@@ -2009,6 +2009,25 @@ function mbqa_runner_module_step_exceptions(): array
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
         ],
+        // Why: settings manages application configuration and backup files, not standard tenant CRUD rows.
+        'settings' => [
+            'mysql' => 'N/A (settings module is configuration/backup UI)',
+            'ui_check' => 'N/A (settings module is configuration/backup UI)',
+            'clear' => 'N/A (settings module is configuration/backup UI)',
+            'sample_data' => 'N/A (settings module is configuration/backup UI)',
+            'add' => 'N/A (settings module is configuration/backup UI)',
+            'pagination' => 'N/A (settings module is configuration/backup UI)',
+            'bulk_cancel' => 'N/A (settings module is configuration/backup UI)',
+            'bulk_delete' => 'N/A (settings module is configuration/backup UI)',
+            'search' => 'N/A (settings module is configuration/backup UI)',
+            'sort' => 'N/A (settings module is configuration/backup UI)',
+            'create' => 'N/A (settings module is configuration/backup UI)',
+            'view' => 'N/A (settings module is configuration/backup UI)',
+            'edit' => 'N/A (settings module is configuration/backup UI)',
+            'list_all' => 'N/A (settings module is configuration/backup UI)',
+            'clear_table' => 'N/A (settings module is configuration/backup UI)',
+            'single_delete' => 'N/A (settings module is configuration/backup UI)',
+        ],
         // Why: audit_logs is a read-only evidence centre; QA documents N/A steps and seeds rows only via add DB fallback.
         'audit_logs' => [
             'list' => 'N/A (read-only audit centre)',
@@ -5437,7 +5456,10 @@ foreach ($companiesToRun as $companyId) {
         $steps = [];
         $detachedProtectedFkRefs = [];
 
-        if ($tier === 'A' && itm_is_safe_identifier($slug)) {
+        $mysqlNaNote = mbqa_runner_module_step_exception_note($slug, 'mysql');
+        if ($mysqlNaNote !== null) {
+            $steps[] = mbqa_step_result('mysql', true, $mysqlNaNote);
+        } elseif ($tier === 'A' && itm_is_safe_identifier($slug)) {
             $mysqlCheck = mbqa_mysql_database_sql_seed_check($slug);
             $steps[] = mbqa_step_result('mysql', $mysqlCheck['ok'], $mysqlCheck['note']);
         } else {
