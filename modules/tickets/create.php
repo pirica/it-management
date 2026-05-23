@@ -195,6 +195,35 @@ function tickets_resolve_created_by_user_id(mysqli $conn, int $companyId): int
     return !empty($options) ? (int)$options[0]['id'] : 0;
 }
 
+function tickets_resolve_asset_label(mysqli $conn, int $companyId, int $assetId): string
+{
+    if ($companyId <= 0 || $assetId <= 0) {
+        return '';
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT name FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    if (!$stmt) {
+        return '';
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ii', $assetId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $lookup = mysqli_stmt_get_result($stmt);
+    $row = ($lookup) ? mysqli_fetch_assoc($lookup) : null;
+    mysqli_stmt_close($stmt);
+
+    return is_array($row) ? trim((string)($row['name'] ?? '')) : '';
+}
+
+function tickets_photo_delete_blocked_message(mysqli $conn, int $companyId, int $assetId): string
+{
+    $assetLabel = tickets_resolve_asset_label($conn, $companyId, $assetId);
+    $labelText = $assetLabel !== '' ? $assetLabel : ('#' . $assetId);
+
+    return 'Ticket photos cannot be deleted because related asset ' . $labelText
+        . ' is in use on this ticket. Clear or change Related Asset first.';
+}
+
 $id = (int)($_GET['id'] ?? 0);
 $is_edit = $id > 0;
 $error = '';
@@ -250,10 +279,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- PHOTO PROCESSING ---
     $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
     $ticketPhotoFilenamesToDeleteAfterSave = [];
-    
+    $deleteCurrentPhoto = isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1';
+    $deletePhotoIndexesRaw = trim((string)($_POST['delete_photo_indexes'] ?? ''));
+    $deletePhotoIndexes = [];
+    if ($deletePhotoIndexesRaw !== '') {
+        $deletePhotoIndexes = array_values(array_unique(array_filter(array_map(static function ($indexValue) {
+            if (!is_numeric($indexValue)) {
+                return null;
+            }
+            $index = (int)$indexValue;
+            return $index >= 0 ? $index : null;
+        }, explode(',', $deletePhotoIndexesRaw)), static function ($value) {
+            return $value !== null;
+        })));
+    }
+    $linkedAssetIdForPhotoGuard = (int)($_POST['asset_id'] ?? $data['asset_id'] ?? 0);
+    $requestedPhotoDeletion = $deleteCurrentPhoto || $deletePhotoIndexes !== [];
+
+    // Why: photos on asset-linked tickets document the related equipment issue; block silent removal.
+    if (!$error && $is_edit && $linkedAssetIdForPhotoGuard > 0 && $requestedPhotoDeletion) {
+        $error = tickets_photo_delete_blocked_message($conn, (int)$company_id, $linkedAssetIdForPhotoGuard);
+    }
+
     // Handle photo removal if requested
-    if (!$error && $is_edit && isset($_POST['delete_photo']) && (string)$_POST['delete_photo'] === '1') {
-        $ticketPhotoFilenamesToDeleteAfterSave = $ticketPhotoFilenames; $ticketPhotoFilenames = [];
+    if (!$error && $is_edit && $deleteCurrentPhoto && !empty($ticketPhotoFilenames)) {
+        $ticketPhotoFilenamesToDeleteAfterSave = $ticketPhotoFilenames;
+        $ticketPhotoFilenames = [];
+    } elseif (!$error && $is_edit && !empty($deletePhotoIndexes) && !empty($ticketPhotoFilenames)) {
+        foreach ($deletePhotoIndexes as $deletePhotoIndex) {
+            if (!array_key_exists($deletePhotoIndex, $ticketPhotoFilenames)) {
+                continue;
+            }
+            $ticketPhotoFilenamesToDeleteAfterSave[] = (string)$ticketPhotoFilenames[$deletePhotoIndex];
+            unset($ticketPhotoFilenames[$deletePhotoIndex]);
+        }
+        $ticketPhotoFilenames = array_values($ticketPhotoFilenames);
+        $ticketPhotoFilenamesToDeleteAfterSave = array_values(array_unique($ticketPhotoFilenamesToDeleteAfterSave));
     }
 
     // Handle new photo uploads
@@ -321,6 +382,12 @@ $existingTicketPhotoUrls = [];
 foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
     $existingTicketPhotoUrls[] = ticket_photo_public_path((string)$existingTicketPhotoFilename);
 }
+$linkedAssetId = (int)($data['asset_id'] ?? 0);
+$linkedAssetLabel = tickets_resolve_asset_label($conn, (int)$company_id, $linkedAssetId);
+$photoDeleteBlockedByAsset = $linkedAssetId > 0;
+$photoDeleteBlockedMessage = $photoDeleteBlockedByAsset
+    ? tickets_photo_delete_blocked_message($conn, (int)$company_id, $linkedAssetId)
+    : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -454,12 +521,17 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
                     <div class="form-row">
                         <div class="form-group">
                             <label>Related Asset</label>
-                            <select name="asset_id">
+                            <select name="asset_id" id="ticketAssetSelect">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($assetOptions as $assetOption): ?>
                                     <option value="<?php echo (int)$assetOption['id']; ?>" <?php echo (string)$data['asset_id'] === (string)$assetOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($assetOption['label']); ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php if ($photoDeleteBlockedByAsset): ?>
+                                <div class="form-hint" id="relatedAssetInUseHint"><?php echo sanitize($photoDeleteBlockedMessage); ?></div>
+                            <?php else: ?>
+                                <div class="form-hint" id="relatedAssetInUseHint" style="display:none;"></div>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <label>Created At</label>
@@ -476,7 +548,13 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
                         <div class="form-hint" id="currentPhotoHint">
                             <span id="currentPhotoHintText"><?php echo count($existingTicketPhotos) > 0 ? 'Current photos: ' . count($existingTicketPhotos) : 'Selected photos: 0'; ?></span>
                             <button type="button" class="btn btn-sm" id="openPhotoPreview">🔎</button>
+                            <?php if ($is_edit && !empty($existingTicketPhotos)): ?>
+                                <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
+                                <input type="hidden" name="delete_photo_indexes" id="deletePhotoIndexesInput" value="">
+                                <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;" <?php echo $photoDeleteBlockedByAsset ? 'disabled' : ''; ?>>Delete All</button>
+                            <?php endif; ?>
                         </div>
+                        <p class="form-hint" id="photoDeleteBlockedHint" style="<?php echo $photoDeleteBlockedByAsset ? '' : 'display:none;'; ?>"><?php echo sanitize($photoDeleteBlockedMessage); ?></p>
                     </div>
 
                     <div class="form-group">
@@ -502,6 +580,9 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
                     <a href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
                         <img src="<?php echo sanitize($photoUrl); ?>" alt="Current ticket photo <?php echo (int)$photoIndex + 1; ?>">
                     </a>
+                    <?php if ($is_edit): ?>
+                        <button type="button" class="btn btn-sm delete-photo-item" data-photo-index="<?php echo (int)$photoIndex; ?>" aria-label="Delete photo <?php echo (int)$photoIndex + 1; ?>" <?php echo $photoDeleteBlockedByAsset ? 'disabled' : ''; ?>>♻️ Delete</button>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -517,15 +598,76 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
     var ticketForm = document.getElementById('ticketForm');
     var uploadTarget = document.getElementById('ticketPhotoUploadTarget');
     var photoInput = document.getElementById('ticketPhotoInput');
+    var assetSelect = document.getElementById('ticketAssetSelect');
     var openPhotoPreview = document.getElementById('openPhotoPreview');
     var photoPreviewModal = document.getElementById('photoPreviewModal');
     var closePhotoPreview = document.getElementById('closePhotoPreview');
+    var deletePhotoButton = document.getElementById('deletePhotoButton');
+    var deletePhotoInput = document.getElementById('deletePhotoInput');
+    var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var existingPhotoPreviewGallery = document.getElementById('existingPhotoPreviewGallery');
     var pendingPhotoPreviewGallery = document.getElementById('pendingPhotoPreviewGallery');
     var photoPreviewEmptyHint = document.getElementById('photoPreviewEmptyHint');
-    var totalCurrentPhotos = existingPhotoPreviewGallery ? existingPhotoPreviewGallery.children.length : 0;
+    var relatedAssetInUseHint = document.getElementById('relatedAssetInUseHint');
+    var photoDeleteBlockedHint = document.getElementById('photoDeleteBlockedHint');
+    var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
+    var totalCurrentPhotos = deletePhotoItemButtons.length || (existingPhotoPreviewGallery ? existingPhotoPreviewGallery.querySelectorAll('.photo-preview-item').length : 0);
     var selectedPhotoPreviewUrls = [];
+    var pendingDeletedPhotoIndexes = new Set();
+    var photoDeleteBlockedMessage = <?php echo json_encode($photoDeleteBlockedMessage, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    var assetOptionLabels = {};
+    if (assetSelect) {
+        Array.prototype.forEach.call(assetSelect.options, function (option) {
+            if (option.value && option.value !== '') {
+                assetOptionLabels[option.value] = option.textContent || option.label || option.value;
+            }
+        });
+    }
+
+    function linkedAssetId() {
+        if (!assetSelect) {
+            return 0;
+        }
+        var value = parseInt(assetSelect.value || '0', 10);
+        return Number.isInteger(value) && value > 0 ? value : 0;
+    }
+
+    function buildPhotoDeleteBlockedMessage(assetId) {
+        if (!assetId) {
+            return '';
+        }
+        var label = assetOptionLabels[String(assetId)] || ('#' + assetId);
+        return 'Ticket photos cannot be deleted because related asset ' + label + ' is in use on this ticket. Clear or change Related Asset first.';
+    }
+
+    function syncPhotoDeleteGuardUi() {
+        var assetId = linkedAssetId();
+        var blocked = assetId > 0;
+        var message = blocked ? (photoDeleteBlockedMessage || buildPhotoDeleteBlockedMessage(assetId)) : '';
+
+        if (deletePhotoButton) {
+            deletePhotoButton.disabled = blocked;
+        }
+        deletePhotoItemButtons.forEach(function (button) {
+            button.disabled = blocked;
+        });
+        if (relatedAssetInUseHint) {
+            relatedAssetInUseHint.textContent = message;
+            relatedAssetInUseHint.style.display = blocked ? '' : 'none';
+        }
+        if (photoDeleteBlockedHint) {
+            photoDeleteBlockedHint.textContent = message;
+            photoDeleteBlockedHint.style.display = blocked ? '' : 'none';
+        }
+    }
+
+    function alertPhotoDeleteBlocked() {
+        var message = photoDeleteBlockedMessage || buildPhotoDeleteBlockedMessage(linkedAssetId());
+        if (message) {
+            window.alert(message);
+        }
+    }
 
     function isExternalFileDrag(event) {
         return !!(event.dataTransfer && event.dataTransfer.types && event.dataTransfer.types.indexOf('Files') !== -1);
@@ -612,6 +754,26 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
         });
     }
 
+    function resetPendingPhotoDeletionState() {
+        pendingDeletedPhotoIndexes.clear();
+        if (deletePhotoInput) {
+            deletePhotoInput.value = '0';
+        }
+        if (deletePhotoIndexesInput) {
+            deletePhotoIndexesInput.value = '';
+        }
+        if (deletePhotoButton) {
+            deletePhotoButton.disabled = linkedAssetId() > 0;
+        }
+    }
+
+    function syncDeletePhotoIndexes() {
+        if (!deletePhotoIndexesInput) {
+            return;
+        }
+        deletePhotoIndexesInput.value = Array.from(pendingDeletedPhotoIndexes).sort(function (a, b) { return a - b; }).join(',');
+    }
+
     function clearPendingPhotoPreview() {
         selectedPhotoPreviewUrls.forEach(function (url) {
             URL.revokeObjectURL(url);
@@ -627,6 +789,15 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
             return;
         }
         var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
+        if (deletePhotoInput && deletePhotoInput.value === '1') {
+            currentPhotoHintText.textContent = 'Current photos will be deleted after you save.';
+            return;
+        }
+        if (pendingDeletedPhotoIndexes.size > 0) {
+            var remainingPhotos = Math.max(totalCurrentPhotos - pendingDeletedPhotoIndexes.size, 0);
+            currentPhotoHintText.textContent = pendingDeletedPhotoIndexes.size + ' photo(s) will be deleted after you save. Remaining: ' + remainingPhotos + '.';
+            return;
+        }
         if (totalCurrentPhotos > 0) {
             currentPhotoHintText.textContent = 'Current photos: ' + totalCurrentPhotos + '. Selected (not saved): ' + selectedPhotoCount + '.';
             return;
@@ -637,7 +808,14 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
     }
 
     function updatePhotoPreviewActionState() {
-        var visibleExistingPhotos = existingPhotoPreviewGallery ? existingPhotoPreviewGallery.children.length : 0;
+        var visibleExistingPhotos = 0;
+        if (existingPhotoPreviewGallery) {
+            Array.prototype.forEach.call(existingPhotoPreviewGallery.children, function (item) {
+                if (item.style.display !== 'none') {
+                    visibleExistingPhotos += 1;
+                }
+            });
+        }
         var selectedPhotoCount = pendingPhotoPreviewGallery ? pendingPhotoPreviewGallery.children.length : 0;
         var hasAnyPhotos = visibleExistingPhotos > 0 || selectedPhotoCount > 0;
         if (openPhotoPreview) {
@@ -688,16 +866,71 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
         photoPreviewModal.setAttribute('aria-hidden', 'true');
     }
 
+    resetPendingPhotoDeletionState();
+    syncPhotoDeleteGuardUi();
     updateCurrentPhotoHint();
     updatePhotoPreviewActionState();
     window.addEventListener('pageshow', function () {
+        resetPendingPhotoDeletionState();
         clearPendingPhotoPreview();
+        syncPhotoDeleteGuardUi();
         updateCurrentPhotoHint();
         updatePhotoPreviewActionState();
     });
 
+    if (assetSelect) {
+        assetSelect.addEventListener('change', function () {
+            photoDeleteBlockedMessage = buildPhotoDeleteBlockedMessage(linkedAssetId());
+            syncPhotoDeleteGuardUi();
+        });
+    }
+
     if (photoInput) {
         photoInput.addEventListener('change', renderPendingPhotoPreview);
+    }
+
+    if (deletePhotoButton && deletePhotoInput) {
+        deletePhotoButton.addEventListener('click', function () {
+            if (linkedAssetId() > 0) {
+                alertPhotoDeleteBlocked();
+                return;
+            }
+            deletePhotoInput.value = '1';
+            pendingDeletedPhotoIndexes.clear();
+            syncDeletePhotoIndexes();
+            hidePhotoModal();
+            updateCurrentPhotoHint();
+            if (photoInput) {
+                photoInput.value = '';
+            }
+            deletePhotoButton.disabled = true;
+        });
+    }
+
+    if (deletePhotoItemButtons.length > 0 && deletePhotoInput) {
+        deletePhotoItemButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (linkedAssetId() > 0) {
+                    alertPhotoDeleteBlocked();
+                    return;
+                }
+                if (deletePhotoInput.value === '1') {
+                    return;
+                }
+                var photoIndex = parseInt(button.getAttribute('data-photo-index') || '', 10);
+                if (!Number.isInteger(photoIndex) || photoIndex < 0) {
+                    return;
+                }
+                pendingDeletedPhotoIndexes.add(photoIndex);
+                syncDeletePhotoIndexes();
+                var photoItem = button.closest('.photo-preview-item');
+                if (photoItem) {
+                    photoItem.style.display = 'none';
+                }
+                updateCurrentPhotoHint();
+                updatePhotoPreviewActionState();
+            });
+        });
     }
 
     if (openPhotoPreview && photoPreviewModal) {
