@@ -1229,6 +1229,7 @@ function mbqa_runner_module_step_exceptions(): array
         ],
         // Why: audit_logs is an immutable evidence trail; delete/import/sample HTTP seed stay disabled in QA.
         'audit_logs' => [
+            'list' => 'N/A (read-only audit centre)',
             'bulk_cancel' => 'N/A (no bulk-delete form in HTML)',
             'bulk_delete' => 'N/A (read-only audit centre; delete disabled)',
             'clear_table' => 'N/A (read-only audit centre; delete disabled)',
@@ -4231,8 +4232,11 @@ foreach ($companiesToRun as $companyId) {
         if ($listOk && $tier === 'A' && itm_is_safe_identifier($slug)) {
             $perPageList = mbqa_records_per_page($conn);
             $rowCountList = mbqa_tenant_row_count($conn, $slug, $companyId);
+            $listNaNote = mbqa_runner_module_step_exception_note($slug, 'list');
             $bulkDeleteNa = mbqa_runner_module_step_exception_note($slug, 'bulk_delete');
-            if ($bulkDeleteNa !== null) {
+            if ($listNaNote !== null) {
+                $bulkGate = ['ok' => true, 'note' => $listNaNote];
+            } elseif ($bulkDeleteNa !== null) {
                 $bulkGate = ['ok' => true, 'note' => 'bulk UI intentionally hidden; ' . $bulkDeleteNa];
             } else {
                 $bulkGate = mbqa_index_bulk_ui_matches_row_gate($rowCountList, $perPageList, $index['body']);
