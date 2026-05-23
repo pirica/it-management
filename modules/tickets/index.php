@@ -168,6 +168,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all tickets? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
@@ -183,7 +184,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
-                        <th>Actions</th>
+                        <th data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -214,18 +215,18 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="8" style="text-align:center;">No tickets found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
                 <?php if ($totalPages > 1): ?>
                     <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>">« Prev</a>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>" title="◀️ Previous">Previous</a>
                         <?php endif; ?>
                         <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>">Next »</a>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>" title="▶️ Next">Next</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
