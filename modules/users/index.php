@@ -795,6 +795,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo sanitize($crud_title); ?> Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .itm-nowrap-column {
+            white-space: nowrap;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -851,7 +858,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                                <th>
+                                <th class="<?php echo in_array($field, ['role_id', 'active'], true) ? 'itm-nowrap-column' : ''; ?>">
                                     <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
@@ -868,7 +875,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
-                                    <td>
+                                    <td class="<?php echo in_array($f, ['role_id', 'active'], true) ? 'itm-nowrap-column' : ''; ?>">
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <?php else: ?>
