@@ -48,6 +48,43 @@ if (!function_exists('itm_table_has_column')) {
 }
 
 /**
+ * Whether a table column accepts NULL (sample seed may omit optional FK values).
+ */
+if (!function_exists('itm_table_column_is_nullable')) {
+    function itm_table_column_is_nullable($conn, $table, $column): bool
+    {
+        static $cache = [];
+        $key = $table . '.' . $column . '.nullable';
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+            $cache[$key] = false;
+            return false;
+        }
+
+        $sql = 'SELECT IS_NULLABLE FROM information_schema.COLUMNS'
+            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            $cache[$key] = false;
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = ($res) ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        $cache[$key] = is_array($row) && strtoupper((string)($row['IS_NULLABLE'] ?? '')) === 'YES';
+
+        return $cache[$key];
+    }
+}
+
+/**
  * Converts a database column name into a label for validation and error messages.
  */
 if (!function_exists('itm_humanize_field_name')) {
