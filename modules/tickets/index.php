@@ -248,6 +248,7 @@ if ($searchRaw !== '') {
         OR t.title LIKE '{$searchEsc}'
         OR ts.name LIKE '{$searchEsc}'
         OR tp.name LIKE '{$searchEsc}'
+        OR t.ui_color LIKE '{$searchEsc}'
         OR CAST(t.created_at AS CHAR) LIKE '{$searchEsc}'
     )";
 }
