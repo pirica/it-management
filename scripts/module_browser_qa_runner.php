@@ -3130,6 +3130,165 @@ function mbqa_tables_never_clear(): array
     return ['companies', 'users'];
 }
 
+function mbqa_fk_restore_label_column(mysqli $conn, string $table): string
+{
+    foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
+        if (itm_table_has_column($conn, $table, $candidate)) {
+            return $candidate;
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Temporarily null protected child FKs so parent reference tables can be QA-cleared without deleting auth data.
+ *
+ * @param array<int, array{child_table:string, child_column:string, child_id:int, old_value:int, parent_table:string, parent_column:string, parent_company_id:int, parent_label_column:string, parent_label_value:string}> $detachedRefs
+ */
+function mbqa_temporarily_detach_never_clear_fk_refs(mysqli $conn, string $parentTable, int $companyId, array &$detachedRefs): int
+{
+    if (!itm_is_safe_identifier($parentTable) || $companyId <= 0 || !itm_table_has_column($conn, $parentTable, 'company_id')) {
+        return 0;
+    }
+
+    $detached = 0;
+    $parentEsc = '`' . str_replace('`', '``', $parentTable) . '`';
+    $labelColumn = mbqa_fk_restore_label_column($conn, $parentTable);
+    $labelSelect = $labelColumn !== ''
+        ? ', p.`' . str_replace('`', '``', $labelColumn) . '` AS parent_label_value'
+        : '';
+    foreach (mbqa_inbound_fk_refs($conn, $parentTable) as $ref) {
+        $child = $ref['child_table'];
+        $childColumn = $ref['child_column'];
+        $parentColumn = $ref['parent_column'];
+        if (!in_array($child, mbqa_tables_never_clear(), true)
+            || !itm_table_has_column($conn, $child, 'id')
+            || !itm_table_column_is_nullable($conn, $child, $childColumn)) {
+            continue;
+        }
+
+        $childEsc = '`' . str_replace('`', '``', $child) . '`';
+        $childColumnEsc = '`' . str_replace('`', '``', $childColumn) . '`';
+        $parentColumnEsc = '`' . str_replace('`', '``', $parentColumn) . '`';
+        $childCompanyScope = itm_table_has_column($conn, $child, 'company_id')
+            ? ' AND c.`company_id`=' . (int)$companyId
+            : '';
+
+        $selectSql = 'SELECT c.`id` AS child_id, c.' . $childColumnEsc . ' AS old_value' . $labelSelect
+            . ' FROM ' . $childEsc . ' c INNER JOIN ' . $parentEsc . ' p ON c.' . $childColumnEsc . ' = p.' . $parentColumnEsc
+            . ' WHERE p.`company_id`=' . (int)$companyId . $childCompanyScope;
+        $res = mysqli_query($conn, $selectSql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $childId = (int)($row['child_id'] ?? 0);
+            $oldValue = (int)($row['old_value'] ?? 0);
+            if ($childId <= 0 || $oldValue <= 0) {
+                continue;
+            }
+            $detachedRefs[] = [
+                'child_table' => $child,
+                'child_column' => $childColumn,
+                'child_id' => $childId,
+                'old_value' => $oldValue,
+                'parent_table' => $parentTable,
+                'parent_column' => $parentColumn,
+                'parent_company_id' => $companyId,
+                'parent_label_column' => $labelColumn,
+                'parent_label_value' => (string)($row['parent_label_value'] ?? ''),
+            ];
+        }
+
+        $updateSql = 'UPDATE ' . $childEsc . ' c INNER JOIN ' . $parentEsc . ' p ON c.' . $childColumnEsc . ' = p.' . $parentColumnEsc
+            . ' SET c.' . $childColumnEsc . '=NULL'
+            . ' WHERE p.`company_id`=' . (int)$companyId . $childCompanyScope;
+        if (itm_run_query($conn, $updateSql)) {
+            $detached += max(0, (int)mysqli_affected_rows($conn));
+        }
+    }
+
+    return $detached;
+}
+
+/**
+ * @param array<int, array{child_table:string, child_column:string, child_id:int, old_value:int, parent_table:string, parent_column:string, parent_company_id:int, parent_label_column:string, parent_label_value:string}> $detachedRefs
+ */
+function mbqa_restore_temporarily_detached_fk_refs(mysqli $conn, array &$detachedRefs, string &$note = ''): bool
+{
+    $note = '';
+    if (empty($detachedRefs)) {
+        return true;
+    }
+
+    $restored = 0;
+    $skipped = 0;
+    $ok = true;
+    foreach ($detachedRefs as $ref) {
+        $child = $ref['child_table'];
+        $childColumn = $ref['child_column'];
+        $parent = $ref['parent_table'];
+        $parentColumn = $ref['parent_column'];
+        $parentCompanyId = (int)($ref['parent_company_id'] ?? 0);
+        $parentLabelColumn = (string)($ref['parent_label_column'] ?? '');
+        $parentLabelValue = (string)($ref['parent_label_value'] ?? '');
+        $childId = (int)$ref['child_id'];
+        $oldValue = (int)$ref['old_value'];
+        if (!itm_is_safe_identifier($child) || !itm_is_safe_identifier($childColumn)
+            || !itm_is_safe_identifier($parent) || !itm_is_safe_identifier($parentColumn)
+            || $childId <= 0 || $oldValue <= 0) {
+            $skipped++;
+            continue;
+        }
+
+        $parentEsc = '`' . str_replace('`', '``', $parent) . '`';
+        $parentColumnEsc = '`' . str_replace('`', '``', $parentColumn) . '`';
+        $parentExists = mysqli_query(
+            $conn,
+            'SELECT 1 FROM ' . $parentEsc . ' WHERE ' . $parentColumnEsc . '=' . $oldValue . ' LIMIT 1'
+        );
+        if (!$parentExists || mysqli_num_rows($parentExists) === 0) {
+            if ($parentLabelColumn === '' || $parentLabelValue === '' || !itm_is_safe_identifier($parentLabelColumn)
+                || $parentCompanyId <= 0
+                || !itm_table_has_column($conn, $parent, 'company_id')) {
+                $skipped++;
+                continue;
+            }
+
+            $labelEsc = mysqli_real_escape_string($conn, $parentLabelValue);
+            $parentLabelColumnEsc = '`' . str_replace('`', '``', $parentLabelColumn) . '`';
+            $fallbackSql = 'SELECT ' . $parentColumnEsc . ' AS resolved_id FROM ' . $parentEsc
+                . ' WHERE `company_id`=' . $parentCompanyId
+                . ' AND ' . $parentLabelColumnEsc . "='" . $labelEsc . "' LIMIT 1";
+            $fallbackRes = mysqli_query($conn, $fallbackSql);
+            $fallbackRow = $fallbackRes ? mysqli_fetch_assoc($fallbackRes) : null;
+            $resolvedValue = is_array($fallbackRow) ? (int)($fallbackRow['resolved_id'] ?? 0) : 0;
+            if ($resolvedValue <= 0) {
+                $skipped++;
+                continue;
+            }
+            $oldValue = $resolvedValue;
+        }
+
+        $childEsc = '`' . str_replace('`', '``', $child) . '`';
+        $childColumnEsc = '`' . str_replace('`', '``', $childColumn) . '`';
+        $sql = 'UPDATE ' . $childEsc . ' SET ' . $childColumnEsc . '=' . $oldValue
+            . ' WHERE `id`=' . $childId . ' AND ' . $childColumnEsc . ' IS NULL LIMIT 1';
+        if (itm_run_query($conn, $sql)) {
+            $restored += max(0, (int)mysqli_affected_rows($conn));
+        } else {
+            $ok = false;
+        }
+    }
+
+    $note = 'restored temporary FK detachments=' . $restored;
+    if ($skipped > 0) {
+        $note .= '; skipped=' . $skipped;
+        $ok = false;
+    }
+    $detachedRefs = [];
+
+    return $ok;
+}
+
 /**
  * Tables that must not receive mbqa_insert_random_rows (creates is_mbqa_equipment_types_* scaffolds).
  *
@@ -5276,6 +5435,7 @@ foreach ($companiesToRun as $companyId) {
 
         $moduleUrl = $baseUrl . 'modules/' . rawurlencode($slug) . '/';
         $steps = [];
+        $detachedProtectedFkRefs = [];
 
         if ($tier === 'A' && itm_is_safe_identifier($slug)) {
             $mysqlCheck = mbqa_mysql_database_sql_seed_check($slug);
@@ -5404,8 +5564,12 @@ foreach ($companiesToRun as $companyId) {
         if ($clearNaNote !== null) {
             $steps[] = mbqa_step_result('clear', true, $clearNaNote);
         } elseif (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
+            $detachedCount = mbqa_temporarily_detach_never_clear_fk_refs($conn, $slug, $companyId, $detachedProtectedFkRefs);
             $clearNote = '';
             $cleared = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearNote);
+            if ($detachedCount > 0) {
+                $clearNote .= ($clearNote !== '' ? '; ' : '') . 'temporarily detached protected FK refs=' . $detachedCount;
+            }
             $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
             $csrfIndex = mbqa_extract_csrf($index['body']);
             $steps[] = mbqa_step_result('clear', $cleared, $clearNote !== '' ? $clearNote : ($cleared ? 'SQL tenant clear' : 'Clear failed'));
@@ -5618,8 +5782,12 @@ foreach ($companiesToRun as $companyId) {
             if (!$clearTableHtml['ok']) {
                 $steps[] = mbqa_step_result('clear_table', false, $clearTableHtml['note']);
             } else {
+                $detachedCount = mbqa_temporarily_detach_never_clear_fk_refs($conn, $slug, $companyId, $detachedProtectedFkRefs);
                 $clearResult = mbqa_run_clear_table($moduleUrl, $cookieFile, $csrfIndex, $slug, $conn, $companyId);
                 $clearTableNote = $clearResult['note'] . '; ' . $clearTableHtml['note'];
+                if ($detachedCount > 0) {
+                    $clearTableNote .= '; temporarily detached protected FK refs=' . $detachedCount;
+                }
                 $steps[] = mbqa_step_result('clear_table', $clearResult['ok'], $clearTableNote);
             }
         } else {
@@ -5634,8 +5802,12 @@ foreach ($companiesToRun as $companyId) {
         if ($clearNaNote !== null) {
             $steps[] = mbqa_step_result('clear', true, $clearNaNote);
         } elseif (!in_array($slug, $skipClear, true) && itm_is_safe_identifier($slug)) {
+            $detachedCount = mbqa_temporarily_detach_never_clear_fk_refs($conn, $slug, $companyId, $detachedProtectedFkRefs);
             $clearBeforeImportNote = '';
             $clearedBeforeImport = mbqa_clear_module_table_for_company($conn, $slug, $companyId, $clearBeforeImportNote);
+            if ($detachedCount > 0) {
+                $clearBeforeImportNote .= ($clearBeforeImportNote !== '' ? '; ' : '') . 'temporarily detached protected FK refs=' . $detachedCount;
+            }
             $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
             $csrfIndex = mbqa_extract_csrf($index['body']);
             $steps[] = mbqa_step_result(
@@ -5797,7 +5969,13 @@ foreach ($companiesToRun as $companyId) {
             }
         }
 
+        $restoreNote = '';
+        $restoreOk = mbqa_restore_temporarily_detached_fk_refs($conn, $detachedProtectedFkRefs, $restoreNote);
         $errorLog = mbqa_read_error_log_since($errorLogOffset);
+        if ($restoreNote !== '') {
+            $errorLog['note'] .= '; ' . $restoreNote;
+            $errorLog['ok'] = $errorLog['ok'] && $restoreOk;
+        }
         $steps[] = mbqa_step_result('error_log', $errorLog['ok'], $errorLog['note']);
 
         $results[] = [
