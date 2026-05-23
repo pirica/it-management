@@ -340,7 +340,7 @@ $data = [
     'ticket_external_code' => '', 'title' => '', 'description' => '',
     'category_id' => '', 'status_id' => '', 'priority_id' => '',
     'created_by_user_id' => (int)($_SESSION['user_id'] ?? 0),
-    'assigned_to_user_id' => '', 'asset_id' => '', 'ui_color' => '#0969da',
+    'assigned_to_user_id' => '', 'asset_id' => '',
     'tickets_photos' => '', 'created_at' => date('Y-m-d\TH:i')
 ];
 
@@ -375,11 +375,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $created_by_user_id = (int)($_POST['created_by_user_id'] ?? 0);
     $assigned_to_user_id = (int)($_POST['assigned_to_user_id'] ?? 0) ?: 'NULL';
     $asset_id = (int)($_POST['asset_id'] ?? 0) ?: 'NULL';
-    
-    // UI Color validation
-    $ui_color_raw = strtolower(trim((string)($_POST['ui_color'] ?? '#0969da')));
-    $ui_color = preg_match('/^#[0-9a-f]{6}$/', $ui_color_raw) ? $ui_color_raw : '#0969da';
-    $ui_color_sql = "'" . escape_sql($ui_color, $conn) . "'";
 
     // --- PHOTO PROCESSING ---
     $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
@@ -451,13 +446,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ticket_external_code='$ticket_external_code', title='$title', description='$description',
                         category_id=$category_id, status_id=$status_id, priority_id=$priority_id,
                         created_by_user_id=$created_by_user_id, assigned_to_user_id=$assigned_to_user_id, asset_id=$asset_id,
-                        ui_color=$ui_color_sql, tickets_photos=$photos_sql, created_at=$created_at_val
+                        tickets_photos=$photos_sql, created_at=$created_at_val
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO tickets
-                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, ui_color, tickets_photos, created_at)
+                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, tickets_photos, created_at)
                     VALUES
-                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $ui_color_sql, $photos_sql, $created_at_val)";
+                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $photos_sql, $created_at_val)";
         }
 
         if (!$error && itm_run_query($conn, $sql)) {
@@ -646,11 +641,6 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
                                 <button type="button" class="btn btn-sm" id="deletePhotoButton" style="margin-left:8px;">Delete All</button>
                             <?php endif; ?>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Color</label>
-                        <input type="color" name="ui_color" value="<?php echo sanitize($data['ui_color'] ?? '#0969da'); ?>">
                     </div>
 
                     <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">🔙</a></div>
