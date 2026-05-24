@@ -466,8 +466,18 @@ if (!function_exists('itm_run_query')) {
             if ($result === false) {
                 $errorCode = (int)mysqli_errno($conn);
                 $errorMessage = (string)mysqli_error($conn);
-            } elseif (is_array($auditMeta) && function_exists('itm_log_audit') && function_exists('itm_fetch_audit_record')) {
-                $auditAction = (string)($auditMeta['action'] ?? '');
+                return false;
+            }
+
+            // Why: Mutation result values must be captured before audit triggers run, as
+            // subsequent logging INSERTs overwrite mysqli_affected_rows() for the session.
+            $mutationResult = null;
+            $auditAction = (string)($auditMeta['action'] ?? '');
+            if ($auditAction !== '') {
+                $mutationResult = (int)mysqli_affected_rows($conn);
+            }
+
+            if (is_array($auditMeta) && function_exists('itm_log_audit') && function_exists('itm_fetch_audit_record')) {
                 $auditTable = (string)($auditMeta['table'] ?? '');
                 if ($auditAction !== '' && $auditTable !== '') {
                     if ($auditAction === 'INSERT') {
@@ -483,7 +493,10 @@ if (!function_exists('itm_run_query')) {
                     }
                 }
             }
-            return $result;
+
+            // Why: For mutations, return the captured affected rows count (which can be 0 for matched but unchanged rows).
+            // For SELECT/SHOW/other queries, return the mysqli_result object or true.
+            return ($mutationResult !== null) ? $mutationResult : $result;
         } catch (Throwable $t) {
             $errorCode = (int)$t->getCode();
             $errorMessage = (string)$t->getMessage();

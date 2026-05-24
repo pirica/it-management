@@ -352,11 +352,11 @@ if ($crud_action === 'delete') {
             $where = ' WHERE company_id=' . (int)$company_id;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        $clearedRows = itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage);
+        if ($clearedRows === false) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         } else {
-            $clearedRows = (int)mysqli_affected_rows($conn);
-            $_SESSION['crud_success'] = 'Cleared ' . $clearedRows . ' record(s).';
+            $_SESSION['crud_success'] = 'Cleared ' . (int)$clearedRows . ' record(s).';
         }
         header('Location: ' . $listUrl);
         exit;
@@ -385,9 +385,9 @@ if ($crud_action === 'delete') {
                 $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
                 $dbErrorCode = 0;
                 $dbErrorMessage = '';
-                if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                    $affectedRows = (int)mysqli_affected_rows($conn);
-                    if ($affectedRows > 0) {
+                $mutationResult = itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage);
+                if ($mutationResult !== false) {
+                    if ((int)$mutationResult > 0) {
                         $deletedCount++;
                     } else {
                         $failedCount++;
@@ -431,11 +431,11 @@ if ($crud_action === 'delete') {
             $_SESSION['crud_error'] = $blockerMessage;
         } else {
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $mutationResult = itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage);
+            if ($mutationResult === false) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             } else {
-                $affectedRows = (int)mysqli_affected_rows($conn);
-                if ($affectedRows <= 0) {
+                if ((int)$mutationResult <= 0) {
                     $_SESSION['crud_error'] = 'Record was not deleted (not found in the current company scope).';
                 } else {
                     $_SESSION['crud_success'] = 'Record deleted successfully.';
