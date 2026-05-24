@@ -206,6 +206,32 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_delete_reference_blocker_message($conn, $table, $pkColumn, $pkValue, $companyId) {
+    if (!function_exists('itm_find_record_usage')) {
+        return '';
+    }
+
+    $usage = itm_find_record_usage($conn, (string)$table, (string)$pkColumn, (int)$pkValue, (int)$companyId);
+    if (!is_array($usage) || empty($usage)) {
+        return '';
+    }
+
+    $first = $usage[0] ?? [];
+    $childTable = trim((string)($first['table'] ?? ''));
+    $childColumn = trim((string)($first['column'] ?? ''));
+
+    if ($childTable !== '' && $childColumn !== '') {
+        return 'This record cannot be deleted because other records still reference it. Referenced by table "'
+            . $childTable . '" via column "' . $childColumn . '". Remove or reassign the related records first.';
+    }
+    if ($childTable !== '') {
+        return 'This record cannot be deleted because other records still reference it. Referenced by table "'
+            . $childTable . '". Remove or reassign the related records first.';
+    }
+
+    return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
+}
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
