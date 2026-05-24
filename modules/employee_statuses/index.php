@@ -479,6 +479,28 @@ if ($crud_action === 'delete') {
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
     $dbErrorCode = 0;
     $dbErrorMessage = '';
+    $rawIds = $_POST['ids'] ?? [];
+    if (!is_array($rawIds)) {
+        $rawIds = [];
+    }
+    $idList = [];
+    foreach ($rawIds as $rawId) {
+        $normalizedId = (int)$rawId;
+        if ($normalizedId > 0) {
+            $idList[$normalizedId] = $normalizedId;
+        }
+    }
+    $singleId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+
+    if ($bulkAction === 'single_delete' && $singleId <= 0 && !empty($idList)) {
+        // Why: some clients submit ids[] without preserving bulk_action; treat as bulk delete.
+        $bulkAction = 'bulk_delete';
+    }
+
+    if ($bulkAction === 'bulk_delete' && empty($idList) && $singleId > 0) {
+        // Why: fallback for clients that send one id but no ids[] array.
+        $idList[$singleId] = $singleId;
+    }
 
     if ($bulkAction === 'clear_table') {
         // Truncate the table within the company scope
@@ -499,18 +521,6 @@ if ($crud_action === 'delete') {
 
     if ($bulkAction === 'bulk_delete') {
         // Delete selected multiple records
-        $ids = $_POST['ids'] ?? [];
-        if (!is_array($ids)) {
-            $ids = [];
-        }
-        $idList = [];
-        foreach ($ids as $rawId) {
-            $id = (int)$rawId;
-            if ($id > 0) {
-                $idList[$id] = $id;
-            }
-        }
-
         if (!empty($idList)) {
             $deletedCount = 0;
             $failedCount = 0;
@@ -567,7 +577,7 @@ if ($crud_action === 'delete') {
     }
 
     // Delete a single record
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $id = $singleId;
     if ($id > 0) {
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
@@ -589,6 +599,8 @@ if ($crud_action === 'delete') {
                 }
             }
         }
+    } else {
+        $_SESSION['crud_error'] = 'No record selected for deletion.';
     }
     header('Location: ' . $listUrl);
     exit;
