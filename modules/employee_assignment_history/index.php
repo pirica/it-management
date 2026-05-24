@@ -473,6 +473,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         }
 
         $insertedRows = 0;
+        $failedRows = 0;
         $importErrors = [];
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
@@ -555,14 +556,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
-            } elseif (count($importErrors) < 5) {
-                $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
+            } else {
+                $failedRows++;
+                if (count($importErrors) < 5) {
+                    $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
+                }
             }
         }
 
         $response = ['ok' => true, 'inserted' => $insertedRows];
+        if ($failedRows > 0) {
+            $response['failed'] = $failedRows;
+        }
         if (!empty($importErrors)) {
-            $response['failed'] = count($importErrors);
             $response['errors'] = $importErrors;
             if ($insertedRows === 0) {
                 $response['message'] = $importErrors[0];
