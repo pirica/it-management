@@ -338,6 +338,23 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
 
+// Keep invitation_code visible in list/export so Excel import payload always carries this NOT NULL field.
+$hasInvitationCodeColumn = false;
+foreach ($uiColumns as $col) {
+    if (((string)($col['Field'] ?? '')) === 'invitation_code') {
+        $hasInvitationCodeColumn = true;
+        break;
+    }
+}
+if (!$hasInvitationCodeColumn) {
+    foreach ($fieldColumns as $col) {
+        if (((string)($col['Field'] ?? '')) === 'invitation_code') {
+            $uiColumns[] = $col;
+            break;
+        }
+    }
+}
+
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
 
