@@ -1645,21 +1645,75 @@ if (!function_exists('itm_handle_json_table_import')) {
                     $refTable = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
                     $refColumn = (string)($fk['REFERENCED_COLUMN_NAME'] ?? 'id');
                     $resolvedFkId = 0;
+                    $rawEscaped = mysqli_real_escape_string($conn, $rawValue);
 
                     if (ctype_digit($rawValue)) {
                         $resolvedFkId = (int)$rawValue;
                     }
 
                     if ($resolvedFkId <= 0 && $refTable !== '' && itm_is_safe_identifier($refTable) && itm_is_safe_identifier($refColumn)) {
-                        $fallbackSql = 'SELECT `' . str_replace('`', '``', $refColumn) . '` AS id FROM `' . str_replace('`', '``', $refTable) . '`';
-                        if ($companyId > 0 && $tableHasColumn($refTable, 'company_id')) {
-                            $fallbackSql .= ' WHERE company_id=' . $companyId;
+                        $refColumns = function_exists('itm_fk_table_column_names')
+                            ? itm_fk_table_column_names($conn, $refTable)
+                            : [];
+                        $hasCompanyScope = $companyId > 0 && in_array('company_id', $refColumns, true);
+
+                        $candidateColumns = [];
+                        if (function_exists('itm_detect_fk_business_key_columns')) {
+                            $candidateColumns = itm_detect_fk_business_key_columns($refTable, $refColumns);
                         }
-                        $fallbackSql .= ' ORDER BY `' . str_replace('`', '``', $refColumn) . '` ASC LIMIT 1';
-                        $fallbackRes = mysqli_query($conn, $fallbackSql);
-                        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
-                            $resolvedFkId = (int)($fallbackRow['id'] ?? 0);
+                        if (function_exists('itm_fk_label_column_for_table')) {
+                            $candidateColumns[] = itm_fk_label_column_for_table($refColumns);
                         }
+                        foreach ([
+                            'name', 'title', 'display_name', 'employee_code', 'external_id', 'username',
+                            'account_name', 'account_code', 'code', 'description', 'email',
+                            'mode_name', 'stage', 'status', 'approver_type_description', 'invitation_code'
+                        ] as $commonLabelColumn) {
+                            $candidateColumns[] = $commonLabelColumn;
+                        }
+                        $candidateColumns = array_values(array_unique(array_filter($candidateColumns, function ($column) use ($refColumns) {
+                            return is_string($column) && $column !== '' && in_array($column, $refColumns, true);
+                        })));
+
+                        foreach ($candidateColumns as $matchColumn) {
+                            $matchSql = 'SELECT `' . str_replace('`', '``', $refColumn) . '` AS id FROM `'
+                                . str_replace('`', '``', $refTable) . '` WHERE `'
+                                . str_replace('`', '``', $matchColumn) . "` = '" . $rawEscaped . "'";
+                            if ($hasCompanyScope) {
+                                $matchSql .= ' AND company_id=' . $companyId;
+                            }
+                            $matchSql .= ' ORDER BY `' . str_replace('`', '``', $refColumn) . '` ASC LIMIT 2';
+                            $matchRes = mysqli_query($conn, $matchSql);
+                            if (!$matchRes) {
+                                continue;
+                            }
+                            $matchCount = mysqli_num_rows($matchRes);
+                            if ($matchCount === 1) {
+                                $matchRow = mysqli_fetch_assoc($matchRes);
+                                $resolvedFkId = (int)($matchRow['id'] ?? 0);
+                                break;
+                            }
+                        }
+
+                        if ($resolvedFkId <= 0
+                            && in_array('first_name', $refColumns, true)
+                            && in_array('last_name', $refColumns, true)
+                            && strpos($rawValue, ' ') !== false) {
+                            $nameSql = 'SELECT `' . str_replace('`', '``', $refColumn) . '` AS id FROM `'
+                                . str_replace('`', '``', $refTable) . '` WHERE TRIM(CONCAT(COALESCE(`first_name`, \'\'), \' \', COALESCE(`last_name`, \'\'))) = \''
+                                . $rawEscaped . '\'';
+                            if ($hasCompanyScope) {
+                                $nameSql .= ' AND company_id=' . $companyId;
+                            }
+                            $nameSql .= ' ORDER BY `' . str_replace('`', '``', $refColumn) . '` ASC LIMIT 2';
+                            $nameRes = mysqli_query($conn, $nameSql);
+                            if ($nameRes && mysqli_num_rows($nameRes) === 1) {
+                                $nameRow = mysqli_fetch_assoc($nameRes);
+                                $resolvedFkId = (int)($nameRow['id'] ?? 0);
+                            }
+                        }
+
+                        // Do not map unresolved non-numeric FK values to an arbitrary row.
                     }
 
                     if ($resolvedFkId > 0) {
