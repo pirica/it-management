@@ -2014,6 +2014,16 @@ function mbqa_runner_module_step_exceptions(): array
         'patches_updates' => [
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
+        // Why: Employee System Access shows the available systems for each Emplyoee, auto populated.
+        'employee_system_access' => [
+            'sample_data' => 'N/A (Auto populated)',
+            'create' => 'N/A (Auto populated)',
+            'bulk_cancel' => 'N/A (Auto populated)',
+            'bulk_delete' => 'N/A (Auto populated)',
+            'list_all' => 'N/A (Auto populated)',
+            'clear_table' => 'N/A (Auto populated)',
+            'single_delete' => 'N/A (Auto populated)',
+        ],
         // Why: database.sql has no INSERT rows for approvers; sample_data start + end restore are N/A in QA.
         'approvers' => [
             'sample_data' => 'No sample rows found in database.sql for this module.',
