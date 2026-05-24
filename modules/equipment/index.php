@@ -313,7 +313,7 @@ if (!empty($_SESSION['crud_success'])) {
             </div>
 
             <div class="card" style="overflow:auto;">
-                <table>
+                <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
                         <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>

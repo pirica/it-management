@@ -950,7 +950,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </form>
                 </div>
                 <div class="card" style="overflow:auto;" data-itm-no-import-excel="1">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <?php if ($showBulkActions): ?>

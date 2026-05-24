@@ -828,7 +828,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </div>
                 <?php endif; ?>
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <?php foreach ($displayFieldColumns as $col): ?>

@@ -887,7 +887,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                     </form>
                 </div>
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
