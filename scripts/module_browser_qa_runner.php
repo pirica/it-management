@@ -2022,6 +2022,11 @@ function mbqa_runner_module_step_exceptions(): array
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
         ],
+        // Why: System Access shows the available systems, auto populated.
+        'system_access' => [
+            'clear_table' => 'N/A (Auto populated)',
+            'sample_data' => 'N/A (Auto populated)',
+        ],
         // Why: Users manages application, protected; avoid users profiles creations in QA.
         'users' => [
             'clear' => 'N/A (users module is user creation)',
