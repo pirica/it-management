@@ -206,6 +206,32 @@ function cr_require_valid_csrf_token() {
     }
 }
 
+function cr_delete_reference_blocker_message($conn, $table, $pkColumn, $pkValue, $companyId) {
+    if (!function_exists('itm_find_record_usage')) {
+        return '';
+    }
+
+    $usage = itm_find_record_usage($conn, (string)$table, (string)$pkColumn, (int)$pkValue, (int)$companyId);
+    if (!is_array($usage) || empty($usage)) {
+        return '';
+    }
+
+    $first = $usage[0] ?? [];
+    $childTable = trim((string)($first['table'] ?? ''));
+    $childColumn = trim((string)($first['column'] ?? ''));
+
+    if ($childTable !== '' && $childColumn !== '') {
+        return 'This record cannot be deleted because other records still reference it. Referenced by table "'
+            . $childTable . '" via column "' . $childColumn . '". Remove or reassign the related records first.';
+    }
+    if ($childTable !== '') {
+        return 'This record cannot be deleted because other records still reference it. Referenced by table "'
+            . $childTable . '". Remove or reassign the related records first.';
+    }
+
+    return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
+}
+
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
@@ -485,13 +511,21 @@ if ($crud_action === 'delete') {
         if (!empty($idList)) {
             $deletedCount = 0;
             $failedCount = 0;
-            $firstDbErrorCode = 0;
-            $firstDbErrorMessage = '';
+            $firstFailureMessage = '';
             foreach (array_values($idList) as $selectedId) {
                 $where = ' WHERE id=' . (int)$selectedId;
                 if ($hasCompany && $company_id > 0) {
                     $where .= ' AND company_id=' . (int)$company_id;
                 }
+                $blockerMessage = cr_delete_reference_blocker_message($conn, $crud_table, 'id', (int)$selectedId, (int)$company_id);
+                if ($blockerMessage !== '') {
+                    $failedCount++;
+                    if ($firstFailureMessage === '') {
+                        $firstFailureMessage = $blockerMessage;
+                    }
+                    continue;
+                }
+
                 $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
                 $dbErrorCode = 0;
                 $dbErrorMessage = '';
@@ -504,19 +538,16 @@ if ($crud_action === 'delete') {
                     }
                 } else {
                     $failedCount++;
-                    if ($firstDbErrorMessage === '') {
-                        $firstDbErrorCode = $dbErrorCode;
-                        $firstDbErrorMessage = (string)$dbErrorMessage;
+                    if ($firstFailureMessage === '') {
+                        $firstFailureMessage = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
                     }
                 }
             }
 
             if ($failedCount > 0) {
-                if ($firstDbErrorMessage !== '') {
-                    $message = itm_format_db_constraint_error($firstDbErrorCode, $firstDbErrorMessage);
-                } else {
-                    $message = 'Some selected records could not be deleted (not found in the current company scope).';
-                }
+                $message = $firstFailureMessage !== ''
+                    ? $firstFailureMessage
+                    : 'Some selected records could not be deleted (not found in the current company scope).';
                 if ($deletedCount > 0) {
                     $message .= ' ' . $deletedCount . ' record(s) deleted; ' . $failedCount . ' could not be deleted.';
                 }
@@ -536,11 +567,16 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-        } elseif ((int)mysqli_affected_rows($conn) <= 0) {
-            $_SESSION['crud_error'] = 'Record was not deleted (not found in the current company scope).';
+        $blockerMessage = cr_delete_reference_blocker_message($conn, $crud_table, 'id', $id, (int)$company_id);
+        if ($blockerMessage !== '') {
+            $_SESSION['crud_error'] = $blockerMessage;
+        } else {
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            } elseif ((int)mysqli_affected_rows($conn) <= 0) {
+                $_SESSION['crud_error'] = 'Record was not deleted (not found in the current company scope).';
+            }
         }
     }
     header('Location: ' . $listUrl);
