@@ -290,11 +290,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 </form>
             </div>
 
-            <!-- DATA TABLE -->
-            <div class="card">
-                <table>
-                    <thead>
-                    <tr>
+                <!-- DATA TABLE -->
+                <div class="card" style="overflow:auto;">
+                    <table data-itm-db-import-endpoint="index.php">
+                        <thead>
+                        <tr>
                         <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                         <?php foreach (['code' => 'Code', 'name' => 'Name', 'active' => 'Status'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
