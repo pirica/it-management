@@ -2022,6 +2022,16 @@ function mbqa_runner_module_step_exceptions(): array
         'equipment_types' => [
             'add' => 'N/A (Bulk random rows — avoid module creations)',
         ],
+        // Why: Users manages application, protected; avoid users profiles creations in QA.
+        'users' => [
+            'clear' => 'N/A (users module is user creation)',
+            'sample_data' => 'N/A (users module is user creation)',
+            'add' => 'N/A (susers module is user creation)',
+            'bulk_cancel' => 'N/A (users module is user creation)',
+            'bulk_delete' => 'N/A (users module is user creation)',
+            'clear_table' => 'N/A (users module is user creation)',
+            'single_delete' => 'N/A (users module is user creation)',
+        ],
         // Why: settings manages application configuration and backup files, not standard tenant CRUD rows.
         'settings' => [
             'mysql' => 'N/A (settings module is configuration/backup UI)',
