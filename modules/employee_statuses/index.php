@@ -483,13 +483,44 @@ if ($crud_action === 'delete') {
         }
 
         if (!empty($idList)) {
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
+            $deletedCount = 0;
+            $failedCount = 0;
+            $firstDbErrorCode = 0;
+            $firstDbErrorMessage = '';
+            foreach (array_values($idList) as $selectedId) {
+                $where = ' WHERE id=' . (int)$selectedId;
+                if ($hasCompany && $company_id > 0) {
+                    $where .= ' AND company_id=' . (int)$company_id;
+                }
+                $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+                $dbErrorCode = 0;
+                $dbErrorMessage = '';
+                if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                    $affectedRows = (int)mysqli_affected_rows($conn);
+                    if ($affectedRows > 0) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                    }
+                } else {
+                    $failedCount++;
+                    if ($firstDbErrorMessage === '') {
+                        $firstDbErrorCode = $dbErrorCode;
+                        $firstDbErrorMessage = (string)$dbErrorMessage;
+                    }
+                }
             }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+
+            if ($failedCount > 0) {
+                if ($firstDbErrorMessage !== '') {
+                    $message = itm_format_db_constraint_error($firstDbErrorCode, $firstDbErrorMessage);
+                } else {
+                    $message = 'Some selected records could not be deleted (not found in the current company scope).';
+                }
+                if ($deletedCount > 0) {
+                    $message .= ' ' . $deletedCount . ' record(s) deleted; ' . $failedCount . ' could not be deleted.';
+                }
+                $_SESSION['crud_error'] = $message;
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -508,6 +539,8 @@ if ($crud_action === 'delete') {
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        } elseif ((int)mysqli_affected_rows($conn) <= 0) {
+            $_SESSION['crud_error'] = 'Record was not deleted (not found in the current company scope).';
         }
     }
     header('Location: ' . $listUrl);
