@@ -2327,6 +2327,32 @@ function mbqa_index_has_xlsx_library(string $html): bool
 }
 
 /**
+ * Reset module table AUTO_INCREMENT before sample-data seeding.
+ *
+ * Why: clear + sample_data loops should restart id allocation when tables are empty.
+ *
+ * @return array{ok:bool,note:string}
+ */
+function mbqa_reset_sample_table_auto_increment(mysqli $conn, string $table): array
+{
+    if (!itm_is_safe_identifier($table)) {
+        return ['ok' => false, 'note' => 'AUTO_INCREMENT reset skipped (unsafe table)'];
+    }
+
+    $sql = "ALTER TABLE `" . $table . "` AUTO_INCREMENT = 1";
+    if (@mysqli_query($conn, $sql)) {
+        return ['ok' => true, 'note' => 'AUTO_INCREMENT=1'];
+    }
+
+    $err = trim((string)mysqli_error($conn));
+    if ($err === '') {
+        $err = 'unknown SQL error';
+    }
+
+    return ['ok' => false, 'note' => 'AUTO_INCREMENT reset failed: ' . $err];
+}
+
+/**
  * HTTP sample seed, then database.sql seed (and FK parents) when the UI reports missing SQL samples.
  *
  * @return array{ok:bool, note:string, html:string, csrf:string, na:bool}
@@ -2353,6 +2379,9 @@ function mbqa_ensure_sample_data(
         return ['ok' => true, 'note' => 'N/A (rows exist)', 'html' => $index['body'], 'csrf' => $csrf, 'na' => true];
     }
 
+    $autoIncrementReset = mbqa_reset_sample_table_auto_increment($conn, $slug);
+    $autoIncrementNote = $autoIncrementReset['note'];
+
     $_SESSION['company_id'] = $companyId;
     mbqa_seed_lookup_parents_for_table($conn, $slug, $companyId);
 
@@ -2367,13 +2396,14 @@ function mbqa_ensure_sample_data(
         $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
         $csrf = mbqa_extract_csrf($index['body']);
         if (!mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body'])) {
-            return ['ok' => true, 'note' => 'HTTP sample seed', 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
+            return ['ok' => true, 'note' => $autoIncrementNote . '; HTTP sample seed', 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
         }
     }
 
     if (!function_exists('itm_seed_table_from_database_sql')) {
         $flash = mbqa_index_sample_seed_flash_note($index['body']);
         $note = $flash !== '' ? $flash : 'Still empty; itm_seed_table_from_database_sql missing';
+        $note = $autoIncrementNote . '; ' . $note;
 
         return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
@@ -2393,6 +2423,7 @@ function mbqa_ensure_sample_data(
         $note = $inserted > 0
             ? ('DB sample seed (' . $inserted . ' row(s) from database.sql)')
             : 'DB sample seed (rows present after FK parent seed)';
+        $note = $autoIncrementNote . '; ' . $note;
         return ['ok' => true, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
 
@@ -2401,6 +2432,7 @@ function mbqa_ensure_sample_data(
     if (mbqa_index_has_sample_seed_error($index['body'])) {
         $note = 'No sample rows in database.sql (HTTP + DB seed)';
     }
+    $note = $autoIncrementNote . '; ' . $note;
 
     return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
 }
@@ -2420,9 +2452,9 @@ function mbqa_error_log_byte_offset(): int
 /**
  * HTTP-only sample seed at end of module QA (after single_delete); does not use database.sql fallback.
  *
- * @return array{ok:bool,note:string,na:bool}
+ * @return array{ok:bool,note:string,na:bool,html?:string}
  */
-function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
+function mbqa_http_sample_seed_end(mysqli $conn, string $slug, string $moduleUrl, string $cookieFile): array
 {
     $index = mbqa_http($moduleUrl . 'index.php', 'GET', null, [], $cookieFile);
     $csrf = mbqa_extract_csrf($index['body']);
@@ -2437,8 +2469,11 @@ function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
         return ['ok' => true, 'note' => 'N/A (rows exist)', 'na' => true];
     }
 
+    $autoIncrementReset = mbqa_reset_sample_table_auto_increment($conn, $slug);
+    $autoIncrementNote = $autoIncrementReset['note'];
+
     if ($csrf === '') {
-        return ['ok' => false, 'note' => 'No CSRF for sample seed', 'na' => false];
+        return ['ok' => false, 'note' => $autoIncrementNote . '; No CSRF for sample seed', 'na' => false];
     }
 
     mbqa_http(
@@ -2452,7 +2487,7 @@ function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile): array
     $ok = !mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body']);
 
     $htmlCheck = mbqa_html_step_sample_data($index['body'], $index['status'], true);
-    $note = $ok ? 'HTTP sample seed' : 'HTTP sample seed failed or empty';
+    $note = $ok ? ($autoIncrementNote . '; HTTP sample seed') : ($autoIncrementNote . '; HTTP sample seed failed or empty');
     if ($ok && $htmlCheck['note'] !== '') {
         $note .= '; ' . $htmlCheck['note'];
     }
@@ -6031,7 +6066,7 @@ foreach ($companiesToRun as $companyId) {
         if ($endSampleDataNaNote !== null) {
             $steps[] = mbqa_step_result('sample_data', true, $endSampleDataNaNote);
         } else {
-            $endSeed = mbqa_http_sample_seed_end($moduleUrl, $cookieFile);
+            $endSeed = mbqa_http_sample_seed_end($conn, $slug, $moduleUrl, $cookieFile);
             if ($endSeed['na']) {
                 $steps[] = mbqa_step_result('sample_data', true, $endSeed['note']);
             } else {
