@@ -898,8 +898,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </div>
                     </form>
                 </div>
+                <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <?php foreach ($uiColumns as $col): ?>
