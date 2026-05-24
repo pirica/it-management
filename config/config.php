@@ -1545,7 +1545,47 @@ if (!function_exists('itm_handle_json_table_import')) {
             $normalizedField = strtolower(str_replace('_', ' ', $fieldName));
             $headerMap[$normalizedField] = $fieldName;
             $headerMap[strtolower(ucwords($normalizedField))] = $fieldName;
+            if (substr($fieldName, -3) === '_id') {
+                $stem = strtolower(str_replace('_', ' ', substr($fieldName, 0, -3)));
+                $headerMap[$stem] = $fieldName;
+                $headerMap[$stem . ' name'] = $fieldName;
+            }
+            if ($fieldName === 'equipment_type_id') {
+                $headerMap['type'] = $fieldName;
+            }
         }
+
+        $fkMap = [];
+        $fkSql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+                  FROM information_schema.KEY_COLUMN_USAGE
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = '" . mysqli_real_escape_string($conn, $tableName) . "'
+                    AND REFERENCED_TABLE_NAME IS NOT NULL";
+        $fkResult = mysqli_query($conn, $fkSql);
+        while ($fkResult && ($fkRow = mysqli_fetch_assoc($fkResult))) {
+            $columnName = (string)($fkRow['COLUMN_NAME'] ?? '');
+            if ($columnName !== '' && isset($columns[$columnName])) {
+                $fkMap[$columnName] = $fkRow;
+            }
+        }
+
+        $tableColumnsCache = [];
+        $tableHasColumn = static function (string $table, string $column) use ($conn, &$tableColumnsCache): bool {
+            if ($table === '' || $column === '' || !itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+                return false;
+            }
+            if (!isset($tableColumnsCache[$table])) {
+                $tableColumnsCache[$table] = [];
+                $res = mysqli_query($conn, 'SHOW COLUMNS FROM `' . str_replace('`', '``', $table) . '`');
+                while ($res && ($row = mysqli_fetch_assoc($res))) {
+                    $field = (string)($row['Field'] ?? '');
+                    if ($field !== '') {
+                        $tableColumnsCache[$table][$field] = true;
+                    }
+                }
+            }
+            return !empty($tableColumnsCache[$table][$column]);
+        };
 
         $importColumnFields = [];
         foreach ($headerRow as $headerValue) {
@@ -1556,6 +1596,7 @@ if (!function_exists('itm_handle_json_table_import')) {
         $targetFields = array_keys($columns);
         $insertedRows = 0;
         $failedRows = 0;
+        $importErrors = [];
 
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
@@ -1584,7 +1625,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                 }
 
                 $rawValue = trim((string)($sourceRow[$index] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
+                if ($rawValue === '' || $rawValue === '—' || strcasecmp($rawValue, 'null') === 0) {
                     continue;
                 }
 
@@ -1599,11 +1640,46 @@ if (!function_exists('itm_handle_json_table_import')) {
                     continue;
                 }
 
+                if (isset($fkMap[$fieldName])) {
+                    $fk = $fkMap[$fieldName];
+                    $refTable = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
+                    $refColumn = (string)($fk['REFERENCED_COLUMN_NAME'] ?? 'id');
+                    $resolvedFkId = 0;
+
+                    if (ctype_digit($rawValue)) {
+                        $resolvedFkId = (int)$rawValue;
+                    }
+
+                    if ($resolvedFkId <= 0 && $refTable !== '' && itm_is_safe_identifier($refTable) && itm_is_safe_identifier($refColumn)) {
+                        $fallbackSql = 'SELECT `' . str_replace('`', '``', $refColumn) . '` AS id FROM `' . str_replace('`', '``', $refTable) . '`';
+                        if ($companyId > 0 && $tableHasColumn($refTable, 'company_id')) {
+                            $fallbackSql .= ' WHERE company_id=' . $companyId;
+                        }
+                        $fallbackSql .= ' ORDER BY `' . str_replace('`', '``', $refColumn) . '` ASC LIMIT 1';
+                        $fallbackRes = mysqli_query($conn, $fallbackSql);
+                        if ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+                            $resolvedFkId = (int)($fallbackRow['id'] ?? 0);
+                        }
+                    }
+
+                    if ($resolvedFkId > 0) {
+                        $rowValues[$fieldName] = (string)$resolvedFkId;
+                    }
+                    continue;
+                }
+
                 if (preg_match('/\b(int|decimal|float|double)\b/i', $columnType)) {
                     if (is_numeric($rawValue)) {
                         $rowValues[$fieldName] = (string)$rawValue;
                     }
                     continue;
+                }
+
+                if (preg_match('/^(?:var)?char\((\d+)\)/i', $columnType, $lenMatch)) {
+                    $maxLen = (int)($lenMatch[1] ?? 0);
+                    if ($maxLen > 0 && strlen($rawValue) > $maxLen) {
+                        $rawValue = substr($rawValue, 0, $maxLen);
+                    }
                 }
 
                 $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
@@ -1659,14 +1735,24 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $insertedRows++;
             } else {
                 $failedRows++;
+                if (count($importErrors) < 5) {
+                    $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
+                }
             }
         }
 
-        echo json_encode([
+        $response = [
             'ok' => true,
             'inserted' => $insertedRows,
             'failed' => $failedRows,
-        ]);
+        ];
+        if (!empty($importErrors)) {
+            $response['errors'] = $importErrors;
+            if ($insertedRows === 0) {
+                $response['message'] = $importErrors[0];
+            }
+        }
+        echo json_encode($response);
         exit;
     }
 }

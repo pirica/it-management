@@ -1339,6 +1339,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         }
 
         $insertedRows = 0;
+        $importErrors = [];
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -1357,7 +1358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
+                if ($rawValue === '' || $rawValue === '—' || strcasecmp($rawValue, 'null') === 0) {
                     continue;
                 }
 
@@ -1401,11 +1402,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     continue;
                 }
 
+                if (preg_match('/^(?:var)?char\((\d+)\)/i', (string)$columnMeta['Type'], $lenMatch)) {
+                    $maxLen = (int)($lenMatch[1] ?? 0);
+                    if ($maxLen > 0 && strlen($rawValue) > $maxLen) {
+                        $rawValue = substr($rawValue, 0, $maxLen);
+                    }
+                }
+
                 $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
             }
 
             if ($hasCompany) {
                 $rowData['company_id'] = (string)(int)$company_id;
+            }
+
+            foreach ($fieldColumns as $col) {
+                $name = (string)($col['Field'] ?? '');
+                if ($name === '' || ($rowData[$name] ?? 'NULL') !== 'NULL') {
+                    continue;
+                }
+
+                $isNullable = strtoupper((string)($col['Null'] ?? 'YES')) === 'YES';
+                if ($isNullable) {
+                    continue;
+                }
+
+                $default = $col['Default'] ?? null;
+                $columnType = (string)($col['Type'] ?? '');
+                if ($default !== null && $default !== '') {
+                    if (preg_match('/int|decimal|float|double/', $columnType)) {
+                        $rowData[$name] = is_numeric((string)$default) ? (string)$default : '0';
+                    } elseif (preg_match('/^tinyint(\(\d+\))?/i', $columnType)) {
+                        $rowData[$name] = in_array(strtolower((string)$default), ['1', 'true'], true) ? '1' : '0';
+                    } else {
+                        $rowData[$name] = "'" . mysqli_real_escape_string($conn, (string)$default) . "'";
+                    }
+                    continue;
+                }
+
+                if (preg_match('/int|tinyint|smallint|mediumint|bigint|decimal|float|double/', $columnType)) {
+                    $rowData[$name] = '0';
+                }
             }
 
             $fields = [];
@@ -1420,10 +1457,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+            } elseif (count($importErrors) < 5) {
+                $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        $response = ['ok' => true, 'inserted' => $insertedRows];
+        if (!empty($importErrors)) {
+            $response['failed'] = count($importErrors);
+            $response['errors'] = $importErrors;
+            if ($insertedRows === 0) {
+                $response['message'] = $importErrors[0];
+            }
+        }
+        echo json_encode($response);
         exit;
     }
 }
@@ -2187,7 +2234,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 <?php foreach ($listColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                            <span data-itm-export-value="<?php echo sanitize((string)($row[$f] ?? '')); ?>">
+                                                <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                            </span>
                                         <?php elseif (isset($fkMap[$f]) && (int)($row[$f] ?? 0) > 0): ?>
                                             <?php
                                                 $fkLabel = cr_fk_label_by_id($conn, $fkMap[$f], (int)$row[$f], (int)$company_id);
