@@ -58,9 +58,10 @@ foreach ($files as $file) {
         continue;
     }
 
-    // Heuristic: Check if file initializes $where with company_id
-    $has_global_scope = preg_match('/\$where\s*=\s*\[[^\]]*[\'"]company_id[\'"]\s*=>\s*\$company_id[^\]]*\]/', $content) ||
-                        preg_match('/\$where\s*=\s*[\'"]WHERE company_id = [\'"]/', $content);
+    // Heuristic: Check if file initializes $where or $company_where with company_id
+    $file_has_scoped_where = preg_match('/\$where\s*=\s*\[[^\]]*[\'"]company_id[\'"]\s*=>\s*\$company_id[^\]]*\]/', $content) ||
+                             preg_match('/\$where\s*=\s*[\'"]WHERE company_id = [\'"]/', $content) ||
+                             preg_match('/\$company_where\s*=\s*[\'"]WHERE company_id = [\'"]/', $content);
 
     // Detailed scan for queries
     // We look for common SQL query patterns
@@ -76,14 +77,29 @@ foreach ($files as $file) {
                 // Ignore administrative/meta queries
                 if (preg_match('/\b(DESCRIBE|SHOW|information_schema|ALTER TABLE|DROP TABLE|CREATE TABLE)\b/i', $query_fragment)) continue;
 
-                // Get context around the match to check for company_id filtering
-                $start = max(0, $offset - 200);
-                $end = min(strlen($content), $offset + strlen($query_fragment) + 200);
-                $context = substr($content, $start, $end - $start);
+                // Determine safety of this specific fragment.
+                // A query is considered safe if it has a local 'company_id' filter OR
+                // if it uses a known scoped variable ($where) OR a scope-providing function.
+                $has_explicit_filter = (strpos($query_fragment, 'company_id') !== false) ||
+                                       (strpos($query_fragment, '$company_id') !== false) ||
+                                       (strpos($query_fragment, 'itm_get_company_where') !== false);
 
-                // Check if the table is used in a query without company_id filtering
-                // Note: This is still a heuristic and might have some false positives or negatives
-                if (strpos($context, 'company_id') === false && !$has_global_scope) {
+                $uses_scoped_variable = ($file_has_scoped_where && (
+                    strpos($query_fragment, '$where') !== false ||
+                    strpos($query_fragment, '$company_where') !== false
+                ));
+
+                // Check the same line for parameter-based filtering (e.g. itm_run_query($sql, ['company_id' => ...]))
+                $start_of_line = strrpos(substr($content, 0, $offset), "\n");
+                $start_of_line = ($start_of_line === false) ? 0 : $start_of_line + 1;
+                $end_of_line = strpos($content, "\n", $offset);
+                $end_of_line = ($end_of_line === false) ? strlen($content) : $end_of_line;
+                $line_content = substr($content, $start_of_line, $end_of_line - $start_of_line);
+                $has_line_filter = (strpos($line_content, 'company_id') !== false ||
+                                    strpos($line_content, 'itm_get_company_where') !== false ||
+                                    ($file_has_scoped_where && (strpos($line_content, '$where') !== false || strpos($line_content, '$company_where') !== false)));
+
+                if (!$has_explicit_filter && !$uses_scoped_variable && !$has_line_filter) {
                     $line = substr_count(substr($content, 0, $offset), "\n") + 1;
                     $leaks[] = [
                         'file' => $relative_path,
@@ -137,9 +153,11 @@ function check_ui_leaks($content, $relative_path, &$leaks) {
 $is_cli = PHP_SAPI === 'cli';
 
 if (!$is_cli) {
+    require_once __DIR__ . '/lib/script_browser_nav.php';
     echo "<html><head><title>Multi-Tenant Leak Audit</title>";
     echo "<style>body{font-family:sans-serif;background:#f4f4f4;padding:20px;} table{width:100%;border-collapse:collapse;background:white;} th,td{padding:10px;border:1px solid #ddd;text-align:left;} th{background:#eee;} .type-err{color:red;font-weight:bold;} code{background:#fffbe6;padding:2px 4px;border:1px solid #ffe58f;}</style>";
     echo "</head><body>";
+    itm_script_browser_nav_echo();
     echo "<h1>Multi-Tenant Leak Audit Result</h1>";
     echo "<p>Scoped tables identified from database.sql: " . count($scoped_tables) . "</p>";
 } else {
