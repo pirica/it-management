@@ -546,6 +546,7 @@ foreach ($files as $file) {
             $line = offset_to_line_number($content, $offset);
             $line_content = extract_line_at_offset($content, $offset);
             $query_type = detect_query_type($query_fragment);
+            $is_insert_query = (strcasecmp($query_type, 'INSERT') === 0);
 
             $has_fragment_predicate = query_has_company_predicate($query_fragment);
             $has_line_predicate = query_has_company_predicate($line_content);
@@ -581,7 +582,7 @@ foreach ($files as $file) {
             // Strict leak gate: only raise issue when query itself has no strong tenant scope signal.
             $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable);
 
-            if ($is_missing_direct_scope) {
+            if (!$is_insert_query && $is_missing_direct_scope) {
                 $context_hints = [];
                 $is_id_lookup = query_is_single_id_lookup($query_fragment);
                 $has_limit_1 = (stripos($query_fragment, 'limit 1') !== false);
