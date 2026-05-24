@@ -1,187 +1,839 @@
 <?php
 /**
- * Multi-Tenant Leak Checker (Optimized v2)
+ * Multi-Tenant Leak Checker (Optimized v4)
  * Scans modules/ for SQL queries and UI elements that might leak data across companies.
  * Supports CLI and Browser.
+ *
+ * Report model:
+ * - Likely leak: no tenant predicate and no strong scope signal in the query.
+ * - Needs review (context-validated?): no direct tenant predicate, but nearby/context hints suggest another guard.
  */
 
-// Configuration
 $modules_dir = __DIR__ . '/../modules';
 $database_sql = __DIR__ . '/../database.sql';
+$project_root = realpath(__DIR__ . '/..');
+$allowlist_file = __DIR__ . '/data/multi_tenant_leak_allowlist.json';
 
 /**
- * Identify scoped tables (those with company_id column)
+ * Parse table definitions from database.sql and separate scoped/non-scoped tables.
  */
-function get_scoped_tables($sql_file) {
-    if (!file_exists($sql_file)) return [];
-    $content = file_get_contents($sql_file);
-    $tables = [];
+function parse_database_tables($sql_file) {
+    if (!file_exists($sql_file)) {
+        return [
+            'tables' => [],
+            'total' => 0,
+            'scoped' => [],
+            'non_scoped' => [],
+            'raw_create_count' => 0
+        ];
+    }
 
-    // Match CREATE TABLE blocks
-    preg_match_all('/CREATE TABLE `([^`]+)` \((.*?)\) ENGINE/s', $content, $matches, PREG_SET_ORDER);
+    $sql = file_get_contents($sql_file);
+    $raw_create_count = preg_match_all('/CREATE TABLE\s+`/i', $sql, $throwaway);
+
+    $matches = [];
+    preg_match_all('/CREATE TABLE\s+`([^`]+)`\s*\((.*?)\)\s*ENGINE\b/si', $sql, $matches, PREG_SET_ORDER);
+
+    // Fallback if table options do not include ENGINE in some CREATE statements.
+    if (empty($matches) && $raw_create_count > 0) {
+        preg_match_all('/CREATE TABLE\s+`([^`]+)`\s*\((.*?)\)\s*;/si', $sql, $matches, PREG_SET_ORDER);
+    }
+
+    $tables = [];
+    $scoped = [];
+    $non_scoped = [];
 
     foreach ($matches as $match) {
         $table_name = $match[1];
         $table_def = $match[2];
+        $has_company_id = (stripos($table_def, '`company_id`') !== false);
 
-        if (strpos($table_def, '`company_id`') !== false) {
-            $tables[] = $table_name;
+        $tables[$table_name] = [
+            'has_company_id' => $has_company_id
+        ];
+
+        if ($has_company_id) {
+            $scoped[] = $table_name;
+        } else {
+            $non_scoped[] = $table_name;
         }
     }
 
-    return $tables;
+    $scoped = array_values(array_unique($scoped));
+    $non_scoped = array_values(array_unique($non_scoped));
+    sort($scoped);
+    sort($non_scoped);
+
+    return [
+        'tables' => $tables,
+        'total' => count($tables),
+        'scoped' => $scoped,
+        'non_scoped' => $non_scoped,
+        'raw_create_count' => (int) $raw_create_count
+    ];
 }
 
-$scoped_tables = get_scoped_tables($database_sql);
+function build_table_regex($tables) {
+    if (empty($tables)) {
+        return null;
+    }
+
+    $escaped = [];
+    foreach ($tables as $table) {
+        $escaped[] = preg_quote($table, '/');
+    }
+
+    return '/\b(' . implode('|', $escaped) . ')\b/i';
+}
+
+function normalize_relative_path($root, $path) {
+    $root_norm = str_replace('\\', '/', rtrim((string) $root, '\\/'));
+    $path_norm = str_replace('\\', '/', (string) $path);
+
+    if ($root_norm !== '' && strpos($path_norm, $root_norm) === 0) {
+        $path_norm = substr($path_norm, strlen($root_norm));
+    }
+
+    return ltrim($path_norm, '/');
+}
+
+function offset_to_line_number($content, $offset) {
+    return substr_count(substr($content, 0, $offset), "\n") + 1;
+}
+
+function extract_line_at_offset($content, $offset) {
+    $start = strrpos(substr($content, 0, $offset), "\n");
+    $start = ($start === false) ? 0 : $start + 1;
+
+    $end = strpos($content, "\n", $offset);
+    $end = ($end === false) ? strlen($content) : $end;
+
+    return substr($content, $start, $end - $start);
+}
+
+function split_content_lines($content) {
+    return preg_split('/\r\n|\r|\n/', $content);
+}
+
+/**
+ * Detect real tenant predicate, not just the company_id token.
+ */
+function query_has_company_predicate($sql_fragment) {
+    if (stripos($sql_fragment, 'company_id') === false) {
+        return false;
+    }
+
+    $patterns = [
+        '/\b(?:where|and|or|on)\b[\s\S]{0,500}?\b(?:[a-z_][a-z0-9_]*\.)?company_id\b\s*(?:=|<=>|IN\s*\(|IS\s+NULL|IS\s+NOT\s+NULL)/i',
+        '/\b(?:where|and|or|on)\b[\s\S]{0,500}?(?:\?|\$[a-z_][a-z0-9_]*|:[a-z_][a-z0-9_]*|\(int\)\s*\$[a-z_][a-z0-9_]*|\d+)\s*=\s*(?:[a-z_][a-z0-9_]*\.)?company_id\b/i'
+    ];
+
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $sql_fragment)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function expression_implies_company_scope($expression) {
+    if (stripos($expression, 'itm_get_company_where') !== false) {
+        return true;
+    }
+
+    if (preg_match('/[\'"]company_id[\'"]\s*=>\s*(?:\$company_id|\(int\)\s*\$company_id|\?)/i', $expression)) {
+        return true;
+    }
+
+    return query_has_company_predicate($expression);
+}
+
+/**
+ * Track scope state of variables over file lines.
+ */
+function collect_variable_scope_history($content) {
+    $history = [];
+    $current_scope = [];
+
+    if (!preg_match_all('/\$(\w+)\s*(=|\.=)\s*(.*?);/s', $content, $matches, PREG_OFFSET_CAPTURE)) {
+        return $history;
+    }
+
+    $total = count($matches[0]);
+    for ($i = 0; $i < $total; $i++) {
+        $var_name = $matches[1][$i][0];
+        $operator = $matches[2][$i][0];
+        $expression = $matches[3][$i][0];
+        $offset = $matches[0][$i][1];
+        $line = offset_to_line_number($content, $offset);
+
+        $expr_scoped = expression_implies_company_scope($expression);
+        $prev_scoped = isset($current_scope[$var_name]) ? (bool) $current_scope[$var_name] : false;
+
+        if ($operator === '.=') {
+            $new_scoped = ($prev_scoped || $expr_scoped);
+        } else {
+            $new_scoped = $expr_scoped;
+        }
+
+        $current_scope[$var_name] = $new_scoped;
+
+        if (!isset($history[$var_name])) {
+            $history[$var_name] = [];
+        }
+
+        $history[$var_name][] = [
+            'line' => $line,
+            'scoped' => $new_scoped,
+            'operator' => $operator
+        ];
+    }
+
+    return $history;
+}
+
+function file_has_scope_signal($variable_scope_history) {
+    foreach ($variable_scope_history as $events) {
+        foreach ($events as $entry) {
+            if (!empty($entry['scoped'])) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function extract_variable_names($text) {
+    if (!preg_match_all('/\$(\w+)/', $text, $matches)) {
+        return [];
+    }
+    return array_values(array_unique($matches[1]));
+}
+
+function variable_scope_state_at_line($history, $var_name, $line) {
+    if (!isset($history[$var_name])) {
+        return null;
+    }
+
+    $state = null;
+    foreach ($history[$var_name] as $entry) {
+        if ($entry['line'] > $line) {
+            break;
+        }
+        $state = (bool) $entry['scoped'];
+    }
+
+    return $state;
+}
+
+function query_scoped_variables($query_fragment, $line, $variable_scope_history) {
+    $vars = extract_variable_names($query_fragment);
+    $scoped_vars = [];
+
+    foreach ($vars as $var_name) {
+        $state = variable_scope_state_at_line($variable_scope_history, $var_name, $line);
+        if ($state === true) {
+            $scoped_vars[] = '$' . $var_name;
+        }
+    }
+
+    return $scoped_vars;
+}
+
+function query_uses_scope_function($fragment_or_line) {
+    return (stripos($fragment_or_line, 'itm_get_company_where') !== false);
+}
+
+function query_is_single_id_lookup($query_fragment) {
+    $where_has_id = preg_match('/\bWHERE\b[\s\S]{0,200}?\bid\b\s*=\s*(?:\?|\$[a-z_][a-z0-9_]*|\(int\)\s*\$[a-z_][a-z0-9_]*|\d+)/i', $query_fragment);
+    if (!$where_has_id) {
+        return false;
+    }
+
+    return true;
+}
+
+function nearby_company_signal($lines, $line, $radius) {
+    $total = count($lines);
+    if ($total === 0) {
+        return false;
+    }
+
+    $start = max(1, $line - $radius);
+    $end = min($total, $line + $radius);
+
+    for ($i = $start; $i <= $end; $i++) {
+        $text = $lines[$i - 1];
+        if (query_has_company_predicate($text) || query_uses_scope_function($text)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function compact_snippet($text, $limit) {
+    $single_line = preg_replace('/\s+/', ' ', str_replace(["\r", "\n"], ' ', $text));
+    $single_line = trim($single_line);
+    if (strlen($single_line) <= $limit) {
+        return $single_line;
+    }
+    return substr($single_line, 0, $limit) . '...';
+}
+
+function detect_query_type($query_fragment) {
+    if (preg_match('/\b(SELECT|UPDATE|DELETE|INSERT|FROM|JOIN|INTO)\b/i', $query_fragment, $m)) {
+        return strtoupper($m[1]);
+    }
+    return 'UNKNOWN';
+}
+
+function join_or_dash($items) {
+    if (empty($items)) {
+        return '-';
+    }
+    return implode(', ', $items);
+}
+
+function load_allowlist_rules($json_file) {
+    if (!file_exists($json_file)) {
+        return [];
+    }
+
+    $raw = file_get_contents($json_file);
+    if ($raw === false || trim($raw) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded) || !isset($decoded['rules']) || !is_array($decoded['rules'])) {
+        return [];
+    }
+
+    $rules = [];
+    foreach ($decoded['rules'] as $rule) {
+        if (!is_array($rule)) {
+            continue;
+        }
+        if (isset($rule['enabled']) && !$rule['enabled']) {
+            continue;
+        }
+        if (empty($rule['id'])) {
+            continue;
+        }
+        $rules[] = $rule;
+    }
+
+    return $rules;
+}
+
+function bool_context_flag($flags, $name) {
+    return !empty($flags[$name]);
+}
+
+function context_flags_match_all($flags, $required) {
+    if (empty($required)) {
+        return true;
+    }
+    foreach ($required as $flag) {
+        if (!bool_context_flag($flags, $flag)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function context_flags_match_any($flags, $required_any) {
+    if (empty($required_any)) {
+        return true;
+    }
+    foreach ($required_any as $flag) {
+        if (bool_context_flag($flags, $flag)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function allowlist_rule_matches_issue($rule, $issue) {
+    if (!empty($rule['issue_type']) && (string)$rule['issue_type'] !== (string)$issue['issue_type']) {
+        return false;
+    }
+
+    if (!empty($rule['query_types']) && is_array($rule['query_types'])) {
+        $ok = false;
+        foreach ($rule['query_types'] as $q) {
+            if (strcasecmp((string)$q, (string)$issue['query_type']) === 0) {
+                $ok = true;
+                break;
+            }
+        }
+        if (!$ok) {
+            return false;
+        }
+    }
+
+    if (!empty($rule['file_regex']) && !preg_match('/' . $rule['file_regex'] . '/i', (string)$issue['file'])) {
+        return false;
+    }
+
+    if (!empty($rule['table_regex']) && !preg_match('/' . $rule['table_regex'] . '/i', (string)$issue['table'])) {
+        return false;
+    }
+
+    $flags = isset($issue['context_flags']) && is_array($issue['context_flags']) ? $issue['context_flags'] : [];
+    if (!context_flags_match_all($flags, isset($rule['require_context_flags_all']) ? $rule['require_context_flags_all'] : [])) {
+        return false;
+    }
+    if (!context_flags_match_any($flags, isset($rule['require_context_flags_any']) ? $rule['require_context_flags_any'] : [])) {
+        return false;
+    }
+
+    if (!empty($rule['snippet_regex']) && !preg_match('/' . $rule['snippet_regex'] . '/i', (string)$issue['snippet'])) {
+        return false;
+    }
+
+    return true;
+}
+
+function apply_allowlist_rules_to_issue($issue, $rules) {
+    if (!isset($issue['allowlist_rules']) || !is_array($issue['allowlist_rules'])) {
+        $issue['allowlist_rules'] = [];
+    }
+
+    foreach ($rules as $rule) {
+        if (!allowlist_rule_matches_issue($rule, $issue)) {
+            continue;
+        }
+
+        $rule_id = (string)$rule['id'];
+        if (!in_array($rule_id, $issue['allowlist_rules'], true)) {
+            $issue['allowlist_rules'][] = $rule_id;
+        }
+
+        $downgrade = isset($rule['downgrade_classification_to']) ? trim((string)$rule['downgrade_classification_to']) : '';
+        if ($downgrade !== '' && stripos((string)$issue['classification'], 'Likely leak') === 0) {
+            $issue['classification'] = $downgrade;
+        }
+    }
+
+    return $issue;
+}
+
+function detect_query_assignment_variable_from_line($line_content) {
+    if (preg_match('/\$(\w+)\s*=\s*[\'"]/i', $line_content, $m)) {
+        return $m[1];
+    }
+    return null;
+}
+
+function line_has_dynamic_company_append_for_variable($line_text, $var_name) {
+    $quoted_var = preg_quote((string)$var_name, '/');
+    if (preg_match('/\$' . $quoted_var . '\s*\.=\s*[\'"][^\'"]*company_id/i', $line_text)) {
+        return true;
+    }
+    if (preg_match('/\$' . $quoted_var . '\s*=\s*\$' . $quoted_var . '\s*\.\s*[\'"][^\'"]*company_id/i', $line_text)) {
+        return true;
+    }
+    return false;
+}
+
+function detect_dynamic_company_append_same_var($lines, $line, $var_name, $window_lines) {
+    if (empty($var_name) || empty($lines)) {
+        return false;
+    }
+
+    $total = count($lines);
+    $start = max(1, $line);
+    $end = min($total, $line + max(0, (int)$window_lines));
+
+    for ($i = $start; $i <= $end; $i++) {
+        $text = (string)$lines[$i - 1];
+        if (line_has_dynamic_company_append_for_variable($text, $var_name)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function check_ui_leaks($content, $relative_path, &$issues) {
+    if (stripos($content, 'Company ID') === false) {
+        return;
+    }
+
+    if (!preg_match_all('/<label[^>]*>\s*Company ID\s*<\/label>/i', $content, $matches, PREG_OFFSET_CAPTURE)) {
+        return;
+    }
+
+    foreach ($matches[0] as $match) {
+        $line = offset_to_line_number($content, $match[1]);
+        $issues[] = [
+            'file' => $relative_path,
+            'line' => $line,
+            'table' => 'N/A (UI)',
+            'query_type' => 'UI',
+            'issue_type' => 'Visible "Company ID" label',
+            'classification' => 'Likely leak',
+            'file_scope_signal' => '-',
+            'scope_signals' => '-',
+            'context_hints' => '-',
+            'allowlist_rules' => [],
+            'context_flags' => [],
+            'snippet' => compact_snippet($match[0], 180)
+        ];
+    }
+}
+
+$table_info = parse_database_tables($database_sql);
+$total_tables = (int) $table_info['total'];
+$scoped_tables = $table_info['scoped'];
+$non_scoped_tables = $table_info['non_scoped'];
+$raw_create_count = (int) $table_info['raw_create_count'];
+
 if (empty($scoped_tables)) {
     die("Error: No scoped tables found in $database_sql\n");
 }
 
-// Build a single regex for all scoped tables for faster initial check
-$table_regex = '/\b(' . implode('|', array_map('preg_quote', $scoped_tables)) . ')\b/i';
+$table_regex = build_table_regex($scoped_tables);
+if ($table_regex === null) {
+    die("Error: Could not build scoped table matcher.\n");
+}
 
-// Scan files
+$allowlist_rules = load_allowlist_rules($allowlist_file);
+
 $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($modules_dir));
-$leaks = [];
+$issues = [];
 
 foreach ($files as $file) {
-    if ($file->isDir() || $file->getExtension() !== 'php') continue;
-
-    $filepath = $file->getPathname();
-    $relative_path = str_replace(realpath(__DIR__ . '/../'), '', realpath($filepath));
-    $content = file_get_contents($filepath);
-
-    // Quick check: does this file contain any scoped table?
-    if (!preg_match($table_regex, $content)) {
-        // Still check for UI leaks
-        check_ui_leaks($content, $relative_path, $leaks);
+    if ($file->isDir() || strtolower($file->getExtension()) !== 'php') {
         continue;
     }
 
-    // Heuristic: Check if file initializes $where or $company_where with company_id
-    $file_has_scoped_where = preg_match('/\$where\s*=\s*\[[^\]]*[\'"]company_id[\'"]\s*=>\s*\$company_id[^\]]*\]/', $content) ||
-                             preg_match('/\$where\s*=\s*[\'"]WHERE company_id = [\'"]/', $content) ||
-                             preg_match('/\$company_where\s*=\s*[\'"]WHERE company_id = [\'"]/', $content);
+    $filepath = $file->getPathname();
+    $real_file = realpath($filepath);
+    if ($real_file === false) {
+        continue;
+    }
 
-    // Detailed scan for queries
-    // We look for common SQL query patterns
+    $relative_path = normalize_relative_path($project_root, $real_file);
+    $content = file_get_contents($real_file);
+    $file_lines = split_content_lines($content);
+    $variable_scope_history = collect_variable_scope_history($content);
+    $has_file_scope_signal = file_has_scope_signal($variable_scope_history);
+
+    if (!preg_match($table_regex, $content)) {
+        check_ui_leaks($content, $relative_path, $issues);
+        continue;
+    }
+
     if (preg_match_all('/([\'"])(SELECT|UPDATE|DELETE|INSERT|FROM|JOIN|INTO)\b.*?\\1/si', $content, $matches, PREG_OFFSET_CAPTURE)) {
         foreach ($matches[0] as $match) {
             $query_fragment = $match[0];
             $offset = $match[1];
 
-            // Does this fragment mention any scoped table?
-            if (preg_match($table_regex, $query_fragment, $table_match)) {
-                $table = $table_match[1];
+            if (!preg_match($table_regex, $query_fragment, $table_match)) {
+                continue;
+            }
 
-                // Ignore administrative/meta queries
-                if (preg_match('/\b(DESCRIBE|SHOW|information_schema|ALTER TABLE|DROP TABLE|CREATE TABLE)\b/i', $query_fragment)) continue;
+            $table = $table_match[1];
 
-                // Determine safety of this specific fragment.
-                // A query is considered safe if it has a local 'company_id' filter OR
-                // if it uses a known scoped variable ($where) OR a scope-providing function.
-                $has_explicit_filter = (strpos($query_fragment, 'company_id') !== false) ||
-                                       (strpos($query_fragment, '$company_id') !== false) ||
-                                       (strpos($query_fragment, 'itm_get_company_where') !== false);
+            if (preg_match('/\b(DESCRIBE|SHOW|INFORMATION_SCHEMA|ALTER TABLE|DROP TABLE|CREATE TABLE)\b/i', $query_fragment)) {
+                continue;
+            }
 
-                $uses_scoped_variable = ($file_has_scoped_where && (
-                    strpos($query_fragment, '$where') !== false ||
-                    strpos($query_fragment, '$company_where') !== false
-                ));
+            $line = offset_to_line_number($content, $offset);
+            $line_content = extract_line_at_offset($content, $offset);
+            $query_type = detect_query_type($query_fragment);
 
-                // Check the same line for parameter-based filtering (e.g. itm_run_query($sql, ['company_id' => ...]))
-                $start_of_line = strrpos(substr($content, 0, $offset), "\n");
-                $start_of_line = ($start_of_line === false) ? 0 : $start_of_line + 1;
-                $end_of_line = strpos($content, "\n", $offset);
-                $end_of_line = ($end_of_line === false) ? strlen($content) : $end_of_line;
-                $line_content = substr($content, $start_of_line, $end_of_line - $start_of_line);
-                $has_line_filter = (strpos($line_content, 'company_id') !== false ||
-                                    strpos($line_content, 'itm_get_company_where') !== false ||
-                                    ($file_has_scoped_where && (strpos($line_content, '$where') !== false || strpos($line_content, '$company_where') !== false)));
+            $has_fragment_predicate = query_has_company_predicate($query_fragment);
+            $has_line_predicate = query_has_company_predicate($line_content);
+            $uses_scope_function = query_uses_scope_function($query_fragment) || query_uses_scope_function($line_content);
+            $scoped_vars = query_scoped_variables($query_fragment, $line, $variable_scope_history);
+            $line_scoped_vars = query_scoped_variables($line_content, $line, $variable_scope_history);
+            $has_scoped_variable = !empty($scoped_vars);
+            $has_line_scoped_variable = !empty($line_scoped_vars);
 
-                if (!$has_explicit_filter && !$uses_scoped_variable && !$has_line_filter) {
-                    $line = substr_count(substr($content, 0, $offset), "\n") + 1;
-                    $leaks[] = [
+            $assigned_var = detect_query_assignment_variable_from_line($line_content);
+            $has_dynamic_company_append_same_var = detect_dynamic_company_append_same_var($file_lines, $line, $assigned_var, 25);
+
+            $scope_signals = [];
+            if ($has_fragment_predicate) {
+                $scope_signals[] = 'fragment_predicate';
+            }
+            if ($has_line_predicate) {
+                $scope_signals[] = 'line_predicate';
+            }
+            if ($uses_scope_function) {
+                $scope_signals[] = 'scope_function';
+            }
+            if ($has_scoped_variable) {
+                $scope_signals[] = 'scoped_vars:' . implode('|', $scoped_vars);
+            }
+            if ($has_line_scoped_variable) {
+                $scope_signals[] = 'line_scoped_vars:' . implode('|', $line_scoped_vars);
+            }
+            if ($has_dynamic_company_append_same_var) {
+                $scope_signals[] = 'dynamic_company_append_same_var';
+            }
+
+            // Strict leak gate: only raise issue when query itself has no strong tenant scope signal.
+            $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable);
+
+            if ($is_missing_direct_scope) {
+                $context_hints = [];
+                $is_id_lookup = query_is_single_id_lookup($query_fragment);
+                $has_limit_1 = (stripos($query_fragment, 'limit 1') !== false);
+                $nearby_scope = nearby_company_signal($file_lines, $line, 8);
+
+                if ($is_id_lookup) {
+                    $context_hints[] = 'id_lookup';
+                }
+                if ($has_limit_1) {
+                    $context_hints[] = 'limit_1';
+                }
+                if ($nearby_scope) {
+                    $context_hints[] = 'nearby_company_signal';
+                }
+                if ($has_file_scope_signal) {
+                    $context_hints[] = 'file_scope_signal';
+                }
+                if ($has_line_scoped_variable) {
+                    $context_hints[] = 'line_scoped_variable';
+                }
+                if ($has_dynamic_company_append_same_var) {
+                    $context_hints[] = 'dynamic_company_append_same_var';
+                }
+
+                $classification = 'Likely leak';
+                if ($is_id_lookup && ($nearby_scope || $has_file_scope_signal)) {
+                    $classification = 'Needs review (context-validated?)';
+                }
+
+                $issue = [
+                    'file' => $relative_path,
+                    'line' => $line,
+                    'table' => $table,
+                    'query_type' => $query_type,
+                    'issue_type' => 'Missing company_id filter',
+                    'classification' => $classification,
+                    'file_scope_signal' => $has_file_scope_signal ? 'yes' : 'no',
+                    'scope_signals' => join_or_dash($scope_signals),
+                    'context_hints' => join_or_dash($context_hints),
+                    'allowlist_rules' => [],
+                    'context_flags' => [
+                        'id_lookup' => $is_id_lookup,
+                        'limit_1' => $has_limit_1,
+                        'nearby_company_signal' => $nearby_scope,
+                        'file_scope_signal' => $has_file_scope_signal,
+                        'line_scoped_variable' => $has_line_scoped_variable,
+                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var
+                    ],
+                    'snippet' => compact_snippet($query_fragment, 180)
+                ];
+
+                $issue = apply_allowlist_rules_to_issue($issue, $allowlist_rules);
+                $issues[] = $issue;
+            }
+
+            // INSERT checks
+            if (preg_match('/INSERT\s+INTO\s+[`"]?' . preg_quote($table, '/') . '[`"]?\s*\(([^)]+)\)/i', $query_fragment, $cols)) {
+                $normalized_cols = strtolower(str_replace(['`', '"', "'", ' ', "\t", "\r", "\n"], '', $cols[1]));
+                if (strpos($normalized_cols, 'company_id') === false) {
+                    $issue = [
                         'file' => $relative_path,
                         'line' => $line,
                         'table' => $table,
-                        'type' => 'Missing company_id filter',
-                        'snippet' => (strlen($query_fragment) > 120) ? substr($query_fragment, 0, 120) . '...' : $query_fragment
+                        'query_type' => 'INSERT',
+                        'issue_type' => 'INSERT missing company_id',
+                        'classification' => 'Likely leak',
+                        'file_scope_signal' => $has_file_scope_signal ? 'yes' : 'no',
+                        'scope_signals' => join_or_dash($scope_signals),
+                        'context_hints' => '-',
+                        'allowlist_rules' => [],
+                        'context_flags' => [
+                            'id_lookup' => false,
+                            'limit_1' => false,
+                            'nearby_company_signal' => false,
+                            'file_scope_signal' => $has_file_scope_signal,
+                            'line_scoped_variable' => $has_line_scoped_variable,
+                            'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var
+                        ],
+                        'snippet' => compact_snippet($query_fragment, 180)
                     ];
+                    $issue = apply_allowlist_rules_to_issue($issue, $allowlist_rules);
+                    $issues[] = $issue;
                 }
-
-                // Check for INSERTs missing company_id
-                if (preg_match('/INSERT\s+INTO\s+[`]?'.preg_quote($table).'[`]?\s*\(([^)]+)\)/i', $query_fragment, $cols)) {
-                    if (strpos($cols[1], 'company_id') === false) {
-                        $line = substr_count(substr($content, 0, $offset), "\n") + 1;
-                        $leaks[] = [
-                            'file' => $relative_path,
-                            'line' => $line,
-                            'table' => $table,
-                            'type' => 'INSERT missing company_id',
-                            'snippet' => $query_fragment
-                        ];
-                    }
-                }
-            }
-        }
-    }
-
-    // Check for UI leaks
-    check_ui_leaks($content, $relative_path, $leaks);
-}
-
-function check_ui_leaks($content, $relative_path, &$leaks) {
-    if (strpos($content, 'Company ID') !== false) {
-        if (preg_match_all('/<label[^>]*>Company ID<\/label>/i', $content, $matches, PREG_OFFSET_CAPTURE)) {
-            foreach ($matches[0] as $match) {
-                // Ignore if it's commented out or appears to be part of a hidden input block
-                $line = substr_count(substr($content, 0, $match[1]), "\n") + 1;
-                $leaks[] = [
+            } elseif (preg_match('/INSERT\s+INTO\s+[`"]?' . preg_quote($table, '/') . '[`"]?\s+(VALUES|SELECT)\b/i', $query_fragment)) {
+                $issue = [
                     'file' => $relative_path,
                     'line' => $line,
-                    'table' => 'N/A (UI)',
-                    'type' => 'Visible "Company ID" label',
-                    'snippet' => $match[0]
+                    'table' => $table,
+                    'query_type' => 'INSERT',
+                    'issue_type' => 'INSERT without explicit column list',
+                    'classification' => 'Needs review (context-validated?)',
+                    'file_scope_signal' => $has_file_scope_signal ? 'yes' : 'no',
+                    'scope_signals' => join_or_dash($scope_signals),
+                    'context_hints' => 'implicit_column_order',
+                    'allowlist_rules' => [],
+                    'context_flags' => [
+                        'id_lookup' => false,
+                        'limit_1' => false,
+                        'nearby_company_signal' => false,
+                        'file_scope_signal' => $has_file_scope_signal,
+                        'line_scoped_variable' => $has_line_scoped_variable,
+                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var
+                    ],
+                    'snippet' => compact_snippet($query_fragment, 180)
                 ];
+                $issue = apply_allowlist_rules_to_issue($issue, $allowlist_rules);
+                $issues[] = $issue;
             }
+        }
+    }
+
+    check_ui_leaks($content, $relative_path, $issues);
+}
+
+$issue_counts = [];
+$class_counts = [];
+$allowlist_tag_counts = [];
+foreach ($issues as $issue) {
+    $type = $issue['issue_type'];
+    $class = $issue['classification'];
+
+    if (!isset($issue_counts[$type])) {
+        $issue_counts[$type] = 0;
+    }
+    if (!isset($class_counts[$class])) {
+        $class_counts[$class] = 0;
+    }
+
+    $issue_counts[$type]++;
+    $class_counts[$class]++;
+
+    if (!empty($issue['allowlist_rules']) && is_array($issue['allowlist_rules'])) {
+        foreach ($issue['allowlist_rules'] as $rule_id) {
+            if (!isset($allowlist_tag_counts[$rule_id])) {
+                $allowlist_tag_counts[$rule_id] = 0;
+            }
+            $allowlist_tag_counts[$rule_id]++;
         }
     }
 }
 
-// Output
-$is_cli = PHP_SAPI === 'cli';
+$is_cli = (PHP_SAPI === 'cli');
 
 if (!$is_cli) {
     require_once __DIR__ . '/lib/script_browser_nav.php';
     echo "<html><head><title>Multi-Tenant Leak Audit</title>";
-    echo "<style>body{font-family:sans-serif;background:#f4f4f4;padding:20px;} table{width:100%;border-collapse:collapse;background:white;} th,td{padding:10px;border:1px solid #ddd;text-align:left;} th{background:#eee;} .type-err{color:red;font-weight:bold;} code{background:#fffbe6;padding:2px 4px;border:1px solid #ffe58f;}</style>";
+    echo "<style>body{font-family:sans-serif;background:#f4f4f4;padding:20px;} table{width:100%;border-collapse:collapse;background:white;} th,td{padding:8px 10px;border:1px solid #ddd;text-align:left;vertical-align:top;font-size:13px;} th{background:#eee;} .type-err{color:#b00020;font-weight:bold;} .class-review{color:#8a6d3b;font-weight:600;} code{background:#fffbe6;padding:2px 4px;border:1px solid #ffe58f;} .summary{background:#fff;margin-bottom:16px;border:1px solid #ddd;padding:12px 14px;} ul{margin:8px 0 0 20px;} .mono{font-family:monospace;}</style>";
     echo "</head><body>";
     itm_script_browser_nav_echo();
     echo "<h1>Multi-Tenant Leak Audit Result</h1>";
-    echo "<p>Scoped tables identified from database.sql: " . count($scoped_tables) . "</p>";
+    echo "<div class='summary'>";
+    echo "<p><strong>CREATE TABLE entries found:</strong> {$total_tables}</p>";
+    echo "<p><strong>Scoped tables with <span class='mono'>company_id</span>:</strong> " . count($scoped_tables) . "</p>";
+    echo "<p><strong>Non-scoped tables:</strong> " . count($non_scoped_tables) . " (" . htmlspecialchars(join_or_dash($non_scoped_tables)) . ")</p>";
+    echo "<p><strong>Allowlist rules loaded:</strong> " . count($allowlist_rules) . "</p>";
+    if ($raw_create_count !== $total_tables) {
+        echo "<p><strong>Parse note:</strong> raw <span class='mono'>CREATE TABLE</span> count is {$raw_create_count}, parsed count is {$total_tables}. Please inspect unusual table DDL if these diverge.</p>";
+    }
+    echo "<p><strong>Total issues found:</strong> " . count($issues) . "</p>";
+
+    if (!empty($class_counts)) {
+        echo "<p><strong>By classification:</strong></p><ul>";
+        foreach ($class_counts as $class => $count) {
+            echo "<li><strong>" . htmlspecialchars($class) . ":</strong> " . (int) $count . "</li>";
+        }
+        echo "</ul>";
+    }
+
+    if (!empty($issue_counts)) {
+        echo "<p><strong>By issue type:</strong></p><ul>";
+        foreach ($issue_counts as $type => $count) {
+            echo "<li><strong>" . htmlspecialchars($type) . ":</strong> " . (int) $count . "</li>";
+        }
+        echo "</ul>";
+    }
+
+    if (!empty($allowlist_tag_counts)) {
+        echo "<p><strong>Allowlist rule matches:</strong></p><ul>";
+        foreach ($allowlist_tag_counts as $rule_id => $count) {
+            echo "<li><strong>" . htmlspecialchars($rule_id) . ":</strong> " . (int) $count . "</li>";
+        }
+        echo "</ul>";
+    }
+    echo "</div>";
 } else {
     echo "Multi-Tenant Leak Audit\n";
     echo "========================\n";
-    echo "Scoped tables identified: " . count($scoped_tables) . "\n\n";
+    echo "CREATE TABLE entries found: {$total_tables}\n";
+    echo "Scoped tables with company_id: " . count($scoped_tables) . "\n";
+    echo "Non-scoped tables (" . count($non_scoped_tables) . "): " . join_or_dash($non_scoped_tables) . "\n";
+    echo "Allowlist rules loaded: " . count($allowlist_rules) . "\n";
+    if ($raw_create_count !== $total_tables) {
+        echo "Parse note: raw CREATE TABLE count is {$raw_create_count}, parsed count is {$total_tables}.\n";
+    }
+    echo "Total issues found: " . count($issues) . "\n";
+    if (!empty($class_counts)) {
+        echo "By classification:\n";
+        foreach ($class_counts as $class => $count) {
+            echo "- {$class}: {$count}\n";
+        }
+    }
+    if (!empty($issue_counts)) {
+        echo "By issue type:\n";
+        foreach ($issue_counts as $type => $count) {
+            echo "- {$type}: {$count}\n";
+        }
+    }
+    if (!empty($allowlist_tag_counts)) {
+        echo "Allowlist rule matches:\n";
+        foreach ($allowlist_tag_counts as $rule_id => $count) {
+            echo "- {$rule_id}: {$count}\n";
+        }
+    }
+    echo "\n";
 }
 
-if (empty($leaks)) {
+if (empty($issues)) {
     echo "No leaks detected! (Based on current heuristics)\n";
 } else {
     if (!$is_cli) {
-        echo "<table><tr><th>File</th><th>Line</th><th>Table</th><th>Issue Type</th><th>Snippet</th></tr>";
-        foreach ($leaks as $leak) {
-            echo "<tr><td>{$leak['file']}</td><td>{$leak['line']}</td><td>{$leak['table']}</td><td class='type-err'>{$leak['type']}</td><td><code>" . htmlspecialchars($leak['snippet']) . "</code></td></tr>";
+        echo "<table><tr><th>File</th><th>Line</th><th>Table</th><th>Query</th><th>Issue Type</th><th>Classification</th><th>Allowlist Rules</th><th>File Scope Signal</th><th>Scope Signals</th><th>Context Hints</th><th>Snippet</th></tr>";
+        foreach ($issues as $issue) {
+            $class_css = ($issue['classification'] === 'Likely leak') ? 'type-err' : 'class-review';
+            $allowlist_rules = (isset($issue['allowlist_rules']) && is_array($issue['allowlist_rules'])) ? join_or_dash($issue['allowlist_rules']) : '-';
+            echo "<tr>";
+            echo "<td>" . htmlspecialchars($issue['file']) . "</td>";
+            echo "<td>" . (int) $issue['line'] . "</td>";
+            echo "<td>" . htmlspecialchars($issue['table']) . "</td>";
+            echo "<td>" . htmlspecialchars($issue['query_type']) . "</td>";
+            echo "<td>" . htmlspecialchars($issue['issue_type']) . "</td>";
+            echo "<td class='" . $class_css . "'>" . htmlspecialchars($issue['classification']) . "</td>";
+            echo "<td>" . htmlspecialchars($allowlist_rules) . "</td>";
+            echo "<td>" . htmlspecialchars($issue['file_scope_signal']) . "</td>";
+            echo "<td>" . htmlspecialchars($issue['scope_signals']) . "</td>";
+            echo "<td>" . htmlspecialchars($issue['context_hints']) . "</td>";
+            echo "<td><code>" . htmlspecialchars($issue['snippet']) . "</code></td>";
+            echo "</tr>";
         }
         echo "</table>";
     } else {
-        foreach ($leaks as $leak) {
-            echo "[!] {$leak['file']}:{$leak['line']} - {$leak['type']} (Table: {$leak['table']})\n";
-            echo "    Snippet: " . str_replace(["\r", "\n"], ' ', $leak['snippet']) . "\n\n";
+        foreach ($issues as $issue) {
+            $allowlist_rules = (isset($issue['allowlist_rules']) && is_array($issue['allowlist_rules'])) ? join_or_dash($issue['allowlist_rules']) : '-';
+            echo "[!] {$issue['classification']} | {$issue['file']}:{$issue['line']} | {$issue['query_type']} | {$issue['issue_type']} | table={$issue['table']}\n";
+            echo "    allowlist_rules: {$allowlist_rules}\n";
+            echo "    file_scope_signal: {$issue['file_scope_signal']}\n";
+            echo "    scope_signals: {$issue['scope_signals']}\n";
+            echo "    context_hints: {$issue['context_hints']}\n";
+            echo "    snippet: {$issue['snippet']}\n\n";
         }
-        echo "Total issues found: " . count($leaks) . "\n";
     }
 }
 
-if (!$is_cli) echo "</body></html>";
+if (!$is_cli) {
+    echo "</body></html>";
+}
