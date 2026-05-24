@@ -554,6 +554,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         }
 
         $insertedRows = 0;
+        $importErrors = [];
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
@@ -572,7 +573,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
+                if ($rawValue === '' || $rawValue === '—' || strcasecmp($rawValue, 'null') === 0) {
                     continue;
                 }
 
@@ -635,10 +636,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $dbErrorCode = 0; $dbErrorMessage = '';
             if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
                 $insertedRows++;
+            } elseif (count($importErrors) < 5) {
+                $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
             }
         }
 
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
+        $response = ['ok' => true, 'inserted' => $insertedRows];
+        if (!empty($importErrors)) {
+            $response['failed'] = count($importErrors);
+            $response['errors'] = $importErrors;
+            if ($insertedRows === 0) {
+                $response['message'] = $importErrors[0];
+            }
+        }
+        echo json_encode($response);
         exit;
     }
 }
@@ -1098,7 +1109,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
+                                            <span title="<?php echo sanitize((string)$row[$f]); ?>" data-itm-export-value="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
