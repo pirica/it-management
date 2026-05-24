@@ -2014,6 +2014,10 @@ function mbqa_runner_module_step_exceptions(): array
         'patches_updates' => [
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
+        // Why: database.sql has no INSERT rows for approvers; sample_data start + end restore are N/A in QA.
+        'approvers' => [
+            'sample_data' => 'No sample rows found in database.sql for this module.',
+        ],
         // Why: IP address rows are generated from live subnets, not stored as static database.sql samples.
         'ip_addresses' => [
             'sample_data' => 'N/A (IP addresses are generated from subnets, not database.sql samples)',
