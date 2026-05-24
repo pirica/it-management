@@ -399,8 +399,8 @@ if ($crud_action === 'delete') {
                 if ($hasCompany && $company_id > 0) {
                     $where .= ' AND company_id=' . (int)$company_id;
                 }
-                $blockerMessage = cr_delete_reference_blocker_message($conn, $crud_table, 'id', (int)$selectedId, (int)$company_id);
-                if ($blockerMessage !== '') {
+                $blockerMessage = '';
+                if (function_exists('itm_can_delete_record') && !itm_can_delete_record($conn, $crud_table, 'id', (int)$selectedId, (int)$company_id, $blockerMessage)) {
                     $failedCount++;
                     if ($firstFailureMessage === '') {
                         $firstFailureMessage = $blockerMessage;
@@ -452,8 +452,8 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $blockerMessage = cr_delete_reference_blocker_message($conn, $crud_table, 'id', $id, (int)$company_id);
-        if ($blockerMessage !== '') {
+        $blockerMessage = '';
+        if (function_exists('itm_can_delete_record') && !itm_can_delete_record($conn, $crud_table, 'id', $id, (int)$company_id, $blockerMessage)) {
             $_SESSION['crud_error'] = $blockerMessage;
         } else {
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';

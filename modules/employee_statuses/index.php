@@ -206,32 +206,6 @@ function cr_require_valid_csrf_token() {
     }
 }
 
-function cr_delete_reference_blocker_message($conn, $table, $pkColumn, $pkValue, $companyId) {
-    if (!function_exists('itm_find_record_usage')) {
-        return '';
-    }
-
-    $usage = itm_find_record_usage($conn, (string)$table, (string)$pkColumn, (int)$pkValue, (int)$companyId);
-    if (!is_array($usage) || empty($usage)) {
-        return '';
-    }
-
-    $first = $usage[0] ?? [];
-    $childTable = trim((string)($first['table'] ?? ''));
-    $childColumn = trim((string)($first['column'] ?? ''));
-
-    if ($childTable !== '' && $childColumn !== '') {
-        return 'This record cannot be deleted because other records still reference it. Referenced by table "'
-            . $childTable . '" via column "' . $childColumn . '". Remove or reassign the related records first.';
-    }
-    if ($childTable !== '') {
-        return 'This record cannot be deleted because other records still reference it. Referenced by table "'
-            . $childTable . '". Remove or reassign the related records first.';
-    }
-
-    return 'This record cannot be deleted because other records still reference it. Remove or reassign the related records first.';
-}
-
 function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
@@ -399,8 +373,8 @@ if ($crud_action === 'delete') {
                 if ($hasCompany && $company_id > 0) {
                     $where .= ' AND company_id=' . (int)$company_id;
                 }
-                $blockerMessage = cr_delete_reference_blocker_message($conn, $crud_table, 'id', (int)$selectedId, (int)$company_id);
-                if ($blockerMessage !== '') {
+                $blockerMessage = '';
+                if (function_exists('itm_can_delete_record') && !itm_can_delete_record($conn, $crud_table, 'id', (int)$selectedId, (int)$company_id, $blockerMessage)) {
                     $failedCount++;
                     if ($firstFailureMessage === '') {
                         $firstFailureMessage = $blockerMessage;
@@ -452,8 +426,8 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $blockerMessage = cr_delete_reference_blocker_message($conn, $crud_table, 'id', $id, (int)$company_id);
-        if ($blockerMessage !== '') {
+        $blockerMessage = '';
+        if (function_exists('itm_can_delete_record') && !itm_can_delete_record($conn, $crud_table, 'id', $id, (int)$company_id, $blockerMessage)) {
             $_SESSION['crud_error'] = $blockerMessage;
         } else {
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
