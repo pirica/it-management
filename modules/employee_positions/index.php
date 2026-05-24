@@ -493,7 +493,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     if ($hasCompany && $company_id > 0) {
         $detailWhere .= ' AND e.company_id=' . (int)$company_id;
     }
-    $detailSql = 'SELECT e.*, d.name AS department_name FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id ' . $detailWhere . ' LIMIT 1';
+    $detailSql = 'SELECT e.*, COALESCE(d.name, CONCAT(\'[Shared] \', ds.name)) AS department_name FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id LEFT JOIN departments ds ON ds.id = e.department_id ' . $detailWhere . ' LIMIT 1';
     $q = mysqli_query($conn, $detailSql);
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
     if (!$data) {
@@ -691,7 +691,7 @@ if ($searchRaw !== '') {
         }
         $searchConditions[] = 'CAST(e.' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
     }
-    $searchConditions[] = "d.name LIKE '{$searchEsc}'";
+    $searchConditions[] = "COALESCE(d.name, CONCAT('[Shared] ', ds.name)) LIKE '{$searchEsc}'";
 
     if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
@@ -715,7 +715,7 @@ $sortSql = 'e.' . cr_escape_identifier($sort) . ' ' . $dir;
 
 // Pagination logic
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
-$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id ' . $where);
+$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id LEFT JOIN departments ds ON ds.id = e.department_id ' . $where);
 $totalRows = 0;
 if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
     $totalRows = (int)($countRow['total_rows'] ?? 0);
@@ -732,7 +732,7 @@ if ($page > $totalPages) {
 $offset = ($page - 1) * $perPage;
 
 // Final data fetch
-$rows = mysqli_query($conn, 'SELECT e.*, d.name AS department_name FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rows = mysqli_query($conn, 'SELECT e.*, COALESCE(d.name, CONCAT(\'[Shared] \', ds.name)) AS department_name FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id LEFT JOIN departments ds ON ds.id = e.department_id ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: ('🧩 ' . $crud_title);
 $newButtonPosition = (string)(($ui_config ?? [])['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
