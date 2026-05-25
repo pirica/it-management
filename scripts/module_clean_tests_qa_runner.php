@@ -132,6 +132,33 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
     }
 
     $dbNameEsc = mysqli_real_escape_string($conn, $dbName);
+
+    // Fetch all tables first so we can track unblocking even for tables without text columns.
+    $tableRes = mysqli_query($conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='{$dbNameEsc}' AND TABLE_TYPE='BASE TABLE'");
+    if (!$tableRes) {
+        $result['ok'] = false;
+        $result['errors'][] = 'INFORMATION_SCHEMA.TABLES scan failed: ' . mysqli_error($conn);
+        return $result;
+    }
+
+    $tableDeleteSpecs = [];
+    while ($tableRow = mysqli_fetch_assoc($tableRes)) {
+        $tableName = trim((string)($tableRow['TABLE_NAME'] ?? ''));
+        if ($tableName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($tableName))) {
+            continue;
+        }
+
+        $tableEsc = '`' . str_replace('`', '``', $tableName) . '`';
+        $tableDeleteSpecs[$tableName] = [
+            'where_sql' => '1=0',
+            'where_sql_child' => '1=0',
+            'where_sql_parent' => '1=0',
+            'delete_sql' => 'DELETE FROM ' . $tableEsc . ' WHERE 1=0',
+            'count_sql' => 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE 1=0',
+        ];
+    }
+
+    // Now scan text columns to build real predicates for tables that can contain signature data.
     $metaSql = "SELECT TABLE_NAME, COLUMN_NAME
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA='{$dbNameEsc}'
@@ -139,23 +166,22 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
     $metaRes = mysqli_query($conn, $metaSql);
     if (!$metaRes) {
         $result['ok'] = false;
-        $result['errors'][] = 'INFORMATION_SCHEMA scan failed: ' . mysqli_error($conn);
+        $result['errors'][] = 'INFORMATION_SCHEMA.COLUMNS scan failed: ' . mysqli_error($conn);
         return $result;
     }
 
-    $tables = [];
+    $textColumnsByTable = [];
     while ($metaRow = mysqli_fetch_assoc($metaRes)) {
         $tableName = trim((string)($metaRow['TABLE_NAME'] ?? ''));
         $columnName = trim((string)($metaRow['COLUMN_NAME'] ?? ''));
         if ($tableName === '' || $columnName === '') {
             continue;
         }
-        $tables[$tableName][] = $columnName;
+        $textColumnsByTable[$tableName][] = $columnName;
     }
 
-    $tableDeleteSpecs = [];
-    foreach ($tables as $tableName => $columns) {
-        if ($tableName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($tableName))) {
+    foreach ($textColumnsByTable as $tableName => $columns) {
+        if (!isset($tableDeleteSpecs[$tableName])) {
             continue;
         }
 
@@ -194,13 +220,11 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
 
         $tableEsc = '`' . str_replace('`', '``', $tableName) . '`';
         $whereSql = implode(' OR ', $predicates);
-        $tableDeleteSpecs[$tableName] = [
-            'where_sql' => $whereSql,
-            'where_sql_child' => implode(' OR ', $predicatesChild),
-            'where_sql_parent' => implode(' OR ', $predicatesParent),
-            'delete_sql' => 'DELETE FROM ' . $tableEsc . ' WHERE ' . $whereSql,
-            'count_sql' => 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE ' . $whereSql,
-        ];
+        $tableDeleteSpecs[$tableName]['where_sql'] = $whereSql;
+        $tableDeleteSpecs[$tableName]['where_sql_child'] = implode(' OR ', $predicatesChild);
+        $tableDeleteSpecs[$tableName]['where_sql_parent'] = implode(' OR ', $predicatesParent);
+        $tableDeleteSpecs[$tableName]['delete_sql'] = 'DELETE FROM ' . $tableEsc . ' WHERE ' . $whereSql;
+        $tableDeleteSpecs[$tableName]['count_sql'] = 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE ' . $whereSql;
     }
 
     $inboundRefs = [];
