@@ -949,22 +949,48 @@ function detect_prevalidated_company_scoped_delete_by_id($lines, $line, $query_f
         return false;
     }
 
-    $pre_block = implode("\n", array_slice($lines, $start - 1, $end - $start + 1));
-    if (!preg_match('/\bSELECT\b[\s\S]{0,1400}\bFROM\s+[`"]?' . $quoted_table . '[`"]?\b/i', $pre_block)) {
-        return false;
-    }
-    if (!query_has_company_predicate($pre_block)) {
-        return false;
-    }
-
     $company_var_pattern = '/\$company[_a-z0-9]*/i';
     $id_var_pattern = '/\$' . preg_quote($delete_id_var, '/') . '\b/i';
-    if (!preg_match_all('/mysqli_stmt_bind_param\s*\(\s*\$[a-z_][a-z0-9_]*\s*,\s*[\'"][^\'"]*ii[^\'"]*[\'"]\s*,\s*([^)]*)\)/is', $pre_block, $bindMatches)) {
-        return false;
-    }
 
-    foreach ($bindMatches[1] as $bindArgs) {
-        if (preg_match($company_var_pattern, $bindArgs) && preg_match($id_var_pattern, $bindArgs)) {
+    for ($i = $start; $i <= $end; $i++) {
+        $bind_block_start = $i;
+        $bind_block_end = min($end, $i + 6);
+        $bind_block = implode("\n", array_slice($lines, $bind_block_start - 1, $bind_block_end - $bind_block_start + 1));
+
+        if (!preg_match('/mysqli_stmt_bind_param\s*\(\s*\$([a-z_][a-z0-9_]*)\s*,\s*[\'"]([^\'"]*)[\'"]\s*,\s*([^)]*)\)/is', $bind_block, $mBind)) {
+            continue;
+        }
+
+        $stmt_var = $mBind[1];
+        $bind_types = $mBind[2];
+        $bind_args = $mBind[3];
+
+        if (stripos($bind_types, 'ii') === false) {
+            continue;
+        }
+        if (!preg_match($company_var_pattern, $bind_args) || !preg_match($id_var_pattern, $bind_args)) {
+            continue;
+        }
+
+        $prepare_search_start = max($start, $i - 40);
+        $prepare_search_end = $i;
+        $quoted_stmt_var = preg_quote((string)$stmt_var, '/');
+        for ($j = $prepare_search_end; $j >= $prepare_search_start; $j--) {
+            $prepare_line = (string)$lines[$j - 1];
+            if (!preg_match('/\$' . $quoted_stmt_var . '\s*=\s*mysqli_prepare\s*\(/i', $prepare_line)) {
+                continue;
+            }
+
+            $prepare_block_start = $j;
+            $prepare_block_end = min($end, $j + 22);
+            $prepare_block = implode("\n", array_slice($lines, $prepare_block_start - 1, $prepare_block_end - $prepare_block_start + 1));
+            if (!preg_match('/\bSELECT\b[\s\S]{0,1400}\bFROM\s+[`"]?' . $quoted_table . '[`"]?\b/i', $prepare_block)) {
+                continue;
+            }
+            if (!query_has_company_predicate($prepare_block)) {
+                continue;
+            }
+
             return true;
         }
     }
