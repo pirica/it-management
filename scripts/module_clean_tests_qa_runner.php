@@ -195,13 +195,13 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
 
             $colEsc = '`' . str_replace('`', '``', $columnName) . '`';
             $patterns = [
-                "LOWER(COALESCE(%s, '')) LIKE 'mbqa-%%'",
+                "LOWER(COALESCE(%s, '')) LIKE '%%mbqa-%%'",
                 "UPPER(COALESCE(%s, '')) LIKE '%%QA-IMPORT-%%'",
-                "LOWER(COALESCE(%s, '')) LIKE 'qa-import-%%'",
-                "LOWER(COALESCE(%s, '')) LIKE 'itm %%test%%'",
-                "LOWER(COALESCE(%s, '')) LIKE 'itm debug %%'",
-                "LOWER(COALESCE(%s, '')) LIKE 'is_mbqa_equipment_types_%%'",
-                "LOWER(COALESCE(%s, '')) LIKE 'is_qa_import_name_%%'",
+                "LOWER(COALESCE(%s, '')) LIKE '%%qa-import-%%'",
+                "LOWER(COALESCE(%s, '')) LIKE '%%itm %%test%%'",
+                "LOWER(COALESCE(%s, '')) LIKE '%%itm debug %%'",
+                "LOWER(COALESCE(%s, '')) LIKE '%%is_mbqa_equipment_types_%%'",
+                "LOWER(COALESCE(%s, '')) LIKE '%%is_qa_import_name_%%'",
             ];
 
             foreach ($patterns as $pattern) {
