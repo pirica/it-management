@@ -330,6 +330,10 @@ function mbqa_pick_free_values_for_unique_scope(mysqli $conn, string $table, int
         $col = $scopeCols[0];
         $refTable = mbqa_fk_reference_table($col, $fkMap);
         if ($refTable !== '' && itm_is_safe_identifier($refTable)) {
+            $fkMeta = $fkMap[$col] ?? null;
+            if (is_array($fkMeta) && !mbqa_fk_reference_column_is_numeric($conn, $fkMeta)) {
+                return [];
+            }
             $refEsc = '`' . str_replace('`', '``', $refTable) . '`';
             $colEsc = '`' . str_replace('`', '``', $col) . '`';
             $parentHasCompany = itm_table_has_column($conn, $refTable, 'company_id');
@@ -356,6 +360,10 @@ function mbqa_pick_free_values_for_unique_scope(mysqli $conn, string $table, int
 
         $refTable = mbqa_fk_reference_table($col, $fkMap);
         if ($refTable !== '' && itm_is_safe_identifier($refTable)) {
+            $fkMeta = $fkMap[$col] ?? null;
+            if (is_array($fkMeta) && !mbqa_fk_reference_column_is_numeric($conn, $fkMeta)) {
+                continue;
+            }
             $freeId = mbqa_pick_fk_value($conn, $refTable, $companyId, true, 1);
             if ($freeId > 0) {
                 $colEsc = '`' . str_replace('`', '``', $col) . '`';
@@ -434,9 +442,28 @@ function mbqa_apply_unique_scope_to_import_rows(mysqli $conn, string $table, int
     return $importRows;
 }
 
-function mbqa_fk_id_exists_for_tenant(mysqli $conn, array $fkMeta, int $companyId, int $fkId): bool
+function mbqa_fk_reference_column_type(mysqli $conn, array $fkMeta): string
 {
-    if ($fkId <= 0) {
+    $refTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
+    $refCol = (string)($fkMeta['REFERENCED_COLUMN_NAME'] ?? 'id');
+    if ($refTable === '' || !itm_is_safe_identifier($refTable) || !itm_is_safe_identifier($refCol)) {
+        return '';
+    }
+
+    $meta = mbqa_table_columns_meta_by_name($conn, $refTable);
+    return strtolower((string)($meta[$refCol]['Type'] ?? ''));
+}
+
+function mbqa_fk_reference_column_is_numeric(mysqli $conn, array $fkMeta): bool
+{
+    $type = mbqa_fk_reference_column_type($conn, $fkMeta);
+    return $type !== '' && (bool)preg_match('/\b(int|decimal|float|double|real|numeric)\b/', $type);
+}
+
+function mbqa_fk_value_exists_for_tenant(mysqli $conn, array $fkMeta, int $companyId, string $rawValue): bool
+{
+    $value = trim($rawValue);
+    if ($value === '') {
         return false;
     }
 
@@ -448,7 +475,15 @@ function mbqa_fk_id_exists_for_tenant(mysqli $conn, array $fkMeta, int $companyI
 
     $tableEsc = '`' . str_replace('`', '``', $refTable) . '`';
     $colEsc = '`' . str_replace('`', '``', $refCol) . '`';
-    $where = $colEsc . '=' . (int)$fkId;
+    $isNumericTarget = mbqa_fk_reference_column_is_numeric($conn, $fkMeta);
+    if ($isNumericTarget) {
+        if (!ctype_digit($value)) {
+            return false;
+        }
+        $where = $colEsc . '=' . (int)$value;
+    } else {
+        $where = $colEsc . "='" . mysqli_real_escape_string($conn, $value) . "'";
+    }
     if (itm_table_has_column($conn, $refTable, 'company_id') && $companyId > 0) {
         $where .= ' AND company_id=' . (int)$companyId;
     }
@@ -458,23 +493,93 @@ function mbqa_fk_id_exists_for_tenant(mysqli $conn, array $fkMeta, int $companyI
     return $res && mysqli_num_rows($res) > 0;
 }
 
-function mbqa_resolve_tenant_fk_import_value(mysqli $conn, array $fkMeta, int $companyId, int $preferredId = 0): string
+function mbqa_fk_lookup_reference_value_by_id(mysqli $conn, array $fkMeta, int $companyId, int $fkId): string
 {
-    if ($preferredId > 0 && mbqa_fk_id_exists_for_tenant($conn, $fkMeta, $companyId, $preferredId)) {
-        return (string)$preferredId;
-    }
-
-    if ($preferredId > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
-        $resolved = itm_fk_resolve_company_equivalent_id($conn, $fkMeta, $companyId, $preferredId);
-        if ($resolved > 0 && mbqa_fk_id_exists_for_tenant($conn, $fkMeta, $companyId, $resolved)) {
-            return (string)$resolved;
-        }
+    if ($fkId <= 0) {
+        return '';
     }
 
     $refTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
-    $pick = mbqa_query_first_id($conn, $refTable, $companyId);
+    $refCol = (string)($fkMeta['REFERENCED_COLUMN_NAME'] ?? 'id');
+    if ($refTable === '' || !itm_is_safe_identifier($refTable) || !itm_is_safe_identifier($refCol)) {
+        return '';
+    }
 
-    return $pick > 0 ? (string)$pick : '';
+    $tableEsc = '`' . str_replace('`', '``', $refTable) . '`';
+    $colEsc = '`' . str_replace('`', '``', $refCol) . '`';
+    $where = 'id=' . (int)$fkId;
+    if (itm_table_has_column($conn, $refTable, 'company_id') && $companyId > 0) {
+        $where .= ' AND company_id=' . (int)$companyId;
+    }
+    $res = mysqli_query($conn, 'SELECT ' . $colEsc . ' AS fk_value FROM ' . $tableEsc . ' WHERE ' . $where . ' LIMIT 1');
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    if (!$row || !array_key_exists('fk_value', $row)) {
+        return '';
+    }
+
+    return trim((string)$row['fk_value']);
+}
+
+function mbqa_query_first_fk_value_for_tenant(mysqli $conn, array $fkMeta, int $companyId): string
+{
+    $refTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
+    $refCol = (string)($fkMeta['REFERENCED_COLUMN_NAME'] ?? 'id');
+    if ($refTable === '' || !itm_is_safe_identifier($refTable) || !itm_is_safe_identifier($refCol)) {
+        return '';
+    }
+
+    $tableEsc = '`' . str_replace('`', '``', $refTable) . '`';
+    $colEsc = '`' . str_replace('`', '``', $refCol) . '`';
+    $where = itm_table_has_column($conn, $refTable, 'company_id') && $companyId > 0
+        ? ' WHERE company_id=' . (int)$companyId
+        : '';
+    $orderBy = itm_table_has_column($conn, $refTable, 'id') ? ' ORDER BY id ASC' : ' ORDER BY ' . $colEsc . ' ASC';
+    $res = mysqli_query($conn, 'SELECT ' . $colEsc . ' AS fk_value FROM ' . $tableEsc . $where . $orderBy . ' LIMIT 1');
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    if (!$row || !array_key_exists('fk_value', $row)) {
+        return '';
+    }
+
+    return trim((string)$row['fk_value']);
+}
+
+function mbqa_resolve_tenant_fk_import_value(mysqli $conn, array $fkMeta, int $companyId, string $preferredRaw = ''): string
+{
+    $preferred = trim($preferredRaw);
+    if (strcasecmp($preferred, 'null') === 0) {
+        $preferred = '';
+    }
+
+    $isNumericTarget = mbqa_fk_reference_column_is_numeric($conn, $fkMeta);
+    if ($preferred !== '') {
+        if ($isNumericTarget) {
+            // Keep non-numeric labels (e.g. "RJ45", "Disabled") so module import handlers can resolve them.
+            if (!ctype_digit($preferred)) {
+                return $preferred;
+            }
+            if (mbqa_fk_value_exists_for_tenant($conn, $fkMeta, $companyId, $preferred)) {
+                return ctype_digit($preferred) ? (string)(int)$preferred : $preferred;
+            }
+            if (ctype_digit($preferred) && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                $resolved = itm_fk_resolve_company_equivalent_id($conn, $fkMeta, $companyId, (int)$preferred);
+                if ($resolved > 0 && mbqa_fk_value_exists_for_tenant($conn, $fkMeta, $companyId, (string)$resolved)) {
+                    return (string)$resolved;
+                }
+            }
+        } else {
+            if (mbqa_fk_value_exists_for_tenant($conn, $fkMeta, $companyId, $preferred)) {
+                return $preferred;
+            }
+            if (ctype_digit($preferred)) {
+                $fromId = mbqa_fk_lookup_reference_value_by_id($conn, $fkMeta, $companyId, (int)$preferred);
+                if ($fromId !== '' && mbqa_fk_value_exists_for_tenant($conn, $fkMeta, $companyId, $fromId)) {
+                    return $fromId;
+                }
+            }
+        }
+    }
+
+    return mbqa_query_first_fk_value_for_tenant($conn, $fkMeta, $companyId);
 }
 
 /**
@@ -506,8 +611,7 @@ function mbqa_ensure_import_row_tenant_fk_values(mysqli $conn, string $table, in
             $raw = '';
         }
 
-        $preferredId = ctype_digit($raw) ? (int)$raw : 0;
-        $resolved = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$col], $companyId, $preferredId);
+        $resolved = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$col], $companyId, $raw);
         if ($resolved !== '') {
             $values[$i] = $resolved;
         }

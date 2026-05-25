@@ -2877,7 +2877,7 @@ function mbqa_database_sql_values_by_column(mysqli $conn, string $table, int $co
 
         $valueToken = trim((string)($chosen['values'][$index] ?? ''), "'\"");
         if (isset($fkMap[$columnName])) {
-            $valueToken = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$columnName], $companyId, (int)$valueToken);
+            $valueToken = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$columnName], $companyId, (string)$valueToken);
         }
 
         $key = strtolower(mbqa_humanize_field_label($columnName));
@@ -3038,7 +3038,7 @@ function mbqa_build_import_rows_from_database_sql_seed(mysqli $conn, string $tab
 
         $valueToken = trim((string)($chosen['values'][$index] ?? ''), "'\"");
         if (isset($fkMap[$columnName])) {
-            $valueToken = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$columnName], $companyId, (int)$valueToken);
+            $valueToken = mbqa_resolve_tenant_fk_import_value($conn, $fkMap[$columnName], $companyId, (string)$valueToken);
         }
 
         $key = strtolower(mbqa_humanize_field_label($columnName));
