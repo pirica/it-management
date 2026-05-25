@@ -158,6 +158,7 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
         }
 
         $predicates = [];
+        $predicatesChild = [];
         $predicatesParent = [];
         foreach ($columns as $columnName) {
             if ($columnName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($columnName))) {
@@ -165,49 +166,47 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
             }
 
             $colEsc = '`' . str_replace('`', '``', $columnName) . '`';
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) REGEXP '^mbqa-[a-z0-9_]+-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
-            $predicates[] = "UPPER(COALESCE({$colEsc}, '')) LIKE '%QA-IMPORT-%'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'qa-import-%'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm cleartable test %'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm equipment cleartable %'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm debug %'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'is_mbqa_equipment_types_%'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'is_qa_import_name_%'";
+            $patterns = [
+                "LOWER(COALESCE(%s, '')) LIKE 'mbqa-%'",
+                "UPPER(COALESCE(%s, '')) LIKE '%%QA-IMPORT-%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'qa-import-%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'itm %%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'is_mbqa_equipment_types_%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'is_qa_import_name_%%'",
+            ];
 
-            $colParentEsc = 'p.' . $colEsc;
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) REGEXP '^mbqa-[a-z0-9_]+-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
-            $predicatesParent[] = "UPPER(COALESCE({$colParentEsc}, '')) LIKE '%QA-IMPORT-%'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'qa-import-%'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm cleartable test %'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm equipment cleartable %'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm debug %'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'is_mbqa_equipment_types_%'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'is_qa_import_name_%'";
+            foreach ($patterns as $pattern) {
+                $predicates[] = sprintf($pattern, $colEsc);
+                $predicatesChild[] = sprintf($pattern, 'c.' . $colEsc);
+                $predicatesParent[] = sprintf($pattern, 'p.' . $colEsc);
+            }
         }
 
         $predicates = array_values(array_unique($predicates));
+        $predicatesChild = array_values(array_unique($predicatesChild));
         $predicatesParent = array_values(array_unique($predicatesParent));
-        if (empty($predicates) || empty($predicatesParent)) {
+        if (empty($predicates) || empty($predicatesChild) || empty($predicatesParent)) {
             continue;
         }
 
         $tableEsc = '`' . str_replace('`', '``', $tableName) . '`';
         $whereSql = implode(' OR ', $predicates);
-        $whereSqlParent = implode(' OR ', $predicatesParent);
         $tableDeleteSpecs[$tableName] = [
             'where_sql' => $whereSql,
-            'where_sql_parent' => $whereSqlParent,
+            'where_sql_child' => implode(' OR ', $predicatesChild),
+            'where_sql_parent' => implode(' OR ', $predicatesParent),
             'delete_sql' => 'DELETE FROM ' . $tableEsc . ' WHERE ' . $whereSql,
             'count_sql' => 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE ' . $whereSql,
         ];
     }
 
     $inboundRefs = [];
-    $fkSql = "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-        WHERE TABLE_SCHEMA='{$dbNameEsc}'
-          AND REFERENCED_TABLE_SCHEMA='{$dbNameEsc}'
-          AND REFERENCED_TABLE_NAME IS NOT NULL";
+    $fkSql = "SELECT k.TABLE_NAME, k.COLUMN_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME, c.IS_NULLABLE
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE k
+        INNER JOIN INFORMATION_SCHEMA.COLUMNS c ON k.TABLE_SCHEMA = c.TABLE_SCHEMA AND k.TABLE_NAME = c.TABLE_NAME AND k.COLUMN_NAME = c.COLUMN_NAME
+        WHERE k.TABLE_SCHEMA='{$dbNameEsc}'
+          AND k.REFERENCED_TABLE_SCHEMA='{$dbNameEsc}'
+          AND k.REFERENCED_TABLE_NAME IS NOT NULL";
     $fkRes = mysqli_query($conn, $fkSql);
     if ($fkRes) {
         while ($fkRow = mysqli_fetch_assoc($fkRes)) {
@@ -215,6 +214,7 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
             $childColumn = trim((string)($fkRow['COLUMN_NAME'] ?? ''));
             $parentTable = trim((string)($fkRow['REFERENCED_TABLE_NAME'] ?? ''));
             $parentColumn = trim((string)($fkRow['REFERENCED_COLUMN_NAME'] ?? ''));
+            $isNullable = (strtoupper((string)($fkRow['IS_NULLABLE'] ?? 'NO')) === 'YES');
 
             if (!isset($tableDeleteSpecs[$parentTable])) {
                 continue;
@@ -233,10 +233,12 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
                 'child_table' => $childTable,
                 'child_column' => $childColumn,
                 'parent_column' => $parentColumn,
+                'is_nullable' => $isNullable,
             ];
         }
     }
 
+    $protectedTables = ['companies', 'users'];
     $tablesWithDeletes = [];
     $fkBlockedTables = [];
     for ($pass = 1; $pass <= 8; $pass++) {
@@ -244,28 +246,75 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
         foreach ($tableDeleteSpecs as $tableName => $spec) {
             if (isset($inboundRefs[$tableName]) && is_array($inboundRefs[$tableName])) {
                 foreach ($inboundRefs[$tableName] as $ref) {
-                    $childTableEsc = '`' . str_replace('`', '``', (string)$ref['child_table']) . '`';
+                    $childTable = (string)$ref['child_table'];
+                    $childTableEsc = '`' . str_replace('`', '``', $childTable) . '`';
                     $childColEsc = '`' . str_replace('`', '``', (string)$ref['child_column']) . '`';
                     $parentTableEsc = '`' . str_replace('`', '``', $tableName) . '`';
                     $parentColEsc = '`' . str_replace('`', '``', (string)$ref['parent_column']) . '`';
-                    $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
-                        . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
-                        . ' WHERE ' . (string)($spec['where_sql_parent'] ?? '');
-                    $childDeletedRes = mysqli_query($conn, $childDeleteSql);
-                    if (!$childDeletedRes) {
-                        $errNo = (int)mysqli_errno($conn);
-                        if ($errNo !== 1451) {
-                            $result['ok'] = false;
-                            $result['errors'][] = (string)$ref['child_table'] . ' cleanup via ' . $tableName . ': ' . mysqli_error($conn);
-                        }
-                        continue;
-                    }
 
-                    $childAffected = max(0, (int)mysqli_affected_rows($conn));
-                    if ($childAffected > 0) {
-                        $passDeleted += $childAffected;
-                        $result['deleted_total'] += $childAffected;
-                        $tablesWithDeletes[(string)$ref['child_table']] = true;
+                    // If the child row itself is an MBQA row, it should be deleted even if the table is protected.
+                    // If the child table is protected and the row is NOT an MBQA row, we should only NULL the FK (if nullable) to unblock parent.
+                    $childIsProtected = in_array($childTable, $protectedTables, true);
+                    $childWhereSqlAliased = isset($tableDeleteSpecs[$childTable]) ? (string)$tableDeleteSpecs[$childTable]['where_sql_child'] : '1=0';
+
+                    if ($childIsProtected) {
+                        // 1. Delete rows in protected table that are themselves MBQA rows.
+                        $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
+                            . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                            . ' WHERE (' . (string)($spec['where_sql_parent'] ?? '') . ') AND (' . $childWhereSqlAliased . ')';
+                        $childDeletedRes = mysqli_query($conn, $childDeleteSql);
+                        if ($childDeletedRes) {
+                            $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                            if ($childAffected > 0) {
+                                $passDeleted += $childAffected;
+                                $result['deleted_total'] += $childAffected;
+                                $tablesWithDeletes[$childTable] = true;
+                            }
+                        } else {
+                            $result['ok'] = false;
+                            $result['errors'][] = $childTable . ' MBQA row cleanup via ' . $tableName . ': ' . mysqli_error($conn);
+                        }
+
+                        // 2. Unblock parent by NULLing the FK in protected table for non-MBQA rows.
+                        if (!empty($ref['is_nullable'])) {
+                            $childUpdateSql = 'UPDATE ' . $childTableEsc . ' c'
+                                . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                                . ' SET c.' . $childColEsc . ' = NULL'
+                                . ' WHERE (' . (string)($spec['where_sql_parent'] ?? '') . ') AND NOT (' . $childWhereSqlAliased . ')';
+                            $childUpdatedRes = mysqli_query($conn, $childUpdateSql);
+                            if ($childUpdatedRes) {
+                                $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                                if ($childAffected > 0) {
+                                    $passDeleted += $childAffected;
+                                    // Note: we don't increment deleted_total here since it was an update, but it counts for pass progress.
+                                    $tablesWithDeletes[$childTable] = true;
+                                }
+                            } else {
+                                $result['ok'] = false;
+                                $result['errors'][] = $childTable . ' FK detachment via ' . $tableName . ': ' . mysqli_error($conn);
+                            }
+                        }
+                    } else {
+                        // Non-protected table: standard unblocking by deletion.
+                        $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
+                            . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                            . ' WHERE ' . (string)($spec['where_sql_parent'] ?? '');
+                        $childDeletedRes = mysqli_query($conn, $childDeleteSql);
+                        if (!$childDeletedRes) {
+                            $errNo = (int)mysqli_errno($conn);
+                            if ($errNo !== 1451) {
+                                $result['ok'] = false;
+                                $result['errors'][] = $childTable . ' cleanup via ' . $tableName . ': ' . mysqli_error($conn);
+                            }
+                            continue;
+                        }
+
+                        $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                        if ($childAffected > 0) {
+                            $passDeleted += $childAffected;
+                            $result['deleted_total'] += $childAffected;
+                            $tablesWithDeletes[$childTable] = true;
+                        }
                     }
                 }
             }
