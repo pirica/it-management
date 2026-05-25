@@ -998,6 +998,80 @@ function detect_prevalidated_company_scoped_delete_by_id($lines, $line, $query_f
     return false;
 }
 
+function detect_fallback_select_after_company_scoped_lookup($lines, $line, $query_fragment, $table, $window_lines) {
+    if (empty($lines) || empty($query_fragment) || empty($table)) {
+        return false;
+    }
+
+    $fragment = (string)$query_fragment;
+    $quoted_table = preg_quote((string)$table, '/');
+    if (!preg_match('/\bSELECT\b[\s\S]{0,240}\bFROM\s+[`"]?' . $quoted_table . '[`"]?\b/i', $fragment)) {
+        return false;
+    }
+    if (!preg_match('/\bSELECT\b[\s\S]{0,120}\bid\b/i', $fragment)) {
+        return false;
+    }
+    if (query_has_company_predicate($fragment)) {
+        return false;
+    }
+    if (stripos($fragment, 'limit 1') === false) {
+        return false;
+    }
+
+    $total = count($lines);
+    $start = max(1, $line - max(12, (int)$window_lines));
+    $end = max(1, min($total, $line - 1));
+    if ($start > $end) {
+        return false;
+    }
+
+    $company_var_pattern = '/\$company[_a-z0-9]*/i';
+    for ($i = $start; $i <= $end; $i++) {
+        $bind_block_start = $i;
+        $bind_block_end = min($end, $i + 6);
+        $bind_block = implode("\n", array_slice($lines, $bind_block_start - 1, $bind_block_end - $bind_block_start + 1));
+
+        if (!preg_match('/mysqli_stmt_bind_param\s*\(\s*\$([a-z_][a-z0-9_]*)\s*,\s*[\'"]([^\'"]*)[\'"]\s*,\s*([^)]*)\)/is', $bind_block, $mBind)) {
+            continue;
+        }
+
+        $stmt_var = $mBind[1];
+        $bind_types = (string)$mBind[2];
+        $bind_args = (string)$mBind[3];
+
+        if (strpos($bind_types, 'i') === false) {
+            continue;
+        }
+        if (!preg_match($company_var_pattern, $bind_args)) {
+            continue;
+        }
+
+        $prepare_search_start = max($start, $i - 40);
+        $prepare_search_end = $i;
+        $quoted_stmt_var = preg_quote((string)$stmt_var, '/');
+        for ($j = $prepare_search_end; $j >= $prepare_search_start; $j--) {
+            $prepare_line = (string)$lines[$j - 1];
+            if (!preg_match('/\$' . $quoted_stmt_var . '\s*=\s*mysqli_prepare\s*\(/i', $prepare_line)) {
+                continue;
+            }
+
+            $prepare_block_start = $j;
+            $prepare_block_end = min($end, $j + 22);
+            $prepare_block = implode("\n", array_slice($lines, $prepare_block_start - 1, $prepare_block_end - $prepare_block_start + 1));
+            if (!preg_match('/\bSELECT\b[\s\S]{0,1400}\bFROM\s+[`"]?' . $quoted_table . '[`"]?\b/i', $prepare_block)) {
+                continue;
+            }
+            if (!query_has_company_predicate($prepare_block)) {
+                continue;
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function check_ui_leaks($content, $relative_path, &$issues) {
     if (stripos($content, 'Company ID') === false) {
         return;
@@ -1116,6 +1190,7 @@ foreach ($files as $file) {
             $has_adjacent_company_column_gate_safe_pattern = detect_adjacent_company_column_gate_safe_pattern($file_lines, $line, $assigned_var, $table, 24);
             $has_idf_position_cleanup_delete_safe_pattern = detect_idf_position_delete_after_scoped_ports_cleanup($file_lines, $line, $query_fragment, $table, 40);
             $has_prevalidated_company_scoped_delete_by_id = detect_prevalidated_company_scoped_delete_by_id($file_lines, $line, $query_fragment, $table, 60);
+            $has_fallback_select_after_company_scoped_lookup = detect_fallback_select_after_company_scoped_lookup($file_lines, $line, $query_fragment, $table, 60);
 
             $scope_signals = [];
             if ($has_fragment_predicate) {
@@ -1148,12 +1223,15 @@ foreach ($files as $file) {
             if ($has_prevalidated_company_scoped_delete_by_id) {
                 $scope_signals[] = 'prevalidated_company_scoped_delete_by_id';
             }
+            if ($has_fallback_select_after_company_scoped_lookup) {
+                $scope_signals[] = 'fallback_select_after_company_scoped_lookup';
+            }
 
             // Strict leak gate: only raise issue when query itself has no strong tenant scope signal.
             $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable);
 
             if (!$is_insert_query && $is_missing_direct_scope) {
-                if ($has_adjacent_company_column_gate_safe_pattern || $has_idf_position_cleanup_delete_safe_pattern || $has_prevalidated_company_scoped_delete_by_id) {
+                if ($has_adjacent_company_column_gate_safe_pattern || $has_idf_position_cleanup_delete_safe_pattern || $has_prevalidated_company_scoped_delete_by_id || $has_fallback_select_after_company_scoped_lookup) {
                     continue;
                 }
 
@@ -1193,6 +1271,9 @@ foreach ($files as $file) {
                 if ($has_prevalidated_company_scoped_delete_by_id) {
                     $context_hints[] = 'prevalidated_company_scoped_delete_by_id';
                 }
+                if ($has_fallback_select_after_company_scoped_lookup) {
+                    $context_hints[] = 'fallback_select_after_company_scoped_lookup';
+                }
                 if ($has_id_var_scoped_origin) {
                     $context_hints[] = 'id_var_scoped_origin';
                 }
@@ -1224,6 +1305,7 @@ foreach ($files as $file) {
                         'adjacent_company_column_gate_safe_pattern' => $has_adjacent_company_column_gate_safe_pattern,
                         'idf_position_cleanup_delete_safe_pattern' => $has_idf_position_cleanup_delete_safe_pattern,
                         'prevalidated_company_scoped_delete_by_id' => $has_prevalidated_company_scoped_delete_by_id,
+                        'fallback_select_after_company_scoped_lookup' => $has_fallback_select_after_company_scoped_lookup,
                         'id_var_scoped_origin' => $has_id_var_scoped_origin
                     ],
                     'snippet' => compact_snippet($query_fragment, 180)
@@ -1259,6 +1341,7 @@ foreach ($files as $file) {
                             'adjacent_company_column_gate_safe_pattern' => $has_adjacent_company_column_gate_safe_pattern,
                             'idf_position_cleanup_delete_safe_pattern' => $has_idf_position_cleanup_delete_safe_pattern,
                             'prevalidated_company_scoped_delete_by_id' => $has_prevalidated_company_scoped_delete_by_id,
+                            'fallback_select_after_company_scoped_lookup' => $has_fallback_select_after_company_scoped_lookup,
                             'id_var_scoped_origin' => false
                         ],
                         'snippet' => compact_snippet($query_fragment, 180)
@@ -1289,6 +1372,7 @@ foreach ($files as $file) {
                             'adjacent_company_column_gate_safe_pattern' => $has_adjacent_company_column_gate_safe_pattern,
                             'idf_position_cleanup_delete_safe_pattern' => $has_idf_position_cleanup_delete_safe_pattern,
                             'prevalidated_company_scoped_delete_by_id' => $has_prevalidated_company_scoped_delete_by_id,
+                            'fallback_select_after_company_scoped_lookup' => $has_fallback_select_after_company_scoped_lookup,
                             'id_var_scoped_origin' => false
                         ],
                         'snippet' => compact_snippet($query_fragment, 180)
