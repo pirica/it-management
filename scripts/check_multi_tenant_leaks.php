@@ -851,6 +851,42 @@ function detect_company_column_gated_dynamic_scope($lines, $line, $var_name, $ta
     return false;
 }
 
+function detect_adjacent_company_column_gate_safe_pattern($lines, $line, $var_name, $table, $window_lines) {
+    if (empty($var_name) || empty($table) || empty($lines) || $line <= 1) {
+        return false;
+    }
+
+    $total = count($lines);
+    $prev_line_text = (string)$lines[$line - 2];
+    $quoted_table = preg_quote((string)$table, '/');
+
+    if (!preg_match('/\$(\w+)\s*=\s*[a-z_][a-z0-9_]*table_has_column\s*\([^;]*[\'"]' . $quoted_table . '[\'"][^;]*[\'"]company_id[\'"]/i', $prev_line_text, $m)) {
+        return false;
+    }
+    $gate_var = $m[1];
+
+    $start = max(1, $line);
+    $end = min($total, $line + max(8, (int)$window_lines));
+    $found_gate_if = false;
+    $found_sql_append = false;
+    $quoted_gate_var = preg_quote((string)$gate_var, '/');
+
+    for ($i = $start; $i <= $end; $i++) {
+        $text = (string)$lines[$i - 1];
+        if (preg_match('/\bif\s*\([^)]*\$' . $quoted_gate_var . '\b/i', $text)) {
+            $found_gate_if = true;
+        }
+        if (line_has_dynamic_company_append_for_variable($text, $var_name)) {
+            $found_sql_append = true;
+        }
+        if ($found_gate_if && $found_sql_append) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function check_ui_leaks($content, $relative_path, &$issues) {
     if (stripos($content, 'Company ID') === false) {
         return;
@@ -962,6 +998,7 @@ foreach ($files as $file) {
             $assigned_var = detect_query_assignment_variable_from_line($line_content);
             $has_dynamic_company_append_same_var = detect_dynamic_company_append_same_var($file_lines, $line, $assigned_var, 25);
             $has_company_column_gated_dynamic_scope = detect_company_column_gated_dynamic_scope($file_lines, $line, $assigned_var, $table, 40);
+            $has_adjacent_company_column_gate_safe_pattern = detect_adjacent_company_column_gate_safe_pattern($file_lines, $line, $assigned_var, $table, 24);
 
             $scope_signals = [];
             if ($has_fragment_predicate) {
@@ -985,11 +1022,18 @@ foreach ($files as $file) {
             if ($has_company_column_gated_dynamic_scope) {
                 $scope_signals[] = 'company_column_gated_dynamic_scope';
             }
+            if ($has_adjacent_company_column_gate_safe_pattern) {
+                $scope_signals[] = 'adjacent_company_column_gate_safe_pattern';
+            }
 
             // Strict leak gate: only raise issue when query itself has no strong tenant scope signal.
             $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable);
 
             if (!$is_insert_query && $is_missing_direct_scope) {
+                if ($has_adjacent_company_column_gate_safe_pattern) {
+                    continue;
+                }
+
                 $context_hints = [];
                 $is_id_lookup = query_is_single_id_lookup($query_fragment);
                 $has_limit_1 = (stripos($query_fragment, 'limit 1') !== false);
@@ -1016,6 +1060,9 @@ foreach ($files as $file) {
                 }
                 if ($has_company_column_gated_dynamic_scope) {
                     $context_hints[] = 'company_column_gated_dynamic_scope';
+                }
+                if ($has_adjacent_company_column_gate_safe_pattern) {
+                    $context_hints[] = 'adjacent_company_column_gate_safe_pattern';
                 }
                 if ($has_id_var_scoped_origin) {
                     $context_hints[] = 'id_var_scoped_origin';
@@ -1045,6 +1092,7 @@ foreach ($files as $file) {
                         'line_scoped_variable' => $has_line_scoped_variable,
                         'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
                         'company_column_gated_dynamic_scope' => $has_company_column_gated_dynamic_scope,
+                        'adjacent_company_column_gate_safe_pattern' => $has_adjacent_company_column_gate_safe_pattern,
                         'id_var_scoped_origin' => $has_id_var_scoped_origin
                     ],
                     'snippet' => compact_snippet($query_fragment, 180)
@@ -1077,6 +1125,7 @@ foreach ($files as $file) {
                             'line_scoped_variable' => $has_line_scoped_variable,
                             'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
                             'company_column_gated_dynamic_scope' => $has_company_column_gated_dynamic_scope,
+                            'adjacent_company_column_gate_safe_pattern' => $has_adjacent_company_column_gate_safe_pattern,
                             'id_var_scoped_origin' => false
                         ],
                         'snippet' => compact_snippet($query_fragment, 180)
@@ -1104,6 +1153,7 @@ foreach ($files as $file) {
                             'line_scoped_variable' => $has_line_scoped_variable,
                             'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
                             'company_column_gated_dynamic_scope' => $has_company_column_gated_dynamic_scope,
+                            'adjacent_company_column_gate_safe_pattern' => $has_adjacent_company_column_gate_safe_pattern,
                             'id_var_scoped_origin' => false
                         ],
                         'snippet' => compact_snippet($query_fragment, 180)
