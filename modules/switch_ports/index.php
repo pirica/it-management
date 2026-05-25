@@ -930,7 +930,7 @@ $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
 }));
 $hasCompany = false;
-foreach ($fieldColumns as $c) {
+foreach ($columns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
@@ -1056,17 +1056,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 if (isset($fkMap[$fieldName])) {
                     $fk = $fkMap[$fieldName];
                     $options = cr_fk_options($conn, $fk, (int)$company_id);
-                    $resolvedId = 0;
+                    $columnType = strtolower((string)($columnMeta['Type'] ?? ''));
+                    $isNumericTarget = (bool)preg_match('/int|decimal|float|double/', $columnType);
+                    $resolvedValue = '';
                     foreach ($options as $option) {
                         if (strcasecmp((string)$option['label'], $rawValue) === 0) {
-                            $resolvedId = (int)$option['id'];
+                            $resolvedValue = trim((string)$option['id']);
                             break;
                         }
                     }
-                    if ($resolvedId <= 0 && ctype_digit($rawValue)) {
-                        $resolvedId = (int)$rawValue;
+                    if ($resolvedValue === '') {
+                        if ($isNumericTarget && ctype_digit($rawValue)) {
+                            $resolvedValue = (string)(int)$rawValue;
+                        } elseif (!$isNumericTarget) {
+                            $resolvedValue = $rawValue;
+                        }
                     }
-                    $rowData[$fieldName] = $resolvedId > 0 ? (string)$resolvedId : 'NULL';
+                    if ($resolvedValue === '') {
+                        $rowData[$fieldName] = 'NULL';
+                    } elseif ($isNumericTarget) {
+                        $rowData[$fieldName] = (string)$resolvedValue;
+                    } else {
+                        $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $resolvedValue) . "'";
+                    }
                     continue;
                 }
 
@@ -1091,6 +1103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 $name = (string)$col['Field'];
                 $fields[] = cr_escape_identifier($name);
                 $values[] = $rowData[$name] ?? 'NULL';
+            }
+            if ($hasCompany) {
+                $fields[] = '`company_id`';
+                $values[] = (string)(int)$company_id;
             }
 
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
