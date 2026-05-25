@@ -255,6 +255,10 @@ function extract_id_lookup_variable($query_fragment) {
         }
     }
 
+    if (preg_match('/\bid\b\s*=\s*\{\s*\$([a-z_][a-z0-9_]*)\s*\}/i', $query_fragment, $m)) {
+        return $m[1];
+    }
+
     if (preg_match('/\bid\b\s*=\s*[\'"]\s*\.\s*(?:\(\s*int\s*\)\s*)?\$([a-z_][a-z0-9_]*)/i', $query_fragment, $m)) {
         return $m[1];
     }
@@ -353,6 +357,30 @@ function detect_query_type($query_fragment) {
         return strtoupper($m[1]);
     }
     return 'UNKNOWN';
+}
+
+function query_fragment_has_sql_shape($query_fragment, $query_type) {
+    $fragment = (string)$query_fragment;
+    $type = strtoupper((string)$query_type);
+
+    switch ($type) {
+        case 'SELECT':
+            return preg_match('/\bSELECT\b[\s\S]{0,1600}\bFROM\b/i', $fragment) === 1;
+        case 'UPDATE':
+            return preg_match('/\bUPDATE\b[\s\S]{0,1600}\bSET\b/i', $fragment) === 1;
+        case 'DELETE':
+            return preg_match('/\bDELETE\b[\s\S]{0,1600}\bFROM\b/i', $fragment) === 1;
+        case 'INSERT':
+            return preg_match('/\bINSERT\b[\s\S]{0,1600}\bINTO\b/i', $fragment) === 1;
+        case 'FROM':
+            return preg_match('/^\s*[\'"]?\s*FROM\b/i', $fragment) === 1;
+        case 'JOIN':
+            return preg_match('/^\s*[\'"]?\s*(?:LEFT|RIGHT|INNER|OUTER|CROSS|STRAIGHT)?\s*JOIN\b/i', $fragment) === 1;
+        case 'INTO':
+            return preg_match('/^\s*[\'"]?\s*INTO\b/i', $fragment) === 1;
+        default:
+            return false;
+    }
 }
 
 function read_balanced_parentheses_span($content, $open_paren_pos) {
@@ -553,13 +581,17 @@ function offset_within_sql_arg_ranges($offset, $sql_candidates) {
     return false;
 }
 
+function sql_expression_starts_with_dml($expression) {
+    return preg_match('/^\s*\(*\s*[\'"]?\s*(SELECT|UPDATE|DELETE|INSERT)\b/i', (string)$expression) === 1;
+}
+
 function collect_query_candidates($content) {
     $candidates = [];
     $mysqli_query_candidates = extract_mysqli_query_sql_candidates($content);
 
     foreach ($mysqli_query_candidates as $candidate) {
         $fragment = (string) $candidate['fragment'];
-        if (!preg_match('/\b(SELECT|UPDATE|DELETE|INSERT|FROM|JOIN|INTO)\b/i', $fragment)) {
+        if (!sql_expression_starts_with_dml($fragment)) {
             continue;
         }
         $candidates[] = [
@@ -839,7 +871,7 @@ foreach ($files as $file) {
 
             $table = $table_match[1];
 
-            if (preg_match('/\b(DESCRIBE|SHOW|INFORMATION_SCHEMA|ALTER TABLE|DROP TABLE|CREATE TABLE)\b/i', $query_fragment)) {
+            if (preg_match('/\b(DESCRIBE|SHOW|INFORMATION_SCHEMA|ALTER TABLE|DROP TABLE|CREATE TABLE|CREATE TRIGGER|DROP TRIGGER)\b/i', $query_fragment)) {
                 continue;
             }
 
@@ -847,6 +879,10 @@ foreach ($files as $file) {
             $line_content = extract_line_at_offset($content, $offset);
             $query_type = detect_query_type($query_fragment);
             $is_insert_query = (strcasecmp($query_type, 'INSERT') === 0);
+
+            if (!query_fragment_has_sql_shape($query_fragment, $query_type)) {
+                continue;
+            }
 
             $has_fragment_predicate = query_has_company_predicate($query_fragment);
             $has_line_predicate = query_has_company_predicate($line_content);
