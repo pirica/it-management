@@ -70,8 +70,10 @@ function itm_is_equipment_regression_test_module_dir(string $moduleDirName): boo
         return true;
     }
 
-    // Orphan wrappers from module_browser_qa_runner inserts on equipment_types (DB row may already be cleared).
-    return strpos($moduleDirName, 'is_mbqa_equipment_types_') === 0;
+    // Orphan wrappers from module_browser_qa_runner inserts/imports on equipment_types
+    // (DB row may already be cleared).
+    return strpos($moduleDirName, 'is_mbqa_equipment_types_') === 0
+        || strpos($moduleDirName, 'is_qa_import_name_') === 0;
 }
 
 /**
@@ -96,11 +98,27 @@ function itm_mbqa_equipment_type_name_pattern_sql(): string
 }
 
 /**
+ * SQL predicate for import smoke names from equipment_types QA paths.
+ */
+function itm_qa_import_equipment_type_name_pattern_sql(): string
+{
+    return "name REGEXP '^qa_import_name_[0-9]{14}$'";
+}
+
+/**
  * Sidebar entry_id for MBQA equipment-type scaffolds (matches itm_equipment_type_sidebar_item_id() output).
  */
 function itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql(): string
 {
     return "entry_id LIKE 'is_mbqa_equipment_types\\_%'";
+}
+
+/**
+ * Sidebar entry_id for QA import smoke scaffolds (is_qa_import_name_YYYYMMDDHHMMSS).
+ */
+function itm_qa_import_equipment_type_scaffold_entry_id_pattern_sql(): string
+{
+    return "entry_id REGEXP '^is_qa_import_name_[0-9]{14}$'";
 }
 
 /**
@@ -218,7 +236,8 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
     $typesRes = mysqli_query(
         $conn,
         "DELETE FROM equipment_types WHERE name LIKE '%itm_eqdct%' OR name LIKE '%itm_edct%'
-            OR " . itm_mbqa_equipment_type_name_pattern_sql()
+            OR " . itm_mbqa_equipment_type_name_pattern_sql() . "
+            OR " . itm_qa_import_equipment_type_name_pattern_sql()
     );
     if ($typesRes) {
         $result['types_deleted'] = (int)mysqli_affected_rows($conn);
@@ -230,7 +249,8 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
     $sidebarRes = mysqli_query(
         $conn,
         'DELETE FROM user_sidebar_preferences WHERE entry_id LIKE \'%itm_eqdct%\' OR entry_id LIKE \'%itm_edct%\'
-            OR ' . itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql()
+            OR ' . itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql() . '
+            OR ' . itm_qa_import_equipment_type_scaffold_entry_id_pattern_sql()
     );
     if ($sidebarRes) {
         $result['sidebar_deleted'] = (int)mysqli_affected_rows($conn);
