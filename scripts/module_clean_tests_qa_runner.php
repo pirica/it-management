@@ -108,14 +108,16 @@ function mbqa_clean_tests_cli_help(): void
  *
  * Why: aborted runs can leave MBQA/QA-IMPORT rows in many modules, not only equipment artifacts.
  *
- * @return array{ok:bool,deleted_total:int,tables_touched:int,errors:array<int,string>,warnings:array<int,string>}
+ * @return array{ok:bool,deleted_total:int,detached_total:int,tables_touched:int,table_details:array<string,array{deleted:int,detached:int}>,errors:array<int,string>,warnings:array<int,string>}
  */
 function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
 {
     $result = [
         'ok' => true,
         'deleted_total' => 0,
+        'detached_total' => 0,
         'tables_touched' => 0,
+        'table_details' => [],
         'errors' => [],
         'warnings' => [],
     ];
@@ -167,10 +169,11 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
 
             $colEsc = '`' . str_replace('`', '``', $columnName) . '`';
             $patterns = [
-                "LOWER(COALESCE(%s, '')) LIKE 'mbqa-%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'mbqa-%%'",
                 "UPPER(COALESCE(%s, '')) LIKE '%%QA-IMPORT-%%'",
                 "LOWER(COALESCE(%s, '')) LIKE 'qa-import-%%'",
-                "LOWER(COALESCE(%s, '')) LIKE 'itm %%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'itm %%test%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'itm debug %%'",
                 "LOWER(COALESCE(%s, '')) LIKE 'is_mbqa_equipment_types_%%'",
                 "LOWER(COALESCE(%s, '')) LIKE 'is_qa_import_name_%%'",
             ];
@@ -239,7 +242,6 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
     }
 
     $protectedTables = ['companies', 'users'];
-    $tablesWithDeletes = [];
     $fkBlockedTables = [];
     for ($pass = 1; $pass <= 8; $pass++) {
         $passDeleted = 0;
@@ -268,7 +270,10 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
                             if ($childAffected > 0) {
                                 $passDeleted += $childAffected;
                                 $result['deleted_total'] += $childAffected;
-                                $tablesWithDeletes[$childTable] = true;
+                                if (!isset($result['table_details'][$childTable])) {
+                                    $result['table_details'][$childTable] = ['deleted' => 0, 'detached' => 0];
+                                }
+                                $result['table_details'][$childTable]['deleted'] += $childAffected;
                             }
                         } else {
                             $result['ok'] = false;
@@ -286,8 +291,11 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
                                 $childAffected = max(0, (int)mysqli_affected_rows($conn));
                                 if ($childAffected > 0) {
                                     $passDeleted += $childAffected;
-                                    // Note: we don't increment deleted_total here since it was an update, but it counts for pass progress.
-                                    $tablesWithDeletes[$childTable] = true;
+                                $result['detached_total'] += $childAffected;
+                                if (!isset($result['table_details'][$childTable])) {
+                                    $result['table_details'][$childTable] = ['deleted' => 0, 'detached' => 0];
+                                }
+                                $result['table_details'][$childTable]['detached'] += $childAffected;
                                 }
                             } else {
                                 $result['ok'] = false;
@@ -313,7 +321,10 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
                         if ($childAffected > 0) {
                             $passDeleted += $childAffected;
                             $result['deleted_total'] += $childAffected;
-                            $tablesWithDeletes[$childTable] = true;
+                            if (!isset($result['table_details'][$childTable])) {
+                                $result['table_details'][$childTable] = ['deleted' => 0, 'detached' => 0];
+                            }
+                            $result['table_details'][$childTable]['deleted'] += $childAffected;
                         }
                     }
                 }
@@ -336,7 +347,10 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
             if ($affected > 0) {
                 $passDeleted += $affected;
                 $result['deleted_total'] += $affected;
-                $tablesWithDeletes[$tableName] = true;
+                if (!isset($result['table_details'][$tableName])) {
+                    $result['table_details'][$tableName] = ['deleted' => 0, 'detached' => 0];
+                }
+                $result['table_details'][$tableName]['deleted'] += $affected;
                 unset($fkBlockedTables[$tableName]);
             }
         }
@@ -346,7 +360,7 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
         }
     }
 
-    $result['tables_touched'] = count($tablesWithDeletes);
+    $result['tables_touched'] = count($result['table_details']);
     foreach (array_keys($fkBlockedTables) as $tableName) {
         if (!isset($tableDeleteSpecs[$tableName]['count_sql'])) {
             continue;
@@ -372,7 +386,9 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
  *   sidebar_deleted:int,
  *   canonical_ensured:int,
  *   runner_rows_deleted:int,
+ *   runner_rows_detached:int,
  *   runner_tables_touched:int,
+ *   runner_table_details:array<string,array{deleted:int,detached:int}>,
  *   errors:array<int,string>,
  *   warnings:array<int,string>
  * }
@@ -417,7 +433,9 @@ function mbqa_clean_tests_run_cleanup(): array
 
     $equipmentCleanup['ok'] = $equipmentCleanup['ok'] && $runnerCleanup['ok'];
     $equipmentCleanup['runner_rows_deleted'] = (int)($runnerCleanup['deleted_total'] ?? 0);
+    $equipmentCleanup['runner_rows_detached'] = (int)($runnerCleanup['detached_total'] ?? 0);
     $equipmentCleanup['runner_tables_touched'] = (int)($runnerCleanup['tables_touched'] ?? 0);
+    $equipmentCleanup['runner_table_details'] = (array)($runnerCleanup['table_details'] ?? []);
     $equipmentCleanup['errors'] = array_values(array_merge(
         $equipmentCleanup['errors'] ?? [],
         $runnerCleanup['errors'] ?? []
@@ -513,8 +531,19 @@ if (mbqa_clean_tests_is_cli()) {
         fwrite(STDOUT, "[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)\n");
     }
 
-    if ($cleanup['runner_rows_deleted'] > 0) {
-        fwrite(STDOUT, "[OK] Removed {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) across {$cleanup['runner_tables_touched']} table(s)\n");
+    if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {
+        fwrite(STDOUT, "[OK] Cleaned MBQA/QA-IMPORT signature data:\n");
+        foreach ($cleanup['runner_table_details'] as $table => $counts) {
+            $parts = [];
+            if ($counts['deleted'] > 0) {
+                $parts[] = "{$counts['deleted']} deleted";
+            }
+            if ($counts['detached'] > 0) {
+                $parts[] = "{$counts['detached']} FKs detached";
+            }
+            fwrite(STDOUT, "     - {$table}: " . implode(', ', $parts) . "\n");
+        }
+        fwrite(STDOUT, "     Total: {$cleanup['runner_rows_deleted']} row(s) deleted, {$cleanup['runner_rows_detached']} FK(s) detached across {$cleanup['runner_tables_touched']} table(s)\n");
     } elseif ($cleanup['ok']) {
         fwrite(STDOUT, "[OK] No MBQA/QA-IMPORT signature rows found across DB tables\n");
     }
@@ -528,7 +557,7 @@ if (mbqa_clean_tests_is_cli()) {
         fwrite(STDOUT, '[WARN] ' . $warningLine . "\n");
     }
 
-    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; canonical is_* modules preserved.\n");
+    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; {$cleanup['runner_rows_detached']} FK(s) detached; canonical is_* modules preserved.\n");
     exit($exitCode);
 }
 
@@ -549,9 +578,24 @@ echo '<tr><td>Test companies removed</td><td>' . (int)$cleanup['companies_delete
 echo '<tr><td>equipment_types rows removed</td><td>' . (int)$cleanup['types_deleted'] . '</td></tr>';
 echo '<tr><td>Sidebar test rows removed</td><td>' . (int)$cleanup['sidebar_deleted'] . '</td></tr>';
 echo '<tr><td>MBQA / QA-IMPORT rows removed</td><td>' . (int)$cleanup['runner_rows_deleted'] . '</td></tr>';
+echo '<tr><td>MBQA / QA-IMPORT FKs detached</td><td>' . (int)$cleanup['runner_rows_detached'] . '</td></tr>';
 echo '<tr><td>Tables touched (signature cleanup)</td><td>' . (int)$cleanup['runner_tables_touched'] . '</td></tr>';
 echo '<tr><td>Canonical facade ensure passes</td><td>' . (int)$cleanup['canonical_ensured'] . '</td></tr>';
 echo '</tbody></table>';
+
+if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {
+    echo '<h2>MBQA Cleanup Details</h2>';
+    echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:780px;font-size:0.9rem;">';
+    echo '<thead><tr><th>Table</th><th>Deleted Rows</th><th>FKs Detached</th></tr></thead><tbody>';
+    foreach ($cleanup['runner_table_details'] as $table => $counts) {
+        echo '<tr>';
+        echo '<td><code>' . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . '</code></td>';
+        echo '<td>' . (int)$counts['deleted'] . '</td>';
+        echo '<td>' . (int)$counts['detached'] . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+}
 
 if (!empty($cleanup['errors'])) {
     echo '<h2>Errors</h2><ul>';
