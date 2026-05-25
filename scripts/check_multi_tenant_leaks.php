@@ -777,13 +777,65 @@ function detect_dynamic_company_append_same_var($lines, $line, $var_name, $windo
     }
 
     $total = count($lines);
-    $start = max(1, $line);
-    $end = min($total, $line + max(0, (int)$window_lines));
+    $forward = max(0, (int)$window_lines);
+    $backward = max(8, (int) floor($forward / 2));
+    $start = max(1, $line - $backward);
+    $end = min($total, $line + $forward);
 
     for ($i = $start; $i <= $end; $i++) {
         $text = (string)$lines[$i - 1];
         if (line_has_dynamic_company_append_for_variable($text, $var_name)) {
             return true;
+        }
+    }
+
+    return false;
+}
+
+function detect_company_column_gated_dynamic_scope($lines, $line, $var_name, $table, $window_lines) {
+    if (empty($var_name) || empty($table) || empty($lines)) {
+        return false;
+    }
+
+    $total = count($lines);
+    $forward = max(0, (int)$window_lines);
+    $backward = max(8, (int) floor($forward / 2));
+    $start = max(1, $line - $backward);
+    $end = min($total, $line + $forward);
+    $quoted_table = preg_quote((string)$table, '/');
+
+    $gate_vars = [];
+    $append_lines = [];
+
+    for ($i = $start; $i <= $end; $i++) {
+        $text = (string)$lines[$i - 1];
+
+        if (line_has_dynamic_company_append_for_variable($text, $var_name)) {
+            $append_lines[] = $i;
+        }
+
+        if (preg_match('/\$(\w+)\s*=\s*[a-z_][a-z0-9_]*table_has_column\s*\([^;]*[\'"]' . $quoted_table . '[\'"][^;]*[\'"]company_id[\'"]/i', $text, $m)) {
+            $gate_vars[] = $m[1];
+        }
+    }
+
+    if (empty($append_lines) || empty($gate_vars)) {
+        return false;
+    }
+
+    $gate_vars = array_values(array_unique($gate_vars));
+    foreach ($append_lines as $append_line) {
+        $probe_start = max($start, $append_line - 14);
+        $probe_end = min($end, $append_line + 4);
+
+        for ($i = $probe_start; $i <= $probe_end; $i++) {
+            $text = (string)$lines[$i - 1];
+            foreach ($gate_vars as $gate_var) {
+                $quoted_gate = preg_quote((string)$gate_var, '/');
+                if (preg_match('/\bif\s*\([^)]*\$' . $quoted_gate . '\b/i', $text)) {
+                    return true;
+                }
+            }
         }
     }
 
@@ -894,6 +946,7 @@ foreach ($files as $file) {
 
             $assigned_var = detect_query_assignment_variable_from_line($line_content);
             $has_dynamic_company_append_same_var = detect_dynamic_company_append_same_var($file_lines, $line, $assigned_var, 25);
+            $has_company_column_gated_dynamic_scope = detect_company_column_gated_dynamic_scope($file_lines, $line, $assigned_var, $table, 40);
 
             $scope_signals = [];
             if ($has_fragment_predicate) {
@@ -914,9 +967,12 @@ foreach ($files as $file) {
             if ($has_dynamic_company_append_same_var) {
                 $scope_signals[] = 'dynamic_company_append_same_var';
             }
+            if ($has_company_column_gated_dynamic_scope) {
+                $scope_signals[] = 'company_column_gated_dynamic_scope';
+            }
 
             // Strict leak gate: only raise issue when query itself has no strong tenant scope signal.
-            $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable);
+            $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable && !$has_company_column_gated_dynamic_scope);
 
             if (!$is_insert_query && $is_missing_direct_scope) {
                 $context_hints = [];
@@ -942,6 +998,9 @@ foreach ($files as $file) {
                 }
                 if ($has_dynamic_company_append_same_var) {
                     $context_hints[] = 'dynamic_company_append_same_var';
+                }
+                if ($has_company_column_gated_dynamic_scope) {
+                    $context_hints[] = 'company_column_gated_dynamic_scope';
                 }
                 if ($has_id_var_scoped_origin) {
                     $context_hints[] = 'id_var_scoped_origin';
@@ -970,6 +1029,7 @@ foreach ($files as $file) {
                         'file_scope_signal' => $has_file_scope_signal,
                         'line_scoped_variable' => $has_line_scoped_variable,
                         'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
+                        'company_column_gated_dynamic_scope' => $has_company_column_gated_dynamic_scope,
                         'id_var_scoped_origin' => $has_id_var_scoped_origin
                     ],
                     'snippet' => compact_snippet($query_fragment, 180)
@@ -1001,6 +1061,7 @@ foreach ($files as $file) {
                             'file_scope_signal' => $has_file_scope_signal,
                             'line_scoped_variable' => $has_line_scoped_variable,
                             'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
+                            'company_column_gated_dynamic_scope' => $has_company_column_gated_dynamic_scope,
                             'id_var_scoped_origin' => false
                         ],
                         'snippet' => compact_snippet($query_fragment, 180)
@@ -1023,13 +1084,14 @@ foreach ($files as $file) {
                     'context_flags' => [
                         'id_lookup' => false,
                         'limit_1' => false,
-                        'nearby_company_signal' => false,
-                        'file_scope_signal' => $has_file_scope_signal,
-                        'line_scoped_variable' => $has_line_scoped_variable,
-                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
-                        'id_var_scoped_origin' => false
-                    ],
-                    'snippet' => compact_snippet($query_fragment, 180)
+                            'nearby_company_signal' => false,
+                            'file_scope_signal' => $has_file_scope_signal,
+                            'line_scoped_variable' => $has_line_scoped_variable,
+                            'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
+                            'company_column_gated_dynamic_scope' => $has_company_column_gated_dynamic_scope,
+                            'id_var_scoped_origin' => false
+                        ],
+                        'snippet' => compact_snippet($query_fragment, 180)
                 ];
                 $issue = apply_allowlist_rules_to_issue($issue, $allowlist_rules);
                 $issues[] = $issue;
