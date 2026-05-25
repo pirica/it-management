@@ -498,7 +498,7 @@
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs the same equipment QA artifact cleanup used by <code>module_browser_qa_runner.php</code> (scaffold folders, QA/test rows, sidebar leftovers), then re-ensures canonical <code>modules/is_*</code> facades. Includes quick links: <strong>Clean Tests · Open markdown file · Download XLSX · Rebuild report · Re-Run Test · Run QA runner</strong>.</td>
                     <td>
-                        Browser: <a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a> (open page, click <strong>Run Clean Tests</strong>, or use <code>?run=1</code>).<br>
+                        Browser: <a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a> (open page, click <strong>Run Clean Tests</strong>; POST + CSRF required).<br>
                         CLI: <code>php scripts/module_clean_tests_qa_runner.php</code><br>
                         Help: <code>php scripts/module_clean_tests_qa_runner.php --help</code>
                     </td>
