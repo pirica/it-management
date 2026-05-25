@@ -104,20 +104,281 @@ function mbqa_clean_tests_cli_help(): void
 }
 
 /**
- * @return array{ok:bool,dirs_removed:int,companies_deleted:int,types_deleted:int,sidebar_deleted:int,canonical_ensured:int,errors:array<int,string>}
+ * Delete rows created by module_browser_qa_runner by signature across all text columns.
+ *
+ * Why: aborted runs can leave MBQA/QA-IMPORT rows in many modules, not only equipment artifacts.
+ *
+ * @return array{ok:bool,deleted_total:int,tables_touched:int,errors:array<int,string>,warnings:array<int,string>}
+ */
+function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
+{
+    $result = [
+        'ok' => true,
+        'deleted_total' => 0,
+        'tables_touched' => 0,
+        'errors' => [],
+        'warnings' => [],
+    ];
+
+    $dbRes = mysqli_query($conn, 'SELECT DATABASE() AS db_name');
+    $dbRow = $dbRes ? mysqli_fetch_assoc($dbRes) : null;
+    $dbName = trim((string)($dbRow['db_name'] ?? ''));
+    if ($dbName === '') {
+        $result['ok'] = false;
+        $result['errors'][] = 'Cannot resolve current database name.';
+        return $result;
+    }
+
+    $dbNameEsc = mysqli_real_escape_string($conn, $dbName);
+    $metaSql = "SELECT TABLE_NAME, COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA='{$dbNameEsc}'
+          AND DATA_TYPE IN ('char','varchar','tinytext','text','mediumtext','longtext')";
+    $metaRes = mysqli_query($conn, $metaSql);
+    if (!$metaRes) {
+        $result['ok'] = false;
+        $result['errors'][] = 'INFORMATION_SCHEMA scan failed: ' . mysqli_error($conn);
+        return $result;
+    }
+
+    $tables = [];
+    while ($metaRow = mysqli_fetch_assoc($metaRes)) {
+        $tableName = trim((string)($metaRow['TABLE_NAME'] ?? ''));
+        $columnName = trim((string)($metaRow['COLUMN_NAME'] ?? ''));
+        if ($tableName === '' || $columnName === '') {
+            continue;
+        }
+        $tables[$tableName][] = $columnName;
+    }
+
+    $tableDeleteSpecs = [];
+    foreach ($tables as $tableName => $columns) {
+        if ($tableName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($tableName))) {
+            continue;
+        }
+
+        $predicates = [];
+        $predicatesParent = [];
+        foreach ($columns as $columnName) {
+            if ($columnName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($columnName))) {
+                continue;
+            }
+
+            $colEsc = '`' . str_replace('`', '``', $columnName) . '`';
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) REGEXP '^mbqa-[a-z0-9_]+-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
+            $predicates[] = "UPPER(COALESCE({$colEsc}, '')) LIKE '%QA-IMPORT-%'";
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'qa-import-%'";
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm cleartable test %'";
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm equipment cleartable %'";
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm debug %'";
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'is_mbqa_equipment_types_%'";
+            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'is_qa_import_name_%'";
+
+            $colParentEsc = 'p.' . $colEsc;
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) REGEXP '^mbqa-[a-z0-9_]+-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
+            $predicatesParent[] = "UPPER(COALESCE({$colParentEsc}, '')) LIKE '%QA-IMPORT-%'";
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'qa-import-%'";
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm cleartable test %'";
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm equipment cleartable %'";
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm debug %'";
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'is_mbqa_equipment_types_%'";
+            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'is_qa_import_name_%'";
+        }
+
+        $predicates = array_values(array_unique($predicates));
+        $predicatesParent = array_values(array_unique($predicatesParent));
+        if (empty($predicates) || empty($predicatesParent)) {
+            continue;
+        }
+
+        $tableEsc = '`' . str_replace('`', '``', $tableName) . '`';
+        $whereSql = implode(' OR ', $predicates);
+        $whereSqlParent = implode(' OR ', $predicatesParent);
+        $tableDeleteSpecs[$tableName] = [
+            'where_sql' => $whereSql,
+            'where_sql_parent' => $whereSqlParent,
+            'delete_sql' => 'DELETE FROM ' . $tableEsc . ' WHERE ' . $whereSql,
+            'count_sql' => 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE ' . $whereSql,
+        ];
+    }
+
+    $inboundRefs = [];
+    $fkSql = "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA='{$dbNameEsc}'
+          AND REFERENCED_TABLE_SCHEMA='{$dbNameEsc}'
+          AND REFERENCED_TABLE_NAME IS NOT NULL";
+    $fkRes = mysqli_query($conn, $fkSql);
+    if ($fkRes) {
+        while ($fkRow = mysqli_fetch_assoc($fkRes)) {
+            $childTable = trim((string)($fkRow['TABLE_NAME'] ?? ''));
+            $childColumn = trim((string)($fkRow['COLUMN_NAME'] ?? ''));
+            $parentTable = trim((string)($fkRow['REFERENCED_TABLE_NAME'] ?? ''));
+            $parentColumn = trim((string)($fkRow['REFERENCED_COLUMN_NAME'] ?? ''));
+
+            if (!isset($tableDeleteSpecs[$parentTable])) {
+                continue;
+            }
+            if (($childTable === '' || $childColumn === '' || $parentTable === '' || $parentColumn === '')
+                || (function_exists('itm_is_safe_identifier')
+                    && (!itm_is_safe_identifier($childTable)
+                        || !itm_is_safe_identifier($childColumn)
+                        || !itm_is_safe_identifier($parentTable)
+                        || !itm_is_safe_identifier($parentColumn)))) {
+                continue;
+            }
+
+            $key = $childTable . '|' . $childColumn . '|' . $parentTable . '|' . $parentColumn;
+            $inboundRefs[$parentTable][$key] = [
+                'child_table' => $childTable,
+                'child_column' => $childColumn,
+                'parent_column' => $parentColumn,
+            ];
+        }
+    }
+
+    $tablesWithDeletes = [];
+    $fkBlockedTables = [];
+    for ($pass = 1; $pass <= 8; $pass++) {
+        $passDeleted = 0;
+        foreach ($tableDeleteSpecs as $tableName => $spec) {
+            if (isset($inboundRefs[$tableName]) && is_array($inboundRefs[$tableName])) {
+                foreach ($inboundRefs[$tableName] as $ref) {
+                    $childTableEsc = '`' . str_replace('`', '``', (string)$ref['child_table']) . '`';
+                    $childColEsc = '`' . str_replace('`', '``', (string)$ref['child_column']) . '`';
+                    $parentTableEsc = '`' . str_replace('`', '``', $tableName) . '`';
+                    $parentColEsc = '`' . str_replace('`', '``', (string)$ref['parent_column']) . '`';
+                    $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
+                        . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                        . ' WHERE ' . (string)($spec['where_sql_parent'] ?? '');
+                    $childDeletedRes = mysqli_query($conn, $childDeleteSql);
+                    if (!$childDeletedRes) {
+                        $errNo = (int)mysqli_errno($conn);
+                        if ($errNo !== 1451) {
+                            $result['ok'] = false;
+                            $result['errors'][] = (string)$ref['child_table'] . ' cleanup via ' . $tableName . ': ' . mysqli_error($conn);
+                        }
+                        continue;
+                    }
+
+                    $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                    if ($childAffected > 0) {
+                        $passDeleted += $childAffected;
+                        $result['deleted_total'] += $childAffected;
+                        $tablesWithDeletes[(string)$ref['child_table']] = true;
+                    }
+                }
+            }
+
+            $deletedRes = mysqli_query($conn, (string)$spec['delete_sql']);
+            if (!$deletedRes) {
+                $errNo = (int)mysqli_errno($conn);
+                if ($errNo === 1451) {
+                    $fkBlockedTables[$tableName] = true;
+                    continue;
+                }
+
+                $result['ok'] = false;
+                $result['errors'][] = $tableName . ' cleanup: ' . mysqli_error($conn);
+                continue;
+            }
+
+            $affected = max(0, (int)mysqli_affected_rows($conn));
+            if ($affected > 0) {
+                $passDeleted += $affected;
+                $result['deleted_total'] += $affected;
+                $tablesWithDeletes[$tableName] = true;
+                unset($fkBlockedTables[$tableName]);
+            }
+        }
+
+        if ($passDeleted === 0) {
+            break;
+        }
+    }
+
+    $result['tables_touched'] = count($tablesWithDeletes);
+    foreach (array_keys($fkBlockedTables) as $tableName) {
+        if (!isset($tableDeleteSpecs[$tableName]['count_sql'])) {
+            continue;
+        }
+
+        $countRes = mysqli_query($conn, (string)$tableDeleteSpecs[$tableName]['count_sql']);
+        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+        $remaining = (int)($countRow['c'] ?? 0);
+        if ($remaining > 0) {
+            $result['warnings'][] = $tableName . ': kept ' . $remaining . ' QA-signature row(s) because non-QA rows still reference them.';
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * @return array{
+ *   ok:bool,
+ *   dirs_removed:int,
+ *   companies_deleted:int,
+ *   types_deleted:int,
+ *   sidebar_deleted:int,
+ *   canonical_ensured:int,
+ *   runner_rows_deleted:int,
+ *   runner_tables_touched:int,
+ *   errors:array<int,string>,
+ *   warnings:array<int,string>
+ * }
  */
 function mbqa_clean_tests_run_cleanup(): array
 {
-    if (mbqa_clean_tests_is_cli()) {
+    if (mbqa_clean_tests_is_cli() && !defined('ITM_CLI_SCRIPT')) {
         define('ITM_CLI_SCRIPT', true);
     }
 
-    require_once dirname(__DIR__) . '/config/config.php';
+    $conn = null;
+    if (isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
+        $conn = $GLOBALS['conn'];
+    } else {
+        require_once dirname(__DIR__) . '/config/config.php';
+        if (isset($conn) && $conn instanceof mysqli) {
+            // Loaded in local scope by include.
+        } elseif (isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
+            $conn = $GLOBALS['conn'];
+        }
+    }
     require_once __DIR__ . '/lib/equipment_type_modules.php';
 
-    $modulesRoot = dirname(__DIR__) . '/modules';
+    if (!($conn instanceof mysqli)) {
+        return [
+            'ok' => false,
+            'dirs_removed' => 0,
+            'companies_deleted' => 0,
+            'types_deleted' => 0,
+            'sidebar_deleted' => 0,
+            'canonical_ensured' => 0,
+            'runner_rows_deleted' => 0,
+            'runner_tables_touched' => 0,
+            'errors' => ['Database connection is not available.'],
+            'warnings' => [],
+        ];
+    }
 
-    return itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesRoot);
+    $modulesRoot = dirname(__DIR__) . '/modules';
+    $equipmentCleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesRoot);
+    $runnerCleanup = mbqa_clean_tests_delete_runner_seed_rows($conn);
+
+    $equipmentCleanup['ok'] = $equipmentCleanup['ok'] && $runnerCleanup['ok'];
+    $equipmentCleanup['runner_rows_deleted'] = (int)($runnerCleanup['deleted_total'] ?? 0);
+    $equipmentCleanup['runner_tables_touched'] = (int)($runnerCleanup['tables_touched'] ?? 0);
+    $equipmentCleanup['errors'] = array_values(array_merge(
+        $equipmentCleanup['errors'] ?? [],
+        $runnerCleanup['errors'] ?? []
+    ));
+    $equipmentCleanup['warnings'] = array_values(array_merge(
+        $equipmentCleanup['warnings'] ?? [],
+        $runnerCleanup['warnings'] ?? []
+    ));
+
+    return $equipmentCleanup;
 }
 
 $options = mbqa_clean_tests_parse_options();
@@ -142,6 +403,7 @@ if ($options['help']) {
     echo '<ul>';
     echo '<li>Remove temporary equipment scaffold module folders under <code>modules/</code>.</li>';
     echo '<li>Delete QA/test rows in <code>equipment_types</code>, test company rows, and sidebar artifacts.</li>';
+    echo '<li>Delete MBQA / QA-IMPORT runner-seeded rows across DB tables by signature.</li>';
     echo '<li>Re-ensure canonical <code>modules/is_*</code> facades.</li>';
     echo '</ul>';
     echo '<p><a href="module_clean_tests_qa_runner.php">Back to clean tests page</a></p>';
@@ -159,7 +421,7 @@ if (!$options['run']) {
     itm_script_browser_nav_echo();
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:860px;margin:16px;line-height:1.5;">';
     echo '<h1>Clean tests for module QA runner</h1>';
-    echo '<p><strong>Destructive (local dev DB):</strong> runs the same cleanup used by the QA runner and removes known test artifacts only.</p>';
+    echo '<p><strong>Destructive (local dev DB):</strong> runs the same cleanup used by the QA runner and removes known test artifacts plus MBQA / QA-IMPORT rows by signature.</p>';
     echo '<p>This does <strong>not</strong> remove canonical equipment modules like <code>is_switch</code> or <code>is_server</code>.</p>';
     echo '<form method="post" action="module_clean_tests_qa_runner.php" style="margin:16px 0;">';
     echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars((string)itm_get_csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
@@ -202,13 +464,22 @@ if (mbqa_clean_tests_is_cli()) {
         fwrite(STDOUT, "[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)\n");
     }
 
+    if ($cleanup['runner_rows_deleted'] > 0) {
+        fwrite(STDOUT, "[OK] Removed {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) across {$cleanup['runner_tables_touched']} table(s)\n");
+    } elseif ($cleanup['ok']) {
+        fwrite(STDOUT, "[OK] No MBQA/QA-IMPORT signature rows found across DB tables\n");
+    }
+
     fwrite(STDOUT, "[OK] Verified canonical modules/is_* facades ({$cleanup['canonical_ensured']} scaffold pass(es))\n");
 
     foreach ($cleanup['errors'] as $errorLine) {
         fwrite(STDERR, '[FAIL] ' . $errorLine . "\n");
     }
+    foreach (($cleanup['warnings'] ?? []) as $warningLine) {
+        fwrite(STDOUT, '[WARN] ' . $warningLine . "\n");
+    }
 
-    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; canonical is_* modules preserved.\n");
+    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; canonical is_* modules preserved.\n");
     exit($exitCode);
 }
 
@@ -228,6 +499,8 @@ echo '<tr><td>Scaffold folders removed</td><td>' . (int)$cleanup['dirs_removed']
 echo '<tr><td>Test companies removed</td><td>' . (int)$cleanup['companies_deleted'] . '</td></tr>';
 echo '<tr><td>equipment_types rows removed</td><td>' . (int)$cleanup['types_deleted'] . '</td></tr>';
 echo '<tr><td>Sidebar test rows removed</td><td>' . (int)$cleanup['sidebar_deleted'] . '</td></tr>';
+echo '<tr><td>MBQA / QA-IMPORT rows removed</td><td>' . (int)$cleanup['runner_rows_deleted'] . '</td></tr>';
+echo '<tr><td>Tables touched (signature cleanup)</td><td>' . (int)$cleanup['runner_tables_touched'] . '</td></tr>';
 echo '<tr><td>Canonical facade ensure passes</td><td>' . (int)$cleanup['canonical_ensured'] . '</td></tr>';
 echo '</tbody></table>';
 
@@ -235,6 +508,14 @@ if (!empty($cleanup['errors'])) {
     echo '<h2>Errors</h2><ul>';
     foreach ($cleanup['errors'] as $errorLine) {
         echo '<li style="color:#cf222e;">' . htmlspecialchars((string)$errorLine, ENT_QUOTES, 'UTF-8') . '</li>';
+    }
+    echo '</ul>';
+}
+
+if (!empty($cleanup['warnings'])) {
+    echo '<h2>Warnings</h2><ul>';
+    foreach ($cleanup['warnings'] as $warningLine) {
+        echo '<li style="color:#9a6700;">' . htmlspecialchars((string)$warningLine, ENT_QUOTES, 'UTF-8') . '</li>';
     }
     echo '</ul>';
 }
