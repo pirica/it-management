@@ -1006,6 +1006,10 @@ $scoped_tables = $table_info['scoped'];
 $non_scoped_tables = $table_info['non_scoped'];
 $raw_create_count = (int) $table_info['raw_create_count'];
 $table_exceptions = get_table_exceptions();
+$display_non_scoped_tables = $non_scoped_tables;
+if (!in_array('audit_logs', $display_non_scoped_tables, true)) {
+    $display_non_scoped_tables[] = 'audit_logs';
+}
 
 if (empty($scoped_tables)) {
     die("Error: No scoped tables found in $database_sql\n");
@@ -1310,7 +1314,7 @@ if (!$is_cli) {
     echo "<div class='summary'>";
     echo "<p><strong>CREATE TABLE entries found:</strong> {$total_tables}</p>";
     echo "<p><strong>Scoped tables with <span class='mono'>company_id</span>:</strong> " . count($scoped_tables) . "</p>";
-    echo "<p><strong>Non-scoped tables:</strong> " . count($non_scoped_tables) . " (" . htmlspecialchars(join_or_dash($non_scoped_tables)) . ")</p>";
+    echo "<p><strong>Non-scoped tables:</strong> " . count($non_scoped_tables) . " (" . htmlspecialchars(join_or_dash($display_non_scoped_tables)) . ")</p>";
     echo "<p><strong>Allowlist rules loaded:</strong> " . count($allowlist_rules) . "</p>";
     if ($raw_create_count !== $total_tables) {
         echo "<p><strong>Parse note:</strong> raw <span class='mono'>CREATE TABLE</span> count is {$raw_create_count}, parsed count is {$total_tables}. Please inspect unusual table DDL if these diverge.</p>";
@@ -1337,13 +1341,6 @@ if (!$is_cli) {
         echo "<p><strong>Allowlist rule matches:</strong></p><ul>";
         foreach ($allowlist_tag_counts as $rule_id => $count) {
             echo "<li><strong>" . htmlspecialchars($rule_id) . ":</strong> " . (int) $count . "</li>";
-        }
-        echo "</ul>";
-    }
-    if (!empty($table_exceptions)) {
-        echo "<p><strong>Skip exceptions:</strong></p><ul>";
-        foreach ($table_exceptions as $table_name => $reason) {
-            echo "<li><span class='mono'>skip " . htmlspecialchars($table_name) . "</span> - " . htmlspecialchars($reason) . "</li>";
         }
         echo "</ul>";
     }
@@ -1426,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', function () {
     echo "========================\n";
     echo "CREATE TABLE entries found: {$total_tables}\n";
     echo "Scoped tables with company_id: " . count($scoped_tables) . "\n";
-    echo "Non-scoped tables (" . count($non_scoped_tables) . "): " . join_or_dash($non_scoped_tables) . "\n";
+    echo "Non-scoped tables (" . count($non_scoped_tables) . "): " . join_or_dash($display_non_scoped_tables) . "\n";
     echo "Allowlist rules loaded: " . count($allowlist_rules) . "\n";
     if ($raw_create_count !== $total_tables) {
         echo "Parse note: raw CREATE TABLE count is {$raw_create_count}, parsed count is {$total_tables}.\n";
@@ -1448,12 +1445,6 @@ document.addEventListener('DOMContentLoaded', function () {
         echo "Allowlist rule matches:\n";
         foreach ($allowlist_tag_counts as $rule_id => $count) {
             echo "- {$rule_id}: {$count}\n";
-        }
-    }
-    if (!empty($table_exceptions)) {
-        echo "Skip exceptions:\n";
-        foreach ($table_exceptions as $table_name => $reason) {
-            echo "skip\t{$table_name}\t-\t{$reason}\n";
         }
     }
     echo "\n";
