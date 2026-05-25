@@ -110,6 +110,9 @@ if ($isAdmin) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?> - Company Selector</title>
+    <?php if (!empty($favicon_url)): ?>
+        <link rel="icon" type="image/x-icon" href="<?php echo sanitize($favicon_url); ?>">
+    <?php endif; ?>
     <style>
         :root {
             --accent: #0969da;
