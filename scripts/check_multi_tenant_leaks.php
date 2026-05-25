@@ -289,6 +289,240 @@ function detect_query_type($query_fragment) {
     return 'UNKNOWN';
 }
 
+function read_balanced_parentheses_span($content, $open_paren_pos) {
+    $length = strlen($content);
+    if ($open_paren_pos < 0 || $open_paren_pos >= $length || $content[$open_paren_pos] !== '(') {
+        return null;
+    }
+
+    $depth = 0;
+    $quote = '';
+    $escaped = false;
+
+    for ($i = $open_paren_pos; $i < $length; $i++) {
+        $char = $content[$i];
+
+        if ($quote !== '') {
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+            if ($char === '\\') {
+                $escaped = true;
+                continue;
+            }
+            if ($char === $quote) {
+                $quote = '';
+            }
+            continue;
+        }
+
+        if ($char === "'" || $char === '"') {
+            $quote = $char;
+            continue;
+        }
+
+        if ($char === '(') {
+            $depth++;
+            continue;
+        }
+
+        if ($char === ')') {
+            $depth--;
+            if ($depth === 0) {
+                return [
+                    'inner' => substr($content, $open_paren_pos + 1, $i - $open_paren_pos - 1),
+                    'close' => $i
+                ];
+            }
+        }
+    }
+
+    return null;
+}
+
+function split_top_level_arguments_with_offsets($text) {
+    $args = [];
+    $length = strlen($text);
+    $arg_start = 0;
+    $paren_depth = 0;
+    $bracket_depth = 0;
+    $brace_depth = 0;
+    $quote = '';
+    $escaped = false;
+
+    for ($i = 0; $i < $length; $i++) {
+        $char = $text[$i];
+
+        if ($quote !== '') {
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+            if ($char === '\\') {
+                $escaped = true;
+                continue;
+            }
+            if ($char === $quote) {
+                $quote = '';
+            }
+            continue;
+        }
+
+        if ($char === "'" || $char === '"') {
+            $quote = $char;
+            continue;
+        }
+
+        if ($char === '(') {
+            $paren_depth++;
+            continue;
+        }
+        if ($char === ')' && $paren_depth > 0) {
+            $paren_depth--;
+            continue;
+        }
+        if ($char === '[') {
+            $bracket_depth++;
+            continue;
+        }
+        if ($char === ']' && $bracket_depth > 0) {
+            $bracket_depth--;
+            continue;
+        }
+        if ($char === '{') {
+            $brace_depth++;
+            continue;
+        }
+        if ($char === '}' && $brace_depth > 0) {
+            $brace_depth--;
+            continue;
+        }
+
+        if ($char === ',' && $paren_depth === 0 && $bracket_depth === 0 && $brace_depth === 0) {
+            $raw = substr($text, $arg_start, $i - $arg_start);
+            $trimmed = trim($raw);
+            if ($trimmed !== '') {
+                $leading_ws = strspn($raw, " \t\r\n");
+                $trimmed_raw = rtrim($raw);
+                $arg_end = $arg_start + strlen($trimmed_raw);
+                $args[] = [
+                    'text' => $trimmed,
+                    'start' => $arg_start + $leading_ws,
+                    'end' => $arg_end
+                ];
+            }
+            $arg_start = $i + 1;
+        }
+    }
+
+    if ($arg_start <= $length) {
+        $raw = substr($text, $arg_start);
+        $trimmed = trim($raw);
+        if ($trimmed !== '') {
+            $leading_ws = strspn($raw, " \t\r\n");
+            $trimmed_raw = rtrim($raw);
+            $arg_end = $arg_start + strlen($trimmed_raw);
+            $args[] = [
+                'text' => $trimmed,
+                'start' => $arg_start + $leading_ws,
+                'end' => $arg_end
+            ];
+        }
+    }
+
+    return $args;
+}
+
+function extract_mysqli_query_sql_candidates($content) {
+    $candidates = [];
+
+    if (!preg_match_all('/\bmysqli_query\s*\(/i', $content, $matches, PREG_OFFSET_CAPTURE)) {
+        return $candidates;
+    }
+
+    foreach ($matches[0] as $match) {
+        $call_text = $match[0];
+        $call_start = $match[1];
+        $paren_rel = strrpos($call_text, '(');
+        if ($paren_rel === false) {
+            continue;
+        }
+        $open_paren_pos = $call_start + $paren_rel;
+
+        $span = read_balanced_parentheses_span($content, $open_paren_pos);
+        if ($span === null || !isset($span['inner'], $span['close'])) {
+            continue;
+        }
+
+        $args = split_top_level_arguments_with_offsets((string) $span['inner']);
+        if (count($args) < 2 || empty($args[1]['text'])) {
+            continue;
+        }
+
+        $sql_arg = $args[1];
+        $arg_start_abs = $open_paren_pos + 1 + (int) $sql_arg['start'];
+        $arg_end_abs = $open_paren_pos + 1 + (int) $sql_arg['end'];
+
+        $candidates[] = [
+            'fragment' => (string) $sql_arg['text'],
+            'offset' => $arg_start_abs,
+            'arg_start' => $arg_start_abs,
+            'arg_end' => $arg_end_abs
+        ];
+    }
+
+    return $candidates;
+}
+
+function offset_within_sql_arg_ranges($offset, $sql_candidates) {
+    foreach ($sql_candidates as $candidate) {
+        if (!isset($candidate['arg_start'], $candidate['arg_end'])) {
+            continue;
+        }
+        if ($offset >= (int) $candidate['arg_start'] && $offset <= (int) $candidate['arg_end']) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function collect_query_candidates($content) {
+    $candidates = [];
+    $mysqli_query_candidates = extract_mysqli_query_sql_candidates($content);
+
+    foreach ($mysqli_query_candidates as $candidate) {
+        $fragment = (string) $candidate['fragment'];
+        if (!preg_match('/\b(SELECT|UPDATE|DELETE|INSERT|FROM|JOIN|INTO)\b/i', $fragment)) {
+            continue;
+        }
+        $candidates[] = [
+            'fragment' => $fragment,
+            'offset' => (int) $candidate['offset']
+        ];
+    }
+
+    if (preg_match_all('/([\'"])(SELECT|UPDATE|DELETE|INSERT|FROM|JOIN|INTO)\b.*?\\1/si', $content, $matches, PREG_OFFSET_CAPTURE)) {
+        foreach ($matches[0] as $match) {
+            $fragment = $match[0];
+            $offset = $match[1];
+            if (offset_within_sql_arg_ranges($offset, $mysqli_query_candidates)) {
+                continue;
+            }
+            $candidates[] = [
+                'fragment' => $fragment,
+                'offset' => $offset
+            ];
+        }
+    }
+
+    usort($candidates, function ($a, $b) {
+        return ((int) $a['offset']) <=> ((int) $b['offset']);
+    });
+
+    return $candidates;
+}
+
 function join_or_dash($items) {
     if (empty($items)) {
         return '-';
@@ -528,10 +762,10 @@ foreach ($files as $file) {
         continue;
     }
 
-    if (preg_match_all('/([\'"])(SELECT|UPDATE|DELETE|INSERT|FROM|JOIN|INTO)\b.*?\\1/si', $content, $matches, PREG_OFFSET_CAPTURE)) {
-        foreach ($matches[0] as $match) {
-            $query_fragment = $match[0];
-            $offset = $match[1];
+    $query_candidates = collect_query_candidates($content);
+    foreach ($query_candidates as $candidate) {
+            $query_fragment = $candidate['fragment'];
+            $offset = $candidate['offset'];
 
             if (!preg_match($table_regex, $query_fragment, $table_match)) {
                 continue;
@@ -691,7 +925,6 @@ foreach ($files as $file) {
                 $issue = apply_allowlist_rules_to_issue($issue, $allowlist_rules);
                 $issues[] = $issue;
             }
-        }
     }
 
     check_ui_leaks($content, $relative_path, $issues);
