@@ -108,14 +108,16 @@ function mbqa_clean_tests_cli_help(): void
  *
  * Why: aborted runs can leave MBQA/QA-IMPORT rows in many modules, not only equipment artifacts.
  *
- * @return array{ok:bool,deleted_total:int,tables_touched:int,errors:array<int,string>,warnings:array<int,string>}
+ * @return array{ok:bool,deleted_total:int,detached_total:int,tables_touched:int,table_details:array<string,array{deleted:int,detached:int}>,errors:array<int,string>,warnings:array<int,string>}
  */
 function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
 {
     $result = [
         'ok' => true,
         'deleted_total' => 0,
+        'detached_total' => 0,
         'tables_touched' => 0,
+        'table_details' => [],
         'errors' => [],
         'warnings' => [],
     ];
@@ -130,6 +132,33 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
     }
 
     $dbNameEsc = mysqli_real_escape_string($conn, $dbName);
+
+    // Fetch all tables first so we can track unblocking even for tables without text columns.
+    $tableRes = mysqli_query($conn, "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='{$dbNameEsc}' AND TABLE_TYPE='BASE TABLE'");
+    if (!$tableRes) {
+        $result['ok'] = false;
+        $result['errors'][] = 'INFORMATION_SCHEMA.TABLES scan failed: ' . mysqli_error($conn);
+        return $result;
+    }
+
+    $tableDeleteSpecs = [];
+    while ($tableRow = mysqli_fetch_assoc($tableRes)) {
+        $tableName = trim((string)($tableRow['TABLE_NAME'] ?? ''));
+        if ($tableName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($tableName))) {
+            continue;
+        }
+
+        $tableEsc = '`' . str_replace('`', '``', $tableName) . '`';
+        $tableDeleteSpecs[$tableName] = [
+            'where_sql' => '1=0',
+            'where_sql_child' => '1=0',
+            'where_sql_parent' => '1=0',
+            'delete_sql' => 'DELETE FROM ' . $tableEsc . ' WHERE 1=0',
+            'count_sql' => 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE 1=0',
+        ];
+    }
+
+    // Now scan text columns to build real predicates for tables that can contain signature data.
     $metaSql = "SELECT TABLE_NAME, COLUMN_NAME
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA='{$dbNameEsc}'
@@ -137,27 +166,27 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
     $metaRes = mysqli_query($conn, $metaSql);
     if (!$metaRes) {
         $result['ok'] = false;
-        $result['errors'][] = 'INFORMATION_SCHEMA scan failed: ' . mysqli_error($conn);
+        $result['errors'][] = 'INFORMATION_SCHEMA.COLUMNS scan failed: ' . mysqli_error($conn);
         return $result;
     }
 
-    $tables = [];
+    $textColumnsByTable = [];
     while ($metaRow = mysqli_fetch_assoc($metaRes)) {
         $tableName = trim((string)($metaRow['TABLE_NAME'] ?? ''));
         $columnName = trim((string)($metaRow['COLUMN_NAME'] ?? ''));
         if ($tableName === '' || $columnName === '') {
             continue;
         }
-        $tables[$tableName][] = $columnName;
+        $textColumnsByTable[$tableName][] = $columnName;
     }
 
-    $tableDeleteSpecs = [];
-    foreach ($tables as $tableName => $columns) {
-        if ($tableName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($tableName))) {
+    foreach ($textColumnsByTable as $tableName => $columns) {
+        if (!isset($tableDeleteSpecs[$tableName])) {
             continue;
         }
 
         $predicates = [];
+        $predicatesChild = [];
         $predicatesParent = [];
         foreach ($columns as $columnName) {
             if ($columnName === '' || (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($columnName))) {
@@ -165,49 +194,46 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
             }
 
             $colEsc = '`' . str_replace('`', '``', $columnName) . '`';
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) REGEXP '^mbqa-[a-z0-9_]+-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
-            $predicates[] = "UPPER(COALESCE({$colEsc}, '')) LIKE '%QA-IMPORT-%'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'qa-import-%'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm cleartable test %'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm equipment cleartable %'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'itm debug %'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'is_mbqa_equipment_types_%'";
-            $predicates[] = "LOWER(COALESCE({$colEsc}, '')) LIKE 'is_qa_import_name_%'";
+            $patterns = [
+                "LOWER(COALESCE(%s, '')) LIKE 'mbqa-%%'",
+                "UPPER(COALESCE(%s, '')) LIKE '%%QA-IMPORT-%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'qa-import-%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'itm %%test%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'itm debug %%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'is_mbqa_equipment_types_%%'",
+                "LOWER(COALESCE(%s, '')) LIKE 'is_qa_import_name_%%'",
+            ];
 
-            $colParentEsc = 'p.' . $colEsc;
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) REGEXP '^mbqa-[a-z0-9_]+-[0-9]+-[0-9]+-[a-f0-9]{6}$'";
-            $predicatesParent[] = "UPPER(COALESCE({$colParentEsc}, '')) LIKE '%QA-IMPORT-%'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'qa-import-%'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm cleartable test %'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm equipment cleartable %'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'itm debug %'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'is_mbqa_equipment_types_%'";
-            $predicatesParent[] = "LOWER(COALESCE({$colParentEsc}, '')) LIKE 'is_qa_import_name_%'";
+            foreach ($patterns as $pattern) {
+                $predicates[] = sprintf($pattern, $colEsc);
+                $predicatesChild[] = sprintf($pattern, 'c.' . $colEsc);
+                $predicatesParent[] = sprintf($pattern, 'p.' . $colEsc);
+            }
         }
 
         $predicates = array_values(array_unique($predicates));
+        $predicatesChild = array_values(array_unique($predicatesChild));
         $predicatesParent = array_values(array_unique($predicatesParent));
-        if (empty($predicates) || empty($predicatesParent)) {
+        if (empty($predicates) || empty($predicatesChild) || empty($predicatesParent)) {
             continue;
         }
 
         $tableEsc = '`' . str_replace('`', '``', $tableName) . '`';
         $whereSql = implode(' OR ', $predicates);
-        $whereSqlParent = implode(' OR ', $predicatesParent);
-        $tableDeleteSpecs[$tableName] = [
-            'where_sql' => $whereSql,
-            'where_sql_parent' => $whereSqlParent,
-            'delete_sql' => 'DELETE FROM ' . $tableEsc . ' WHERE ' . $whereSql,
-            'count_sql' => 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE ' . $whereSql,
-        ];
+        $tableDeleteSpecs[$tableName]['where_sql'] = $whereSql;
+        $tableDeleteSpecs[$tableName]['where_sql_child'] = implode(' OR ', $predicatesChild);
+        $tableDeleteSpecs[$tableName]['where_sql_parent'] = implode(' OR ', $predicatesParent);
+        $tableDeleteSpecs[$tableName]['delete_sql'] = 'DELETE FROM ' . $tableEsc . ' WHERE ' . $whereSql;
+        $tableDeleteSpecs[$tableName]['count_sql'] = 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE ' . $whereSql;
     }
 
     $inboundRefs = [];
-    $fkSql = "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-        WHERE TABLE_SCHEMA='{$dbNameEsc}'
-          AND REFERENCED_TABLE_SCHEMA='{$dbNameEsc}'
-          AND REFERENCED_TABLE_NAME IS NOT NULL";
+    $fkSql = "SELECT k.TABLE_NAME, k.COLUMN_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME, c.IS_NULLABLE
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE k
+        INNER JOIN INFORMATION_SCHEMA.COLUMNS c ON k.TABLE_SCHEMA = c.TABLE_SCHEMA AND k.TABLE_NAME = c.TABLE_NAME AND k.COLUMN_NAME = c.COLUMN_NAME
+        WHERE k.TABLE_SCHEMA='{$dbNameEsc}'
+          AND k.REFERENCED_TABLE_SCHEMA='{$dbNameEsc}'
+          AND k.REFERENCED_TABLE_NAME IS NOT NULL";
     $fkRes = mysqli_query($conn, $fkSql);
     if ($fkRes) {
         while ($fkRow = mysqli_fetch_assoc($fkRes)) {
@@ -215,6 +241,7 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
             $childColumn = trim((string)($fkRow['COLUMN_NAME'] ?? ''));
             $parentTable = trim((string)($fkRow['REFERENCED_TABLE_NAME'] ?? ''));
             $parentColumn = trim((string)($fkRow['REFERENCED_COLUMN_NAME'] ?? ''));
+            $isNullable = (strtoupper((string)($fkRow['IS_NULLABLE'] ?? 'NO')) === 'YES');
 
             if (!isset($tableDeleteSpecs[$parentTable])) {
                 continue;
@@ -233,39 +260,96 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
                 'child_table' => $childTable,
                 'child_column' => $childColumn,
                 'parent_column' => $parentColumn,
+                'is_nullable' => $isNullable,
             ];
         }
     }
 
-    $tablesWithDeletes = [];
+    $protectedTables = ['companies', 'users'];
     $fkBlockedTables = [];
     for ($pass = 1; $pass <= 8; $pass++) {
         $passDeleted = 0;
         foreach ($tableDeleteSpecs as $tableName => $spec) {
             if (isset($inboundRefs[$tableName]) && is_array($inboundRefs[$tableName])) {
                 foreach ($inboundRefs[$tableName] as $ref) {
-                    $childTableEsc = '`' . str_replace('`', '``', (string)$ref['child_table']) . '`';
+                    $childTable = (string)$ref['child_table'];
+                    $childTableEsc = '`' . str_replace('`', '``', $childTable) . '`';
                     $childColEsc = '`' . str_replace('`', '``', (string)$ref['child_column']) . '`';
                     $parentTableEsc = '`' . str_replace('`', '``', $tableName) . '`';
                     $parentColEsc = '`' . str_replace('`', '``', (string)$ref['parent_column']) . '`';
-                    $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
-                        . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
-                        . ' WHERE ' . (string)($spec['where_sql_parent'] ?? '');
-                    $childDeletedRes = mysqli_query($conn, $childDeleteSql);
-                    if (!$childDeletedRes) {
-                        $errNo = (int)mysqli_errno($conn);
-                        if ($errNo !== 1451) {
-                            $result['ok'] = false;
-                            $result['errors'][] = (string)$ref['child_table'] . ' cleanup via ' . $tableName . ': ' . mysqli_error($conn);
-                        }
-                        continue;
-                    }
 
-                    $childAffected = max(0, (int)mysqli_affected_rows($conn));
-                    if ($childAffected > 0) {
-                        $passDeleted += $childAffected;
-                        $result['deleted_total'] += $childAffected;
-                        $tablesWithDeletes[(string)$ref['child_table']] = true;
+                    // If the child row itself is an MBQA row, it should be deleted even if the table is protected.
+                    // If the child table is protected and the row is NOT an MBQA row, we should only NULL the FK (if nullable) to unblock parent.
+                    $childIsProtected = in_array($childTable, $protectedTables, true);
+                    $childWhereSqlAliased = isset($tableDeleteSpecs[$childTable]) ? (string)$tableDeleteSpecs[$childTable]['where_sql_child'] : '1=0';
+
+                    if ($childIsProtected) {
+                        // 1. Delete rows in protected table that are themselves MBQA rows.
+                        $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
+                            . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                            . ' WHERE (' . (string)($spec['where_sql_parent'] ?? '') . ') AND (' . $childWhereSqlAliased . ')';
+                        $childDeletedRes = mysqli_query($conn, $childDeleteSql);
+                        if ($childDeletedRes) {
+                            $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                            if ($childAffected > 0) {
+                                $passDeleted += $childAffected;
+                                $result['deleted_total'] += $childAffected;
+                                if (!isset($result['table_details'][$childTable])) {
+                                    $result['table_details'][$childTable] = ['deleted' => 0, 'detached' => 0];
+                                }
+                                $result['table_details'][$childTable]['deleted'] += $childAffected;
+                            }
+                        } else {
+                            $result['ok'] = false;
+                            $result['errors'][] = $childTable . ' MBQA row cleanup via ' . $tableName . ': ' . mysqli_error($conn);
+                        }
+
+                        // 2. Unblock parent by NULLing the FK in protected table for non-MBQA rows.
+                        if (!empty($ref['is_nullable'])) {
+                            $childUpdateSql = 'UPDATE ' . $childTableEsc . ' c'
+                                . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                                . ' SET c.' . $childColEsc . ' = NULL'
+                                . ' WHERE (' . (string)($spec['where_sql_parent'] ?? '') . ') AND NOT (' . $childWhereSqlAliased . ')';
+                            $childUpdatedRes = mysqli_query($conn, $childUpdateSql);
+                            if ($childUpdatedRes) {
+                                $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                                if ($childAffected > 0) {
+                                    $passDeleted += $childAffected;
+                                $result['detached_total'] += $childAffected;
+                                if (!isset($result['table_details'][$childTable])) {
+                                    $result['table_details'][$childTable] = ['deleted' => 0, 'detached' => 0];
+                                }
+                                $result['table_details'][$childTable]['detached'] += $childAffected;
+                                }
+                            } else {
+                                $result['ok'] = false;
+                                $result['errors'][] = $childTable . ' FK detachment via ' . $tableName . ': ' . mysqli_error($conn);
+                            }
+                        }
+                    } else {
+                        // Non-protected table: standard unblocking by deletion.
+                        $childDeleteSql = 'DELETE c FROM ' . $childTableEsc . ' c'
+                            . ' INNER JOIN ' . $parentTableEsc . ' p ON c.' . $childColEsc . ' = p.' . $parentColEsc
+                            . ' WHERE ' . (string)($spec['where_sql_parent'] ?? '');
+                        $childDeletedRes = mysqli_query($conn, $childDeleteSql);
+                        if (!$childDeletedRes) {
+                            $errNo = (int)mysqli_errno($conn);
+                            if ($errNo !== 1451) {
+                                $result['ok'] = false;
+                                $result['errors'][] = $childTable . ' cleanup via ' . $tableName . ': ' . mysqli_error($conn);
+                            }
+                            continue;
+                        }
+
+                        $childAffected = max(0, (int)mysqli_affected_rows($conn));
+                        if ($childAffected > 0) {
+                            $passDeleted += $childAffected;
+                            $result['deleted_total'] += $childAffected;
+                            if (!isset($result['table_details'][$childTable])) {
+                                $result['table_details'][$childTable] = ['deleted' => 0, 'detached' => 0];
+                            }
+                            $result['table_details'][$childTable]['deleted'] += $childAffected;
+                        }
                     }
                 }
             }
@@ -287,7 +371,10 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
             if ($affected > 0) {
                 $passDeleted += $affected;
                 $result['deleted_total'] += $affected;
-                $tablesWithDeletes[$tableName] = true;
+                if (!isset($result['table_details'][$tableName])) {
+                    $result['table_details'][$tableName] = ['deleted' => 0, 'detached' => 0];
+                }
+                $result['table_details'][$tableName]['deleted'] += $affected;
                 unset($fkBlockedTables[$tableName]);
             }
         }
@@ -297,7 +384,7 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
         }
     }
 
-    $result['tables_touched'] = count($tablesWithDeletes);
+    $result['tables_touched'] = count($result['table_details']);
     foreach (array_keys($fkBlockedTables) as $tableName) {
         if (!isset($tableDeleteSpecs[$tableName]['count_sql'])) {
             continue;
@@ -323,7 +410,9 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
  *   sidebar_deleted:int,
  *   canonical_ensured:int,
  *   runner_rows_deleted:int,
+ *   runner_rows_detached:int,
  *   runner_tables_touched:int,
+ *   runner_table_details:array<string,array{deleted:int,detached:int}>,
  *   errors:array<int,string>,
  *   warnings:array<int,string>
  * }
@@ -368,7 +457,9 @@ function mbqa_clean_tests_run_cleanup(): array
 
     $equipmentCleanup['ok'] = $equipmentCleanup['ok'] && $runnerCleanup['ok'];
     $equipmentCleanup['runner_rows_deleted'] = (int)($runnerCleanup['deleted_total'] ?? 0);
+    $equipmentCleanup['runner_rows_detached'] = (int)($runnerCleanup['detached_total'] ?? 0);
     $equipmentCleanup['runner_tables_touched'] = (int)($runnerCleanup['tables_touched'] ?? 0);
+    $equipmentCleanup['runner_table_details'] = (array)($runnerCleanup['table_details'] ?? []);
     $equipmentCleanup['errors'] = array_values(array_merge(
         $equipmentCleanup['errors'] ?? [],
         $runnerCleanup['errors'] ?? []
@@ -464,8 +555,19 @@ if (mbqa_clean_tests_is_cli()) {
         fwrite(STDOUT, "[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)\n");
     }
 
-    if ($cleanup['runner_rows_deleted'] > 0) {
-        fwrite(STDOUT, "[OK] Removed {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) across {$cleanup['runner_tables_touched']} table(s)\n");
+    if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {
+        fwrite(STDOUT, "[OK] Cleaned MBQA/QA-IMPORT signature data:\n");
+        foreach ($cleanup['runner_table_details'] as $table => $counts) {
+            $parts = [];
+            if ($counts['deleted'] > 0) {
+                $parts[] = "{$counts['deleted']} deleted";
+            }
+            if ($counts['detached'] > 0) {
+                $parts[] = "{$counts['detached']} FKs detached";
+            }
+            fwrite(STDOUT, "     - {$table}: " . implode(', ', $parts) . "\n");
+        }
+        fwrite(STDOUT, "     Total: {$cleanup['runner_rows_deleted']} row(s) deleted, {$cleanup['runner_rows_detached']} FK(s) detached across {$cleanup['runner_tables_touched']} table(s)\n");
     } elseif ($cleanup['ok']) {
         fwrite(STDOUT, "[OK] No MBQA/QA-IMPORT signature rows found across DB tables\n");
     }
@@ -479,7 +581,7 @@ if (mbqa_clean_tests_is_cli()) {
         fwrite(STDOUT, '[WARN] ' . $warningLine . "\n");
     }
 
-    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; canonical is_* modules preserved.\n");
+    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; {$cleanup['runner_rows_detached']} FK(s) detached; canonical is_* modules preserved.\n");
     exit($exitCode);
 }
 
@@ -500,9 +602,24 @@ echo '<tr><td>Test companies removed</td><td>' . (int)$cleanup['companies_delete
 echo '<tr><td>equipment_types rows removed</td><td>' . (int)$cleanup['types_deleted'] . '</td></tr>';
 echo '<tr><td>Sidebar test rows removed</td><td>' . (int)$cleanup['sidebar_deleted'] . '</td></tr>';
 echo '<tr><td>MBQA / QA-IMPORT rows removed</td><td>' . (int)$cleanup['runner_rows_deleted'] . '</td></tr>';
+echo '<tr><td>MBQA / QA-IMPORT FKs detached</td><td>' . (int)$cleanup['runner_rows_detached'] . '</td></tr>';
 echo '<tr><td>Tables touched (signature cleanup)</td><td>' . (int)$cleanup['runner_tables_touched'] . '</td></tr>';
 echo '<tr><td>Canonical facade ensure passes</td><td>' . (int)$cleanup['canonical_ensured'] . '</td></tr>';
 echo '</tbody></table>';
+
+if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {
+    echo '<h2>MBQA Cleanup Details</h2>';
+    echo '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:780px;font-size:0.9rem;">';
+    echo '<thead><tr><th>Table</th><th>Deleted Rows</th><th>FKs Detached</th></tr></thead><tbody>';
+    foreach ($cleanup['runner_table_details'] as $table => $counts) {
+        echo '<tr>';
+        echo '<td><code>' . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . '</code></td>';
+        echo '<td>' . (int)$counts['deleted'] . '</td>';
+        echo '<td>' . (int)$counts['detached'] . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+}
 
 if (!empty($cleanup['errors'])) {
     echo '<h2>Errors</h2><ul>';
