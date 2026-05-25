@@ -1071,7 +1071,7 @@ $is_cli = (PHP_SAPI === 'cli');
 if (!$is_cli) {
     require_once __DIR__ . '/lib/script_browser_nav.php';
     echo "<html><head><title>Multi-Tenant Leak Audit</title>";
-    echo "<style>body{font-family:sans-serif;background:#f4f4f4;padding:20px;} table{width:100%;border-collapse:collapse;background:white;} th,td{padding:8px 10px;border:1px solid #ddd;text-align:left;vertical-align:top;font-size:13px;} th{background:#eee;} .type-err{color:#b00020;font-weight:bold;} .class-review{color:#8a6d3b;font-weight:600;} code{background:#fffbe6;padding:2px 4px;border:1px solid #ffe58f;} .summary{background:#fff;margin-bottom:16px;border:1px solid #ddd;padding:12px 14px;} ul{margin:8px 0 0 20px;} .mono{font-family:monospace;}</style>";
+    echo "<style>body{font-family:sans-serif;background:#f4f4f4;padding:20px;} table{width:100%;border-collapse:collapse;background:white;} th,td{padding:8px 10px;border:1px solid #ddd;text-align:left;vertical-align:top;font-size:13px;} th{background:#eee;} th.sortable{cursor:pointer;user-select:none;position:relative;padding-right:20px;} th.sortable::after{content:'\\2195';position:absolute;right:7px;color:#888;font-size:11px;} th.sortable.sorted-asc::after{content:'\\25B2';color:#333;} th.sortable.sorted-desc::after{content:'\\25BC';color:#333;} .type-err{color:#b00020;font-weight:bold;} .class-review{color:#8a6d3b;font-weight:600;} code{background:#fffbe6;padding:2px 4px;border:1px solid #ffe58f;} .summary{background:#fff;margin-bottom:16px;border:1px solid #ddd;padding:12px 14px;} ul{margin:8px 0 0 20px;} .mono{font-family:monospace;}</style>";
     echo "</head><body>";
     itm_script_browser_nav_echo();
     echo "<h1>Multi-Tenant Leak Audit Result</h1>";
@@ -1109,6 +1109,79 @@ if (!$is_cli) {
         echo "</ul>";
     }
     echo "</div>";
+    echo "<script>
+function itmSortNormalize(text) {
+    return String(text || '').replace(/\\s+/g, ' ').trim();
+}
+
+function itmSortIssuesTable(columnIndex, valueType, header) {
+    var table = document.getElementById('issues-table');
+    if (!table) {
+        return;
+    }
+    var body = table.tBodies[0];
+    if (!body) {
+        return;
+    }
+
+    var headers = table.querySelectorAll('th.sortable');
+    var currentDirection = header.getAttribute('data-sort-dir') || 'none';
+    var nextDirection = (currentDirection === 'asc') ? 'desc' : 'asc';
+
+    headers.forEach(function (th) {
+        th.classList.remove('sorted-asc', 'sorted-desc');
+        th.setAttribute('data-sort-dir', 'none');
+    });
+    header.setAttribute('data-sort-dir', nextDirection);
+    header.classList.add(nextDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+    var rows = Array.prototype.slice.call(body.rows);
+    rows.sort(function (rowA, rowB) {
+        var textA = itmSortNormalize(rowA.cells[columnIndex] ? rowA.cells[columnIndex].textContent : '');
+        var textB = itmSortNormalize(rowB.cells[columnIndex] ? rowB.cells[columnIndex].textContent : '');
+        var cmp = 0;
+
+        if (valueType === 'number') {
+            var numA = parseInt(textA, 10);
+            var numB = parseInt(textB, 10);
+            var aValid = !isNaN(numA);
+            var bValid = !isNaN(numB);
+            if (!aValid && !bValid) {
+                cmp = 0;
+            } else if (!aValid) {
+                cmp = -1;
+            } else if (!bValid) {
+                cmp = 1;
+            } else {
+                cmp = numA - numB;
+            }
+        } else {
+            cmp = textA.localeCompare(textB, undefined, { sensitivity: 'base', numeric: true });
+        }
+
+        return nextDirection === 'asc' ? cmp : -cmp;
+    });
+
+    rows.forEach(function (row) {
+        body.appendChild(row);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var table = document.getElementById('issues-table');
+    if (!table) {
+        return;
+    }
+    var headers = table.querySelectorAll('th.sortable');
+    headers.forEach(function (header) {
+        header.addEventListener('click', function () {
+            var columnIndex = parseInt(header.getAttribute('data-col-index') || '0', 10);
+            var valueType = header.getAttribute('data-sort-type') || 'text';
+            itmSortIssuesTable(columnIndex, valueType, header);
+        });
+    });
+});
+</script>";
 } else {
     echo "Multi-Tenant Leak Audit\n";
     echo "========================\n";
@@ -1145,7 +1218,19 @@ if (empty($issues)) {
     echo "No leaks detected! (Based on current heuristics)\n";
 } else {
     if (!$is_cli) {
-        echo "<table><tr><th>File</th><th>Line</th><th>Table</th><th>Query</th><th>Issue Type</th><th>Classification</th><th>Allowlist Rules</th><th>File Scope Signal</th><th>Scope Signals</th><th>Context Hints</th><th>Snippet</th></tr>";
+        echo "<table id='issues-table'><thead><tr>";
+        echo "<th class='sortable' data-col-index='0' data-sort-type='text' data-sort-dir='none'>File</th>";
+        echo "<th class='sortable' data-col-index='1' data-sort-type='number' data-sort-dir='none'>Line</th>";
+        echo "<th class='sortable' data-col-index='2' data-sort-type='text' data-sort-dir='none'>Table</th>";
+        echo "<th class='sortable' data-col-index='3' data-sort-type='text' data-sort-dir='none'>Query</th>";
+        echo "<th class='sortable' data-col-index='4' data-sort-type='text' data-sort-dir='none'>Issue Type</th>";
+        echo "<th class='sortable' data-col-index='5' data-sort-type='text' data-sort-dir='none'>Classification</th>";
+        echo "<th class='sortable' data-col-index='6' data-sort-type='text' data-sort-dir='none'>Allowlist Rules</th>";
+        echo "<th class='sortable' data-col-index='7' data-sort-type='text' data-sort-dir='none'>File Scope Signal</th>";
+        echo "<th class='sortable' data-col-index='8' data-sort-type='text' data-sort-dir='none'>Scope Signals</th>";
+        echo "<th class='sortable' data-col-index='9' data-sort-type='text' data-sort-dir='none'>Context Hints</th>";
+        echo "<th>Snippet</th>";
+        echo "</tr></thead><tbody>";
         foreach ($issues as $issue) {
             $class_css = ($issue['classification'] === 'Likely leak') ? 'type-err' : 'class-review';
             $allowlist_rules = (isset($issue['allowlist_rules']) && is_array($issue['allowlist_rules'])) ? join_or_dash($issue['allowlist_rules']) : '-';
@@ -1163,7 +1248,7 @@ if (empty($issues)) {
             echo "<td><code>" . htmlspecialchars($issue['snippet']) . "</code></td>";
             echo "</tr>";
         }
-        echo "</table>";
+        echo "</tbody></table>";
     } else {
         foreach ($issues as $issue) {
             $allowlist_rules = (isset($issue['allowlist_rules']) && is_array($issue['allowlist_rules'])) ? join_or_dash($issue['allowlist_rules']) : '-';
