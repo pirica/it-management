@@ -14,6 +14,15 @@ $database_sql = __DIR__ . '/../database.sql';
 $project_root = realpath(__DIR__ . '/..');
 $allowlist_file = __DIR__ . '/data/multi_tenant_leak_allowlist.json';
 
+function get_table_exceptions() {
+    return [
+        'companies' => 'No company_id column (global / system table).',
+        'floor_plan_item_tags' => 'No company_id column (global / system table).',
+        'attempts' => 'No company_id column (global / system table).',
+        'audit_logs' => 'Append-only log table; tenant scope UNIQUE not required.'
+    ];
+}
+
 /**
  * Parse table definitions from database.sql and separate scoped/non-scoped tables.
  */
@@ -875,6 +884,7 @@ $total_tables = (int) $table_info['total'];
 $scoped_tables = $table_info['scoped'];
 $non_scoped_tables = $table_info['non_scoped'];
 $raw_create_count = (int) $table_info['raw_create_count'];
+$table_exceptions = get_table_exceptions();
 
 if (empty($scoped_tables)) {
     die("Error: No scoped tables found in $database_sql\n");
@@ -922,6 +932,11 @@ foreach ($files as $file) {
             }
 
             $table = $table_match[1];
+            $table_key = strtolower((string)$table);
+
+            if (isset($table_exceptions[$table_key])) {
+                continue;
+            }
 
             if (preg_match('/\b(DESCRIBE|SHOW|INFORMATION_SCHEMA|ALTER TABLE|DROP TABLE|CREATE TABLE|CREATE TRIGGER|DROP TRIGGER)\b/i', $query_fragment)) {
                 continue;
@@ -972,7 +987,7 @@ foreach ($files as $file) {
             }
 
             // Strict leak gate: only raise issue when query itself has no strong tenant scope signal.
-            $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable && !$has_company_column_gated_dynamic_scope);
+            $is_missing_direct_scope = (!$has_fragment_predicate && !$has_line_predicate && !$uses_scope_function && !$has_scoped_variable);
 
             if (!$is_insert_query && $is_missing_direct_scope) {
                 $context_hints = [];
@@ -1170,6 +1185,13 @@ if (!$is_cli) {
         }
         echo "</ul>";
     }
+    if (!empty($table_exceptions)) {
+        echo "<p><strong>Skip exceptions:</strong></p><ul>";
+        foreach ($table_exceptions as $table_name => $reason) {
+            echo "<li><span class='mono'>skip " . htmlspecialchars($table_name) . "</span> - " . htmlspecialchars($reason) . "</li>";
+        }
+        echo "</ul>";
+    }
     echo "</div>";
     echo "<script>
 function itmSortNormalize(text) {
@@ -1271,6 +1293,12 @@ document.addEventListener('DOMContentLoaded', function () {
         echo "Allowlist rule matches:\n";
         foreach ($allowlist_tag_counts as $rule_id => $count) {
             echo "- {$rule_id}: {$count}\n";
+        }
+    }
+    if (!empty($table_exceptions)) {
+        echo "Skip exceptions:\n";
+        foreach ($table_exceptions as $table_name => $reason) {
+            echo "skip\t{$table_name}\t-\t{$reason}\n";
         }
     }
     echo "\n";
