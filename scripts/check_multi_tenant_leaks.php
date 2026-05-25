@@ -245,13 +245,79 @@ function query_uses_scope_function($fragment_or_line) {
     return (stripos($fragment_or_line, 'itm_get_company_where') !== false);
 }
 
+function extract_id_lookup_variable($query_fragment) {
+    if (preg_match('/\bid\b\s*=\s*(?:\?\s*|\(int\)\s*\$([a-z_][a-z0-9_]*)|\$([a-z_][a-z0-9_]*)|\d+)/i', $query_fragment, $m)) {
+        if (!empty($m[1])) {
+            return $m[1];
+        }
+        if (!empty($m[2])) {
+            return $m[2];
+        }
+    }
+
+    if (preg_match('/\bid\b\s*=\s*[\'"]\s*\.\s*(?:\(\s*int\s*\)\s*)?\$([a-z_][a-z0-9_]*)/i', $query_fragment, $m)) {
+        return $m[1];
+    }
+
+    return null;
+}
+
 function query_is_single_id_lookup($query_fragment) {
-    $where_has_id = preg_match('/\bWHERE\b[\s\S]{0,200}?\bid\b\s*=\s*(?:\?|\$[a-z_][a-z0-9_]*|\(int\)\s*\$[a-z_][a-z0-9_]*|\d+)/i', $query_fragment);
+    $where_has_id = preg_match('/\bWHERE\b[\s\S]{0,260}?\bid\b\s*=/i', $query_fragment);
     if (!$where_has_id) {
         return false;
     }
 
-    return true;
+    return extract_id_lookup_variable($query_fragment) !== null
+        || preg_match('/\bWHERE\b[\s\S]{0,260}?\bid\b\s*=\s*\?/i', $query_fragment);
+}
+
+function id_variable_from_scoped_context($file_lines, $line, $query_fragment, $window_lines) {
+    $id_var = extract_id_lookup_variable($query_fragment);
+    if (empty($id_var) || empty($file_lines)) {
+        return false;
+    }
+
+    $total = count($file_lines);
+    $start = max(1, $line - max(20, (int)$window_lines));
+    $end = max(1, min($total, $line - 1));
+    if ($start > $end) {
+        return false;
+    }
+
+    $var_pattern = '/\$' . preg_quote($id_var, '/') . '\s*=\s*\(int\)\s*\(\s*\$[a-z_][a-z0-9_]*\s*\[\s*[\'"]id[\'"]\s*\]/i';
+    $assignment_line = null;
+    for ($i = $end; $i >= $start; $i--) {
+        $text = (string)$file_lines[$i - 1];
+        if (preg_match($var_pattern, $text)) {
+            $assignment_line = $i;
+            break;
+        }
+    }
+
+    if ($assignment_line === null) {
+        return false;
+    }
+
+    $probe_start = max(1, $assignment_line - 80);
+    $probe_end = min($total, $assignment_line + 5);
+    $found_company_scope_signal = false;
+    $found_id_row_signal = false;
+
+    for ($i = $probe_start; $i <= $probe_end; $i++) {
+        $text = (string)$file_lines[$i - 1];
+        if (query_has_company_predicate($text) || query_uses_scope_function($text)) {
+            $found_company_scope_signal = true;
+        }
+        if (preg_match('/\bSELECT\b/i', $text) && preg_match('/\bid\b/i', $text)) {
+            $found_id_row_signal = true;
+        }
+        if (preg_match('/mysqli_stmt_get_result|mysqli_fetch_assoc/i', $text)) {
+            $found_id_row_signal = true;
+        }
+    }
+
+    return $found_company_scope_signal && $found_id_row_signal;
 }
 
 function nearby_company_signal($lines, $line, $radius) {
@@ -821,6 +887,7 @@ foreach ($files as $file) {
                 $is_id_lookup = query_is_single_id_lookup($query_fragment);
                 $has_limit_1 = (stripos($query_fragment, 'limit 1') !== false);
                 $nearby_scope = nearby_company_signal($file_lines, $line, 8);
+                $has_id_var_scoped_origin = id_variable_from_scoped_context($file_lines, $line, $query_fragment, 140);
 
                 if ($is_id_lookup) {
                     $context_hints[] = 'id_lookup';
@@ -840,9 +907,12 @@ foreach ($files as $file) {
                 if ($has_dynamic_company_append_same_var) {
                     $context_hints[] = 'dynamic_company_append_same_var';
                 }
+                if ($has_id_var_scoped_origin) {
+                    $context_hints[] = 'id_var_scoped_origin';
+                }
 
                 $classification = 'Likely leak';
-                if ($is_id_lookup && ($nearby_scope || $has_file_scope_signal)) {
+                if (($is_id_lookup && ($nearby_scope || $has_file_scope_signal)) || $has_id_var_scoped_origin) {
                     $classification = 'Needs review (context-validated?)';
                 }
 
@@ -863,7 +933,8 @@ foreach ($files as $file) {
                         'nearby_company_signal' => $nearby_scope,
                         'file_scope_signal' => $has_file_scope_signal,
                         'line_scoped_variable' => $has_line_scoped_variable,
-                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var
+                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
+                        'id_var_scoped_origin' => $has_id_var_scoped_origin
                     ],
                     'snippet' => compact_snippet($query_fragment, 180)
                 ];
@@ -893,7 +964,8 @@ foreach ($files as $file) {
                             'nearby_company_signal' => false,
                             'file_scope_signal' => $has_file_scope_signal,
                             'line_scoped_variable' => $has_line_scoped_variable,
-                            'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var
+                            'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
+                            'id_var_scoped_origin' => false
                         ],
                         'snippet' => compact_snippet($query_fragment, 180)
                     ];
@@ -918,7 +990,8 @@ foreach ($files as $file) {
                         'nearby_company_signal' => false,
                         'file_scope_signal' => $has_file_scope_signal,
                         'line_scoped_variable' => $has_line_scoped_variable,
-                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var
+                        'dynamic_company_append_same_var' => $has_dynamic_company_append_same_var,
+                        'id_var_scoped_origin' => false
                     ],
                     'snippet' => compact_snippet($query_fragment, 180)
                 ];
