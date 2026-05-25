@@ -11,7 +11,7 @@ declare(strict_types=1);
  *
  * Browser:
  *   scripts/module_clean_tests_qa_runner.php
- *   scripts/module_clean_tests_qa_runner.php?run=1
+ *   submit POST run form (CSRF-protected)
  */
 
 require_once __DIR__ . '/lib/script_browser_nav.php';
@@ -44,7 +44,7 @@ function mbqa_clean_tests_parse_options(): array
         return $options;
     }
 
-    $options['run'] = isset($_GET['run']) || isset($_POST['run']);
+    $options['run'] = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['run']);
     $options['help'] = isset($_GET['help']);
 
     return $options;
@@ -65,7 +65,7 @@ function mbqa_clean_tests_action_hrefs(string $root): array
     }
 
     return [
-        'clean_href' => 'module_clean_tests_qa_runner.php?run=1',
+        'clean_href' => 'module_clean_tests_qa_runner.php',
         'md_href' => '../qa-reports/' . mbqa_report_markdown_basename(),
         'xlsx_href' => $xlsxHref,
         'rebuild_href' => 'module_browser_qa_build_report.php?run=1',
@@ -112,7 +112,7 @@ function mbqa_clean_tests_run_cleanup(): array
         define('ITM_CLI_SCRIPT', true);
     }
 
-    require dirname(__DIR__) . '/config/config.php';
+    require_once dirname(__DIR__) . '/config/config.php';
     require_once __DIR__ . '/lib/equipment_type_modules.php';
 
     $modulesRoot = dirname(__DIR__) . '/modules';
@@ -123,6 +123,10 @@ function mbqa_clean_tests_run_cleanup(): array
 $options = mbqa_clean_tests_parse_options();
 $root = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
 $hrefs = mbqa_clean_tests_action_hrefs($root);
+
+if (!mbqa_clean_tests_is_cli()) {
+    require_once dirname(__DIR__) . '/config/config.php';
+}
 
 if ($options['help']) {
     if (mbqa_clean_tests_is_cli()) {
@@ -157,7 +161,8 @@ if (!$options['run']) {
     echo '<h1>Clean tests for module QA runner</h1>';
     echo '<p><strong>Destructive (local dev DB):</strong> runs the same cleanup used by the QA runner and removes known test artifacts only.</p>';
     echo '<p>This does <strong>not</strong> remove canonical equipment modules like <code>is_switch</code> or <code>is_server</code>.</p>';
-    echo '<form method="get" action="module_clean_tests_qa_runner.php" style="margin:16px 0;">';
+    echo '<form method="post" action="module_clean_tests_qa_runner.php" style="margin:16px 0;">';
+    echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars((string)itm_get_csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
     echo '<input type="hidden" name="run" value="1">';
     echo '<button type="submit" style="padding:10px 16px;font-weight:600;">Run Clean Tests</button>';
     echo '</form>';
@@ -165,6 +170,11 @@ if (!$options['run']) {
     echo '<p style="font-size:0.9rem;"><a href="module_clean_tests_qa_runner.php?help=1">Help</a></p>';
     echo '</main>';
     exit(0);
+}
+
+$isBrowserRun = !mbqa_clean_tests_is_cli() && $options['run'];
+if ($isBrowserRun) {
+    itm_require_post_csrf();
 }
 
 $cleanup = mbqa_clean_tests_run_cleanup();
