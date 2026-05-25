@@ -3343,6 +3343,31 @@ function mbqa_temporarily_detach_never_clear_fk_refs(mysqli $conn, string $paren
 /**
  * @param array<int, array{child_table:string, child_column:string, child_id:int, old_value:int, parent_table:string, parent_column:string, parent_company_id:int, parent_label_column:string, parent_label_value:string}> $detachedRefs
  */
+function mbqa_detached_ref_is_disposable_users_seed(mysqli $conn, array $ref): bool
+{
+    $childTable = (string)($ref['child_table'] ?? '');
+    $childId = (int)($ref['child_id'] ?? 0);
+    if ($childTable !== 'users' || $childId <= 0) {
+        return false;
+    }
+
+    if (!function_exists('itm_username_is_mbqa_runner_seeded')) {
+        return false;
+    }
+
+    $res = mysqli_query($conn, 'SELECT `username` FROM `users` WHERE `id`=' . $childId . ' LIMIT 1');
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    $username = is_array($row) ? (string)($row['username'] ?? '') : '';
+    if ($username === '') {
+        return false;
+    }
+
+    return itm_username_is_mbqa_runner_seeded($username);
+}
+
+/**
+ * @param array<int, array{child_table:string, child_column:string, child_id:int, old_value:int, parent_table:string, parent_column:string, parent_company_id:int, parent_label_column:string, parent_label_value:string}> $detachedRefs
+ */
 function mbqa_restore_temporarily_detached_fk_refs(mysqli $conn, array &$detachedRefs, string &$note = ''): bool
 {
     $note = '';
@@ -3352,6 +3377,7 @@ function mbqa_restore_temporarily_detached_fk_refs(mysqli $conn, array &$detache
 
     $restored = 0;
     $skipped = 0;
+    $skippedDisposable = 0;
     $ok = true;
     foreach ($detachedRefs as $ref) {
         $child = $ref['child_table'];
@@ -3393,6 +3419,10 @@ function mbqa_restore_temporarily_detached_fk_refs(mysqli $conn, array &$detache
             $fallbackRow = $fallbackRes ? mysqli_fetch_assoc($fallbackRes) : null;
             $resolvedValue = is_array($fallbackRow) ? (int)($fallbackRow['resolved_id'] ?? 0) : 0;
             if ($resolvedValue <= 0) {
+                if (mbqa_detached_ref_is_disposable_users_seed($conn, $ref)) {
+                    $skippedDisposable++;
+                    continue;
+                }
                 $skipped++;
                 continue;
             }
@@ -3411,6 +3441,9 @@ function mbqa_restore_temporarily_detached_fk_refs(mysqli $conn, array &$detache
     }
 
     $note = 'restored temporary FK detachments=' . $restored;
+    if ($skippedDisposable > 0) {
+        $note .= '; skipped_disposable=' . $skippedDisposable;
+    }
     if ($skipped > 0) {
         $note .= '; skipped=' . $skipped;
         $ok = false;
