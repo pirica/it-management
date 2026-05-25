@@ -735,13 +735,13 @@ $xlsxRel = ($xlsxBuilt['ok'] && $reportFiles !== null)
     ? ('../qa-reports/' . $reportFiles['xlsx_basename'])
     : '';
 $actionLinks = [
+    '<a href="module_clean_tests_qa_runner.php?run=1">Clean Tests</a>',
     '<a href="' . htmlspecialchars($mdRel, ENT_QUOTES, 'UTF-8') . '">Open markdown file</a>',
 ];
-if ($xlsxBuilt['ok'] && $xlsxRel !== '') {
+if ($xlsxRel !== '') {
     $actionLinks[] = '<a href="' . htmlspecialchars($xlsxRel, ENT_QUOTES, 'UTF-8') . '">Download XLSX</a>';
-} elseif ($xlsxBuilt['error'] !== '') {
-    $actionLinks[] = '<span style="color:#cf222e;font-size:0.85rem;">XLSX unavailable ('
-        . htmlspecialchars($xlsxBuilt['error'], ENT_QUOTES, 'UTF-8') . ')</span>';
+} else {
+    $actionLinks[] = '<span style="color:#57606a;">Download XLSX (not found)</span>';
 }
 $actionLinks[] = '<a href="' . htmlspecialchars($cfg['self_script'], ENT_QUOTES, 'UTF-8') . '?run=1">Rebuild report</a>';
 $actionLinks[] = '<a href="' . htmlspecialchars($rerunHref, ENT_QUOTES, 'UTF-8') . '">Re-Run Test</a>';
