@@ -378,7 +378,9 @@ function equipment_sync_idf_position_and_ports(mysqli $conn, int $companyId, arr
             $positionId = (int)($currentPosition['id'] ?? 0);
             if ($positionId > 0) {
                 mysqli_query($conn, "DELETE FROM idf_ports WHERE position_id = " . $positionId . " AND company_id = " . $companyId);
-                mysqli_query($conn, "DELETE FROM idf_positions WHERE id = " . $positionId . " LIMIT 1");
+                //mysqli_query($conn, "DELETE FROM idf_positions WHERE id = " . $positionId . " LIMIT 1");
+                mysqli_query($conn, "DELETE FROM idf_positions WHERE id = " . $positionId . " AND company_id = " . $companyId . " LIMIT 1");
+
             }
         }
         mysqli_query($conn, "UPDATE switch_ports SET idf_id = NULL WHERE company_id = " . $companyId . " AND equipment_id = " . $equipmentId);
