@@ -126,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     mysqli_stmt_bind_param($stmt, 'sii', $layoutJson, $id, $company_id);
     $ok = mysqli_stmt_execute($stmt);
+    $updatedRows = $ok ? mysqli_stmt_affected_rows($stmt) : 0;
     mysqli_stmt_close($stmt);
 
     if (!$ok) {
@@ -138,7 +139,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         exit;
     }
 
-    $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+    $sourcePriceSyncOk = true;
+    if ($updatedRows > 0) {
+        $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+    }
     echo json_encode([
         'success' => true,
         'message' => $sourcePriceSyncOk ? 'Auto-saved.' : 'Auto-saved with source price sync warning.',
@@ -175,7 +179,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         if (mysqli_stmt_execute($stmt)) {
-            $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+            $affectedRows = mysqli_stmt_affected_rows($stmt);
+            $sourcePriceSyncOk = true;
+            if ($crud_action === 'create' || $affectedRows > 0) {
+                $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+            }
             $_SESSION['crud_success'] = $sourcePriceSyncOk ? 'Rack plan saved.' : 'Rack plan saved with source price sync warning.';
             header('Location: index.php');
             exit;

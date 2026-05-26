@@ -501,8 +501,8 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
         }
 
         $price = null;
-        if ($code !== 'empty' && strpos($code, 'catalog:') !== 0) {
-            // Keep non-catalog component prices parsed from the trailing label amount.
+        if ($code !== 'empty') {
+            // Prefer trailing label amount when present so edited modal prices are preserved.
             $parsedLabelPrice = rack_planner_extract_price_from_text($label);
             if ($parsedLabelPrice !== null && is_numeric($parsedLabelPrice)) {
                 $price = (float)$parsedLabelPrice;
