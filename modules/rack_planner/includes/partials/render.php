@@ -1333,7 +1333,7 @@ const rackCombinedCodeMeta = <?php echo json_encode($combinedCodeMeta, JSON_HEX_
             }
 
             let normalizedPrice = null;
-            if (!isEmptyCode(code) && !isCatalogCode(code)) {
+            if (!isEmptyCode(code)) {
                 const parsedLabelPrice = rackExtractPriceFromText(label);
                 normalizedPrice = Number.isFinite(parsedLabelPrice) ? parsedLabelPrice : null;
             }
