@@ -745,17 +745,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     $fk = $fkMap[$fieldName];
                     $options = cr_fk_options($conn, $fk, (int)$company_id);
                     $resolvedId = 0;
+                    $exactMatchId = 0;
+                    $normalizedMatchMap = [];
                     $rawMatchKey = cr_normalize_label_match_key($rawValue);
                     foreach ($options as $option) {
                         $optionLabel = (string)($option['label'] ?? '');
                         if (strcasecmp($optionLabel, $rawValue) === 0) {
-                            $resolvedId = (int)$option['id'];
+                            $exactMatchId = (int)$option['id'];
                             break;
                         }
                         if ($rawMatchKey !== '' && cr_normalize_label_match_key($optionLabel) === $rawMatchKey) {
-                            $resolvedId = (int)$option['id'];
-                            break;
+                            $matchId = (int)($option['id'] ?? 0);
+                            if ($matchId > 0) {
+                                $normalizedMatchMap[$matchId] = true;
+                            }
                         }
+                    }
+                    if ($exactMatchId > 0) {
+                        $resolvedId = $exactMatchId;
+                    } elseif (count($normalizedMatchMap) === 1) {
+                        // Why: avoid ambiguous normalized-label collisions (e.g. A-B vs A/B) that could map to the wrong FK id.
+                        $resolvedId = (int)array_key_first($normalizedMatchMap);
                     }
                     if ($resolvedId <= 0 && ctype_digit($rawValue)) {
                         $resolvedId = (int)$rawValue;
