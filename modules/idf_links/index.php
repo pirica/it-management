@@ -79,6 +79,8 @@ function cr_fk_map($conn, $table) {
 
     if ($table === 'idf_links') {
         $manual = [
+            'port_id_a' => ['COLUMN_NAME' => 'port_id_a', 'REFERENCED_TABLE_NAME' => 'idf_ports', 'REFERENCED_COLUMN_NAME' => 'id'],
+            'port_id_b' => ['COLUMN_NAME' => 'port_id_b', 'REFERENCED_TABLE_NAME' => 'idf_ports', 'REFERENCED_COLUMN_NAME' => 'id'],
             'equipment_id' => ['COLUMN_NAME' => 'equipment_id', 'REFERENCED_TABLE_NAME' => 'equipment', 'REFERENCED_COLUMN_NAME' => 'id'],
             'equipment_vlan_id' => ['COLUMN_NAME' => 'equipment_vlan_id', 'REFERENCED_TABLE_NAME' => 'vlans', 'REFERENCED_COLUMN_NAME' => 'id'],
             'equipment_status_id' => ['COLUMN_NAME' => 'equipment_status_id', 'REFERENCED_TABLE_NAME' => 'switch_status', 'REFERENCED_COLUMN_NAME' => 'id'],
@@ -92,6 +94,14 @@ function cr_fk_map($conn, $table) {
     }
 
     return $map;
+}
+
+function cr_normalize_label_match_key($value) {
+    $text = html_entity_decode(trim((string)$value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = strtolower($text);
+    $text = preg_replace('/[^a-z0-9]+/u', ' ', $text);
+    $text = preg_replace('/\s+/', ' ', (string)$text);
+    return trim((string)$text);
 }
 
 /**
@@ -482,10 +492,14 @@ function cr_render_cell_value($table, $field, $value) {
 
     if (($GLOBALS['crud_table'] ?? '') === 'idf_links') {
         if (($field === 'port_id_a' || $field === 'port_id_b') && ctype_digit($rawValue)) {
-            return sanitize(cr_idf_port_display_label($GLOBALS['conn'], (int)$rawValue, $companyId));
+            $portId = (int)$rawValue;
+            $label = cr_idf_port_display_label($GLOBALS['conn'], $portId, $companyId);
+            return '<span data-itm-export-value="' . $portId . '">' . sanitize($label) . '</span>';
         }
         if ($field === 'equipment_id' && ctype_digit($rawValue)) {
-            return sanitize(cr_equipment_display_label($GLOBALS['conn'], (int)$rawValue, $companyId));
+            $equipmentId = (int)$rawValue;
+            $label = cr_equipment_display_label($GLOBALS['conn'], $equipmentId, $companyId);
+            return '<span data-itm-export-value="' . $equipmentId . '">' . sanitize($label) . '</span>';
         }
     }
 
@@ -731,8 +745,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     $fk = $fkMap[$fieldName];
                     $options = cr_fk_options($conn, $fk, (int)$company_id);
                     $resolvedId = 0;
+                    $rawMatchKey = cr_normalize_label_match_key($rawValue);
                     foreach ($options as $option) {
-                        if (strcasecmp((string)$option['label'], $rawValue) === 0) {
+                        $optionLabel = (string)($option['label'] ?? '');
+                        if (strcasecmp($optionLabel, $rawValue) === 0) {
+                            $resolvedId = (int)$option['id'];
+                            break;
+                        }
+                        if ($rawMatchKey !== '' && cr_normalize_label_match_key($optionLabel) === $rawMatchKey) {
                             $resolvedId = (int)$option['id'];
                             break;
                         }
