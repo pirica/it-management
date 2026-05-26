@@ -222,6 +222,19 @@ Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Run
 | `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Early module/company preflight; auto-detected Base URL on Laragon (HTTPS→HTTP on localhost); structured **`import_db`** JSON parsing; stale AJAX progress cleanup; optional browser-only **UI click smoke** (one module + one company) appending `bulk_cancel_click`, `pagination_click`, `export_xlsx_click`, and `import_excel_click`. Browser **Run QA** silently runs `module_clean_tests_qa_runner.php` at start and end. Writes timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` and matching **`.xlsx`** each run. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from a runner JSON (pick by date): summary, tier reference, configured step exceptions, **Results by module**, failure categories, **Failures only** and **Skip** quick indexes, preview in browser. Re-Run links preserve **UI click smoke** when set. Writes `qa-reports/module-browser-qa.md` (overwritten each build). |
 
+**Scripts that write sample/test data (DB mutation):**
+
+* `scripts/module_browser_qa_runner.php` (sample seed, random add rows, import round-trip rows).
+* `scripts/employees_delete_clear_table_test.php` (creates temporary tenant + employee/access rows).
+* `scripts/equipment_delete_clear_table_test.php` (creates temporary tenant + equipment/switch rows).
+* `scripts/floor_plans_folder_move_test.php` (creates temporary folder hierarchy rows).
+* `scripts/idfs_sync_human_test.php` (creates temporary equipment/switch/idf rows for end-to-end sync checks).
+* `scripts/tickets_related_asset_equipment_delete_test.php` (seeds sample ticket rows from `database.sql`).
+
+**Script that dumps seed SQL (no DB writes):**
+
+* `scripts/export_floor_plan_folders_seed.php` prints `INSERT` statements to stdout for pasting into `database.sql`.
+
 **Commands (repository root, Laragon — PowerShell):**
 
 ```powershell
