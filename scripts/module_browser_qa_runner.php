@@ -801,6 +801,110 @@ function mbqa_print_help(): void
 }
 
 /**
+ * Reuse module_clean_tests_qa_runner.php cleanup logic without rendering its UI.
+ *
+ * @return array{
+ *   ok:bool,
+ *   dirs_removed:int,
+ *   companies_deleted:int,
+ *   types_deleted:int,
+ *   sidebar_deleted:int,
+ *   canonical_ensured:int,
+ *   runner_rows_deleted:int,
+ *   runner_rows_detached:int,
+ *   runner_tables_touched:int,
+ *   runner_table_details:array<string,array{deleted:int,detached:int}>,
+ *   errors:array<int,string>,
+ *   warnings:array<int,string>
+ * }
+ */
+function mbqa_run_clean_tests_silent(): array
+{
+    if (!function_exists('mbqa_clean_tests_run_cleanup')) {
+        if (!defined('MBQA_CLEAN_TESTS_LIBRARY_MODE')) {
+            define('MBQA_CLEAN_TESTS_LIBRARY_MODE', true);
+        }
+        require_once __DIR__ . '/module_clean_tests_qa_runner.php';
+    }
+
+    if (!function_exists('mbqa_clean_tests_run_cleanup')) {
+        return [
+            'ok' => false,
+            'dirs_removed' => 0,
+            'companies_deleted' => 0,
+            'types_deleted' => 0,
+            'sidebar_deleted' => 0,
+            'canonical_ensured' => 0,
+            'runner_rows_deleted' => 0,
+            'runner_rows_detached' => 0,
+            'runner_tables_touched' => 0,
+            'runner_table_details' => [],
+            'errors' => ['module_clean_tests_qa_runner.php could not be loaded in library mode.'],
+            'warnings' => [],
+        ];
+    }
+
+    $cleanup = mbqa_clean_tests_run_cleanup();
+    if (!is_array($cleanup)) {
+        return [
+            'ok' => false,
+            'dirs_removed' => 0,
+            'companies_deleted' => 0,
+            'types_deleted' => 0,
+            'sidebar_deleted' => 0,
+            'canonical_ensured' => 0,
+            'runner_rows_deleted' => 0,
+            'runner_rows_detached' => 0,
+            'runner_tables_touched' => 0,
+            'runner_table_details' => [],
+            'errors' => ['module_clean_tests_qa_runner returned an invalid cleanup payload.'],
+            'warnings' => [],
+        ];
+    }
+
+    return $cleanup;
+}
+
+function mbqa_clean_tests_report_summary(array $cleanup, string $phaseLabel = 'QA cleanup'): string
+{
+    $ok = (bool)($cleanup['ok'] ?? false);
+    if (!$ok) {
+        $errors = array_values(array_filter((array)($cleanup['errors'] ?? []), static function ($line): bool {
+            return trim((string)$line) !== '';
+        }));
+        if ($errors !== []) {
+            return $phaseLabel . ' failed: ' . implode('; ', array_map('strval', $errors));
+        }
+
+        return $phaseLabel . ' failed.';
+    }
+
+    $parts = [];
+    if ((int)($cleanup['dirs_removed'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['dirs_removed'] . ' scaffold folder(s)';
+    }
+    if ((int)($cleanup['types_deleted'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['types_deleted'] . ' equipment_types row(s)';
+    }
+    if ((int)($cleanup['sidebar_deleted'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['sidebar_deleted'] . ' sidebar pref row(s)';
+    }
+    if ((int)($cleanup['companies_deleted'] ?? 0) > 0) {
+        $parts[] = (int)$cleanup['companies_deleted'] . ' test compan' . ((int)$cleanup['companies_deleted'] === 1 ? 'y' : 'ies');
+    }
+    if ((int)($cleanup['runner_rows_deleted'] ?? 0) > 0 || (int)($cleanup['runner_rows_detached'] ?? 0) > 0) {
+        $parts[] = (int)($cleanup['runner_rows_deleted'] ?? 0) . ' MBQA/QA-IMPORT row(s)'
+            . ', ' . (int)($cleanup['runner_rows_detached'] ?? 0) . ' FK detach(es)';
+    }
+
+    if ($parts === []) {
+        return '';
+    }
+
+    return $phaseLabel . ': removed ' . implode(', ', $parts) . '.';
+}
+
+/**
  * Selected company id for the browser form (&lt;select&gt;). Default **1** on first load; empty = ALL when user chose ALL.
  */
 function mbqa_browser_form_company_selected(array $options): string
@@ -1657,6 +1761,7 @@ $baseUrl = $mbqaOptions['base_url'];
 $pilotOnly = $mbqaOptions['pilot_only'];
 $filterModule = $mbqaOptions['module'];
 $filterCompany = $mbqaOptions['company'];
+$browserRunViaQaButton = !mbqa_is_cli_sapi() && !empty($mbqaOptions['ajax']);
 
 $bespokeSmoke = mbqa_runner_bespoke_smoke_modules();
 $skipClear = mbqa_runner_skip_clear_modules();
@@ -5522,11 +5627,16 @@ if ($mbqaAdminUserId <= 0) {
 }
 $_SESSION['user_id'] = $mbqaAdminUserId;
 
-// Why: Clear leftover MBQA equipment_type scaffolds/rows from prior runs before module steps mutate the DB again.
-$mbqaEquipmentPrecleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
-$mbqaEquipmentPrecleanupNote = itm_equipment_cleanup_report_summary($mbqaEquipmentPrecleanup);
-if (!$mbqaEquipmentPrecleanup['ok'] && !empty($mbqaEquipmentPrecleanup['errors'])) {
-    mbqa_err(itm_equipment_cleanup_report_summary($mbqaEquipmentPrecleanup) . "\n");
+// Why: browser Run QA should execute the same cleanup as "Run Clean Tests" silently before module steps.
+$mbqaEquipmentPrecleanup = $browserRunViaQaButton
+    ? mbqa_run_clean_tests_silent()
+    : itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
+$mbqaEquipmentPrecleanupNote = $browserRunViaQaButton
+    ? mbqa_clean_tests_report_summary($mbqaEquipmentPrecleanup, 'Pre-QA clean tests')
+    : itm_equipment_cleanup_report_summary($mbqaEquipmentPrecleanup);
+if (!$mbqaEquipmentPrecleanup['ok']) {
+    $preCleanupError = $mbqaEquipmentPrecleanupNote !== '' ? $mbqaEquipmentPrecleanupNote : 'Pre-QA clean tests failed.';
+    mbqa_err($preCleanupError . "\n");
 }
 mbqa_sync_mysql_audit_session($conn, null, $mbqaAdminUserId);
 
@@ -6202,9 +6312,13 @@ foreach ($results as $row) {
     }
 }
 
-// Why: equipment_types QA inserts MBQA-equipment_types-… names; sidebar may scaffold modules/is_mbqa_* orphans.
-$mbqaEquipmentCleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
-$mbqaEquipmentCleanupNote = itm_equipment_cleanup_report_summary($mbqaEquipmentCleanup);
+// Why: browser Run QA should execute "Run Clean Tests" silently again after all QA steps complete.
+$mbqaEquipmentCleanup = $browserRunViaQaButton
+    ? mbqa_run_clean_tests_silent()
+    : itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesDir);
+$mbqaEquipmentCleanupNote = $browserRunViaQaButton
+    ? mbqa_clean_tests_report_summary($mbqaEquipmentCleanup, 'Post-QA clean tests')
+    : itm_equipment_cleanup_report_summary($mbqaEquipmentCleanup);
 
 $xlsxBuilt = mbqar_build_runner_xlsx(
     $root,
