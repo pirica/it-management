@@ -33,7 +33,8 @@ if (isset($_SESSION['crud_success'])) {
 }
 
 $catalogOptions = rack_planner_fetch_catalog_options($conn, $company_id);
-$catalogCodeMeta = rack_planner_catalog_code_meta_map($catalogOptions);
+$equipmentPickerOptions = rack_planner_fetch_equipment_picker_options($conn, $company_id);
+$combinedCodeMeta = rack_planner_combined_code_meta_map($catalogOptions, $equipmentPickerOptions);
 
 // Handle Delete
 if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -98,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $id = (int)($_POST['id'] ?? 0);
     $rackUnits = max(1, min(100, (int)($_POST['rack_units'] ?? 42)));
     $layoutRaw = (string)($_POST['layout_json'] ?? '');
-    $normalizedLayout = rack_planner_normalize_layout_json($layoutRaw, $rackUnits, $catalogCodeMeta);
+    $normalizedLayout = rack_planner_normalize_layout_json($layoutRaw, $rackUnits, $combinedCodeMeta);
     $layoutJson = rack_planner_encode_layout($normalizedLayout);
     $totalAmount = rack_planner_layout_total($normalizedLayout);
 
@@ -137,11 +138,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         exit;
     }
 
+    $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
     echo json_encode([
         'success' => true,
-        'message' => 'Auto-saved.',
+        'message' => $sourcePriceSyncOk ? 'Auto-saved.' : 'Auto-saved with source price sync warning.',
         'layout_json' => $layoutJson,
         'total_amount' => number_format($totalAmount, 2, '.', ''),
+        'source_price_sync' => $sourcePriceSyncOk,
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -155,7 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $notes = trim((string)($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
     $layout_raw = (string)($_POST['layout_json'] ?? '');
-    $layout_json = rack_planner_encode_layout(rack_planner_normalize_layout_json($layout_raw, $rack_units, $catalogCodeMeta));
+    $normalizedLayout = rack_planner_normalize_layout_json($layout_raw, $rack_units, $combinedCodeMeta);
+    $layout_json = rack_planner_encode_layout($normalizedLayout);
 
     if ($name === '') {
         $errors[] = 'Name is required.';
@@ -171,7 +175,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['crud_success'] = 'Rack plan saved.';
+            $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+            $_SESSION['crud_success'] = $sourcePriceSyncOk ? 'Rack plan saved.' : 'Rack plan saved with source price sync warning.';
             header('Location: index.php');
             exit;
         } else {
@@ -196,4 +201,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($crud_action === 'index' || $crud_
     header('Location: index.php');
     exit;
 }
-

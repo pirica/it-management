@@ -401,6 +401,16 @@ Every module (excluding the Protection Zone) must implement:
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
 * **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center.
 
+#### Rack Planner price source sync (mandatory)
+
+When Rack Planner stores a priced device with code `catalog:<id>`, `equipment:<id>`, or `idf_unlinked:<token>`, price changes must persist to source tables as part of save/autosave:
+
+1. `catalog:<id>` -> update `catalogs.price`.
+2. `equipment:<id>` -> update `equipment.purchase_cost`.
+3. `idf_unlinked:<token>` -> update `idf_positions.price` for matching token-style `equipment_id` (`^[0-9]{4}-[0-9]{4}$`) in the active company.
+
+Do not keep price edits only inside `rack_planner.layout_json`; source tables must remain aligned.
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.

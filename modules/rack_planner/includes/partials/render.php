@@ -589,6 +589,51 @@
                                             <?php endforeach; ?>
                                         </optgroup>
                                     <?php endforeach; ?>
+                                    <?php if (!empty($catalogOptions)): ?>
+                                        <optgroup label="Catalog">
+                                            <?php foreach ($catalogOptions as $catalogOption): ?>
+                                                <?php
+                                                $catalogCode = trim((string)($catalogOption['code'] ?? ''));
+                                                if ($catalogCode === '') { continue; }
+                                                $catalogLabel = trim((string)($catalogOption['select_text'] ?? $catalogOption['label'] ?? $catalogCode));
+                                                $catalogSize = ((int)($catalogOption['size'] ?? 1) === 2) ? 2 : 1;
+                                                $catalogPriceRaw = (isset($catalogOption['price_value']) && is_numeric($catalogOption['price_value'])) ? number_format((float)$catalogOption['price_value'], 2, '.', '') : '';
+                                                ?>
+                                                <option
+                                                    value="<?php echo sanitize($catalogCode); ?>"
+                                                    data-size="<?php echo $catalogSize; ?>"
+                                                    data-label="<?php echo sanitize($catalogLabel); ?>"
+                                                    data-price="<?php echo sanitize($catalogPriceRaw); ?>"
+                                                    data-source="catalog"
+                                                >
+                                                    <?php echo sanitize($catalogLabel); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                            <option value="__add_new__" data-source="catalog_add">➕</option>
+                                        </optgroup>
+                                    <?php endif; ?>
+                                    <?php if (!empty($equipmentPickerOptions)): ?>
+                                        <optgroup label="Equipment">
+                                            <?php foreach ($equipmentPickerOptions as $equipmentOption): ?>
+                                                <?php
+                                                $equipmentCode = trim((string)($equipmentOption['code'] ?? ''));
+                                                if ($equipmentCode === '') { continue; }
+                                                $equipmentLabel = trim((string)($equipmentOption['select_text'] ?? $equipmentOption['label'] ?? $equipmentCode));
+                                                $equipmentSize = ((int)($equipmentOption['size'] ?? 1) === 2) ? 2 : 1;
+                                                $equipmentPriceRaw = (isset($equipmentOption['price_value']) && is_numeric($equipmentOption['price_value'])) ? number_format((float)$equipmentOption['price_value'], 2, '.', '') : '';
+                                                ?>
+                                                <option
+                                                    value="<?php echo sanitize($equipmentCode); ?>"
+                                                    data-size="<?php echo $equipmentSize; ?>"
+                                                    data-label="<?php echo sanitize($equipmentLabel); ?>"
+                                                    data-price="<?php echo sanitize($equipmentPriceRaw); ?>"
+                                                    data-source="equipment_picker"
+                                                >
+                                                    <?php echo sanitize($equipmentLabel); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
                                 </select>
                             </div>
                             <div class="rack-unit-modal-actions">
@@ -701,6 +746,8 @@
 <script>
 const rackComponentCatalog = <?php echo json_encode($componentCatalog, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+const rackEquipmentPickerOptions = <?php echo json_encode($equipmentPickerOptions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+const rackCombinedCodeMeta = <?php echo json_encode($combinedCodeMeta, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
 (function () {
     const rackExportScope = document.getElementById('rackExportScope');
@@ -1057,11 +1104,16 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return String(code || '').indexOf('catalog:') === 0;
     }
 
+    function isEquipmentPickerCode(code) {
+        const normalizedCode = String(code || '');
+        return normalizedCode.indexOf('equipment:') === 0 || normalizedCode.indexOf('idf_unlinked:') === 0;
+    }
+
     function canEditPriceForMeta(meta) {
         if (!meta) {
             return false;
         }
-        return !isCatalogCode(meta.code) && !isEmptyCode(meta.code) && !isPlaceholderCode(meta.code);
+        return !isEmptyCode(meta.code) && !isPlaceholderCode(meta.code);
     }
 
     function updateModalActionButtons(meta) {
@@ -1078,7 +1130,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         if (normalizedCode === '' || normalizedCode === 'empty') {
             return '';
         }
-        if (isCatalogCode(normalizedCode)) {
+        if (isCatalogCode(normalizedCode) || isEquipmentPickerCode(normalizedCode)) {
             return '../../assets/catalog.svg';
         }
 
@@ -1158,6 +1210,30 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         return /\b2\s*-\s*ru\b|\b2\s*ru\b/i.test(String(name || '')) ? 2 : 1;
     }
 
+    function getCombinedCodeMeta(code) {
+        if (!code || typeof rackCombinedCodeMeta !== 'object' || rackCombinedCodeMeta === null) {
+            return null;
+        }
+        if (!Object.prototype.hasOwnProperty.call(rackCombinedCodeMeta, code)) {
+            return null;
+        }
+
+        const option = rackCombinedCodeMeta[code];
+        if (!option || typeof option !== 'object') {
+            return null;
+        }
+
+        const size = Number(option.size) === 2 ? 2 : inferCatalogSizeFromName(option.label || code);
+        const priceValue = (option.price !== null && option.price !== undefined && option.price !== '') ? Number(option.price) : null;
+        const displayLabel = String(option.label || code);
+
+        return {
+            label: displayLabel,
+            size: size,
+            price: Number.isFinite(priceValue) ? priceValue : null
+        };
+    }
+
     function getCatalogMeta(code) {
         if (!code || !Array.isArray(rackCatalogOptions)) {
             return null;
@@ -1194,7 +1270,12 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             };
         }
 
-        if (String(code || '').indexOf('catalog:') === 0) {
+        const combinedMeta = getCombinedCodeMeta(code);
+        if (combinedMeta) {
+            return combinedMeta;
+        }
+
+        if (isCatalogCode(code) || isEquipmentPickerCode(code)) {
             const catalogMeta = getCatalogMeta(code);
             if (catalogMeta) {
                 return catalogMeta;
@@ -1437,6 +1518,44 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
         catalogsGroup.appendChild(quickAddOption);
     }
 
+    function appendEquipmentOptionsToSelect() {
+        if (!unitTypeSelect || !Array.isArray(rackEquipmentPickerOptions) || rackEquipmentPickerOptions.length === 0) {
+            return;
+        }
+
+        let equipmentGroup = unitTypeSelect.querySelector('optgroup[label="Equipment"]');
+        if (!equipmentGroup) {
+            equipmentGroup = document.createElement('optgroup');
+            equipmentGroup.label = 'Equipment';
+            unitTypeSelect.appendChild(equipmentGroup);
+        }
+
+        rackEquipmentPickerOptions.forEach(function (equipmentOption) {
+            if (!equipmentOption || typeof equipmentOption !== 'object') {
+                return;
+            }
+
+            const optionValue = String(equipmentOption.code || '');
+            if (optionValue === '' || hasSelectOptionValue(unitTypeSelect, optionValue)) {
+                return;
+            }
+
+            const optionLabel = String(equipmentOption.label || optionValue);
+            const optionSize = Number(equipmentOption.size) === 2 ? 2 : inferCatalogSizeFromName(optionLabel);
+            const optionText = String(equipmentOption.select_text || optionLabel);
+            const optionPrice = (equipmentOption.price_value !== null && equipmentOption.price_value !== undefined && equipmentOption.price_value !== '') ? Number(equipmentOption.price_value) : NaN;
+
+            const optionEl = document.createElement('option');
+            optionEl.value = optionValue;
+            optionEl.textContent = optionText;
+            optionEl.setAttribute('data-label', optionText);
+            optionEl.setAttribute('data-size', String(optionSize));
+            optionEl.setAttribute('data-price', Number.isFinite(optionPrice) ? optionPrice.toFixed(2) : '');
+            optionEl.setAttribute('data-source', 'equipment_picker');
+            equipmentGroup.appendChild(optionEl);
+        });
+    }
+
     function getSelectedOptionMeta() {
         if (!unitTypeSelect) {
             return null;
@@ -1648,9 +1767,6 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
                         const resolvedLabel = normalizedCustomLabel !== '' ? normalizedCustomLabel : String(selectedMeta.label || '');
                         if (isEmptyCode(selectedMeta.code)) {
                             return null;
-                        }
-                        if (isCatalogCode(selectedMeta.code)) {
-                            return selectedMeta.price;
                         }
                         const parsedLabelPrice = rackExtractPriceFromText(resolvedLabel);
                         if (Number.isFinite(parsedLabelPrice)) {
@@ -1940,8 +2056,9 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
             if (rackUnitModalTitle) {
                 rackUnitModalTitle.textContent = 'Component ' + String(activeUnit);
             }
-            if (assignment && String(assignment.code || '').indexOf('catalog:') === 0) {
+            if (assignment && (isCatalogCode(assignment.code) || isEquipmentPickerCode(assignment.code))) {
                 appendCatalogOptionsToSelect();
+                appendEquipmentOptionsToSelect();
             }
             if (assignment) {
                 ensureOptionExists(String(assignment.code || ''), String(assignment.label || assignment.code || ''), Number(assignment.size || 1), assignment.price);
@@ -1970,6 +2087,7 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 
         renderLayout(layoutState);
         appendCatalogOptionsToSelect();
+        appendEquipmentOptionsToSelect();
 
         rackUnitCells.forEach(function (cell) {
             cell.style.cursor = 'pointer';
@@ -2255,4 +2373,3 @@ const rackCatalogOptions = <?php echo json_encode($catalogOptions, JSON_HEX_TAG 
 </script>
 </body>
 </html>
-

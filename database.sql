@@ -1555,6 +1555,7 @@ CREATE TABLE `idf_positions` (
   `equipment_id` varchar(9) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `rj45_count` smallint NOT NULL DEFAULT '0',
   `sfp_count` smallint NOT NULL DEFAULT '0',
+  `price` decimal(10,2) DEFAULT NULL,
   `switch_port_numbering_layout_id` int DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4092,8 +4093,8 @@ WHERE t.`company_id` = @replicate_source_company_id
     WHERE t_existing.`company_id` = c.`id`
       AND t_existing.`idfdevicetype_name` = t.`idfdevicetype_name`
   );
-INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `rj45_count`, `sfp_count`, `notes`, `created_at`, `updated_at`)
-SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`rj45_count`, t.`sfp_count`, t.`notes`, '2026-01-01 00:00:01', t.`updated_at`
+INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `rj45_count`, `sfp_count`, `price`, `notes`, `created_at`, `updated_at`)
+SELECT c.`id`, t.`idf_id`, t.`position_no`, dt_target.`id`, t.`device_name`, t.`equipment_id`, t.`rj45_count`, t.`sfp_count`, t.`price`, t.`notes`, '2026-01-01 00:00:01', t.`updated_at`
 FROM `idf_positions` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
 LEFT JOIN `idf_device_type` dt_source ON dt_source.`id` = t.`device_type`
@@ -4946,15 +4947,15 @@ DROP TRIGGER IF EXISTS `trg_idf_positions_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_idf_positions_audit_insert` AFTER INSERT ON `idf_positions` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'idf_id', NEW.`idf_id`, 'position_no', NEW.`position_no`, 'device_type', NEW.`device_type`, 'device_name', NEW.`device_name`, 'equipment_id', NEW.`equipment_id`, 'rj45_count', NEW.`rj45_count`, 'sfp_count', NEW.`sfp_count`, 'switch_port_numbering_layout_id', NEW.`switch_port_numbering_layout_id`, 'notes', NEW.`notes`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'idf_id', NEW.`idf_id`, 'position_no', NEW.`position_no`, 'device_type', NEW.`device_type`, 'device_name', NEW.`device_name`, 'equipment_id', NEW.`equipment_id`, 'rj45_count', NEW.`rj45_count`, 'sfp_count', NEW.`sfp_count`, 'price', NEW.`price`, 'switch_port_numbering_layout_id', NEW.`switch_port_numbering_layout_id`, 'notes', NEW.`notes`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_idf_positions_audit_update` AFTER UPDATE ON `idf_positions` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idf_id', OLD.`idf_id`, 'position_no', OLD.`position_no`, 'device_type', OLD.`device_type`, 'device_name', OLD.`device_name`, 'equipment_id', OLD.`equipment_id`, 'rj45_count', OLD.`rj45_count`, 'sfp_count', OLD.`sfp_count`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'idf_id', NEW.`idf_id`, 'position_no', NEW.`position_no`, 'device_type', NEW.`device_type`, 'device_name', NEW.`device_name`, 'equipment_id', NEW.`equipment_id`, 'rj45_count', NEW.`rj45_count`, 'sfp_count', NEW.`sfp_count`, 'switch_port_numbering_layout_id', NEW.`switch_port_numbering_layout_id`, 'notes', NEW.`notes`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idf_id', OLD.`idf_id`, 'position_no', OLD.`position_no`, 'device_type', OLD.`device_type`, 'device_name', OLD.`device_name`, 'equipment_id', OLD.`equipment_id`, 'rj45_count', OLD.`rj45_count`, 'sfp_count', OLD.`sfp_count`, 'price', OLD.`price`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'idf_id', NEW.`idf_id`, 'position_no', NEW.`position_no`, 'device_type', NEW.`device_type`, 'device_name', NEW.`device_name`, 'equipment_id', NEW.`equipment_id`, 'rj45_count', NEW.`rj45_count`, 'sfp_count', NEW.`sfp_count`, 'price', NEW.`price`, 'switch_port_numbering_layout_id', NEW.`switch_port_numbering_layout_id`, 'notes', NEW.`notes`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_idf_positions_audit_delete` AFTER DELETE ON `idf_positions` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idf_id', OLD.`idf_id`, 'position_no', OLD.`position_no`, 'device_type', OLD.`device_type`, 'device_name', OLD.`device_name`, 'equipment_id', OLD.`equipment_id`, 'rj45_count', OLD.`rj45_count`, 'sfp_count', OLD.`sfp_count`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'idf_positions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'idf_id', OLD.`idf_id`, 'position_no', OLD.`position_no`, 'device_type', OLD.`device_type`, 'device_name', OLD.`device_name`, 'equipment_id', OLD.`equipment_id`, 'rj45_count', OLD.`rj45_count`, 'sfp_count', OLD.`sfp_count`, 'price', OLD.`price`, 'switch_port_numbering_layout_id', OLD.`switch_port_numbering_layout_id`, 'notes', OLD.`notes`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_idfs_audit_insert`;

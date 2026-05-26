@@ -144,6 +144,17 @@ function rack_planner_fetch_catalog_options(mysqli $conn, int $companyId): array
     return $options;
 }
 
+function rack_planner_price_text($value): string
+{
+    if ($value === null || $value === '') {
+        return 'N/A';
+    }
+    if (!is_numeric($value)) {
+        return 'N/A';
+    }
+    return number_format((float)$value, 2, '.', ',');
+}
+
 function rack_planner_catalog_code_meta_map(array $catalogOptions): array
 {
     $map = [];
@@ -173,7 +184,246 @@ function rack_planner_catalog_code_meta_map(array $catalogOptions): array
     return $map;
 }
 
-function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, array $catalogCodeMeta = []): array
+function rack_planner_fetch_equipment_picker_options(mysqli $conn, int $companyId): array
+{
+    $options = [];
+    if ($companyId <= 0) {
+        return $options;
+    }
+
+    $equipmentSql = "SELECT e.id, e.name, e.purchase_cost, et.name AS equipment_type_name
+                     FROM equipment e
+                     LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
+                     WHERE e.company_id = ?
+                     ORDER BY e.name ASC, e.id ASC";
+    $equipmentStmt = mysqli_prepare($conn, $equipmentSql);
+    if ($equipmentStmt) {
+        mysqli_stmt_bind_param($equipmentStmt, 'i', $companyId);
+        mysqli_stmt_execute($equipmentStmt);
+        $equipmentRes = mysqli_stmt_get_result($equipmentStmt);
+        while ($equipmentRes && ($row = mysqli_fetch_assoc($equipmentRes))) {
+            $name = trim((string)($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $equipmentType = trim((string)($row['equipment_type_name'] ?? ''));
+            if ($equipmentType === '') {
+                $equipmentType = 'Other';
+            }
+
+            $priceValue = null;
+            if (isset($row['purchase_cost']) && $row['purchase_cost'] !== null && $row['purchase_cost'] !== '' && is_numeric($row['purchase_cost'])) {
+                $priceValue = (float)$row['purchase_cost'];
+            }
+
+            $priceText = rack_planner_price_text($priceValue);
+            $size = rack_planner_is_two_ru_name($name) ? 2 : 1;
+            $code = 'equipment:' . (int)$row['id'];
+            $selectText = $name . ' - ' . $equipmentType . ' - ' . $priceText;
+
+            $options[] = [
+                'code' => $code,
+                'label' => $name,
+                'select_text' => $selectText,
+                'size' => $size,
+                'equipment_type' => $equipmentType,
+                'price' => $priceText,
+                'price_value' => $priceValue,
+            ];
+        }
+        mysqli_stmt_close($equipmentStmt);
+    }
+
+    $unlinkedSql = "SELECT p.equipment_id, p.device_name, p.price, dt.idfdevicetype_name
+                    FROM idf_positions p
+                    LEFT JOIN idf_device_type dt ON dt.id = p.device_type AND dt.company_id = p.company_id
+                    WHERE p.company_id = ?
+                      AND p.equipment_id IS NOT NULL
+                      AND p.equipment_id REGEXP '^[0-9]{4}-[0-9]{4}$'
+                    ORDER BY p.device_name ASC, p.equipment_id ASC";
+    $unlinkedStmt = mysqli_prepare($conn, $unlinkedSql);
+    if ($unlinkedStmt) {
+        mysqli_stmt_bind_param($unlinkedStmt, 'i', $companyId);
+        mysqli_stmt_execute($unlinkedStmt);
+        $unlinkedRes = mysqli_stmt_get_result($unlinkedStmt);
+        while ($unlinkedRes && ($row = mysqli_fetch_assoc($unlinkedRes))) {
+            $token = trim((string)($row['equipment_id'] ?? ''));
+            $deviceName = trim((string)($row['device_name'] ?? ''));
+            if ($token === '' || $deviceName === '') {
+                continue;
+            }
+
+            $equipmentType = trim((string)($row['idfdevicetype_name'] ?? ''));
+            if ($equipmentType === '') {
+                $equipmentType = 'Other';
+            }
+
+            $priceValue = null;
+            if (isset($row['price']) && $row['price'] !== null && $row['price'] !== '' && is_numeric($row['price'])) {
+                $priceValue = (float)$row['price'];
+            }
+
+            $priceText = rack_planner_price_text($priceValue);
+            $size = rack_planner_is_two_ru_name($deviceName) ? 2 : 1;
+            $code = 'idf_unlinked:' . $token;
+            $selectText = $deviceName . ' - ' . $equipmentType . ' - ' . $priceText;
+
+            $options[] = [
+                'code' => $code,
+                'label' => $deviceName,
+                'select_text' => $selectText,
+                'size' => $size,
+                'equipment_type' => $equipmentType,
+                'price' => $priceText,
+                'price_value' => $priceValue,
+            ];
+        }
+        mysqli_stmt_close($unlinkedStmt);
+    }
+
+    usort($options, static function (array $a, array $b): int {
+        $labelCompare = strcasecmp((string)($a['label'] ?? ''), (string)($b['label'] ?? ''));
+        if ($labelCompare !== 0) {
+            return $labelCompare;
+        }
+        return strcasecmp((string)($a['code'] ?? ''), (string)($b['code'] ?? ''));
+    });
+
+    return $options;
+}
+
+function rack_planner_combined_code_meta_map(array $catalogOptions, array $equipmentOptions): array
+{
+    $map = rack_planner_catalog_code_meta_map($catalogOptions);
+    foreach ($equipmentOptions as $option) {
+        if (!is_array($option)) {
+            continue;
+        }
+
+        $code = trim((string)($option['code'] ?? ''));
+        if ($code === '') {
+            continue;
+        }
+
+        $size = ((int)($option['size'] ?? 1) === 2) ? 2 : 1;
+        $label = trim((string)($option['label'] ?? ''));
+        if ($label === '') {
+            $label = $code;
+        }
+
+        $map[$code] = [
+            'label' => trim((string)($option['select_text'] ?? $label)),
+            'size' => $size,
+            'price' => isset($option['price_value']) && is_numeric($option['price_value']) ? (float)$option['price_value'] : null,
+        ];
+    }
+
+    return $map;
+}
+
+function rack_planner_sync_source_prices_from_layout(mysqli $conn, int $companyId, array $layout): bool
+{
+    if ($companyId <= 0 || !isset($layout['devices']) || !is_array($layout['devices'])) {
+        return true;
+    }
+
+    $catalogPriceById = [];
+    $equipmentPriceById = [];
+    $unlinkedPriceByToken = [];
+
+    foreach ($layout['devices'] as $device) {
+        if (!is_array($device)) {
+            continue;
+        }
+
+        $code = trim((string)($device['code'] ?? ''));
+        if ($code === '' || !isset($device['price']) || !is_numeric($device['price'])) {
+            continue;
+        }
+
+        $price = (float)$device['price'];
+        if (preg_match('/^catalog:(\d+)$/', $code, $matches)) {
+            $catalogId = (int)($matches[1] ?? 0);
+            if ($catalogId > 0) {
+                $catalogPriceById[$catalogId] = $price;
+            }
+            continue;
+        }
+
+        if (preg_match('/^equipment:(\d+)$/', $code, $matches)) {
+            $equipmentId = (int)($matches[1] ?? 0);
+            if ($equipmentId > 0) {
+                $equipmentPriceById[$equipmentId] = $price;
+            }
+            continue;
+        }
+
+        if (preg_match('/^idf_unlinked:([0-9]{4}-[0-9]{4})$/', $code, $matches)) {
+            $token = trim((string)($matches[1] ?? ''));
+            if ($token !== '') {
+                $unlinkedPriceByToken[$token] = $price;
+            }
+        }
+    }
+
+    $allOk = true;
+
+    if (!empty($catalogPriceById)) {
+        $stmt = mysqli_prepare($conn, "UPDATE catalogs SET price = ? WHERE company_id = ? AND id = ?");
+        if (!$stmt) {
+            $allOk = false;
+        } else {
+            foreach ($catalogPriceById as $catalogId => $price) {
+                $catalogId = (int)$catalogId;
+                $price = (float)$price;
+                mysqli_stmt_bind_param($stmt, 'dii', $price, $companyId, $catalogId);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $allOk = false;
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    if (!empty($equipmentPriceById)) {
+        $stmt = mysqli_prepare($conn, "UPDATE equipment SET purchase_cost = ? WHERE company_id = ? AND id = ?");
+        if (!$stmt) {
+            $allOk = false;
+        } else {
+            foreach ($equipmentPriceById as $equipmentId => $price) {
+                $equipmentId = (int)$equipmentId;
+                $price = (float)$price;
+                mysqli_stmt_bind_param($stmt, 'dii', $price, $companyId, $equipmentId);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $allOk = false;
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    if (!empty($unlinkedPriceByToken)) {
+        $stmt = mysqli_prepare($conn, "UPDATE idf_positions SET price = ? WHERE company_id = ? AND equipment_id = ? AND equipment_id REGEXP '^[0-9]{4}-[0-9]{4}$'");
+        if (!$stmt) {
+            $allOk = false;
+        } else {
+            foreach ($unlinkedPriceByToken as $token => $price) {
+                $token = trim((string)$token);
+                $price = (float)$price;
+                mysqli_stmt_bind_param($stmt, 'dis', $price, $companyId, $token);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $allOk = false;
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    return $allOk;
+}
+
+function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, array $dynamicCodeMeta = []): array
 {
     $units = max(1, min(100, $rackUnits));
     $catalog = rack_planner_component_catalog();
@@ -200,12 +450,14 @@ function rack_planner_normalize_layout_json(string $layoutJson, int $rackUnits, 
         $meta = null;
         if (isset($catalog[$code])) {
             $meta = $catalog[$code];
-        } elseif (isset($catalogCodeMeta[$code])) {
-            $meta = $catalogCodeMeta[$code];
-        } elseif (strpos($code, 'catalog:') === 0) {
+        } elseif (isset($dynamicCodeMeta[$code])) {
+            $meta = $dynamicCodeMeta[$code];
+        } elseif (strpos($code, 'catalog:') === 0 || strpos($code, 'equipment:') === 0 || strpos($code, 'idf_unlinked:') === 0) {
+            $fallbackLabel = trim((string)($rawDevice['label'] ?? $code));
             $meta = [
-                'label' => trim((string)($rawDevice['label'] ?? $code)),
-                'size' => (int)($rawDevice['size'] ?? 1),
+                'label' => $fallbackLabel,
+                'size' => (int)($rawDevice['size'] ?? (rack_planner_is_two_ru_name($fallbackLabel) ? 2 : 1)),
+                'price' => (isset($rawDevice['price']) && is_numeric($rawDevice['price'])) ? (float)$rawDevice['price'] : null,
             ];
         } else {
             continue;
@@ -331,4 +583,3 @@ function rack_planner_assignments_by_unit(array $layout): array
     }
     return $assignments;
 }
-

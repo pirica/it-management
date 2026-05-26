@@ -21,7 +21,7 @@ if (in_array($crud_action, ['edit', 'view'])) {
 
 $componentCatalog = rack_planner_component_catalog();
 $componentGroups = rack_planner_component_groups();
-$normalizedLayout = rack_planner_normalize_layout_json((string)($data['layout_json'] ?? ''), (int)($data['rack_units'] ?? 42), $catalogCodeMeta);
+$normalizedLayout = rack_planner_normalize_layout_json((string)($data['layout_json'] ?? ''), (int)($data['rack_units'] ?? 42), $combinedCodeMeta);
 $data['layout_json'] = rack_planner_encode_layout($normalizedLayout);
 $rackAssignmentsByUnit = rack_planner_assignments_by_unit($normalizedLayout);
 $layoutTotalAmount = rack_planner_layout_total($normalizedLayout);
