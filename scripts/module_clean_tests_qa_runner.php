@@ -472,6 +472,12 @@ function mbqa_clean_tests_run_cleanup(): array
     return $equipmentCleanup;
 }
 
+// Allow other scripts (for example module_browser_qa_runner.php) to reuse
+// cleanup helpers without executing this file's CLI/browser entrypoint.
+if (defined('MBQA_CLEAN_TESTS_LIBRARY_MODE') && MBQA_CLEAN_TESTS_LIBRARY_MODE === true) {
+    return;
+}
+
 $options = mbqa_clean_tests_parse_options();
 $root = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
 $hrefs = mbqa_clean_tests_action_hrefs($root);
