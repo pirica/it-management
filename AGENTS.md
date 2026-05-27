@@ -616,6 +616,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
 * **Color Fields:** Use color picker UI: `<input type="color" name="hex_color" id="cable-hex-color-picker" value="#008000">`.
 * **Date Fields:** Show date picker UI.
+* **Switch Port Manager icon mapping (mandatory):** For `modules/equipment/index.php` generated switch port tiles, keep one centered icon with centered port number overlay. Map by port type + status (`Unknown` check is case-insensitive): RJ45 `Unknown` → `images/switch_port_icons/rj45_38x31_Unknown.png`, RJ45 non-`Unknown` → `images/switch_port_icons/rj45_38x31.png`, SFP `Unknown` → `images/switch_port_icons/sfp_38x38_Unknown.png`, SFP non-`Unknown` → `images/switch_port_icons/sfp_38x38.png`. When status is saved, refresh the icon immediately without page reload.
 
 ---
 

@@ -781,13 +781,28 @@ input[type="color"] {
 .switch-port-num {
     font-size: clamp(9px, calc(var(--switch-port-size) * 0.16), 12px);
     color: #111;
-    z-index: 4;
+    z-index: 6;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-weight: 700;
     text-align: center;
+    pointer-events: none;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.85), 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.switch-port-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: clamp(18px, calc(var(--switch-port-size) * 0.52), 38px);
+    max-width: calc(var(--switch-port-size) - 8px);
+    max-height: calc(var(--switch-port-size) - 8px);
+    height: auto;
+    object-fit: contain;
+    z-index: 3;
     pointer-events: none;
 }
 
@@ -829,7 +844,7 @@ input[type="color"] {
     text-transform: uppercase;
     border-radius: 3px;
     padding: 3px 5px;
-    z-index: 4;
+    z-index: 7;
     pointer-events: none;
 }
 

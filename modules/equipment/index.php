@@ -650,6 +650,10 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
     (function () {
         const apiGet = '<?php echo BASE_URL; ?>includes/get_ports.php';
         const apiUpdate = '<?php echo BASE_URL; ?>includes/update_port.php';
+        const iconRj45Known = '<?php echo BASE_URL; ?>images/switch_port_icons/rj45_38x31.png';
+        const iconRj45Unknown = '<?php echo BASE_URL; ?>images/switch_port_icons/rj45_38x31_Unknown.png';
+        const iconSfpKnown = '<?php echo BASE_URL; ?>images/switch_port_icons/sfp_38x38.png';
+        const iconSfpUnknown = '<?php echo BASE_URL; ?>images/switch_port_icons/sfp_38x38_Unknown.png';
         const selectedSwitchId = <?php echo (int)$selectedSwitchId; ?>;
         const selectedSwitchMeta = <?php echo json_encode($selectedSwitchData ?? []); ?>;
         let ports = [];
@@ -951,6 +955,30 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
             return String(status || '').trim().toLowerCase() === 'up';
         }
 
+        function isUnknownPortStatus(status) {
+            return String(status || '').trim().toLowerCase() === 'unknown';
+        }
+
+        function resolvePortIconUrl(portType, status) {
+            const normalizedType = normalizePortType(portType);
+            const isUnknown = isUnknownPortStatus(status);
+            if (normalizedType === 'sfp') {
+                return isUnknown ? iconSfpUnknown : iconSfpKnown;
+            }
+            return isUnknown ? iconRj45Unknown : iconRj45Known;
+        }
+
+        function paintPortIcon(el) {
+            if (!el) {
+                return;
+            }
+            const icon = el.querySelector('.switch-port-icon');
+            if (!icon) {
+                return;
+            }
+            icon.src = resolvePortIconUrl(el.dataset.portType || 'rj45', el.dataset.status || 'Unknown');
+        }
+
         function paintPort(el, color, colorHex) {
             const normalizedColor = color || 'black';
             const indicator = el.querySelector('.switch-color-indicator');
@@ -978,7 +1006,11 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
             if (!tag) {
                 return;
             }
+            if (typeof status !== 'undefined' && status !== null && String(status).trim() !== '') {
+                el.dataset.status = String(status).trim();
+            }
             tag.style.display = hasUpStatus(status) ? 'inline-block' : 'none';
+            paintPortIcon(el);
         }
 
         function escapeHtml(s) {
@@ -1124,6 +1156,12 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
             vlanDiv.className = 'switch-vlan-indicator';
             el.appendChild(vlanDiv);
 
+            const icon = document.createElement('img');
+            icon.className = 'switch-port-icon';
+            icon.alt = '';
+            icon.setAttribute('aria-hidden', 'true');
+            el.appendChild(icon);
+
             const frameDiv = document.createElement('div');
             frameDiv.className = 'switch-port-frame';
             el.appendChild(frameDiv);
@@ -1141,6 +1179,7 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
             el.appendChild(statusTag);
 
             paintVlan(el, p.vlan_id);
+            paintPortIcon(el);
 
             el.addEventListener('mouseenter', function (ev) { showTooltip(ev, el); });
             el.addEventListener('mousemove', moveTooltip);
@@ -1562,4 +1601,3 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
 <?php endif; ?>
 </body>
 </html>
-
