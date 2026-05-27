@@ -278,6 +278,16 @@
                     <td><strong>CLI only</strong> (browser shows instructions + <strong>← Scripts index</strong>): <code>php scripts/normalize_database_sql_created_at.php</code></td>
                 </tr>
                 <tr>
+                    <td>apply_module_sample_data_seed.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Automates PR #1993-style seed expansion per module/table: adds missing sample rows for every company listed in <code>companies</code> and updates the target table <code>AUTO_INCREMENT</code> in <code>database.sql</code>. Supports defaults for <code>idf_device_type</code> and custom <code>--sample</code> values for other modules.</td>
+                    <td>
+                        <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code><br>
+                        <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --dry-run</code><br>
+                        <code>php scripts/apply_module_sample_data_seed.php --module=equipment_poe --value-column=name --sample=LabPoE --dry-run</code>
+                    </td>
+                </tr>
+                <tr>
                     <td>export_floor_plan_folders_seed.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>database.sql</code>-style <code>INSERT</code> statements for pasting into seed data.</td>

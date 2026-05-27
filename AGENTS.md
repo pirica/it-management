@@ -167,7 +167,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** — see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**.
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **Setup & Debugging → PHP CLI tests**).
-* **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
+* **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_module_sample_data_seed.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
 #### 4. Shared libraries (do not duplicate ad hoc)
@@ -212,6 +212,8 @@ GitHub Actions (`.github/workflows/smoke.yml`) and local CI use **`bash scripts/
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/index.html`).
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
+
+Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate PR #1993-style per-company lookup seed additions (updates inserts + table `AUTO_INCREMENT`).
 
 #### Full-module browser QA (5 companies, Laragon)
 
