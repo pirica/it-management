@@ -221,7 +221,40 @@ function itm_seed_extract_company_ids(string $sql): array
 }
 
 /**
- * @return array{columns:array<int,string>,create_start:int,create_end:int,engine_start:int,engine_end:int}|null
+ * @return array<string,array{not_null:bool,has_default:bool,auto_increment:bool,generated:bool}>
+ */
+function itm_seed_collect_column_specs(string $createBody): array
+{
+    $specs = [];
+    $lines = preg_split('/\R/', $createBody);
+    if (!is_array($lines)) {
+        return $specs;
+    }
+
+    foreach ($lines as $line) {
+        $trimmed = trim((string)$line);
+        if ($trimmed === '' || strpos($trimmed, '`') !== 0) {
+            continue;
+        }
+        if (!preg_match('/^`([^`]+)`\s+(.*)$/', $trimmed, $match)) {
+            continue;
+        }
+
+        $columnName = strtolower((string)$match[1]);
+        $definition = strtoupper(rtrim((string)$match[2], ", \t"));
+        $specs[$columnName] = [
+            'not_null' => strpos($definition, 'NOT NULL') !== false,
+            'has_default' => strpos($definition, 'DEFAULT ') !== false,
+            'auto_increment' => strpos($definition, 'AUTO_INCREMENT') !== false,
+            'generated' => strpos($definition, ' GENERATED ') !== false || strpos($definition, ' AS (') !== false,
+        ];
+    }
+
+    return $specs;
+}
+
+/**
+ * @return array{columns:array<int,string>,column_specs:array<string,array{not_null:bool,has_default:bool,auto_increment:bool,generated:bool}>,create_start:int,create_end:int,engine_start:int,engine_end:int}|null
  */
 function itm_seed_find_table_metadata(string $sql, string $table): ?array
 {
@@ -249,6 +282,7 @@ function itm_seed_find_table_metadata(string $sql, string $table): ?array
 
     return [
         'columns' => $columns,
+        'column_specs' => itm_seed_collect_column_specs($body),
         'create_start' => $fullStart,
         'create_end' => $fullEnd,
         'engine_start' => $engineStart,
@@ -343,6 +377,52 @@ function itm_seed_pick_emoji_column(array $tableColumns, string $preferred): str
     return '';
 }
 
+/**
+ * @param array<int,string> $templateColumns
+ * @param array<string,array{not_null:bool,has_default:bool,auto_increment:bool,generated:bool}> $columnSpecs
+ * @param array<int,string> $handledColumns
+ */
+function itm_seed_assert_supported_template_columns(string $table, array $templateColumns, array $columnSpecs, array $handledColumns): void
+{
+    $handledMap = [];
+    foreach ($handledColumns as $column) {
+        $handledMap[strtolower($column)] = true;
+    }
+
+    $unsupportedRequired = [];
+    foreach ($templateColumns as $columnName) {
+        $columnKey = strtolower($columnName);
+        if (isset($handledMap[$columnKey])) {
+            continue;
+        }
+
+        if (!isset($columnSpecs[$columnKey])) {
+            $unsupportedRequired[] = $columnName . ' (definition parse failed)';
+            continue;
+        }
+
+        $spec = $columnSpecs[$columnKey];
+        if ($spec['generated']) {
+            $unsupportedRequired[] = $columnName . ' (generated column)';
+            continue;
+        }
+
+        if ($spec['auto_increment']) {
+            continue;
+        }
+
+        if ($spec['not_null'] && !$spec['has_default']) {
+            $unsupportedRequired[] = $columnName;
+        }
+    }
+
+    if ($unsupportedRequired !== []) {
+        fwrite(STDERR, "[ERROR] Unsupported required columns for table '{$table}': " . implode(', ', $unsupportedRequired) . "\n");
+        fwrite(STDERR, "This script only auto-populates lookup-safe columns. Add explicit mappings before seeding this table.\n");
+        exit(2);
+    }
+}
+
 $args = itm_seed_parse_args($argv);
 
 $module = $args['module'];
@@ -413,6 +493,7 @@ if ($meta === null) {
 }
 
 $tableColumns = $meta['columns'];
+$tableColumnSpecs = $meta['column_specs'];
 $columnMap = [];
 foreach ($tableColumns as $column) {
     $columnMap[strtolower($column)] = $column;
@@ -473,6 +554,21 @@ $activeColumn = $columnMap['active'] ?? '';
 $createdAtColumn = $columnMap['created_at'] ?? '';
 $updatedAtColumn = $columnMap['updated_at'] ?? '';
 $createdAtDefault = '2026-01-01 00:00:01';
+$handledColumns = ['id', 'company_id', $valueColumn];
+if ($emojiColumn !== '') {
+    $handledColumns[] = $emojiColumn;
+}
+if ($activeColumn !== '') {
+    $handledColumns[] = $activeColumn;
+}
+if ($createdAtColumn !== '') {
+    $handledColumns[] = $createdAtColumn;
+}
+if ($updatedAtColumn !== '') {
+    $handledColumns[] = $updatedAtColumn;
+}
+
+itm_seed_assert_supported_template_columns($table, $templateColumns, $tableColumnSpecs, $handledColumns);
 
 foreach ($companyIds as $companyId) {
     foreach ($normalizedSamples as $sample) {
