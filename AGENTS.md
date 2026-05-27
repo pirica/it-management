@@ -213,7 +213,7 @@ Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_cover
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
-Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate PR #1993-style per-company lookup seed additions (updates inserts + table `AUTO_INCREMENT`).
+Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate PR #1993-style per-company lookup seed additions (updates inserts only).
 
 #### Full-module browser QA (5 companies, Laragon)
 
