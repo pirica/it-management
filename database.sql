@@ -1511,7 +1511,7 @@ CREATE TABLE `idf_device_type` (
   UNIQUE KEY `idf_device_type_unique` (`company_id`,`idfdevicetype_name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `idf_device_type_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `idf_device_type`
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('6', '2', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
@@ -1538,6 +1538,21 @@ INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('15', '3', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('20', '4', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('25', '5', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('26', '1', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('29', '2', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('32', '3', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('35', '4', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('38', '5', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('27', '1', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('30', '2', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('33', '3', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('36', '4', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('39', '5', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('28', '1', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('31', '2', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('34', '3', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('37', '4', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
+INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('40', '5', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
 -- Table structure for `idf_positions`
 DROP TABLE IF EXISTS `idf_positions`;
 CREATE TABLE `idf_positions` (
