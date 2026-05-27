@@ -116,7 +116,7 @@ Options:
 
 Defaults:
   For --module=idf_device_type with no --sample options, the script applies:
-    firewall:🛡️, router:📡, pdu:🔌
+    other:📦, server:🖥️, ups:🔋, patch_panel:➿, switch:🔀
 
 TXT;
 }
@@ -361,9 +361,11 @@ if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
 $samples = $args['samples'];
 if ($samples === [] && strcasecmp($module, 'idf_device_type') === 0) {
     $samples = [
-        ['value' => 'firewall', 'emoji' => '🛡️'],
-        ['value' => 'router', 'emoji' => '📡'],
-        ['value' => 'pdu', 'emoji' => '🔌'],
+        ['value' => 'other', 'emoji' => '📦'],
+        ['value' => 'server', 'emoji' => '🖥️'],
+        ['value' => 'ups', 'emoji' => '🔋'],
+        ['value' => 'patch_panel', 'emoji' => '➿'],
+        ['value' => 'switch', 'emoji' => '🔀'],
     ];
 }
 if ($samples === []) {
