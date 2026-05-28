@@ -189,12 +189,14 @@ function rrmdir($dir) {
 header("Content-Type: application/json; charset=utf-8");
 
 $action = $_POST['action'] ?? '';
-$path   = $_POST['path']   ?? '';
+// Why: Normalize path to ensure trailing slashes do not bypass root protection guards.
+$path = trim((string)($_POST['path'] ?? ''), '/');
 
 switch ($action) {
 
 /* ---------------- LIST ---------------- */
 case "list":
+    // Why: get_full_path already trims $path, but we keep the local $path trimmed for logic checks.
     $dir = get_full_path($storage_root, $path, $user_id, $dept_id, $username);
     if (!$dir) { echo json_encode(['items' => []]); break; }
 
@@ -330,6 +332,7 @@ case "rename":
 
 /* ---------------- COPY ---------------- */
 case "copy":
+    // Why: Normalize source and destination to prevent root protection bypass with trailing slashes.
     $src_rel = trim((string)($_POST['src_path'] ?? $path), '/');
     $dest_rel = trim((string)($_POST['dest'] ?? $src_rel), '/');
 
@@ -368,8 +371,9 @@ case "copy":
 
 /* ---------------- MOVE ---------------- */
 case "move":
-    $src_rel = $_POST['src_path'] ?? $path;
-    $dest_rel = $_POST['dest'] ?? '';
+    // Why: Normalize source and destination to prevent root protection bypass with trailing slashes.
+    $src_rel = trim((string)($_POST['src_path'] ?? $path), '/');
+    $dest_rel = trim((string)($_POST['dest'] ?? ''), '/');
 
     $dir = get_full_path($storage_root, $src_rel, $user_id, $dept_id, $username);
     $targetDir = get_full_path($storage_root, $dest_rel, $user_id, $dept_id, $username);

@@ -20,6 +20,21 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
 
 $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['user_id'];
+
+// Why: Fallback to database if session username is missing (e.g. legacy session).
+if (!isset($_SESSION['username'])) {
+    $stmt = mysqli_prepare($conn, "SELECT username FROM users WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($user_row = mysqli_fetch_assoc($res)) {
+            $_SESSION['username'] = $user_row['username'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
 $username = $_SESSION['username'] ?? 'User';
 $user_private_dir = "{$username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
