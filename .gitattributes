@@ -1,0 +1,13 @@
+# Text files are UTF-8; avoid silent ANSI re-saves breaking em dashes and emoji in docs/reports.
+* text=auto eol=lf
+
+*.php text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+
+# Generated QA markdown may include a UTF-8 BOM for Windows Notepad; still UTF-8.
+qa-reports/*.md text eol=lf
