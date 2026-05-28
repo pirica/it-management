@@ -103,7 +103,7 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
     // Why: Access control logic.
     // Paths starting with 'private' are restricted to the owner's username subfolder.
     if (str_starts_with($relative_path, 'Private')) {
-        if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'private') {
+        if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'Private') {
             return null;
         }
     }
@@ -187,12 +187,12 @@ case "list":
     if (!$dir) { echo json_encode(['items' => []]); break; }
 
     // Why: Ensure structure for new company.
-    if ($path === '' && !is_dir("$dir/common")) {
+    if ($path === '' && !is_dir("$dir/Common")) {
         @mkdir("$dir/Common", 0777, true);
         @mkdir("$dir/Private", 0777, true);
         @mkdir("$dir/Departments", 0777, true);
         @mkdir("$dir/Private/$username", 0777, true);
-        if ($dept_id > 0) @mkdir("$dir/department/$dept_id", 0777, true);
+        if ($dept_id > 0) @mkdir("$dir/Departments/$dept_id", 0777, true);
     }
 
     $items = [];
