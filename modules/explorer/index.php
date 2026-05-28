@@ -21,18 +21,20 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
 $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
+$user_private_dir = "{$username}_{$user_id}";
 
-/*
-if (!empty($_SESSION)) {
-    echo "<pre>"; // Format output for readability
-    print_r($_SESSION); // Print all session variables
-    echo "</pre>";
-} else {
-    echo "No session variables are set.";
+// Why: Fetch employee info to use as the correctly-scoped User label.
+$employee_id = 0;
+$display_name = $username;
+$emp_res = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE user_id = $user_id AND company_id = $company_id LIMIT 1");
+if ($emp_res && $emp_row = mysqli_fetch_assoc($emp_res)) {
+    $employee_id = (int)$emp_row['id'];
+    if (!empty($emp_row['display_name'])) {
+        $display_name = $emp_row['display_name'];
+    }
 }
-*/
-// Why: Ensure the root /files/{company_id} directory exists via an API call or logic.
-// Handled by api.php on first list, but we can do a quick check here too.
+
+// Why: Ensure the root /files/{company_id} directory exists.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 if (!is_dir($storage_root)) {
     @mkdir($storage_root, 0777, true);
@@ -83,6 +85,7 @@ body {
 #sidebar div { margin-bottom:12px; cursor:pointer; padding: 6px; border-radius: 4px; }
 #sidebar div:hover { background: #f0f0f0; }
 .dark #sidebar div:hover { background: #3a3a3a; }
+#sidebar a { text-decoration: none; color: inherit; display: block; }
 
 /* TOPBAR */
 .topbar {
@@ -271,12 +274,12 @@ button:hover { background:#1d3570; }
 
 <div id="sidebar">
     <h3>📌 Quick Access</h3>
-    <div><a href=../../dashboard.php>📊 Dashboard</a></div>
-    <div onclick="loadFolder('')">🏠 Home (Company Root)</div>
-    <div onclick="loadFolder('Common')">🌐 Common Area</div>
-    <div onclick="loadFolder('Departments')">🏢 Department Area</div>
-    <div onclick="loadFolder('Private')">🔒 Private Area</div>
-    <div onclick="openRecycle()">♻️ Recycle</div>
+    <div onclick="closeSidebar()"><a href="../../dashboard.php">📊 Dashboard</a></div>
+    <div onclick="loadFolder(''); closeSidebar();">🏠 Home (Company Root)</div>
+    <div onclick="loadFolder('Common'); closeSidebar();">🌐 Common Area</div>
+    <div onclick="loadFolder('Departments'); closeSidebar();">🏢 Department Area</div>
+    <div onclick="loadFolder('Private'); closeSidebar();">🔒 Private Area</div>
+    <div onclick="openRecycle(); closeSidebar();">🗑️ Trash</div>
 
     <h4>⭐ Favourites</h4>
     <div id="favorites"></div>
@@ -289,7 +292,7 @@ button:hover { background:#1d3570; }
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
-            <span style="font-size: 13px; color: #666;"><a href=../../dashboard.php><?= sanitize($username) ?></a></span>
+            <span style="font-size: 13px; color: #666;"><a href="../../dashboard.php"><?= sanitize($display_name) ?></a></span>
             <button id="sidebarToggle">☰</button>
         </div>
     </div>
@@ -318,9 +321,10 @@ let tabs = [{ path: "", title: "Home" }];
 let activeTab = 0;
 let currentPath = "";
 let selected = new Set();
-let clipboard = { type: null, items: [] };
+let clipboard = { type: null, path: null, items: [] };
 let contextItem = null;
 let inRecycle = false;
+let userPrivateDir = "<?= $user_private_dir ?>";
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
 
 const sidebar   = document.getElementById("sidebar");
@@ -331,6 +335,10 @@ const preview   = document.getElementById("preview");
 const previewCont = document.getElementById("previewContainer");
 
 btnToggle.onclick = () => sidebar.classList.toggle("open");
+
+function closeSidebar() {
+    sidebar.classList.remove("open");
+}
 
 function applyDarkMode() {
     if (localStorage.getItem("itm_dark_mode") === "true") {
@@ -348,6 +356,7 @@ function toggleDark(){
 function api(action, data = {}) {
     data.action = action;
     data.path = currentPath;
+    data.csrf_token = "<?= itm_get_csrf_token() ?>";
     return fetch("api.php", {
         method: "POST",
         body: new URLSearchParams(data)
@@ -377,7 +386,7 @@ function renderTabs() {
 function renderBreadcrumbs() {
     const el = document.getElementById("breadcrumbs");
     if (inRecycle) {
-        el.textContent = "♻️ Recycle";
+        el.textContent = "🗑️ Trash";
         return;
     }
     const parts = currentPath.split("/").filter(Boolean);
@@ -426,7 +435,7 @@ function renderIcons(list) {
                 if (item.name === "Departments") emoji = "🏢";
                 if (item.name === "Private") emoji = "🔒";
             } else if (currentPath === "Private") {
-                emoji = "👤";
+                if (item.name === userPrivateDir) emoji = "👤";
             }
         }
         if (item.type === "zip")    emoji = "🗜️";
@@ -526,7 +535,7 @@ function showEmptyContextMenu(e) {
         <div onclick="refreshFolder()">Refresh 🔄</div>
         <hr>
         <div onclick="createYearMonthDay()">Create Year/Month/Day Structure 🗓️</div>
-        <div onclick="createYears()">Create Year 🗓️</div>
+        <div onclick="createYear()">Create Year 🗓️</div>
         <div onclick="createMonths()">Create Months 🗓️</div>
         <div onclick="createDays()">Create Days 📅</div>
     `;
@@ -608,12 +617,14 @@ function renameItem() {
 function copyItem() {
     if (!contextItem) return;
     clipboard.type = "copy";
+    clipboard.path = currentPath;
     clipboard.items = [contextItem.name];
 }
 
 function cutItem() {
     if (!contextItem) return;
     clipboard.type = "move";
+    clipboard.path = currentPath;
     clipboard.items = [contextItem.name];
 }
 
@@ -626,14 +637,26 @@ function pasteItem() {
     const item = clipboard.items[0];
 
     if (clipboard.type === "copy") {
-        api("copy", { item }).then(() => loadFolder(currentPath));
+        api("copy", {
+            item,
+            src_path: clipboard.path,
+            dest: currentPath
+        }).then(res => {
+            if (res.ok) {
+                loadFolder(currentPath);
+            } else {
+                alert(res.error || "Copy failed.");
+            }
+        });
     } else if (clipboard.type === "move") {
         api("move", { 
             item,
+            src_path: clipboard.path,
             dest: currentPath
         }).then(res => {
             if (res.ok) {
                 clipboard.items = [];
+                clipboard.path = null;
                 clipboard.type = null;
                 loadFolder(currentPath);
             } else {
@@ -647,6 +670,7 @@ function pasteItem() {
 function moveTo() {
     if (!contextItem) return;
     clipboard.type = "move";
+    clipboard.path = currentPath;
     clipboard.items = [contextItem.name];
     alert("Now navigate to the destination folder and use PASTE from the context menu.");
 }
@@ -665,6 +689,22 @@ function createYearMonthDay() {
     api("createYearMonthDay", {}).then(() => loadFolder(currentPath));
 }
 
+function createYear() {
+    api("createYear", {}).then(() => loadFolder(currentPath));
+}
+
+function createMonths() {
+    api("createMonths", {}).then(() => loadFolder(currentPath));
+}
+
+function createDays() {
+    api("createDays", {}).then(() => loadFolder(currentPath));
+}
+
+function refreshFolder() {
+    loadFolder(currentPath);
+}
+
 /* UPLOAD */
 function triggerUpload() {
     const input = document.createElement("input");
@@ -677,6 +717,7 @@ function uploadFiles(files) {
     const form = new FormData();
     form.append("action", "upload");
     form.append("path", currentPath);
+    form.append("csrf_token", "<?= itm_get_csrf_token() ?>");
     for (let f of files) form.append("files[]", f);
     fetch("api.php", { method:"POST", body:form })
         .then(() => loadFolder(currentPath));

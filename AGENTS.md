@@ -426,6 +426,18 @@ When Rack Planner stores a priced device with code `catalog:<id>`, `equipment:<i
 
 Do not keep price edits only inside `rack_planner.layout_json`; source tables must remain aligned.
 
+#### Explorer module (mandatory)
+
+The explorer module (`modules/explorer/`) provides a secure, multi-tenant file system.
+
+1. **Storage:** Anchored at `/files/{company_id}/` and subdivided into `Common/` (all company users), `Departments/{dept_id}/` (department members only), and `Private/{username}_{user_id}/` (owner only).
+2. **Access Control:**
+    - Segment-boundary checks must be used for path validation (e.g. check for `Private/{owner}/` or exact `Private/{owner}`).
+    - Users can only access `Common`, their assigned `Departments/{dept_id}`, and their own `Private/{username}_{user_id}`.
+    - Creation or upload of items is blocked directly in `Home` (root), `Private` root, and `Departments` root.
+3. **Protected Folders:** Top-level system folders (`Common`, `Departments`, `Private`) and the user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
+4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.

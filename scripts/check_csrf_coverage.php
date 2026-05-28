@@ -182,6 +182,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: scripts/explorer_human_test.php is a CLI integration test; $_POST is mocked for internal API calls.
+    if ($relativePath === 'scripts/explorer_human_test.php') {
+        $skipped[] = [
+            $relativePath,
+            'CLI integration test: mocks $_POST for internal API inclusions; not a web-accessible POST endpoint',
+        ];
+        continue;
+    }
+
     // Why: module_browser_qa_* scripts are CLI/browser QA tools; $_POST is option parsing only and
     // $_SESSION['company_id'] simulates tenant context for HTTP checks — not application CRUD endpoints.
     if (preg_match('#^scripts/module_browser_qa_.+\\.php$#', $relativePath) === 1) {

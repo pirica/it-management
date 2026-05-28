@@ -20,11 +20,11 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
 
 $company_id = (int)($_SESSION['company_id'] ?? 1);
 $storage_root = ROOT_PATH . 'files/' . $company_id;
-$recycle_root = $storage_root . '/Recycle';
+$trash_root = $storage_root . '/Trash';
 
 /* Create directories if they don't exist */
 if (!is_dir($storage_root)) mkdir($storage_root, 0777, true);
-if (!is_dir($recycle_root)) mkdir($recycle_root, 0777, true);
+if (!is_dir($trash_root)) mkdir($trash_root, 0777, true);
 
 /* Create initial subfolders */
 @mkdir($storage_root . '/Common', 0777, true);
