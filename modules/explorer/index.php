@@ -266,7 +266,7 @@ button:hover { background:#1d3570; }
     <div onclick="loadFolder('common')">🌐 Common Area</div>
     <div onclick="loadFolder('department')">🏢 Department Area</div>
     <div onclick="loadFolder('private')">🔒 Private Area</div>
-    <div onclick="openRecycle()">🗑 Recycle Bin</div>
+    <div onclick="openRecycle()">♻️ Recycle Bin</div>
 
     <h4>⭐ Favourites</h4>
     <div id="favorites"></div>
