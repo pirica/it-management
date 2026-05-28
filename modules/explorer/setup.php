@@ -27,12 +27,12 @@ if (!is_dir($storage_root)) mkdir($storage_root, 0777, true);
 if (!is_dir($recycle_root)) mkdir($recycle_root, 0777, true);
 
 /* Create initial subfolders */
-@mkdir($storage_root . '/common', 0777, true);
-@mkdir($storage_root . '/department', 0777, true);
-@mkdir($storage_root . '/private', 0777, true);
+@mkdir($storage_root . '/Common', 0777, true);
+@mkdir($storage_root . '/Departments', 0777, true);
+@mkdir($storage_root . '/Private', 0777, true);
 
 /* Create test file */
-file_put_contents($storage_root . '/common/Welcome.txt', "Explorer successfully initialised.\n");
+file_put_contents($storage_root . '/Common/Welcome.txt', "Explorer successfully initialised.\n");
 
 if (PHP_SAPI === 'cli') {
     echo "Setup completed for Company ID: $company_id\n";
