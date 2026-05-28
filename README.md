@@ -85,6 +85,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment (includes **Network Discovery** TCP scan under IP Subnets)
 - Rack planner — Visual rack elevation and component placement
 - Floor Plans — Image/PDF/CAD gallery with nested folders, tags, optional IT Location link, and drag-and-drop moves ([details](#floor-plans-gallery))
+- Explorer — Advanced web-based file explorer with Common, Department, and Private storage areas, localised to UK English.
 - Printers — Track printers and supplies
 - Workstations — Manage workstations
 - Tickets — Support ticket system
