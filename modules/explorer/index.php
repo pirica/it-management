@@ -515,6 +515,9 @@ function showEmptyContextMenu(e) {
         <div onclick="pasteItem()">Paste</div>
         <hr>
         <div onclick="createYearMonthDay()">Create Year/Month/Day Structure</div>
+        <div onclick="createYears()">Create Year</div>
+        <div onclick="createMonths()">Create Months</div>
+        <div onclick="createDays()">Create Days</div>
     `;
 
     ctxMenu.style.left = e.pageX + "px";
