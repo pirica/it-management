@@ -356,6 +356,7 @@ function toggleDark(){
 function api(action, data = {}) {
     data.action = action;
     data.path = currentPath;
+    data.csrf_token = "<?= itm_get_csrf_token() ?>";
     return fetch("api.php", {
         method: "POST",
         body: new URLSearchParams(data)
@@ -716,6 +717,7 @@ function uploadFiles(files) {
     const form = new FormData();
     form.append("action", "upload");
     form.append("path", currentPath);
+    form.append("csrf_token", "<?= itm_get_csrf_token() ?>");
     for (let f of files) form.append("files[]", f);
     fetch("api.php", { method:"POST", body:form })
         .then(() => loadFolder(currentPath));

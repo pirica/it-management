@@ -107,6 +107,11 @@ if (!isset($_SESSION['company_id'])) {
     exit;
 }
 
+// Why: Enforce CSRF protection for all state-changing API requests.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+}
+
 $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'unknown';

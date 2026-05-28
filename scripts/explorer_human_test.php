@@ -71,6 +71,7 @@ function mock_api_call($action, $path = '', $params = []) {
     $_POST = [];
     $_POST['action'] = $action;
     $_POST['path'] = $path;
+    $_POST['csrf_token'] = itm_get_csrf_token();
     foreach ($params as $k => $v) $_POST[$k] = $v;
 
     ob_start();
