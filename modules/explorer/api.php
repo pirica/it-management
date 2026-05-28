@@ -330,8 +330,8 @@ case "rename":
 
 /* ---------------- COPY ---------------- */
 case "copy":
-    $src_rel = $_POST['src_path'] ?? $path;
-    $dest_rel = $_POST['dest'] ?? $src_rel;
+    $src_rel = trim((string)($_POST['src_path'] ?? $path), '/');
+    $dest_rel = trim((string)($_POST['dest'] ?? $src_rel), '/');
 
     $dir = get_full_path($storage_root, $src_rel, $user_id, $dept_id, $username);
     $targetDir = get_full_path($storage_root, $dest_rel, $user_id, $dept_id, $username);
