@@ -39,14 +39,5 @@ if (PHP_SAPI === 'cli') {
 } else {
     echo "<h2>Setup completed!</h2>";
     echo "<p>The storage directories for Company ID: <b>$company_id</b> have been created in <b>/files/</b>.</p>";
-    echo "<p>You can now open the <a href='index.php'>Explorer</a>.</p>";
-if (!empty($_SESSION)) {
-    echo "<pre>"; // Format output for readability
-    print_r($_SESSION); // Print all session variables
-    echo "</pre>";
-} else {
-    echo "No session variables are set.";
-}
-
-    
+    echo "<p>You can now open the <a href='index.php'>Explorer</a>.</p>";   
 }
