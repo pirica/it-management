@@ -17,13 +17,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
         exit;
     }
 }
-if (!empty($_SESSION)) {
-    echo "<pre>"; // Format output for readability
-    print_r($_SESSION); // Print all session variables
-    echo "</pre>";
-} else {
-    echo "No session variables are set.";
-}
+
 $company_id = (int)($_SESSION['company_id'] ?? 1);
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 $recycle_root = $storage_root . '/recycle_bin';
@@ -46,4 +40,13 @@ if (PHP_SAPI === 'cli') {
     echo "<h2>Setup completed!</h2>";
     echo "<p>The storage directories for Company ID: <b>$company_id</b> have been created in <b>/files/</b>.</p>";
     echo "<p>You can now open the <a href='index.php'>Explorer</a>.</p>";
+if (!empty($_SESSION)) {
+    echo "<pre>"; // Format output for readability
+    print_r($_SESSION); // Print all session variables
+    echo "</pre>";
+} else {
+    echo "No session variables are set.";
+}
+
+    
 }
