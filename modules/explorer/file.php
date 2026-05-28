@@ -38,14 +38,14 @@ $full_path = $storage_root . ($path ? "/" . trim($path, '/') : "");
 
 // Why: Access control logic (mirroring api.php).
 $relative_path = trim($path, '/');
-if (str_starts_with($relative_path, 'private')) {
-    if (!str_starts_with($relative_path, "private/$username") && $relative_path !== 'private') {
+if (str_starts_with($relative_path, 'Private')) {
+    if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'private') {
         http_response_code(403);
         exit("Access denied to private folder.");
     }
 }
-if (str_starts_with($relative_path, 'department')) {
-    if ($dept_id <= 0 || (!str_starts_with($relative_path, "department/$dept_id") && $relative_path !== 'department')) {
+if (str_starts_with($relative_path, 'Departments')) {
+    if ($dept_id <= 0 || (!str_starts_with($relative_path, "Departments/$dept_id") && $relative_path !== 'Departments')) {
         http_response_code(403);
         exit("Access denied to department folder.");
     }
@@ -75,7 +75,14 @@ if ($ext === 'pdf') {
     readfile($full_path);
     exit;
 }
-
+/* -------------------------
+   ZIP
+------------------------- */
+if ($ext === 'zip') {
+    header("Content-Type: application/zip");
+    readfile($full_path);
+    exit;
+}
 /* -------------------------
    TEXT / CODE
 ------------------------- */
