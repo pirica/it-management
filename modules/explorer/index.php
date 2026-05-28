@@ -23,7 +23,7 @@ $user_id = (int)$_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
 $user_private_dir = "{$username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
-
+/*
 // Why: Fetch employee info to use as the correctly-scoped User label.
 $employee_id = 0;
 $display_name = $username;
@@ -34,7 +34,7 @@ if ($emp_res && $emp_row = mysqli_fetch_assoc($emp_res)) {
         $display_name = $emp_row['display_name'];
     }
 }
-
+*/
 // Why: Ensure the root /files/{company_id} directory exists.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 if (!is_dir($storage_root)) {
@@ -293,7 +293,7 @@ button:hover { background:#1d3570; }
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
-            <span style="font-size: 13px; color: #666;"><a href="../../dashboard.php"><?= sanitize($display_name) ?></a></span>
+            <span style="font-size: 13px; color: #666;"><a href="../../dashboard.php"><?= sanitize($username) ?></a></span>
             <button id="sidebarToggle">☰</button>
         </div>
     </div>
