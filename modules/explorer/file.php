@@ -39,7 +39,7 @@ $full_path = $storage_root . ($path ? "/" . trim($path, '/') : "");
 // Why: Access control logic (mirroring api.php).
 $relative_path = trim($path, '/');
 if (str_starts_with($relative_path, 'Private')) {
-    if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'private') {
+    if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'Private') {
         http_response_code(403);
         exit("Access denied to private folder.");
     }
