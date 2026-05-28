@@ -17,7 +17,13 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
         exit;
     }
 }
-
+if (!empty($_SESSION)) {
+    echo "<pre>"; // Format output for readability
+    print_r($_SESSION); // Print all session variables
+    echo "</pre>";
+} else {
+    echo "No session variables are set.";
+}
 $company_id = (int)($_SESSION['company_id'] ?? 1);
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 $recycle_root = $storage_root . '/recycle_bin';
