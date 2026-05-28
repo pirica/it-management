@@ -275,12 +275,12 @@ button:hover { background:#1d3570; }
 <div id="main">
     <div class="topbar">
         <div style="display:flex; gap:10px;">
-            <button id="sidebarToggle">☰</button>
             <button onclick="toggleDark()">🌙 Toggle Theme</button>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
             <span style="font-size: 13px; color: #666;"><?= sanitize($username) ?></span>
+            <button id="sidebarToggle">☰</button>
         </div>
     </div>
 
