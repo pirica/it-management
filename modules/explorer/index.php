@@ -275,7 +275,7 @@ button:hover { background:#1d3570; }
     <div onclick="loadFolder('Common')">🌐 Common Area</div>
     <div onclick="loadFolder('Departments')">🏢 Department Area</div>
     <div onclick="loadFolder('Private')">🔒 Private Area</div>
-    <div onclick="openRecycle()">♻️ Recycle Bin</div>
+    <div onclick="openRecycle()">♻️ Recycle</div>
 
     <h4>⭐ Favourites</h4>
     <div id="favorites"></div>
@@ -288,7 +288,7 @@ button:hover { background:#1d3570; }
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
-            <span style="font-size: 13px; color: #666;"><?= sanitize($username) ?></span>
+            <span style="font-size: 13px; color: #666;"><a href=../../index.php><?= sanitize($username) ?></a></span>
             <button id="sidebarToggle">☰</button>
         </div>
     </div>
@@ -376,7 +376,7 @@ function renderTabs() {
 function renderBreadcrumbs() {
     const el = document.getElementById("breadcrumbs");
     if (inRecycle) {
-        el.textContent = "♻️ Recycle Bin";
+        el.textContent = "♻️ Recycle";
         return;
     }
     const parts = currentPath.split("/").filter(Boolean);
@@ -492,7 +492,7 @@ function showContextMenu(e, item) {
             <div onclick="renameItem()">Rename</div>
             <div onclick="deleteItem()">Delete</div>
             <hr>
-            <div onclick="zipItem()">Compress (Zip)</div>
+            <div onclick="zipItem()">Compress 🗜️</div>
             <div onclick="moveTo()">Move to…</div>
             <div onclick="toggleFavourite('${item.name}')">⭐ Favourite</div>
         `;
