@@ -272,9 +272,9 @@ button:hover { background:#1d3570; }
 <div id="sidebar">
     <h3>📌 Quick Access</h3>
     <div onclick="loadFolder('')">🏠 Home (Company Root)</div>
-    <div onclick="loadFolder('common')">🌐 Common Area</div>
-    <div onclick="loadFolder('department')">🏢 Department Area</div>
-    <div onclick="loadFolder('private')">🔒 Private Area</div>
+    <div onclick="loadFolder('Common')">🌐 Common Area</div>
+    <div onclick="loadFolder('Departments')">🏢 Department Area</div>
+    <div onclick="loadFolder('Private')">🔒 Private Area</div>
     <div onclick="openRecycle()">♻️ Recycle Bin</div>
 
     <h4>⭐ Favourites</h4>
