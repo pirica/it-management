@@ -373,7 +373,7 @@ function renderTabs() {
 function renderBreadcrumbs() {
     const el = document.getElementById("breadcrumbs");
     if (inRecycle) {
-        el.textContent = "🗑 Recycle Bin";
+        el.textContent = "♻️ Recycle Bin";
         return;
     }
     const parts = currentPath.split("/").filter(Boolean);
@@ -418,10 +418,10 @@ function renderIcons(list) {
             emoji = "📁";
             // Special emojis for top-level access areas
             if (currentPath === "") {
-                if (item.name === "common") emoji = "🌐";
-                if (item.name === "department") emoji = "🏢";
-                if (item.name === "private") emoji = "🔒";
-            } else if (currentPath === "private") {
+                if (item.name === "Common") emoji = "🌐";
+                if (item.name === "Departments") emoji = "🏢";
+                if (item.name === "Private") emoji = "🔒";
+            } else if (currentPath === "Private") {
                 emoji = "👤";
             }
         }
@@ -477,7 +477,7 @@ function showContextMenu(e, item) {
     contextItem = item;
 
     // Why: Restrict actions on top-level system folders.
-    const isSystemFolder = (currentPath === "" && ["common", "department", "private"].includes(item.name));
+    const isSystemFolder = (currentPath === "" && ["Common", "Departments", "Private"].includes(item.name));
 
     let html = `<div onclick="openItem('${item.name}', '${item.type}')">Open</div>`;
 
@@ -510,20 +510,21 @@ function showEmptyContextMenu(e) {
     e.preventDefault();
 
     // Why: Prevent creating files in restricted top-levels.
-    if (currentPath === "" || currentPath === "private" || currentPath === "department") {
+    if (currentPath === "" || currentPath === "Private" || currentPath === "Departments") {
         return;
     }
 
     ctxMenu.innerHTML = `
-        <div onclick="createFolder()">Create New Folder</div>
-        <div onclick="triggerUpload()">Upload Files</div>
-        <div onclick="downloadZip()">Download as ZIP</div>
-        <div onclick="pasteItem()">Paste</div>
+        <div onclick="createFolder()">Create New Folder 📁</div>
+        <div onclick="triggerUpload()">Upload Files ⬆️</div>
+        <div onclick="downloadZip()">Download as ZIP 🗜️</div>
+        <div onclick="pasteItem()">Paste 📋</div>
+        <div onclick="refreshFolder()">Refresh 🔄</div>
         <hr>
-        <div onclick="createYearMonthDay()">Create Year/Month/Day Structure</div>
-        <div onclick="createYears()">Create Year</div>
-        <div onclick="createMonths()">Create Months</div>
-        <div onclick="createDays()">Create Days</div>
+        <div onclick="createYearMonthDay()">Create Year/Month/Day Structure 🗓️</div>
+        <div onclick="createYears()">Create Year 🗓️</div>
+        <div onclick="createMonths()">Create Months 🗓️</div>
+        <div onclick="createDays()">Create Days 📅</div>
     `;
 
     ctxMenu.style.left = e.pageX + "px";
