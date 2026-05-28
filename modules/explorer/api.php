@@ -188,21 +188,21 @@ case "list":
 
     // Why: Ensure structure for new company.
     if ($path === '' && !is_dir("$dir/common")) {
-        @mkdir("$dir/common", 0777, true);
-        @mkdir("$dir/private", 0777, true);
-        @mkdir("$dir/department", 0777, true);
-        @mkdir("$dir/private/$username", 0777, true);
+        @mkdir("$dir/Common", 0777, true);
+        @mkdir("$dir/Private", 0777, true);
+        @mkdir("$dir/Departments", 0777, true);
+        @mkdir("$dir/Private/$username", 0777, true);
         if ($dept_id > 0) @mkdir("$dir/department/$dept_id", 0777, true);
     }
 
     $items = [];
     if (is_dir($dir)) {
         foreach (scandir($dir) as $f) {
-            if ($f === "." || $f === ".." || $f === "recycle_bin") continue;
+            if ($f === "." || $f === ".." || $f === "Recycle") continue;
 
             // Why: Access control for listing top-level folders.
-            if ($path === 'private' && $f !== $username) continue;
-            if ($path === 'department' && $f !== (string)$dept_id) continue;
+            if ($path === 'Private' && $f !== $username) continue;
+            if ($path === 'Departments' && $f !== (string)$dept_id) continue;
 
             $full = $dir . "/" . $f;
             $type = is_dir($full) ? "folder" : "file";
