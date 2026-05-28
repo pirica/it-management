@@ -227,6 +227,11 @@ $res = mock_api_call('copy', $dest_path, ['item' => $new_name, 'src_path' => $de
 assert_test(($res['ok'] ?? 1) === 0, "Copy into Private root blocked");
 assert_test(!is_dir("$storage_root/Private/$new_name"), "Copy did not create item in Private root");
 
+$res = mock_api_call('copy', $dest_path, ['item' => $new_name, 'src_path' => "$dest_path/", 'dest' => 'Private/']);
+assert_test(($res['ok'] ?? 1) === 0, "Copy into Private root with trailing slash blocked");
+assert_test(!is_dir("$storage_root/Private/$new_name"), "Trailing-slash copy did not create item in Private root");
+
+
 // 8. Test Audit Logs
 echo "\n--- 8. Audit Logs ---\n";
 $audit_res = mysqli_query($conn, "SELECT id FROM audit_logs WHERE table_name = 'explorer' AND action = 'INSERT' ORDER BY id DESC LIMIT 1");
