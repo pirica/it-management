@@ -5793,3 +5793,47 @@ CREATE TRIGGER `trg_rack_planner_audit_delete` AFTER DELETE ON `rack_planner` FO
 END$$
 DELIMITER ;
 SET FOREIGN_KEY_CHECKS=1;
+
+-- Table structure for `explorer`
+DROP TABLE IF EXISTS `explorer`;
+CREATE TABLE `explorer` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `department_id` int DEFAULT NULL,
+  `folder_path` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_favorite` tinyint(1) DEFAULT '0',
+  `is_private` tinyint(1) DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_explorer_company_path_name` (`company_id`,`folder_path`,`file_name`),
+  KEY `company_id` (`company_id`),
+  KEY `user_id` (`user_id`),
+  KEY `department_id` (`department_id`),
+  CONSTRAINT `explorer_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `explorer_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `explorer_ibfk_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Triggers for `explorer`
+DROP TRIGGER IF EXISTS `trg_explorer_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_explorer_audit_update`;
+DROP TRIGGER IF EXISTS `trg_explorer_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_explorer_audit_insert` AFTER INSERT ON `explorer` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'explorer', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'department_id', NEW.`department_id`, 'folder_path', NEW.`folder_path`, 'file_name', NEW.`file_name`, 'file_type', NEW.`file_type`, 'is_favorite', NEW.`is_favorite`, 'is_private', NEW.`is_private`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_explorer_audit_update` AFTER UPDATE ON `explorer` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'explorer', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'department_id', OLD.`department_id`, 'folder_path', OLD.`folder_path`, 'file_name', OLD.`file_name`, 'file_type', OLD.`file_type`, 'is_favorite', OLD.`is_favorite`, 'is_private', OLD.`is_private`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'department_id', NEW.`department_id`, 'folder_path', NEW.`folder_path`, 'file_name', NEW.`file_name`, 'file_type', NEW.`file_type`, 'is_favorite', NEW.`is_favorite`, 'is_private', NEW.`is_private`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_explorer_audit_delete` AFTER DELETE ON `explorer` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'explorer', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'department_id', OLD.`department_id`, 'folder_path', OLD.`folder_path`, 'file_name', OLD.`file_name`, 'file_type', OLD.`file_type`, 'is_favorite', OLD.`is_favorite`, 'is_private', OLD.`is_private`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
