@@ -21,7 +21,13 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
 $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
-
+if (!empty($_SESSION)) {
+    echo "<pre>"; // Format output for readability
+    print_r($_SESSION); // Print all session variables
+    echo "</pre>";
+} else {
+    echo "No session variables are set.";
+}
 // Why: Ensure the root /files/{company_id} directory exists via an API call or logic.
 // Handled by api.php on first list, but we can do a quick check here too.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
