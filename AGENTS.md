@@ -115,7 +115,7 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * `modules/`: Feature-specific CRUD logic.
 * `scripts/`: Maintenance, security audits, and CLI tools. Catalog: `scripts/index.html`.
 * `js/` & `css/`: Assets (use `css/styles.css`).
-* **Required Dirs:** `images/`, `tickets_photos/`, and `backups/` must exist with write permissions.
+* **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
 
 ### Scripts directory (`scripts/`) — mandatory for every tool

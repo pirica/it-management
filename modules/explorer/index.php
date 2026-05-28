@@ -1,28 +1,56 @@
 <?php
-$base = __DIR__ . "/data";
-$recycle = __DIR__ . "/recycle_bin";
-if (!is_dir($base)) mkdir($base, 0777, true);
-if (!is_dir($recycle)) mkdir($recycle, 0777, true);
+/**
+ * Explorer Module
+ *
+ * Provides a web-based file explorer with UK English localisation.
+ * Integrated with the multi-tenant IT Management System, featuring:
+ * - Company-scoped storage (Common, Department-specific, and User-private).
+ * - Multi-tab and breadcrumb navigation.
+ * - Real-time synchronisation with the 'explorer' database table.
+ * - Dark mode support and contextual actions.
+ */
+
+require_once '../../config/config.php';
+
+// Why: Protection Zone - User needs to be logged in and have a company selected.
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
+    header('Location: ' . BASE_URL . 'login.php');
+    exit;
+}
+
+$company_id = (int)$_SESSION['company_id'];
+$user_id = (int)$_SESSION['user_id'];
+$username = $_SESSION['username'] ?? 'User';
+
+// Why: Ensure the root /files/{company_id} directory exists via an API call or logic.
+// Handled by api.php on first list, but we can do a quick check here too.
+$storage_root = ROOT_PATH . 'files/' . $company_id;
+if (!is_dir($storage_root)) {
+    @mkdir($storage_root, 0777, true);
+}
+
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<title>Windows 11 Web Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explorer - <?= sanitize($app_name) ?></title>
+<link rel="icon" type="image/png" href="<?= sanitize($favicon_url) ?>">
 
 <style>
 body {
-    font-family: "Segoe UI", sans-serif;
+    font-family: "Segoe UI", "Tahoma", sans-serif;
     background: #f3f6fd;
     margin: 0;
     padding: 0;
-    transition: .3s;
+    transition: background 0.3s, color 0.3s;
 }
 .dark { background: #1e1e1e; color: #eee; }
 
 #main {
     margin: 20px;
-    transition: .3s;
+    transition: margin 0.3s;
 }
 
 /* SIDEBAR */
@@ -37,27 +65,32 @@ body {
     padding: 20px;
     z-index: 9998;
     transform: translateX(-100%);
-    transition: transform .25s ease;
+    transition: transform 0.25s ease;
 }
 #sidebar.open { transform: translateX(0); }
 .dark #sidebar { background:#2a2a2a; border-color:#444; color:#eee; }
-#sidebar h3, #sidebar h4 { margin-top:0; }
-#sidebar div { margin-bottom:10px; cursor:pointer; }
+#sidebar h3, #sidebar h4 { margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+.dark #sidebar h3, .dark #sidebar h4 { border-color: #444; }
+#sidebar div { margin-bottom:12px; cursor:pointer; padding: 6px; border-radius: 4px; }
+#sidebar div:hover { background: #f0f0f0; }
+.dark #sidebar div:hover { background: #3a3a3a; }
 
 /* TOPBAR */
 .topbar {
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:10px;
+    margin-bottom:15px;
 }
 button {
-    padding:6px 12px;
+    padding:8px 16px;
     border:none;
     background:#2a4d9b;
     color:white;
     border-radius:6px;
     cursor:pointer;
+    font-size: 13px;
+    font-weight: 500;
 }
 button:hover { background:#1d3570; }
 #sidebarToggle {
@@ -74,71 +107,100 @@ button:hover { background:#1d3570; }
 
 /* SEARCH */
 .search {
-    padding:6px;
+    padding:8px 12px;
     width:250px;
     border-radius:6px;
     border:1px solid #ccc;
+    font-size: 13px;
 }
+.dark .search { background: #333; color: #fff; border-color: #555; }
 
 /* TABS */
 .tabs {
     display:flex;
     gap:5px;
-    margin-bottom:10px;
+    margin-bottom:0;
+    border-bottom: 1px solid #ccc;
 }
+.dark .tabs { border-color: #444; }
 .tab {
-    padding:6px 12px;
+    padding:8px 16px;
     background:#e1e7f5;
-    border-radius:6px 6px 0 0;
+    border-radius:8px 8px 0 0;
     cursor:pointer;
     font-size:13px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .tab.active {
     background:#ffffff;
     font-weight:bold;
+    border-color: #ccc;
 }
-.dark .tab { background:#333; }
-.dark .tab.active { background:#444; }
+.dark .tab { background:#333; color: #aaa; }
+.dark .tab.active { background:#2a2a2a; border-color: #444; color: #fff; }
 
 /* BREADCRUMBS */
-.breadcrumbs {
-    margin-bottom:10px;
-    font-size:13px;
+.breadcrumbs-bar {
+    background: #fff;
+    padding: 10px 15px;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid #ccc;
+    border-top: none;
+    margin-bottom: 15px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
 }
+.dark .breadcrumbs-bar { background: #2a2a2a; border-color: #444; }
 .breadcrumbs span {
     cursor:pointer;
     color:#2a4d9b;
 }
+.dark .breadcrumbs span { color: #5a82e8; }
 .breadcrumbs span:hover { text-decoration:underline; }
 
-/* DESKTOP */
+/* DESKTOP (FILE GRID) */
 .desktop {
     display:flex;
     flex-wrap:wrap;
-    gap:25px;
-    padding:20px;
-    background:#e7ecf7;
+    gap:20px;
+    padding:25px;
+    background:#ffffff;
     border-radius:10px;
-    min-height:300px;
+    min-height:400px;
     position:relative;
+    border: 1px solid #eee;
 }
-.dark .desktop { background:#2a2a2a; }
+.dark .desktop { background:#212121; border-color: #333; }
 
 .icon {
-    width:90px;
+    width:100px;
     text-align:center;
     cursor:pointer;
     font-size:12px;
     user-select:none;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.2s;
 }
+.icon:hover { background: #f0f7ff; }
+.dark .icon:hover { background: #2d2d2d; }
+
 .icon-emoji {
-    font-size:40px;
-    margin-bottom:4px;
+    font-size:48px;
+    margin-bottom:8px;
+    display: block;
 }
 .icon.selected {
-    outline:2px solid #4a90e2;
-    border-radius:6px;
+    background: #e5f1ff;
+    outline:1px solid #4a90e2;
 }
+.dark .icon.selected { background: #334; outline-color: #5a82e8; }
 
 /* CONTEXT MENU */
 .context-menu {
@@ -146,97 +208,122 @@ button:hover { background:#1d3570; }
     display:none;
     background:#ffffff;
     border:1px solid #ccc;
-    border-radius:6px;
+    border-radius:8px;
     width:200px;
     z-index:9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 4px 0;
 }
 .context-menu div {
-    padding:8px;
+    padding:10px 15px;
     cursor:pointer;
     font-size:13px;
 }
 .context-menu div:hover { background:#e5f1ff; }
 .dark .context-menu { background:#333; color:#fff; border-color:#555; }
+.dark .context-menu div:hover { background: #444; }
+.context-menu hr { border: none; border-top: 1px solid #eee; margin: 4px 0; }
+.dark .context-menu hr { border-color: #444; }
 
 /* PREVIEW */
 .preview {
-    margin-top:10px;
-    padding:10px;
+    margin-top:20px;
+    padding:15px;
     background:#ffffff;
-    border-radius:6px;
-    max-height:250px;
+    border-radius:8px;
+    max-height:300px;
     overflow:auto;
     font-size:13px;
+    border: 1px solid #eee;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-.dark .preview { background:#333; color:#fff; }
+.dark .preview { background:#2a2a2a; color:#eee; border-color: #333; }
 
 /* UPLOAD */
 .upload-area {
     border:2px dashed #2a4d9b;
-    padding:15px;
+    padding:20px;
     text-align:center;
     border-radius:10px;
-    margin-bottom:10px;
-    background:rgba(255,255,255,0.7);
+    margin-bottom:15px;
+    background:rgba(255,255,255,0.8);
+    transition: background 0.3s;
 }
-.upload-area.dragover { background:#dce7ff; }
-.dark .upload-area { background:#333; border-color:#777; }
+.upload-area.dragover { background:#e1e7f5; border-style: solid; }
+.dark .upload-area { background:#2a2a2a; border-color:#444; }
+.upload-area input[type="file"] { cursor: pointer; }
+
+/* BADGES */
+.badge-private { font-size: 10px; background: #ff4757; color: #fff; padding: 2px 4px; border-radius: 3px; position: absolute; top: 5px; right: 5px; }
+
 </style>
 </head>
 <body>
 
 <div id="sidebar">
     <h3>📌 Quick Access</h3>
-    <div onclick="loadFolder('')">🏠 Data</div>
+    <div onclick="loadFolder('')">🏠 Home (Company Root)</div>
+    <div onclick="loadFolder('common')">🌐 Common Area</div>
+    <div onclick="loadFolder('department')">🏢 Department Area</div>
+    <div onclick="loadFolder('private')">🔒 Private Area</div>
     <div onclick="openRecycle()">🗑 Recycle Bin</div>
 
-    <h4>⭐ Favoritos</h4>
+    <h4>⭐ Favourites</h4>
     <div id="favorites"></div>
 </div>
 
 <div id="main">
     <div class="topbar">
-        <div>
-            <button onclick="toggleDark()">🌙 Dark</button>
+        <div style="display:flex; gap:10px;">
+            <button id="sidebarToggle">☰</button>
+            <button onclick="toggleDark()">🌙 Toggle Theme</button>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
-            <input id="searchBox" class="search" placeholder="Search..." oninput="filterIcons()">
-            <button id="sidebarToggle">☰</button>
+            <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
+            <span style="font-size: 13px; color: #666;"><?= sanitize($username) ?></span>
         </div>
     </div>
 
     <div id="tabs" class="tabs"></div>
-    <div id="breadcrumbs" class="breadcrumbs"></div>
+    <div class="breadcrumbs-bar">
+        <div id="breadcrumbs" class="breadcrumbs"></div>
+    </div>
 
     <div id="uploadArea" class="upload-area">
         Drop files here or <input type="file" multiple onchange="uploadFiles(this.files)">
     </div>
 
     <div id="desktop" class="desktop"></div>
-    <div id="preview" class="preview"></div>
+
+    <div id="previewContainer" style="display:none;">
+        <h4>Preview</h4>
+        <div id="preview" class="preview"></div>
+    </div>
+
     <div id="contextMenu" class="context-menu"></div>
 </div>
 
 <script>
-let tabs = [{ path: "", title: "Data" }];
+let tabs = [{ path: "", title: "Home" }];
 let activeTab = 0;
 let currentPath = "";
 let selected = new Set();
 let clipboard = { type: null, items: [] };
 let contextItem = null;
 let inRecycle = false;
-let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
 
 const sidebar   = document.getElementById("sidebar");
 const btnToggle = document.getElementById("sidebarToggle");
 const desktop   = document.getElementById("desktop");
 const ctxMenu   = document.getElementById("contextMenu");
 const preview   = document.getElementById("preview");
+const previewCont = document.getElementById("previewContainer");
 
 btnToggle.onclick = () => sidebar.classList.toggle("open");
 
 function applyDarkMode() {
-    if (localStorage.getItem("dark") === "true") {
+    if (localStorage.getItem("itm_dark_mode") === "true") {
         document.body.classList.add("dark");
     }
 }
@@ -244,7 +331,7 @@ applyDarkMode();
 
 function toggleDark(){
     document.body.classList.toggle("dark");
-    localStorage.setItem("dark", document.body.classList.contains("dark"));
+    localStorage.setItem("itm_dark_mode", document.body.classList.contains("dark"));
 }
 
 /* API WRAPPER */
@@ -264,7 +351,8 @@ function renderTabs() {
     tabs.forEach((t, i) => {
         const div = document.createElement("div");
         div.className = "tab" + (i === activeTab ? " active" : "");
-        div.textContent = t.title || "Tab";
+        div.textContent = t.title || "Explorer";
+        div.title = t.path || "/";
         div.onclick = () => {
             activeTab = i;
             currentPath = tabs[i].path;
@@ -283,11 +371,13 @@ function renderBreadcrumbs() {
         return;
     }
     const parts = currentPath.split("/").filter(Boolean);
-    let html = `<span onclick="goToBreadcrumb(0)">Data</span>`;
+    let html = `<span onclick="goToBreadcrumb(0)">Home</span>`;
     let acc = "";
     parts.forEach((p, i) => {
         acc += "/" + p;
-        html += " / " + `<span onclick="goToBreadcrumb(${i+1})">${p}</span>`;
+        // Why: Make department IDs and usernames more readable in breadcrumbs if possible.
+        let label = p;
+        html += " / " + `<span onclick="goToBreadcrumb(${i+1})">${label}</span>`;
     });
     el.innerHTML = html;
 }
@@ -303,16 +393,32 @@ function goToBreadcrumb(index) {
     loadFolder(currentPath);
 }
 
-/* RENDER ICONS (EMOJIS) */
+/* RENDER ICONS */
 let currentList = [];
 
 function renderIcons(list) {
     currentList = list;
     desktop.innerHTML = "";
     selected.clear();
+
+    if (list.length === 0) {
+        desktop.innerHTML = '<div style="width:100%; text-align:center; color:#888; padding-top:50px;">This folder is empty.</div>';
+        return;
+    }
+
     list.forEach(item => {
         let emoji = "📄";
-        if (item.type === "folder") emoji = "📁";
+        if (item.type === "folder") {
+            emoji = "📁";
+            // Special emojis for top-level access areas
+            if (currentPath === "") {
+                if (item.name === "common") emoji = "🌐";
+                if (item.name === "department") emoji = "🏢";
+                if (item.name === "private") emoji = "🔒";
+            } else if (currentPath === "private") {
+                emoji = "👤";
+            }
+        }
         if (item.type === "zip")    emoji = "🗜️";
         if (item.type === "txt")    emoji = "📝";
 
@@ -323,8 +429,8 @@ function renderIcons(list) {
         div.dataset.type = item.type;
 
         div.innerHTML = `
-            <div class="icon-emoji">${emoji}</div>
-            <div>${item.name}</div>
+            <span class="icon-emoji">${emoji}</span>
+            <div style="word-break:break-all;">${item.name}</div>
         `;
 
         div.ondblclick = () => openItem(item.name, item.type);
@@ -364,19 +470,30 @@ function showContextMenu(e, item) {
     e.preventDefault();
     contextItem = item;
 
-    ctxMenu.innerHTML = `
-        <div onclick="openItem('${item.name}', '${item.type}')">Open</div>
-        <div onclick="copyItem()">Copy</div>
-        <div onclick="cutItem()">Cut</div>
-        <div onclick="pasteItem()">Paste</div>
-        <div onclick="renameItem()">Rename</div>
-        <div onclick="deleteItem()">Delete</div>
-        <div onclick="zipItem()">Zip</div>
-        <div onclick="unzipItem()">Unzip</div>
-        <div onclick="moveTo()">Move to…</div>
-        <div onclick="toggleFavorite('${item.name}')">⭐ Favorito</div>
-    `;
+    // Why: Restrict actions on top-level system folders.
+    const isSystemFolder = (currentPath === "" && ["common", "department", "private"].includes(item.name));
 
+    let html = `<div onclick="openItem('${item.name}', '${item.type}')">Open</div>`;
+
+    if (!isSystemFolder && !inRecycle) {
+        html += `
+            <div onclick="copyItem()">Copy</div>
+            <div onclick="cutItem()">Cut</div>
+            <div onclick="pasteItem()">Paste</div>
+            <div onclick="renameItem()">Rename</div>
+            <div onclick="deleteItem()">Delete</div>
+            <hr>
+            <div onclick="zipItem()">Compress (Zip)</div>
+            <div onclick="moveTo()">Move to…</div>
+            <div onclick="toggleFavourite('${item.name}')">⭐ Favourite</div>
+        `;
+    } else if (inRecycle) {
+        html += `
+            <div onclick="restoreFromRecycle('${item.name}')">Restore</div>
+        `;
+    }
+
+    ctxMenu.innerHTML = html;
     ctxMenu.style.left = e.pageX + "px";
     ctxMenu.style.top  = e.pageY + "px";
     ctxMenu.style.display = "block";
@@ -386,16 +503,18 @@ function showContextMenu(e, item) {
 function showEmptyContextMenu(e) {
     e.preventDefault();
 
+    // Why: Prevent creating files in restricted top-levels.
+    if (currentPath === "" || currentPath === "private" || currentPath === "department") {
+        return;
+    }
+
     ctxMenu.innerHTML = `
-        <div onclick="createFolder()">Criar Pasta</div>
-        <div onclick="triggerUpload()">Upload</div>
-        <div onclick="downloadZip()">Download ZIP</div>
+        <div onclick="createFolder()">Create New Folder</div>
+        <div onclick="triggerUpload()">Upload Files</div>
+        <div onclick="downloadZip()">Download as ZIP</div>
         <div onclick="pasteItem()">Paste</div>
         <hr>
-        <div onclick="createYearMonthDay()">Criar Ano/Mês/Dia</div>
-        <div onclick="createYears()">Criar Anos</div>
-        <div onclick="createMonths()">Criar Meses</div>
-        <div onclick="createDays()">Criar Dias</div>
+        <div onclick="createYearMonthDay()">Create Year/Month/Day Structure</div>
     `;
 
     ctxMenu.style.left = e.pageX + "px";
@@ -404,31 +523,35 @@ function showEmptyContextMenu(e) {
 }
 
 
-/* FAVORITOS */
-function renderFavorites() {
+/* FAVOURITES */
+function renderFavourites() {
     const el = document.getElementById("favorites");
     el.innerHTML = "";
-    favorites.forEach(f => {
+    if (favourites.length === 0) {
+        el.innerHTML = '<div style="font-size:11px; color:#888;">No favourites yet.</div>';
+    }
+    favourites.forEach(f => {
         const d = document.createElement("div");
-        d.textContent = "⭐ " + f;
+        d.innerHTML = "⭐ " + f;
         d.onclick = () => {
             currentPath = f;
             inRecycle = false;
             tabs[activeTab].path = currentPath;
+            tabs[activeTab].title = f.split('/').pop() || "Home";
             loadFolder(currentPath);
         };
         el.appendChild(d);
     });
 }
-function toggleFavorite(name) {
+function toggleFavourite(name) {
     const full = currentPath ? currentPath + "/" + name : name;
-    if (favorites.includes(full)) {
-        favorites = favorites.filter(f => f !== full);
+    if (favourites.includes(full)) {
+        favourites = favourites.filter(f => f !== full);
     } else {
-        favorites.push(full);
+        favourites.push(full);
     }
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-    renderFavorites();
+    localStorage.setItem("itm_explorer_favourites", JSON.stringify(favourites));
+    renderFavourites();
 }
 
 /* FILE OPS */
@@ -436,30 +559,34 @@ function openItem(name, type) {
     if (type === "folder") {
         currentPath = currentPath ? currentPath + "/" + name : name;
         tabs[activeTab].path = currentPath;
+        tabs[activeTab].title = name;
         inRecycle = false;
         loadFolder(currentPath);
     } else {
         api("open", { item: name }).then(res => {
-            preview.textContent = res.content || "";
+            if (res.content !== undefined) {
+                previewCont.style.display = "block";
+                preview.textContent = res.content || "(File is empty or not readable as text)";
+            }
         });
     }
 }
 
 function createFolder() {
-    const name = prompt("Folder name:");
+    const name = prompt("Enter folder name:");
     if (!name) return;
     api("createFolder", { name }).then(() => loadFolder(currentPath));
 }
 
 function deleteItem() {
     if (!contextItem) return;
-    if (!confirm("Delete " + contextItem.name + "?")) return;
+    if (!confirm("Are you sure you want to delete '" + contextItem.name + "'?")) return;
     api("delete", { item: contextItem.name }).then(() => loadFolder(currentPath));
 }
 
 function renameItem() {
     if (!contextItem) return;
-    const name = prompt("New name:", contextItem.name);
+    const name = prompt("Enter new name:", contextItem.name);
     if (!name) return;
     api("rename", { item: contextItem.name, name }).then(() => loadFolder(currentPath));
 }
@@ -478,7 +605,7 @@ function cutItem() {
 
 function pasteItem() {
     if (!clipboard.items.length) {
-        alert("Clipboard vazio");
+        alert("Clipboard is empty.");
         return;
     }
 
@@ -486,17 +613,18 @@ function pasteItem() {
 
     if (clipboard.type === "copy") {
         api("copy", { item }).then(() => loadFolder(currentPath));
-        return;
-    }
-
-    if (clipboard.type === "move") {
+    } else if (clipboard.type === "move") {
         api("move", { 
             item,
-            dest: currentPath   // ← AQUI ESTÁ A CORREÇÃO
-        }).then(() => {
-            clipboard.items = [];
-            clipboard.type = null;
-            loadFolder(currentPath);
+            dest: currentPath
+        }).then(res => {
+            if (res.ok) {
+                clipboard.items = [];
+                clipboard.type = null;
+                loadFolder(currentPath);
+            } else {
+                alert(res.error || "Move failed.");
+            }
         });
     }
 }
@@ -506,16 +634,12 @@ function moveTo() {
     if (!contextItem) return;
     clipboard.type = "move";
     clipboard.items = [contextItem.name];
-    alert("Agora navega até à pasta destino e usa PASTE.");
+    alert("Now navigate to the destination folder and use PASTE from the context menu.");
 }
 
 function zipItem() {
     if (!contextItem) return;
     api("zip", { item: contextItem.name }).then(() => loadFolder(currentPath));
-}
-function unzipItem() {
-    if (!contextItem) return;
-    api("unzip", { item: contextItem.name }).then(() => loadFolder(currentPath));
 }
 
 function downloadZip() {
@@ -525,15 +649,6 @@ function downloadZip() {
 /* CRIAR ESTRUTURAS DE DATA */
 function createYearMonthDay() {
     api("createYearMonthDay", {}).then(() => loadFolder(currentPath));
-}
-function createYears() {
-    api("createYears", {}).then(() => loadFolder(currentPath));
-}
-function createMonths() {
-    api("createMonths", {}).then(() => loadFolder(currentPath));
-}
-function createDays() {
-    api("createDays", {}).then(() => loadFolder(currentPath));
 }
 
 /* UPLOAD */
@@ -553,7 +668,7 @@ function uploadFiles(files) {
         .then(() => loadFolder(currentPath));
 }
 
-/* DRAG & DROP (Opção B) */
+/* DRAG & DROP */
 let draggedItem = null;
 
 document.addEventListener("dragstart", e => {
@@ -571,8 +686,7 @@ document.addEventListener("drop", e => {
     if (!draggedItem) return;
 
     if (!target) {
-        // soltar no vazio → mover para pasta atual
-        api("move", { item: draggedItem }).then(() => loadFolder(currentPath));
+        api("move", { item: draggedItem, dest: currentPath }).then(() => loadFolder(currentPath));
         return;
     }
 
@@ -597,25 +711,24 @@ function openRecycle() {
     api("listRecycle", {}).then(res => {
         renderIcons(res.items || []);
         renderBreadcrumbs();
+        renderTabs();
     });
 }
 function restoreFromRecycle(name) {
     api("restore", { item: name }).then(openRecycle);
 }
-function emptyRecycle() {
-    if (!confirm("Esvaziar recycle bin?")) return;
-    api("emptyRecycle", {}).then(openRecycle);
-}
 
 /* LOAD FOLDER */
 function loadFolder(path) {
     inRecycle = false;
+    currentPath = path;
     api("list", { path }).then(res => {
         renderIcons(res.items || []);
         renderTabs();
         renderBreadcrumbs();
-        renderFavorites();
+        renderFavourites();
         preview.textContent = "";
+        previewCont.style.display = "none";
     });
 }
 

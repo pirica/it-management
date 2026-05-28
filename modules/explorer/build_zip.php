@@ -1,14 +1,20 @@
 <?php
+/**
+ * Explorer Build ZIP Utility (UK English)
+ *
+ * Packages the explorer module components for distribution.
+ * Localised to UK English and updated to respect the new structure.
+ */
 
 /* ---------------------------------------------------------
    CONFIG
 --------------------------------------------------------- */
 
-$zipName = "explorer_ready.zip";
+$zipName = "explorer_ready_uk.zip";
 $tmp = __DIR__ . "/tmp_build";
 
 /* ---------------------------------------------------------
-   CLEANUP TEMPORÁRIO
+   TEMPORARY CLEANUP
 --------------------------------------------------------- */
 
 if (is_dir($tmp)) {
@@ -38,78 +44,62 @@ function copyFileSafe($src, $dst) {
 }
 
 /* ---------------------------------------------------------
-   COPIAR FICHEIROS DO PROJETO
+   COPY PROJECT FILES
 --------------------------------------------------------- */
 
 copyFileSafe(__DIR__ . "/index.php",      "$tmp/index.php");
 copyFileSafe(__DIR__ . "/api.php",        "$tmp/api.php");
 copyFileSafe(__DIR__ . "/file.php",       "$tmp/file.php");
 copyFileSafe(__DIR__ . "/setup.php",      "$tmp/setup.php");
-copyFileSafe(__DIR__ . "/folder.png",     "$tmp/folder.png");
-copyFileSafe(__DIR__ . "/file.png",       "$tmp/file.png");
 
 /* ---------------------------------------------------------
-   COPIAR PASTAS
+   COPY FOLDERS (Note: data/ and recycle_bin/ are now in root /files/)
 --------------------------------------------------------- */
 
-function copyFolder($src, $dst) {
-    if (!is_dir($src)) return;
-
-    mkdir($dst, 0777, true);
-
-    foreach (array_diff(scandir($src), ['.','..']) as $item) {
-        $s = "$src/$item";
-        $d = "$dst/$item";
-
-        if (is_dir($s)) {
-            copyFolder($s, $d);
-        } else {
-            copy($s, $d);
-        }
-    }
-}
-
-copyFolder(__DIR__ . "/data",         "$tmp/data");
-copyFolder(__DIR__ . "/recycle_bin",  "$tmp/recycle_bin");
+// We don't package user data into the module ZIP usually.
 
 /* ---------------------------------------------------------
-   CRIAR ZIP
+   CREATE ZIP
 --------------------------------------------------------- */
 
 $zip = new ZipArchive();
-$zip->open($zipName, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+if ($zip->open($zipName, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
 
-$files = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($tmp, FilesystemIterator::SKIP_DOTS),
-    RecursiveIteratorIterator::SELF_FIRST
-);
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($tmp, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
 
-foreach ($files as $file) {
-    $filePath = $file->getRealPath();
-    $local = substr($filePath, strlen($tmp) + 1);
+    foreach ($files as $file) {
+        $filePath = $file->getRealPath();
+        $local = substr($filePath, strlen($tmp) + 1);
 
-    if ($file->isDir()) {
-        $zip->addEmptyDir($local);
-    } else {
-        $zip->addFile($filePath, $local);
+        if ($file->isDir()) {
+            $zip->addEmptyDir($local);
+        } else {
+            $zip->addFile($filePath, $local);
+        }
     }
+
+    $zip->close();
+
+    /* ---------------------------------------------------------
+       DOWNLOAD ZIP
+    --------------------------------------------------------- */
+
+    header("Content-Type: application/zip");
+    header("Content-Disposition: attachment; filename=$zipName");
+    header("Content-Length: " . filesize($zipName));
+    readfile($zipName);
+
+} else {
+    echo "Could not create ZIP file.";
 }
-
-$zip->close();
-
-/* ---------------------------------------------------------
-   DOWNLOAD ZIP
---------------------------------------------------------- */
-
-header("Content-Type: application/zip");
-header("Content-Disposition: attachment; filename=$zipName");
-header("Content-Length: " . filesize($zipName));
-readfile($zipName);
 
 /* ---------------------------------------------------------
    CLEANUP
 --------------------------------------------------------- */
 
-unlink($zipName);
+if (file_exists($zipName)) unlink($zipName);
 rrmdir_build($tmp);
 exit;
