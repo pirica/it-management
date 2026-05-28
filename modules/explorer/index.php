@@ -271,6 +271,7 @@ button:hover { background:#1d3570; }
 
 <div id="sidebar">
     <h3>📌 Quick Access</h3>
+    <div><a href=../../dashboard.php>📊 Dashboard</a></div>
     <div onclick="loadFolder('')">🏠 Home (Company Root)</div>
     <div onclick="loadFolder('Common')">🌐 Common Area</div>
     <div onclick="loadFolder('Departments')">🏢 Department Area</div>
