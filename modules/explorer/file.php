@@ -17,6 +17,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
 $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'unknown';
+$user_private_dir = "{$username}_{$user_id}";
 
 // Why: Fetch user department for access control.
 $dept_id = 0;
@@ -36,16 +37,20 @@ if (strpos($path, '..') !== false) {
 
 $full_path = $storage_root . ($path ? "/" . trim($path, '/') : "");
 
-// Why: Access control logic (mirroring api.php).
+// Why: Access control logic (mirroring api.php) with segment-boundary checks.
 $relative_path = trim($path, '/');
-if (str_starts_with($relative_path, 'Private')) {
-    if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'Private') {
+if ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/')) {
+    if ($relative_path !== 'Private' &&
+        !str_starts_with($relative_path, "Private/$user_private_dir/") &&
+        $relative_path !== "Private/$user_private_dir") {
         http_response_code(403);
         exit("Access denied to private folder.");
     }
 }
-if (str_starts_with($relative_path, 'Departments')) {
-    if ($dept_id <= 0 || (!str_starts_with($relative_path, "Departments/$dept_id") && $relative_path !== 'Departments')) {
+if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
+    if ($dept_id <= 0 || ($relative_path !== 'Departments' &&
+        !str_starts_with($relative_path, "Departments/$dept_id/") &&
+        $relative_path !== "Departments/$dept_id")) {
         http_response_code(403);
         exit("Access denied to department folder.");
     }

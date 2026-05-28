@@ -24,9 +24,11 @@ echo "Starting Explorer Human-Like Test...\n";
 $_SESSION['company_id'] = 1;
 $_SESSION['user_id'] = 1;
 $_SESSION['username'] = 'Admin';
-$company_id = 1;
+$company_id = 999; // Use a dedicated test company ID to avoid deleting real user files
+$_SESSION['company_id'] = $company_id;
 $user_id = 1;
 $username = 'Admin';
+$user_private_dir = "{$username}_{$user_id}";
 
 // Fetch department for user 1 in company 1
 $dept_id = 0;
@@ -99,39 +101,39 @@ function assert_test($condition, $message) {
 echo "\n--- 1. Initialise and List ---\n";
 $res = mock_api_call('list', '');
 assert_test(isset($res['items']), "API returned items list");
-assert_test(is_dir("$storage_root/common"), "Common directory created");
-assert_test(is_dir("$storage_root/private/$username"), "Private directory created for user");
+assert_test(is_dir("$storage_root/Common"), "Common directory created");
+assert_test(is_dir("$storage_root/Private/$user_private_dir"), "Private directory created for user");
 
 // 2. Create Folder in Common
 echo "\n--- 2. Create Folder ---\n";
 $folder_name = "Test_Folder_" . time();
-$res = mock_api_call('createFolder', 'common', ['name' => $folder_name]);
+$res = mock_api_call('createFolder', 'Common', ['name' => $folder_name]);
 assert_test(($res['ok'] ?? 0) === 1, "Folder creation API success");
-assert_test(is_dir("$storage_root/common/$folder_name"), "Folder exists on disk");
+assert_test(is_dir("$storage_root/Common/$folder_name"), "Folder exists on disk");
 
 // Verify DB sync
-$check_sql = "SELECT id FROM explorer WHERE company_id = $company_id AND folder_path = 'common' AND file_name = '$folder_name' AND file_type = 'folder'";
+$check_sql = "SELECT id FROM explorer WHERE company_id = $company_id AND folder_path = 'Common' AND file_name = '$folder_name' AND file_type = 'folder'";
 $db_res = mysqli_query($conn, $check_sql);
 assert_test(mysqli_num_rows($db_res) > 0, "Folder record exists in 'explorer' table");
 
 // 3. Rename Folder
 echo "\n--- 3. Rename Folder ---\n";
 $new_name = $folder_name . "_Renamed";
-$res = mock_api_call('rename', 'common', ['item' => $folder_name, 'name' => $new_name]);
+$res = mock_api_call('rename', 'Common', ['item' => $folder_name, 'name' => $new_name]);
 assert_test(($res['ok'] ?? 0) === 1, "Rename API success");
-assert_test(!is_dir("$storage_root/common/$folder_name"), "Old folder name gone from disk");
-assert_test(is_dir("$storage_root/common/$new_name"), "New folder name exists on disk");
+assert_test(!is_dir("$storage_root/Common/$folder_name"), "Old folder name gone from disk");
+assert_test(is_dir("$storage_root/Common/$new_name"), "New folder name exists on disk");
 
 // Verify DB sync for rename
 $db_res_old = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$folder_name'");
-$db_res_new = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$new_name' AND folder_path = 'common'");
+$db_res_new = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$new_name' AND folder_path = 'Common'");
 assert_test(mysqli_num_rows($db_res_old) === 0, "Old record deleted from DB");
 assert_test(mysqli_num_rows($db_res_new) > 0, "New record exists in DB");
 
 // 4. Move Folder to Private
 echo "\n--- 4. Move Folder ---\n";
-$dest_path = "private/$username";
-$res = mock_api_call('move', 'common', ['item' => $new_name, 'dest' => $dest_path]);
+$dest_path = "Private/$user_private_dir";
+$res = mock_api_call('move', 'Common', ['item' => $new_name, 'dest' => $dest_path, 'src_path' => 'Common']);
 assert_test(($res['ok'] ?? 0) === 1, "Move API success to $dest_path");
 assert_test(is_dir("$storage_root/$dest_path/$new_name"), "Folder exists in new location on disk");
 
@@ -141,18 +143,17 @@ assert_test(mysqli_num_rows($db_res_move) > 0, "Move reflected in DB with new pa
 
 // 5. Copy Folder
 echo "\n--- 5. Copy Folder ---\n";
-$res = mock_api_call('copy', $dest_path, ['item' => $new_name]);
+$res = mock_api_call('copy', $dest_path, ['item' => $new_name, 'src_path' => $dest_path]);
 assert_test(($res['ok'] ?? 0) === 1, "Copy API success");
 $copy_name = "copy_of_" . $new_name;
 assert_test(is_dir("$storage_root/$dest_path/$copy_name"), "Copy exists on disk");
 
-// 6. Delete Folder (Recycle Bin)
+// 6. Delete Folder (Trash)
 echo "\n--- 6. Delete ---\n";
 $res = mock_api_call('delete', $dest_path, ['item' => $copy_name]);
-assert_test(($res['ok'] ?? 0) === 1, "Delete API success (moved to recycle)");
+assert_test(($res['ok'] ?? 0) === 1, "Delete API success (moved to trash)");
 assert_test(!file_exists("$storage_root/$dest_path/$copy_name"), "Deleted folder gone from data area");
-// Note: recycle bin matches relative path
-assert_test(file_exists(ROOT_PATH . "files/$company_id/recycle_bin/$dest_path/$copy_name"), "Folder moved to recycle bin area");
+assert_test(file_exists(ROOT_PATH . "files/$company_id/Trash/$dest_path/$copy_name"), "Folder moved to trash area");
 
 // Verify DB removal
 $db_res_del = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$copy_name'");
@@ -162,10 +163,18 @@ assert_test(mysqli_num_rows($db_res_del) === 0, "Record removed from explorer ta
 echo "\n--- 7. Access Control ---\n";
 // Manually change session username to mock another user
 $_SESSION['username'] = 'OtherUser';
-$other_user_path = "private/Admin";
+$other_user_path = "Private/$user_private_dir";
 $res = mock_api_call('list', $other_user_path);
 assert_test(empty($res['items']), "Access to Admin's private folder by OtherUser denied");
 $_SESSION['username'] = 'Admin'; // Restore
+
+// 8. Test Restricted Actions
+echo "\n--- 8. Restricted Actions ---\n";
+$res = mock_api_call('createFolder', '');
+assert_test(($res['ok'] ?? 0) === 0, "Folder creation in Home root blocked");
+
+$res = mock_api_call('delete', 'Private', ['item' => $user_private_dir]);
+assert_test(($res['ok'] ?? 0) === 0, "Deletion of own Private folder blocked");
 
 // 8. Test Audit Logs
 echo "\n--- 8. Audit Logs ---\n";
