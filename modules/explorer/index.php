@@ -288,7 +288,7 @@ button:hover { background:#1d3570; }
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
-            <span style="font-size: 13px; color: #666;"><a href=../../index.php><?= sanitize($username) ?></a></span>
+            <span style="font-size: 13px; color: #666;"><a href=../../dashboard.php><?= sanitize($username) ?></a></span>
             <button id="sidebarToggle">☰</button>
         </div>
     </div>
