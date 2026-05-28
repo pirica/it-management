@@ -20,17 +20,47 @@ if (PHP_SAPI !== 'cli') {
 
 echo "Starting Explorer Human-Like Test...\n";
 
-// Use Company 1 and User 1 (Admin) for testing
-$_SESSION['company_id'] = 1;
-$_SESSION['user_id'] = 1;
-$_SESSION['username'] = 'Admin';
-$company_id = 999; // Use a dedicated test company ID to avoid deleting real user files
-$_SESSION['company_id'] = $company_id;
+$test_failures = 0;
+$audit_company_id = 1;
+mysqli_query($conn, 'SET @app_company_id = ' . $audit_company_id);
+mysqli_query($conn, 'SET @app_user_id = 1');
+mysqli_query($conn, "SET @app_username = 'Admin'");
+
+if (!function_exists('deleteDir')) {
+    function deleteDir($dirPath) {
+        if (!is_dir($dirPath)) return;
+        if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') $dirPath .= '/';
+        $files = glob($dirPath . '*', GLOB_MARK);
+        foreach ($files as $file) {
+            if (is_dir($file)) deleteDir($file);
+            else unlink($file);
+        }
+        rmdir($dirPath);
+    }
+}
+
+// Use a temporary tenant so the test never deletes live company files.
+$test_company_name = 'ITM Explorer Test ' . date('YmdHis') . '-' . mt_rand(1000, 9999);
+$stmt_company = mysqli_prepare($conn, "INSERT INTO companies (company, incode, active) VALUES (?, NULL, 1)");
+if (!$stmt_company) {
+    die("Unable to prepare test company insert: " . mysqli_error($conn) . "\n");
+}
+mysqli_stmt_bind_param($stmt_company, "s", $test_company_name);
+if (!mysqli_stmt_execute($stmt_company)) {
+    die("Unable to create test company: " . mysqli_error($conn) . "\n");
+}
+$company_id = (int)mysqli_insert_id($conn);
+mysqli_stmt_close($stmt_company);
+mysqli_query($conn, 'SET @app_company_id = ' . $company_id);
+
 $user_id = 1;
 $username = 'Admin';
 $user_private_dir = "{$username}_{$user_id}";
+$_SESSION['company_id'] = $company_id;
+$_SESSION['user_id'] = $user_id;
+$_SESSION['username'] = $username;
 
-// Fetch department for user 1 in company 1
+// Fetch any department scoped to the temporary tenant.
 $dept_id = 0;
 $stmt_dept = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE user_id = ? AND company_id = ? LIMIT 1");
 mysqli_stmt_bind_param($stmt_dept, "ii", $user_id, $company_id);
@@ -44,19 +74,27 @@ echo "Testing as user '$username' (ID: $user_id) in Department ID: $dept_id, Com
 
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 
+register_shutdown_function(function () use (&$conn, &$company_id, &$storage_root, $audit_company_id) {
+    if ($company_id > 0) {
+        mysqli_query($conn, 'SET @app_company_id = ' . (int)$audit_company_id);
+        $stmt_clean_explorer = mysqli_prepare($conn, "DELETE FROM explorer WHERE company_id = ?");
+        if ($stmt_clean_explorer) {
+            mysqli_stmt_bind_param($stmt_clean_explorer, "i", $company_id);
+            mysqli_stmt_execute($stmt_clean_explorer);
+            mysqli_stmt_close($stmt_clean_explorer);
+        }
+        $stmt_clean_company = mysqli_prepare($conn, "DELETE FROM companies WHERE id = ?");
+        if ($stmt_clean_company) {
+            mysqli_stmt_bind_param($stmt_clean_company, "i", $company_id);
+            mysqli_stmt_execute($stmt_clean_company);
+            mysqli_stmt_close($stmt_clean_company);
+        }
+    }
+    deleteDir($storage_root);
+});
+
 // Cleanup from previous runs if any
 if (is_dir($storage_root)) {
-    // Recursive delete helper for safety
-    function deleteDir($dirPath) {
-        if (!is_dir($dirPath)) return;
-        if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') $dirPath .= '/';
-        $files = glob($dirPath . '*', GLOB_MARK);
-        foreach ($files as $file) {
-            if (is_dir($file)) deleteDir($file);
-            else unlink($file);
-        }
-        rmdir($dirPath);
-    }
     deleteDir($storage_root);
 }
 $stmt_clean = mysqli_prepare($conn, "DELETE FROM explorer WHERE company_id = ?");
@@ -89,14 +127,22 @@ function mock_api_call($action, $path = '', $params = []) {
 }
 
 function assert_test($condition, $message) {
+    global $test_failures;
+
     if ($condition) {
         echo "[PASS] $message\n";
     } else {
+        $test_failures++;
         echo "[FAIL] $message\n";
     }
 }
 
 // --- TEST CASES ---
+
+// Why: Reproduces upgraded storage where Common already exists but the scoped private folder does not.
+@mkdir("$storage_root/Common", 0777, true);
+@mkdir("$storage_root/Private", 0777, true);
+@mkdir("$storage_root/Departments", 0777, true);
 
 // 1. Initialise and List Root
 echo "\n--- 1. Initialise and List ---\n";
@@ -177,9 +223,18 @@ assert_test(($res['ok'] ?? 0) === 0, "Folder creation in Home root blocked");
 $res = mock_api_call('delete', 'Private', ['item' => $user_private_dir]);
 assert_test(($res['ok'] ?? 0) === 0, "Deletion of own Private folder blocked");
 
+$res = mock_api_call('copy', $dest_path, ['item' => $new_name, 'src_path' => $dest_path, 'dest' => 'Private']);
+assert_test(($res['ok'] ?? 1) === 0, "Copy into Private root blocked");
+assert_test(!is_dir("$storage_root/Private/$new_name"), "Copy did not create item in Private root");
+
 // 8. Test Audit Logs
 echo "\n--- 8. Audit Logs ---\n";
 $audit_res = mysqli_query($conn, "SELECT id FROM audit_logs WHERE table_name = 'explorer' AND action = 'INSERT' ORDER BY id DESC LIMIT 1");
 assert_test(mysqli_num_rows($audit_res) > 0, "Audit logs recorded for explorer operations");
 
-echo "\nExplorer Human-Like Test Completed.\n";
+if ($test_failures > 0) {
+    echo "\nExplorer Human-Like Test Completed with $test_failures failure(s).\n";
+    exit(1);
+}
+
+echo "\nExplorer Human-Like Test Completed with all checks passing.\n";
