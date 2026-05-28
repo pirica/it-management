@@ -22,6 +22,7 @@ $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';
 $user_private_dir = "{$username}_{$user_id}";
+$user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
 // Why: Fetch employee info to use as the correctly-scoped User label.
 $employee_id = 0;
@@ -324,7 +325,7 @@ let selected = new Set();
 let clipboard = { type: null, path: null, items: [] };
 let contextItem = null;
 let inRecycle = false;
-let userPrivateDir = "<?= $user_private_dir ?>";
+let userPrivateDir = <?= $user_private_dir_json ?>;
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
 
 const sidebar   = document.getElementById("sidebar");

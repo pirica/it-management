@@ -198,8 +198,8 @@ case "list":
     $dir = get_full_path($storage_root, $path, $user_id, $dept_id, $username);
     if (!$dir) { echo json_encode(['items' => []]); break; }
 
-    // Why: Ensure structure for new company.
-    if ($path === '' && !is_dir("$dir/Common")) {
+    // Why: Existing company storage may predate scoped private folders.
+    if ($path === '') {
         @mkdir("$dir/Common", 0777, true);
         @mkdir("$dir/Private", 0777, true);
         @mkdir("$dir/Departments", 0777, true);
@@ -341,6 +341,12 @@ case "copy":
 
     if (!$dir || !$targetDir || !file_exists($src)) {
         echo json_encode(["ok" => 0, "error" => "Invalid source or destination."]);
+        break;
+    }
+
+    // Why: Copy must follow the same non-writable root policy as create/upload/move.
+    if ($dest_rel === '' || $dest_rel === 'Private' || $dest_rel === 'Departments') {
+        echo json_encode(["ok" => 0, "error" => "Items cannot be copied directly into Home, Private, or Departments root."]);
         break;
     }
 
@@ -614,4 +620,3 @@ case "emptyRecycle":
 default:
     echo json_encode(["error" => "Unknown action"]);
 }
-
