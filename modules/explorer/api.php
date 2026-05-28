@@ -76,7 +76,7 @@ if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
 
 // Why: New storage root is /files/ instead of /modules/explorer/data/
 $storage_root = ROOT_PATH . 'files/' . $company_id;
-$recycle_root = ROOT_PATH . 'files/' . $company_id . '/recycle_bin';
+$recycle_root = ROOT_PATH . 'files/' . $company_id . '/Recycle';
 
 // Why: Auto-create basic structure if it doesn't exist.
 if (!is_dir($storage_root)) mkdir($storage_root, 0777, true);
@@ -102,16 +102,16 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
 
     // Why: Access control logic.
     // Paths starting with 'private' are restricted to the owner's username subfolder.
-    if (str_starts_with($relative_path, 'private')) {
-        if (!str_starts_with($relative_path, "private/$username") && $relative_path !== 'private') {
+    if (str_starts_with($relative_path, 'Private')) {
+        if (!str_starts_with($relative_path, "Private/$username") && $relative_path !== 'private') {
             return null;
         }
     }
 
     // Paths starting with 'department' are restricted to the user's department ID subfolder.
-    if (str_starts_with($relative_path, 'department')) {
+    if (str_starts_with($relative_path, 'Departments')) {
         if ($dept_id <= 0) return null; // User has no department
-        if (!str_starts_with($relative_path, "department/$dept_id") && $relative_path !== 'department') {
+        if (!str_starts_with($relative_path, "Departments/$dept_id") && $relative_path !== 'Departments') {
             return null;
         }
     }
