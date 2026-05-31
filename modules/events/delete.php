@@ -379,6 +379,140 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+// Handle ICS Import
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
+    itm_require_post_csrf();
+    $file = $_FILES['ics_file'];
+    if ($file['error'] === UPLOAD_ERR_OK) {
+        $raw_content = file_get_contents($file['tmp_name']);
+        // Handle line folding (RFC 5545): replace CRLF followed by a space or tab with nothing.
+        $content = preg_replace('/\r\n[ \t]/', '', $raw_content);
+
+        // Basic ICS parser
+        preg_match_all('/BEGIN:VEVENT.*?END:VEVENT/s', $content, $matches);
+        $importedCount = 0;
+        foreach ($matches[0] as $vevent) {
+            // Regex to handle property parameters (e.g. SUMMARY;CHARSET=UTF-8:Value)
+            preg_match('/^SUMMARY(?:;[^:]*)?:(.*)$/m', $vevent, $summaryMatch);
+            preg_match('/^DESCRIPTION(?:;[^:]*)?:(.*)$/m', $vevent, $descMatch);
+            preg_match('/^DTSTART(?:;[^:]*)?:(.*)$/m', $vevent, $startMatch);
+            preg_match('/^DTEND(?:;[^:]*)?:(.*)$/m', $vevent, $endMatch);
+            preg_match('/^LOCATION(?:;[^:]*)?:(.*)$/m', $vevent, $locMatch);
+
+            $title = trim($summaryMatch[1] ?? 'Imported Event');
+            $description = trim($descMatch[1] ?? '');
+            $location = trim($locMatch[1] ?? '');
+
+            // Unescape backslashes for text fields
+            $title = str_replace(['\\,', '\\;', '\\\\', '\\n', '\\N'], [',', ';', '\\', "\n", "\n"], $title);
+            $description = str_replace(['\\,', '\\;', '\\\\', '\\n', '\\N'], [',', ';', '\\', "\n", "\n"], $description);
+            $location = str_replace(['\\,', '\\;', '\\\\', '\\n', '\\N'], [',', ';', '\\', "\n", "\n"], $location);
+
+            $start_raw = trim($startMatch[1] ?? '');
+            $end_raw = trim($endMatch[1] ?? '');
+
+            // Convert ICS date (YYYYMMDDTHHMMSSZ or YYYYMMDD) to MySQL datetime
+            $format_date = function($raw) {
+                if (!$raw) return null;
+                // Strip everything after Z or any non-numeric before T
+                $raw = preg_replace('/[^0-9T]/', '', $raw);
+                if (strlen($raw) >= 8) {
+                    $y = substr($raw, 0, 4);
+                    $m = substr($raw, 4, 2);
+                    $d = substr($raw, 6, 2);
+                    $date = "$y-$m-$d";
+                    if (strpos($raw, 'T') !== false) {
+                        $tPos = strpos($raw, 'T');
+                        $h = substr($raw, $tPos + 1, 2) ?: '00';
+                        $min = substr($raw, $tPos + 3, 2) ?: '00';
+                        $s = substr($raw, $tPos + 5, 2) ?: '00';
+                        return "$date $h:$min:$s";
+                    }
+                    return "$date 00:00:00";
+                }
+                return null;
+            };
+
+            $start_dt = $format_date($start_raw);
+            $end_dt = $format_date($end_raw);
+
+            if ($start_dt) {
+                $sql = "INSERT INTO events (company_id, title, description, start_datetime, end_datetime, location, active) VALUES (?, ?, ?, ?, ?, ?, 1)";
+                $stmt = mysqli_prepare($conn, $sql);
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, 'isssss', $company_id, $title, $description, $start_dt, $end_dt, $location);
+                    if (mysqli_stmt_execute($stmt)) {
+                        $importedCount++;
+                    }
+                    mysqli_stmt_close($stmt);
+                }
+            }
+        }
+        $_SESSION['crud_success'] = "Successfully imported $importedCount events.";
+    } else {
+        $_SESSION['crud_error'] = "Failed to upload file.";
+    }
+    header("Location: index.php");
+    exit;
+}
+
+// Handle ICS Export
+if (isset($_GET['export']) && $_GET['export'] === 'ics') {
+    $export_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+    if ($export_id > 0) {
+        $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND e.id = ? LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql_export);
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $export_id);
+    } else {
+        $start_export = date('Y-m-01', strtotime("-1 year"));
+        $end_export = date('Y-m-t', strtotime("+1 year"));
+        $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
+                       AND e.start_datetime BETWEEN ? AND ?";
+        $stmt = mysqli_prepare($conn, $sql_export);
+        mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_export, $end_export);
+    }
+
+    $ics_esc = function($text) {
+        $text = str_replace('\\', '\\\\', (string)$text);
+        $text = str_replace(',', '\\,', $text);
+        $text = str_replace(';', '\\;', $text);
+        $text = str_replace(["\r\n", "\n", "\r"], "\\n", $text);
+        return $text;
+    };
+
+    $ics_content = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPROID:-//IT Management System//Calendar//EN\r\n";
+    if ($stmt) {
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($res)) {
+            $ics_content .= "BEGIN:VEVENT\r\n";
+            $ics_content .= "UID:" . $row['id'] . "@it-management\r\n";
+            $ics_content .= "DTSTAMP:" . date('Ymd\THis\Z') . "\r\n";
+            $ics_content .= "DTSTART:" . date('Ymd\THis', strtotime($row['start_datetime'])) . "\r\n";
+            if ($row['end_datetime']) {
+                $ics_content .= "DTEND:" . date('Ymd\THis', strtotime($row['end_datetime'])) . "\r\n";
+            }
+            $ics_content .= "SUMMARY:" . $ics_esc($row['title']) . "\r\n";
+            if ($row['description']) {
+                $ics_content .= "DESCRIPTION:" . $ics_esc($row['description']) . "\r\n";
+            }
+            if ($row['location']) {
+                $ics_content .= "LOCATION:" . $ics_esc($row['location']) . "\r\n";
+            }
+            $ics_content .= "END:VEVENT\r\n";
+        }
+        mysqli_stmt_close($stmt);
+    }
+    $ics_content .= "END:VCALENDAR";
+
+    header('Content-Type: text/calendar; charset=utf-8');
+    $filename = "events_export_" . ($export_id > 0 ? "id_$export_id" : date('Ymd')) . ".ics";
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    echo $ics_content;
+    exit;
+}
+
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
@@ -609,6 +743,8 @@ if (!empty($_SESSION['crud_error'])) {
     $errors[] = (string)$_SESSION['crud_error'];
     unset($_SESSION['crud_error']);
 }
+$success = $_SESSION['crud_success'] ?? null;
+unset($_SESSION['crud_success']);
 $data = [];
 foreach ($fieldColumns as $col) {
     if ($col['Field'] === 'active') {
@@ -928,6 +1064,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?php echo sanitize($success); ?></div>
+            <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <!-- LIST VIEW -->
@@ -963,7 +1102,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 
                 <!-- SEARCH BAR -->
                 <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
                         <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                         <input type="hidden" name="page" value="1">
@@ -973,9 +1112,23 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="?export=ics" class="btn" title="Export all active events to ICS">📤 Export ICS</a>
                             <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
+
+                    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px;">
+                        <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;width:100%;">
+                            <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                <label>Import ICS (.ics)</label>
+                                <input type="file" name="ics_file" accept=".ics" required style="font-size: 0.8rem; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); width: 100%;">
+                            </div>
+                            <div class="form-actions" style="margin:0;">
+                                <button type="submit" class="btn btn-sm btn-primary">Import Events</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 <?php if ($crud_table === 'catalogs'): ?>
@@ -1051,6 +1204,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="?export=ics&id=<?php echo (int)$row['id']; ?>" title="Export to ICS">📅</a>
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
