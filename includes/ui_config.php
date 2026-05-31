@@ -73,6 +73,15 @@ function itm_sidebar_base_structure() {
             ],
         ],
         [
+            'id' => 'planning',
+            'title' => '🗓️ Planning',
+            'items' => [
+                ['id' => 'calendar', 'label' => '📅 Calendar', 'href' => 'modules/calendar/', 'match_dir' => 'calendar'],
+                ['id' => 'events', 'label' => '📅 Events', 'href' => 'modules/events/', 'match_dir' => 'events'],
+                ['id' => 'event_categories', 'label' => '🏷️ Event Categories', 'href' => 'modules/event_categories/', 'match_dir' => 'event_categories'],
+            ],
+        ],
+        [
             'id' => 'admin',
             'title' => '🧰 Admin',
             'items' => [

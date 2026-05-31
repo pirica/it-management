@@ -438,6 +438,17 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
 3. **Protected Folders:** Top-level system folders (`Common`, `Departments`, `Private`) and the user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
 4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
 
+#### Calendar and Events integration (mandatory)
+
+The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.
+
+1. **Integration (Sync):** The calendar must automatically pull and display:
+    - Events from the `events` module.
+    - Tickets with a `due_date` (displayed as tasks).
+    - Equipment with a `certificate_expiry`.
+2. **Standard CRUD:** The `events` and `event_categories` modules must follow the standard CRUD structure and multi-tenancy rules.
+3. **UI:** The calendar grid must follow a Monday to Sunday layout.
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.

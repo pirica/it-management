@@ -340,7 +340,7 @@ $data = [
     'ticket_external_code' => '', 'title' => '', 'description' => '',
     'category_id' => '', 'status_id' => '', 'priority_id' => '',
     'created_by_user_id' => (int)($_SESSION['user_id'] ?? 0),
-    'assigned_to_user_id' => '', 'asset_id' => '',
+    'assigned_to_user_id' => '', 'asset_id' => '', 'due_date' => '',
     'tickets_photos' => '', 'created_at' => date('Y-m-d\TH:i')
 ];
 
@@ -354,6 +354,7 @@ if ($is_edit) {
         if ($q && mysqli_num_rows($q) === 1) {
             $data = mysqli_fetch_assoc($q);
             $data['created_at'] = date('Y-m-d\TH:i', strtotime($data['created_at']));
+            $data['due_date'] = $data['due_date'] ? date('Y-m-d', strtotime($data['due_date'])) : '';
         } else { $error = 'Ticket not found.'; $is_edit = false; }
         mysqli_stmt_close($stmt);
     }
@@ -375,6 +376,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $created_by_user_id = (int)($_POST['created_by_user_id'] ?? 0);
     $assigned_to_user_id = (int)($_POST['assigned_to_user_id'] ?? 0) ?: 'NULL';
     $asset_id = (int)($_POST['asset_id'] ?? 0) ?: 'NULL';
+    $due_date = trim((string)($_POST['due_date'] ?? ''));
+    $due_date_sql = ($due_date !== '') ? "'" . escape_sql($due_date, $conn) . "'" : 'NULL';
 
     // --- PHOTO PROCESSING ---
     $ticketPhotoFilenames = ticket_parse_photo_filenames((string)($data['tickets_photos'] ?? ''));
@@ -446,13 +449,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ticket_external_code='$ticket_external_code', title='$title', description='$description',
                         category_id=$category_id, status_id=$status_id, priority_id=$priority_id,
                         created_by_user_id=$created_by_user_id, assigned_to_user_id=$assigned_to_user_id, asset_id=$asset_id,
+                        due_date=$due_date_sql,
                         tickets_photos=$photos_sql, created_at=$created_at_val
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO tickets
-                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, tickets_photos, created_at)
+                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, due_date, tickets_photos, created_at)
                     VALUES
-                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $photos_sql, $created_at_val)";
+                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $due_date_sql, $photos_sql, $created_at_val)";
         }
 
         if (!$error && itm_run_query($conn, $sql)) {
@@ -624,6 +628,14 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
                             <label>Created At</label>
                             <input type="datetime-local" name="created_at" value="<?php echo sanitize((string)($data['created_at'] ?? '')); ?>">
                         </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Due Date</label>
+                            <input type="date" name="due_date" value="<?php echo sanitize((string)($data['due_date'] ?? '')); ?>">
+                        </div>
+                        <div class="form-group"></div>
                     </div>
 
                     <div class="form-group">
