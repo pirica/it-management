@@ -95,6 +95,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Employees — Employee tracking
 - Companies — Multi-company support
 - Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
+- Planning — Shared Calendar and Events management
 - Audit Logs
 
 
