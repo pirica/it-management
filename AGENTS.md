@@ -633,12 +633,15 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
     * `<span class="badge badge-success">Active</span>`
     * `<span class="badge badge-danger">Inactive</span>`
 * **Booleans (Edit Mode):** Use icons: `1` = ✅, `0` = ❌.
-* **Active Checkbox Guardrail:** In create/edit forms, treat `active` as a checkbox boolean for `tinyint` variants (not only `tinyint(1)`) so the Active toggle is always rendered and normalized reliably. Use the humanized field name for the label text:
+* **Active Checkbox Guardrail (Double-Label Pattern):** In create/edit forms, treat `active` as a checkbox boolean for `tinyint` variants. Every form field must have a top-level `<label>`. For checkboxes, use the `itm-checkbox-control` wrapper with an inner `<span>` that repeats the humanized field name and includes the status indicator:
 ```html
-<label class="itm-checkbox-control">
-    <input type="checkbox" name="active" value="1" <?= ($isActive ? 'checked' : '') ?>>
-    <span><?= sanitize(cr_humanize_field('active')) ?> <span class="itm-check-indicator" aria-hidden="true"><?= ($isActive ? '✅' : '❌') ?></span></span>
-</label>
+<div class="form-group">
+    <label><?= sanitize(cr_humanize_field('active')) ?></label>
+    <label class="itm-checkbox-control">
+        <input type="checkbox" name="active" value="1" <?= ($isActive ? 'checked' : '') ?>>
+        <span><?= sanitize(cr_humanize_field('active')) ?> <span class="itm-check-indicator" aria-hidden="true"><?= ($isActive ? '✅' : '❌') ?></span></span>
+    </label>
+</div>
 ```
 
 
