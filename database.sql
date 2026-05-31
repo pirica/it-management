@@ -2936,6 +2936,7 @@ CREATE TABLE `tickets` (
   `created_by_user_id` int NOT NULL,
   `assigned_to_user_id` int DEFAULT NULL,
   `asset_id` int DEFAULT NULL,
+  `due_date` date DEFAULT NULL,
   `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -5450,15 +5451,15 @@ DROP TRIGGER IF EXISTS `trg_tickets_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_tickets_audit_insert` AFTER INSERT ON `tickets` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'due_date', NEW.`due_date`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_tickets_audit_update` AFTER UPDATE ON `tickets` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'due_date', OLD.`due_date`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'ticket_external_code', NEW.`ticket_external_code`, 'title', NEW.`title`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'status_id', NEW.`status_id`, 'priority_id', NEW.`priority_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'asset_id', NEW.`asset_id`, 'due_date', NEW.`due_date`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_tickets_audit_delete` AFTER DELETE ON `tickets` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'tickets', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_external_code', OLD.`ticket_external_code`, 'title', OLD.`title`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'status_id', OLD.`status_id`, 'priority_id', OLD.`priority_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'asset_id', OLD.`asset_id`, 'due_date', OLD.`due_date`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DELIMITER $$
@@ -5836,3 +5837,98 @@ CREATE TRIGGER `trg_explorer_audit_delete` AFTER DELETE ON `explorer` FOR EACH R
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'explorer', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'department_id', OLD.`department_id`, 'folder_path', OLD.`folder_path`, 'file_name', OLD.`file_name`, 'file_type', OLD.`file_type`, 'is_favorite', OLD.`is_favorite`, 'is_private', OLD.`is_private`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
+
+-- Table structure for `event_categories`
+DROP TABLE IF EXISTS `event_categories`;
+CREATE TABLE `event_categories` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '#3b82f6',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_event_categories_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `event_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `events`
+DROP TABLE IF EXISTS `events`;
+CREATE TABLE `events` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `start_datetime` datetime NOT NULL,
+  `end_datetime` datetime DEFAULT NULL,
+  `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `category_id` int DEFAULT NULL,
+  `assigned_to_user_id` int DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `category_id` (`category_id`),
+  KEY `assigned_to_user_id` (`assigned_to_user_id`),
+  CONSTRAINT `events_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `events_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `event_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `events_ibfk_assigned_to` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Triggers for `event_categories`
+DELIMITER $$
+CREATE TRIGGER `trg_event_categories_audit_insert` AFTER INSERT ON `event_categories` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'event_categories', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'color', NEW.`color`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_event_categories_audit_update` AFTER UPDATE ON `event_categories` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'event_categories', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'color', OLD.`color`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'color', NEW.`color`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_event_categories_audit_delete` AFTER DELETE ON `event_categories` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'event_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'color', OLD.`color`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+
+-- Triggers for `events`
+DELIMITER $$
+CREATE TRIGGER `trg_events_audit_insert` AFTER INSERT ON `events` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'events', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'category_id', NEW.`category_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_events_audit_update` AFTER UPDATE ON `events` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'events', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'category_id', OLD.`category_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'category_id', NEW.`category_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_events_audit_delete` AFTER DELETE ON `events` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'events', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'category_id', OLD.`category_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+
+-- Data for `event_categories`
+INSERT INTO `event_categories` (`company_id`, `name`, `color`) VALUES
+(1, 'Meeting', '#3b82f6'),
+(1, 'Maintenance', '#ef4444'),
+(1, 'Holiday', '#10b981'),
+(1, 'Other', '#6b7280'),
+(2, 'Meeting', '#3b82f6'),
+(2, 'Maintenance', '#ef4444'),
+(2, 'Holiday', '#10b981'),
+(2, 'Other', '#6b7280'),
+(3, 'Meeting', '#3b82f6'),
+(3, 'Maintenance', '#ef4444'),
+(3, 'Holiday', '#10b981'),
+(3, 'Other', '#6b7280'),
+(4, 'Meeting', '#3b82f6'),
+(4, 'Maintenance', '#ef4444'),
+(4, 'Holiday', '#10b981'),
+(4, 'Other', '#6b7280'),
+(5, 'Meeting', '#3b82f6'),
+(5, 'Maintenance', '#ef4444'),
+(5, 'Holiday', '#10b981'),
+(5, 'Other', '#6b7280');
