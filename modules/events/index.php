@@ -172,7 +172,7 @@ function cr_is_hidden_employee_field($field) {
 /**
  * Formats database values for UI display (badges, icons, clickable links).
  */
-function cr_render_cell_value($table, $field, $value) {
+function cr_render_cell_value($table, $field, $value, $row_data = null) {
     // Status badges for the 'active' flag.
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -180,6 +180,10 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     if ($field === 'category_id' && $value) {
+        if ($row_data && isset($row_data['category_name'])) {
+            $c = sanitize((string)($row_data['category_color'] ?? '#3b82f6'));
+            return '<span class="badge" style="background-color:' . $c . '33;color:' . $c . ';border:1px solid ' . $c . '44;">' . sanitize($row_data['category_name']) . '</span>';
+        }
         global $conn, $company_id;
         $stmt = mysqli_prepare($conn, 'SELECT name, color FROM event_categories WHERE id = ? AND company_id = ?');
         if ($stmt) {
@@ -198,6 +202,11 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     if ($field === 'assigned_to_user_id' && $value) {
+        if ($row_data && (isset($row_data['first_name']) || isset($row_data['username']))) {
+            $name = trim(($row_data['first_name'] ?? '') . ' ' . ($row_data['last_name'] ?? ''));
+            if ($name === '') $name = $row_data['username'] ?? '';
+            return sanitize($name);
+        }
         global $conn;
         $stmt = mysqli_prepare($conn, 'SELECT first_name, last_name, username FROM users WHERE id = ?');
         if ($stmt) {
@@ -884,7 +893,11 @@ if ($page < 1) { $page = 1; }
 if ($page > $totalPages) { $page = $totalPages; }
 $offset = ($page - 1) * $perPage;
 
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
+     FROM events e
+     LEFT JOIN event_categories ec ON e.category_id = ec.id
+     LEFT JOIN users u ON e.assigned_to_user_id = u.id
+     ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
@@ -931,6 +944,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
@@ -1020,7 +1034,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
                                         <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
+                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? '', $row); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>

@@ -38,30 +38,39 @@ $first_day_of_month = (int)date('N', mktime(0, 0, 0, $month, 1, $year)); // 1 (M
 
 // Fetch Events for the month
 $events = [];
+$start_range = "$year-$month-01";
+$end_range = "$year-$month-$days_in_month";
+
 $sql_events = "SELECT e.*, ec.name as category_name, ec.color as category_color
                FROM events e
                LEFT JOIN event_categories ec ON e.category_id = ec.id
                WHERE e.company_id = ? AND e.active = 1
-               AND (
-                   (DATE(e.start_datetime) BETWEEN ? AND ?)
-                   OR (e.end_datetime IS NOT NULL AND DATE(e.end_datetime) BETWEEN ? AND ?)
-               )";
+               AND NOT (DATE(COALESCE(e.end_datetime, e.start_datetime)) < ? OR DATE(e.start_datetime) > ?)";
+
 $stmt = mysqli_prepare($conn, $sql_events);
 if ($stmt) {
-    $start_range = "$year-$month-01";
-    $end_range = "$year-$month-$days_in_month";
-    mysqli_stmt_bind_param($stmt, 'issss', $company_id, $start_range, $end_range, $start_range, $end_range);
+    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($row = mysqli_fetch_assoc($res)) {
-        $d = date('Y-m-d', strtotime($row['start_datetime']));
-        $events[$d][] = [
-            'type' => 'event',
-            'title' => $row['title'],
-            'color' => $row['category_color'] ?: '#3b82f6',
-            'icon' => '📅',
-            'data' => $row
-        ];
+        $start_dt = strtotime($row['start_datetime']);
+        $end_dt = $row['end_datetime'] ? strtotime($row['end_datetime']) : $start_dt;
+
+        $curr = $start_dt;
+        while ($curr <= $end_dt) {
+            $d = date('Y-m-d', $curr);
+            // Only add if within the current month view
+            if ($d >= $start_range && $d <= $end_range) {
+                $events[$d][] = [
+                    'type' => 'event',
+                    'title' => $row['title'],
+                    'color' => $row['category_color'] ?: '#3b82f6',
+                    'icon' => '📅',
+                    'data' => $row
+                ];
+            }
+            $curr = strtotime('+1 day', $curr);
+        }
     }
     mysqli_stmt_close($stmt);
 }
@@ -263,8 +272,8 @@ $selected_day_events = $events[$current_date_param] ?? [];
                     <div class="side-panel-events-list">
                         <?php if ($selected_day_events): ?>
                             <?php foreach ($selected_day_events as $ev): ?>
-                                <div class="side-event-item" style="border-left-color: <?php echo $ev['color']; ?>;">
-                                    <div style="font-weight: bold;"><?php echo $ev['icon']; ?> <?php echo sanitize($ev['title']); ?></div>
+                                <div class="side-event-item" style="border-left-color: <?php echo sanitize($ev['color']); ?>;">
+                                    <div style="font-weight: bold;"><?php echo sanitize($ev['icon']); ?> <?php echo sanitize($ev['title']); ?></div>
                                     <?php if ($ev['type'] === 'event' && !empty($ev['data']['description'])): ?>
                                         <div style="font-size: 0.85rem; margin-top: 5px; opacity: 0.8;"><?php echo sanitize($ev['data']['description']); ?></div>
                                     <?php endif; ?>
@@ -314,7 +323,7 @@ $selected_day_events = $events[$current_date_param] ?? [];
 
                         <?php
                         // Empty cells before the first day
-                        $prev_month_days = cal_days_in_month(CAL_GREGORIAN, $prev_month, $prev_year);
+                        $prev_month_days = (int)date('t', mktime(0, 0, 0, $prev_month, 1, $prev_year));
                         for ($i = 1; $i < $first_day_of_month; $i++) {
                             $day_num = $prev_month_days - ($first_day_of_month - $i - 1);
                             echo '<div class="calendar-day other-month"><span class="day-number">' . $day_num . '</span></div>';
