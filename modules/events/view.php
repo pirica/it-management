@@ -1,6 +1,6 @@
 <?php
 /**
- * Event Categories Module - Index
+ * Events Module - Index
  *
  * Standalone event categories CRUD implementation.
  *
@@ -16,8 +16,8 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'event_categories';
-$crud_title = 'Event Categories';
+$crud_table = 'events';
+$crud_title = 'Events';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php

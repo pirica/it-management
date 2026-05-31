@@ -538,7 +538,7 @@ unset($_SESSION['calendar_success']);
                             </div>
 
                         <?php elseif ($view === 'week'): ?>
-                            <div class="calendar-grid">
+                            <div class="calendar-grid week-time-grid" style="border-bottom: 0;">
                                 <div class="calendar-day-head">Time</div>
                                 <?php
                                     $day_names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
