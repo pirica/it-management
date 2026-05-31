@@ -15,20 +15,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
     itm_require_post_csrf();
     $file = $_FILES['ics_file'];
     if ($file['error'] === UPLOAD_ERR_OK) {
-        $content = file_get_contents($file['tmp_name']);
+        $raw_content = file_get_contents($file['tmp_name']);
+        // Handle line folding (RFC 5545): replace CRLF followed by a space or tab with nothing.
+        $content = preg_replace('/\r\n[ \t]/', '', $raw_content);
+
         // Basic ICS parser
         preg_match_all('/BEGIN:VEVENT.*?END:VEVENT/s', $content, $matches);
         $importedCount = 0;
         foreach ($matches[0] as $vevent) {
-            preg_match('/SUMMARY:(.*)/', $vevent, $summaryMatch);
-            preg_match('/DESCRIPTION:(.*)/', $vevent, $descMatch);
-            preg_match('/DTSTART:(.*)/', $vevent, $startMatch);
-            preg_match('/DTEND:(.*)/', $vevent, $endMatch);
-            preg_match('/LOCATION:(.*)/', $vevent, $locMatch);
+            // Regex to handle property parameters (e.g. SUMMARY;CHARSET=UTF-8:Value)
+            preg_match('/^SUMMARY(?:;[^:]*)?:(.*)$/m', $vevent, $summaryMatch);
+            preg_match('/^DESCRIPTION(?:;[^:]*)?:(.*)$/m', $vevent, $descMatch);
+            preg_match('/^DTSTART(?:;[^:]*)?:(.*)$/m', $vevent, $startMatch);
+            preg_match('/^DTEND(?:;[^:]*)?:(.*)$/m', $vevent, $endMatch);
+            preg_match('/^LOCATION(?:;[^:]*)?:(.*)$/m', $vevent, $locMatch);
 
             $title = trim($summaryMatch[1] ?? 'Imported Event');
             $description = trim($descMatch[1] ?? '');
             $location = trim($locMatch[1] ?? '');
+
+            // Unescape backslashes for text fields
+            $title = str_replace(['\\,', '\\;', '\\\\', '\\n', '\\N'], [',', ';', '\\', "\n", "\n"], $title);
+            $description = str_replace(['\\,', '\\;', '\\\\', '\\n', '\\N'], [',', ';', '\\', "\n", "\n"], $description);
+            $location = str_replace(['\\,', '\\;', '\\\\', '\\n', '\\N'], [',', ';', '\\', "\n", "\n"], $location);
 
             $start_raw = trim($startMatch[1] ?? '');
             $end_raw = trim($endMatch[1] ?? '');
@@ -36,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
             // Convert ICS date (YYYYMMDDTHHMMSSZ or YYYYMMDD) to MySQL datetime
             $format_date = function($raw) {
                 if (!$raw) return null;
+                // Strip everything after Z or any non-numeric before T
                 $raw = preg_replace('/[^0-9T]/', '', $raw);
                 if (strlen($raw) >= 8) {
                     $y = substr($raw, 0, 4);
@@ -43,9 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
                     $d = substr($raw, 6, 2);
                     $date = "$y-$m-$d";
                     if (strpos($raw, 'T') !== false) {
-                        $h = substr($raw, 9, 2) ?: '00';
-                        $min = substr($raw, 11, 2) ?: '00';
-                        $s = substr($raw, 13, 2) ?: '00';
+                        $tPos = strpos($raw, 'T');
+                        $h = substr($raw, $tPos + 1, 2) ?: '00';
+                        $min = substr($raw, $tPos + 3, 2) ?: '00';
+                        $s = substr($raw, $tPos + 5, 2) ?: '00';
                         return "$date $h:$min:$s";
                     }
                     return "$date 00:00:00";
@@ -83,9 +94,19 @@ if (isset($_GET['export']) && $_GET['export'] === 'ics') {
     $start_export = date('Y-m-01', strtotime("-1 year"));
     $end_export = date('Y-m-t', strtotime("+1 year"));
 
-    $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND e.active = 1
+    // Sync active filter with display query: active = 1 OR active IS NULL
+    $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
                    AND e.start_datetime BETWEEN ? AND ?";
     $stmt = mysqli_prepare($conn, $sql_export);
+
+    $ics_esc = function($text) {
+        $text = str_replace('\\', '\\\\', (string)$text);
+        $text = str_replace(',', '\\,', $text);
+        $text = str_replace(';', '\\;', $text);
+        $text = str_replace(["\r\n", "\n", "\r"], "\\n", $text);
+        return $text;
+    };
+
     $ics_content = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPROID:-//IT Management System//Calendar//EN\r\n";
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_export, $end_export);
@@ -99,12 +120,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'ics') {
             if ($row['end_datetime']) {
                 $ics_content .= "DTEND:" . date('Ymd\THis', strtotime($row['end_datetime'])) . "\r\n";
             }
-            $ics_content .= "SUMMARY:" . str_replace("\r\n", " ", $row['title']) . "\r\n";
+            $ics_content .= "SUMMARY:" . $ics_esc($row['title']) . "\r\n";
             if ($row['description']) {
-                $ics_content .= "DESCRIPTION:" . str_replace("\r\n", "\\n", $row['description']) . "\r\n";
+                $ics_content .= "DESCRIPTION:" . $ics_esc($row['description']) . "\r\n";
             }
             if ($row['location']) {
-                $ics_content .= "LOCATION:" . $row['location'] . "\r\n";
+                $ics_content .= "LOCATION:" . $ics_esc($row['location']) . "\r\n";
             }
             $ics_content .= "END:VEVENT\r\n";
         }
@@ -178,10 +199,12 @@ if ($stmt) {
         while ($curr_day <= $loop_end) {
             $d = date('Y-m-d', $curr_day);
             if ($d >= $start_range && $d <= $end_range) {
+                $ev_color = $row['category_color'] ?: '#3b82f6';
+                if (!preg_match('/^#[0-9a-fA-F]{6}$/i', $ev_color)) { $ev_color = '#3b82f6'; }
                 $events_data[$d][] = [
                     'type' => 'event',
                     'title' => $row['title'],
-                    'color' => $row['category_color'] ?: '#3b82f6',
+                    'color' => $ev_color,
                     'icon' => '📅',
                     'start' => $row['start_datetime'],
                     'end' => $row['end_datetime'],
@@ -209,6 +232,7 @@ if ($stmt) {
     while ($row = mysqli_fetch_assoc($res)) {
         $d = $row['due_date'];
         $c = $row['priority_color'] ?: ($row['status_color'] ?: '#ef4444');
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/i', $c)) { $c = '#ef4444'; }
         $events_data[$d][] = [
             'type' => 'ticket',
             'title' => "Ticket: " . $row['title'],
@@ -327,8 +351,8 @@ unset($_SESSION['calendar_success']);
         .event-dot { width: 6px; height: 6px; border-radius: 50%; }
 
         /* Day/Week Time Grid */
-        .time-grid-container { display: grid; grid-template-columns: 60px 1fr; border-top: 1px solid var(--border); }
-        .week-time-grid { grid-template-columns: 60px repeat(7, 1fr); }
+        .time-grid-container { display: grid; grid-template-columns: 50px 1fr; border-top: 1px solid var(--border); }
+        .week-time-grid { grid-template-columns: 50px repeat(7, 1fr); }
         .time-label { padding: 10px 5px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 0.75rem; color: var(--text-secondary); text-align: right; }
         .time-slot { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); position: relative; min-height: 50px; }
         .time-event { position: absolute; left: 2px; right: 2px; border-radius: 4px; padding: 2px 5px; font-size: 0.75rem; color: white; overflow: hidden; z-index: 2; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
@@ -374,7 +398,7 @@ unset($_SESSION['calendar_success']);
                         <?php echo count($selected_day_events); ?> items scheduled
                     </p>
 
-                    <div class="side-panel-events-list">
+                    <div class="side-panel-events-list" style="flex: 1;">
                         <?php if ($selected_day_events): ?>
                             <?php foreach ($selected_day_events as $ev): ?>
                                 <div class="side-event-item" style="border-left-color: <?php echo sanitize($ev['color']); ?>;">
@@ -406,10 +430,6 @@ unset($_SESSION['calendar_success']);
                     </div>
 
                     <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
-                        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h4 style="margin: 0; font-size: 0.9rem;">📅 ICS Tools</h4>
-                            <a href="?export=ics" class="btn btn-sm" title="Export to ICS">📤 Export</a>
-                        </div>
                         <h4 style="margin-bottom: 10px; font-size: 0.8rem; opacity: 0.8;">📥 Import (.ics)</h4>
                         <form method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
@@ -417,6 +437,7 @@ unset($_SESSION['calendar_success']);
                             <button type="submit" class="btn btn-sm w-100">Import Events</button>
                         </form>
                     </div>
+
                 </div>
 
                 <!-- Main Calendar -->
@@ -441,7 +462,7 @@ unset($_SESSION['calendar_success']);
                             <?php elseif ($view === 'day'): ?>
                                 <h2 style="margin: 0;"><?php echo date('d F Y', $current_time); ?></h2>
                             <?php else: ?>
-                                <h2 style="margin: 0;"><?php echo date('F Y', $current_time); ?></h2>
+                                <h2 style="margin: 0;"><?php echo date('F Y', mktime(0, 0, 0, $month, 1, $year)); ?></h2>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -463,7 +484,10 @@ unset($_SESSION['calendar_success']);
                                     echo '<div class="' . $cls . '" onclick="location.href=\'?view=month&month=' . $month . '&year=' . $year . '&date=' . $ds . '\'">';
                                     echo '<span class="day-number">' . $day . '</span>';
                                     echo '<div class="event-dot-container">';
-                                    foreach ($events_data[$ds] ?? [] as $ev) { echo '<div class="event-dot" style="background-color: ' . $ev['color'] . ';" title="' . sanitize($ev['title']) . '"></div>'; }
+                                    foreach ($events_data[$ds] ?? [] as $ev) {
+                                        $ev_c = (preg_match('/^#[0-9a-fA-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
+                                        echo '<div class="event-dot" style="background-color: ' . $ev_c . ';" title="' . sanitize($ev['title']) . '"></div>';
+                                    }
                                     echo '</div></div>';
                                 }
                                 $last_day = date('N', mktime(0, 0, 0, $month, $days_in_month, $year));
@@ -481,14 +505,26 @@ unset($_SESSION['calendar_success']);
                                                 <?php
                                                     $st = strtotime($ev['start']);
                                                     $et = $ev['end'] ? strtotime($ev['end']) : ($st + 3600);
-                                                    $start_h = (int)date('G', $st);
-                                                    $start_m = (int)date('i', $st);
-                                                    $duration = ($et - $st) / 3600;
-                                                    if ($start_h === $h):
+                                                    $day_start = strtotime(date('Y-m-d 00:00:00', $current_time));
+                                                    $day_end = strtotime(date('Y-m-d 23:59:59', $current_time));
+
+                                                    // Calculate intersection with current hour slot
+                                                    $slot_start = strtotime(date('Y-m-d ' . sprintf('%02d:00:00', $h), $current_time));
+                                                    $slot_end = $slot_start + 3600;
+
+                                                    if ($st < $slot_end && $et > $slot_start):
+                                                        // Only render if it's the start hour or the first hour of the day
+                                                        if ((int)date('G', $st) === $h || ($st < $day_start && $h === 0)):
+                                                            $display_start = max($st, $day_start);
+                                                            $display_end = min($et, $day_end);
+                                                            $top = ((int)date('i', $display_start) / 60) * 100;
+                                                            $height = (($display_end - $display_start) / 3600) * 100;
+                                                            $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
                                                 ?>
-                                                    <div class="time-event" style="background:<?php echo $ev['color']; ?>; top:<?php echo ($start_m/60)*100; ?>%; height:<?php echo $duration*100; ?>%;" onclick="location.href='../events/view.php?id=<?php echo $ev['id']; ?>'">
+                                                    <div class="time-event" style="background:<?php echo $color; ?>; top:<?php echo $top; ?>%; height:<?php echo $height; ?>%;" onclick="location.href='../events/view.php?id=<?php echo $ev['id']; ?>'">
                                                         <?php echo sanitize($ev['title']); ?>
                                                     </div>
+                                                <?php endif; ?>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
@@ -497,7 +533,7 @@ unset($_SESSION['calendar_success']);
                             </div>
 
                         <?php elseif ($view === 'week'): ?>
-                            <div class="calendar-grid">
+                            <div class="calendar-grid week-time-grid" style="border-bottom: 0;">
                                 <div class="calendar-day-head">Time</div>
                                 <?php
                                     $day_names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -519,12 +555,25 @@ unset($_SESSION['calendar_success']);
                                                 <?php if ($ev['type'] === 'event' && !empty($ev['start'])): ?>
                                                     <?php
                                                         $st = strtotime($ev['start']);
-                                                        $start_h = (int)date('G', $st);
-                                                        if ($start_h === $h):
+                                                        $et = $ev['end'] ? strtotime($ev['end']) : ($st + 3600);
+                                                        $wd_start = strtotime($wd . ' 00:00:00');
+                                                        $wd_end = strtotime($wd . ' 23:59:59');
+
+                                                        $slot_start = strtotime($wd . ' ' . sprintf('%02d:00:00', $h));
+                                                        $slot_end = $slot_start + 3600;
+
+                                                        if ($st < $slot_end && $et > $slot_start):
+                                                            if ((int)date('G', $st) === $h || ($st < $wd_start && $h === 0)):
+                                                                $display_start = max($st, $wd_start);
+                                                                $display_end = min($et, $wd_end);
+                                                                $top = ((int)date('i', $display_start) / 60) * 100;
+                                                                $height = (($display_end - $display_start) / 3600) * 100;
+                                                                $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
                                                     ?>
-                                                        <div class="time-event" style="background:<?php echo $ev['color']; ?>;" onclick="location.href='../events/view.php?id=<?php echo $ev['id']; ?>'">
+                                                        <div class="time-event" style="background:<?php echo $color; ?>; top:<?php echo $top; ?>%; height:<?php echo $height; ?>%;" onclick="location.href='../events/view.php?id=<?php echo $ev['id']; ?>'">
                                                             <?php echo sanitize($ev['title']); ?>
                                                         </div>
+                                                    <?php endif; ?>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                             <?php endforeach; ?>

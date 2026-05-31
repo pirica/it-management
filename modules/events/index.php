@@ -2,7 +2,7 @@
 /**
  * Events Module - Index
  *
- * Standalone events CRUD implementation.
+ * Standalone event categories CRUD implementation.
  *
  * Features:
  * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms
@@ -102,7 +102,56 @@ function cr_fk_options($conn, $fk, $company_id) {
         }
         mysqli_stmt_close($stmt);
     }
+
+    // Fallback for tenants without pre-seeded FK rows
+    if (empty($rows) && $hasCompany) {
+        $fallbackSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . ' ORDER BY label';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        while ($fallbackRes && ($fallbackRow = mysqli_fetch_assoc($fallbackRes))) {
+            $rows[] = $fallbackRow;
+        }
+    }
     return $rows;
+}
+
+/**
+ * Resolves the display label column for a related table.
+ */
+function cr_fk_ensure_selected_option($conn, $fk, $options, $selectedValue) {
+    $selectedRaw = trim((string)$selectedValue);
+    if ($selectedRaw === '' || strtoupper($selectedRaw) === 'NULL') {
+        return $options;
+    }
+
+    foreach ($options as $option) {
+        if ((string)($option['id'] ?? '') === $selectedRaw) {
+            return $options;
+        }
+    }
+
+    if (!preg_match('/^-?\d+$/', $selectedRaw)) {
+        return $options;
+    }
+
+    $selectedId = (int)$selectedRaw;
+    if ($selectedId <= 0) {
+        return $options;
+    }
+
+    $table = $fk['REFERENCED_TABLE_NAME'];
+    $col = $fk['REFERENCED_COLUMN_NAME'];
+    $meta = cr_fk_metadata($conn, $table);
+    $labelCol = $meta['label_col'];
+
+    $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol)
+        . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $selectedId . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $options[] = $row;
+    }
+
+    return $options;
 }
 
 /**
@@ -172,61 +221,22 @@ function cr_is_hidden_employee_field($field) {
 /**
  * Formats database values for UI display (badges, icons, clickable links).
  */
-function cr_render_cell_value($table, $field, $value, $row_data = null) {
+function cr_render_cell_value($table, $field, $value) {
     // Status badges for the 'active' flag.
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
-        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active ✅' : 'Inactive ❌') . '</span>';
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
-    if ($field === 'category_id' && $value) {
-        if ($row_data && isset($row_data['category_name'])) {
-            $c = sanitize((string)($row_data['category_color'] ?? '#3b82f6'));
-            return '<span class="badge" style="background-color:' . $c . '33;color:' . $c . ';border:1px solid ' . $c . '44;">' . sanitize($row_data['category_name']) . '</span>';
-        }
-        global $conn, $company_id;
-        $stmt = mysqli_prepare($conn, 'SELECT name, color FROM event_categories WHERE id = ? AND company_id = ?');
-        if ($stmt) {
-            $cid = (int)$company_id;
-            $vid = (int)$value;
-            mysqli_stmt_bind_param($stmt, 'ii', $vid, $cid);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            $row = $res ? mysqli_fetch_assoc($res) : null;
-            mysqli_stmt_close($stmt);
-            if ($row) {
-                $c = sanitize((string)($row['color'] ?? '#3b82f6'));
-                return '<span class="badge" style="background-color:' . $c . '33;color:' . $c . ';border:1px solid ' . $c . '44;">' . sanitize($row['name']) . '</span>';
-            }
-        }
-    }
-
-    if ($field === 'assigned_to_user_id' && $value) {
-        if ($row_data && (isset($row_data['first_name']) || isset($row_data['username']))) {
-            $name = trim(($row_data['first_name'] ?? '') . ' ' . ($row_data['last_name'] ?? ''));
-            if ($name === '') $name = $row_data['username'] ?? '';
-            return sanitize($name);
-        }
-        global $conn;
-        $stmt = mysqli_prepare($conn, 'SELECT first_name, last_name, username FROM users WHERE id = ?');
-        if ($stmt) {
-            $vid = (int)$value;
-            mysqli_stmt_bind_param($stmt, 'i', $vid);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            $row = $res ? mysqli_fetch_assoc($res) : null;
-            mysqli_stmt_close($stmt);
-            if ($row) {
-                $name = trim($row['first_name'] . ' ' . $row['last_name']);
-                if ($name === '') $name = $row['username'];
-                return sanitize($name);
-            }
-        }
+    if ($field === 'color') {
+        $hex = sanitize((string)($value ?? '#3b82f6'));
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/i', $hex)) { $hex = '#3b82f6'; }
+        return '<div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:4px;background-color:' . $hex . ';border:1px solid rgba(0,0,0,0.1);"></div><code>' . $hex . '</code></div>';
     }
 
     // Special boolean mapping for Employee Access module.
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
-        $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
@@ -269,12 +279,7 @@ function cr_get_csrf_token() {
 }
 
 function cr_require_valid_csrf_token() {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        exit('Forbidden: invalid CSRF token.');
-    }
+    itm_require_post_csrf();
 }
 
 function cr_numeric_validation_error($field, $message) {
@@ -359,7 +364,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['events', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['event_categories', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -373,6 +378,64 @@ $displayFieldColumns = $uiColumns;
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
+
+
+// Handle ICS Export
+if (isset($_GET['export']) && $_GET['export'] === 'ics') {
+    $export_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+    if ($export_id > 0) {
+        $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND e.id = ? LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql_export);
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $export_id);
+    } else {
+        $start_export = date('Y-m-01', strtotime("-1 year"));
+        $end_export = date('Y-m-t', strtotime("+1 year"));
+        $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
+                       AND e.start_datetime BETWEEN ? AND ?";
+        $stmt = mysqli_prepare($conn, $sql_export);
+        mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_export, $end_export);
+    }
+
+    $ics_esc = function($text) {
+        $text = str_replace('\\', '\\\\', (string)$text);
+        $text = str_replace(',', '\\,', $text);
+        $text = str_replace(';', '\\;', $text);
+        $text = str_replace(["\r\n", "\n", "\r"], "\\n", $text);
+        return $text;
+    };
+
+    $ics_content = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPROID:-//IT Management System//Calendar//EN\r\n";
+    if ($stmt) {
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($res)) {
+            $ics_content .= "BEGIN:VEVENT\r\n";
+            $ics_content .= "UID:" . $row['id'] . "@it-management\r\n";
+            $ics_content .= "DTSTAMP:" . date('Ymd\THis\Z') . "\r\n";
+            $ics_content .= "DTSTART:" . date('Ymd\THis', strtotime($row['start_datetime'])) . "\r\n";
+            if ($row['end_datetime']) {
+                $ics_content .= "DTEND:" . date('Ymd\THis', strtotime($row['end_datetime'])) . "\r\n";
+            }
+            $ics_content .= "SUMMARY:" . $ics_esc($row['title']) . "\r\n";
+            if ($row['description']) {
+                $ics_content .= "DESCRIPTION:" . $ics_esc($row['description']) . "\r\n";
+            }
+            if ($row['location']) {
+                $ics_content .= "LOCATION:" . $ics_esc($row['location']) . "\r\n";
+            }
+            $ics_content .= "END:VEVENT\r\n";
+        }
+        mysqli_stmt_close($stmt);
+    }
+    $ics_content .= "END:VCALENDAR";
+
+    header('Content-Type: text/calendar; charset=utf-8');
+    $filename = "events_export_" . ($export_id > 0 ? "id_$export_id" : date('Ymd')) . ".ics";
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    echo $ics_content;
+    exit;
+}
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
@@ -604,6 +667,8 @@ if (!empty($_SESSION['crud_error'])) {
     $errors[] = (string)$_SESSION['crud_error'];
     unset($_SESSION['crud_error']);
 }
+$success = $_SESSION['crud_success'] ?? null;
+unset($_SESSION['crud_success']);
 $data = [];
 foreach ($fieldColumns as $col) {
     if ($col['Field'] === 'active') {
@@ -698,7 +763,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
 
         // Logical Booleans
-        if ($isTinyInt) {
+        if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
         }
@@ -923,6 +988,9 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?php echo sanitize($success); ?></div>
+            <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <!-- LIST VIEW -->
@@ -958,7 +1026,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 
                 <!-- SEARCH BAR -->
                 <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
                         <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                         <input type="hidden" name="page" value="1">
@@ -968,9 +1036,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="?export=ics" class="btn" title="Export all active events to ICS">📤 Export ICS</a>
                             <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
+
                 </div>
 
                 <?php if ($crud_table === 'catalogs'): ?>
@@ -1046,6 +1116,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="?export=ics&id=<?php echo (int)$row['id']; ?>" title="Export to ICS">📅</a>
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
@@ -1102,22 +1173,21 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === null) ? '' : (string)$val;
                     ?>
+                        <?php if ($name === 'company_id'): ?>
+                            <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <div class="form-group">
-                            <?php if ($isTinyInt): ?>
-                                <!-- Skip top label for checkboxes to avoid duplication with Active ✅ -->
-                            <?php else: ?>
-                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php endif; ?>
-                            <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
-                            <?php elseif ($isTinyInt): ?>
+                            <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
+                            <?php if ($isTinyInt || $name === 'active'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span>Active ✅ <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
                                     $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = cr_fk_ensure_selected_option($conn, $fkMap[$name], $opts, $displayVal);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
