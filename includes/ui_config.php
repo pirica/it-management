@@ -79,6 +79,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'calendar', 'label' => '📅 Calendar', 'href' => 'modules/calendar/', 'match_dir' => 'calendar'],
                 ['id' => 'events', 'label' => '📅 Events', 'href' => 'modules/events/', 'match_dir' => 'events'],
                 ['id' => 'event_categories', 'label' => '🏷️ Event Categories', 'href' => 'modules/event_categories/', 'match_dir' => 'event_categories'],
+                ['id' => 'patches_updates', 'label' => '🛠️ Patches Updates', 'href' => 'modules/patches_updates/', 'match_dir' => 'patches_updates'],
             ],
         ],
         [
@@ -159,6 +160,7 @@ function itm_sidebar_module_default_label($moduleName) {
     $moduleName = trim((string)$moduleName);
     $labels = [
         'inventory_items' => '📦 Inventory',
+        'patches_updates' => '🛠️ Patches Updates',
     ];
 
     return $labels[$moduleName] ?? null;

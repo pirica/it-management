@@ -332,8 +332,13 @@ function cr_render_cell_value($table, $field, $value) {
         return $html;
     }
 
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active ✅' : 'Inactive ❌') . '</span>';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
-        $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
+        $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
@@ -781,7 +786,11 @@ if (!empty($_SESSION['crud_error'])) {
 }
 $data = [];
 foreach ($fieldColumns as $col) {
-    $data[$col['Field']] = '';
+    if ($col['Field'] === 'active') {
+        $data[$col['Field']] = 1;
+    } else {
+        $data[$col['Field']] = '';
+    }
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -1222,13 +1231,17 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
                         <div class="form-group">
-                            <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
+                            <?php if ($isTinyInt): ?>
+                                <!-- Skip top label for checkboxes to avoid duplication with Active ✅ -->
+                            <?php else: ?>
+                                <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
+                            <?php endif; ?>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span>Active ✅ <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
