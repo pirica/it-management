@@ -1,6 +1,6 @@
 <?php
 /**
- * Events Module - Index
+ * Event Categories Module - Index
  *
  * Standalone event categories CRUD implementation.
  *
@@ -16,8 +16,8 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'events';
-$crud_title = 'Events';
+$crud_table = 'event_categories';
+$crud_title = 'Event Categories';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
@@ -874,7 +874,7 @@ if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(e.`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($fieldColumns as $col) {
+    foreach ($displayFieldColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') { continue; }
         $searchConditions[] = 'CAST(e.' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
