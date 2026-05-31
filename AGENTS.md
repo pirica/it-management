@@ -629,11 +629,17 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Buttons:** `btn-primary` for main actions; `btn-sm` for table actions.
 * **Tables:** Use `.itm-actions-cell` and `.itm-actions-wrap` for action columns.
 * **Active field use badges for status (index.php/view.php).
-* **Booleans (List View):** Use badges for status: 
+* **Booleans (List View):** Use badges for status (must NOT contain emojis):
     * `<span class="badge badge-success">Active</span>`
     * `<span class="badge badge-danger">Inactive</span>`
 * **Booleans (Edit Mode):** Use icons: `1` = ✅, `0` = ❌.
-* **Active Checkbox Guardrail:** In create/edit forms, treat `active` as a checkbox boolean for `tinyint` variants (not only `tinyint(1)`) so the Active toggle is always rendered and normalized reliably.
+* **Active Checkbox Guardrail:** In create/edit forms, treat `active` as a checkbox boolean for `tinyint` variants (not only `tinyint(1)`) so the Active toggle is always rendered and normalized reliably. Use the humanized field name for the label text:
+```html
+<label class="itm-checkbox-control">
+    <input type="checkbox" name="active" value="1" <?= ($isActive ? 'checked' : '') ?>>
+    <span><?= sanitize(cr_humanize_field('active')) ?> <span class="itm-check-indicator" aria-hidden="true"><?= ($isActive ? '✅' : '❌') ?></span></span>
+</label>
+```
 
 
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.

@@ -176,7 +176,7 @@ function cr_render_cell_value($table, $field, $value) {
     // Status badges for the 'active' flag.
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
-        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active ✅' : 'Inactive ❌') . '</span>';
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
     if ($field === 'color') {
@@ -565,7 +565,13 @@ if (!empty($_SESSION['crud_error'])) {
     unset($_SESSION['crud_error']);
 }
 $data = [];
-foreach ($fieldColumns as $col) { $data[$col['Field']] = ''; }
+foreach ($fieldColumns as $col) {
+    if ($col['Field'] === 'active') {
+        $data[$col['Field']] = 1;
+    } else {
+        $data[$col['Field']] = '';
+    }
+}
 
 if ($crud_table === 'catalogs' && $crud_action === 'create') {
     $catalogPrefillMap = [
@@ -1063,7 +1069,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span>Active ✅ <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
