@@ -270,6 +270,12 @@ if (isset($_GET['search'])) {
     $archiveFilterSql = '';
 }
 
+$archiveFilterSql = $showArchived ? " AND t.is_archived = 1" : " AND t.is_archived = 0";
+// If searching, include both archived and active as requested
+if ($searchRaw !== '') {
+    $archiveFilterSql = '';
+}
+
 // Sorting logic
 $uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'created_at'];
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.

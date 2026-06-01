@@ -132,6 +132,19 @@ if ($id > 0) {
                                 </tr>
                                 <?php continue; ?>
                             <?php endif; ?>
+                            <?php if ($field === 'is_archived'): ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
+                                    <td>
+                                        <?php if ((int)($item['is_archived'] ?? 0) === 1): ?>
+                                            <span class="badge badge-danger">Archived</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-success">Active</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
                             <?php if ($field === 'status_id'): ?>
                                 <tr>
                                     <th style="width:220px;"><?php echo sanitize($label); ?></th>
