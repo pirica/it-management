@@ -1,0 +1,211 @@
+<?php
+// Handle Excel/CSV database import requests from table-tools.js.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true)) {
+    $itm_content_type = isset($_SERVER['CONTENT_TYPE']) ? strtolower(trim((string) $_SERVER['CONTENT_TYPE'])) : '';
+    if (strpos($itm_content_type, 'application/json') === 0) {
+        $itm_raw_body = file_get_contents('php://input');
+        $itm_payload = json_decode($itm_raw_body, true);
+
+        if (is_array($itm_payload) && isset($itm_payload['import_excel_rows'])) {
+            itm_handle_json_table_import($conn, $crud_table, (int)($company_id ?? 0));
+            exit;
+        }
+    }
+}
+
+if (!isset($_SESSION['company_id'])) {
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
+}
+
+$company_id = (int)($_SESSION['company_id'] ?? 0);
+$csrfToken = itm_get_csrf_token();
+$errors = [];
+$success_msg = '';
+
+if (isset($_SESSION['crud_error'])) {
+    $errors[] = $_SESSION['crud_error'];
+    unset($_SESSION['crud_error']);
+}
+if (isset($_SESSION['crud_success'])) {
+    $success_msg = $_SESSION['crud_success'];
+    unset($_SESSION['crud_success']);
+}
+
+$catalogOptions = rack_planner_fetch_catalog_options($conn, $company_id);
+$equipmentPickerOptions = rack_planner_fetch_equipment_picker_options($conn, $company_id);
+$combinedCodeMeta = rack_planner_combined_code_meta_map($catalogOptions, $equipmentPickerOptions);
+
+// Handle Delete
+if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+
+    // Handle Clear Table Bulk Action
+    if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'clear_table') {
+        $stmt = mysqli_prepare($conn, "DELETE FROM rack_planner WHERE company_id = ?");
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        if (mysqli_stmt_execute($stmt)) {
+            $_SESSION['crud_success'] = 'Table cleared.';
+        } else {
+            $_SESSION['crud_error'] = 'Error clearing table.';
+        }
+        mysqli_stmt_close($stmt);
+        header('Location: index.php');
+        exit;
+    }
+
+    // Handle Bulk Delete
+    if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = mysqli_prepare($conn, "DELETE FROM rack_planner WHERE id IN ($placeholders) AND company_id = ?");
+            $types = str_repeat('i', count($ids)) . 'i';
+            $params = array_map('intval', $ids);
+            $params[] = $company_id;
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
+            if (mysqli_stmt_execute($stmt)) {
+                $_SESSION['crud_success'] = 'Selected plans deleted.';
+            } else {
+                $_SESSION['crud_error'] = 'Error deleting plans.';
+            }
+            mysqli_stmt_close($stmt);
+        }
+        header('Location: index.php');
+        exit;
+    }
+
+    // Single Delete
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id > 0) {
+        $stmt = mysqli_prepare($conn, "DELETE FROM rack_planner WHERE id = ? AND company_id = ?");
+        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        if (mysqli_stmt_execute($stmt)) {
+            $_SESSION['crud_success'] = 'Rack plan deleted.';
+        } else {
+            $_SESSION['crud_error'] = 'Error deleting rack plan.';
+        }
+        mysqli_stmt_close($stmt);
+    }
+    header('Location: index.php');
+    exit;
+}
+
+// Handle Save (Create/Edit)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true) && isset($_POST['ajax_update_layout'])) {
+    itm_require_post_csrf();
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $id = (int)($_POST['id'] ?? 0);
+    $rackUnits = max(1, min(100, (int)($_POST['rack_units'] ?? 42)));
+    $layoutRaw = (string)($_POST['layout_json'] ?? '');
+    $normalizedLayout = rack_planner_normalize_layout_json($layoutRaw, $rackUnits, $combinedCodeMeta);
+    $layoutJson = rack_planner_encode_layout($normalizedLayout);
+    $totalAmount = rack_planner_layout_total($normalizedLayout);
+
+    if ($id <= 0) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Create mode requires Save before auto-save.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET layout_json = ? WHERE id = ? AND company_id = ?");
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Unable to prepare auto-save.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'sii', $layoutJson, $id, $company_id);
+    $ok = mysqli_stmt_execute($stmt);
+    $updatedRows = $ok ? mysqli_stmt_affected_rows($stmt) : 0;
+    mysqli_stmt_close($stmt);
+
+    if (!$ok) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Auto-save failed.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $sourcePriceSyncOk = true;
+    if ($updatedRows > 0) {
+        $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+    }
+    echo json_encode([
+        'success' => true,
+        'message' => $sourcePriceSyncOk ? 'Auto-saved.' : 'Auto-saved with source price sync warning.',
+        'layout_json' => $layoutJson,
+        'total_amount' => number_format($totalAmount, 2, '.', ''),
+        'source_price_sync' => $sourcePriceSyncOk,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'])) {
+    itm_require_post_csrf();
+
+    $id = (int)($_POST['id'] ?? 0);
+    $name = trim((string)($_POST['name'] ?? ''));
+    $rack_units = max(1, min(100, (int)($_POST['rack_units'] ?? 42)));
+    $notes = trim((string)($_POST['notes'] ?? ''));
+    $active = isset($_POST['active']) ? 1 : 0;
+    $layout_raw = (string)($_POST['layout_json'] ?? '');
+    $normalizedLayout = rack_planner_normalize_layout_json($layout_raw, $rack_units, $combinedCodeMeta);
+    $layout_json = rack_planner_encode_layout($normalizedLayout);
+
+    if ($name === '') {
+        $errors[] = 'Name is required.';
+    }
+
+    if (empty($errors)) {
+        if ($crud_action === 'create') {
+            $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, name, rack_units, layout_json, notes, active) VALUES (?, ?, ?, ?, ?, ?)");
+            mysqli_stmt_bind_param($stmt, 'isissi', $company_id, $name, $rack_units, $layout_json, $notes, $active);
+        } else {
+            $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET name = ?, rack_units = ?, layout_json = ?, notes = ?, active = ? WHERE id = ? AND company_id = ?");
+            mysqli_stmt_bind_param($stmt, 'sissiii', $name, $rack_units, $layout_json, $notes, $active, $id, $company_id);
+        }
+
+        if (mysqli_stmt_execute($stmt)) {
+            $affectedRows = mysqli_stmt_affected_rows($stmt);
+            $sourcePriceSyncOk = true;
+            if ($crud_action === 'create' || $affectedRows > 0) {
+                $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
+            }
+            $_SESSION['crud_success'] = $sourcePriceSyncOk ? 'Rack plan saved.' : 'Rack plan saved with source price sync warning.';
+            header('Location: index.php');
+            exit;
+        } else {
+            $errors[] = 'Error saving rack plan: ' . mysqli_error($conn);
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
+// Handle Add Sample Data
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($crud_action === 'index' || $crud_action === 'list_all') && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+    $name = 'Core Rack A';
+    $units = 42;
+    $json = '{"version":1,"units":42,"devices":[]}';
+    $notes = 'Sample empty rack plan.';
+    $active = 1;
+    $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, name, rack_units, layout_json, notes, active) VALUES (?, ?, ?, ?, ?, ?)");
+    mysqli_stmt_bind_param($stmt, 'isissi', $company_id, $name, $units, $json, $notes, $active);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    header('Location: index.php');
+    exit;
+}
