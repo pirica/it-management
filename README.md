@@ -162,7 +162,7 @@ Then re-run:
 <h2 align="center">Production Deployment Note</h2>
 
 - Keep `scripts/debug.php` for development/troubleshooting only.
-- Before any production release, remove or block access to `debug.php` to avoid exposing sensitive system and database information.
+- Before any production release, remove or block access to `scripts/debug.php` to avoid exposing sensitive system and database information.
 
 <h2 align="center">Network Discovery & IP2WHOIS</h2>
 
