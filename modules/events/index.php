@@ -16,8 +16,8 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'event_categories';
-$crud_title = 'Event Categories';
+$crud_table = 'events';
+$crud_title = 'Events';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
@@ -1112,7 +1112,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="?export=ics" class="btn" title="Export all active events to ICS">📤 Export ICS</a>
                             <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
@@ -1122,7 +1121,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label>Import ICS (.ics)</label>
-                                <input type="file" name="ics_file" accept=".ics" required style="font-size: 0.8rem; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); width: 100%;">
+                                <input type="file" name="ics_file" accept=".ics" required style="font-size: 0.8rem; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); width: 300px;">
                             </div>
                             <div class="form-actions" style="margin:0;">
                                 <button type="submit" class="btn btn-sm btn-primary">Import Events</button>
