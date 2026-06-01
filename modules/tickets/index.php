@@ -243,6 +243,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
 
 // Extraction of search and sorting parameters
 $searchRaw = trim((string)($_GET['search'] ?? ''));
+$showArchived = (int)($_GET['show_archived'] ?? 0) === 1;
+
 $searchSql = '';
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
@@ -257,11 +259,20 @@ if ($searchRaw !== '') {
     )";
 }
 
+$archiveFilterSql = $showArchived ? " AND t.is_archived = 1" : " AND t.is_archived = 0";
+// If searching, include both archived and active as requested
+if ($searchRaw !== '') {
+    $archiveFilterSql = '';
+}
+
 // Sorting logic
-$sortableColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'created_at'];
+$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'created_at'];
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
+if (!in_array($sort, $uiColumns, true)) { $sort = 'id'; }
 if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 
 $orderByMap = [
@@ -280,7 +291,7 @@ $countQuery = mysqli_query(
      FROM tickets t
      LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
      LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
-     WHERE t.company_id = $company_id{$searchSql}"
+     WHERE t.company_id = $company_id{$archiveFilterSql}{$searchSql}"
 );
 $countRow = $countQuery ? mysqli_fetch_assoc($countQuery) : null;
 $totalRows = (int)($countRow['total'] ?? 0);
@@ -300,7 +311,7 @@ $items = mysqli_query(
      FROM tickets t
      LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
      LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
-     WHERE t.company_id = $company_id{$searchSql}
+     WHERE t.company_id = $company_id{$archiveFilterSql}{$searchSql}
      ORDER BY {$orderByMap[$sort]} {$dir}
      LIMIT " . (int)$perPage . " OFFSET " . (int)$offset
 );
@@ -339,6 +350,11 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
                         <a href="index.php" class="btn">🔙</a>
+                        <?php if ($showArchived): ?>
+                            <a href="index.php" class="btn" title="Show Active Tickets">🔓</a>
+                        <?php else: ?>
+                            <a href="index.php?show_archived=1" class="btn" title="List all Archived Tickets">🔓</a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -374,16 +390,32 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                         <tr>
                             <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$t['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo (int)$t['id']; ?></td>
-                            <td><?php echo sanitize($t['ticket_external_code'] ?? '-'); ?></td>
+                            <td><?php echo sanitize($t['ticket_external_code'] ?? '—'); ?></td>
                             <td><?php echo sanitize($t['title']); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
-                            <td><?php echo sanitize($t['due_date'] ?? '-'); ?></td>
+                            <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
                             <td><?php echo sanitize($t['created_at']); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
                                     <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$t['id']; ?>">✏️</a>
+                                    <?php if ((int)($t['is_archived'] ?? 0) === 1): ?>
+                                        <form method="POST" action="archive.php" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                            <input type="hidden" name="id" value="<?php echo (int)$t['id']; ?>">
+                                            <input type="hidden" name="archive_action" value="unarchive">
+                                            <input type="hidden" name="redirect_archived" value="<?php echo $showArchived ? '1' : '0'; ?>">
+                                            <button type="submit" class="btn btn-sm" title="Un-archive">🔓</button>
+                                        </form>
+                                    <?php elseif (strcasecmp((string)($t['status_name'] ?? ''), 'Closed') === 0): ?>
+                                        <form method="POST" action="archive.php" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                            <input type="hidden" name="id" value="<?php echo (int)$t['id']; ?>">
+                                            <input type="hidden" name="archive_action" value="archive">
+                                            <button type="submit" class="btn btn-sm" title="Archive">🔐</button>
+                                        </form>
+                                    <?php endif; ?>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete ticket?');">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                                         <input type="hidden" name="id" value="<?php echo (int)$t['id']; ?>">
@@ -401,11 +433,11 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                 <?php if ($totalPages > 1): ?>
                     <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>" title="◀️ Previous">Previous</a>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>" title="◀️ Previous">Previous</a>
                         <?php endif; ?>
                         <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>" title="▶️ Next">Next</a>
+                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>" title="▶️ Next">Next</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

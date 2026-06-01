@@ -102,7 +102,7 @@ if ($id > 0) {
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_user_id' => 'Created By',
                             'assigned_to_user_id' => 'Assigned To', 'asset_id' => 'Related Asset',
-                            'due_date' => 'Due Date', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
+                            'due_date' => 'Due Date', 'is_archived' => 'Archived', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
                         ];
 
                         $fieldDisplayValues = [
@@ -127,6 +127,19 @@ if ($id > 0) {
                                                     </a>
                                                 <?php endforeach; ?>
                                             </div>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php if ($field === 'is_archived'): ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
+                                    <td>
+                                        <?php if ((int)($item['is_archived'] ?? 0) === 1): ?>
+                                            <span class="badge badge-danger">Archived</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-success">Active</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
