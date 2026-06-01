@@ -318,6 +318,7 @@ if (
 ) {
     $itmBrowserMaintenanceAuthAllowlist = [
         'module_browser_qa_runner.php',
+        'run_tests.php',
     ];
     $itmMaintenanceScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
     if (in_array($itmMaintenanceScript, $itmBrowserMaintenanceAuthAllowlist, true)) {
