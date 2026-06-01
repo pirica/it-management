@@ -1122,10 +1122,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label>Import ICS (.ics)</label>
                                 <input type="file" name="ics_file" accept=".ics" required style="font-size: 0.8rem; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); width: 300px;">
-                            </div>
-                            <div class="form-actions" style="margin:0;">
-                                <button type="submit" class="btn btn-sm btn-primary">Import Events</button>
-                            </div>
+                            <br><button type="submit" class="btn btn-sm btn-primary">Import Events</button></div>
                         </form>
                     </div>
                 </div>
