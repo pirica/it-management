@@ -9,11 +9,33 @@
 // Define that we are in a CLI script context to bypass web-only auth/logic
 define('ITM_CLI_SCRIPT', true);
 
-// Set environment variable to skip DB tests in config.php
-putenv('ITM_SKIP_DB_TESTS=1');
-$_ENV['ITM_SKIP_DB_TESTS'] = '1';
+// Why: We need to set ITM_SKIP_DB_TESTS=1 BEFORE config.php if we want to avoid connection fatals.
+if (($_GET['skip_db'] ?? $_ENV['ITM_SKIP_DB_TESTS'] ?? getenv('ITM_SKIP_DB_TESTS') ?? '') === '1') {
+    putenv('ITM_SKIP_DB_TESTS=1');
+    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
+}
+
+// Detect if we should skip database tests.
+// Default to skip if not explicitly requested and we are in a web context without a local DB connection.
+$skip_db = ($_GET['skip_db'] ?? $_ENV['ITM_SKIP_DB_TESTS'] ?? getenv('ITM_SKIP_DB_TESTS') ?? '') === '1';
+
+// Why: If we don't explicitly want to skip, we try to connect but suppress the fatal error from config.php if it fails.
+if (!$skip_db) {
+    // Temporarily disable the die() on connection failure by mocking ITM_SKIP_DB_TESTS
+    putenv('ITM_SKIP_DB_TESTS=1');
+    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
+}
 
 require_once dirname(__DIR__) . '/config/config.php';
+
+// Why: If no explicit preference is set, we check if we actually have a connection.
+if ($skip_db || (!isset($conn) || !$conn)) {
+    putenv('ITM_SKIP_DB_TESTS=1');
+    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
+} else {
+    putenv('ITM_SKIP_DB_TESTS=0');
+    $_ENV['ITM_SKIP_DB_TESTS'] = '0';
+}
 require_once ROOT_PATH . 'scripts/lib/script_browser_nav.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 
