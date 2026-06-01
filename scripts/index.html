@@ -156,6 +156,12 @@
                         <code>php scripts/detect_fk_dropdown_ui_risk.php [--company=N] [--json] [--data-only] [--code-only] [--repair-catalogs] [--help]</code>.
                     </td>
                 </tr>
+                <tr>
+                    <td><a href="debug.php">debug.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>System overview (DB, tables, PHP version, extensions, and file permissions).</td>
+                    <td>Open in browser for quick troubleshooting.</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -586,6 +592,34 @@
         <p class="scripts-muted" style="margin-top:12px;">
             Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/equipment_type_modules.php</code> (canonical <code>modules/is_*</code> allowlist; safe removal of <code>*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> test scaffolds only), <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, relative module / table→module links).
         </p>
+    </div>
+
+    <div class="scripts-card" id="deployment">
+        <h2>Deployment &amp; Git</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="http://myhome.dynip.sapo.pt/delete.php" target="_blank" rel="nofollow noreferrer">delete.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Clone Github + Import Database</td>
+                    <td>Open in browser to trigger remote deployment</td>
+                </tr>
+                <tr>
+                    <td><a href="http://myhome.dynip.sapo.pt/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Upload to Github local files + Import Database</td>
+                    <td>Open in browser to trigger remote git reset</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="scripts-card">
