@@ -196,7 +196,9 @@ if ($itm_envBaseUrl !== '') {
 }
 
 define('BASE_URL', $itm_baseUrl);
-define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
+if (!defined('ROOT_PATH')) {
+    define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
+}
 define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'images'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('UPLOAD_URL', BASE_URL . 'images/');
 define('TICKET_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'tickets_photos'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
