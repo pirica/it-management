@@ -66,16 +66,15 @@ if (!is_dir($storage_root)) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Explorer - <?= sanitize($app_name) ?></title>
 <link rel="icon" type="image/png" href="<?= sanitize($favicon_url) ?>">
+<link rel="stylesheet" href="../../css/styles.css">
 
 <style>
 body {
-    font-family: "Segoe UI", "Tahoma", sans-serif;
-    background: #f3f6fd;
+    background: var(--bg-secondary);
     margin: 0;
     padding: 0;
     transition: background 0.3s, color 0.3s;
 }
-.dark { background: #1e1e1e; color: #eee; }
 
 #main {
     margin: 20px;
@@ -89,20 +88,17 @@ body {
     left: 0;
     width: 240px;
     height: 100%;
-    background: #ffffff;
-    border-right: 1px solid #ccc;
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border);
     padding: 20px;
-    z-index: 9998;
+    z-index: 9999;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
 }
 #sidebar.open { transform: translateX(0); }
-.dark #sidebar { background:#2a2a2a; border-color:#444; color:#eee; }
-#sidebar h3, #sidebar h4 { margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-.dark #sidebar h3, .dark #sidebar h4 { border-color: #444; }
+#sidebar h3, #sidebar h4 { margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
 #sidebar div { margin-bottom:12px; cursor:pointer; padding: 6px; border-radius: 4px; }
-#sidebar div:hover { background: #f0f0f0; }
-.dark #sidebar div:hover { background: #3a3a3a; }
+#sidebar div:hover { background: var(--bg-tertiary); }
 #sidebar a { text-decoration: none; color: inherit; display: block; }
 
 /* TOPBAR */
@@ -112,19 +108,9 @@ body {
     align-items:center;
     margin-bottom:15px;
 }
-button {
-    padding:8px 16px;
-    border:none;
-    background:#2a4d9b;
-    color:white;
-    border-radius:6px;
-    cursor:pointer;
-    font-size: 13px;
-    font-weight: 500;
-}
-button:hover { background:#1d3570; }
+
 #sidebarToggle {
-    background:#2a4d9b;
+    background: var(--accent);
     color:white;
     border:none;
     border-radius:6px;
@@ -132,30 +118,29 @@ button:hover { background:#1d3570; }
     font-size:18px;
     padding:6px 10px;
 }
-#sidebarToggle:hover { background:#1d3570; }
-.dark #sidebarToggle { background:#444; }
+#sidebarToggle:hover { background: var(--accent-hover); }
 
 /* SEARCH */
 .search {
     padding:8px 12px;
     width:250px;
     border-radius:6px;
-    border:1px solid #ccc;
+    border:1px solid var(--border);
     font-size: 13px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
-.dark .search { background: #333; color: #fff; border-color: #555; }
 
 /* TABS */
 .tabs {
     display:flex;
     gap:5px;
     margin-bottom:0;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--border);
 }
-.dark .tabs { border-color: #444; }
 .tab {
     padding:8px 16px;
-    background:#e1e7f5;
+    background: var(--bg-tertiary);
     border-radius:8px 8px 0 0;
     cursor:pointer;
     font-size:13px;
@@ -165,33 +150,31 @@ button:hover { background:#1d3570; }
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: var(--text-secondary);
 }
 .tab.active {
-    background:#ffffff;
+    background: var(--bg-primary);
     font-weight:bold;
-    border-color: #ccc;
+    border-color: var(--border);
+    color: var(--text-primary);
 }
-.dark .tab { background:#333; color: #aaa; }
-.dark .tab.active { background:#2a2a2a; border-color: #444; color: #fff; }
 
 /* BREADCRUMBS */
 .breadcrumbs-bar {
-    background: #fff;
+    background: var(--bg-primary);
     padding: 10px 15px;
     border-radius: 0 0 8px 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     border-top: none;
     margin-bottom: 15px;
     font-size: 13px;
     display: flex;
     align-items: center;
 }
-.dark .breadcrumbs-bar { background: #2a2a2a; border-color: #444; }
 .breadcrumbs span {
     cursor:pointer;
-    color:#2a4d9b;
+    color: var(--accent);
 }
-.dark .breadcrumbs span { color: #5a82e8; }
 .breadcrumbs span:hover { text-decoration:underline; }
 
 /* DESKTOP (FILE GRID) */
@@ -200,13 +183,12 @@ button:hover { background:#1d3570; }
     flex-wrap:wrap;
     gap:20px;
     padding:25px;
-    background:#ffffff;
+    background: var(--bg-primary);
     border-radius:10px;
     min-height:400px;
     position:relative;
-    border: 1px solid #eee;
+    border: 1px solid var(--border);
 }
-.dark .desktop { background:#212121; border-color: #333; }
 
 .icon {
     width:100px;
@@ -217,9 +199,9 @@ button:hover { background:#1d3570; }
     padding: 10px;
     border-radius: 8px;
     transition: background 0.2s;
+    color: var(--text-primary);
 }
-.icon:hover { background: #f0f7ff; }
-.dark .icon:hover { background: #2d2d2d; }
+.icon:hover { background: var(--bg-tertiary); }
 
 .icon-emoji {
     font-size:48px;
@@ -227,60 +209,57 @@ button:hover { background:#1d3570; }
     display: block;
 }
 .icon.selected {
-    background: #e5f1ff;
-    outline:1px solid #4a90e2;
+    background: var(--bg-tertiary);
+    outline:1px solid var(--accent);
 }
-.dark .icon.selected { background: #334; outline-color: #5a82e8; }
 
 /* CONTEXT MENU */
 .context-menu {
     position:absolute;
     display:none;
-    background:#ffffff;
-    border:1px solid #ccc;
+    background: var(--bg-primary);
+    border:1px solid var(--border);
     border-radius:8px;
     width:200px;
     z-index:9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-lg);
     padding: 4px 0;
+    color: var(--text-primary);
 }
 .context-menu div {
     padding:10px 15px;
     cursor:pointer;
     font-size:13px;
 }
-.context-menu div:hover { background:#e5f1ff; }
-.dark .context-menu { background:#333; color:#fff; border-color:#555; }
-.dark .context-menu div:hover { background: #444; }
-.context-menu hr { border: none; border-top: 1px solid #eee; margin: 4px 0; }
-.dark .context-menu hr { border-color: #444; }
+.context-menu div:hover { background: var(--bg-tertiary); }
+.context-menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 
 /* PREVIEW */
 .preview {
     margin-top:20px;
     padding:15px;
-    background:#ffffff;
+    background: var(--bg-primary);
     border-radius:8px;
     max-height:300px;
     overflow:auto;
     font-size:13px;
-    border: 1px solid #eee;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    color: var(--text-primary);
 }
-.dark .preview { background:#2a2a2a; color:#eee; border-color: #333; }
 
 /* UPLOAD */
 .upload-area {
-    border:2px dashed #2a4d9b;
+    border:2px dashed var(--accent);
     padding:20px;
     text-align:center;
     border-radius:10px;
     margin-bottom:15px;
-    background:rgba(255,255,255,0.8);
+    background: var(--bg-primary);
     transition: background 0.3s;
+    color: var(--text-primary);
 }
-.upload-area.dragover { background:#e1e7f5; border-style: solid; }
-.dark .upload-area { background:#2a2a2a; border-color:#444; }
+.upload-area.dragover { background: var(--bg-tertiary); border-style: solid; }
 .upload-area input[type="file"] { cursor: pointer; }
 
 /* BADGES */
@@ -306,11 +285,11 @@ button:hover { background:#1d3570; }
 <div id="main">
     <div class="topbar">
         <div style="display:flex; gap:10px;">
-            <button onclick="toggleDark()">🌙 Toggle Theme</button>
+            <button onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙</button>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <input id="searchBox" class="search" placeholder="Search files..." oninput="filterIcons()">
-            <span style="font-size: 13px; color: #666;"><a href="../../dashboard.php"><?= sanitize($username) ?></a></span>
+            <span style="font-size: 13px; color: var(--text-secondary);"><a href="../../dashboard.php" style="color: inherit; text-decoration: none;"><?= sanitize($username) ?></a></span>
             <button id="sidebarToggle">☰</button>
         </div>
     </div>
@@ -358,17 +337,6 @@ function closeSidebar() {
     sidebar.classList.remove("open");
 }
 
-function applyDarkMode() {
-    if (localStorage.getItem("itm_dark_mode") === "true") {
-        document.body.classList.add("dark");
-    }
-}
-applyDarkMode();
-
-function toggleDark(){
-    document.body.classList.toggle("dark");
-    localStorage.setItem("itm_dark_mode", document.body.classList.contains("dark"));
-}
 
 /* API WRAPPER */
 function api(action, data = {}) {
@@ -809,5 +777,6 @@ function loadFolder(path) {
 currentPath = "";
 loadFolder("");
 </script>
+<script src="../../js/theme.js"></script>
 </body>
 </html>
