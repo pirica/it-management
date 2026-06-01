@@ -21,7 +21,7 @@ $crud_title = 'Events';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
-require '../../config/config.php';
+require_once '../../config/config.php';
 $pk = 'id';
 
 /**
@@ -221,7 +221,23 @@ function cr_is_hidden_employee_field($field) {
 /**
  * Formats database values for UI display (badges, icons, clickable links).
  */
-function cr_render_cell_value($table, $field, $value) {
+function cr_render_cell_value($table, $field, $value, $row = []) {
+    if ($table === 'events') {
+        if ($field === 'category_id' && isset($row['category_name'])) {
+            $catName = (string)$row['category_name'];
+            $catColor = sanitize((string)($row['category_color'] ?? '#3b82f6'));
+            return '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background-color:' . $catColor . ';"></div>' . sanitize($catName) . '</div>';
+        }
+        if ($field === 'assigned_to_user_id') {
+            $firstName = trim((string)($row['first_name'] ?? ''));
+            $lastName = trim((string)($row['last_name'] ?? ''));
+            $username = trim((string)($row['username'] ?? ''));
+            $fullName = trim($firstName . ' ' . $lastName);
+            $label = ($fullName !== '') ? $fullName : $username;
+            return sanitize($label !== '' ? $label : (string)$value);
+        }
+    }
+
     // Status badges for the 'active' flag.
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -364,7 +380,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['event_categories', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['events', 'event_categories', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -1313,10 +1329,31 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                 <div class="card">
                     <table>
                         <tbody>
+                        <?php
+                        // Enhanced row data for view rendering
+                        $viewRow = $data;
+                        if ($crud_table === 'events' && $editId > 0) {
+                            $sqlExt = "SELECT ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
+                                       FROM events e
+                                       LEFT JOIN event_categories ec ON e.category_id = ec.id
+                                       LEFT JOIN users u ON e.assigned_to_user_id = u.id
+                                       WHERE e.id = ? LIMIT 1";
+                            $stmtExt = mysqli_prepare($conn, $sqlExt);
+                            if ($stmtExt) {
+                                mysqli_stmt_bind_param($stmtExt, 'i', $editId);
+                                mysqli_stmt_execute($stmtExt);
+                                $resExt = mysqli_stmt_get_result($stmtExt);
+                                if ($resExt && $rowExt = mysqli_fetch_assoc($resExt)) {
+                                    $viewRow = array_merge($data, $rowExt);
+                                }
+                                mysqli_stmt_close($stmtExt);
+                            }
+                        }
+                        ?>
                         <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $viewRow[$f] ?? '', $viewRow); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
