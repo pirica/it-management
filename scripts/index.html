@@ -235,7 +235,30 @@
             </tbody>
         </table>
     </div>
-
+<div class="scripts-card" id="tests">
+        <h2>Tests</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="run_tests.php">run_tests.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Executes the PHPUnit test suite located in <code>tests/Unit/</code> using <code>phpunit.phar</code>.</td>
+                    <td>
+                        Open in browser to see styled output.<br>
+                        CLI: <code>php scripts/run_tests.php</code>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <div class="scripts-card" id="database">
         <h2>Database</h2>
         <table class="scripts-table">
