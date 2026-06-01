@@ -117,6 +117,7 @@ $projectJsonEndpoints = [
     ['method' => 'POST', 'path' => 'includes/update_port.php', 'purpose' => 'Update switch port fields and sync matching idf_ports rows; To IDF saves now auto-create/update/delete auto-synced idf_ports records.'],
     ['method' => 'GET',  'path' => 'modules/idfs/index.php?refresh_select_options=rack|location', 'purpose' => 'Refresh select options for IDF forms.'],
     ['method' => 'POST', 'path' => 'modules/employee_assignment_history/index.php', 'purpose' => 'Employee Assignment History save-to-database import endpoint (JSON rows from table-tools).'],
+    ['method' => 'POST', 'path' => 'modules/tickets/archive.php', 'purpose' => 'Archive or un-archive a ticket (requires id, archive_action, and csrf_token).'],
     ['method' => 'POST', 'path' => 'scripts/test_sql_injection.php', 'purpose' => 'Security test helper endpoint used during audits.'],
     ['method' => 'GET', 'path' => 'scripts/DBdesign.php?format=html|mermaid|json', 'purpose' => 'Generate database.sql ER diagram output (drawdb-style viewer, Mermaid, or JSON).'],
     ['method' => 'GET', 'path' => 'modules/calendar/index.php?date=YYYY-MM-DD', 'purpose' => 'Fetch calendar view for a specific month/year and selected day.'],

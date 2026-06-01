@@ -102,7 +102,7 @@ if ($id > 0) {
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_user_id' => 'Created By',
                             'assigned_to_user_id' => 'Assigned To', 'asset_id' => 'Related Asset',
-                            'due_date' => 'Due Date', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
+                            'due_date' => 'Due Date', 'is_archived' => 'Archived', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
                         ];
 
                         $fieldDisplayValues = [
@@ -148,7 +148,8 @@ if ($id > 0) {
                             <?php endif; ?>
                             
                             <?php 
-                            if (array_key_exists($field, $fieldDisplayValues) && (string)$fieldDisplayValues[$field] !== '') { $value = $fieldDisplayValues[$field]; }
+                            if ($field === 'is_archived') { $value = (int)$value === 1 ? 'Yes' : 'No'; }
+                            elseif (array_key_exists($field, $fieldDisplayValues) && (string)$fieldDisplayValues[$field] !== '') { $value = $fieldDisplayValues[$field]; }
                             elseif ($value === null || $value === '') { $value = '—'; }
                             ?>
                             <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo sanitize((string)$value); ?></td></tr>
