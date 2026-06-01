@@ -9,32 +9,36 @@
 // Define that we are in a CLI script context to bypass web-only auth/logic
 define('ITM_CLI_SCRIPT', true);
 
-// Why: We need to set ITM_SKIP_DB_TESTS=1 BEFORE config.php if we want to avoid connection fatals.
-if (($_GET['skip_db'] ?? $_ENV['ITM_SKIP_DB_TESTS'] ?? getenv('ITM_SKIP_DB_TESTS') ?? '') === '1') {
-    putenv('ITM_SKIP_DB_TESTS=1');
-    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
-}
+// Detect user preference for skipping DB tests.
+$user_wants_skip = ($_GET['skip_db'] ?? $_ENV['ITM_SKIP_DB_TESTS'] ?? getenv('ITM_SKIP_DB_TESTS') ?? '') === '1';
 
-// Detect if we should skip database tests.
-// Default to skip if not explicitly requested and we are in a web context without a local DB connection.
-$skip_db = ($_GET['skip_db'] ?? $_ENV['ITM_SKIP_DB_TESTS'] ?? getenv('ITM_SKIP_DB_TESTS') ?? '') === '1';
-
-// Why: If we don't explicitly want to skip, we try to connect but suppress the fatal error from config.php if it fails.
-if (!$skip_db) {
-    // Temporarily disable the die() on connection failure by mocking ITM_SKIP_DB_TESTS
-    putenv('ITM_SKIP_DB_TESTS=1');
-    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
-}
+// Why: We force skip during the parent's config.php load to avoid connection fatals.
+// The real probe happens below using the credentials loaded from config.php.
+putenv('ITM_SKIP_DB_TESTS=1');
+$_ENV['ITM_SKIP_DB_TESTS'] = '1';
 
 require_once dirname(__DIR__) . '/config/config.php';
 
-// Why: If no explicit preference is set, we check if we actually have a connection.
-if ($skip_db || (!isset($conn) || !$conn)) {
-    putenv('ITM_SKIP_DB_TESTS=1');
-    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
-} else {
+$db_available = false;
+if (!$user_wants_skip) {
+    // Manual probe using constants from config.php
+    $probe_conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    if (!$probe_conn && DB_HOST === 'localhost') {
+        $probe_conn = @mysqli_connect('127.0.0.1', DB_USER, DB_PASS, DB_NAME);
+    }
+    if ($probe_conn) {
+        $db_available = true;
+        mysqli_close($probe_conn);
+    }
+}
+
+// Final environment setting for the child PHPUnit process.
+if ($db_available) {
     putenv('ITM_SKIP_DB_TESTS=0');
     $_ENV['ITM_SKIP_DB_TESTS'] = '0';
+} else {
+    putenv('ITM_SKIP_DB_TESTS=1');
+    $_ENV['ITM_SKIP_DB_TESTS'] = '1';
 }
 require_once ROOT_PATH . 'scripts/lib/script_browser_nav.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
