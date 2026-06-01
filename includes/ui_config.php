@@ -161,6 +161,8 @@ function itm_sidebar_module_default_label($moduleName) {
     $labels = [
         'inventory_items' => '📦 Inventory',
         'patches_updates' => '🛠️ Patches Updates',
+        'expiring' => '⏳ Expiring',
+        'warranty_types' => '🛡️ Warranty Types',
     ];
 
     return $labels[$moduleName] ?? null;

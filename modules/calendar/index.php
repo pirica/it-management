@@ -219,9 +219,8 @@ if ($stmt) {
 }
 
 // Tickets
-$sql_tickets = "SELECT t.id, t.title, t.due_date, ts.color as status_color, tp.color as priority_color
+$sql_tickets = "SELECT t.id, t.title, t.due_date, tp.color as priority_color
                FROM tickets t
-               LEFT JOIN ticket_statuses ts ON t.status_id = ts.id
                LEFT JOIN ticket_priorities tp ON t.priority_id = tp.id
                WHERE t.company_id = ? AND t.due_date BETWEEN ? AND ?";
 $stmt = mysqli_prepare($conn, $sql_tickets);
@@ -231,13 +230,33 @@ if ($stmt) {
     $res = mysqli_stmt_get_result($stmt);
     while ($row = mysqli_fetch_assoc($res)) {
         $d = $row['due_date'];
-        $c = $row['priority_color'] ?: ($row['status_color'] ?: '#ef4444');
+        $c = $row['priority_color'] ?: '#ef4444';
         if (!preg_match('/^#[0-9a-fA-F]{6}$/i', $c)) { $c = '#ef4444'; }
         $events_data[$d][] = [
             'type' => 'ticket',
             'title' => "Ticket: " . $row['title'],
             'color' => $c,
             'icon' => '🎟️',
+            'id' => $row['id']
+        ];
+    }
+    mysqli_stmt_close($stmt);
+}
+
+// Equipment Warranties
+$sql_warranty = "SELECT id, name, warranty_expiry FROM equipment WHERE company_id = ? AND warranty_expiry BETWEEN ? AND ?";
+$stmt = mysqli_prepare($conn, $sql_warranty);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $d = $row['warranty_expiry'];
+        $events_data[$d][] = [
+            'type' => 'equipment',
+            'title' => "Warranty: " . $row['name'],
+            'color' => '#10b981',
+            'icon' => '🛡️',
             'id' => $row['id']
         ];
     }
@@ -356,6 +375,13 @@ unset($_SESSION['calendar_success']);
         .time-label { padding: 10px 5px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 0.75rem; color: var(--text-secondary); text-align: right; }
         .time-slot { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); position: relative; min-height: 50px; }
         .time-event { position: absolute; left: 2px; right: 2px; border-radius: 4px; padding: 2px 5px; font-size: 0.75rem; color: white; overflow: hidden; z-index: 2; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
+
+        .all-day-section { display: grid; grid-template-columns: 50px 1fr; border-bottom: 2px solid var(--border); background: var(--bg-secondary); }
+        .all-day-label { padding: 10px 5px; border-right: 1px solid var(--border); font-size: 0.7rem; font-weight: bold; color: var(--text-secondary); text-align: right; display: flex; align-items: center; justify-content: flex-end; }
+        .all-day-content { padding: 5px; display: flex; flex-direction: column; gap: 5px; min-height: 40px; }
+        .all-day-item { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; color: white; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .week-all-day-grid { display: grid; grid-template-columns: 50px repeat(7, 1fr); border-bottom: 2px solid var(--border); background: var(--bg-secondary); }
 
         /* Year View */
         .year-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
@@ -496,12 +522,44 @@ unset($_SESSION['calendar_success']);
                             </div>
 
                         <?php elseif ($view === 'day'): ?>
+                            <div class="all-day-section">
+                                <div class="all-day-label">All Day</div>
+                                <div class="all-day-content">
+                                    <?php foreach ($selected_day_events as $ev): ?>
+                                        <?php
+                                            $is_all_day = ($ev['type'] !== 'event');
+                                            if (!$is_all_day && !empty($ev['start']) && !empty($ev['end'])) {
+                                                // If event spans more than 24 hours, it's effectively all-day for this day
+                                                $st = strtotime($ev['start']);
+                                                $et = strtotime($ev['end']);
+                                                if (($et - $st) >= 86400) { $is_all_day = true; }
+                                            }
+                                            if ($is_all_day):
+                                                $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
+                                                $link = '../events/view.php?id=' . $ev['id'];
+                                                if ($ev['type'] === 'ticket') { $link = '../tickets/view.php?id=' . $ev['id']; }
+                                                elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
+                                                elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
+                                        ?>
+                                            <div class="all-day-item" style="background:<?php echo $color; ?>;" onclick="location.href='<?php echo $link; ?>'">
+                                                <?php echo sanitize($ev['icon'] . ' ' . $ev['title']); ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                             <div class="time-grid-container">
                                 <?php for ($h = 0; $h < 24; $h++): ?>
                                     <div class="time-label"><?php echo sprintf('%02d:00', $h); ?></div>
                                     <div class="time-slot">
                                         <?php foreach ($selected_day_events as $ev): ?>
-                                            <?php if ($ev['type'] === 'event' && !empty($ev['start'])): ?>
+                                            <?php
+                                                $is_timed_event = ($ev['type'] === 'event' && !empty($ev['start']));
+                                                if ($is_timed_event && !empty($ev['end'])) {
+                                                    if ((strtotime($ev['end']) - strtotime($ev['start'])) >= 86400) { $is_timed_event = false; }
+                                                }
+                                                if ($is_timed_event):
+                                            ?>
                                                 <?php
                                                     $st = strtotime($ev['start']);
                                                     $et = $ev['end'] ? strtotime($ev['end']) : ($st + 3600);
@@ -546,13 +604,46 @@ unset($_SESSION['calendar_success']);
                                     }
                                 ?>
                             </div>
+                            <div class="week-all-day-grid">
+                                <div class="all-day-label">All Day</div>
+                                <?php foreach ($week_days as $wd): ?>
+                                    <div class="all-day-content" style="border-right: 1px solid var(--border);">
+                                        <?php foreach ($events_data[$wd] ?? [] as $ev): ?>
+                                            <?php
+                                                $is_all_day = ($ev['type'] !== 'event');
+                                                if (!$is_all_day && !empty($ev['start']) && !empty($ev['end'])) {
+                                                    $st = strtotime($ev['start']);
+                                                    $et = strtotime($ev['end']);
+                                                    if (($et - $st) >= 86400) { $is_all_day = true; }
+                                                }
+                                                if ($is_all_day):
+                                                    $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
+                                                    $link = '../events/view.php?id=' . $ev['id'];
+                                                    if ($ev['type'] === 'ticket') { $link = '../tickets/view.php?id=' . $ev['id']; }
+                                                    elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
+                                                    elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
+                                            ?>
+                                                <div class="all-day-item" style="background:<?php echo $color; ?>; width: 100%; overflow: hidden; text-overflow: ellipsis;" onclick="location.href='<?php echo $link; ?>'" title="<?php echo sanitize($ev['title']); ?>">
+                                                    <?php echo sanitize($ev['icon'] . ' ' . $ev['title']); ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
                             <div class="time-grid-container week-time-grid">
                                 <?php for ($h = 0; $h < 24; $h++): ?>
                                     <div class="time-label"><?php echo sprintf('%02d:00', $h); ?></div>
                                     <?php foreach ($week_days as $wd): ?>
                                         <div class="time-slot">
                                             <?php foreach ($events_data[$wd] ?? [] as $ev): ?>
-                                                <?php if ($ev['type'] === 'event' && !empty($ev['start'])): ?>
+                                                <?php
+                                                    $is_timed_event = ($ev['type'] === 'event' && !empty($ev['start']));
+                                                    if ($is_timed_event && !empty($ev['end'])) {
+                                                        if ((strtotime($ev['end']) - strtotime($ev['start'])) >= 86400) { $is_timed_event = false; }
+                                                    }
+                                                    if ($is_timed_event):
+                                                ?>
                                                     <?php
                                                         $st = strtotime($ev['start']);
                                                         $et = $ev['end'] ? strtotime($ev['end']) : ($st + 3600);
