@@ -29,7 +29,21 @@ $phpunit_bin = ROOT_PATH . 'phpunit.phar';
 $bootstrap = ROOT_PATH . 'tests/bootstrap.php';
 $tests_dir = ROOT_PATH . 'tests/Unit';
 
-$command = "ITM_SKIP_DB_TESTS=1 php " . escapeshellarg($phpunit_bin) . " 2>&1";
+// Use PHP_BINARY to ensure the same PHP version is used for the sub-process.
+// We fallback to 'php' if PHP_BINARY is not available.
+$php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
+
+// Why: In some environments PHP_BINARY might point to a CGI binary; attempt to use the CLI one.
+if (strpos($php_bin, 'php-cgi') !== false) {
+    $php_bin = str_replace('php-cgi', 'php', $php_bin);
+}
+
+// Why: Explicitly reference the configuration file so PHPUnit can find the tests regardless of the current working directory.
+$phpunit_xml = ROOT_PATH . 'phpunit.xml';
+
+// Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
+// We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
+$command = escapeshellarg($php_bin) . " " . escapeshellarg($phpunit_bin) . " -c " . escapeshellarg($phpunit_xml) . " 2>&1";
 
 if (PHP_SAPI === 'cli') {
     echo "Running command: $command\n\n";
