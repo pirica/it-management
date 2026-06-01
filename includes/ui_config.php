@@ -382,7 +382,7 @@ function itm_sidebar_structure($conn = null) {
         }
     }
 
-    if ($conn === null && isset($GLOBALS['conn']) && is_object($GLOBALS['conn'])) {
+    if ($conn === null && isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
         $conn = $GLOBALS['conn'];
     }
 
@@ -404,7 +404,7 @@ function itm_sidebar_structure($conn = null) {
     }
 
     // Discover modules by scanning database tables and auto-scaffolding if needed
-    if ($conn) {
+    if ($conn instanceof mysqli) {
         $hasEquipmentTypeEditEmoji = itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji');
         $equipmentTypeSelectFields = $hasEquipmentTypeEditEmoji ? 'name, field_edit_emoji' : 'name';
         $equipmentTypeRes = mysqli_query($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types');
@@ -666,6 +666,9 @@ function itm_normalize_flag($value) {
  * Ensures the ui_configuration table exists and has the current schema
  */
 function itm_ensure_ui_configuration_table($conn, &$report = null) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
     $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'ui_configuration'");
     if (!$tableExistsRes) {
         return false;
@@ -1186,6 +1189,9 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
  * Ensures the user_sidebar_preferences table exists for per-user relational sidebar preferences.
  */
 function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
     $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'user_sidebar_preferences'");
     if (!$tableExistsRes) {
         return false;
@@ -1291,6 +1297,9 @@ function itm_ensure_user_sidebar_preferences_table($conn, &$report = null) {
  * Ensures sidebar preference audit triggers target the current audit_logs column names.
  */
 function itm_ensure_user_sidebar_preferences_audit_triggers($conn) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
     $triggerNames = [
         'trg_user_sidebar_preferences_audit_insert',
         'trg_user_sidebar_preferences_audit_update',
@@ -1358,6 +1367,9 @@ function itm_ensure_user_sidebar_preferences_audit_triggers($conn) {
  * Reconciles legacy inventory sidebar rows onto inventory_items (Admin, 📦 label).
  */
 function itm_reconcile_user_sidebar_preferences_inventory($conn, $company_id, $user_id) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
     $company_id = (int)$company_id;
     $user_id = (int)$user_id;
     if ($company_id <= 0 || $user_id <= 0) {
@@ -1458,6 +1470,9 @@ function itm_reconcile_user_sidebar_preferences_inventory($conn, $company_id, $u
  * Reconciles persisted legacy rows for switch_ports in user_sidebar_preferences.
  */
 function itm_reconcile_user_sidebar_preferences_switch_ports($conn, $company_id, $user_id) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
     $company_id = (int)$company_id;
     $user_id = (int)$user_id;
     if ($company_id <= 0 || $user_id <= 0) {
@@ -1595,6 +1610,9 @@ function itm_reconcile_user_sidebar_preferences_switch_ports($conn, $company_id,
  * Retrieves per-user relational sidebar preferences.
  */
 function itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id) {
+    if (!($conn instanceof mysqli)) {
+        return null;
+    }
     $company_id = (int)$company_id;
     $user_id = (int)$user_id;
     if ($company_id <= 0 || $user_id <= 0 || !itm_ensure_user_sidebar_preferences_table($conn)) {
@@ -1666,6 +1684,10 @@ function itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id) {
  */
 function itm_seed_default_user_sidebar_preferences_for_company($conn, $company_id, $user_id = 1, &$error = '') {
     $error = '';
+    if (!($conn instanceof mysqli)) {
+        $error = 'Invalid database connection.';
+        return 0;
+    }
     $company_id = (int)$company_id;
     $user_id = (int)$user_id;
     if ($company_id <= 0 || $user_id <= 0) {
