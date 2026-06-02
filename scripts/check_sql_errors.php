@@ -1,22 +1,35 @@
 <?php
-// Use '../' to look in the previous (parent) directory
-$sqlFile = '../database.sql';
+/**
+ * Audit database.sql for column mismatches in triggers and INSERT statements.
+ *
+ * Why: Metadata drift can leave triggers referencing non-existent columns
+ * or INSERT statements with wrong column counts. This script validates
+ * these references against the CREATE TABLE definitions.
+ *
+ * Browser: open scripts/check_sql_errors.php (login required).
+ * CLI: php scripts/check_sql_errors.php
+ */
 
-// Check if the file actually exists before trying to read it
-if (file_exists($sqlFile)) {
-    $content = file_get_contents($sqlFile);
-    $lines = explode("\n", $content);
-    
-    // Optional: Clean up carriage returns if the file was saved on Windows
-    $lines = array_map('trim', $lines);
-    
-    echo "Successfully loaded " . count($lines) . " lines.";
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    require_once dirname(__DIR__) . '/config/config.php';
 } else {
-    echo "Error: Could not find the file at " . realpath($sqlFile);
+    define('ITM_CLI_SCRIPT', true);
 }
 
-$content = file_get_contents($sqlFile);
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Check SQL Errors');
+
+$sqlPath = dirname(__DIR__) . '/database.sql';
+if (!is_file($sqlPath)) {
+    echo "Error: database.sql not found at $sqlPath\n";
+    exit(1);
+}
+
+$content = file_get_contents($sqlPath);
 $lines = explode("\n", $content);
+$lines = array_map('trim', $lines);
 
 $tables = [];
 $currentTable = null;
@@ -27,7 +40,7 @@ foreach ($lines as $line) {
         continue;
     }
     if ($currentTable) {
-        if (preg_match('/^\s+`([^`]+)`/', $line, $matches)) {
+        if (preg_match('/^\s*`([^`]+)`/', $line, $matches)) {
             $tables[$currentTable][] = $matches[1];
         }
         if (preg_match('/\)\s*ENGINE\s*=.*?;/', $line) || preg_match('/\);\s*$/', $line)) {
@@ -38,7 +51,13 @@ foreach ($lines as $line) {
 
 $errors = [];
 $currentTriggerTable = null;
+$currentDelimiter = ';';
 foreach ($lines as $index => $line) {
+    if (preg_match('/DELIMITER\s+(\S+)/', $line, $matches)) {
+        $currentDelimiter = trim($matches[1]);
+        continue;
+    }
+
     if (preg_match('/CREATE TRIGGER `[^`]+` (?:AFTER|BEFORE) (?:INSERT|UPDATE|DELETE) ON `([^`]+)`/', $line, $matches)) {
         $currentTriggerTable = $matches[1];
     }
@@ -53,12 +72,12 @@ foreach ($lines as $index => $line) {
         }
     }
     
-    if (strpos($line, 'END$$') !== false) {
+    if ($currentTriggerTable && strpos($line, 'END' . $currentDelimiter) !== false) {
         $currentTriggerTable = null;
     }
 }
 
-// Check for duplicates
+// Check for duplicates in table definitions
 foreach ($tables as $name => $cols) {
     $counts = array_count_values($cols);
     foreach ($counts as $col => $count) {
@@ -72,3 +91,5 @@ foreach ($errors as $error) {
     echo $error . "\n";
 }
 echo "Total errors: " . count($errors) . "\n";
+
+exit(count($errors) > 0 ? 1 : 0);

@@ -9,14 +9,19 @@
  *      php scripts/apply_bulk_actions_records_per_page_gate.php --dry-run
  */
 
+declare(strict_types=1);
+
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+    require_once dirname(__DIR__) . '/config/config.php';
+    require_once __DIR__ . '/lib/script_browser_nav.php';
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
     itm_script_browser_nav_echo();
     echo '<p><strong>CLI only.</strong></p><pre>php scripts/apply_bulk_actions_records_per_page_gate.php [--dry-run]</pre></body></html>';
     exit(1);
 }
+
+define('ITM_CLI_SCRIPT', true);
 
 $root = dirname(__DIR__);
 $modulesDir = $root . '/modules';

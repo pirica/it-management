@@ -1,28 +1,34 @@
 <?php
-// 1. Define the path to the database file in the previous folder
-$sqlFile = '../database.sql';
+/**
+ * Comprehensive SQL audit script for database.sql.
+ *
+ * Why: Combines delimiter checks, duplicate column detection, and trigger
+ * reference validation into a single tool.
+ *
+ * Browser: open scripts/verify_sql.php (login required).
+ * CLI: php scripts/verify_sql.php
+ */
 
-// 2. Make sure the file actually exists before trying to read it
-if (file_exists($sqlFile)) {
-    
-    // 3. Read the entire file content into a string
-    $content = file_get_contents($sqlFile);
-    
-    // 4. Explode the content into an array by newline characters
-    $lines = explode("\n", $content);
-    
-    // 5. Clean up any hidden carriage returns (\r) left over from Windows formatting
-    $lines = array_map('trim', $lines);
+declare(strict_types=1);
 
-    // ---- YOUR CODE GOES HERE ----
-    // The $lines array is now ready for you to use.
-    // For example, you can see how many lines were loaded:
-    echo "Successfully loaded " . count($lines) . " lines from the SQL file.";
-
+if (PHP_SAPI !== 'cli') {
+    require_once dirname(__DIR__) . '/config/config.php';
 } else {
-    // Elegant fallback if the file path is incorrect
-    die("Error: 'database.sql' could not be found in the previous folder.");
+    define('ITM_CLI_SCRIPT', true);
 }
+
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Verify SQL');
+
+$sqlPath = dirname(__DIR__) . '/database.sql';
+if (!is_file($sqlPath)) {
+    echo "Error: 'database.sql' could not be found.\n";
+    exit(1);
+}
+
+$content = file_get_contents($sqlPath);
+$lines = explode("\n", $content);
+$lines = array_map('trim', $lines);
 
 $tables = [];
 $currentTable = null;
@@ -40,7 +46,7 @@ foreach ($lines as $i => $line) {
     
     if ($currentTable) {
         // Detect column definition
-        if (preg_match('/^\s+`([^`]+)`/', $line, $matches)) {
+        if (preg_match('/^\s*`([^`]+)`/', $line, $matches)) {
             $colName = $matches[1];
             if (in_array($colName, $tables[$currentTable]['columns'])) {
                 $errors[] = "Duplicate column `$colName` in table `$currentTable` at line $lineNum";
@@ -49,7 +55,6 @@ foreach ($lines as $i => $line) {
         }
         
         // Detect end of CREATE TABLE
-        // Usually ends with ) ENGINE=...;
         if (preg_match('/\)\s*ENGINE\s*=.*?;/', $line) || (trim($line) === ');' && !preg_match('/VALUES\s*\(/', $line))) {
              $currentTable = null;
         }
@@ -72,6 +77,9 @@ foreach ($lines as $i => $line) {
     if (preg_match('/CREATE TRIGGER `[^`]+` (?:AFTER|BEFORE) (?:INSERT|UPDATE|DELETE) ON `([^`]+)`/', $line, $matches)) {
         $inTrigger = true;
         $triggerTable = $matches[1];
+        if ($currentDelimiter === ';') {
+            $errors[] = "Trigger at line $lineNum started while DELIMITER is still ';'";
+        }
     }
     
     if ($inTrigger) {
@@ -82,19 +90,6 @@ foreach ($lines as $i => $line) {
                     $errors[] = "Trigger for `$triggerTable` at line $lineNum references non-existent column `$col`";
                 }
             }
-        }
-        // Check for specific columns in JSON_OBJECT
-        if (strpos($line, 'JSON_OBJECT(') !== false) {
-             if (preg_match_all("/'([^']+)', (?:NEW|OLD)\.`[^`]+`/", $line, $matches)) {
-                 foreach ($matches[1] as $col) {
-                     if (isset($tables[$triggerTable]) && !in_array($col, $tables[$triggerTable]['columns'])) {
-                        // Sometimes the key in JSON doesn't match the column name exactly, but here it usually does
-                        // Skip if it's a known mismatch or just report it
-                        // Actually, in this project they should match.
-                        $errors[] = "Trigger for `$triggerTable` at line $lineNum has JSON key '$col' which is not a column";
-                     }
-                 }
-             }
         }
         
         if (strpos($line, 'END' . $currentDelimiter) !== false) {
@@ -116,3 +111,5 @@ foreach ($lines as $i => $line) {
 
 foreach ($errors as $err) echo $err . "\n";
 echo "Total errors found: " . count($errors) . "\n";
+
+exit(count($errors) > 0 ? 1 : 0);

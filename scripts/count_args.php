@@ -1,9 +1,35 @@
 <?php
-$content = file_get_contents('database.sql');
+/**
+ * Count arguments in the trg_employees_audit_insert trigger in database.sql.
+ *
+ * Why: Ensures that the audit trigger for employees correctly captures all
+ * expected columns in its JSON_OBJECT payload.
+ *
+ * Browser: open scripts/count_args.php (login required).
+ * CLI: php scripts/count_args.php
+ */
+
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    require_once dirname(__DIR__) . '/config/config.php';
+} else {
+    define('ITM_CLI_SCRIPT', true);
+}
+
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Count Args');
+
+$sqlPath = dirname(__DIR__) . '/database.sql';
+if (!is_file($sqlPath)) {
+    echo "Error: database.sql not found at $sqlPath\n";
+    exit(1);
+}
+
+$content = file_get_contents($sqlPath);
 if (preg_match('/CREATE TRIGGER `trg_employees_audit_insert`.*?JSON_OBJECT\((.+?)\)/s', $content, $matches)) {
     $argsPart = $matches[1];
     
-    // Improved argument splitting to handle nested functions if any (though unlikely here)
     $args = [];
     $current = '';
     $depth = 0;
@@ -24,8 +50,10 @@ if (preg_match('/CREATE TRIGGER `trg_employees_audit_insert`.*?JSON_OBJECT\((.+?
     }
     $args[] = trim($current);
 
-    echo "Total arguments: " . count($args) . "\n";
+    echo "Total arguments in trg_employees_audit_insert: " . count($args) . "\n";
     foreach ($args as $i => $arg) {
         echo ($i+1) . ": " . $arg . "\n";
     }
+} else {
+    echo "Trigger trg_employees_audit_insert not found in database.sql\n";
 }

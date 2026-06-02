@@ -227,6 +227,24 @@
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="test_email_forgot.php">test_email_forgot.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Test script for Password Reset email delivery verification.</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="test_email_forgot.php">test_email_forgot.php</a>.
+                        CLI: <code>php scripts/test_email_forgot.php email=test@example.com</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="test_register_mail.php">test_register_mail.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Test script for Registration Welcome email delivery verification.</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="test_register_mail.php">test_register_mail.php</a>.
+                        CLI: <code>php scripts/test_register_mail.php email=test@example.com</code>
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="../js/itm-user-errors.js">itm-user-errors.js</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Global JS helpers <code>itmNotifyError()</code>, <code>itmNotifyAjaxError()</code> (modal-aware), and <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
@@ -325,6 +343,54 @@
                         <code>php scripts/export_floor_plan_folders_seed.php</code><br>
                         <code>php scripts/export_floor_plan_folders_seed.php --company=1</code> — stdout INSERTs; exit <code>1</code> when no rows.
                     </td>
+                </tr>
+                <tr>
+                    <td><a href="check_delimiters.php">check_delimiters.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audit database.sql for correct DELIMITER usage in trigger blocks.</td>
+                    <td>Open <a href="check_delimiters.php">check_delimiters.php</a> while logged in. CLI: <code>php scripts/check_delimiters.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="check_duplicates.php">check_duplicates.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audit database.sql for duplicate column definitions in CREATE TABLE blocks.</td>
+                    <td>Open <a href="check_duplicates.php">check_duplicates.php</a> while logged in. CLI: <code>php scripts/check_duplicates.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="check_phones.php">check_phones.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Identify tables in database.sql that contain phone-related columns for PII auditing.</td>
+                    <td>Open <a href="check_phones.php">check_phones.php</a> while logged in. CLI: <code>php scripts/check_phones.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="check_sql_errors.php">check_sql_errors.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audit database.sql for column mismatches in triggers and INSERT statements.</td>
+                    <td>Open <a href="check_sql_errors.php">check_sql_errors.php</a> while logged in. CLI: <code>php scripts/check_sql_errors.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="count_args.php">count_args.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Count arguments in the <code>trg_employees_audit_insert</code> trigger in database.sql.</td>
+                    <td>Open <a href="count_args.php">count_args.php</a> while logged in. CLI: <code>php scripts/count_args.php</code></td>
+                </tr>
+                <tr>
+                    <td>fix_sql_departments.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Fix column count mismatch in departments INSERT statements in database.sql.</td>
+                    <td><code>php scripts/fix_sql_departments.php</code> — CLI only (browser shows instructions).</td>
+                </tr>
+                <tr>
+                    <td><a href="list_columns.php">list_columns.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>List columns for each table defined in database.sql, filtering for phone columns.</td>
+                    <td>Open <a href="list_columns.php">list_columns.php</a> while logged in. CLI: <code>php scripts/list_columns.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_sql.php">verify_sql.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Comprehensive SQL audit script for database.sql (delimiters, duplicates, references).</td>
+                    <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
                 </tr>
             </tbody>
         </table>
@@ -543,6 +609,12 @@
                     <td><code>php scripts/apply_bulk_delete_cancel_ux.php</code> · <code>php scripts/apply_bulk_delete_cancel_ux.php --dry-run</code></td>
                 </tr>
                 <tr>
+                    <td>apply_bulk_actions_records_per_page_gate.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Add records_per_page visibility gate for bulk delete / clear table on module index.php files.</td>
+                    <td><code>php scripts/apply_bulk_actions_records_per_page_gate.php [--dry-run]</code> — CLI only (browser shows instructions).</td>
+                </tr>
+                <tr>
                     <td><a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs the same equipment QA artifact cleanup used by <code>module_browser_qa_runner.php</code> (scaffold folders, QA/test rows, sidebar leftovers), then re-ensures canonical <code>modules/is_*</code> facades. Browser <strong>Run QA</strong> already triggers this cleanup silently at start and end; use this page for manual cleanup runs. Includes quick links: <strong>Clean Tests · Open markdown file · Download XLSX · Rebuild report · Re-Run Test · Run QA runner</strong>.</td>
@@ -636,10 +708,10 @@
                     <td>Open in browser to trigger remote deployment</td>
                 </tr>
                 <tr>
-                    <td><a href="http://myhome.dynip.sapo.pt/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a></td>
+                    <td><a href="reset_git_history.php">reset_git_history.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Upload to Github local files + Import Database</td>
-                    <td>Open in browser to trigger remote git reset</td>
+                    <td>Completely reset Git history and force push a clean master branch.</td>
+                    <td><strong>Log in first.</strong> Open <a href="reset_git_history.php">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong></td>
                 </tr>
             </tbody>
         </table>

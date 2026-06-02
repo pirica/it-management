@@ -1,28 +1,33 @@
 <?php
-// 1. Define the path to the database file in the previous folder
-$sqlFile = '../database.sql';
+/**
+ * List columns for each table defined in database.sql, filtering for phone columns.
+ *
+ * Why: Assists in auditing table schemas and identifying PII locations.
+ *
+ * Browser: open scripts/list_columns.php (login required).
+ * CLI: php scripts/list_columns.php
+ */
 
-// 2. Make sure the file actually exists before trying to read it
-if (file_exists($sqlFile)) {
-    
-    // 3. Read the entire file content into a string
-    $content = file_get_contents($sqlFile);
-    
-    // 4. Explode the content into an array by newline characters
-    $lines = explode("\n", $content);
-    
-    // 5. Clean up any hidden carriage returns (\r) left over from Windows formatting
-    $lines = array_map('trim', $lines);
+declare(strict_types=1);
 
-    // ---- YOUR CODE GOES HERE ----
-    // The $lines array is now ready for you to use.
-    // For example, you can see how many lines were loaded:
-    echo "Successfully loaded " . count($lines) . " lines from the SQL file.";
-
+if (PHP_SAPI !== 'cli') {
+    require_once dirname(__DIR__) . '/config/config.php';
 } else {
-    // Elegant fallback if the file path is incorrect
-    die("Error: 'database.sql' could not be found in the previous folder.");
+    define('ITM_CLI_SCRIPT', true);
 }
+
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('List Columns');
+
+$sqlPath = dirname(__DIR__) . '/database.sql';
+if (!is_file($sqlPath)) {
+    echo "Error: database.sql not found at $sqlPath\n";
+    exit(1);
+}
+
+$content = file_get_contents($sqlPath);
+$lines = explode("\n", $content);
+$lines = array_map('trim', $lines);
 
 $currentTable = null;
 $tables = [];
@@ -31,16 +36,18 @@ foreach ($lines as $line) {
         $currentTable = $matches[1];
         $tables[$currentTable] = [];
     }
-    if ($currentTable && preg_match('/^\s+`([^`]+)`/', $line, $matches)) {
+    if ($currentTable && preg_match('/^\s*`([^`]+)`/', $line, $matches)) {
         $tables[$currentTable][] = $matches[1];
     }
-    if (strpos($line, ');') !== false && strpos($line, 'ENGINE=') !== false) {
+    if (strpos($line, ');') !== false && (strpos($line, 'ENGINE=') !== false || strpos($line, 'CHARSET=') !== false)) {
         $currentTable = null;
     }
 }
 
+echo "Scanning for phone-related columns in database.sql:\n\n";
+
 foreach ($tables as $table => $cols) {
-    $phoneCols = array_filter($cols, function($c) { return strpos($c, 'phone') !== false; });
+    $phoneCols = array_filter($cols, function($c) { return strpos(strtolower($c), 'phone') !== false; });
     if (!empty($phoneCols)) {
         echo "Table $table: " . implode(', ', $phoneCols) . "\n";
     }

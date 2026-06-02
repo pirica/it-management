@@ -1,14 +1,12 @@
 <?php
 /**
- * SQL Injection Testing Script
- * 
- * Provides a sandbox to test how the application's security filters handle 
- * various SQL injection payloads. It demonstrates both signature detection
- * and safe query execution using prepared statements.
- * 
- * Allowed methods: GET and POST.
- * POST requires a valid CSRF token.
- * Requires an authenticated session with a valid company context.
+ * Sandbox to test SQL injection signature detection and safe prepared statements.
+ *
+ * Why: Allows security researchers and developers to verify that the application
+ * correctly identifies malicious payloads and handles them safely.
+ *
+ * Browser: open scripts/test_sql_injection.php (login required).
+ * CLI: php scripts/test_sql_injection.php payload="' OR '1'='1"
  */
 
 require __DIR__ . '/../config/config.php';
