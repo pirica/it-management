@@ -60,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     mysqli_stmt_close($stmt_map);
 
+    // Verify employee belongs to current tenant
+    if (!isset($employeeMap[$employeeId])) {
+        echo json_encode(['ok' => false, 'error' => 'Employee not found in this company.']);
+        exit;
+    }
+
     if ($reportsTo > 0 && itm_is_circular_reporting($employeeMap, $reportsTo, $employeeId)) {
         echo json_encode(['ok' => false, 'error' => 'Circular reporting detected. Hierarchy update blocked.']);
         exit;
