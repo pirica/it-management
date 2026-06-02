@@ -440,6 +440,15 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
 3. **Protected Folders:** Top-level system folders (`Common`, `Departments`, `Private`) and the user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
 4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
 
+#### Org Chart and Hierarchy (mandatory)
+
+The org chart module (`modules/org_chart/`) provides a visual representation of the company hierarchy.
+
+1. **Data Source:** Reporting lines are stored in the `employees.reports_to` column (self-referencing FK).
+2. **Cycle Detection:** Hierarchy updates (drag-and-drop) must perform recursive cycle detection to prevent circular reporting loops.
+3. **Layout:** The module uses a dynamic tree layout algorithm to position nodes automatically based on reporting lines.
+4. **Persistence:** Changes to the hierarchy via drag-and-drop are saved immediately via AJAX to the `employees` table.
+
 #### Calendar and Events integration (mandatory)
 
 The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.

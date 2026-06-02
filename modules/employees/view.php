@@ -19,13 +19,15 @@ if ($employeeId <= 0) {
     exit;
 }
 
-$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name '
+$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name, ep.name AS position_name, m.display_name AS manager_name '
     . 'FROM employees e '
     . 'LEFT JOIN departments d ON d.id = e.department_id '
     . 'LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id '
     . 'LEFT JOIN employee_statuses es ON es.id = e.employment_status_id '
     . 'LEFT JOIN workstation_modes wm ON wm.id = e.workstation_mode_id AND wm.company_id = e.company_id '
     . 'LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id '
+    . 'LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id '
+    . 'LEFT JOIN employees m ON m.id = e.reports_to '
     . 'WHERE e.id = ? AND e.company_id = ? '
     . 'LIMIT 1';
 
@@ -68,7 +70,9 @@ $profileFields = [
     'Department' => (string)($employee['department_name'] ?? ''),
     'Office Key Card Department' => (string)($employee['office_key_card_department_name'] ?? ''),
     'Job Code' => (string)($employee['job_code'] ?? ''),
-    'Job Title' => (string)($employee['job_title'] ?? ''),
+    'Job Title (Legacy)' => (string)($employee['job_title'] ?? ''),
+    'Position Title' => (string)($employee['position_name'] ?? ''),
+    'Reports To' => (string)($employee['manager_name'] ?? ''),
     'Raw Status Code' => (string)($employee['raw_status_code'] ?? ''),
     'Employment Status' => (string)($employee['employment_status_name'] ?? ''),
     'Workstation Mode' => (string)($employee['workstation_mode_name'] ?? ''),

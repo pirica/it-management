@@ -10,6 +10,7 @@
 - ✅ Printer and workstation tracking
 - ✅ Ticket management system
 - ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
+- ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
 - ✅ API
 
@@ -92,7 +93,8 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Inventory — Track supplies
 - Users — User management
 - Departments — Department management
-- Employees — Employee tracking
+- Employees — Employee tracking with hierarchy and reporting lines
+- Org Chart — Visual, interactive organizational structure diagram
 - Companies — Multi-company support
 - Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
 - Planning — Shared Calendar and Events management

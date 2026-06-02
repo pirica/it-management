@@ -52,6 +52,7 @@
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
             <li><a href="#ui-modules">UI &amp; modules</a></li>
+            <li><a href="#org-chart">Org Chart</a></li>
             <li><a href="http://localhost/phpmyadmin/" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
             <li><a href="https://github.com/pirica/it-management" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">Github</a></li>
         </ul>
@@ -416,6 +417,28 @@
                         CLI: <code>php scripts/employees_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code>.<br>
                         Browser: static checks only (no DB mutations). MySQL regression requires CLI: <code>php scripts/employees_delete_clear_table_test.php</code>.
                     </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="scripts-card" id="org-chart">
+        <h2>Org Chart</h2>
+        <table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="../modules/org_chart/index.php">Org Chart</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Visual, interactive divisional organizational structure diagram. Supports drag-and-drop hierarchy updates and Export to Excel/Image.</td>
+                    <td>Open <code>modules/org_chart/index.php</code> while logged in to view the company hierarchy.</td>
                 </tr>
             </tbody>
         </table>

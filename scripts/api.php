@@ -122,6 +122,7 @@ $projectJsonEndpoints = [
     ['method' => 'GET', 'path' => 'scripts/DBdesign.php?format=html|mermaid|json', 'purpose' => 'Generate database.sql ER diagram output (drawdb-style viewer, Mermaid, or JSON).'],
     ['method' => 'GET', 'path' => 'modules/calendar/index.php?date=YYYY-MM-DD', 'purpose' => 'Fetch calendar view for a specific month/year and selected day.'],
     ['method' => 'POST', 'path' => 'modules/tickets/archive.php', 'purpose' => 'Archive or un-archive a support ticket. Requires id and archive_action (archive/unarchive).'],
+    ['method' => 'POST', 'path' => 'modules/org_chart/index.php', 'purpose' => 'Update employee reporting hierarchy via drag-and-drop. Requires employee_id, reports_to, and action=update_hierarchy.'],
 ];
 ?>
 <!DOCTYPE html>
