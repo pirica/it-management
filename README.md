@@ -10,7 +10,7 @@
 - ✅ Printer and workstation tracking
 - ✅ Ticket management system
 - ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
-- ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
+- ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png)
 - ✅ Responsive design
 - ✅ API
 
@@ -55,6 +55,10 @@
 <p align="center"><strong>Floor Plans</strong> — gallery with nested folders, tags, and uploads (images, PDF, AutoCAD); optional link to IT Locations; drag-and-drop to move files and folders (see <a href="#floor-plans-gallery">Floor Plans gallery</a>).</p>
 
 <p align="center"><img src="docs/readme/floor_plans.png" alt="Floor Plans gallery" /></p>
+
+<p align="center"><strong>Org Chart</strong> — visual, interactive organizational structure diagram with drag-and-drop reporting lines and manager management.</p>
+
+<p align="center"><img src="docs/readme/org_chart.png" alt="Org Chart" /></p>
 
 <h2 align="center">Architecture</h2>
 

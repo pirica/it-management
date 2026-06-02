@@ -35,43 +35,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         exit;
     }
 
-    /**
-     * Recursive cycle detection: Ensure employeeId is not in the reporting chain of reportsTo.
-     * Why: Prevents infinite loops in the organizational tree when dragging/dropping.
-     */
-    function itm_is_circular_reporting($conn, $startReportsTo, $targetEmployeeId, $company_id) {
-        $current = $startReportsTo;
-        $visited = [];
-        while ($current > 0) {
-            if ($current === $targetEmployeeId) return true;
-            if (isset($visited[$current])) return true; // Safety against existing DB cycles
-            $visited[$current] = true;
-
-            $stmt = mysqli_prepare($conn, "SELECT reports_to FROM employees WHERE id = ? AND company_id = ?");
-            mysqli_stmt_bind_param($stmt, "ii", $current, $company_id);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            $row = mysqli_fetch_assoc($res);
-            $current = $row ? (int)$row['reports_to'] : 0;
+    // P1: Validate manager belongs to the same company to prevent cross-tenant hierarchy corruption
+    if ($reportsTo > 0) {
+        $stmt = mysqli_prepare($conn, "SELECT id FROM employees WHERE id = ? AND company_id = ?");
+        mysqli_stmt_bind_param($stmt, "ii", $reportsTo, $company_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if (mysqli_num_rows($res) === 0) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid manager selection.']);
             mysqli_stmt_close($stmt);
+            exit;
         }
-        return false;
+        mysqli_stmt_close($stmt);
     }
 
-    if ($reportsTo > 0 && itm_is_circular_reporting($conn, $reportsTo, $employeeId, (int)$company_id)) {
+    // Fetch employee map for in-memory cycle detection to avoid N+1 queries
+    $stmt_map = mysqli_prepare($conn, "SELECT id, reports_to FROM employees WHERE company_id = ?");
+    mysqli_stmt_bind_param($stmt_map, "i", $company_id);
+    mysqli_stmt_execute($stmt_map);
+    $res_map = mysqli_stmt_get_result($stmt_map);
+    $employeeMap = [];
+    while ($row_map = mysqli_fetch_assoc($res_map)) {
+        $employeeMap[(int)$row_map['id']] = (int)$row_map['reports_to'];
+    }
+    mysqli_stmt_close($stmt_map);
+
+    if ($reportsTo > 0 && itm_is_circular_reporting($employeeMap, $reportsTo, $employeeId)) {
         echo json_encode(['ok' => false, 'error' => 'Circular reporting detected. Hierarchy update blocked.']);
         exit;
     }
 
-    $reportsToSql = ($reportsTo > 0) ? $reportsTo : 'NULL';
-    $sql = "UPDATE employees SET reports_to = $reportsToSql WHERE id = $employeeId AND company_id = " . (int)$company_id;
+    // High risk: Use prepared statement for update
+    $reportsToVal = ($reportsTo > 0) ? $reportsTo : null;
+    $stmt = mysqli_prepare($conn, "UPDATE employees SET reports_to = ? WHERE id = ? AND company_id = ?");
+    mysqli_stmt_bind_param($stmt, "iii", $reportsToVal, $employeeId, $company_id);
 
-    if (mysqli_query($conn, $sql)) {
+    if (mysqli_stmt_execute($stmt)) {
         echo json_encode(['ok' => true]);
     } else {
-        echo json_encode(['ok' => false, 'error' => mysqli_error($conn)]);
+        // Medium risk: Generic error message
+        echo json_encode(['ok' => false, 'error' => 'Database update failed.']);
     }
+    mysqli_stmt_close($stmt);
     exit;
+}
+
+/**
+ * Recursive cycle detection: Ensure employeeId is not in the reporting chain of reportsTo.
+ * Why: Prevents infinite loops in the organizational tree when dragging/dropping.
+ * Optimized: Uses in-memory map to avoid N+1 database queries.
+ */
+function itm_is_circular_reporting($employeeMap, $startReportsTo, $targetEmployeeId) {
+    $current = $startReportsTo;
+    $visited = [];
+    while ($current > 0) {
+        if ($current === $targetEmployeeId) return true;
+        if (isset($visited[$current])) return true; // Safety against existing DB cycles
+        $visited[$current] = true;
+
+        $current = isset($employeeMap[$current]) ? $employeeMap[$current] : 0;
+    }
+    return false;
 }
 
 // Fetch all employees with positions and departments
@@ -80,17 +104,22 @@ $sql = "SELECT e.id, e.display_name, e.first_name, e.last_name, e.reports_to,
         FROM employees e
         LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id
         LEFT JOIN departments d ON d.id = e.department_id
-        WHERE e.company_id = " . (int)$company_id . "
+        WHERE e.company_id = ?
         ORDER BY d.name, e.display_name";
 
-$res = mysqli_query($conn, $sql);
+$stmt_list = mysqli_prepare($conn, $sql);
+mysqli_stmt_bind_param($stmt_list, "i", $company_id);
+mysqli_stmt_execute($stmt_list);
+$res = mysqli_stmt_get_result($stmt_list);
 $employees = [];
 while ($row = mysqli_fetch_assoc($res)) {
     $employees[] = $row;
 }
+mysqli_stmt_close($stmt_list);
 
 // Prepare JSON for JS visualization
-$employeesJson = json_encode($employees);
+// P2: Escape JSON for safe injection into script block
+$employeesJson = json_encode($employees, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 
 ?>
 <!DOCTYPE html>
@@ -334,13 +363,26 @@ $employeesJson = json_encode($employees);
             div.style.top = node.y + 'px';
             div.draggable = true;
 
-            div.innerHTML = `
-                <div class="name">${node.display_name || (node.first_name + ' ' + node.last_name)}</div>
-                <div class="details">
-                    <div class="position">${node.position_name || 'No Position'}</div>
-                    <div class="department">${node.department_name || 'No Department'}</div>
-                </div>
-            `;
+            // P2: Prevent XSS by using textContent for labels
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'name';
+            nameDiv.textContent = node.display_name || (node.first_name + ' ' + node.last_name);
+            div.appendChild(nameDiv);
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'details';
+
+            const positionDiv = document.createElement('div');
+            positionDiv.className = 'position';
+            positionDiv.textContent = node.position_name || 'No Position';
+            detailsDiv.appendChild(positionDiv);
+
+            const departmentDiv = document.createElement('div');
+            departmentDiv.className = 'department';
+            departmentDiv.textContent = node.department_name || 'No Department';
+            detailsDiv.appendChild(departmentDiv);
+
+            div.appendChild(detailsDiv);
 
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragover', handleDragOver);

@@ -19,6 +19,7 @@ function mbqa_runner_bespoke_smoke_modules(): array
         'expiring',
         'rack_planner',
         'floor_plans',
+        'org_chart',
         'companies',
     ];
 }
