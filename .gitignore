@@ -1,0 +1,7 @@
+.env
+.editorconfig
+.gitattributes
+up.bat
+up.ps1
+.cursor/
+.phpunit.result.cache

@@ -1,0 +1,29 @@
+name: Smoke tests
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+# Why: GitHub is deprecating Node.js 20 for JavaScript actions (checkout, setup-php, etc.).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mysqli
+          coverage: none
+
+      - name: Run smoke test runner
+        run: bash scripts/smoke_test.sh
