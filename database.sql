@@ -633,6 +633,7 @@ CREATE TABLE `approvers` (
   CONSTRAINT `approvers_ibfk_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvers_ibfk_approver_type` FOREIGN KEY (`approver_type_id`) REFERENCES `approver_type` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Table structure for `org_chart`
 -- Table structure for `employee_assignment_history`
 DROP TABLE IF EXISTS `employee_assignment_history`;
 CREATE TABLE `employee_assignment_history` (
@@ -902,6 +903,8 @@ CREATE TABLE `employees` (
   `assignment_type_id` int DEFAULT NULL,
   `location_id` int DEFAULT NULL,
   `employment_status_id` int NOT NULL,
+  `employee_position_id` int DEFAULT NULL,
+  `reports_to` int DEFAULT NULL,
   `raw_status_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -917,13 +920,17 @@ CREATE TABLE `employees` (
   KEY `idx_employees_office_key_department` (`office_key_card_department_id`),
   KEY `idx_employees_workstation_mode` (`workstation_mode_id`),
   KEY `idx_employees_assignment_type` (`assignment_type_id`),
+  KEY `idx_employees_position` (`employee_position_id`),
+  KEY `idx_employees_reports_to` (`reports_to`),
   CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `employees_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `employees_ibfk_3` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
   CONSTRAINT `employees_ibfk_4` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`),
   CONSTRAINT `employees_ibfk_5` FOREIGN KEY (`office_key_card_department_id`) REFERENCES `departments` (`id`),
   CONSTRAINT `employees_ibfk_6` FOREIGN KEY (`employment_status_id`) REFERENCES `employee_statuses` (`id`),
-  CONSTRAINT `employees_ibfk_7` FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types` (`id`)
+  CONSTRAINT `employees_ibfk_7` FOREIGN KEY (`assignment_type_id`) REFERENCES `assignment_types` (`id`),
+  CONSTRAINT `employees_ibfk_8` FOREIGN KEY (`employee_position_id`) REFERENCES `employee_positions` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `employees_ibfk_9` FOREIGN KEY (`reports_to`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Table structure for `equipment`
 DROP TABLE IF EXISTS `equipment`;

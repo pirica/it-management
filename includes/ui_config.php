@@ -119,6 +119,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'approver_type', 'label' => '🧩 Approver Type', 'href' => 'modules/approver_type/', 'match_dir' => 'approver_type'],
                 ['id' => 'approvers', 'label' => '✅ Approvers', 'href' => 'modules/approvers/', 'match_dir' => 'approvers'],
                 ['id' => 'audit_logs', 'label' => '🧾 Audit Logs', 'href' => 'modules/audit_logs/', 'match_dir' => 'audit_logs'],
+                ['id' => 'org_chart', 'label' => '📈 Org Chart', 'href' => 'modules/org_chart/', 'match_dir' => 'org_chart'],
             ],
         ],
     ];

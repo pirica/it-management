@@ -89,6 +89,8 @@ $form = [
     'department_id' => (string)($employee['department_id'] ?? ''),
     'raw_status_code' => (string)($employee['raw_status_code'] ?? 'A'),
     'employment_status_id' => (string)($employee['employment_status_id'] ?? '1'),
+    'employee_position_id' => (string)($employee['employee_position_id'] ?? ''),
+    'reports_to' => (string)($employee['reports_to'] ?? ''),
     'workstation_mode_id' => (string)($employee['workstation_mode_id'] ?? ''),
     'assignment_type_id' => (string)($employee['assignment_type_id'] ?? ''),
     'comments' => (string)($employee['comments'] ?? ''),
@@ -126,6 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $officeDeptId = $form['office_key_card_department_id'] === '' ? 'NULL' : (string)(int)$form['office_key_card_department_id'];
         $rawStatusCode = $form['raw_status_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['raw_status_code']) . "'";
         $employmentStatusId = $form['employment_status_id'] === '' ? '1' : (string)(int)$form['employment_status_id'];
+        $employeePositionId = $form['employee_position_id'] === '' ? 'NULL' : (string)(int)$form['employee_position_id'];
+        $reportsTo = $form['reports_to'] === '' ? 'NULL' : (string)(int)$form['reports_to'];
         $workstationModeId = $form['workstation_mode_id'] === '' ? 'NULL' : (string)(int)$form['workstation_mode_id'];
         $assignmentTypeId = $form['assignment_type_id'] === '' ? 'NULL' : (string)(int)$form['assignment_type_id'];
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
@@ -137,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             email={$email}, external_id={$externalId}, username={$username},
             department_id={$departmentId}, job_code={$jobCode}, job_title={$jobTitle},
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
+            employee_position_id={$employeePositionId}, reports_to={$reportsTo},
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
             comments={$comments}
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
@@ -191,8 +196,29 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
-                        <div class="form-group"><label>Job Title</label><input type="text" name="job_title" value="<?php echo sanitize($form['job_title']); ?>"></div>
-                        
+                        <div class="form-group"><label>Job Title (Legacy)</label><input type="text" name="job_title" value="<?php echo sanitize($form['job_title']); ?>"></div>
+                        <div class="form-group"><label>Position Title</label>
+                            <select name="employee_position_id" data-addable-select="1" data-add-table="employee_positions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="position title">
+                                <option value="">-- None --</option>
+                                <?php
+                                $positions = mysqli_query($conn, 'SELECT id, name FROM employee_positions WHERE company_id=' . (int)$company_id . ' ORDER BY name');
+                                if ($positions): while ($p = mysqli_fetch_assoc($positions)): ?>
+                                    <option value="<?php echo (int)$p['id']; ?>" <?php echo ((string)$p['id'] === (string)$form['employee_position_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$p['name']); ?></option>
+                                <?php endwhile; endif; ?>
+                                <option value="__add_new__">➕</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Reports To</label>
+                            <select name="reports_to">
+                                <option value="">-- None --</option>
+                                <?php
+                                $mgrs = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE company_id=" . (int)$company_id . " AND id != " . $id . " ORDER BY display_name");
+                                if ($mgrs): while ($m = mysqli_fetch_assoc($mgrs)): ?>
+                                    <option value="<?php echo (int)$m['id']; ?>" <?php echo ((string)$m['id'] === (string)$form['reports_to']) ? 'selected' : ''; ?>><?php echo sanitize((string)$m['display_name']); ?></option>
+                                <?php endwhile; endif; ?>
+                            </select>
+                        </div>
+
                         <!-- LOOKUP SELECTS -->
                         <div class="form-group"><label>Department</label>
                             <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department">
