@@ -51,6 +51,7 @@ $data = [
     'email' => '',
     'website' => '',
     'vat' => '',
+    'unit_no' => '',
     'comments' => '',
     'active' => 1,
 ];
@@ -89,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim((string)($_POST['email'] ?? ''));
     $website = trim((string)($_POST['website'] ?? ''));
     $vat = trim((string)($_POST['vat'] ?? ''));
+    $unit_no = trim((string)($_POST['unit_no'] ?? ''));
     $comments = trim((string)($_POST['comments'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
 
@@ -101,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'email' => $email,
         'website' => $website,
         'vat' => $vat,
+        'unit_no' => $unit_no,
         'comments' => $comments,
         'active' => $active,
     ];
@@ -111,10 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_edit) {
             // Process UPDATE
             $old = itm_fetch_audit_record($conn, 'companies', $id, (int)($_SESSION['company_id'] ?? 0));
-            $sql = 'UPDATE companies SET company=?, incode=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=? WHERE id=? AND id > 0';
+            $sql = 'UPDATE companies SET company=?, incode=?, unit_no=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=? WHERE id=? AND id > 0';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'sssssssssii', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active, $id);
+                mysqli_stmt_bind_param($stmt, 'ssssssssssii', $company, $incode, $unit_no, $city, $country, $phone, $email, $website, $vat, $comments, $active, $id);
                 try {
                     if (mysqli_stmt_execute($stmt)) {
                         itm_log_audit($conn, 'companies', $id, 'UPDATE', $old, $data);
@@ -132,10 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // Process INSERT
-            $sql = 'INSERT INTO companies (company, incode, city, country, phone, email, website, vat, comments, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            $sql = 'INSERT INTO companies (company, incode, unit_no, city, country, phone, email, website, vat, comments, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'sssssssssi', $company, $incode, $city, $country, $phone, $email, $website, $vat, $comments, $active);
+                mysqli_stmt_bind_param($stmt, 'ssssssssssi', $company, $incode, $unit_no, $city, $country, $phone, $email, $website, $vat, $comments, $active);
                 try {
                     if (mysqli_stmt_execute($stmt)) {
                         $newId = (int)mysqli_insert_id($conn);
@@ -178,6 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-row">
                         <div class="form-group"><label>Company *</label><input type="text" name="company" required value="<?php echo sanitize($data['company'] ?? ''); ?>"></div>
                         <div class="form-group"><label>InCode</label><input type="text" name="incode" maxlength="6" size="6" value="<?php echo sanitize($data['incode'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>Unit No.</label><input type="text" name="unit_no" maxlength="10" size="10" value="<?php echo sanitize($data['unit_no'] ?? ''); ?>"></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>City</label><input type="text" name="city" value="<?php echo sanitize($data['city'] ?? ''); ?>"></div>
