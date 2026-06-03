@@ -5953,3 +5953,38 @@ INSERT INTO `events` (`company_id`, `title`, `description`, `start_datetime`, `e
 (1, 'Project Kickoff', 'Initial meeting for the new project', '2026-05-01 09:00:00', '2026-05-01 11:00:00', 'Meeting Room A', 1, 1),
 (1, 'Server Maintenance', 'Monthly server updates and backup verification', '2026-05-15 22:00:00', '2026-05-16 02:00:00', 'Data Center', 2, 1),
 (1, 'Team Lunch', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
+
+-- Table structure for `visitors_access_log`
+DROP TABLE IF EXISTS `visitors_access_log`;
+CREATE TABLE `visitors_access_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `visitor_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `company_department` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reason_for_visit` text COLLATE utf8mb4_unicode_ci,
+  `pre_approved_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `room_opened_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `date_time_in` datetime DEFAULT NULL,
+  `date_time_out` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `visitors_access_log_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Audit Triggers for `visitors_access_log`
+DELIMITER //
+CREATE TRIGGER `trg_visitors_access_log_audit_insert` AFTER INSERT ON `visitors_access_log` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'visitors_access_log', NEW.`id`, 'INSERT', NULL, JSON_OBJECT('visitor_name', NEW.`visitor_name`, 'date_time_in', NEW.`date_time_in`), @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_visitors_access_log_audit_update` AFTER UPDATE ON `visitors_access_log` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'visitors_access_log', NEW.`id`, 'UPDATE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'date_time_in', OLD.`date_time_in`), JSON_OBJECT('visitor_name', NEW.`visitor_name`, 'date_time_in', NEW.`date_time_in`), @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_visitors_access_log_audit_delete` AFTER DELETE ON `visitors_access_log` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'visitors_access_log', OLD.`id`, 'DELETE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'date_time_in', OLD.`date_time_in`), NULL, @app_ip_address, @app_user_agent);
+END//
+DELIMITER ;

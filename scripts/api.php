@@ -123,6 +123,7 @@ $projectJsonEndpoints = [
     ['method' => 'GET', 'path' => 'modules/calendar/index.php?date=YYYY-MM-DD', 'purpose' => 'Fetch calendar view for a specific month/year and selected day.'],
     ['method' => 'POST', 'path' => 'modules/tickets/archive.php', 'purpose' => 'Archive or un-archive a support ticket. Requires id and archive_action (archive/unarchive).'],
     ['method' => 'POST', 'path' => 'modules/org_chart/index.php', 'purpose' => 'Update employee reporting hierarchy via drag-and-drop. Requires employee_id, reports_to, and action=update_hierarchy.'],
+    ['method' => 'POST', 'path' => 'modules/visitors_access_log/index.php', 'purpose' => 'Visitors Access Log inline editing and timestamp updates. Supports ajax_inline_edit=1 or action_timestamp=1.'],
 ];
 ?>
 <!DOCTYPE html>

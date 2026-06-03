@@ -88,6 +88,7 @@ function itm_sidebar_base_structure() {
             'title' => '🧰 Admin',
             'items' => [
                 ['id' => 'inventory_items', 'label' => '📦 Inventory', 'href' => 'modules/inventory_items/', 'match_dir' => 'inventory_items'],
+                ['id' => 'visitors_access_log', 'label' => '📝 Visitors Access Log', 'href' => 'modules/visitors_access_log/', 'match_dir' => 'visitors_access_log'],
                 ['id' => 'users', 'label' => '👥 Users', 'href' => 'modules/users/', 'match_dir' => 'users'],
                 ['id' => 'companies', 'label' => '🌍 Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
             ],
