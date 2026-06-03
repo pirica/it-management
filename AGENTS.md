@@ -458,6 +458,16 @@ The visitors access log module (`modules/visitors_access_log/`) provides a way t
 3. **Fallbacks:** The `val_is_today` helper must fall back to `created_at` if `date_time_in` is not provided.
 4. **Layout:** The module follows the action-wrapper pattern and includes standard sidebar and header components.
 
+#### Backup Tape Log (mandatory)
+
+The backup tape log module (`modules/backup_tape_log/`) provides a monthly grid to track server backups.
+
+1. **Monthly Grid:** The index view renders one row for every day of the selected month/year/server combination.
+2. **Auto-population:** The `log_date` and `tape_to_be_used` (day name) are automatically derived for each row. Sundays must be highlighted in yellow.
+3. **Immutability:** Records not from today are locked for editing and deletion.
+4. **Restricted Fields:** The `tape_used_for_restore` and `ism_review` fields are only editable by Admin users or staff assigned to the IT department.
+5. **Exports:** XLSX and PDF exports must include the custom header (Year, Month, Company, Server, Unit No) and follow the requested grid layout.
+
 #### Calendar and Events integration (mandatory)
 
 The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.
