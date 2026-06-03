@@ -73,14 +73,20 @@ function val_count_logs($conn, $company_id, $search = '') {
  */
 function val_is_today($dateTimeStr) {
     if (!$dateTimeStr) return false;
-    $date = date('Y-m-d', strtotime($dateTimeStr));
-    return $date === date('Y-m-d');
+    // Allow either datetime string or timestamp string
+    $ts = is_numeric($dateTimeStr) ? (int)$dateTimeStr : strtotime($dateTimeStr);
+    if (!$ts) return false;
+
+    return date('Y-m-d', $ts) === date('Y-m-d');
 }
 
 /**
  * Format date time for display
+ * Example: 01-Jun-2027 20:15
  */
 function val_format_datetime($dateTimeStr) {
     if (!$dateTimeStr) return '—';
-    return date('d/M H:i', strtotime($dateTimeStr));
+    $ts = is_numeric($dateTimeStr) ? (int)$dateTimeStr : strtotime($dateTimeStr);
+    if (!$ts) return '—';
+    return date('d-M-Y H:i', $ts);
 }

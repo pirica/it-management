@@ -2,8 +2,6 @@
 /**
  * UI Rendering for Visitors Access Log Module
  */
-
-include ROOT_PATH . 'includes/header.php';
 ?>
 
 <div class="content">
@@ -27,7 +25,9 @@ include ROOT_PATH . 'includes/header.php';
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <form action="index.php" method="GET" class="form-inline">
-                                        <input type="text" name="search" class="form-control form-control-sm mr-2" placeholder="Search..." value="<?= sanitize($search) ?>">
+                                        <div class="form-group mr-2">
+                                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search..." value="<?= sanitize($search) ?>">
+                                        </div>
                                         <button type="submit" class="btn btn-sm btn-primary">Search</button>
                                         <?php if ($search !== ''): ?>
                                             <a href="index.php" class="btn btn-sm btn-secondary ml-2">Clear</a>
@@ -37,7 +37,7 @@ include ROOT_PATH . 'includes/header.php';
                                 <div class="col-md-6 text-right">
                                     <?php if ($showBulkActions): ?>
                                         <form id="bulk-delete-form" method="POST" action="delete.php" style="display:inline-block;" data-itm-bulk-delete-bound="1">
-                                            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= sanitize($csrf_token) ?>">
                                             <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                                             <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                                             <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
@@ -65,29 +65,29 @@ include ROOT_PATH . 'includes/header.php';
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <!-- 1st Row: Ready to fill -->
-                                        <tr class="table-primary">
-                                        <td>
-                                            <form id="quick-add-form" action="index.php" method="POST" style="display:none;">
-                                                <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
-                                                <input type="hidden" name="action_quick_add" value="1">
-                                            </form>
-                                        </td>
-                                        <td><input type="text" name="visitor_name" form="quick-add-form" class="form-control form-control-sm" placeholder="Visitor Name" required></td>
-                                        <td><input type="text" name="company_department" form="quick-add-form" class="form-control form-control-sm" placeholder="Company / Dept"></td>
-                                        <td><input type="text" name="reason_for_visit" form="quick-add-form" class="form-control form-control-sm" placeholder="Reason"></td>
-                                        <td><input type="text" name="pre_approved_by" form="quick-add-form" class="form-control form-control-sm" placeholder="Approved By"></td>
-                                        <td><input type="text" name="room_opened_by" form="quick-add-form" class="form-control form-control-sm" placeholder="Opened By"></td>
-                                        <td>
-                                            <div class="input-group input-group-sm">
-                                                <input type="text" name="date_time_in" form="quick-add-form" class="form-control" placeholder="Now" readonly>
-                                                <div class="input-group-append">
-                                                    <button type="submit" form="quick-add-form" class="btn btn-success">IN</button>
+                                        <!-- 1st Row: Quick Add Form -->
+                                        <tr style="background-color: var(--bg-tertiary);">
+                                            <td>
+                                                <form id="quick-add-form" action="index.php" method="POST" style="display:none;">
+                                                    <input type="hidden" name="csrf_token" value="<?= sanitize($csrf_token) ?>">
+                                                    <input type="hidden" name="action_quick_add" value="1">
+                                                </form>
+                                            </td>
+                                            <td><input type="text" name="visitor_name" form="quick-add-form" class="form-control form-control-sm" placeholder="Visitor Name" required></td>
+                                            <td><input type="text" name="company_department" form="quick-add-form" class="form-control form-control-sm" placeholder="Company / Dept"></td>
+                                            <td><input type="text" name="reason_for_visit" form="quick-add-form" class="form-control form-control-sm" placeholder="Reason"></td>
+                                            <td><input type="text" name="pre_approved_by" form="quick-add-form" class="form-control form-control-sm" placeholder="Approved By"></td>
+                                            <td><input type="text" name="room_opened_by" form="quick-add-form" class="form-control form-control-sm" placeholder="Opened By"></td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" name="date_time_in" form="quick-add-form" class="form-control" placeholder="Now" readonly>
+                                                    <div class="input-group-append">
+                                                        <button type="submit" form="quick-add-form" class="btn btn-success">IN</button>
                                                     </div>
-                                            </div>
-                                        </td>
-                                        <td>—</td>
-                                        <td><button type="submit" form="quick-add-form" class="btn btn-sm btn-primary">Save</button></td>
+                                                </div>
+                                            </td>
+                                            <td>—</td>
+                                            <td><button type="submit" form="quick-add-form" class="btn btn-sm btn-primary">Save</button></td>
                                         </tr>
 
                                         <!-- Data Rows -->
@@ -97,7 +97,7 @@ include ROOT_PATH . 'includes/header.php';
                                             </tr>
                                         <?php else: ?>
                                             <?php foreach ($logs as $log):
-                                                $isToday = val_is_today($log['date_time_in']);
+                                                $isToday = val_is_today($log['date_time_in'] ?? $log['created_at']);
                                                 $rowClass = $isToday ? '' : 'text-muted';
                                             ?>
                                                 <tr class="<?= $rowClass ?>" data-id="<?= $log['id'] ?>">
@@ -111,7 +111,7 @@ include ROOT_PATH . 'includes/header.php';
                                                         <td class="inline-editable" data-field="<?= $field ?>" data-original="<?= sanitize($log[$field]) ?>">
                                                             <?php if ($field === 'date_time_in' || $field === 'date_time_out'): ?>
                                                                 <span class="display-val"><?= val_format_datetime($log[$field]) ?></span>
-                                                                <?php if ($isToday): ?>
+                                                                <?php if ($isToday && ($field === 'date_time_in' || ($field === 'date_time_out' && !empty($log['date_time_in'])))): ?>
                                                                     <button class="btn btn-xs btn-outline-info btn-timestamp ml-1" data-type="<?= ($field === 'date_time_in' ? 'in' : 'out') ?>" title="Set current time">⏱️</button>
                                                                 <?php endif; ?>
                                                             <?php else: ?>
@@ -129,11 +129,13 @@ include ROOT_PATH . 'includes/header.php';
                                                         <div class="itm-actions-wrap">
                                                             <a href="view.php?id=<?= $log['id'] ?>" class="btn btn-sm">🔎</a>
                                                             <a href="edit.php?id=<?= $log['id'] ?>" class="btn btn-sm">✏️</a>
+                                                            <?php if ($isToday): ?>
                                                             <form action="delete.php" method="POST" style="display:inline;" onsubmit="return confirm('Delete this entry?');">
-                                                                <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                                                                <input type="hidden" name="csrf_token" value="<?= sanitize($csrf_token) ?>">
                                                                 <input type="hidden" name="id" value="<?= $log['id'] ?>">
                                                                 <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                                                             </form>
+                                                            <?php endif; ?>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -169,47 +171,47 @@ include ROOT_PATH . 'includes/header.php';
                         </div>
                         <div class="card-body">
                             <form method="POST" class="form-grid">
-                                <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                                <input type="hidden" name="csrf_token" value="<?= sanitize($csrf_token) ?>">
                                 <input type="hidden" name="id" value="<?= (int)($data['id'] ?? 0) ?>">
 
                                 <div class="form-group">
                                     <label>Visitor Name</label>
-                                    <input type="text" name="visitor_name" value="<?= sanitize($data['visitor_name'] ?? '') ?>" required>
+                                    <input type="text" name="visitor_name" class="form-control" value="<?= sanitize($data['visitor_name'] ?? '') ?>" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label>Company / Department</label>
-                                    <input type="text" name="company_department" value="<?= sanitize($data['company_department'] ?? '') ?>">
+                                    <input type="text" name="company_department" class="form-control" value="<?= sanitize($data['company_department'] ?? '') ?>">
                                 </div>
 
                                 <div class="form-group">
                                     <label>Reason for Visit</label>
-                                    <textarea name="reason_for_visit"><?= sanitize($data['reason_for_visit'] ?? '') ?></textarea>
+                                    <textarea name="reason_for_visit" class="form-control"><?= sanitize($data['reason_for_visit'] ?? '') ?></textarea>
                                 </div>
 
                                 <div class="form-group">
                                     <label>Pre-Approved by</label>
-                                    <input type="text" name="pre_approved_by" value="<?= sanitize($data['pre_approved_by'] ?? '') ?>">
+                                    <input type="text" name="pre_approved_by" class="form-control" value="<?= sanitize($data['pre_approved_by'] ?? '') ?>">
                                 </div>
 
                                 <div class="form-group">
                                     <label>Computer Room Opened By</label>
-                                    <input type="text" name="room_opened_by" value="<?= sanitize($data['room_opened_by'] ?? '') ?>">
+                                    <input type="text" name="room_opened_by" class="form-control" value="<?= sanitize($data['room_opened_by'] ?? '') ?>">
                                 </div>
 
                                 <div class="form-group">
                                     <label>Date & Time IN</label>
-                                    <input type="datetime-local" name="date_time_in" value="<?= !empty($data['date_time_in']) ? date('Y-m-d\TH:i', strtotime($data['date_time_in'])) : '' ?>">
+                                    <input type="datetime-local" name="date_time_in" class="form-control" value="<?= !empty($data['date_time_in']) ? date('Y-m-d\TH:i', strtotime($data['date_time_in'])) : '' ?>">
                                 </div>
 
                                 <div class="form-group">
                                     <label>Date & Time OUT</label>
-                                    <input type="datetime-local" name="date_time_out" value="<?= !empty($data['date_time_out']) ? date('Y-m-d\TH:i', strtotime($data['date_time_out'])) : '' ?>">
+                                    <input type="datetime-local" name="date_time_out" class="form-control" value="<?= !empty($data['date_time_out']) ? date('Y-m-d\TH:i', strtotime($data['date_time_out'])) : '' ?>">
                                 </div>
 
                                 <div class="form-actions">
                                     <button class="btn btn-primary" type="submit">Save</button>
-                                    <a href="index.php" class="btn">Cancel</a>
+                                    <a href="index.php" class="btn btn-secondary">Cancel</a>
                                 </div>
                             </form>
                         </div>
@@ -237,7 +239,7 @@ include ROOT_PATH . 'includes/header.php';
                             </table>
                             <div class="mt-3">
                                 <a href="edit.php?id=<?= (int)$data['id'] ?>" class="btn btn-sm btn-primary">Edit</a>
-                                <a href="index.php" class="btn btn-sm">Back</a>
+                                <a href="index.php" class="btn btn-sm btn-secondary">Back</a>
                             </div>
                         </div>
                     </div>
@@ -284,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData();
         formData.append('ajax_inline_edit', '1');
-        formData.append('csrf_token', '<?= $csrf_token ?>');
+        formData.append('csrf_token', '<?= sanitize($csrf_token) ?>');
         formData.append('id', id);
         formData.append('field', field);
         formData.append('value', value);
@@ -317,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData();
             formData.append('action_timestamp', '1');
-            formData.append('csrf_token', '<?= $csrf_token ?>');
+            formData.append('csrf_token', '<?= sanitize($csrf_token) ?>');
             formData.append('id', id);
             formData.append('type', type);
 
@@ -337,5 +339,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-<?php include ROOT_PATH . 'includes/footer.php'; ?>

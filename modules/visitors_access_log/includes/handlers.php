@@ -18,14 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     }
 
     // Check if the record is from today (security check)
-    $stmt = mysqli_prepare($conn, "SELECT date_time_in FROM visitors_access_log WHERE id = ? AND company_id = ?");
+    $stmt = mysqli_prepare($conn, "SELECT date_time_in, created_at FROM visitors_access_log WHERE id = ? AND company_id = ?");
     mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $row = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 
-    if (!$row || !val_is_today($row['date_time_in'])) {
+    if (!$row || !val_is_today($row['date_time_in'] ?? $row['created_at'])) {
         echo json_encode(['success' => false, 'message' => 'Only today\'s records can be edited.']);
         exit;
     }
@@ -51,6 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
 
     if ($id <= 0 || !in_array($type, ['in', 'out'], true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+        exit;
+    }
+
+    // Security: Check if the record is from today
+    $stmt = mysqli_prepare($conn, "SELECT date_time_in, created_at FROM visitors_access_log WHERE id = ? AND company_id = ?");
+    mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+
+    if (!$row || !val_is_today($row['date_time_in'] ?? $row['created_at'])) {
+        echo json_encode(['success' => false, 'message' => 'Only today\'s records can be edited.']);
         exit;
     }
 
@@ -116,14 +129,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // Security: Check if editing a past record
     if ($crud_action === 'edit' && $id > 0) {
-        $stmt = mysqli_prepare($conn, "SELECT date_time_in FROM visitors_access_log WHERE id = ? AND company_id = ?");
+        $stmt = mysqli_prepare($conn, "SELECT date_time_in, created_at FROM visitors_access_log WHERE id = ? AND company_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         $row = mysqli_fetch_assoc($result);
         mysqli_stmt_close($stmt);
 
-        if ($row && !val_is_today($row['date_time_in'])) {
+        if ($row && !val_is_today($row['date_time_in'] ?? $row['created_at'])) {
             $errors[] = 'Only today\'s records can be edited.';
         }
     }
@@ -173,11 +186,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'delete') {
     itm_require_post_csrf();
 
     if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'clear_table') {
-        $stmt = mysqli_prepare($conn, "DELETE FROM visitors_access_log WHERE company_id = ?");
+        $stmt = mysqli_prepare($conn, "DELETE FROM visitors_access_log WHERE company_id = ? AND (DATE(date_time_in) = CURDATE() OR (date_time_in IS NULL AND DATE(created_at) = CURDATE()))");
         mysqli_stmt_bind_param($stmt, 'i', $company_id);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
-        $_SESSION['crud_success'] = 'Log cleared.';
+        $_SESSION['crud_success'] = 'Log cleared (today\'s records only).';
         header('Location: index.php');
         exit;
     }
@@ -186,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'delete') {
         $ids = $_POST['ids'] ?? [];
         if (!empty($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $sql = "DELETE FROM visitors_access_log WHERE id IN ($placeholders) AND company_id = ?";
+            $sql = "DELETE FROM visitors_access_log WHERE id IN ($placeholders) AND company_id = ? AND (DATE(date_time_in) = CURDATE() OR (date_time_in IS NULL AND DATE(created_at) = CURDATE()))";
             $stmt = mysqli_prepare($conn, $sql);
             $types = str_repeat('i', count($ids)) . 'i';
             $params = array_map('intval', $ids);
@@ -194,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'delete') {
             mysqli_stmt_bind_param($stmt, $types, ...$params);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
-            $_SESSION['crud_success'] = 'Selected entries deleted.';
+            $_SESSION['crud_success'] = 'Selected entries deleted (only if from today).';
         }
         header('Location: index.php');
         exit;
@@ -202,11 +215,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'delete') {
 
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
-        $stmt = mysqli_prepare($conn, "DELETE FROM visitors_access_log WHERE id = ? AND company_id = ?");
+        $stmt = mysqli_prepare($conn, "DELETE FROM visitors_access_log WHERE id = ? AND company_id = ? AND (DATE(date_time_in) = CURDATE() OR (date_time_in IS NULL AND DATE(created_at) = CURDATE()))");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
-        $_SESSION['crud_success'] = 'Entry deleted.';
+        $_SESSION['crud_success'] = 'Entry deleted (only if from today).';
     }
     header('Location: index.php');
     exit;
