@@ -104,6 +104,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
 - Planning — Shared Calendar and Events management
 - Visitors Access Log — Track manual entry logs of visitors with inline editing and auto-timestamps
+- Backup Tape Log — Monthly grid view to track server backup tapes with auto-populated day/tape names and restricted ISM review.
 - Audit Logs
 
 

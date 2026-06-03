@@ -5990,3 +5990,52 @@ CREATE TRIGGER `trg_visitors_access_log_audit_delete` AFTER DELETE ON `visitors_
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'visitors_access_log', OLD.`id`, 'DELETE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'company_department', OLD.`company_department`, 'reason_for_visit', OLD.`reason_for_visit`, 'pre_approved_by', OLD.`pre_approved_by`, 'room_opened_by', OLD.`room_opened_by`, 'date_time_in', OLD.`date_time_in`, 'date_time_out', OLD.`date_time_out`), NULL, @app_ip_address, @app_user_agent);
 END//
 DELIMITER ;
+
+-- Table structure for `backup_tape_log`
+DROP TABLE IF EXISTS `backup_tape_log`;
+CREATE TABLE `backup_tape_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `server_id` int NOT NULL,
+  `log_date` date NOT NULL,
+  `tape_to_be_used` varchar(50) NOT NULL,
+  `time_tape_inserted` datetime DEFAULT NULL,
+  `time_returned_to_safe` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+  `print_name` varchar(255) NOT NULL DEFAULT '',
+  `backup_status` ENUM('Full', 'Part', 'Fail') NOT NULL DEFAULT 'Full',
+  `problem_details` text,
+  `tape_used_for_restore` tinyint(1) DEFAULT '0',
+  `ism_review` tinyint(1) DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_backup_tape_log_scope` (`company_id`,`server_id`,`log_date`),
+  KEY `company_id` (`company_id`),
+  KEY `server_id` (`server_id`),
+  CONSTRAINT `backup_tape_log_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `backup_tape_log_ibfk_server` FOREIGN KEY (`server_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Audit Triggers for `backup_tape_log`
+DELIMITER //
+CREATE TRIGGER `trg_backup_tape_log_audit_insert` AFTER INSERT ON `backup_tape_log` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'backup_tape_log', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('server_id', NEW.`server_id`, 'log_date', NEW.`log_date`, 'tape_to_be_used', NEW.`tape_to_be_used`, 'time_tape_inserted', NEW.`time_tape_inserted`, 'time_returned_to_safe', NEW.`time_returned_to_safe`, 'print_name', NEW.`print_name`, 'backup_status', NEW.`backup_status`, 'problem_details', NEW.`problem_details`, 'tape_used_for_restore', NEW.`tape_used_for_restore`, 'ism_review', NEW.`ism_review`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_backup_tape_log_audit_update` AFTER UPDATE ON `backup_tape_log` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'backup_tape_log', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('server_id', OLD.`server_id`, 'log_date', OLD.`log_date`, 'tape_to_be_used', OLD.`tape_to_be_used`, 'time_tape_inserted', OLD.`time_tape_inserted`, 'time_returned_to_safe', OLD.`time_returned_to_safe`, 'print_name', OLD.`print_name`, 'backup_status', OLD.`backup_status`, 'problem_details', OLD.`problem_details`, 'tape_used_for_restore', OLD.`tape_used_for_restore`, 'ism_review', OLD.`ism_review`, 'active', OLD.`active`),
+  JSON_OBJECT('server_id', NEW.`server_id`, 'log_date', NEW.`log_date`, 'tape_to_be_used', NEW.`tape_to_be_used`, 'time_tape_inserted', NEW.`time_tape_inserted`, 'time_returned_to_safe', NEW.`time_returned_to_safe`, 'print_name', NEW.`print_name`, 'backup_status', NEW.`backup_status`, 'problem_details', NEW.`problem_details`, 'tape_used_for_restore', NEW.`tape_used_for_restore`, 'ism_review', NEW.`ism_review`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_backup_tape_log_audit_delete` AFTER DELETE ON `backup_tape_log` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'backup_tape_log', OLD.`id`, 'DELETE',
+  JSON_OBJECT('server_id', OLD.`server_id`, 'log_date', OLD.`log_date`, 'tape_to_be_used', OLD.`tape_to_be_used`, 'time_tape_inserted', OLD.`time_tape_inserted`, 'time_returned_to_safe', OLD.`time_returned_to_safe`, 'print_name', OLD.`print_name`, 'backup_status', OLD.`backup_status`, 'problem_details', OLD.`problem_details`, 'tape_used_for_restore', OLD.`tape_used_for_restore`, 'ism_review', OLD.`ism_review`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+DELIMITER ;
