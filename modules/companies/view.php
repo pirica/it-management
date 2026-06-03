@@ -102,6 +102,10 @@ if ($item === null && $error === '') {
                         <tr><th>Email</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['email'])); ?></td></tr>
                         <tr><th>Website</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['website'])); ?></td></tr>
                         <tr><th>VAT</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['vat'])); ?></td></tr>
+                        <?php $unitNo = itm_company_view_value($itemNormalized, ['unit_no']); ?>
+                        <?php if ($unitNo !== ''): ?>
+                            <tr><th>Unit No.</th><td><?php echo sanitize($unitNo); ?></td></tr>
+                        <?php endif; ?>
                         <tr><th>Comments</th><td><?php echo nl2br(sanitize(itm_company_view_value($itemNormalized, ['comments']))); ?></td></tr>
                         <?php $activeValue = (int)itm_company_view_value($itemNormalized, ['active', 'status'], '0'); ?>
                         <tr><th>Status</th><td><?php echo $activeValue === 1 ? '✅' : '❌'; ?></td></tr>
