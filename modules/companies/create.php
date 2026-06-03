@@ -179,23 +179,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-row">
-                        <div class="form-group"><label>Company *</label><input type="text" name="company" required value="<?php echo sanitize($data['company'] ?? ''); ?>"></div>
-                        <div class="form-group"><label>InCode</label><input type="text" name="incode" maxlength="6" size="6" value="<?php echo sanitize($data['incode'] ?? ''); ?>"></div>
-                        <div class="form-group"><label>Unit No.</label><input type="text" name="unit_no" maxlength="10" size="10" value="<?php echo sanitize($data['unit_no'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>Company *</label><input type="text" name="company" required value="<?php echo htmlspecialchars((string)($data['company'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
+                        <div class="form-group"><label>InCode</label><input type="text" name="incode" maxlength="6" size="6" value="<?php echo htmlspecialchars((string)($data['incode'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
+                        <div class="form-group"><label>Unit No.</label><input type="text" name="unit_no" maxlength="10" size="10" value="<?php echo htmlspecialchars((string)($data['unit_no'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>City</label><input type="text" name="city" value="<?php echo sanitize($data['city'] ?? ''); ?>"></div>
-                        <div class="form-group"><label>Country</label><input type="text" name="country" value="<?php echo sanitize($data['country'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>City</label><input type="text" name="city" value="<?php echo htmlspecialchars((string)($data['city'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
+                        <div class="form-group"><label>Country</label><input type="text" name="country" value="<?php echo htmlspecialchars((string)($data['country'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo sanitize($data['phone'] ?? ''); ?>"></div>
-                        <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($data['email'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo htmlspecialchars((string)($data['phone'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
+                        <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo htmlspecialchars((string)($data['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Website</label><input type="url" name="website" value="<?php echo sanitize($data['website'] ?? ''); ?>"></div>
-                        <div class="form-group"><label>VAT</label><input type="text" name="vat" value="<?php echo sanitize($data['vat'] ?? ''); ?>"></div>
+                        <div class="form-group"><label>Website</label><input type="url" name="website" value="<?php echo htmlspecialchars((string)($data['website'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
+                        <div class="form-group"><label>VAT</label><input type="text" name="vat" value="<?php echo htmlspecialchars((string)($data['vat'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
-                    <div class="form-group"><label>Comments</label><textarea name="comments" rows="4"><?php echo sanitize($data['comments'] ?? ''); ?></textarea></div>
+                    <div class="form-group"><label>Comments</label><textarea name="comments" rows="4"><?php echo htmlspecialchars((string)($data['comments'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea></div>
                     <div class="form-group"><label class="role-flag-option"><input type="checkbox" name="active" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>> <span>Active</span></label></div>
                     <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">🔙</a></div>
                 </form>
