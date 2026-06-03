@@ -103,6 +103,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Companies — Multi-company support
 - Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
 - Planning — Shared Calendar and Events management
+- Visitors Access Log — Track manual entry logs of visitors with inline editing and auto-timestamps
 - Audit Logs
 
 

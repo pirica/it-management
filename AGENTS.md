@@ -449,6 +449,15 @@ The org chart module (`modules/org_chart/`) provides a visual representation of 
 3. **Layout:** The module uses a dynamic tree layout algorithm to position nodes automatically based on reporting lines.
 4. **Persistence:** Changes to the hierarchy via drag-and-drop are saved immediately via AJAX to the `employees` table.
 
+#### Visitors Access Log (mandatory)
+
+The visitors access log module (`modules/visitors_access_log/`) provides a way to track manual entry logs of visitors.
+
+1. **Quick Add:** The index view features a persistent first row for quick logging of new visitors.
+2. **Security & Immutability:** Historical records (not created today) are locked for editing and deletion to maintain audit integrity.
+3. **Fallbacks:** The `val_is_today` helper must fall back to `created_at` if `date_time_in` is not provided.
+4. **Layout:** The module follows the action-wrapper pattern and includes standard sidebar and header components.
+
 #### Calendar and Events integration (mandatory)
 
 The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.
