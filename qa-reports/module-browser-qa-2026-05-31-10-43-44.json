@@ -1,0 +1,533 @@
+{
+    "generated_at": "2026-05-31 10:43:44",
+    "report_files": {
+        "slug": "2026-05-31-10-43-44",
+        "json": "module-browser-qa-2026-05-31-10-43-44.json",
+        "xlsx": "module-browser-qa-2026-05-31-10-43-44.xlsx"
+    },
+    "run_id": "rmptnjbia2xogkixs",
+    "module_step_exceptions": {
+        "user_companies": {
+            "create": "N/A (module has no create screen)",
+            "add": "N/A (no random bulk rows for junction assignments)",
+            "import_db": "N/A (no Excel import round-trip)"
+        },
+        "patches_updates": {
+            "sample_data": "No sample rows found in database.sql for this module."
+        },
+        "explorer": {
+            "ui_check": "N/A (Not standart Module CRUD)",
+            "clear": "N/A (Not standart Module CRUD)",
+            "sample_data": "N/A (Not standart Module CRUD)",
+            "add": "N/A (Not standart Module CRUD)",
+            "pagination": "N/A (Not standart Module CRUD)",
+            "bulk_cancel": "N/A (Not standart Module CRUD)",
+            "bulk_delete": "N/A (Not standart Module CRUD)",
+            "search": "N/A (Not standart Module CRUD)",
+            "sort": "N/A (Not standart Module CRUD)",
+            "create": "N/A (Not standart Module CRUD)",
+            "view": "N/A (Not standart Module CRUD)",
+            "edit": "N/A (Not standart Module CRUD)",
+            "list_all": "N/A (Not standart Module CRUD)",
+            "export_pdf": "N/A (Not standart Module CRUD)",
+            "export_xlsx": "N/A (Not standart Module CRUD)",
+            "clear_table": "N/A (Not standart Module CRUD)",
+            "import_db": "N/A (Not standart Module CRUD)",
+            "single_delete": "N/A (Not standart Module CRUD)"
+        },
+        "employee_system_access": {
+            "sample_data": "N/A (Auto populated)",
+            "create": "N/A (Auto populated)",
+            "bulk_cancel": "N/A (Auto populated)",
+            "bulk_delete": "N/A (Auto populated)",
+            "list_all": "N/A (Auto populated)",
+            "clear_table": "N/A (Auto populated)",
+            "single_delete": "N/A (Auto populated)"
+        },
+        "employee_assignment_history": {
+            "sample_data": "No sample rows found in database.sql for this module."
+        },
+        "approvers": {
+            "sample_data": "No sample rows found in database.sql for this module."
+        },
+        "ip_addresses": {
+            "sample_data": "N/A (IP addresses are generated from subnets, not database.sql samples)"
+        },
+        "equipment_types": {
+            "add": "N/A (Bulk random rows — avoid module creations)"
+        },
+        "system_access": {
+            "clear_table": "N/A (Auto populated)",
+            "sample_data": "N/A (Auto populated)"
+        },
+        "idf_links": {
+            "sample_data": "No sample rows found in database.sql for this module."
+        },
+        "idf_ports": {
+            "sample_data": "No sample rows found in database.sql for this module."
+        },
+        "idf_positions": {
+            "sample_data": "No sample rows found in database.sql for this module."
+        },
+        "users": {
+            "clear": "N/A (users module is user creation)",
+            "sample_data": "N/A (users module is user creation)",
+            "add": "N/A (users module is user creation)",
+            "bulk_cancel": "N/A (users module is user creation)",
+            "bulk_delete": "N/A (users module is user creation)",
+            "clear_table": "N/A (users module is user creation)",
+            "single_delete": "N/A (users module is user creation)"
+        },
+        "ui_configuration": {
+            "add": "N/A (User UI Configurarion capped by 1)",
+            "create": "N/A (User UI Configurarion)",
+            "pagination": "N/A (User UI Configurarion capped by 1)",
+            "bulk_cancel": "N/A (User UI Configurarion)",
+            "bulk_delete": "N/A (User UI Configurarion)"
+        },
+        "settings": {
+            "mysql": "N/A (settings module is configuration/backup UI)",
+            "ui_check": "N/A (settings module is configuration/backup UI)",
+            "clear": "N/A (settings module is configuration/backup UI)",
+            "sample_data": "N/A (settings module is configuration/backup UI)",
+            "add": "N/A (settings module is configuration/backup UI)",
+            "pagination": "N/A (settings module is configuration/backup UI)",
+            "bulk_cancel": "N/A (settings module is configuration/backup UI)",
+            "bulk_delete": "N/A (settings module is configuration/backup UI)",
+            "search": "N/A (settings module is configuration/backup UI)",
+            "sort": "N/A (settings module is configuration/backup UI)",
+            "create": "N/A (settings module is configuration/backup UI)",
+            "view": "N/A (settings module is configuration/backup UI)",
+            "edit": "N/A (settings module is configuration/backup UI)",
+            "list_all": "N/A (settings module is configuration/backup UI)",
+            "clear_table": "N/A (settings module is configuration/backup UI)",
+            "import_db": "N/A (settings module is configuration/backup UI)",
+            "single_delete": "N/A (settings module is configuration/backup UI)"
+        },
+        "audit_logs": {
+            "list": "N/A (read-only audit centre)",
+            "add": "N/A (read-only audit centre)",
+            "create": "N/A (read-only audit centre)",
+            "edit": "N/A (read-only audit centre)",
+            "list_all": "N/A (read-only audit centre)",
+            "bulk_cancel": "N/A (no bulk-delete form in HTML)",
+            "bulk_delete": "N/A (read-only audit centre; delete disabled)",
+            "clear_table": "N/A (read-only audit centre; delete disabled)",
+            "import_db": "N/A (read-only audit centre)",
+            "single_delete": "N/A (read-only audit centre; delete disabled)",
+            "sample_data": "N/A (read-only audit centre)"
+        },
+        "attempts": {
+            "clear": "N/A (global audit table)",
+            "sample_data": "N/A (global audit table)",
+            "add": "N/A (global audit table)",
+            "pagination": "N/A (global audit table)",
+            "bulk_cancel": "N/A (global audit table)",
+            "bulk_delete": "N/A (global audit table)",
+            "search": "N/A (global audit table)",
+            "sort": "N/A (global audit table)",
+            "create": "N/A (global audit table)",
+            "view": "N/A (global audit table)",
+            "edit": "N/A (global audit table)",
+            "list_all": "N/A (global audit table)",
+            "export_pdf": "N/A (global audit table)",
+            "export_xlsx": "N/A (global audit table)",
+            "clear_table": "N/A (global audit table)",
+            "import_db": "N/A (global audit table)",
+            "single_delete": "N/A (global audit table)"
+        },
+        "user_sidebar_preferences": {
+            "sample_data": "N/A (seeds default sidebar layout)",
+            "add": "N/A (seeds default sidebar layout)",
+            "pagination": "N/A (seeds default sidebar layout)",
+            "bulk_cancel": "N/A (seeds default sidebar layout)",
+            "bulk_delete": "N/A (seeds default sidebar layout)",
+            "create": "N/A (seeds default sidebar layout)",
+            "view": "N/A (seeds default sidebar layout)",
+            "edit": "N/A (seeds default sidebar layout)",
+            "export_pdf": "N/A (seeds default sidebar layout)",
+            "export_xlsx": "N/A (seeds default sidebar layout)",
+            "clear_table": "N/A (seeds default sidebar layout)",
+            "import_db": "N/A (seeds default sidebar layout)",
+            "single_delete": "N/A (seeds default sidebar layout)"
+        },
+        "is_workstation": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_server": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_switch": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_printer": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_pos": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_router": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_port_patch_panel": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_cctv": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_phone": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_firewall": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_access_point": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        },
+        "is_other": {
+            "clear": "N/A routing",
+            "sample_data": "N/A routing",
+            "add": "N/A routing",
+            "pagination": "N/A routing",
+            "bulk_cancel": "N/A routing",
+            "bulk_delete": "N/A routing",
+            "search": "N/A routing",
+            "sort": "N/A routing",
+            "create": "N/A routing",
+            "view": "N/A routing",
+            "edit": "N/A routing",
+            "list_all": "N/A routing",
+            "export_pdf": "N/A routing",
+            "export_xlsx": "N/A routing",
+            "import_db": "N/A routing",
+            "single_delete": "N/A routing",
+            "clear_table": "N/A routing"
+        }
+    },
+    "run_options": {
+        "module": "equipment_rj45",
+        "company": 1,
+        "pilot_only": false,
+        "ui_click_smoke": false,
+        "base_url": "http://myhome.dynip.sapo.pt/it-management/"
+    },
+    "results": [
+        {
+            "module": "_preflight",
+            "company_id": 1,
+            "company_name": "TechCorp Global",
+            "tier": "preflight",
+            "steps": [
+                {
+                    "step": "company_switch",
+                    "status": "Pass",
+                    "notes": ""
+                }
+            ]
+        },
+        {
+            "module": "equipment_rj45",
+            "company_id": 1,
+            "company_name": "TechCorp Global",
+            "tier": "A",
+            "steps": [
+                {
+                    "step": "mysql",
+                    "status": "Pass",
+                    "notes": "database.sql: 20 row(s)"
+                },
+                {
+                    "step": "error_log",
+                    "status": "Pass",
+                    "notes": "no error_log.txt"
+                },
+                {
+                    "step": "list",
+                    "status": "Pass",
+                    "notes": "HTTP 200, no fatal; bulk UI hidden (4 rows < perPage 25); pagination hidden (4 rows <= perPage 25)"
+                },
+                {
+                    "step": "ui_check",
+                    "status": "Pass",
+                    "notes": "Actions mapped (itm-actions-cell + data-itm-actions-origin on header and body)"
+                },
+                {
+                    "step": "clear",
+                    "status": "Pass",
+                    "notes": "SQL tenant clear (first cleared: employee_assignment_history, ip_addresses, patches_updates, switch_ports, tickets, equipment)"
+                },
+                {
+                    "step": "sample_data",
+                    "status": "Pass",
+                    "notes": "HTTP sample seed; table rows in HTML"
+                },
+                {
+                    "step": "add",
+                    "status": "Pass",
+                    "notes": "inserted 26 random row(s); total=30 target=30; 25 row(s) in HTML"
+                },
+                {
+                    "step": "pagination",
+                    "status": "Pass",
+                    "notes": "page=1 Next→2, page=2 Previous→1 in HTML (sort=id, dir=DESC)"
+                },
+                {
+                    "step": "bulk_cancel",
+                    "status": "Pass",
+                    "notes": "shared JS: Cancel label + exitSelectionMode + data-itm-bulk-cancel; bulk-delete-form in HTML; bulk-delete-selection.js in HTML; bulk_action + Select to Delete in HTML; Cancel injected by shared JS on first Select to Delete"
+                },
+                {
+                    "step": "bulk_delete",
+                    "status": "Pass",
+                    "notes": "deleted ids=79,78,77; bulk UI + rows in HTML"
+                },
+                {
+                    "step": "search",
+                    "status": "Pass",
+                    "notes": "HTTP 200; search input + table in HTML"
+                },
+                {
+                    "step": "sort",
+                    "status": "Pass",
+                    "notes": "sort=name in HTML"
+                },
+                {
+                    "step": "create",
+                    "status": "Pass",
+                    "notes": "create form in HTML"
+                },
+                {
+                    "step": "view",
+                    "status": "Pass",
+                    "notes": "view screen in HTML (id=79)"
+                },
+                {
+                    "step": "edit",
+                    "status": "Pass",
+                    "notes": "edit form in HTML (id=79)"
+                },
+                {
+                    "step": "list_all",
+                    "status": "Pass",
+                    "notes": "list table in HTML"
+                },
+                {
+                    "step": "export_pdf",
+                    "status": "Pass",
+                    "notes": "Export PDF in HTML, 25 row(s)"
+                },
+                {
+                    "step": "export_xlsx",
+                    "status": "Pass",
+                    "notes": "Export Excel (.xlsx) in HTML, 25 row(s)"
+                },
+                {
+                    "step": "clear_table",
+                    "status": "Pass",
+                    "notes": "table empty for tenant; Clear Table in HTML"
+                },
+                {
+                    "step": "clear",
+                    "status": "Pass",
+                    "notes": "SQL tenant clear (first cleared: employee_assignment_history, ip_addresses, patches_updates, switch_ports, tickets, equipment)"
+                },
+                {
+                    "step": "import_db",
+                    "status": "Pass",
+                    "notes": "data-itm-db-import-endpoint + table-tools in HTML; imported Export Excel headers with insertable row (database.sql FK ids when needed); inserted=1; 1 row(s) in HTML after import"
+                },
+                {
+                    "step": "single_delete",
+                    "status": "Pass",
+                    "notes": "deleted id=80; delete control in HTML"
+                },
+                {
+                    "step": "sample_data",
+                    "status": "Pass",
+                    "notes": "HTTP sample seed; table rows in HTML; table rows in HTML"
+                },
+                {
+                    "step": "error_log",
+                    "status": "Pass",
+                    "notes": "0 errors"
+                }
+            ]
+        }
+    ]
+}
