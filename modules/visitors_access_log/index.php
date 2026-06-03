@@ -424,13 +424,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             <td><input type="text" name="pre_approved_by" form="quick-add-form" class="form-control form-control-sm" placeholder="Approved By"></td>
                             <td><input type="text" name="room_opened_by" form="quick-add-form" class="form-control form-control-sm" placeholder="Opened By"></td>
                             <td>
-                                <div style="display:flex; gap: 4px; align-items: center;">
-                                    <input type="text" name="date_time_in" form="quick-add-form" class="form-control form-control-sm" placeholder="Now" readonly style="flex: 1; min-width: 80px;">
-                                    <button type="submit" form="quick-add-form" class="btn btn-sm btn-success">IN</button>
-                                </div>
+                                <button type="submit" form="quick-add-form" class="btn btn-sm btn-success">IN</button>
                             </td>
                             <td>—</td>
-                            <td><button type="submit" form="quick-add-form" class="btn btn-sm btn-primary">Save</button></td>
+                            <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                <button type="submit" form="quick-add-form" class="btn btn-sm btn-primary">Save</button>
+                            </td>
                         </tr>
 
                         <?php if (empty($logs)): ?>
@@ -572,8 +571,8 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         </div>
     </div>
 </div>
-<?php include '../../includes/footer.php'; ?>
 
+<script src="../../js/script.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Inline editing for text fields
