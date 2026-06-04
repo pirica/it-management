@@ -5,4 +5,3 @@ up.bat
 up.ps1
 .cursor/
 .phpunit.result.cache
-php_server.log

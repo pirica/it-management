@@ -607,7 +607,6 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/index.html` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
-* **Login & Auth Guardrail:** Any changes to `login.php` (such as joining with `user_roles`) must be verified against the schema in `database.sql` to avoid breaking authentication for all users.
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
   * All **Create, Edit, Update, Delete, Copy, and Move** operations must keep the following tables fully synchronized at all times: `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links`.
   * **Hard-fail policy:** partial cross-table updates are not allowed. When a workflow touches multiple IDF-related tables, use transaction boundaries and rollback on any synchronization failure.
@@ -642,6 +641,10 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **CSRF:** Use `itm_require_post_csrf()` in handlers. Forms require:
   `<input type="hidden" name="csrf_token" value="<?= itm_get_csrf_token() ?>">`
 * **XSS:** Wrap all echoed user-provided strings in `sanitize($data)`.
+
+## 🛡️ Safety & Side Effects
+* **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `user_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
+* **UI Redundancy:** Modules with custom export layouts should disable the default `table-tools.js` buttons using the `data-itm-no-export-*` attributes.
 
 ---
 

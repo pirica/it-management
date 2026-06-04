@@ -90,11 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     $log_date = $_POST['log_date'] ?? date('Y-m-d');
     $server_id = (int)($_POST['server_id'] ?? 0);
 
-    if ($server_id <= 0) {
-        echo json_encode(['success' => false, 'message' => 'No server selected.']);
-        exit;
-    }
-
     // Whitelist fields to prevent SQL injection
     $allowed_fields = [
         'time_tape_inserted', 'time_returned_to_safe', 'print_name',
@@ -174,11 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
     // In this module, the user might click ⏱️ on a row that doesn't exist yet.
     $log_date = $_POST['log_date'] ?? date('Y-m-d');
     $server_id = (int)($_POST['server_id'] ?? 0);
-
-    if ($server_id <= 0) {
-        echo json_encode(['success' => false, 'message' => 'No server selected.']);
-        exit;
-    }
 
     if (!btl_is_today($log_date) && !$can_edit_restricted) {
         echo json_encode(['success' => false, 'message' => 'Only today\'s date can be updated.']);
@@ -262,17 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             // Update
             // Restricted fields check
             if (!$can_edit_restricted) {
-                // Fetch current values for restricted fields
-                $chkStmt = mysqli_prepare($conn, "SELECT time_tape_inserted, time_returned_to_safe, backup_status, tape_used_for_restore, ism_review FROM backup_tape_log WHERE id = ?");
+                // Fetch current values
+                $chkStmt = mysqli_prepare($conn, "SELECT tape_used_for_restore, ism_review FROM backup_tape_log WHERE id = ?");
                 mysqli_stmt_bind_param($chkStmt, 'i', $id);
                 mysqli_stmt_execute($chkStmt);
                 $chk = mysqli_fetch_assoc(mysqli_stmt_get_result($chkStmt));
                 mysqli_stmt_close($chkStmt);
-
-                // Anyone can only edit print_name and problem_details
-                $time_tape_inserted = $chk['time_tape_inserted'];
-                $time_returned_to_safe = $chk['time_returned_to_safe'];
-                $backup_status = $chk['backup_status'];
                 $tape_used_for_restore = $chk['tape_used_for_restore'];
                 $ism_review = $chk['ism_review'];
             }
@@ -333,7 +318,6 @@ foreach ($servers as $s) {
 }
 
 $no_servers_alert = empty($servers);
-$no_server_selected = ($selected_server_id <= 0);
 
 // View logic
 if ($crud_action === 'view' || $crud_action === 'edit') {
@@ -379,9 +363,9 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                 <div class="btl-grid-header">
                     <div style="display:flex; justify-content:space-between; align-items: flex-start;">
                         <div>
-                            <h1 style="margin:0;"><?= (int)$selected_year ?> Backup Tape Log File</h1>
+                            <h1 style="margin:0;"><?= $selected_year ?> Backup Tape Log File</h1>
                             <div style="margin-top:10px;">
-                                <strong>Month:</strong> <?= date('F', mktime(0, 0, 0, (int)$selected_month, 1)) ?><br>
+                                <strong>Month:</strong> <?= date('F', mktime(0, 0, 0, $selected_month, 1)) ?><br>
                                 <strong>Server:</strong> <?= sanitize($current_server_name) ?>
                             </div>
                         </div>
@@ -406,7 +390,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                             <label>Month</label>
                             <select name="month" class="form-control" onchange="this.form.submit()">
                                 <?php for ($m = 1; $m <= 12; $m++): ?>
-                                    <option value="<?= $m ?>" <?= $m == $selected_month ? 'selected' : '' ?>><?= date('F', mktime(0, 0, 0, (int)$m, 1)) ?></option>
+                                    <option value="<?= $m ?>" <?= $m == $selected_month ? 'selected' : '' ?>><?= date('F', mktime(0, 0, 0, $m, 1)) ?></option>
                                 <?php endfor; ?>
                             </select>
                         </div>
@@ -427,7 +411,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                     </div>
                 </div>
 
-                <div class="card" style="overflow:auto; padding:0;" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
+                <div class="card" style="overflow:auto; padding:0;">
                     <table class="table btl-table" id="btl-grid-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
@@ -456,20 +440,16 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                                 $isSunday = (date('w', strtotime($date)) == 0);
                                 $rowClass = $isToday ? 'btl-today' : '';
                                 $rowId = $log['id'] ?? 0;
-                                $canEditRow = ($isToday || $can_edit_restricted) && !$no_server_selected;
-                                // Everyone non Admin/IT only today's records
-                                // Anyone can edit Print Name | Detail any problems (today's records)
-                                $canEditBasic = $isToday && !$no_server_selected;
-                                $canEditAll = $can_edit_restricted && !$no_server_selected;
+                                $canEditRow = ($isToday || $can_edit_restricted);
                             ?>
                             <tr class="<?= $rowClass ?>" data-date="<?= $date ?>" data-id="<?= $rowId ?>">
                                 <td class="btl-readonly" style="font-weight:bold;"><?= btl_format_date($date) ?></td>
                                 <td class="btl-readonly" <?= $isSunday ? 'style="background-color: #ffff00 !important; color: #000 !important;"' : '' ?>><?= date('l', strtotime($date)) ?></td>
 
-                                <td class="<?= ($canEditAll && !$isFuture) ? 'inline-editable' : '' ?>" data-field="time_tape_inserted" data-type="datetime">
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="time_tape_inserted" data-type="datetime">
                                     <?php if (!$isFuture): ?>
                                         <span class="display-val"><?= btl_format_datetime($log['time_tape_inserted'] ?? null) ?></span>
-                                        <?php if ($canEditAll): ?>
+                                        <?php if ($canEditRow): ?>
                                             <input type="datetime-local" class="edit-input" style="display:none;" value="<?= !empty($log['time_tape_inserted']) ? date('Y-m-d\TH:i', strtotime($log['time_tape_inserted'])) : '' ?>">
                                             <button class="btn btn-sm btn-timestamp" data-type="inserted" title="Set current time">⏱️</button>
                                         <?php endif; ?>
@@ -478,10 +458,10 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= ($canEditAll && !$isFuture) ? 'inline-editable' : '' ?>" data-field="time_returned_to_safe" data-type="datetime">
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="time_returned_to_safe" data-type="datetime">
                                     <?php if (!$isFuture): ?>
                                         <span class="display-val"><?= btl_format_datetime($log['time_returned_to_safe'] ?? null) ?></span>
-                                        <?php if ($canEditAll): ?>
+                                        <?php if ($canEditRow): ?>
                                             <input type="datetime-local" class="edit-input" style="display:none;" value="<?= !empty($log['time_returned_to_safe']) ? date('Y-m-d\TH:i', strtotime($log['time_returned_to_safe'])) : '' ?>">
                                             <button class="btn btn-sm btn-timestamp" data-type="returned" title="Set current time">⏱️</button>
                                         <?php endif; ?>
@@ -490,10 +470,10 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= (($canEditAll || $canEditBasic) && !$isFuture) ? 'inline-editable' : '' ?>" data-field="print_name">
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="print_name">
                                     <?php if (!$isFuture): ?>
                                         <span class="display-val"><?= sanitize($log['print_name'] ?? '—') ?></span>
-                                        <?php if ($canEditAll || $canEditBasic): ?>
+                                        <?php if ($canEditRow): ?>
                                             <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($log['print_name'] ?? '') ?>">
                                         <?php endif; ?>
                                     <?php else: ?>
@@ -503,30 +483,30 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
                                 <td data-field="backup_status" data-type="radio" data-value="Full">
                                     <?php if (!$isFuture): ?>
-                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Full" <?= ($log['backup_status'] ?? 'Full') === 'Full' ? 'checked' : '' ?> <?= $canEditAll ? '' : 'disabled' ?>>
+                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Full" <?= ($log['backup_status'] ?? 'Full') === 'Full' ? 'checked' : '' ?> <?= $canEditRow ? '' : 'disabled' ?>>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>
                                 </td>
                                 <td data-field="backup_status" data-type="radio" data-value="Part">
                                     <?php if (!$isFuture): ?>
-                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Part" <?= ($log['backup_status'] ?? '') === 'Part' ? 'checked' : '' ?> <?= $canEditAll ? '' : 'disabled' ?>>
+                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Part" <?= ($log['backup_status'] ?? '') === 'Part' ? 'checked' : '' ?> <?= $canEditRow ? '' : 'disabled' ?>>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>
                                 </td>
                                 <td data-field="backup_status" data-type="radio" data-value="Fail">
                                     <?php if (!$isFuture): ?>
-                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Fail" <?= ($log['backup_status'] ?? '') === 'Fail' ? 'checked' : '' ?> <?= $canEditAll ? '' : 'disabled' ?>>
+                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Fail" <?= ($log['backup_status'] ?? '') === 'Fail' ? 'checked' : '' ?> <?= $canEditRow ? '' : 'disabled' ?>>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= (($canEditAll || $canEditBasic) && !$isFuture) ? 'inline-editable' : '' ?>" data-field="problem_details">
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="problem_details">
                                     <?php if (!$isFuture): ?>
                                         <span class="display-val"><?= sanitize($log['problem_details'] ?? '—') ?></span>
-                                        <?php if ($canEditAll || $canEditBasic): ?>
+                                        <?php if ($canEditRow): ?>
                                             <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($log['problem_details'] ?? '') ?>">
                                         <?php endif; ?>
                                     <?php else: ?>
@@ -536,7 +516,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
                                 <td data-field="tape_used_for_restore" data-type="checkbox">
                                     <?php if (!$isFuture): ?>
-                                        <input type="checkbox" class="status-checkbox" <?= ($log['tape_used_for_restore'] ?? 0) ? 'checked' : '' ?> <?= ($can_edit_restricted && !$no_server_selected) ? '' : 'disabled' ?>>
+                                        <input type="checkbox" class="status-checkbox" <?= ($log['tape_used_for_restore'] ?? 0) ? 'checked' : '' ?> <?= $can_edit_restricted ? '' : 'disabled' ?>>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>
@@ -544,7 +524,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
                                 <td data-field="ism_review" data-type="checkbox">
                                     <?php if (!$isFuture): ?>
-                                        <input type="checkbox" class="status-checkbox" <?= ($log['ism_review'] ?? 0) ? 'checked' : '' ?> <?= ($can_edit_restricted && !$no_server_selected) ? '' : 'disabled' ?>>
+                                        <input type="checkbox" class="status-checkbox" <?= ($log['ism_review'] ?? 0) ? 'checked' : '' ?> <?= $can_edit_restricted ? '' : 'disabled' ?>>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>
@@ -552,7 +532,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
-                                        <?php if (!$isFuture && !$no_server_selected): ?>
+                                        <?php if (!$isFuture): ?>
                                             <?php if ($rowId > 0): ?>
                                                 <a class="btn btn-sm" href="view.php?id=<?= $rowId ?>" title="View">🔎</a>
                                                 <?php if ($canEditRow): ?>
@@ -583,9 +563,6 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)):
                 $date = $data['log_date'] ?? ($_GET['log_date'] ?? date('Y-m-d'));
                 $s_id = $data['server_id'] ?? ($_GET['server_id'] ?? $selected_server_id);
-                $isToday = btl_is_today($date);
-                $canEditAll = $can_edit_restricted;
-                $canEditBasic = $isToday;
             ?>
                 <h1><?= $crud_action === 'create' ? 'New ' : 'Edit '; ?> Backup Tape Log</h1>
                 <div class="card">
@@ -607,31 +584,31 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
                         <div class="form-group">
                             <label>Time Tape Inserted</label>
-                            <input type="datetime-local" name="time_tape_inserted" class="form-control" value="<?= !empty($data['time_tape_inserted']) ? date('Y-m-d\TH:i', strtotime($data['time_tape_inserted'])) : '' ?>" <?= $canEditAll ? '' : 'readonly' ?>>
+                            <input type="datetime-local" name="time_tape_inserted" class="form-control" value="<?= !empty($data['time_tape_inserted']) ? date('Y-m-d\TH:i', strtotime($data['time_tape_inserted'])) : '' ?>">
                         </div>
 
                         <div class="form-group">
                             <label>Time Returned to Safe</label>
-                            <input type="datetime-local" name="time_returned_to_safe" class="form-control" value="<?= !empty($data['time_returned_to_safe']) ? date('Y-m-d\TH:i', strtotime($data['time_returned_to_safe'])) : '' ?>" <?= $canEditAll ? '' : 'readonly' ?>>
+                            <input type="datetime-local" name="time_returned_to_safe" class="form-control" value="<?= !empty($data['time_returned_to_safe']) ? date('Y-m-d\TH:i', strtotime($data['time_returned_to_safe'])) : '' ?>">
                         </div>
 
                         <div class="form-group">
                             <label>Print Name</label>
-                            <input type="text" name="print_name" class="form-control" value="<?= sanitize($data['print_name'] ?? '') ?>" required <?= ($canEditAll || $canEditBasic) ? '' : 'readonly' ?>>
+                            <input type="text" name="print_name" class="form-control" value="<?= sanitize($data['print_name'] ?? '') ?>" required>
                         </div>
 
                         <div class="form-group">
                             <label>Backup Status</label>
                             <div class="status-radio-group">
-                                <label><input type="radio" name="backup_status" value="Full" <?= ($data['backup_status'] ?? 'Full') === 'Full' ? 'checked' : '' ?> <?= $canEditAll ? '' : 'disabled' ?>> Full</label>
-                                <label><input type="radio" name="backup_status" value="Part" <?= ($data['backup_status'] ?? '') === 'Part' ? 'checked' : '' ?> <?= $canEditAll ? '' : 'disabled' ?>> Part</label>
-                                <label><input type="radio" name="backup_status" value="Fail" <?= ($data['backup_status'] ?? '') === 'Fail' ? 'checked' : '' ?> <?= $canEditAll ? '' : 'disabled' ?>> Fail</label>
+                                <label><input type="radio" name="backup_status" value="Full" <?= ($data['backup_status'] ?? 'Full') === 'Full' ? 'checked' : '' ?>> Full</label>
+                                <label><input type="radio" name="backup_status" value="Part" <?= ($data['backup_status'] ?? '') === 'Part' ? 'checked' : '' ?>> Part</label>
+                                <label><input type="radio" name="backup_status" value="Fail" <?= ($data['backup_status'] ?? '') === 'Fail' ? 'checked' : '' ?>> Fail</label>
                             </div>
                         </div>
 
                         <div class="form-group" style="grid-column: span 2;">
                             <label>Problem Details</label>
-                            <textarea name="problem_details" class="form-control" <?= ($canEditAll || $canEditBasic) ? '' : 'readonly' ?>><?= sanitize($data['problem_details'] ?? '') ?></textarea>
+                            <textarea name="problem_details" class="form-control"><?= sanitize($data['problem_details'] ?? '') ?></textarea>
                         </div>
 
                         <?php if ($can_edit_restricted): ?>
@@ -686,7 +663,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 <script src="../../js/script.js"></script>
 <script>
 <?php if ($no_servers_alert): ?>
-alert('No servers found');
+alert('No Server exist');
 <?php endif; ?>
 document.addEventListener('DOMContentLoaded', function() {
     // Inline editing
@@ -821,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function exportBTL(format) {
     if (format === 'pdf') {
         const originalTitle = document.title;
-        document.title = '<?= (int)$selected_year ?> Backup Tape Log File - <?= date('F', mktime(0,0,0,(int)$selected_month,1)) ?>';
+        document.title = '<?= $selected_year ?> Backup Tape Log File - <?= date('F', mktime(0,0,0,$selected_month,1)) ?>';
         window.print();
         document.title = originalTitle;
         return;
@@ -845,8 +822,8 @@ function doXlsxExport() {
 
     // Custom data construction to match requested layout
     const data = [
-        ['<?= (int)$selected_year ?> Backup Tape Log File'],
-        ['Month: <?= date('F', mktime(0,0,0,(int)$selected_month,1)) ?>', '', '', '', 'Company name:', '<?= sanitize($company_info['company'] ?? '') ?>'],
+        ['<?= $selected_year ?> Backup Tape Log File'],
+        ['Month: <?= date('F', mktime(0,0,0,$selected_month,1)) ?>', '', '', '', 'Company name:', '<?= sanitize($company_info['company'] ?? '') ?>'],
         ['Server: <?= sanitize($current_server_name) ?>', '', '', '', 'Unit No:', '<?= sanitize($company_info['unit_no'] ?? '—') ?>'],
         [],
         ['Date to be backed up', 'Tape to be used', 'Time Tape inserted', 'Time Returned to Safe', 'Print Name', 'Full', 'Part', 'Fail', 'Detail any problems', 'Tape used for restore', 'ISM review']
@@ -884,7 +861,7 @@ function doXlsxExport() {
 
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, "Backup Log");
-    XLSX.writeFile(wb, `Backup_Tape_Log_<?= (int)$selected_year ?>_<?= (int)$selected_month ?>.xlsx`);
+    XLSX.writeFile(wb, `Backup_Tape_Log_<?= $selected_year ?>_<?= $selected_month ?>.xlsx`);
 }
 </script>
 </body>
