@@ -450,7 +450,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
         .comment-box .label-row { font-weight: 600; border-bottom: 1px solid #d0d7de; padding-bottom: 3px; margin-bottom: 3px; color: #0969da; }
         .controls { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #d0d7de; }
         .layer-controls { margin-left: auto; display: flex; gap: 10px; align-items: center; border-left: 1px solid #d0d7de; padding-left: 15px; }
-        .grid-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; background-image: radial-gradient(#d0d7de 1px, transparent 1px); background-size: 25px 25px; display: none; opacity: 0.5; }
+        .grid-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; background-image: linear-gradient(#d0d7de 1px, transparent 1px), linear-gradient(90deg, #d0d7de 1px, transparent 1px); background-size: 25px 25px; display: none; opacity: 0.8; }
         .show-grid .grid-layer { display: block; }
         .point.is-filtered { opacity: 0.1 !important; pointer-events: none !important; }
         .comment-box.is-filtered { display: none !important; }
