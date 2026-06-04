@@ -6000,7 +6000,7 @@ CREATE TABLE `backup_tape_log` (
   `log_date` date NOT NULL,
   `tape_to_be_used` varchar(50) NOT NULL,
   `time_tape_inserted` datetime DEFAULT NULL,
-  `time_returned_to_safe` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+  `time_returned_to_safe` datetime DEFAULT NULL,
   `print_name` varchar(255) NOT NULL DEFAULT '',
   `backup_status` ENUM('Full', 'Part', 'Fail') NOT NULL DEFAULT 'Full',
   `problem_details` text,
