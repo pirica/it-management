@@ -263,17 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $sql = "UPDATE floor_designer_points SET point_type_id=?, x=?, y=?, comment_x=?, comment_y=?, label=?, rotation=?, wlan_address=?, ip_address=?, mac_address=?, patch_port=?, switch_id=?, switch_port_id=?, cable_color_id=? WHERE id=? AND company_id=?";
             $stmt = mysqli_prepare($conn, $sql);
             mysqli_stmt_bind_param($stmt, 'iddddsdssssiiiii', $point_type_id, $x, $y, $comment_x, $comment_y, $label, $rotation, $wlan_address, $ip_address, $mac_address, $patch_port, $switch_id, $switch_port_id, $cable_color_id, $point_id, $company_id);
-
-$stmt = mysqli_prepare($conn, $sql);
-
-mysqli_stmt_bind_param(
-    $stmt,
-    'iddddsdssssiiii',
-    $point_type_id, $x, $y, $comment_x, $comment_y, $label, $rotation,
-    $wlan_address, $ip_address, $mac_address, $patch_port,
-    $switch_id, $switch_port_id, $cable_color_id,
-    $point_id, $company_id
-);
+        );
 
         
         
@@ -281,19 +271,7 @@ mysqli_stmt_bind_param(
             $sql = "INSERT INTO floor_designer_points (company_id, floor_designer_id, point_type_id, x, y, comment_x, comment_y, label, rotation, wlan_address, ip_address, mac_address, patch_port, switch_id, switch_port_id, cable_color_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conn, $sql);
             mysqli_stmt_bind_param($stmt, 'iiiddddsdssssiii', $company_id, $floor_designer_id, $point_type_id, $x, $y, $comment_x, $comment_y, $label, $rotation, $wlan_address, $ip_address, $mac_address, $patch_port, $switch_id, $switch_port_id, $cable_color_id);
-
-$stmt = mysqli_prepare($conn, $sql);
-
-mysqli_stmt_bind_param(
-    $stmt,
-    'iiidddsdssssiii',
-    $company_id, $floor_designer_id, $point_type_id,
-    $x, $y, $comment_x, $comment_y,
-    $label, $rotation,
-    $wlan_address, $ip_address, $mac_address, $patch_port,
-    $switch_id, $switch_port_id, $cable_color_id
-);
-
+        );
         
         
         
