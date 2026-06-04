@@ -95,7 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Search for an active user by email or username
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id, password, email, username FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
+            'SELECT u.id, u.password, u.email, u.username, ur.name AS role_name
+             FROM users u
+             LEFT JOIN user_roles ur ON u.role_id = ur.id
+             WHERE u.active = 1 AND (LOWER(u.email) = LOWER(?) OR LOWER(u.username) = LOWER(?)) LIMIT 1'
         );
 
         if ($stmt) {
@@ -153,7 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = (int)$user['id'];
             $_SESSION['user_id'] = $userId;
             $_SESSION['username'] = (string)($user['username'] ?? 'User');
-            
+            $_SESSION['role_name'] = (string)($user['role_name'] ?? '');
+
             // Clear any previously stored company context to ensure a fresh selection
             unset($_SESSION['company_id'], $_SESSION['company_name']);
 
