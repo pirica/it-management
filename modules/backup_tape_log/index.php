@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     }
 
     if ($id > 0) {
-        // For existing records, we enforce "Today only" restriction
+        // For existing records, we enforce "Today only" restriction unless Admin/IT
         $stmt = mysqli_prepare($conn, "SELECT log_date FROM backup_tape_log WHERE id = ? AND company_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
@@ -113,8 +113,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
             exit;
         }
 
-        if (!btl_is_today($row['log_date'])) {
+        if (!btl_is_today($row['log_date']) && !$can_edit_restricted) {
             echo json_encode(['success' => false, 'message' => 'Only today\'s records can be edited.']);
+            exit;
+        }
+    } else {
+        // For new records, check if it's today or if user is Admin/IT
+        if (!btl_is_today($log_date) && !$can_edit_restricted) {
+            echo json_encode(['success' => false, 'message' => 'Only today\'s records can be created.']);
             exit;
         }
     }
@@ -164,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
     $log_date = $_POST['log_date'] ?? date('Y-m-d');
     $server_id = (int)($_POST['server_id'] ?? 0);
 
-    if (!btl_is_today($log_date)) {
+    if (!btl_is_today($log_date) && !$can_edit_restricted) {
         echo json_encode(['success' => false, 'message' => 'Only today\'s date can be updated.']);
         exit;
     }
@@ -203,7 +209,7 @@ if ($crud_action === 'delete') {
     $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
     mysqli_stmt_close($stmt);
 
-    if ($row && btl_is_today($row['log_date'])) {
+    if ($row && (btl_is_today($row['log_date']) || $can_edit_restricted)) {
         $stmt = mysqli_prepare($conn, "DELETE FROM backup_tape_log WHERE id = ? AND company_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
@@ -233,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     if ($server_id <= 0 || empty($log_date)) {
         $_SESSION['crud_error'] = 'Server and date are required.';
-    } else if ($id > 0 && !btl_is_today($log_date)) {
+    } else if ($id > 0 && !btl_is_today($log_date) && !$can_edit_restricted) {
         $_SESSION['crud_error'] = 'Only today\'s records can be edited.';
     } else {
         $tape_to_be_used = date('l', strtotime($log_date));
@@ -311,6 +317,8 @@ foreach ($servers as $s) {
     }
 }
 
+$no_servers_alert = empty($servers);
+
 // View logic
 if ($crud_action === 'view' || $crud_action === 'edit') {
     $editId = (int)($_GET['id'] ?? 0);
@@ -355,14 +363,14 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                 <div class="btl-grid-header">
                     <div style="display:flex; justify-content:space-between; align-items: flex-start;">
                         <div>
-                            <h1 style="margin:0;"><?= $selected_year ?> Hotel Backup Tape Log File</h1>
+                            <h1 style="margin:0;"><?= $selected_year ?> Backup Tape Log File</h1>
                             <div style="margin-top:10px;">
                                 <strong>Month:</strong> <?= date('F', mktime(0, 0, 0, $selected_month, 1)) ?><br>
                                 <strong>Server:</strong> <?= sanitize($current_server_name) ?>
                             </div>
                         </div>
                         <div style="text-align:right;">
-                            <strong>Hotel name:</strong> <span style="color:red;"><?= sanitize($company_info['company'] ?? '') ?></span><br>
+                            <strong>Company name:</strong> <span style="color:red;"><?= sanitize($company_info['company'] ?? '') ?></span><br>
                             <strong>Unit No:</strong> <span style="color:red;"><?= sanitize($company_info['unit_no'] ?? '—') ?></span>
                         </div>
                     </div>
@@ -404,7 +412,7 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                 </div>
 
                 <div class="card" style="overflow:auto; padding:0;">
-                    <table class="table btl-table" id="btl-grid-table">
+                    <table class="table btl-table" id="btl-grid-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th rowspan="2">Date to be<br>backed up</th>
@@ -428,95 +436,120 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                             <?php foreach ($month_days as $date):
                                 $log = $logs[$date] ?? null;
                                 $isToday = btl_is_today($date);
+                                $isFuture = (strtotime($date) > strtotime(date('Y-m-d')));
                                 $isSunday = (date('w', strtotime($date)) == 0);
                                 $rowClass = $isToday ? 'btl-today' : '';
                                 $rowId = $log['id'] ?? 0;
+                                $canEditRow = ($isToday || $can_edit_restricted);
                             ?>
                             <tr class="<?= $rowClass ?>" data-date="<?= $date ?>" data-id="<?= $rowId ?>">
                                 <td class="btl-readonly" style="font-weight:bold;"><?= btl_format_date($date) ?></td>
                                 <td class="btl-readonly" <?= $isSunday ? 'style="background-color: #ffff00 !important; color: #000 !important;"' : '' ?>><?= date('l', strtotime($date)) ?></td>
 
-                                <td class="inline-editable" data-field="time_tape_inserted" data-type="datetime">
-                                    <span class="display-val"><?= btl_format_datetime($log['time_tape_inserted'] ?? null) ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="datetime-local" class="edit-input" style="display:none;" value="<?= !empty($log['time_tape_inserted']) ? date('Y-m-d\TH:i', strtotime($log['time_tape_inserted'])) : '' ?>">
-                                        <button class="btn btn-sm btn-timestamp" data-type="inserted" title="Set current time">⏱️</button>
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="time_tape_inserted" data-type="datetime">
+                                    <?php if (!$isFuture): ?>
+                                        <span class="display-val"><?= btl_format_datetime($log['time_tape_inserted'] ?? null) ?></span>
+                                        <?php if ($canEditRow): ?>
+                                            <input type="datetime-local" class="edit-input" style="display:none;" value="<?= !empty($log['time_tape_inserted']) ? date('Y-m-d\TH:i', strtotime($log['time_tape_inserted'])) : '' ?>">
+                                            <button class="btn btn-sm btn-timestamp" data-type="inserted" title="Set current time">⏱️</button>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="inline-editable" data-field="time_returned_to_safe" data-type="datetime">
-                                    <span class="display-val"><?= btl_format_datetime($log['time_returned_to_safe'] ?? null) ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="datetime-local" class="edit-input" style="display:none;" value="<?= !empty($log['time_returned_to_safe']) ? date('Y-m-d\TH:i', strtotime($log['time_returned_to_safe'])) : '' ?>">
-                                        <button class="btn btn-sm btn-timestamp" data-type="returned" title="Set current time">⏱️</button>
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="time_returned_to_safe" data-type="datetime">
+                                    <?php if (!$isFuture): ?>
+                                        <span class="display-val"><?= btl_format_datetime($log['time_returned_to_safe'] ?? null) ?></span>
+                                        <?php if ($canEditRow): ?>
+                                            <input type="datetime-local" class="edit-input" style="display:none;" value="<?= !empty($log['time_returned_to_safe']) ? date('Y-m-d\TH:i', strtotime($log['time_returned_to_safe'])) : '' ?>">
+                                            <button class="btn btn-sm btn-timestamp" data-type="returned" title="Set current time">⏱️</button>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= ($isToday || $rowId === 0) ? 'inline-editable' : '' ?>" data-field="print_name">
-                                    <span class="display-val"><?= sanitize($log['print_name'] ?? '—') ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($log['print_name'] ?? '') ?>">
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="print_name">
+                                    <?php if (!$isFuture): ?>
+                                        <span class="display-val"><?= sanitize($log['print_name'] ?? '—') ?></span>
+                                        <?php if ($canEditRow): ?>
+                                            <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($log['print_name'] ?? '') ?>">
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= ($isToday || $rowId === 0) ? 'inline-editable' : '' ?>" data-field="backup_status" data-type="radio" data-value="Full">
-                                    <span class="display-val"><?= ($log['backup_status'] ?? ($isToday || $rowId === 0 ? 'Full' : '')) === 'Full' ? 'x' : '' ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="radio" name="st_<?= $date ?>" class="edit-input" style="display:none;" value="Full" <?= ($log['backup_status'] ?? 'Full') === 'Full' ? 'checked' : '' ?>>
+                                <td data-field="backup_status" data-type="radio" data-value="Full">
+                                    <?php if (!$isFuture): ?>
+                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Full" <?= ($log['backup_status'] ?? 'Full') === 'Full' ? 'checked' : '' ?> <?= $canEditRow ? '' : 'disabled' ?>>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
-                                <td class="<?= ($isToday || $rowId === 0) ? 'inline-editable' : '' ?>" data-field="backup_status" data-type="radio" data-value="Part">
-                                    <span class="display-val"><?= ($log['backup_status'] ?? '') === 'Part' ? 'x' : '' ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="radio" name="st_<?= $date ?>" class="edit-input" style="display:none;" value="Part" <?= ($log['backup_status'] ?? '') === 'Part' ? 'checked' : '' ?>>
+                                <td data-field="backup_status" data-type="radio" data-value="Part">
+                                    <?php if (!$isFuture): ?>
+                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Part" <?= ($log['backup_status'] ?? '') === 'Part' ? 'checked' : '' ?> <?= $canEditRow ? '' : 'disabled' ?>>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
-                                <td class="<?= ($isToday || $rowId === 0) ? 'inline-editable' : '' ?>" data-field="backup_status" data-type="radio" data-value="Fail">
-                                    <span class="display-val"><?= ($log['backup_status'] ?? '') === 'Fail' ? 'x' : '' ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="radio" name="st_<?= $date ?>" class="edit-input" style="display:none;" value="Fail" <?= ($log['backup_status'] ?? '') === 'Fail' ? 'checked' : '' ?>>
-                                    <?php endif; ?>
-                                </td>
-
-                                <td class="<?= ($isToday || $rowId === 0) ? 'inline-editable' : '' ?>" data-field="problem_details">
-                                    <span class="display-val"><?= sanitize($log['problem_details'] ?? '—') ?></span>
-                                    <?php if ($isToday || $rowId === 0): ?>
-                                        <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($log['problem_details'] ?? '') ?>">
+                                <td data-field="backup_status" data-type="radio" data-value="Fail">
+                                    <?php if (!$isFuture): ?>
+                                        <input type="radio" name="st_<?= $date ?>" class="status-radio" value="Fail" <?= ($log['backup_status'] ?? '') === 'Fail' ? 'checked' : '' ?> <?= $canEditRow ? '' : 'disabled' ?>>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= ($isToday || $rowId === 0) && $can_edit_restricted ? 'inline-editable' : '' ?>" data-field="tape_used_for_restore" data-type="checkbox">
-                                    <span class="display-val"><?= ($log['tape_used_for_restore'] ?? 0) ? 'x' : '' ?></span>
-                                    <?php if (($isToday || $rowId === 0) && $can_edit_restricted): ?>
-                                        <input type="checkbox" class="edit-input" style="display:none;" <?= ($log['tape_used_for_restore'] ?? 0) ? 'checked' : '' ?>>
+                                <td class="<?= ($canEditRow && !$isFuture) ? 'inline-editable' : '' ?>" data-field="problem_details">
+                                    <?php if (!$isFuture): ?>
+                                        <span class="display-val"><?= sanitize($log['problem_details'] ?? '—') ?></span>
+                                        <?php if ($canEditRow): ?>
+                                            <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($log['problem_details'] ?? '') ?>">
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= ($isToday || $rowId === 0) && $can_edit_restricted ? 'inline-editable' : '' ?>" data-field="ism_review" data-type="checkbox">
-                                    <span class="display-val"><?= ($log['ism_review'] ?? 0) ? 'x' : '' ?></span>
-                                    <?php if (($isToday || $rowId === 0) && $can_edit_restricted): ?>
-                                        <input type="checkbox" class="edit-input" style="display:none;" <?= ($log['ism_review'] ?? 0) ? 'checked' : '' ?>>
+                                <td data-field="tape_used_for_restore" data-type="checkbox">
+                                    <?php if (!$isFuture): ?>
+                                        <input type="checkbox" class="status-checkbox" <?= ($log['tape_used_for_restore'] ?? 0) ? 'checked' : '' ?> <?= $can_edit_restricted ? '' : 'disabled' ?>>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
+
+                                <td data-field="ism_review" data-type="checkbox">
+                                    <?php if (!$isFuture): ?>
+                                        <input type="checkbox" class="status-checkbox" <?= ($log['ism_review'] ?? 0) ? 'checked' : '' ?> <?= $can_edit_restricted ? '' : 'disabled' ?>>
+                                    <?php else: ?>
+                                        —
                                     <?php endif; ?>
                                 </td>
 
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
-                                        <?php if ($rowId > 0): ?>
-                                            <a class="btn btn-sm" href="view.php?id=<?= $rowId ?>" title="View">🔎</a>
-                                            <?php if ($isToday): ?>
-                                                <a class="btn btn-sm" href="edit.php?id=<?= $rowId ?>" title="Edit">✏️</a>
-                                                <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this entry?');">
-                                                    <input type="hidden" name="id" value="<?= $rowId ?>">
-                                                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                                    <input type="hidden" name="server_id" value="<?= $selected_server_id ?>">
-                                                    <input type="hidden" name="month" value="<?= $selected_month ?>">
-                                                    <input type="hidden" name="year" value="<?= $selected_year ?>">
-                                                    <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                                </form>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <?php if ($isToday): ?>
-                                                <a class="btn btn-sm btn-primary" href="create.php?server_id=<?= $selected_server_id ?>&log_date=<?= $date ?>" title="Create">➕</a>
+                                        <?php if (!$isFuture): ?>
+                                            <?php if ($rowId > 0): ?>
+                                                <a class="btn btn-sm" href="view.php?id=<?= $rowId ?>" title="View">🔎</a>
+                                                <?php if ($canEditRow): ?>
+                                                    <a class="btn btn-sm" href="edit.php?id=<?= $rowId ?>" title="Edit">✏️</a>
+                                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this entry?');">
+                                                        <input type="hidden" name="id" value="<?= $rowId ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                                        <input type="hidden" name="server_id" value="<?= $selected_server_id ?>">
+                                                        <input type="hidden" name="month" value="<?= $selected_month ?>">
+                                                        <input type="hidden" name="year" value="<?= $selected_year ?>">
+                                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <?php if ($canEditRow): ?>
+                                                    <a class="btn btn-sm btn-primary" href="create.php?server_id=<?= $selected_server_id ?>&log_date=<?= $date ?>" title="Create">➕</a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
@@ -629,6 +662,9 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
 <script src="../../js/script.js"></script>
 <script>
+<?php if ($no_servers_alert): ?>
+alert('No Server exist');
+<?php endif; ?>
 document.addEventListener('DOMContentLoaded', function() {
     // Inline editing
     document.querySelectorAll('.inline-editable').forEach(cell => {
@@ -655,20 +691,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function saveEdit(cell) {
+    function saveEdit(cell, manualValue = null) {
         const tr = cell.closest('tr');
         const id = tr.dataset.id;
         const date = tr.dataset.date;
         const field = cell.dataset.field;
         const type = cell.dataset.type;
-        let value;
+        let value = manualValue;
 
-        if (type === 'checkbox') {
-            value = cell.querySelector('input').checked ? '1' : '0';
-        } else if (type === 'radio') {
-            value = cell.dataset.value;
-        } else {
-            value = cell.querySelector('.edit-input').value.trim();
+        if (value === null) {
+            if (type === 'checkbox') {
+                value = cell.querySelector('input').checked ? '1' : '0';
+            } else if (type === 'radio') {
+                value = cell.dataset.value;
+            } else {
+                const input = cell.querySelector('.edit-input');
+                if (!input) return;
+                value = input.value.trim();
+            }
         }
 
         const formData = new FormData();
@@ -702,6 +742,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (input) input.style.display = 'none';
         });
     }
+
+    // Status radio and checkbox buttons
+    document.querySelectorAll('.status-radio, .status-checkbox').forEach(input => {
+        input.addEventListener('change', function() {
+            const cell = this.closest('td');
+            const field = cell.dataset.field;
+            const type = cell.dataset.type;
+            let value;
+            if (type === 'checkbox') {
+                value = this.checked ? '1' : '0';
+            } else {
+                value = this.value;
+            }
+            saveEdit(cell, value);
+        });
+    });
 
     // Timestamp buttons
     document.querySelectorAll('.btn-timestamp').forEach(btn => {
@@ -742,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function exportBTL(format) {
     if (format === 'pdf') {
         const originalTitle = document.title;
-        document.title = '<?= $selected_year ?> Hotel Backup Tape Log File - <?= date('F', mktime(0,0,0,$selected_month,1)) ?>';
+        document.title = '<?= $selected_year ?> Backup Tape Log File - <?= date('F', mktime(0,0,0,$selected_month,1)) ?>';
         window.print();
         document.title = originalTitle;
         return;
@@ -766,8 +822,8 @@ function doXlsxExport() {
 
     // Custom data construction to match requested layout
     const data = [
-        ['<?= $selected_year ?> Hotel Backup Tape Log File'],
-        ['Month: <?= date('F', mktime(0,0,0,$selected_month,1)) ?>', '', '', '', 'Hotel name:', '<?= sanitize($company_info['company'] ?? '') ?>'],
+        ['<?= $selected_year ?> Backup Tape Log File'],
+        ['Month: <?= date('F', mktime(0,0,0,$selected_month,1)) ?>', '', '', '', 'Company name:', '<?= sanitize($company_info['company'] ?? '') ?>'],
         ['Server: <?= sanitize($current_server_name) ?>', '', '', '', 'Unit No:', '<?= sanitize($company_info['unit_no'] ?? '—') ?>'],
         [],
         ['Date to be backed up', 'Tape to be used', 'Time Tape inserted', 'Time Returned to Safe', 'Print Name', 'Full', 'Part', 'Fail', 'Detail any problems', 'Tape used for restore', 'ISM review']
@@ -782,23 +838,23 @@ function doXlsxExport() {
         // Tape
         rowData.push(cells[1].textContent.trim());
         // Inserted
-        rowData.push(cells[2].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[2].querySelector('.display-val')?.textContent.trim() || (cells[2].textContent.trim() === '—' ? '' : cells[2].textContent.trim()));
         // Returned
-        rowData.push(cells[3].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[3].querySelector('.display-val')?.textContent.trim() || (cells[3].textContent.trim() === '—' ? '' : cells[3].textContent.trim()));
         // Print Name
-        rowData.push(cells[4].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[4].querySelector('.display-val')?.textContent.trim() || (cells[4].textContent.trim() === '—' ? '' : cells[4].textContent.trim()));
         // Status Full
-        rowData.push(cells[5].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[5].querySelector('input[type="radio"]')?.checked ? 'x' : '');
         // Status Part
-        rowData.push(cells[6].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[6].querySelector('input[type="radio"]')?.checked ? 'x' : '');
         // Status Fail
-        rowData.push(cells[7].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[7].querySelector('input[type="radio"]')?.checked ? 'x' : '');
         // Problems
-        rowData.push(cells[8].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[8].querySelector('.display-val')?.textContent.trim() || '');
         // Restore
-        rowData.push(cells[9].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[9].querySelector('input[type="checkbox"]')?.checked ? 'x' : '');
         // ISM
-        rowData.push(cells[10].querySelector('.display-val').textContent.trim());
+        rowData.push(cells[10].querySelector('input[type="checkbox"]')?.checked ? 'x' : '');
 
         data.push(rowData);
     });
