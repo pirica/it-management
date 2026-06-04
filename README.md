@@ -10,10 +10,10 @@
 - ✅ Printer and workstation tracking
 - ✅ Ticket management system
 - ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
-- ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png)
+- ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
 - ✅ API
-
+<!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 
 <p align="center"><strong>Login</strong> — sign in with username and password; CSRF-protected form with light/dark toggle.</p>
