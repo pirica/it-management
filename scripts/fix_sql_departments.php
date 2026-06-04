@@ -64,7 +64,7 @@ function parseValues($valuesPart) {
 $newLines = [];
 $fixedCount = 0;
 foreach ($lines as $line) {
-    if (preg_match('/^INSERT INTO `departments` \(`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `deck`, `extension`, `active`, `created_at`\) VALUES \((.+)\);$/', trim($line), $matches)) {
+    if (preg_match('/^INSERT INTO `departments` \(`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`\) VALUES \((.+)\);$/', trim($line), $matches)) {
         $valuesPart = $matches[1];
         $values = parseValues($valuesPart);
         
@@ -77,12 +77,12 @@ foreach ($lines as $line) {
                 $values[4], // description
                 $values[5], // email
                 $values[6], // phone
-                $values[7], // deck
+                $values[7], // dect
                 $values[8], // extension
                 $values[count($values) - 2], // active
                 $values[count($values) - 1]  // created_at
             ];
-            $line = "INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `deck`, `extension`, `active`, `created_at`) VALUES (" . implode(", ", $newValues) . ");";
+            $line = "INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (" . implode(", ", $newValues) . ");";
             $fixedCount++;
         }
     }

@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 itm_require_post_csrf();
 $type = $_POST['type']; $id = (int)$_POST['id']; $field = $_POST['field']; $value = $_POST['value'];
 $table = ($type === 'dept') ? 'departments' : 'employees';
-$allowed = ['email', 'deck', 'phone', 'work_email', 'external_number'];
+$allowed = ['email', 'dect', 'phone', 'work_email', 'external_number'];
 if (!in_array($field, $allowed)) die(json_encode(['ok' => false, 'error' => 'Forbidden']));
 $sql = "UPDATE `{$table}` SET `{$field}` = ? WHERE id = ? AND company_id = ?";
 $stmt = mysqli_prepare($conn, $sql);

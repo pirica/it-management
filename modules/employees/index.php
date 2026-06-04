@@ -72,7 +72,8 @@ function emp_canonical_header($header) {
         'mobile phone' => 'mobile_phone',
         'external number' => 'external_number',
         'work phone' => 'external_number',
-        'deck' => 'deck',
+        'dect' => 'dect',
+        'deck' => 'dect',
         'extension' => 'extension',
         'on contacts' => 'on_contacts',
         'employee status' => 'raw_status_code',
@@ -375,7 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','deck','extension','employee_code','external_id','username','display_name','job_code','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
@@ -447,7 +448,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_phone','personal_email','mobile_phone','external_number','deck','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','workstation_mode_id','assignment_type_id','comments'];
+$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','workstation_mode_id','assignment_type_id','comments'];
 $hiddenColumns = ['company_id','employee_code','location','location_id','user_id','external_number'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));

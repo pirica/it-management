@@ -70,7 +70,7 @@ $profileFields = [
     'Mobile Phone' => (string)($employee['mobile_phone'] ?? ''),
     'External Number' => (string)($employee['external_number'] ?? ''),
     'Extension' => (string)($employee['extension'] ?? ''),
-    'Deck' => (string)($employee['deck'] ?? ''),
+    'Dect' => (string)($employee['dect'] ?? ''),
     'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '✅' : '❌'),
     'External ID' => (string)($employee['external_id'] ?? ''),
     'Username' => (string)($employee['username'] ?? ''),

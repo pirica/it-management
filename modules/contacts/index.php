@@ -33,20 +33,20 @@ mysqli_stmt_close($empStmt);
             <h1>Contacts 📓</h1>
             <div class="card">
                 <table class="table">
-                    <thead><tr><th>Name / Position</th><th>Email</th><th>Deck</th><th>Phone</th></tr></thead>
+                    <thead><tr><th>Name / Position</th><th>Email</th><th>Dect</th><th>Phone</th></tr></thead>
                     <tbody>
                         <?php foreach ($departments as $dept): $did = (int)$dept['id']; ?>
                             <tr class="dept-header">
                                 <td><?php echo sanitize($dept['name']); ?></td>
                                 <td><span class="inline-edit" data-type="dept" data-id="<?php echo $did; ?>" data-field="email"><?php echo sanitize($dept['email'] ?: '—'); ?></span></td>
-                                <td><span class="inline-edit" data-type="dept" data-id="<?php echo $did; ?>" data-field="deck"><?php echo sanitize($dept['deck'] ?: '—'); ?></span></td>
+                                <td><span class="inline-edit" data-type="dept" data-id="<?php echo $did; ?>" data-field="dect"><?php echo sanitize($dept['dect'] ?: '—'); ?></span></td>
                                 <td><span class="inline-edit" data-type="dept" data-id="<?php echo $did; ?>" data-field="phone"><?php echo sanitize($dept['phone'] ?: '—'); ?></span></td>
                             </tr>
                             <?php if (isset($employeesByDept[$did])): foreach ($employeesByDept[$did] as $emp): ?>
                                 <tr>
                                     <td><strong><?php echo sanitize($emp['first_name'].' '.$emp['last_name']); ?></strong><br><small><?php echo sanitize($emp['position_title'] ?: '—'); ?></small></td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="work_email"><?php echo sanitize($emp['work_email'] ?: '—'); ?></span></td>
-                                    <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="deck"><?php echo sanitize($emp['deck'] ?: '—'); ?></span></td>
+                                    <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="dect"><?php echo sanitize($emp['dect'] ?: '—'); ?></span></td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="external_number"><?php echo sanitize($emp['external_number'] ?: '—'); ?></span></td>
                                 </tr>
                             <?php endforeach; endif; ?>
