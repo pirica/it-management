@@ -2467,6 +2467,11 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUE
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('3', '8', 'SFP', '2026-01-01 00:00:01');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '11', 'SFP', '2026-01-01 00:00:01');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '14', 'SFP', '2026-01-01 00:00:01');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('1', '3', 'Door', '2026-01-01 00:00:01');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('2', '6', 'Door', '2026-01-01 00:00:01');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('3', '9', 'Door', '2026-01-01 00:00:01');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '12', 'Door', '2026-01-01 00:00:01');
+INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '15', 'Door', '2026-01-01 00:00:01');
 ALTER TABLE `idf_ports`
   ADD CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`);
 -- Table structure for `switch_ports`
@@ -6063,6 +6068,9 @@ CREATE TABLE `floor_designer` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `floor_designer_points`
+-- Manual migration:
+-- ALTER TABLE `floor_designer_points` ADD COLUMN `rotation` decimal(5,2) NOT NULL DEFAULT '0.00' AFTER `label`;
+-- INSERT INTO `switch_port_types` (`company_id`, `type`) VALUES (1, 'Door'), (2, 'Door'), (3, 'Door'), (4, 'Door'), (5, 'Door');
 DROP TABLE IF EXISTS `floor_designer_points`;
 CREATE TABLE `floor_designer_points` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -6081,6 +6089,7 @@ CREATE TABLE `floor_designer_points` (
   `switch_port_id` int DEFAULT NULL COMMENT 'FK to switch_ports',
   `cable_color_id` int DEFAULT NULL COMMENT 'FK to cable_colors',
   `label` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `rotation` decimal(5,2) NOT NULL DEFAULT '0.00',
   `active` tinyint NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -6127,20 +6136,20 @@ DELIMITER //
 CREATE TRIGGER `trg_floor_designer_points_audit_insert` AFTER INSERT ON `floor_designer_points` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_designer_points', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('floor_designer_id', NEW.`floor_designer_id`, 'point_type_id', NEW.`point_type_id`, 'x', NEW.`x`, 'y', NEW.`y`, 'label', NEW.`label`, 'active', NEW.`active`),
+  JSON_OBJECT('floor_designer_id', NEW.`floor_designer_id`, 'point_type_id', NEW.`point_type_id`, 'x', NEW.`x`, 'y', NEW.`y`, 'label', NEW.`label`, 'rotation', NEW.`rotation`, 'active', NEW.`active`),
   @app_ip_address, @app_user_agent);
 END//
 CREATE TRIGGER `trg_floor_designer_points_audit_update` AFTER UPDATE ON `floor_designer_points` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_designer_points', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('floor_designer_id', OLD.`floor_designer_id`, 'point_type_id', OLD.`point_type_id`, 'x', OLD.`x`, 'y', OLD.`y`, 'label', OLD.`label`, 'active', OLD.`active`),
-  JSON_OBJECT('floor_designer_id', NEW.`floor_designer_id`, 'point_type_id', NEW.`point_type_id`, 'x', NEW.`x`, 'y', NEW.`y`, 'label', NEW.`label`, 'active', NEW.`active`),
+  JSON_OBJECT('floor_designer_id', OLD.`floor_designer_id`, 'point_type_id', OLD.`point_type_id`, 'x', OLD.`x`, 'y', OLD.`y`, 'label', OLD.`label`, 'rotation', OLD.`rotation`, 'active', OLD.`active`),
+  JSON_OBJECT('floor_designer_id', NEW.`floor_designer_id`, 'point_type_id', NEW.`point_type_id`, 'x', NEW.`x`, 'y', NEW.`y`, 'label', NEW.`label`, 'rotation', NEW.`rotation`, 'active', NEW.`active`),
   @app_ip_address, @app_user_agent);
 END//
 CREATE TRIGGER `trg_floor_designer_points_audit_delete` AFTER DELETE ON `floor_designer_points` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_designer_points', OLD.`id`, 'DELETE',
-  JSON_OBJECT('floor_designer_id', OLD.`floor_designer_id`, 'point_type_id', OLD.`point_type_id`, 'x', OLD.`x`, 'y', OLD.`y`, 'label', OLD.`label`, 'active', OLD.`active`),
+  JSON_OBJECT('floor_designer_id', OLD.`floor_designer_id`, 'point_type_id', OLD.`point_type_id`, 'x', OLD.`x`, 'y', OLD.`y`, 'label', OLD.`label`, 'rotation', OLD.`rotation`, 'active', OLD.`active`),
   NULL, @app_ip_address, @app_user_agent);
 END//
 DELIMITER ;

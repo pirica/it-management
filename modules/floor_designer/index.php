@@ -250,6 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         $comment_x = (float)($_POST['comment_x'] ?? 0);
         $comment_y = (float)($_POST['comment_y'] ?? 30);
         $label = trim((string)($_POST['label'] ?? ''));
+        $rotation = (float)($_POST['rotation'] ?? 0);
         $wlan_address = trim((string)($_POST['wlan_address'] ?? ''));
         $ip_address = trim((string)($_POST['ip_address'] ?? ''));
         $mac_address = trim((string)($_POST['mac_address'] ?? ''));
@@ -259,13 +260,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         $cable_color_id = (int)($_POST['cable_color_id'] ?? 0) ?: null;
 
         if ($point_id > 0) {
-            $sql = "UPDATE floor_designer_points SET point_type_id=?, x=?, y=?, comment_x=?, comment_y=?, label=?, wlan_address=?, ip_address=?, mac_address=?, patch_port=?, switch_id=?, switch_port_id=?, cable_color_id=? WHERE id=? AND company_id=?";
+            $sql = "UPDATE floor_designer_points SET point_type_id=?, x=?, y=?, comment_x=?, comment_y=?, label=?, rotation=?, wlan_address=?, ip_address=?, mac_address=?, patch_port=?, switch_id=?, switch_port_id=?, cable_color_id=? WHERE id=? AND company_id=?";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, 'iddddsssssiiiii', $point_type_id, $x, $y, $comment_x, $comment_y, $label, $wlan_address, $ip_address, $mac_address, $patch_port, $switch_id, $switch_port_id, $cable_color_id, $point_id, $company_id);
+            mysqli_stmt_bind_param($stmt, 'iddddsdsssssiiiii', $point_type_id, $x, $y, $comment_x, $comment_y, $label, $rotation, $wlan_address, $ip_address, $mac_address, $patch_port, $switch_id, $switch_port_id, $cable_color_id, $point_id, $company_id);
         } else {
-            $sql = "INSERT INTO floor_designer_points (company_id, floor_designer_id, point_type_id, x, y, comment_x, comment_y, label, wlan_address, ip_address, mac_address, patch_port, switch_id, switch_port_id, cable_color_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO floor_designer_points (company_id, floor_designer_id, point_type_id, x, y, comment_x, comment_y, label, rotation, wlan_address, ip_address, mac_address, patch_port, switch_id, switch_port_id, cable_color_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, 'iiiddddsssssiii', $company_id, $floor_designer_id, $point_type_id, $x, $y, $comment_x, $comment_y, $label, $wlan_address, $ip_address, $mac_address, $patch_port, $switch_id, $switch_port_id, $cable_color_id);
+            mysqli_stmt_bind_param($stmt, 'iiiddddsdsssssiii', $company_id, $floor_designer_id, $point_type_id, $x, $y, $comment_x, $comment_y, $label, $rotation, $wlan_address, $ip_address, $mac_address, $patch_port, $switch_id, $switch_port_id, $cable_color_id);
         }
 
         if (mysqli_stmt_execute($stmt)) {
@@ -443,14 +444,16 @@ $moduleListHeading = '🧩 ' . $crud_title;
         .point { position: absolute; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; cursor: move; z-index: 100; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.4); transform: translate(-50%, -50%); }
         .point.rj45 { background: #0969da; }
         .point.sfp { background: #1a7f37; }
+        .point.door { background: transparent; border: none; box-shadow: none; width: 60px; height: 60px; border-radius: 0; transform-origin: 0 0; --rotation: 0deg; transform: rotate(var(--rotation)); }
         .point:hover { transform: translate(-50%, -50%) scale(1.2); z-index: 110; }
+        .point.door:hover { transform: rotate(var(--rotation)) scale(1.1); z-index: 110; }
         .comment-box { position: absolute; background: rgba(255,255,255,0.95); border: 1px solid #d0d7de; border-radius: 6px; padding: 6px; font-size: 11px; white-space: nowrap; cursor: move; z-index: 90; box-shadow: 0 3px 6px rgba(0,0,0,0.15); pointer-events: auto; }
         .comment-box table { border-collapse: collapse; margin: 0; }
         .comment-box td { padding: 1px 4px; border: none; font-size: 10px; color: #24292f; line-height: 1.3; }
         .comment-box .label-row { font-weight: 600; border-bottom: 1px solid #d0d7de; padding-bottom: 3px; margin-bottom: 3px; color: #0969da; }
         .controls { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #d0d7de; }
         .layer-controls { margin-left: auto; display: flex; gap: 10px; align-items: center; border-left: 1px solid #d0d7de; padding-left: 15px; }
-        .grid-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; background-image: radial-gradient(#d0d7de 1px, transparent 1px); background-size: 25px 25px; display: none; opacity: 0.5; }
+        .grid-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; background-image: linear-gradient(#d0d7de 1px, transparent 1px), linear-gradient(90deg, #d0d7de 1px, transparent 1px); background-size: 25px 25px; display: none; opacity: 0.8; }
         .show-grid .grid-layer { display: block; }
         .point.is-filtered { opacity: 0.1 !important; pointer-events: none !important; }
         .comment-box.is-filtered { display: none !important; }
@@ -609,9 +612,11 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     <div class="layer-controls">
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('RJ45', this.checked)"> RJ45</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('SFP', this.checked)"> Fiber</label>
+                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
                     </div>
 
                     <button class="btn btn-sm btn-primary" onclick="addNewPoint()">📍 Add Network Point</button>
+                    <button class="btn btn-sm btn-primary" onclick="addNewDoor()">🚪 Add Door</button>
                 </div>
 
                 <div class="designer-wrapper" id="designer-wrapper">
@@ -632,9 +637,9 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         </div>
                         <div class="form-group">
                             <label>Type</label>
-                            <select id="modal-type">
+                            <select id="modal-type" onchange="toggleModalFields()">
                                 <?php 
-                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id OR id IN (1,2,4,5,7,8,10,11,13,14) ORDER BY type ASC");
+                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id OR id IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15) ORDER BY type ASC");
                                 while ($t = mysqli_fetch_assoc($types)): ?>
                                     <option value="<?php echo $t['id']; ?>" data-type-name="<?php echo sanitize($t['type']); ?>"><?php echo sanitize($t['type']); ?></option>
                                 <?php endwhile; ?>
@@ -670,6 +675,10 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         <div class="form-group">
                             <label>Patch Port</label>
                             <input type="text" id="modal-patch">
+                        </div>
+                        <div class="form-group" id="group-rotation" style="display:none;">
+                            <label>Rotation (degrees)</label>
+                            <input type="number" id="modal-rotation" value="0">
                         </div>
                         <div class="form-group" style="grid-column: span 2;">
                             <label>Cable Color</label>
@@ -736,13 +745,29 @@ $moduleListHeading = '🧩 ' . $crud_title;
 
                     function renderPoint(p) {
                         const isSfp = String(p.point_type_name || '').includes('SFP') || String(p.point_type_name || '').includes('Fiber');
+                        const isDoor = String(p.point_type_name || '').includes('Door');
                         const el = document.createElement('div');
                         el.id = 'point-' + p.id;
-                        el.className = `point point-type-${isSfp ? 'SFP' : 'RJ45'} ${isSfp ? 'sfp' : 'rj45'}`;
-                        el.style.left = p.x + 'px';
-                        el.style.top = p.y + 'px';
-                        if (p.hex_color) el.style.backgroundColor = p.hex_color;
-                        el.textContent = p.label ? p.label.substring(0, 2).toUpperCase() : p.id;
+
+                        if (isDoor) {
+                            el.className = `point point-type-Door door`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
+                            el.innerHTML = `
+                                <svg viewBox="0 0 100 100" width="60" height="60" style="pointer-events: none;">
+                                    <path d="M 10,90 L 10,10 L 90,10 A 80,80 0 0 1 10,90" fill="none" stroke="#24292f" stroke-width="3" />
+                                    <rect x="0" y="85" width="20" height="10" fill="#333" />
+                                    <rect x="80" y="85" width="20" height="10" fill="#333" />
+                                </svg>`;
+                        } else {
+                            el.className = `point point-type-${isSfp ? 'SFP' : 'RJ45'} ${isSfp ? 'sfp' : 'rj45'}`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            if (p.hex_color) el.style.backgroundColor = p.hex_color;
+                            el.textContent = p.label ? p.label.substring(0, 2).toUpperCase() : p.id;
+                        }
+
                         el.dataset.id = p.id;
                         el.dataset.search = `${p.label} ${p.ip_address} ${p.mac_address} ${p.switch_name} ${p.patch_port}`.toLowerCase();
                         
@@ -756,7 +781,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
 
                         const cb = document.createElement('div');
                         cb.id = 'comment-' + p.id;
-                        cb.className = `comment-box comment-type-${isSfp ? 'SFP' : 'RJ45'}`;
+                        cb.className = `comment-box comment-type-${isDoor ? 'Door' : (isSfp ? 'SFP' : 'RJ45')}`;
                         updateCommentAbsolutePos(p, cb);
                         
                         let tableHtml = `<table>`;
@@ -876,7 +901,21 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             point_type_id: 1,
                             x: 50, y: 50,
                             comment_x: 20, comment_y: 20,
-                            label: ''
+                            label: '',
+                            rotation: 0
+                        });
+                    }
+
+                    function addNewDoor() {
+                        const doorTypeOpt = Array.from(document.querySelectorAll('#modal-type option')).find(opt => opt.textContent.includes('Door'));
+                        openPointModal({
+                            id: 0,
+                            floor_designer_id: floorData.id,
+                            point_type_id: doorTypeOpt ? doorTypeOpt.value : 3,
+                            x: 100, y: 100,
+                            comment_x: 20, comment_y: 20,
+                            label: 'Door',
+                            rotation: 0
                         });
                     }
 
@@ -889,6 +928,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         document.getElementById('modal-mac').value = p.mac_address || '';
                         document.getElementById('modal-wlan').value = p.wlan_address || '';
                         document.getElementById('modal-patch').value = p.patch_port || '';
+                        document.getElementById('modal-rotation').value = p.rotation || 0;
                         document.getElementById('modal-color').value = p.cable_color_id || '';
                         document.getElementById('btn-delete-point').style.display = p.id > 0 ? 'inline-block' : 'none';
                         document.getElementById('modal-title').textContent = p.id > 0 ? 'Edit Network Point' : 'Add New Network Point';
@@ -898,7 +938,24 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         } else {
                             document.getElementById('modal-port').innerHTML = '<option value="">-- Select Port --</option>';
                         }
+                        toggleModalFields();
                         document.getElementById('point-modal').style.display = 'block';
+                    }
+
+                    function toggleModalFields() {
+                        const typeSelect = document.getElementById('modal-type');
+                        const typeName = typeSelect.options[typeSelect.selectedIndex]?.dataset.typeName || '';
+                        const isDoor = typeName.includes('Door');
+
+                        document.getElementById('group-rotation').style.display = isDoor ? 'block' : 'none';
+
+                        const netFields = ['modal-switch', 'modal-port', 'modal-ip', 'modal-mac', 'modal-wlan', 'modal-patch', 'modal-color'];
+                        netFields.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el && el.closest('.form-group')) {
+                                el.closest('.form-group').style.display = isDoor ? 'none' : 'block';
+                            }
+                        });
                     }
 
                     function loadPorts(switchId, selectedPortId = null) {
@@ -948,6 +1005,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         formData.append('mac_address', document.getElementById('modal-mac').value);
                         formData.append('wlan_address', document.getElementById('modal-wlan').value);
                         formData.append('patch_port', document.getElementById('modal-patch').value);
+                        formData.append('rotation', document.getElementById('modal-rotation').value);
                         formData.append('cable_color_id', document.getElementById('modal-color').value);
                         
                         if (pointId == 0) {
@@ -1057,6 +1115,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     <div class="layer-controls">
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('RJ45', this.checked)"> RJ45</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('SFP', this.checked)"> Fiber</label>
+                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
                     </div>
                 </div>
 
@@ -1107,20 +1166,36 @@ $moduleListHeading = '🧩 ' . $crud_title;
 
                     function renderPoint(p) {
                         const isSfp = String(p.point_type_name || '').includes('SFP') || String(p.point_type_name || '').includes('Fiber');
+                        const isDoor = String(p.point_type_name || '').includes('Door');
                         const el = document.createElement('div');
                         el.id = 'point-' + p.id;
-                        el.className = `point point-type-${isSfp ? 'SFP' : 'RJ45'} ${isSfp ? 'sfp' : 'rj45'}`;
-                        el.style.left = p.x + 'px';
-                        el.style.top = p.y + 'px';
-                        if (p.hex_color) el.style.backgroundColor = p.hex_color;
-                        el.textContent = p.label ? p.label.substring(0, 2).toUpperCase() : p.id;
+
+                        if (isDoor) {
+                            el.className = `point point-type-Door door`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
+                            el.innerHTML = `
+                                <svg viewBox="0 0 100 100" width="60" height="60" style="pointer-events: none;">
+                                    <path d="M 10,90 L 10,10 L 90,10 A 80,80 0 0 1 10,90" fill="none" stroke="#24292f" stroke-width="3" />
+                                    <rect x="0" y="85" width="20" height="10" fill="#333" />
+                                    <rect x="80" y="85" width="20" height="10" fill="#333" />
+                                </svg>`;
+                        } else {
+                            el.className = `point point-type-${isSfp ? 'SFP' : 'RJ45'} ${isSfp ? 'sfp' : 'rj45'}`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            if (p.hex_color) el.style.backgroundColor = p.hex_color;
+                            el.textContent = p.label ? p.label.substring(0, 2).toUpperCase() : p.id;
+                        }
+
                         el.dataset.id = p.id;
                         el.dataset.search = `${p.label} ${p.ip_address} ${p.mac_address} ${p.switch_name} ${p.patch_port}`.toLowerCase();
                         container.appendChild(el);
 
                         const cb = document.createElement('div');
                         cb.id = 'comment-' + p.id;
-                        cb.className = `comment-box comment-type-${isSfp ? 'SFP' : 'RJ45'}`;
+                        cb.className = `comment-box comment-type-${isDoor ? 'Door' : (isSfp ? 'SFP' : 'RJ45')}`;
                         cb.style.left = (parseFloat(p.x) + parseFloat(p.comment_x)) + 'px';
                         cb.style.top = (parseFloat(p.y) + parseFloat(p.comment_y)) + 'px';
                         
