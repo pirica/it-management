@@ -25,7 +25,7 @@ class UserCompaniesTest extends TestCase
         $data['company_id'] = $this->companyId;
         $data['active'] = 1;
         // Find or fallback for user_id (users)
-        $resuser_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resuser_id = mysqli_query($this->conn, "SELECT u.id FROM `users` u LEFT JOIN `user_companies` uc ON u.id = uc.user_id AND uc.company_id = {$this->companyId} WHERE uc.user_id IS NULL LIMIT 1");
         if ($rowuser_id = mysqli_fetch_assoc($resuser_id)) {
             $data['user_id'] = $rowuser_id['id'];
         } else {
@@ -52,7 +52,7 @@ class UserCompaniesTest extends TestCase
         $bindTypes = 'iii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
 
