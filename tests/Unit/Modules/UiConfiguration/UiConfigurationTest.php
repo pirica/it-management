@@ -22,21 +22,30 @@ class UiConfigurationTest extends TestCase
     {
         // 1. Create
         $data = [];
-        $data['company_id'] = $this->companyId;
-        $data['user_id'] = 1;
-        $data['table_actions_position'] = 'Test table_actions_position';
-        $data['new_button_position'] = 'Test new_button_position';
-        $data['export_buttons_position'] = 'Test export_buttons_position';
-        $data['back_save_position'] = 'Test back_save_position';
+
+        // Find a user and company that don't have a UI configuration yet to avoid unique constraint violations.
+        // uq_ui_configuration_company_user (company_id, user_id)
+        $resuser = mysqli_query($this->conn, "SELECT u.id, u.company_id FROM `users` u LEFT JOIN `ui_configuration` uc ON u.id = uc.user_id AND u.company_id = uc.company_id WHERE uc.id IS NULL LIMIT 1");
+        if ($rowuser = mysqli_fetch_assoc($resuser)) {
+            $data['user_id'] = $rowuser['id'];
+            $data['company_id'] = $rowuser['company_id'];
+        } else {
+            $this->markTestSkipped('No user found without a UI configuration.');
+        }
+
+        $data['table_actions_position'] = 'left';
+        $data['new_button_position'] = 'left';
+        $data['export_buttons_position'] = 'left';
+        $data['back_save_position'] = 'left';
         $data['enable_all_error_reporting'] = 1;
         $data['enable_audit_logs'] = 1;
-        $data['records_per_page'] = 'Test records_per_page';
+        $data['records_per_page'] = '25';
         $data['app_name'] = 'Test app_name';
         $data['favicon_path'] = 'Test favicon_path';
 
         $sql = "INSERT INTO `ui_configuration` (company_id, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
-        $this->assertNotFalse($stmt, mysqli_error($this->conn));
+        $this->assertNotFalse($stmt, 'Prepare failed: ' . mysqli_error($this->conn));
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
@@ -53,7 +62,7 @@ class UiConfigurationTest extends TestCase
         $bindTypes = 'iissssiisss';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), 'Execute failed: ' . mysqli_stmt_error($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
 
@@ -61,14 +70,15 @@ class UiConfigurationTest extends TestCase
         $res = mysqli_query($this->conn, "SELECT * FROM `ui_configuration` WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertNotNull($row);
-        $this->assertEquals($this->companyId, $row['company_id']);
+        $this->assertEquals($data['company_id'], $row['company_id']);
 
         // 3. Update
-        $updatedValue = 'Updated Value';
+        $updatedValue = 'right';
         $updateSql = "UPDATE `ui_configuration` SET `table_actions_position` = ? WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $updateSql);
+        $this->assertNotFalse($stmt, 'Prepare update failed: ' . mysqli_error($this->conn));
         mysqli_stmt_bind_param($stmt, 'si', $updatedValue, $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), 'Execute update failed: ' . mysqli_stmt_error($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT `table_actions_position` FROM `ui_configuration` WHERE id = $id");
@@ -78,8 +88,9 @@ class UiConfigurationTest extends TestCase
         // 4. Delete
         $deleteSql = "DELETE FROM `ui_configuration` WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $deleteSql);
+        $this->assertNotFalse($stmt, 'Prepare delete failed: ' . mysqli_error($this->conn));
         mysqli_stmt_bind_param($stmt, 'i', $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), 'Execute delete failed: ' . mysqli_stmt_error($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `ui_configuration` WHERE id = $id");
