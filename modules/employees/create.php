@@ -59,7 +59,7 @@ $form = [
     'username' => '', 'job_code' => '', 'department_id' => '', 'raw_status_code' => 'A',
     'employment_status_id' => '1', 'employee_position_id' => '', 'reports_to' => '', 'workstation_mode_id' => '',
     'assignment_type_id' => '', 'comments' => '', 'office_key_card_department_id' => '',
-    'personal_phone' => '', 'mobile_phone' => '', 'work_phone' => '', 'deck' => '', 'extension' => '', 'on_contacts' => '0',
+    'personal_phone' => '', 'mobile_phone' => '', 'external_number' => '', 'dect' => '', 'extension' => '', 'on_contacts' => '0',
 ];
 
 $selectedSystemAccessIds = [];
@@ -106,17 +106,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
         $personalPhone = $form['personal_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['personal_phone']) . "'";
         $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
-        $workPhone = $form['work_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['work_phone']) . "'";
-        $deck = $form['deck'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['deck']) . "'";
+        $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
+        $dect = $form['dect'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['dect']) . "'";
         $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
         $onContacts = (int)$form['on_contacts'];
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, work_email, personal_email, external_id, username,
-            department_id, job_code, comments, personal_phone, mobile_phone, work_phone, deck, extension, on_contacts, raw_status_code, employment_status_id,
+            department_id, job_code, comments, personal_phone, mobile_phone, external_number, dect, extension, on_contacts, raw_status_code, employment_status_id,
             employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$workEmail}, {$personalEmail}, {$externalId}, {$username},
-            {$departmentId}, {$jobCode}, {$comments}, {$personalPhone}, {$mobilePhone}, {$workPhone}, {$deck}, {$extension}, {$onContacts}, {$rawStatusCode}, {$employmentStatusId},
+            {$departmentId}, {$jobCode}, {$comments}, {$personalPhone}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$rawStatusCode}, {$employmentStatusId},
             {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId}
         )";
 
@@ -170,9 +170,9 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Personal Email</label><input type="email" name="personal_email" value="<?php echo sanitize($form['personal_email']); ?>"></div>
                         <div class="form-group"><label>Personal Phone</label><input type="text" name="personal_phone" value="<?php echo sanitize($form['personal_phone']); ?>"></div>
                         <div class="form-group"><label>Mobile Phone</label><input type="text" name="mobile_phone" value="<?php echo sanitize($form['mobile_phone']); ?>"></div>
-                        <div class="form-group"><label>Work Phone</label><input type="text" name="work_phone" value="<?php echo sanitize($form['work_phone']); ?>"></div>
+                        <div class="form-group"><label>External Number</label><input type="text" name="external_number" value="<?php echo sanitize($form['external_number']); ?>"></div>
                         <div class="form-group"><label>Extension</label><input type="text" name="extension" value="<?php echo sanitize($form['extension']); ?>"></div>
-                        <div class="form-group"><label>Deck</label><input type="text" name="deck" value="<?php echo sanitize($form['deck']); ?>"></div>
+                        <div class="form-group"><label>Dect</label><input type="text" name="dect" value="<?php echo sanitize($form['dect']); ?>"></div>
                         <div class="form-group"><label>On Contacts</label><select name="on_contacts"><option value="0" <?php echo ($form['on_contacts'] == 0) ? 'selected' : ''; ?>>No</option><option value="1" <?php echo ($form['on_contacts'] == 1) ? 'selected' : ''; ?>>Yes</option></select></div>
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>

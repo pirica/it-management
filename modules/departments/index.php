@@ -135,7 +135,7 @@ function cr_humanize_field($field) {
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
         'phone' => 'Department Phone',
-        'deck' => 'Department Deck',
+        'dect' => 'Department Dect',
     ];
 
     if (isset($map[$label])) {
