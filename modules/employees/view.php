@@ -68,7 +68,7 @@ $profileFields = [
     'Personal Email' => (string)($employee['personal_email'] ?? ''),
     'Personal Phone' => (string)($employee['personal_phone'] ?? ''),
     'Mobile Phone' => (string)($employee['mobile_phone'] ?? ''),
-    'Work Phone' => (string)($employee['work_phone'] ?? ''),
+    'External Number' => (string)($employee['external_number'] ?? ''),
     'Extension' => (string)($employee['extension'] ?? ''),
     'Deck' => (string)($employee['deck'] ?? ''),
     'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '✅' : '❌'),

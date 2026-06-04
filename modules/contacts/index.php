@@ -47,7 +47,7 @@ mysqli_stmt_close($empStmt);
                                     <td><strong><?php echo sanitize($emp['first_name'].' '.$emp['last_name']); ?></strong><br><small><?php echo sanitize($emp['position_title'] ?: '—'); ?></small></td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="work_email"><?php echo sanitize($emp['work_email'] ?: '—'); ?></span></td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="deck"><?php echo sanitize($emp['deck'] ?: '—'); ?></span></td>
-                                    <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="work_phone"><?php echo sanitize($emp['work_phone'] ?: '—'); ?></span></td>
+                                    <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="external_number"><?php echo sanitize($emp['external_number'] ?: '—'); ?></span></td>
                                 </tr>
                             <?php endforeach; endif; ?>
                         <?php endforeach; ?>
