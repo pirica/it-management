@@ -413,6 +413,7 @@ Every module (excluding the Protection Zone) must implement:
 * **Search:** Comprehensive search across all visible fields — see **List/search visible columns** below.
 * **Order:** Standardized sort fields ASC DESC - '▲' : '▼'.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
+    * **Disabling Exports:** Automatically generated export buttons can be hidden by adding `data-itm-no-export-excel="1"` or `data-itm-no-export-pdf="1"` to the `<table>` element or its parent `.card`.
 * **Navigation:** Standardized server-side pagination based on `records_per_page`. List **Previous** / **Next** controls use link text `Previous` and `Next` (preserve `search`, `sort`, `dir`, and `page` query params). **Required `title` attributes:** `title="◀️ Previous"` and `title="▶️ Next"` on pagination anchors (not `🔎 Search`). Pagination URLs include `search=`; `includes/header.php` auto-tooltips must match **visible link text** for Next/Previous and must not treat `search=` in `href` as a Search action. **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **Next** (`btn-sm`, `page=2`, `title="▶️ Next"`), then page 2 includes **Previous** (`btn-sm`, `page=1`, `title="◀️ Previous"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
@@ -640,6 +641,10 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **CSRF:** Use `itm_require_post_csrf()` in handlers. Forms require:
   `<input type="hidden" name="csrf_token" value="<?= itm_get_csrf_token() ?>">`
 * **XSS:** Wrap all echoed user-provided strings in `sanitize($data)`.
+
+## 🛡️ Safety & Side Effects
+* **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `user_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
+* **UI Redundancy:** Modules with custom export layouts should disable the default `table-tools.js` buttons using the `data-itm-no-export-*` attributes.
 
 ---
 
