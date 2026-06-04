@@ -48,7 +48,7 @@ $foundCount = 0;
 foreach ($tables as $table => $cols) {
     $matched = [];
     if (in_array('phone', $cols)) $matched[] = 'phone';
-    if (in_array('work_phone', $cols)) $matched[] = 'work_phone';
+    if (in_array('external_number', $cols)) $matched[] = 'external_number';
 
     if (!empty($matched)) {
         echo "Table $table has: " . implode(', ', $matched) . "\n";
