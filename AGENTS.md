@@ -413,6 +413,7 @@ Every module (excluding the Protection Zone) must implement:
 * **Search:** Comprehensive search across all visible fields — see **List/search visible columns** below.
 * **Order:** Standardized sort fields ASC DESC - '▲' : '▼'.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
+    * **Disabling Exports:** Automatically generated export buttons can be hidden by adding `data-itm-no-export-excel="1"` or `data-itm-no-export-pdf="1"` to the `<table>` element or its parent `.card`.
 * **Navigation:** Standardized server-side pagination based on `records_per_page`. List **Previous** / **Next** controls use link text `Previous` and `Next` (preserve `search`, `sort`, `dir`, and `page` query params). **Required `title` attributes:** `title="◀️ Previous"` and `title="▶️ Next"` on pagination anchors (not `🔎 Search`). Pagination URLs include `search=`; `includes/header.php` auto-tooltips must match **visible link text** for Next/Previous and must not treat `search=` in `href` as a Search action. **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **Next** (`btn-sm`, `page=2`, `title="▶️ Next"`), then page 2 includes **Previous** (`btn-sm`, `page=1`, `title="◀️ Previous"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
@@ -606,6 +607,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/index.html` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
+* **Login & Auth Guardrail:** Any changes to `login.php` (such as joining with `user_roles`) must be verified against the schema in `database.sql` to avoid breaking authentication for all users.
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
   * All **Create, Edit, Update, Delete, Copy, and Move** operations must keep the following tables fully synchronized at all times: `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links`.
   * **Hard-fail policy:** partial cross-table updates are not allowed. When a workflow touches multiple IDF-related tables, use transaction boundaries and rollback on any synchronization failure.

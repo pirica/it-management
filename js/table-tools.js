@@ -432,10 +432,14 @@
         const card = table ? table.closest('.card') : null;
         const noImport = (table && table.dataset.itmNoImportExcel === '1')
             || (card && card.dataset.itmNoImportExcel === '1');
+        const noExcel = (table && table.dataset.itmNoExportExcel === '1')
+            || (card && card.dataset.itmNoExportExcel === '1');
+        const noPdf = (table && table.dataset.itmNoExportPdf === '1')
+            || (card && card.dataset.itmNoExportPdf === '1');
 
         return {
-            excel: true,
-            pdf: true,
+            excel: !noExcel,
+            pdf: !noPdf,
             importExcel: !noImport,
         };
     }
