@@ -4,7 +4,13 @@
  * Supports both CLI and Browser.
  */
 
+if (!defined('ROOT_PATH')) {
+    define('ROOT_PATH', realpath(__DIR__ . '/..') . DIRECTORY_SEPARATOR);
+}
+
 require_once __DIR__ . '/lib/script_cli_output.php';
+define('ITM_CLI_SCRIPT', true);
+require_once __DIR__ . '/../config/config.php';
 
 itm_script_output_begin('List Active Fields and Checkboxes');
 
@@ -12,17 +18,23 @@ $modules_dir = realpath(__DIR__ . '/../modules');
 $modules = array_filter(glob($modules_dir . '/*'), 'is_dir');
 
 $active_results = [];
-$checkbox_results = [];
 $active_text_results = [];
+$checkbox_results = [];
 
 foreach ($modules as $module_path) {
     $module_name = basename($module_path);
+
+    // 1. Check database schema for 'active' column
+    $res = mysqli_query($conn, "SHOW TABLES LIKE '{$module_name}'");
+    $has_table = ($res && mysqli_num_rows($res) > 0);
+
+    $has_active_column = false;
+    if ($has_table) {
+        $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$module_name}` LIKE 'active'");
+        $has_active_column = ($res && mysqli_num_rows($res) > 0);
+    }
+
     $files = glob($module_path . '/*.php');
-
-    $module_active_files = [];
-    $module_checkbox_files = [];
-    $module_active_text_files = [];
-
     foreach ($files as $file) {
         $basename = basename($file);
         if (!in_array($basename, ['create.php', 'edit.php', 'index.php'])) continue;
@@ -30,40 +42,24 @@ foreach ($modules as $module_path) {
         $content = file_get_contents($file);
         $relativePath = 'modules/' . $module_name . '/' . $basename;
 
-        // Check for 'active' input field
-        $has_active = false;
-        if (strpos($content, 'name="active"') !== false ||
-            strpos($content, "name='active'") !== false ||
-            strpos($content, '$name === \'active\'') !== false) {
-            $has_active = true;
-            $module_active_files[] = $relativePath;
-        }
+        // 2. Check for 'active' input field (case-insensitive)
+        if ($has_active_column) {
+            if (preg_match('/name=["\']active["\']/i', $content) ||
+                (strpos($content, '$name === \'active\'') !== false && strpos($content, '$col[\'Field\']') !== false)) {
+                $active_results[$module_name][] = $relativePath;
 
-        // Check for specific type="text" name="active"
-        if ($has_active && (strpos($content, 'type="text"') !== false || strpos($content, "type='text'") !== false)) {
-            // This is a naive check. Let's look for both in the same file.
-            // A more robust check would use regex to ensure they are on the same tag, but for a debug script this might be enough if we just want to flag files for manual review.
-            if (preg_match('/<input[^>]+type=["\']text["\'][^>]+name=["\']active["\']/', $content) ||
-                preg_match('/<input[^>]+name=["\']active["\'][^>]+type=["\']text["\']/', $content)) {
-                $module_active_text_files[] = $relativePath;
+                // Specifically detect type="text"
+                if (preg_match('/<input[^>]+type=["\']text["\'][^>]+name=["\']active["\']/i', $content) ||
+                    preg_match('/<input[^>]+name=["\']active["\'][^>]+type=["\']text["\']/i', $content)) {
+                    $active_text_results[$module_name][] = $relativePath;
+                }
             }
         }
 
-        // Check for checkbox
-        if (strpos($content, 'type="checkbox"') !== false ||
-            strpos($content, "type='checkbox'") !== false) {
-            $module_checkbox_files[] = $relativePath;
+        // 3. Check for checkbox
+        if (stripos($content, 'type="checkbox"') !== false) {
+            $checkbox_results[$module_name][] = $relativePath;
         }
-    }
-
-    if (!empty($module_active_files)) {
-        $active_results[$module_name] = $module_active_files;
-    }
-    if (!empty($module_checkbox_files)) {
-        $checkbox_results[$module_name] = $module_checkbox_files;
-    }
-    if (!empty($module_active_text_files)) {
-        $active_text_results[$module_name] = $module_active_text_files;
     }
 }
 
