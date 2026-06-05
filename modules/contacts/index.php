@@ -9,7 +9,7 @@ $deptRes = mysqli_stmt_get_result($deptStmt);
 $departments = [];
 while ($d = mysqli_fetch_assoc($deptRes)) { $departments[] = $d; }
 mysqli_stmt_close($deptStmt);
-$empSql = "SELECT e.id, e.department_id, e.first_name, e.last_name, e.work_email, e.extension, e.mobile_phone, e.external_number, e.dect, ep.name as position_title FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id INNER JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND e.on_contacts = 1 AND es.name = 'Active' ORDER BY e.reports_to ASC, e.first_name ASC, e.last_name ASC";
+$empSql = "SELECT e.id, e.department_id, e.first_name, e.last_name, e.work_email, e.extension, e.mobile_phone, e.external_number, e.dect, ep.name as position_title FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND e.on_contacts = 1 AND (es.active = 1 OR es.id IS NULL) ORDER BY e.reports_to ASC, e.first_name ASC, e.last_name ASC";
 $empStmt = mysqli_prepare($conn, $empSql);
 mysqli_stmt_bind_param($empStmt, 'i', $company_id);
 mysqli_stmt_execute($empStmt);
@@ -71,7 +71,7 @@ mysqli_stmt_close($empStmt);
             <h1>Contacts 📓</h1>
             <div class="card">
                 <table class="table">
-                    <thead><tr><th>Name / Position</th><th>Extension</th><th>Dect</th><th>Mobile Phone</th><th>External Number</th><th>Job Role</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Extension</th><th>Dect</th><th>Mobile Phone</th><th>External Number</th><th>Job Role</th></tr></thead>
                     <tbody>
                         <?php foreach ($departments as $dept): $did = (int)$dept['id']; ?>
                             <tr class="dept-header">
@@ -92,7 +92,6 @@ mysqli_stmt_close($empStmt);
                                         <?php else: ?>
                                             <strong><?php echo sanitize($emp['first_name'].' '.$emp['last_name']); ?></strong>
                                         <?php endif; ?>
-                                        <br><small><?php echo sanitize($emp['position_title'] ?: '—'); ?></small>
                                     </td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="extension"><?php echo sanitize($emp['extension'] ?: '—'); ?></span></td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="dect"><?php echo sanitize($emp['dect'] ?: '—'); ?></span></td>
