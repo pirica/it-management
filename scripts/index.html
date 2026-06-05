@@ -712,6 +712,15 @@
                     <td>Identifies tables missing the mandatory <code>active</code> column and detects code mismatches where queries expect this field on tables that lack it.</td>
                     <td>Browser: HTML report with detailed mismatch locations. CLI: <code>php scripts/db_field_active.php</code> — run after CRUD changes to ensure schema compliance.</td>
                 </tr>
+                <tr>
+                    <td><a href="list_active_and_checkboxes.php">list_active_and_checkboxes.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists all modules that have an "active" input field and all modules that use checkboxes in their create/edit/index pages.</td>
+                    <td>
+                        Browser: <a href="list_active_and_checkboxes.php">list_active_and_checkboxes.php</a><br>
+                        <code>php scripts/list_active_and_checkboxes.php</code>
+                    </td>
+                </tr>
             </tbody>
         </table>
         <p class="scripts-muted" style="margin-top:12px;">
