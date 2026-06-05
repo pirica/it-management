@@ -375,6 +375,13 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
         .btl-today { background-color: rgba(var(--primary-rgb), 0.1); border-left: 4px solid var(--primary-color) !important; }
         .status-radio-group { display: flex; gap: 5px; }
         .status-radio-group label { margin: 0; font-weight: normal; font-size: 11px; }
+
+        @media print {
+            @page { size: landscape; margin: 1cm; }
+            .btl-controls, .itm-actions-cell { display: none !important; }
+            .btl-table { width: 100%; }
+            .card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+        }
     </style>
 </head>
 <body>
@@ -865,6 +872,21 @@ function doXlsxExport() {
     const table = document.getElementById('btl-grid-table');
     const wb = XLSX.utils.book_new();
 
+    const getVal = (td) => {
+        if (!td) return '';
+        // If it has a radio or checkbox, get its checked state
+        const input = td.querySelector('input[type="radio"], input[type="checkbox"]');
+        if (input) {
+            return input.checked ? 'x' : '';
+        }
+        // Otherwise, get text from .display-val or the cell itself
+        const display = td.querySelector('.display-val');
+        let text = (display ? display.textContent : td.textContent).trim();
+        // Remove the 🕒 icon from the text if it's there
+        text = text.replace('🕒', '').trim();
+        return (text === '—') ? '' : text;
+    };
+
     // Custom data construction to match requested layout
     const data = [
         ['<?= (int)$selected_year ?> Backup Tape Log File'],
@@ -878,28 +900,19 @@ function doXlsxExport() {
     rows.forEach(tr => {
         const rowData = [];
         const cells = tr.querySelectorAll('td');
-        // Date
-        rowData.push(cells[0].textContent.trim());
-        // Tape
-        rowData.push(cells[1].textContent.trim());
-        // Inserted
-        rowData.push(cells[2].querySelector('.display-val')?.textContent.trim() || (cells[2].textContent.trim() === '—' ? '' : cells[2].textContent.trim()));
-        // Returned
-        rowData.push(cells[3].querySelector('.display-val')?.textContent.trim() || (cells[3].textContent.trim() === '—' ? '' : cells[3].textContent.trim()));
-        // Print Name
-        rowData.push(cells[4].querySelector('.display-val')?.textContent.trim() || (cells[4].textContent.trim() === '—' ? '' : cells[4].textContent.trim()));
-        // Status Full
-        rowData.push(cells[5].querySelector('input[type="radio"]')?.checked ? 'x' : '');
-        // Status Part
-        rowData.push(cells[6].querySelector('input[type="radio"]')?.checked ? 'x' : '');
-        // Status Fail
-        rowData.push(cells[7].querySelector('input[type="radio"]')?.checked ? 'x' : '');
-        // Problems
-        rowData.push(cells[8].querySelector('.display-val')?.textContent.trim() || '');
-        // Restore
-        rowData.push(cells[9].querySelector('input[type="checkbox"]')?.checked ? 'x' : '');
-        // ISM
-        rowData.push(cells[10].querySelector('input[type="checkbox"]')?.checked ? 'x' : '');
+        if (cells.length < 11) return;
+
+        rowData.push(getVal(cells[0]));  // Date to be backed up
+        rowData.push(getVal(cells[1]));  // Tape to be used
+        rowData.push(getVal(cells[2]));  // Time Tape inserted
+        rowData.push(getVal(cells[3]));  // Time Returned to Safe
+        rowData.push(getVal(cells[4]));  // Print Name
+        rowData.push(getVal(cells[5]));  // Full
+        rowData.push(getVal(cells[6]));  // Part
+        rowData.push(getVal(cells[7]));  // Fail
+        rowData.push(getVal(cells[8]));  // Detail any problems
+        rowData.push(getVal(cells[9]));  // Tape used for restore
+        rowData.push(getVal(cells[10])); // ISM review
 
         data.push(rowData);
     });
