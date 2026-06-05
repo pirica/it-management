@@ -1,18 +1,32 @@
 <?php
 require '../../config/config.php';
 $csrfToken = itm_get_csrf_token();
+
+// 1. Fetch Departments
 $deptSql = "SELECT id, name, extension, dect, phone FROM departments WHERE company_id = ? AND active = 1 ORDER BY name ASC";
 $deptStmt = mysqli_prepare($conn, $deptSql);
+if (!$deptStmt) {
+    die("Database error (prepare departments): " . mysqli_error($conn));
+}
 mysqli_stmt_bind_param($deptStmt, 'i', $company_id);
-mysqli_stmt_execute($deptStmt);
+if (!mysqli_stmt_execute($deptStmt)) {
+    die("Database error (execute departments): " . mysqli_stmt_error($deptStmt));
+}
 $deptRes = mysqli_stmt_get_result($deptStmt);
 $departments = [];
 while ($d = mysqli_fetch_assoc($deptRes)) { $departments[] = $d; }
 mysqli_stmt_close($deptStmt);
+
+// 2. Fetch Employees
 $empSql = "SELECT e.id, e.department_id, e.first_name, e.last_name, e.work_email, e.extension, e.mobile_phone, e.external_number, e.dect, ep.name as position_title FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND e.on_contacts = 1 AND (es.active = 1 OR es.id IS NULL) ORDER BY e.reports_to ASC, e.first_name ASC, e.last_name ASC";
 $empStmt = mysqli_prepare($conn, $empSql);
+if (!$empStmt) {
+    die("Database error (prepare employees): " . mysqli_error($conn));
+}
 mysqli_stmt_bind_param($empStmt, 'i', $company_id);
-mysqli_stmt_execute($empStmt);
+if (!mysqli_stmt_execute($empStmt)) {
+    die("Database error (execute employees): " . mysqli_stmt_error($empStmt));
+}
 $empRes = mysqli_stmt_get_result($empStmt);
 $employeesByDept = [];
 while ($e = mysqli_fetch_assoc($empRes)) { $employeesByDept[(int)$e['department_id']][] = $e; }
