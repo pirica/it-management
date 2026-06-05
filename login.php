@@ -156,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = (int)$user['id'];
             $_SESSION['user_id'] = $userId;
             $_SESSION['username'] = (string)($user['username'] ?? 'User');
+            $_SESSION['role_name'] = (string)($user['role_name'] ?? '');
 
             // Clear any previously stored company context to ensure a fresh selection
             unset($_SESSION['company_id'], $_SESSION['company_name']);
