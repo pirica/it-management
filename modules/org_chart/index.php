@@ -35,14 +35,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         exit;
     }
 
-    // P1: Validate manager belongs to the same company to prevent cross-tenant hierarchy corruption
+    // P1: Validate manager belongs to the same company and is on org chart to prevent cross-tenant hierarchy corruption
     if ($reportsTo > 0) {
-        $stmt = mysqli_prepare($conn, "SELECT id FROM employees WHERE id = ? AND company_id = ?");
+        $stmt = mysqli_prepare($conn, "SELECT e.id FROM employees e
+                                       INNER JOIN employee_statuses es ON es.id = e.employment_status_id
+                                       WHERE e.id = ? AND e.company_id = ? AND e.on_orgchart = 1 AND es.name = 'Active'");
         mysqli_stmt_bind_param($stmt, "ii", $reportsTo, $company_id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         if (mysqli_num_rows($res) === 0) {
-            echo json_encode(['ok' => false, 'error' => 'Invalid manager selection.']);
+            echo json_encode(['ok' => false, 'error' => 'Invalid manager selection (Manager must be on Org Chart and Active).']);
             mysqli_stmt_close($stmt);
             exit;
         }
@@ -110,7 +112,8 @@ $sql = "SELECT e.id, e.display_name, e.first_name, e.last_name, e.reports_to,
         FROM employees e
         LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id
         LEFT JOIN departments d ON d.id = e.department_id
-        WHERE e.company_id = ?
+        INNER JOIN employee_statuses es ON es.id = e.employment_status_id
+        WHERE e.company_id = ? AND e.on_orgchart = 1 AND es.name = 'Active'
         ORDER BY d.name, e.display_name";
 
 $stmt_list = mysqli_prepare($conn, $sql);

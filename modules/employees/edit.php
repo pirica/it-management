@@ -95,12 +95,12 @@ $form = [
     'assignment_type_id' => (string)($employee['assignment_type_id'] ?? ''),
     'comments' => (string)($employee['comments'] ?? ''),
     'office_key_card_department_id' => (string)($employee['office_key_card_department_id'] ?? ''),
-    'personal_phone' => (string)($employee['personal_phone'] ?? ''),
     'mobile_phone' => (string)($employee['mobile_phone'] ?? ''),
     'external_number' => (string)($employee['external_number'] ?? ''),
     'dect' => (string)($employee['dect'] ?? ''),
     'extension' => (string)($employee['extension'] ?? ''),
     'on_contacts' => (string)($employee['on_contacts'] ?? '0'),
+    'on_orgchart' => (string)($employee['on_orgchart'] ?? '0'),
 ];
 
 // Load current permission IDs
@@ -142,19 +142,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $workstationModeId = $form['workstation_mode_id'] === '' ? 'NULL' : (string)(int)$form['workstation_mode_id'];
         $assignmentTypeId = $form['assignment_type_id'] === '' ? 'NULL' : (string)(int)$form['assignment_type_id'];
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
-        $personalPhone = $form['personal_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['personal_phone']) . "'";
         $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
         $dect = $form['dect'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['dect']) . "'";
         $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
         $onContacts = (int)$form['on_contacts'];
+        $onOrgchart = (int)$form['on_orgchart'];
         $workstationModesSql = $hasWorkstationModesColumn ? ", workstation_mode_id={$workstationModeId}" : '';
         $assignmentTypesSql = $hasAssignmentTypesColumn ? ", assignment_type_id={$assignmentTypeId}" : '';
 
         $sql = "UPDATE employees SET
             first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
             work_email={$workEmail}, personal_email={$personalEmail}, external_id={$externalId}, username={$username},
-            department_id={$departmentId}, job_code={$jobCode}, personal_phone={$personalPhone}, mobile_phone={$mobilePhone}, external_number={$externalNumber}, dect={$dect}, extension={$extension}, on_contacts={$onContacts},
+            department_id={$departmentId}, job_code={$jobCode}, mobile_phone={$mobilePhone}, external_number={$externalNumber}, dect={$dect}, extension={$extension}, on_contacts={$onContacts}, on_orgchart={$onOrgchart},
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
             employee_position_id={$employeePositionId}, reports_to={$reportsTo},
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
@@ -209,12 +209,12 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Display Name</label><input type="text" name="display_name" value="<?php echo sanitize($form['display_name']); ?>"></div>
                         <div class="form-group"><label>Work Email</label><input type="email" name="work_email" value="<?php echo sanitize($form['work_email']); ?>"></div>
                         <div class="form-group"><label>Personal Email</label><input type="email" name="personal_email" value="<?php echo sanitize($form['personal_email']); ?>"></div>
-                        <div class="form-group"><label>Personal Phone</label><input type="text" name="personal_phone" value="<?php echo sanitize($form['personal_phone']); ?>"></div>
                         <div class="form-group"><label>Mobile Phone</label><input type="text" name="mobile_phone" value="<?php echo sanitize($form['mobile_phone']); ?>"></div>
                         <div class="form-group"><label>External Number</label><input type="text" name="external_number" value="<?php echo sanitize($form['external_number']); ?>"></div>
                         <div class="form-group"><label>Extension</label><input type="text" name="extension" value="<?php echo sanitize($form['extension']); ?>"></div>
                         <div class="form-group"><label>Dect</label><input type="text" name="dect" value="<?php echo sanitize($form['dect']); ?>"></div>
                         <div class="form-group"><label>On Contacts</label><select name="on_contacts"><option value="0" <?php echo ($form['on_contacts'] == 0) ? 'selected' : ''; ?>>No</option><option value="1" <?php echo ($form['on_contacts'] == 1) ? 'selected' : ''; ?>>Yes</option></select></div>
+                        <div class="form-group"><label>On Org Chart</label><select name="on_orgchart"><option value="0" <?php echo ($form['on_orgchart'] == 0) ? 'selected' : ''; ?>>No</option><option value="1" <?php echo ($form['on_orgchart'] == 1) ? 'selected' : ''; ?>>Yes</option></select></div>
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
