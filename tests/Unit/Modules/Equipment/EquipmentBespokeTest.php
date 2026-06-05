@@ -19,36 +19,72 @@ class EquipmentBespokeTest extends TestCase
 
         require_once ROOT_PATH . 'modules/equipment/delete_functions.php';
 
-        // Create a temporary company
-        mysqli_query($this->conn, "INSERT INTO companies (company, active) VALUES ('Test Company Bespoke Equipment', 1)");
-        $this->companyId = mysqli_insert_id($this->conn);
+        // Use company_id 1 which is guaranteed to exist by database.sql
+        $this->companyId = 1;
+
+        // Set session company_id for auditing to bypass the 0 FK constraint in audit_logs
+        mysqli_query($this->conn, "SET @app_company_id = {$this->companyId}");
     }
 
     protected function tearDown(): void
     {
-        if ($this->companyId) {
-            // Cleanup equipment and dependencies for this company
-            mysqli_query($this->conn, "DELETE FROM switch_ports WHERE company_id = {$this->companyId}");
-            mysqli_query($this->conn, "DELETE FROM idf_positions WHERE company_id = {$this->companyId}");
-            mysqli_query($this->conn, "DELETE FROM equipment WHERE company_id = {$this->companyId}");
-            mysqli_query($this->conn, "DELETE FROM equipment_types WHERE company_id = {$this->companyId}");
-            mysqli_query($this->conn, "DELETE FROM equipment_statuses WHERE company_id = {$this->companyId}");
-            mysqli_query($this->conn, "DELETE FROM companies WHERE id = {$this->companyId}");
+        // No cleanup of company 1
+    }
+
+    private function getOrCreateEquipmentType($name) {
+        $res = mysqli_query($this->conn, "SELECT id FROM equipment_types WHERE company_id = {$this->companyId} AND name = '$name' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
         }
+        mysqli_query($this->conn, "INSERT INTO equipment_types (company_id, name) VALUES ({$this->companyId}, '$name')");
+        return mysqli_insert_id($this->conn);
+    }
+
+    private function getOrCreateEquipmentStatus($name) {
+        $res = mysqli_query($this->conn, "SELECT id FROM equipment_statuses WHERE company_id = {$this->companyId} AND name = '$name' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
+        }
+        mysqli_query($this->conn, "INSERT INTO equipment_statuses (company_id, name) VALUES ({$this->companyId}, '$name')");
+        return mysqli_insert_id($this->conn);
+    }
+
+    private function getOrCreateColor() {
+        $res = mysqli_query($this->conn, "SELECT id FROM cable_colors LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
+        }
+        mysqli_query($this->conn, "INSERT INTO cable_colors (color_name, color_code) VALUES ('Blue', '#0000FF')");
+        return mysqli_insert_id($this->conn);
+    }
+
+    private function getOrCreateUser() {
+        $res = mysqli_query($this->conn, "SELECT id FROM users WHERE company_id = {$this->companyId} LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
+        }
+        $res = mysqli_query($this->conn, "SELECT id FROM user_roles WHERE company_id = {$this->companyId} LIMIT 1");
+        $roleId = ($row = mysqli_fetch_assoc($res)) ? $row['id'] : 1;
+        mysqli_query($this->conn, "INSERT INTO users (company_id, username, password, email, role_id, active) VALUES ({$this->companyId}, 'testuser', 'pass', 'test@example.com', $roleId, 1)");
+        return mysqli_insert_id($this->conn);
     }
 
     public function testEquipmentDeleteTransactional()
     {
-        // 1. Seed
-        mysqli_query($this->conn, "INSERT INTO equipment_types (company_id, name) VALUES ({$this->companyId}, 'Switch')");
-        $typeId = mysqli_insert_id($this->conn);
-        mysqli_query($this->conn, "INSERT INTO equipment_statuses (company_id, name) VALUES ({$this->companyId}, 'Active')");
-        $statusId = mysqli_insert_id($this->conn);
+        $uniqueSuffix = uniqid();
+        $name = 'Test Switch Delete Trans ' . $uniqueSuffix;
 
-        mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, status_id, name) VALUES ({$this->companyId}, $typeId, $statusId, 'Test Switch')");
+        // 1. Seed
+        $typeId = $this->getOrCreateEquipmentType('Switch');
+        $statusId = $this->getOrCreateEquipmentStatus('Active');
+        $colorId = $this->getOrCreateColor();
+
+        $res = mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, status_id, name) VALUES ({$this->companyId}, $typeId, $statusId, '$name')");
+        $this->assertTrue($res, "Failed to insert equipment: " . mysqli_error($this->conn));
         $equipmentId = mysqli_insert_id($this->conn);
 
-        mysqli_query($this->conn, "INSERT INTO switch_ports (company_id, equipment_id, port_number, port_type, status_id) VALUES ({$this->companyId}, $equipmentId, 1, 'RJ45', 1)");
+        $res = mysqli_query($this->conn, "INSERT INTO switch_ports (company_id, equipment_id, port_number, port_type, status_id, color_id) VALUES ({$this->companyId}, $equipmentId, 999, 'RJ45', 1, $colorId)");
+        $this->assertTrue($res, "Failed to insert switch_port: " . mysqli_error($this->conn));
         $portId = mysqli_insert_id($this->conn);
 
         // 2. Delete Switch (should also delete ports)
@@ -65,38 +101,58 @@ class EquipmentBespokeTest extends TestCase
 
     public function testEquipmentDeleteUsageBlock()
     {
-        // 1. Seed
-        mysqli_query($this->conn, "INSERT INTO equipment_types (company_id, name) VALUES ({$this->companyId}, 'Server')");
-        $typeId = mysqli_insert_id($this->conn);
-        mysqli_query($this->conn, "INSERT INTO equipment_statuses (company_id, name) VALUES ({$this->companyId}, 'Active')");
-        $statusId = mysqli_insert_id($this->conn);
+        $uniqueSuffix = uniqid();
+        $name = 'Test Server Delete Block ' . $uniqueSuffix;
 
-        mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, status_id, name) VALUES ({$this->companyId}, $typeId, $statusId, 'Test Server')");
+        // 1. Seed
+        $typeId = $this->getOrCreateEquipmentType('Server');
+        $statusId = $this->getOrCreateEquipmentStatus('Active');
+        $userId = $this->getOrCreateUser();
+
+        $res = mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, status_id, name) VALUES ({$this->companyId}, $typeId, $statusId, '$name')");
+        $this->assertTrue($res, "Failed to insert equipment: " . mysqli_error($this->conn));
         $equipmentId = mysqli_insert_id($this->conn);
 
         // Create a blocker in tickets (supplemental relation)
-        mysqli_query($this->conn, "INSERT INTO ticket_categories (company_id, name) VALUES ({$this->companyId}, 'Hardware')");
-        $catId = mysqli_insert_id($this->conn);
-        mysqli_query($this->conn, "INSERT INTO ticket_statuses (company_id, name) VALUES ({$this->companyId}, 'Open')");
-        $statId = mysqli_insert_id($this->conn);
-        mysqli_query($this->conn, "INSERT INTO ticket_priorities (company_id, name, level) VALUES ({$this->companyId}, 'High', 1)");
-        $prioId = mysqli_insert_id($this->conn);
+        $res = mysqli_query($this->conn, "SELECT id FROM ticket_categories WHERE company_id = {$this->companyId} AND name = 'Hardware' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            $catId = $row['id'];
+        } else {
+            mysqli_query($this->conn, "INSERT INTO ticket_categories (company_id, name) VALUES ({$this->companyId}, 'Hardware')");
+            $catId = mysqli_insert_id($this->conn);
+        }
 
-        mysqli_query($this->conn, "INSERT INTO tickets (company_id, title, category_id, status_id, priority_id, asset_id) VALUES ({$this->companyId}, 'Broken Server', $catId, $statId, $prioId, $equipmentId)");
+        $res = mysqli_query($this->conn, "SELECT id FROM ticket_statuses WHERE company_id = {$this->companyId} AND name = 'Open' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            $statId = $row['id'];
+        } else {
+            mysqli_query($this->conn, "INSERT INTO ticket_statuses (company_id, name) VALUES ({$this->companyId}, 'Open')");
+            $statId = mysqli_insert_id($this->conn);
+        }
+
+        $res = mysqli_query($this->conn, "SELECT id FROM ticket_priorities WHERE company_id = {$this->companyId} AND level = 1 LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            $prioId = $row['id'];
+        } else {
+            mysqli_query($this->conn, "INSERT INTO ticket_priorities (company_id, name, level) VALUES ({$this->companyId}, 'High', 1)");
+            $prioId = mysqli_insert_id($this->conn);
+        }
+
+        $res = mysqli_query($this->conn, "INSERT INTO tickets (company_id, title, category_id, status_id, priority_id, asset_id, created_by_user_id) VALUES ({$this->companyId}, 'Broken Server Test', $catId, $statId, $prioId, $equipmentId, $userId)");
+        $this->assertTrue($res, "Failed to insert ticket: " . mysqli_error($this->conn));
+        $ticketId = mysqli_insert_id($this->conn);
 
         // 2. Delete (should be blocked)
         $error = equipment_delete_record($this->conn, $this->companyId, $equipmentId);
         $this->assertNotNull($error, "Delete should be blocked by ticket reference");
-        $this->assertStringContainsString('ticket', $error);
+        $this->assertStringContainsString('ticket', strtolower((string)$error));
 
         // 3. Verify record still exists
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM equipment WHERE id = $equipmentId");
         $this->assertEquals(1, (int)mysqli_fetch_assoc($res)['count']);
         
-        // Cleanup ticket blocker
-        mysqli_query($this->conn, "DELETE FROM tickets WHERE company_id = {$this->companyId}");
-        mysqli_query($this->conn, "DELETE FROM ticket_categories WHERE company_id = {$this->companyId}");
-        mysqli_query($this->conn, "DELETE FROM ticket_statuses WHERE company_id = {$this->companyId}");
-        mysqli_query($this->conn, "DELETE FROM ticket_priorities WHERE company_id = {$this->companyId}");
+        // Cleanup
+        mysqli_query($this->conn, "DELETE FROM tickets WHERE id = $ticketId");
+        mysqli_query($this->conn, "DELETE FROM equipment WHERE id = $equipmentId");
     }
 }
