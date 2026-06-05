@@ -71,7 +71,7 @@ mysqli_stmt_close($empStmt);
             <h1>Contacts 📓</h1>
             <div class="card">
                 <table class="table">
-                    <thead><tr><th>Name / Position</th><th>Extension</th><th>Dect</th><th>Mobile Phone</th><th>External Number</th><th>Job Role</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Extension</th><th>Dect</th><th>Mobile Phone</th><th>External Number</th><th>Job Role</th></tr></thead>
                     <tbody>
                         <?php foreach ($departments as $dept): $did = (int)$dept['id']; ?>
                             <tr class="dept-header">
@@ -92,7 +92,6 @@ mysqli_stmt_close($empStmt);
                                         <?php else: ?>
                                             <strong><?php echo sanitize($emp['first_name'].' '.$emp['last_name']); ?></strong>
                                         <?php endif; ?>
-                                        <br><small><?php echo sanitize($emp['position_title'] ?: '—'); ?></small>
                                     </td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="extension"><?php echo sanitize($emp['extension'] ?: '—'); ?></span></td>
                                     <td><span class="inline-edit" data-type="emp" data-id="<?php echo (int)$emp['id']; ?>" data-field="dect"><?php echo sanitize($emp['dect'] ?: '—'); ?></span></td>
