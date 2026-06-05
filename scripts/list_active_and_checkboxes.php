@@ -1,6 +1,7 @@
 <?php
 /**
- * Script to list modules with 'active' input fields and checkboxes.
+ * Script to list modules with 'active' input fields and checkboxes,
+ * constrained to modules that actually have an 'active' database column.
  * Supports both CLI and Browser.
  */
 
@@ -12,26 +13,39 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 
-itm_script_output_begin('List Active Fields and Checkboxes');
+itm_script_output_begin('List Active Fields and Checkboxes (Constrained by DB Column)');
 
 $modules_dir = realpath(__DIR__ . '/../modules');
 $modules = array_filter(glob($modules_dir . '/*'), 'is_dir');
 
-$active_results = [];
+$active_input_results = [];
 $active_text_results = [];
-$checkbox_results = [];
+$active_checkbox_results = [];
 
 foreach ($modules as $module_path) {
     $module_name = basename($module_path);
 
-    // 1. Check database schema for 'active' column
+    // Check database schema for 'active' column (case-insensitive)
     $res = mysqli_query($conn, "SHOW TABLES LIKE '{$module_name}'");
     $has_table = ($res && mysqli_num_rows($res) > 0);
 
     $has_active_column = false;
     if ($has_table) {
         $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$module_name}` LIKE 'active'");
-        $has_active_column = ($res && mysqli_num_rows($res) > 0);
+        if ($res && mysqli_num_rows($res) > 0) {
+            $has_active_column = true;
+        } else {
+            // Check for 'Active' (upper case) just in case
+            $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$module_name}` LIKE 'Active'");
+            if ($res && mysqli_num_rows($res) > 0) {
+                $has_active_column = true;
+            }
+        }
+    }
+
+    // ONLY proceed if the module has an 'active' column in the DB
+    if (!$has_active_column) {
+        continue;
     }
 
     $files = glob($module_path . '/*.php');
@@ -42,23 +56,21 @@ foreach ($modules as $module_path) {
         $content = file_get_contents($file);
         $relativePath = 'modules/' . $module_name . '/' . $basename;
 
-        // 2. Check for 'active' input field (case-insensitive)
-        if ($has_active_column) {
-            if (preg_match('/name=["\']active["\']/i', $content) ||
-                (strpos($content, '$name === \'active\'') !== false && strpos($content, '$col[\'Field\']') !== false)) {
-                $active_results[$module_name][] = $relativePath;
+        // 1. Check for ANY 'active' input field in code
+        if (preg_match('/name=["\']active["\']/i', $content) ||
+            (strpos($content, '$name === \'active\'') !== false && strpos($content, '$col[\'Field\']') !== false)) {
+            $active_input_results[$module_name][] = $relativePath;
 
-                // Specifically detect type="text"
-                if (preg_match('/<input[^>]+type=["\']text["\'][^>]+name=["\']active["\']/i', $content) ||
-                    preg_match('/<input[^>]+name=["\']active["\'][^>]+type=["\']text["\']/i', $content)) {
-                    $active_text_results[$module_name][] = $relativePath;
-                }
+            // 1a. Specifically detect type="text"
+            if (preg_match('/<input[^>]+type=["\']text["\'][^>]+name=["\']active["\']/i', $content) ||
+                preg_match('/<input[^>]+name=["\']active["\'][^>]+type=["\']text["\']/i', $content)) {
+                $active_text_results[$module_name][] = $relativePath;
             }
         }
 
-        // 3. Check for checkbox
+        // 2. Check for ANY checkbox in this module (now constrained by having an 'active' DB column)
         if (stripos($content, 'type="checkbox"') !== false) {
-            $checkbox_results[$module_name][] = $relativePath;
+            $active_checkbox_results[$module_name][] = $relativePath;
         }
     }
 }
@@ -70,15 +82,19 @@ function format_module_link($name) {
     return ' (<a href="../modules/' . htmlspecialchars($name) . '/index.php" target="_blank">link modules/' . htmlspecialchars($name) . ' module</a>)';
 }
 
-echo "Count (Active fields): " . count($active_results) . "\n";
+echo "Count (Modules with Active DB field and 'active' input code): " . count($active_input_results) . "\n";
 echo "### Modules with 'active' input field:\n";
-foreach ($active_results as $name => $files) {
-    foreach ($files as $f) {
-        echo $f . format_module_link($name) . "\n";
+if (empty($active_input_results)) {
+    echo "None found.\n";
+} else {
+    foreach ($active_input_results as $name => $files) {
+        foreach ($files as $f) {
+            echo $f . format_module_link($name) . "\n";
+        }
     }
 }
 
-echo "\nCount (Active text fields): " . count($active_text_results) . "\n";
+echo "\nCount (Modules with Active DB field and <input type=\"text\" name=\"active\">): " . count($active_text_results) . "\n";
 echo "### Modules with <input type=\"text\" name=\"active\">:\n";
 if (empty($active_text_results)) {
     echo "None found.\n";
@@ -90,11 +106,15 @@ if (empty($active_text_results)) {
     }
 }
 
-echo "\nCount (Checkboxes): " . count($checkbox_results) . "\n";
+echo "\nCount (Modules with Active DB field and checkboxes): " . count($active_checkbox_results) . "\n";
 echo "### Modules with checkboxes:\n";
-foreach ($checkbox_results as $name => $files) {
-    foreach ($files as $f) {
-        echo $f . format_module_link($name) . "\n";
+if (empty($active_checkbox_results)) {
+    echo "None found.\n";
+} else {
+    foreach ($active_checkbox_results as $name => $files) {
+        foreach ($files as $f) {
+            echo $f . format_module_link($name) . "\n";
+        }
     }
 }
 
