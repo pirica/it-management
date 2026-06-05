@@ -1641,11 +1641,24 @@ if (!function_exists('itm_handle_json_table_import')) {
         // We need to resolve departments FIRST if we are in the employees module,
         // because position creation depends on the resolved department_id.
         $deptIndex = -1;
+        $geralDeptId = 0;
         if ($tableName === 'employees') {
             foreach ($importColumnFields as $index => $fieldName) {
                 if ($fieldName === 'department_id') {
                     $deptIndex = $index;
                     break;
+                }
+            }
+
+            // Ensure "Geral" department exists for this company
+            $geralNameEsc = mysqli_real_escape_string($conn, 'Geral');
+            $geralCodeEsc = mysqli_real_escape_string($conn, 'GER');
+            $deptCheck = mysqli_query($conn, "SELECT id FROM departments WHERE company_id=" . (int)$companyId . " AND (name='Geral' OR code='GER') LIMIT 1");
+            if ($deptCheck && mysqli_num_rows($deptCheck) > 0) {
+                $geralDeptId = (int)mysqli_fetch_assoc($deptCheck)['id'];
+            } else {
+                if (mysqli_query($conn, "INSERT INTO departments (company_id, name, code, active) VALUES (" . (int)$companyId . ", '{$geralNameEsc}', '{$geralCodeEsc}', 1)")) {
+                    $geralDeptId = (int)mysqli_insert_id($conn);
                 }
             }
         }
@@ -1669,8 +1682,9 @@ if (!function_exists('itm_handle_json_table_import')) {
             }
 
             // Employee module: Pre-resolve department if present
-            if ($tableName === 'employees' && $deptIndex >= 0) {
-                $deptValue = trim((string)($sourceRow[$deptIndex] ?? ''));
+            if ($tableName === 'employees') {
+                $rowValues['department_id'] = (string)$geralDeptId;
+                $deptValue = ($deptIndex >= 0) ? trim((string)($sourceRow[$deptIndex] ?? '')) : '';
                 if ($deptValue !== '' && $deptValue !== '—' && strcasecmp($deptValue, 'null') !== 0) {
                     $depNameEsc = mysqli_real_escape_string($conn, $deptValue);
                     $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$companyId . " AND name='" . $depNameEsc . "' LIMIT 1";
@@ -1811,7 +1825,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                         if ($tableName === 'employees' && $fieldName === 'employee_position_id' && (int)$resolvedFkId > 0) {
                             $deptId = (string)($rowValues['department_id'] ?? 'NULL');
                             if ($deptId !== 'NULL' && (int)$deptId > 0) {
-                                mysqli_query($conn, "UPDATE employee_positions SET department_id=" . (int)$deptId . " WHERE id=" . (int)$resolvedFkId . " AND department_id IS NULL");
+                                mysqli_query($conn, "UPDATE employee_positions SET department_id=" . (int)$deptId . " WHERE id=" . (int)$resolvedFkId . " AND (department_id IS NULL OR department_id = 0)");
                             }
                         }
                     } else if ($tableName === 'employees' && $fieldName === 'employee_position_id' && !empty($rawValue)) {

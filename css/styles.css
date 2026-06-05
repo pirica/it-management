@@ -1209,12 +1209,14 @@ td {
 }
 
 table {
-    max-width: 100%;
+    max-width: none;
 }
 
 th,
 td {
-    overflow-wrap: break-word;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: nowrap;
 }
 
 input,

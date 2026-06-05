@@ -45,8 +45,12 @@ function emp_parse_delimited_rows($content) {
     $rows = [];
     foreach ($lines as $line) {
         if (trim($line) === '') { continue; }
-        $delimiter = str_contains($line, "\t") ? "\t" : ',';
-        $rows[] = str_getcsv($line, $delimiter);
+        // Handle tab-separated data (common when pasting from Excel)
+        if (str_contains($line, "\t")) {
+            $rows[] = explode("\t", $line);
+        } else {
+            $rows[] = str_getcsv($line, ',');
+        }
     }
     return $rows;
 }
@@ -296,6 +300,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
         }
 
         if (empty($errors)) {
+            // Ensure "Geral" department exists for this company
+            $geralDeptId = 0;
+            $geralNameEsc = mysqli_real_escape_string($conn, 'Geral');
+            $geralCodeEsc = mysqli_real_escape_string($conn, 'GER');
+            $deptCheck = mysqli_query($conn, "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND (name='Geral' OR code='GER') LIMIT 1");
+            if ($deptCheck && mysqli_num_rows($deptCheck) > 0) {
+                $geralDeptId = (int)mysqli_fetch_assoc($deptCheck)['id'];
+            } else {
+                if (mysqli_query($conn, "INSERT INTO departments (company_id, name, code, active) VALUES (" . (int)$company_id . ", '{$geralNameEsc}', '{$geralCodeEsc}', 1)")) {
+                    $geralDeptId = (int)mysqli_insert_id($conn);
+                }
+            }
+
             $created = 0; $updated = 0; $skipped = 0; $deleted = 0;
             $matchedIds = [];
             $existingIndex = [];
@@ -364,7 +381,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 // Map status flag
                 $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
 
-                // Auto-map departments
+                // Auto-map departments (Default to Geral if missing)
+                $mapped['department_id'] = $geralDeptId;
                 if (!empty($mapped['department_name'])) {
                     $depNameEsc = mysqli_real_escape_string($conn, (string)$mapped['department_name']);
                     $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND name='" . $depNameEsc . "' LIMIT 1";
@@ -378,11 +396,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     }
                 }
 
-                // Auto-map positions (linked to department)
+                // Auto-map positions (linked to department, default to Geral if no dept specified)
                 if (!empty($mapped['employee_position_id'])) {
                     $posName = (string)$mapped['employee_position_id'];
                     $posNameEsc = mysqli_real_escape_string($conn, $posName);
-                    $posDeptId = !empty($mapped['department_id']) ? (int)$mapped['department_id'] : 'NULL';
+                    $posDeptId = (int)$mapped['department_id'];
 
                     $posSql = "SELECT id, department_id FROM employee_positions WHERE company_id=" . (int)$company_id . " AND name='" . $posNameEsc . "' LIMIT 1";
                     $posRes = mysqli_query($conn, $posSql);
@@ -390,8 +408,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         $posRow = mysqli_fetch_assoc($posRes);
                         $mapped['employee_position_id'] = (int)$posRow['id'];
                         // If position exists but department is not linked, update it
-                        if (empty($posRow['department_id']) && !empty($mapped['department_id'])) {
-                            mysqli_query($conn, "UPDATE employee_positions SET department_id=" . (int)$mapped['department_id'] . " WHERE id=" . (int)$mapped['employee_position_id']);
+                        if (empty($posRow['department_id'])) {
+                            mysqli_query($conn, "UPDATE employee_positions SET department_id=" . $posDeptId . " WHERE id=" . (int)$mapped['employee_position_id']);
                         }
                     } else {
                         if (mysqli_query($conn, "INSERT INTO employee_positions (company_id, name, department_id) VALUES (" . (int)$company_id . ", '" . $posNameEsc . "', " . $posDeptId . ")")) {
