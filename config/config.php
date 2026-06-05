@@ -1486,17 +1486,15 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
  * Handles JSON import requests from table-tools.js and writes rows directly to a table.
  */
 if (!function_exists('itm_handle_json_table_import')) {
-    function itm_handle_json_table_import($conn, $tableName, $companyId = 0, ?array $jsonBodyOverride = null) {
+    function itm_handle_json_table_import($conn, $tableName, $companyId = 0, ?array $jsonBodyOverride = null, $returnInsteadOfExit = false) {
         if ((string)($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             return false;
         }
 
         $contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
-        $rawBody = file_get_contents('php://input');
-        if ($rawBody === false) {
-            return false;
-        }
-        $bodyMentionsImportRows = strpos($rawBody, '"import_excel_rows"') !== false;
+        $rawBody = (string)@file_get_contents('php://input');
+        $bodyMentionsImportRows = ($rawBody !== '' && strpos($rawBody, '"import_excel_rows"') !== false);
+
         if ($jsonBodyOverride === null && strpos($contentType, 'application/json') === false && !$bodyMentionsImportRows) {
             return false;
         }
@@ -1507,9 +1505,13 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
         if (!is_array($jsonBody)) {
             if ($bodyMentionsImportRows) {
-                header('Content-Type: application/json');
-                http_response_code(400);
-                echo json_encode(['ok' => false, 'error' => 'Invalid JSON payload.']);
+                if (!$returnInsteadOfExit) {
+                    header('Content-Type: application/json');
+                    http_response_code(400);
+                }
+                $err = ['ok' => false, 'error' => 'Invalid JSON payload.'];
+                if ($returnInsteadOfExit) return $err;
+                echo json_encode($err);
                 exit;
             }
             return false;
@@ -1518,7 +1520,9 @@ if (!function_exists('itm_handle_json_table_import')) {
             return false;
         }
 
-        header('Content-Type: application/json');
+        if (!$returnInsteadOfExit) {
+            header('Content-Type: application/json');
+        }
 
         $tableName = trim((string)$tableName);
         if ($tableName === '' || !itm_is_safe_identifier($tableName)) {
@@ -1573,7 +1577,12 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
 
         $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
-        $headerMap = [];
+        $headerMap = [
+            'id' => 'id',
+            'id▼' => 'id',
+            'id▲' => 'id',
+            'duplicate' => 'duplicate', // usually skipped
+        ];
         foreach ($columns as $fieldName => $meta) {
             $normalizedField = strtolower(str_replace('_', ' ', $fieldName));
             $headerMap[$normalizedField] = $fieldName;
@@ -1582,6 +1591,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $stem = strtolower(str_replace('_', ' ', substr($fieldName, 0, -3)));
                 $headerMap[$stem] = $fieldName;
                 $headerMap[$stem . ' name'] = $fieldName;
+                $headerMap[$stem . ' id'] = $fieldName;
             }
             if ($fieldName === 'equipment_type_id') {
                 $headerMap['type'] = $fieldName;
@@ -1592,7 +1602,14 @@ if (!function_exists('itm_handle_json_table_import')) {
         if ($tableName === 'employees') {
             $headerMap['hilton id'] = 'external_id';
             $headerMap['user name'] = 'username';
+            $headerMap['position title'] = 'employee_position_id';
             $headerMap['title'] = 'employee_position_id';
+            $headerMap['email'] = 'work_email';
+            $headerMap['employee status'] = 'raw_status_code';
+            $headerMap['status'] = 'raw_status_code';
+            $headerMap['on orgchart'] = 'on_orgchart';
+            $headerMap['on org chart'] = 'on_orgchart';
+            $headerMap['department name'] = 'department_id';
         }
 
         $fkMap = [];
@@ -1628,13 +1645,19 @@ if (!function_exists('itm_handle_json_table_import')) {
         };
 
         $importColumnFields = [];
-        foreach ($headerRow as $headerValue) {
+        $idIndex = -1;
+        foreach ($headerRow as $idx => $headerValue) {
             $normalizedHeader = strtolower(trim(preg_replace('/\s+/', ' ', (string)$headerValue)));
-            $importColumnFields[] = $headerMap[$normalizedHeader] ?? null;
+            $field = $headerMap[$normalizedHeader] ?? null;
+            $importColumnFields[] = $field;
+            if ($field === 'id') {
+                $idIndex = $idx;
+            }
         }
 
         $targetFields = array_keys($columns);
         $insertedRows = 0;
+        $updatedRows = 0;
         $failedRows = 0;
         $importErrors = [];
 
@@ -1898,22 +1921,58 @@ if (!function_exists('itm_handle_json_table_import')) {
                 }
             }
 
-            $insertFields = [];
-            $insertValues = [];
-            foreach ($targetFields as $fieldName) {
-                $insertFields[] = '`' . str_replace('`', '``', $fieldName) . '`';
-                $insertValues[] = $rowValues[$fieldName] ?? 'NULL';
+            $rowId = 0;
+            if ($idIndex >= 0) {
+                $rowId = (int)trim((string)($sourceRow[$idIndex] ?? ''));
             }
 
-            $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
-            $dbErrorCode = 0;
-            $dbErrorMessage = '';
-            if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                $insertedRows++;
+            $existingId = 0;
+            if ($rowId > 0) {
+                $checkSql = "SELECT id FROM `" . str_replace('`', '``', $tableName) . "` WHERE id = " . $rowId;
+                if ($hasCompanyColumn) {
+                    $checkSql .= " AND company_id = " . (int)$companyId;
+                }
+                $checkRes = mysqli_query($conn, $checkSql);
+                if ($checkRes && mysqli_num_rows($checkRes) > 0) {
+                    $existingId = $rowId;
+                }
+            }
+
+            if ($existingId > 0) {
+                $updateParts = [];
+                foreach ($targetFields as $fieldName) {
+                    if ($fieldName === 'company_id') continue;
+                    $updateParts[] = '`' . str_replace('`', '``', $fieldName) . '` = ' . ($rowValues[$fieldName] ?? 'NULL');
+                }
+                $updateSql = "UPDATE `" . str_replace('`', '``', $tableName) . "` SET " . implode(', ', $updateParts) . " WHERE id = " . $existingId;
+                $dbErrorCode = 0;
+                $dbErrorMessage = '';
+                if (itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage) !== false) {
+                    $updatedRows++;
+                } else {
+                    $failedRows++;
+                    if (count($importErrors) < 5) {
+                        $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
+                    }
+                }
             } else {
-                $failedRows++;
-                if (count($importErrors) < 5) {
-                    $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
+                $insertFields = [];
+                $insertValues = [];
+                foreach ($targetFields as $fieldName) {
+                    $insertFields[] = '`' . str_replace('`', '``', $fieldName) . '`';
+                    $insertValues[] = $rowValues[$fieldName] ?? 'NULL';
+                }
+
+                $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
+                $dbErrorCode = 0;
+                $dbErrorMessage = '';
+                if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                    $insertedRows++;
+                } else {
+                    $failedRows++;
+                    if (count($importErrors) < 5) {
+                        $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . (string)$dbErrorMessage;
+                    }
                 }
             }
         }
@@ -1921,14 +1980,20 @@ if (!function_exists('itm_handle_json_table_import')) {
         $response = [
             'ok' => true,
             'inserted' => $insertedRows,
+            'updated' => $updatedRows,
             'failed' => $failedRows,
         ];
         if (!empty($importErrors)) {
             $response['errors'] = $importErrors;
-            if ($insertedRows === 0) {
+            if ($insertedRows === 0 && $updatedRows === 0) {
                 $response['message'] = $importErrors[0];
             }
         }
+
+        if ($returnInsteadOfExit) {
+            return $response;
+        }
+
         echo json_encode($response);
         exit;
     }
