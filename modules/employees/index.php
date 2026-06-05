@@ -60,6 +60,7 @@ function emp_canonical_header($header) {
     $normalized = str_replace(['_', '-'], ' ', $normalized);
 
     $map = [
+        'hilton id' => 'external_id',
         'external id' => 'external_id',
         'employee code' => 'employee_code',
         'user name' => 'username',
@@ -81,7 +82,8 @@ function emp_canonical_header($header) {
         'first name' => 'first_name',
         'last name' => 'last_name',
         'job code' => 'job_code',
-        'title' => 'job_title',
+        'title' => 'employee_position_id',
+        'job title' => 'employee_position_id',
         'comments' => 'comments',
         'comment' => 'comments',
         'termination date' => 'termination_date',
@@ -185,6 +187,18 @@ function emp_identifier_tokens($mapped) {
     if (!empty($mapped['external_id'])) { $tokens[] = 'external_id:' . strtolower(trim((string)$mapped['external_id'])); }
     sort($tokens);
     return $tokens;
+}
+
+/**
+ * Determines if an email address is likely personal or corporate
+ */
+function emp_is_personal_email($email) {
+    $personalDomains = [
+        'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
+        'aol.com', 'msn.com', 'live.com', 'me.com', 'yandex.com', 'mail.ru'
+    ];
+    $domain = strtolower(substr(strrchr((string)$email, "@"), 1));
+    return in_array($domain, $personalDomains, true);
 }
 
 
@@ -309,11 +323,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'work_email' => '', 'personal_email' => '', 'employee_code' => '',
                     'external_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '',
                     'comments' => '', 'raw_status_code' => '', 'termination_date' => '', 'request_date' => '', 'requested_by' => '',
-                    'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0
+                    'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0,
+                    'employee_position_id' => null
                 ];
 
+                $importEmail = '';
                 foreach ($validIdx as $idx => $field) {
-                    $mapped[$field] = trim((string)($row[$idx] ?? ''));
+                    if ($field === 'work_email') {
+                        $importEmail = trim((string)($row[$idx] ?? ''));
+                    } else {
+                        $mapped[$field] = trim((string)($row[$idx] ?? ''));
+                    }
+                }
+
+                // Distinguish between work and personal email
+                if ($importEmail !== '') {
+                    if (emp_is_personal_email($importEmail)) {
+                        $mapped['personal_email'] = $importEmail;
+                    } else {
+                        $mapped['work_email'] = $importEmail;
+                    }
                 }
 
                 // Auto-fill names
@@ -349,6 +378,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     }
                 }
 
+                // Auto-map positions (linked to department)
+                if (!empty($mapped['employee_position_id'])) {
+                    $posName = (string)$mapped['employee_position_id'];
+                    $posNameEsc = mysqli_real_escape_string($conn, $posName);
+                    $posDeptId = !empty($mapped['department_id']) ? (int)$mapped['department_id'] : 'NULL';
+
+                    $posSql = "SELECT id, department_id FROM employee_positions WHERE company_id=" . (int)$company_id . " AND name='" . $posNameEsc . "' LIMIT 1";
+                    $posRes = mysqli_query($conn, $posSql);
+                    if ($posRes && mysqli_num_rows($posRes) === 1) {
+                        $posRow = mysqli_fetch_assoc($posRes);
+                        $mapped['employee_position_id'] = (int)$posRow['id'];
+                        // If position exists but department is not linked, update it
+                        if (empty($posRow['department_id']) && !empty($mapped['department_id'])) {
+                            mysqli_query($conn, "UPDATE employee_positions SET department_id=" . (int)$mapped['department_id'] . " WHERE id=" . (int)$mapped['employee_position_id']);
+                        }
+                    } else {
+                        if (mysqli_query($conn, "INSERT INTO employee_positions (company_id, name, department_id) VALUES (" . (int)$company_id . ", '" . $posNameEsc . "', " . $posDeptId . ")")) {
+                            $mapped['employee_position_id'] = (int)mysqli_insert_id($conn);
+                        } else {
+                            $mapped['employee_position_id'] = null;
+                        }
+                    }
+                }
+
+
                 // Check for duplicates within the file itself
                 $identifierTokens = emp_identifier_tokens($mapped);
                 if (!$identifierTokens) {
@@ -376,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
