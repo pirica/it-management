@@ -75,46 +75,43 @@ foreach ($modules as $module_path) {
     }
 }
 
-function format_module_link($name) {
+function format_module_link_v2($name) {
     if (itm_script_is_cli_sapi()) {
         return " (link modules/$name module)";
     }
     return ' (<a href="../modules/' . htmlspecialchars($name) . '/index.php" target="_blank">link modules/' . htmlspecialchars($name) . ' module</a>)';
 }
 
-echo "Count (Modules with Active DB field and 'active' input code): " . count($active_input_results) . "\n";
+// Flatten for counting distinct module/file pairs
+$count_active = 0; foreach($active_input_results as $files) $count_active += count($files);
+$count_text = 0; foreach($active_text_results as $files) $count_text += count($files);
+$count_checkbox = 0; foreach($active_checkbox_results as $files) $count_checkbox += count($files);
+
+echo "Count: " . $count_active . "\n";
 echo "### Modules with 'active' input field:\n";
-if (empty($active_input_results)) {
-    echo "None found.\n";
-} else {
-    foreach ($active_input_results as $name => $files) {
-        foreach ($files as $f) {
-            echo $f . format_module_link($name) . "\n";
-        }
+foreach ($active_input_results as $name => $files) {
+    foreach ($files as $f) {
+        echo $f . format_module_link_v2($name) . "\n";
     }
 }
 
-echo "\nCount (Modules with Active DB field and <input type=\"text\" name=\"active\">): " . count($active_text_results) . "\n";
+echo "\nCount: " . $count_text . "\n";
 echo "### Modules with <input type=\"text\" name=\"active\">:\n";
 if (empty($active_text_results)) {
     echo "None found.\n";
 } else {
     foreach ($active_text_results as $name => $files) {
         foreach ($files as $f) {
-            echo $f . format_module_link($name) . "\n";
+            echo $f . format_module_link_v2($name) . "\n";
         }
     }
 }
 
-echo "\nCount (Modules with Active DB field and checkboxes): " . count($active_checkbox_results) . "\n";
-echo "### Modules with checkboxes:\n";
-if (empty($active_checkbox_results)) {
-    echo "None found.\n";
-} else {
-    foreach ($active_checkbox_results as $name => $files) {
-        foreach ($files as $f) {
-            echo $f . format_module_link($name) . "\n";
-        }
+echo "\nCount: " . $count_checkbox . "\n";
+echo "### Modules with checkboxes (only if DB has active field):\n";
+foreach ($active_checkbox_results as $name => $files) {
+    foreach ($files as $f) {
+        echo $f . format_module_link_v2($name) . "\n";
     }
 }
 
