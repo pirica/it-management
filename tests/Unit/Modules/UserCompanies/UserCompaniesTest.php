@@ -16,6 +16,23 @@ class UserCompaniesTest extends TestCase
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+
+        // Set session company_id for auditing
+        mysqli_query($this->conn, "SET @app_company_id = {$this->companyId}");
+    }
+
+    private function getOrCreateUser() {
+        // Find a user that is not linked to this company yet
+        $res = mysqli_query($this->conn, "SELECT u.id FROM `users` u LEFT JOIN `user_companies` uc ON u.id = uc.user_id AND uc.company_id = {$this->companyId} WHERE uc.user_id IS NULL LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
+        }
+
+        // Create new user
+        $username = 'user_comp_' . uniqid();
+        $email = $username . '@example.com';
+        mysqli_query($this->conn, "INSERT INTO `users` (company_id, username, email, active) VALUES ({$this->companyId}, '$username', '$email', 1)");
+        return mysqli_insert_id($this->conn);
     }
 
     public function testCRUD()
@@ -24,22 +41,7 @@ class UserCompaniesTest extends TestCase
         $data = [];
         $data['company_id'] = $this->companyId;
         $data['active'] = 1;
-        // Find or fallback for user_id (users)
-        $resuser_id = mysqli_query($this->conn, "SELECT u.id FROM `users` u LEFT JOIN `user_companies` uc ON u.id = uc.user_id AND uc.company_id = {$this->companyId} WHERE uc.user_id IS NULL LIMIT 1");
-        if ($rowuser_id = mysqli_fetch_assoc($resuser_id)) {
-            $data['user_id'] = $rowuser_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $this->markTestSkipped('Required dependency users not found in database.');
-        }
-        // Find or fallback for granted_by_user_id (users)
-        $resgranted_by_user_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowgranted_by_user_id = mysqli_fetch_assoc($resgranted_by_user_id)) {
-            $data['granted_by_user_id'] = $rowgranted_by_user_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['granted_by_user_id'] = null;
-        }
+        $data['user_id'] = $this->getOrCreateUser();
 
         $sql = "INSERT INTO `user_companies` (company_id, `user_id`, `active`) VALUES (?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
@@ -63,7 +65,16 @@ class UserCompaniesTest extends TestCase
         $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
-        // No suitable varchar/text column found for update test, skipping update assertion
+        $updatedValue = 0; // Toggle active
+        $updateSql = "UPDATE `user_companies` SET `active` = ? WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $updateSql);
+        mysqli_stmt_bind_param($stmt, 'ii', $updatedValue, $id);
+        $this->assertTrue(mysqli_stmt_execute($stmt));
+        mysqli_stmt_close($stmt);
+
+        $res = mysqli_query($this->conn, "SELECT `active` FROM `user_companies` WHERE id = $id");
+        $row = mysqli_fetch_assoc($res);
+        $this->assertEquals($updatedValue, (int)$row['active']);
 
         // 4. Delete
         $deleteSql = "DELETE FROM `user_companies` WHERE id = ?";

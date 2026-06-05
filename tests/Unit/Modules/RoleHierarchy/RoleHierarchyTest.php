@@ -16,22 +16,36 @@ class RoleHierarchyTest extends TestCase
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+
+        // Set session company_id for auditing
+        mysqli_query($this->conn, "SET @app_company_id = {$this->companyId}");
+    }
+
+    private function getAvailableRoleId() {
+        // Find a role that is NOT in role_hierarchy for this company
+        $res = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE company_id = {$this->companyId} AND id NOT IN (SELECT role_id FROM role_hierarchy WHERE company_id = {$this->companyId}) LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
+        }
+
+        // If all roles are used, create a new one
+        $uniqueName = 'Test Role ' . uniqid();
+        $res = mysqli_query($this->conn, "INSERT INTO `user_roles` (company_id, name, active) VALUES ({$this->companyId}, '$uniqueName', 1)");
+        if (!$res) {
+            throw new \Exception("Failed to insert user_role: " . mysqli_error($this->conn));
+        }
+        return mysqli_insert_id($this->conn);
     }
 
     public function testCRUD()
     {
+        $roleId = $this->getAvailableRoleId();
+
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
-        $data['hierarchy_order'] = 1;
-        // Find or fallback for role_id (user_roles)
-        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE " . (strpos('user_roles', 'companies') === false && strpos('user_roles', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowrole_id = mysqli_fetch_assoc($resrole_id)) {
-            $data['role_id'] = $rowrole_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $this->markTestSkipped('Required dependency user_roles not found in database.');
-        }
+        $data['role_id'] = $roleId;
+        $data['hierarchy_order'] = 999;
 
         $sql = "INSERT INTO `role_hierarchy` (company_id, `role_id`, `hierarchy_order`) VALUES (?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
@@ -44,7 +58,7 @@ class RoleHierarchyTest extends TestCase
         $bindTypes = 'iii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
 
@@ -55,7 +69,16 @@ class RoleHierarchyTest extends TestCase
         $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
-        // No suitable varchar/text column found for update test, skipping update assertion
+        $updatedValue = 1000;
+        $updateSql = "UPDATE `role_hierarchy` SET `hierarchy_order` = ? WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $updateSql);
+        mysqli_stmt_bind_param($stmt, 'ii', $updatedValue, $id);
+        $this->assertTrue(mysqli_stmt_execute($stmt));
+        mysqli_stmt_close($stmt);
+
+        $res = mysqli_query($this->conn, "SELECT `hierarchy_order` FROM `role_hierarchy` WHERE id = $id");
+        $row = mysqli_fetch_assoc($res);
+        $this->assertEquals($updatedValue, (int)$row['hierarchy_order']);
 
         // 4. Delete
         $deleteSql = "DELETE FROM `role_hierarchy` WHERE id = ?";

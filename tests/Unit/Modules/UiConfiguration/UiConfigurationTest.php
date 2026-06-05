@@ -16,22 +16,32 @@ class UiConfigurationTest extends TestCase
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+
+        // Set session company_id for auditing
+        mysqli_query($this->conn, "SET @app_company_id = {$this->companyId}");
+    }
+
+    private function getOrCreateUser() {
+        // Find a user and company that don't have a UI configuration yet to avoid unique constraint violations.
+        $res = mysqli_query($this->conn, "SELECT u.id, u.company_id FROM `users` u LEFT JOIN `ui_configuration` uc ON u.id = uc.user_id AND u.company_id = uc.company_id WHERE uc.id IS NULL LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row;
+        }
+
+        // Create new user
+        $username = 'user_' . uniqid();
+        $email = $username . '@example.com';
+        mysqli_query($this->conn, "INSERT INTO `users` (company_id, username, email, active) VALUES ({$this->companyId}, '$username', '$email', 1)");
+        return ['id' => mysqli_insert_id($this->conn), 'company_id' => $this->companyId];
     }
 
     public function testCRUD()
     {
         // 1. Create
         $data = [];
-
-        // Find a user and company that don't have a UI configuration yet to avoid unique constraint violations.
-        // uq_ui_configuration_company_user (company_id, user_id)
-        $resuser = mysqli_query($this->conn, "SELECT u.id, u.company_id FROM `users` u LEFT JOIN `ui_configuration` uc ON u.id = uc.user_id AND u.company_id = uc.company_id WHERE uc.id IS NULL LIMIT 1");
-        if ($rowuser = mysqli_fetch_assoc($resuser)) {
-            $data['user_id'] = $rowuser['id'];
-            $data['company_id'] = $rowuser['company_id'];
-        } else {
-            $this->markTestSkipped('No user found without a UI configuration.');
-        }
+        $user = $this->getOrCreateUser();
+        $data['user_id'] = $user['id'];
+        $data['company_id'] = $user['company_id'];
 
         $data['table_actions_position'] = 'left';
         $data['new_button_position'] = 'left';

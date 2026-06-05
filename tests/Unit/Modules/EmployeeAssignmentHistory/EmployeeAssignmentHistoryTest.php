@@ -16,6 +16,27 @@ class EmployeeAssignmentHistoryTest extends TestCase
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+
+        // Set session company_id for auditing
+        mysqli_query($this->conn, "SET @app_company_id = {$this->companyId}");
+    }
+
+    private function getOrCreateEmployee() {
+        $res = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE company_id = {$this->companyId} LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return $row['id'];
+        }
+
+        // Need dependencies: employee_status
+        $resStat = mysqli_query($this->conn, "SELECT id FROM employee_statuses WHERE company_id = {$this->companyId} LIMIT 1");
+        $statId = ($row = mysqli_fetch_assoc($resStat)) ? $row['id'] : 0;
+        if (!$statId) {
+            mysqli_query($this->conn, "INSERT INTO employee_statuses (company_id, name) VALUES ({$this->companyId}, 'Active')");
+            $statId = mysqli_insert_id($this->conn);
+        }
+
+        mysqli_query($this->conn, "INSERT INTO `employees` (company_id, first_name, last_name, employment_status_id) VALUES ({$this->companyId}, 'Test', 'Assignment', $statId)");
+        return mysqli_insert_id($this->conn);
     }
 
     public function testCRUD()
@@ -26,46 +47,7 @@ class EmployeeAssignmentHistoryTest extends TestCase
         $data['assigned_date'] = date('Y-m-d');
         $data['signed_handover'] = 1;
         $data['active'] = 1;
-        // Find or fallback for employee_id (employees)
-        $resemployee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowemployee_id = mysqli_fetch_assoc($resemployee_id)) {
-            $data['employee_id'] = $rowemployee_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $this->markTestSkipped('Required dependency employees not found in database.');
-        }
-        // Find or fallback for equipment_id (equipment)
-        $resequipment_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowequipment_id = mysqli_fetch_assoc($resequipment_id)) {
-            $data['equipment_id'] = $rowequipment_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['equipment_id'] = null;
-        }
-        // Find or fallback for inventory_item_id (inventory_items)
-        $resinventory_item_id = mysqli_query($this->conn, "SELECT id FROM `inventory_items` WHERE " . (strpos('inventory_items', 'companies') === false && strpos('inventory_items', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowinventory_item_id = mysqli_fetch_assoc($resinventory_item_id)) {
-            $data['inventory_item_id'] = $rowinventory_item_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['inventory_item_id'] = null;
-        }
-        // Find or fallback for assigned_by_user_id (users)
-        $resassigned_by_user_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowassigned_by_user_id = mysqli_fetch_assoc($resassigned_by_user_id)) {
-            $data['assigned_by_user_id'] = $rowassigned_by_user_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['assigned_by_user_id'] = null;
-        }
-        // Find or fallback for received_by_user_id (users)
-        $resreceived_by_user_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowreceived_by_user_id = mysqli_fetch_assoc($resreceived_by_user_id)) {
-            $data['received_by_user_id'] = $rowreceived_by_user_id['id'];
-        } else {
-            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['received_by_user_id'] = null;
-        }
+        $data['employee_id'] = $this->getOrCreateEmployee();
 
         $sql = "INSERT INTO `employee_assignment_history` (company_id, `employee_id`, `assigned_date`, `signed_handover`, `active`) VALUES (?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
@@ -80,7 +62,7 @@ class EmployeeAssignmentHistoryTest extends TestCase
         $bindTypes = 'iisii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
 
@@ -91,11 +73,11 @@ class EmployeeAssignmentHistoryTest extends TestCase
         $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
-        $updatedValue = 'Updated Value';
+        $updatedValue = 'Updated Asset Description ' . uniqid();
         $updateSql = "UPDATE `employee_assignment_history` SET `asset_description` = ? WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $updateSql);
         mysqli_stmt_bind_param($stmt, 'si', $updatedValue, $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT `asset_description` FROM `employee_assignment_history` WHERE id = $id");
@@ -106,7 +88,7 @@ class EmployeeAssignmentHistoryTest extends TestCase
         $deleteSql = "DELETE FROM `employee_assignment_history` WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $deleteSql);
         mysqli_stmt_bind_param($stmt, 'i', $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `employee_assignment_history` WHERE id = $id");
