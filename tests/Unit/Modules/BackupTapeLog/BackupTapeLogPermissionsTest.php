@@ -40,25 +40,26 @@ class BackupTapeLogPermissionsTest extends TestCase
     private function simulateAjaxRequest($postData, $sessionData = [])
     {
         $tmpFile = tempnam(sys_get_temp_dir(), 'test_sim_');
+        $dir = str_replace('\\', '/', __DIR__);
         $sessionDataMerged = array_merge([
             'company_id' => $this->companyId,
             'user_id' => 1,
             'role_name' => 'admin'
         ], $sessionData);
-        $sessionDataJson = json_encode($sessionDataMerged);
-        $postDataJson = json_encode($postData);
+        $sessionDataExport = var_export($sessionDataMerged, true);
+        $postDataExport = var_export($postData, true);
 
         $script = '<?php
 define("ITM_CLI_SCRIPT", true);
 error_reporting(0);
 session_start();
-require_once "' . __DIR__ . '/../../../../config/config.php";
-$_SESSION = json_decode(\'' . addslashes($sessionDataJson) . '\', true);
+require_once "' . $dir . '/../../../../config/config.php";
+$_SESSION = ' . $sessionDataExport . ';
 $_SESSION["csrf_token"] = itm_get_csrf_token();
 $_SERVER["REQUEST_METHOD"] = "POST";
-$_POST = json_decode(\'' . addslashes($postDataJson) . '\', true);
+$_POST = ' . $postDataExport . ';
 $_POST["csrf_token"] = $_SESSION["csrf_token"];
-chdir("' . __DIR__ . '/../../../../modules/backup_tape_log");
+chdir("' . $dir . '/../../../../modules/backup_tape_log");
 include "index.php";
 ';
         file_put_contents($tmpFile, $script);
