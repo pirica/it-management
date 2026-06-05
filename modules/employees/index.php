@@ -73,7 +73,6 @@ function emp_canonical_header($header) {
         'work email' => 'work_email',
         'email' => 'work_email',
         'personal email' => 'personal_email',
-        'personal phone' => 'personal_phone',
         'mobile phone' => 'mobile_phone',
         'external number' => 'external_number',
         'work phone' => 'external_number',
@@ -82,6 +81,7 @@ function emp_canonical_header($header) {
         'extension' => 'extension',
         'on contacts' => 'on_contacts',
         'employee status' => 'raw_status_code',
+        'raw status code' => 'raw_status_code',
         'status' => 'raw_status_code',
         'first name' => 'first_name',
         'last name' => 'last_name',
@@ -94,7 +94,18 @@ function emp_canonical_header($header) {
         'request date' => 'request_date',
         'requested by' => 'requested_by',
         'termination requested by' => 'termination_requested_by',
-        'department name' => 'department_name'
+        'department name' => 'department_name',
+        'on orgchart' => 'on_orgchart',
+        'on org chart' => 'on_orgchart',
+        'position title' => 'employee_position_id',
+        'reports to' => 'reports_to',
+        'employment status' => 'employment_status_id',
+        'workstation mode' => 'workstation_mode_id',
+        'assignment type' => 'assignment_type_id',
+        'office key card department id' => 'office_key_card_department_id',
+        'id' => 'id',
+        'id▼' => 'id',
+        'on contacts' => 'on_contacts'
     ];
 
     return $map[$normalized] ?? null;
@@ -106,11 +117,11 @@ function emp_canonical_header($header) {
 function emp_status_id_from_raw($conn, $rawStatus) {
     $status = strtoupper(trim((string)$rawStatus));
     $name = 'Active';
-    if ($status === 'I') {
+    if ($status === 'I' || $status === 'INACTIVE') {
         $name = 'Inactive';
-    } elseif ($status === 'L') {
+    } elseif ($status === 'L' || $status === 'ON LEAVE') {
         $name = 'On Leave';
-    } elseif ($status === 'T') {
+    } elseif ($status === 'T' || $status === 'TERMINATED') {
         $name = 'Terminated';
     }
 
@@ -315,13 +326,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
             $created = 0; $updated = 0; $skipped = 0; $deleted = 0;
             $matchedIds = [];
+            $importErrors = [];
             $existingIndex = [];
             $processedIdMap = [];
             $importIdentitySeen = [];
 
             // Build an in-memory index of existing employees for fast lookup during import
             $existingRowMap = [];
-            $existingSql = 'SELECT id,work_email,personal_email,employee_code,external_id,duplicate,first_name,last_name,username,display_name,job_code,comments,raw_status_code,termination_date,request_date,requested_by,termination_requested_by,department_id,employment_status_id FROM employees WHERE company_id=' . (int)$company_id;
+            $existingSql = 'SELECT * FROM employees WHERE company_id=' . (int)$company_id;
             $existingRes = mysqli_query($conn, $existingSql);
             while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
                 $existingId = (int)($existingRow['id'] ?? 0);
@@ -341,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'external_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '',
                     'comments' => '', 'raw_status_code' => '', 'termination_date' => '', 'request_date' => '', 'requested_by' => '',
                     'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0,
-                    'employee_position_id' => null
+                    'employee_position_id' => null, 'on_orgchart' => 0, 'on_contacts' => 0, 'id' => null
                 ];
 
                 $importEmail = '';
@@ -379,12 +391,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Map status flag
+                if (empty($mapped['raw_status_code']) && !empty($mapped['employment_status_id']) && !is_numeric($mapped['employment_status_id'])) {
+                    $mapped['raw_status_code'] = $mapped['employment_status_id'];
+                }
                 $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
 
                 // Auto-map departments (Default to Geral if missing)
                 $mapped['department_id'] = $geralDeptId;
-                if (!empty($mapped['department_name'])) {
-                    $depNameEsc = mysqli_real_escape_string($conn, (string)$mapped['department_name']);
+                if (!empty($mapped['department_name']) || (!empty($mapped['department_id']) && !is_numeric($mapped['department_id']))) {
+                    $depName = !empty($mapped['department_name']) ? $mapped['department_name'] : $mapped['department_id'];
+                    $depNameEsc = mysqli_real_escape_string($conn, (string)$depName);
                     $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND name='" . $depNameEsc . "' LIMIT 1";
                     $depRes = mysqli_query($conn, $depSql);
                     if ($depRes && mysqli_num_rows($depRes) === 1) {
@@ -392,6 +408,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     } else {
                         if (mysqli_query($conn, "INSERT INTO departments (company_id,name,active) VALUES (" . (int)$company_id . ", '" . $depNameEsc . "', 1)")) {
                             $mapped['department_id'] = (int)mysqli_insert_id($conn);
+                        }
+                    }
+                }
+
+                // Resolve other names to IDs
+                $lookupMaps = [
+                    'workstation_mode_id' => ['table' => 'workstation_modes', 'col' => 'mode_name'],
+                    'assignment_type_id' => ['table' => 'assignment_types', 'col' => 'name'],
+                    'office_key_card_department_id' => ['table' => 'departments', 'col' => 'name'],
+                ];
+                foreach ($lookupMaps as $targetField => $info) {
+                    if (!empty($mapped[$targetField]) && !is_numeric($mapped[$targetField])) {
+                        $valEsc = mysqli_real_escape_string($conn, (string)$mapped[$targetField]);
+                        $res = mysqli_query($conn, "SELECT id FROM {$info['table']} WHERE company_id=" . (int)$company_id . " AND {$info['col']}='{$valEsc}' LIMIT 1");
+                        if ($res && mysqli_num_rows($res) > 0) {
+                            $mapped[$targetField] = (int)mysqli_fetch_assoc($res)['id'];
+                        } else {
+                            $mapped[$targetField] = null;
                         }
                     }
                 }
@@ -438,24 +472,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
                 // Attempt to find an existing record in the database
                 $existingId = 0;
-                foreach ($identifierTokens as $token) {
-                    foreach ($existingIndex[$token] ?? [] as $candidateId) {
-                        if (!isset($processedIdMap[$candidateId])) {
-                            $existingId = (int)$candidateId;
-                            break 2;
+                if (!empty($mapped['id']) && is_numeric($mapped['id'])) {
+                    $candidateId = (int)$mapped['id'];
+                    if (isset($existingRowMap[$candidateId]) && !isset($processedIdMap[$candidateId])) {
+                        $existingId = $candidateId;
+                    }
+                }
+
+                if ($existingId <= 0) {
+                    foreach ($identifierTokens as $token) {
+                        foreach ($existingIndex[$token] ?? [] as $candidateId) {
+                            if (!isset($processedIdMap[$candidateId])) {
+                                $existingId = (int)$candidateId;
+                                break 2;
+                            }
                         }
                     }
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
-                    $value = $mapped[$col] ?? null;
-                    if ($value === '' || $value === null) { $values[$col] = 'NULL'; }
-                    elseif (in_array($col, ['company_id','employment_status_id','duplicate'], true)) { $values[$col] = (string)(int)$value; }
-                    else { $values[$col] = "'" . mysqli_real_escape_string($conn, (string)$value) . "'"; }
+                    $value = trim((string)($mapped[$col] ?? ''));
+                    if ($value === '' || strcasecmp($value, 'null') === 0 || $value === '—') {
+                        $values[$col] = 'NULL';
+                    } elseif (in_array($col, ['duplicate', 'on_contacts', 'on_orgchart'], true) || (isset($columnTypes[$col]) && strpos($columnTypes[$col], 'tinyint') !== false)) {
+                        $normalizedBool = strtolower($value);
+                        if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
+                            $values[$col] = '1';
+                        } else {
+                            $values[$col] = '0';
+                        }
+                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id'], true)) {
+                        $values[$col] = (string)(int)$value;
+                    } else {
+                        $values[$col] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+                    }
                 }
 
                 if ($existingId > 0) {
@@ -475,6 +529,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
                         if (mysqli_query($conn, $sql)) {
                             $updated += 1; $matchedIds[] = $existingId; $processedIdMap[$existingId] = true;
+                        } else {
+                            $importErrors[] = "Row {$sourceRowNumber} (Update): " . mysqli_error($conn);
                         }
                     } else {
                         $skipped += 1; $matchedIds[] = $existingId; $processedIdMap[$existingId] = true;
@@ -485,6 +541,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     if (mysqli_query($conn, $sql)) {
                         $created += 1; $newId = (int)mysqli_insert_id($conn);
                         $matchedIds[] = $newId; $processedIdMap[$newId] = true;
+                    } else {
+                        $importErrors[] = "Row {$sourceRowNumber} (Insert): " . mysqli_error($conn);
                     }
                 }
             }
@@ -498,6 +556,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             }
 
             $messages[] = "Import complete: {$created} created, {$updated} updated, {$deleted} removed, {$skipped} skipped.";
+            if (!empty($importErrors)) {
+                $errors = array_merge($errors, array_slice($importErrors, 0, 10));
+            }
         }
     }
 }
@@ -520,8 +581,8 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','workstation_mode_id','assignment_type_id','comments'];
-$hiddenColumns = ['company_id','employee_code','location','location_id','user_id','external_number'];
+$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','workstation_mode_id','assignment_type_id','comments'];
+$hiddenColumns = ['company_id','employee_code','location','location_id','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
 
@@ -601,6 +662,7 @@ function emp_label($field) {
     if ($field === 'assignment_type_id') return 'Assignment Type';
     if ($field === 'external_id') return 'External ID';
     if ($field === 'on_contacts') return 'On Contacts';
+    if ($field === 'on_orgchart') return 'On Org Chart';
     if ($field === 'external_number') return 'External Number';
     return ucwords(str_replace('_', ' ', trim((string)$field)));
 }
