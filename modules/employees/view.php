@@ -71,7 +71,7 @@ $profileFields = [
     'Extension' => (string)($employee['extension'] ?? ''),
     'Dect' => (string)($employee['dect'] ?? ''),
     'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '✅' : '❌'),
-    'On Org Chart' => ((int)($employee['on_orgchart'] ?? 0) === 1 ? '✅' : '❌'),
+    'On Orgchart' => ((int)($employee['on_orgchart'] ?? 0) === 1 ? '✅' : '❌'),
     'External ID' => (string)($employee['external_id'] ?? ''),
     'Username' => (string)($employee['username'] ?? ''),
     'Department' => (string)($employee['department_name'] ?? ''),
