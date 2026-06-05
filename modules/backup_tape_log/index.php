@@ -18,25 +18,31 @@ $csrfToken = itm_get_csrf_token();
 /**
  * Check if a date is today
  */
-function btl_is_today($dateStr) {
-    if (!$dateStr) return false;
-    return date('Y-m-d', strtotime($dateStr)) === date('Y-m-d');
+if (!function_exists('btl_is_today')) {
+    function btl_is_today($dateStr) {
+        if (!$dateStr) return false;
+        return date('Y-m-d', strtotime($dateStr)) === date('Y-m-d');
+    }
 }
 
 /**
  * Format date for display (d-M)
  */
-function btl_format_date($dateStr) {
-    if (!$dateStr) return '—';
-    return date('d-M', strtotime($dateStr));
+if (!function_exists('btl_format_date')) {
+    function btl_format_date($dateStr) {
+        if (!$dateStr) return '—';
+        return date('d-M', strtotime($dateStr));
+    }
 }
 
 /**
  * Format date time for display (d-M-Y H:i)
  */
-function btl_format_datetime($dateTimeStr) {
-    if (!$dateTimeStr || strpos($dateTimeStr, '1970-01-01') === 0) return '—';
-    return date('d-M-Y H:i', strtotime($dateTimeStr));
+if (!function_exists('btl_format_datetime')) {
+    function btl_format_datetime($dateTimeStr) {
+        if (!$dateTimeStr || strpos($dateTimeStr, '1970-01-01') === 0) return '—';
+        return date('d-M-Y H:i', strtotime($dateTimeStr));
+    }
 }
 
 // Permission Check: Admin or IT Department
@@ -131,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     }
 
     // Restricted fields check
-    if (in_array($field, ['tape_used_for_restore', 'ism_review', 'time_tape_inserted', 'time_returned_to_safe', 'backup_status'], true) && !$can_edit_restricted) {
+    if (in_array($field, ['tape_used_for_restore', 'ism_review', 'backup_status'], true) && !$can_edit_restricted) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized to edit this field.']);
         exit;
     }
@@ -171,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
     $now = date('Y-m-d H:i:s');
 
     // For empty rows in grid, ID will be 0, but we should probably handle it differently
-    // In this module, the user might click ⏱️ on a row that doesn't exist yet.
+    // In this module, the user might click 🕒 on a row that doesn't exist yet.
     $log_date = $_POST['log_date'] ?? date('Y-m-d');
     $server_id = (int)($_POST['server_id'] ?? 0);
 
@@ -255,6 +261,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $tape_to_be_used = date('l', strtotime($log_date));
 
         if ($id === 0) {
+            if (!$can_edit_restricted) {
+                $backup_status = 'Full';
+                $tape_used_for_restore = 0;
+                $ism_review = 0;
+            }
             $sql = "INSERT INTO backup_tape_log (company_id, server_id, log_date, tape_to_be_used, time_tape_inserted, time_returned_to_safe, print_name, backup_status, problem_details, tape_used_for_restore, ism_review) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conn, $sql);
             mysqli_stmt_bind_param($stmt, 'iisssssssii', $company_id, $server_id, $log_date, $tape_to_be_used, $time_tape_inserted, $time_returned_to_safe, $print_name, $backup_status, $problem_details, $tape_used_for_restore, $ism_review);
@@ -269,9 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $chk = mysqli_fetch_assoc(mysqli_stmt_get_result($chkStmt));
                 mysqli_stmt_close($chkStmt);
 
-                // Anyone can only edit print_name and problem_details
-                $time_tape_inserted = $chk['time_tape_inserted'];
-                $time_returned_to_safe = $chk['time_returned_to_safe'];
+                // Anyone can only edit print_name, problem_details, time_tape_inserted, and time_returned_to_safe (if today)
                 $backup_status = $chk['backup_status'];
                 $tape_used_for_restore = $chk['tape_used_for_restore'];
                 $ism_review = $chk['ism_review'];
@@ -466,26 +475,31 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                                 <td class="btl-readonly" style="font-weight:bold;"><?= btl_format_date($date) ?></td>
                                 <td class="btl-readonly" <?= $isSunday ? 'style="background-color: #ffff00 !important; color: #000 !important;"' : '' ?>><?= date('l', strtotime($date)) ?></td>
 
-                                <td class="<?= ($canEditAll && (!$isFuture || $can_edit_restricted)) ? 'inline-editable' : '' ?>" data-field="time_tape_inserted" data-type="datetime">
+                                <?php $canPunchTime = ($isToday || $can_edit_restricted) && !$no_server_selected; ?>
+                                <td class="<?= ($canPunchTime && (!$isFuture || $can_edit_restricted)) ? 'inline-editable' : '' ?>" data-field="time_tape_inserted" data-type="datetime">
                                     <?php if ($no_server_selected || ($isFuture && !$can_edit_restricted)): ?>
                                         —
                                     <?php else: ?>
                                         <span class="display-val"><?= btl_format_datetime($log['time_tape_inserted'] ?? null) ?></span>
-                                        <?php if ($canEditAll): ?>
-                                            <input type="datetime-local" class="edit-input" style="display:none;" value="<?= (!empty($log['time_tape_inserted']) && strpos($log['time_tape_inserted'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($log['time_tape_inserted'])) : '' ?>">
-                                            <button class="btn btn-sm btn-timestamp" data-type="inserted" title="Set current time">⏱️</button>
+                                        <?php if ($canPunchTime): ?>
+                                            <?php if ($can_edit_restricted): ?>
+                                                <input type="datetime-local" class="edit-input" style="display:none;" value="<?= (!empty($log['time_tape_inserted']) && strpos($log['time_tape_inserted'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($log['time_tape_inserted'])) : '' ?>">
+                                            <?php endif; ?>
+                                            <button class="btn btn-sm btn-timestamp" data-type="inserted" title="Set current time">🕒</button>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="<?= ($canEditAll && (!$isFuture || $can_edit_restricted)) ? 'inline-editable' : '' ?>" data-field="time_returned_to_safe" data-type="datetime">
+                                <td class="<?= ($canPunchTime && (!$isFuture || $can_edit_restricted)) ? 'inline-editable' : '' ?>" data-field="time_returned_to_safe" data-type="datetime">
                                     <?php if ($no_server_selected || ($isFuture && !$can_edit_restricted)): ?>
                                         —
                                     <?php else: ?>
                                         <span class="display-val"><?= btl_format_datetime($log['time_returned_to_safe'] ?? null) ?></span>
-                                        <?php if ($canEditAll): ?>
-                                            <input type="datetime-local" class="edit-input" style="display:none;" value="<?= (!empty($log['time_returned_to_safe']) && strpos($log['time_returned_to_safe'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($log['time_returned_to_safe'])) : '' ?>">
-                                            <button class="btn btn-sm btn-timestamp" data-type="returned" title="Set current time">⏱️</button>
+                                        <?php if ($canPunchTime): ?>
+                                            <?php if ($can_edit_restricted): ?>
+                                                <input type="datetime-local" class="edit-input" style="display:none;" value="<?= (!empty($log['time_returned_to_safe']) && strpos($log['time_returned_to_safe'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($log['time_returned_to_safe'])) : '' ?>">
+                                            <?php endif; ?>
+                                            <button class="btn btn-sm btn-timestamp" data-type="returned" title="Set current time">🕒</button>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
@@ -601,12 +615,12 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 
                         <div class="form-group">
                             <label>Time Tape Inserted</label>
-                            <input type="datetime-local" name="time_tape_inserted" class="form-control" value="<?= (!empty($data['time_tape_inserted']) && strpos($data['time_tape_inserted'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($data['time_tape_inserted'])) : '' ?>" <?= $canEditAll ? '' : 'readonly' ?>>
+                            <input type="datetime-local" name="time_tape_inserted" class="form-control" value="<?= (!empty($data['time_tape_inserted']) && strpos($data['time_tape_inserted'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($data['time_tape_inserted'])) : '' ?>" <?= ($canEditAll || btl_is_today($date)) ? '' : 'readonly' ?>>
                         </div>
 
                         <div class="form-group">
                             <label>Time Returned to Safe</label>
-                            <input type="datetime-local" name="time_returned_to_safe" class="form-control" value="<?= (!empty($data['time_returned_to_safe']) && strpos($data['time_returned_to_safe'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($data['time_returned_to_safe'])) : '' ?>" <?= $canEditAll ? '' : 'readonly' ?>>
+                            <input type="datetime-local" name="time_returned_to_safe" class="form-control" value="<?= (!empty($data['time_returned_to_safe']) && strpos($data['time_returned_to_safe'], '1970-01-01') !== 0) ? date('Y-m-d\TH:i', strtotime($data['time_returned_to_safe'])) : '' ?>" <?= ($canEditAll || btl_is_today($date)) ? '' : 'readonly' ?>>
                         </div>
 
                         <div class="form-group">
