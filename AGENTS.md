@@ -118,6 +118,10 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
 
+* **Mandatory script placement:** All scripts generated to debug, perform fixes, or document findings must be saved in the `scripts/` directory. Every new script added to this directory must be cataloged in `scripts/index.html`.
+
+
+
 ### Scripts directory (`scripts/`) — mandatory for every tool
 
 The live catalog is **`scripts/index.html`**. Before merge, **verify every runnable file under `scripts/`** (and any new script you add) against this checklist.
