@@ -151,7 +151,7 @@ body.sidebar-collapsed .main-content,
     display: inline-block;
     min-width: 0;
     max-width: 100%;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .header-logout-form {
@@ -1209,12 +1209,14 @@ td {
 }
 
 table {
-    max-width: 100%;
+    max-width: none;
 }
 
 th,
 td {
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: nowrap;
 }
 
 input,
@@ -1242,6 +1244,7 @@ input[type="submit"] {
 
 .content .card table {
     width: 100%;
+    min-width: max-content;
 }
 
 .itm-new-button-bar,

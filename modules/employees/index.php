@@ -45,8 +45,12 @@ function emp_parse_delimited_rows($content) {
     $rows = [];
     foreach ($lines as $line) {
         if (trim($line) === '') { continue; }
-        $delimiter = str_contains($line, "\t") ? "\t" : ',';
-        $rows[] = str_getcsv($line, $delimiter);
+        // Handle tab-separated data (common when pasting from Excel)
+        if (str_contains($line, "\t")) {
+            $rows[] = explode("\t", $line);
+        } else {
+            $rows[] = str_getcsv($line, ',');
+        }
     }
     return $rows;
 }
@@ -60,6 +64,7 @@ function emp_canonical_header($header) {
     $normalized = str_replace(['_', '-'], ' ', $normalized);
 
     $map = [
+        'hilton id' => 'external_id',
         'external id' => 'external_id',
         'employee code' => 'employee_code',
         'user name' => 'username',
@@ -81,7 +86,8 @@ function emp_canonical_header($header) {
         'first name' => 'first_name',
         'last name' => 'last_name',
         'job code' => 'job_code',
-        'title' => 'job_title',
+        'title' => 'employee_position_id',
+        'job title' => 'employee_position_id',
         'comments' => 'comments',
         'comment' => 'comments',
         'termination date' => 'termination_date',
@@ -187,6 +193,18 @@ function emp_identifier_tokens($mapped) {
     return $tokens;
 }
 
+/**
+ * Determines if an email address is likely personal or corporate
+ */
+function emp_is_personal_email($email) {
+    $personalDomains = [
+        'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
+        'aol.com', 'msn.com', 'live.com', 'me.com', 'yandex.com', 'mail.ru'
+    ];
+    $domain = strtolower(substr(strrchr((string)$email, "@"), 1));
+    return in_array($domain, $personalDomains, true);
+}
+
 
 /**
  * Runs a cross-check within the database to find and flag duplicate records
@@ -282,6 +300,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
         }
 
         if (empty($errors)) {
+            // Ensure "Geral" department exists for this company
+            $geralDeptId = 0;
+            $geralNameEsc = mysqli_real_escape_string($conn, 'Geral');
+            $geralCodeEsc = mysqli_real_escape_string($conn, 'GER');
+            $deptCheck = mysqli_query($conn, "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND (name='Geral' OR code='GER') LIMIT 1");
+            if ($deptCheck && mysqli_num_rows($deptCheck) > 0) {
+                $geralDeptId = (int)mysqli_fetch_assoc($deptCheck)['id'];
+            } else {
+                if (mysqli_query($conn, "INSERT INTO departments (company_id, name, code, active) VALUES (" . (int)$company_id . ", '{$geralNameEsc}', '{$geralCodeEsc}', 1)")) {
+                    $geralDeptId = (int)mysqli_insert_id($conn);
+                }
+            }
+
             $created = 0; $updated = 0; $skipped = 0; $deleted = 0;
             $matchedIds = [];
             $existingIndex = [];
@@ -309,11 +340,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'work_email' => '', 'personal_email' => '', 'employee_code' => '',
                     'external_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '',
                     'comments' => '', 'raw_status_code' => '', 'termination_date' => '', 'request_date' => '', 'requested_by' => '',
-                    'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0
+                    'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'duplicate' => 0,
+                    'employee_position_id' => null
                 ];
 
+                $importEmail = '';
                 foreach ($validIdx as $idx => $field) {
-                    $mapped[$field] = trim((string)($row[$idx] ?? ''));
+                    if ($field === 'work_email') {
+                        $importEmail = trim((string)($row[$idx] ?? ''));
+                    } else {
+                        $mapped[$field] = trim((string)($row[$idx] ?? ''));
+                    }
+                }
+
+                // Distinguish between work and personal email
+                if ($importEmail !== '') {
+                    if (emp_is_personal_email($importEmail)) {
+                        $mapped['personal_email'] = $importEmail;
+                    } else {
+                        $mapped['work_email'] = $importEmail;
+                    }
                 }
 
                 // Auto-fill names
@@ -335,7 +381,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 // Map status flag
                 $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
 
-                // Auto-map departments
+                // Auto-map departments (Default to Geral if missing)
+                $mapped['department_id'] = $geralDeptId;
                 if (!empty($mapped['department_name'])) {
                     $depNameEsc = mysqli_real_escape_string($conn, (string)$mapped['department_name']);
                     $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND name='" . $depNameEsc . "' LIMIT 1";
@@ -348,6 +395,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         }
                     }
                 }
+
+                // Auto-map positions (linked to department, default to Geral if no dept specified)
+                if (!empty($mapped['employee_position_id'])) {
+                    $posName = (string)$mapped['employee_position_id'];
+                    $posNameEsc = mysqli_real_escape_string($conn, $posName);
+                    $posDeptId = (int)$mapped['department_id'];
+
+                    $posSql = "SELECT id, department_id FROM employee_positions WHERE company_id=" . (int)$company_id . " AND name='" . $posNameEsc . "' LIMIT 1";
+                    $posRes = mysqli_query($conn, $posSql);
+                    if ($posRes && mysqli_num_rows($posRes) === 1) {
+                        $posRow = mysqli_fetch_assoc($posRes);
+                        $mapped['employee_position_id'] = (int)$posRow['id'];
+                        // If position exists but department is not linked, update it
+                        if (empty($posRow['department_id'])) {
+                            mysqli_query($conn, "UPDATE employee_positions SET department_id=" . $posDeptId . " WHERE id=" . (int)$mapped['employee_position_id']);
+                        }
+                    } else {
+                        if (mysqli_query($conn, "INSERT INTO employee_positions (company_id, name, department_id) VALUES (" . (int)$company_id . ", '" . $posNameEsc . "', " . $posDeptId . ")")) {
+                            $mapped['employee_position_id'] = (int)mysqli_insert_id($conn);
+                        } else {
+                            $mapped['employee_position_id'] = null;
+                        }
+                    }
+                }
+
 
                 // Check for duplicates within the file itself
                 $identifierTokens = emp_identifier_tokens($mapped);
@@ -376,7 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_phone','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','requested_by','termination_requested_by','department_id','employment_status_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {

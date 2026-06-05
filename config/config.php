@@ -673,6 +673,7 @@ if (!function_exists('itm_format_db_constraint_error')) {
                     if (defined('ROOT_PATH')) {
                         @error_log('[ITM DB] ' . $fallbackText . PHP_EOL, 3, ROOT_PATH . 'error_log.txt');
                     }
+                    return 'We could not save your changes. Error: ' . $fallbackText;
                 }
 
                 return 'We could not save your changes. Review the required fields and try again.';
@@ -1587,6 +1588,13 @@ if (!function_exists('itm_handle_json_table_import')) {
             }
         }
 
+        // Module-specific overrides for common industry/legacy headers
+        if ($tableName === 'employees') {
+            $headerMap['hilton id'] = 'external_id';
+            $headerMap['user name'] = 'username';
+            $headerMap['title'] = 'employee_position_id';
+        }
+
         $fkMap = [];
         $fkSql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
                   FROM information_schema.KEY_COLUMN_USAGE
@@ -1630,6 +1638,31 @@ if (!function_exists('itm_handle_json_table_import')) {
         $failedRows = 0;
         $importErrors = [];
 
+        // We need to resolve departments FIRST if we are in the employees module,
+        // because position creation depends on the resolved department_id.
+        $deptIndex = -1;
+        $geralDeptId = 0;
+        if ($tableName === 'employees') {
+            foreach ($importColumnFields as $index => $fieldName) {
+                if ($fieldName === 'department_id') {
+                    $deptIndex = $index;
+                    break;
+                }
+            }
+
+            // Ensure "Geral" department exists for this company
+            $geralNameEsc = mysqli_real_escape_string($conn, 'Geral');
+            $geralCodeEsc = mysqli_real_escape_string($conn, 'GER');
+            $deptCheck = mysqli_query($conn, "SELECT id FROM departments WHERE company_id=" . (int)$companyId . " AND (name='Geral' OR code='GER') LIMIT 1");
+            if ($deptCheck && mysqli_num_rows($deptCheck) > 0) {
+                $geralDeptId = (int)mysqli_fetch_assoc($deptCheck)['id'];
+            } else {
+                if (mysqli_query($conn, "INSERT INTO departments (company_id, name, code, active) VALUES (" . (int)$companyId . ", '{$geralNameEsc}', '{$geralCodeEsc}', 1)")) {
+                    $geralDeptId = (int)mysqli_insert_id($conn);
+                }
+            }
+        }
+
         for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
             $sourceRow = (array)$importRows[$rowIndex];
             $hasValues = false;
@@ -1648,11 +1681,34 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $rowValues[$fieldName] = 'NULL';
             }
 
+            // Employee module: Pre-resolve department if present
+            if ($tableName === 'employees') {
+                $rowValues['department_id'] = (string)$geralDeptId;
+                $deptValue = ($deptIndex >= 0) ? trim((string)($sourceRow[$deptIndex] ?? '')) : '';
+                if ($deptValue !== '' && $deptValue !== '—' && strcasecmp($deptValue, 'null') !== 0) {
+                    $depNameEsc = mysqli_real_escape_string($conn, $deptValue);
+                    $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$companyId . " AND name='" . $depNameEsc . "' LIMIT 1";
+                    $depRes = mysqli_query($conn, $depSql);
+                    if ($depRes && mysqli_num_rows($depRes) === 1) {
+                        $rowValues['department_id'] = (string)mysqli_fetch_assoc($depRes)['id'];
+                    } else {
+                        if (mysqli_query($conn, "INSERT INTO departments (company_id, name, active) VALUES (" . (int)$companyId . ", '" . $depNameEsc . "', 1)")) {
+                            $rowValues['department_id'] = (string)mysqli_insert_id($conn);
+                        }
+                    }
+                }
+            }
+
             foreach ($importColumnFields as $index => $fieldName) {
                 if ($fieldName === null || !isset($columns[$fieldName])) {
                     continue;
                 }
                 if ($fieldName === 'company_id') {
+                    continue;
+                }
+
+                // If we already handled department_id for employees, skip it here
+                if ($tableName === 'employees' && $fieldName === 'department_id') {
                     continue;
                 }
 
@@ -1662,6 +1718,20 @@ if (!function_exists('itm_handle_json_table_import')) {
                 }
 
                 $columnType = (string)$columns[$fieldName]['type'];
+
+                // Employees module: classification of emails
+                if ($tableName === 'employees' && $fieldName === 'work_email') {
+                    $personalDomains = [
+                        'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
+                        'aol.com', 'msn.com', 'live.com', 'me.com', 'yandex.com', 'mail.ru'
+                    ];
+                    $domain = strtolower(substr(strrchr((string)$rawValue, "@"), 1));
+                    if (in_array($domain, $personalDomains, true)) {
+                        $rowValues['personal_email'] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
+                        continue;
+                    }
+                }
+
                 if (preg_match('/^tinyint(\(\d+\))?/i', $columnType)) {
                     $normalizedBool = strtolower($rawValue);
                     if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
@@ -1750,6 +1820,27 @@ if (!function_exists('itm_handle_json_table_import')) {
 
                     if ($resolvedFkId > 0) {
                         $rowValues[$fieldName] = (string)$resolvedFkId;
+
+                        // Employees module special case: link position to department
+                        if ($tableName === 'employees' && $fieldName === 'employee_position_id' && (int)$resolvedFkId > 0) {
+                            $deptId = (string)($rowValues['department_id'] ?? 'NULL');
+                            if ($deptId !== 'NULL' && (int)$deptId > 0) {
+                                mysqli_query($conn, "UPDATE employee_positions SET department_id=" . (int)$deptId . " WHERE id=" . (int)$resolvedFkId . " AND (department_id IS NULL OR department_id = 0)");
+                            }
+                        }
+                    } else if ($tableName === 'employees' && $fieldName === 'employee_position_id' && !empty($rawValue)) {
+                        // Employees module: auto-create position if it doesn't exist
+                        $posNameEsc = mysqli_real_escape_string($conn, $rawValue);
+                        $deptId = (string)($rowValues['department_id'] ?? 'NULL');
+                        if (mysqli_query($conn, "INSERT INTO employee_positions (company_id, name, department_id) VALUES (" . (int)$companyId . ", '" . $posNameEsc . "', " . $deptId . ")")) {
+                            $rowValues[$fieldName] = (string)mysqli_insert_id($conn);
+                        }
+                    } else if ($tableName === 'employees' && $fieldName === 'department_id' && !empty($rawValue)) {
+                        // Employees module: auto-create department if it doesn't exist
+                        $depNameEsc = mysqli_real_escape_string($conn, $rawValue);
+                        if (mysqli_query($conn, "INSERT INTO departments (company_id, name, active) VALUES (" . (int)$companyId . ", '" . $depNameEsc . "', 1)")) {
+                            $rowValues[$fieldName] = (string)mysqli_insert_id($conn);
+                        }
                     }
                     continue;
                 }
