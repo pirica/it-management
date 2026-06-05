@@ -117,10 +117,7 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
-
-* **Mandatory script placement:** All scripts generated to debug, perform fixes, or document findings must be saved in the `scripts/` directory. Every new script added to this directory must be cataloged in `scripts/index.html`.
-
-
+* **Mandatory script placement:** All scripts generated to debug, perform fixes, or document findings must be saved in the `scripts/` directory. Every new script added to this directory must be cataloged in `scripts/index.html`. These scripts must support execution via both Browser and CLI and include the standard Navigation Menu (relative back link to `scripts/index.html`) using `itm_script_browser_nav_echo()` when viewed in a browser.
 
 ### Scripts directory (`scripts/`) — mandatory for every tool
 
