@@ -1,7 +1,7 @@
 <?php
 require '../../config/config.php';
 $csrfToken = itm_get_csrf_token();
-$deptSql = "SELECT id, name, extension, dect, phone FROM departments WHERE company_id = ? ORDER BY name ASC";
+$deptSql = "SELECT id, name, extension, dect, phone FROM departments WHERE company_id = ? AND active = 1 ORDER BY name ASC";
 $deptStmt = mysqli_prepare($conn, $deptSql);
 mysqli_stmt_bind_param($deptStmt, 'i', $company_id);
 mysqli_stmt_execute($deptStmt);
@@ -9,7 +9,7 @@ $deptRes = mysqli_stmt_get_result($deptStmt);
 $departments = [];
 while ($d = mysqli_fetch_assoc($deptRes)) { $departments[] = $d; }
 mysqli_stmt_close($deptStmt);
-$empSql = "SELECT e.id, e.department_id, e.first_name, e.last_name, e.work_email, e.extension, e.mobile_phone, e.external_number, e.dect, ep.name as position_title FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id WHERE e.company_id = ? AND e.on_contacts = 1 ORDER BY e.reports_to ASC, e.first_name ASC, e.last_name ASC";
+$empSql = "SELECT e.id, e.department_id, e.first_name, e.last_name, e.work_email, e.extension, e.mobile_phone, e.external_number, e.dect, ep.name as position_title FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id INNER JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND e.on_contacts = 1 AND es.name = 'Active' ORDER BY e.reports_to ASC, e.first_name ASC, e.last_name ASC";
 $empStmt = mysqli_prepare($conn, $empSql);
 mysqli_stmt_bind_param($empStmt, 'i', $company_id);
 mysqli_stmt_execute($empStmt);
