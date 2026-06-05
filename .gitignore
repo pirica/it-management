@@ -8,3 +8,4 @@ up.ps1
 php_server.log
 test-results
 qa-reports
+error_log.txt

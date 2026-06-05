@@ -56,15 +56,13 @@ $rows1 = [
 test_import("User Sample 1 (Normal)", $headers1, $rows1);
 
 // Sample 2: Tabular (Id▼, Position Title)
-// We need a valid ID to test the "Update" logic. Let's find the last inserted ID or use a known one.
-$headers2 = ["Id▼", "Duplicate", "External ID", "Username", "Display Name", "Email", "Personal Email", "Dect", "Extension", "Raw Status Code", "First Name", "Last Name", "Job Code", "Position Title", "Reports To", "On Contacts", "Department Name", "Request Date", "Requested By", "Termination Requested By", "Termination Date", "Employment Status", "Workstation Mode", "Assignment Type", "Comments", "Created At", "Office Key Card Department Id", "On Orgchart", "Updated At"];
-
 // Find a record to update
 $sql = "SELECT id FROM employees WHERE company_id = 1 ORDER BY id DESC LIMIT 1";
 $res = itm_run_query($conn, $sql);
 $row = ($res instanceof mysqli_result) ? mysqli_fetch_assoc($res) : null;
 $idToUpdate = $row ? $row['id'] : 1;
 
+$headers2 = ["Id▼", "Duplicate", "External ID", "Username", "Display Name", "Email", "Personal Email", "Dect", "Extension", "Raw Status Code", "First Name", "Last Name", "Job Code", "Position Title", "Reports To", "On Contacts", "Department Name", "Request Date", "Requested By", "Termination Requested By", "Termination Date", "Employment Status", "Workstation Mode", "Assignment Type", "Comments", "Created At", "Office Key Card Department Id", "On Orgchart", "Updated At"];
 $rows2 = [
     [(string)$idToUpdate, "—", "A354231", "nelsonsalvador", "first last", "nelson.salvador@conradhotels.com", "nelsonsalvador@gmail.com", "5798", "6002", "A", "test first name", "Test last name", "IT Manager", "IT Manager", "", "✅", "Geral", "2026-06-05", "ads", "asd", "", "Active", "", "", "sad comments", "2026-06-05 16:02:49", "", "✅", ""]
 ];
