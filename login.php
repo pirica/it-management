@@ -183,6 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Admin users bypass employee status checks and go straight to the dashboard
             if ($isAdmin) {
+                $_SESSION['role_name'] = 'admin';
+
                 // Pre-select the first available company for admins for convenience
                 $companyStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company ASC LIMIT 1');
                 if ($companyStmt) {
