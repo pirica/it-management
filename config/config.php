@@ -1494,6 +1494,7 @@ if (!function_exists('itm_handle_json_table_import')) {
         $contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
         $rawBody = (string)@file_get_contents('php://input');
         $bodyMentionsImportRows = ($rawBody !== '' && strpos($rawBody, '"import_excel_rows"') !== false);
+
         if ($jsonBodyOverride === null && strpos($contentType, 'application/json') === false && !$bodyMentionsImportRows) {
             return false;
         }
@@ -1504,9 +1505,13 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
         if (!is_array($jsonBody)) {
             if ($bodyMentionsImportRows) {
-                header('Content-Type: application/json');
-                http_response_code(400);
-                echo json_encode(['ok' => false, 'error' => 'Invalid JSON payload.']);
+                if (!$returnInsteadOfExit) {
+                    header('Content-Type: application/json');
+                    http_response_code(400);
+                }
+                $err = ['ok' => false, 'error' => 'Invalid JSON payload.'];
+                if ($returnInsteadOfExit) return $err;
+                echo json_encode($err);
                 exit;
             }
             return false;
@@ -1515,7 +1520,9 @@ if (!function_exists('itm_handle_json_table_import')) {
             return false;
         }
 
-        header('Content-Type: application/json');
+        if (!$returnInsteadOfExit) {
+            header('Content-Type: application/json');
+        }
 
         $tableName = trim((string)$tableName);
         if ($tableName === '' || !itm_is_safe_identifier($tableName)) {

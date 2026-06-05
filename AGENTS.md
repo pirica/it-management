@@ -460,6 +460,18 @@ The visitors access log module (`modules/visitors_access_log/`) provides a way t
 3. **Fallbacks:** The `val_is_today` helper must fall back to `created_at` if `date_time_in` is not provided.
 4. **Layout:** The module follows the action-wrapper pattern and includes standard sidebar and header components.
 
+#### Employees module import logic (mandatory)
+
+The employees module (`modules/employees/`) provides specialized import logic for handling various corporate data formats.
+
+1. **Header Aliases:** The import must handle industry-specific and export-specific headers such as 'Hilton ID' (maps to `external_id`), 'Position Title' (maps to `employee_position_id`), 'Department Name' (maps to `department_id`), and sorting markers like 'Id▼' (maps to `id`).
+2. **ID-based Updates:** If an 'id' column is present in the import data, the system must attempt to update the existing record rather than creating a duplicate.
+3. **Automated Entity Resolution:**
+    - **Departments:** If a department name is provided but not found, it must be automatically created for the company.
+    - **Positions:** If a position title is provided but not found, it must be automatically created and linked to the resolved department.
+4. **Email Classification:** The system must automatically classify emails. Known personal domains (e.g., gmail.com, yahoo.com) route to `personal_email`; others route to `work_email`.
+5. **Boolean Normalization:** Support for common export markers is mandatory. Convert '✅' or 'Active' to `1` and '❌' to `0` for boolean fields like `on_contacts` and `on_orgchart`.
+
 #### Backup Tape Log (mandatory)
 
 The backup tape log module (`modules/backup_tape_log/`) provides a monthly grid to track server backups.
