@@ -104,8 +104,7 @@ function emp_canonical_header($header) {
         'assignment type' => 'assignment_type_id',
         'office key card department id' => 'office_key_card_department_id',
         'id' => 'id',
-        'id▼' => 'id',
-        'on contacts' => 'on_contacts'
+        'id▼' => 'id'
     ];
 
     return $map[$normalized] ?? null;

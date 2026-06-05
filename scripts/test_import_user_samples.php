@@ -20,8 +20,10 @@ $_SESSION['csrf_token'] = 'test_token';
 
 // Set MySQL session variables for triggers
 if (isset($conn) && $conn) {
-    mysqli_query($conn, "SET @app_user_id = 1");
-    mysqli_query($conn, "SET @app_company_id = 1");
+    $sql = "SET @app_user_id = 1";
+    itm_run_query($conn, $sql);
+    $sql = "SET @app_company_id = 1";
+    itm_run_query($conn, $sql);
 }
 
 function test_import($name, $headers, $rows) {
@@ -58,8 +60,9 @@ test_import("User Sample 1 (Normal)", $headers1, $rows1);
 $headers2 = ["Id▼", "Duplicate", "External ID", "Username", "Display Name", "Email", "Personal Email", "Dect", "Extension", "Raw Status Code", "First Name", "Last Name", "Job Code", "Position Title", "Reports To", "On Contacts", "Department Name", "Request Date", "Requested By", "Termination Requested By", "Termination Date", "Employment Status", "Workstation Mode", "Assignment Type", "Comments", "Created At", "Office Key Card Department Id", "On Orgchart", "Updated At"];
 
 // Find a record to update
-$res = mysqli_query($conn, "SELECT id FROM employees WHERE company_id = 1 ORDER BY id DESC LIMIT 1");
-$row = mysqli_fetch_assoc($res);
+$sql = "SELECT id FROM employees WHERE company_id = 1 ORDER BY id DESC LIMIT 1";
+$res = itm_run_query($conn, $sql);
+$row = ($res instanceof mysqli_result) ? mysqli_fetch_assoc($res) : null;
 $idToUpdate = $row ? $row['id'] : 1;
 
 $rows2 = [
