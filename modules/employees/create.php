@@ -172,8 +172,20 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>External Number</label><input type="text" name="external_number" value="<?php echo sanitize($form['external_number']); ?>"></div>
                         <div class="form-group"><label>Extension</label><input type="text" name="extension" value="<?php echo sanitize($form['extension']); ?>"></div>
                         <div class="form-group"><label>Dect</label><input type="text" name="dect" value="<?php echo sanitize($form['dect']); ?>"></div>
-                        <div class="form-group"><label>On Contacts</label><select name="on_contacts"><option value="0" <?php echo ($form['on_contacts'] == 0) ? 'selected' : ''; ?>>No</option><option value="1" <?php echo ($form['on_contacts'] == 1) ? 'selected' : ''; ?>>Yes</option></select></div>
-                        <div class="form-group"><label>On Org Chart</label><select name="on_orgchart"><option value="0" <?php echo ($form['on_orgchart'] == 0) ? 'selected' : ''; ?>>No</option><option value="1" <?php echo ($form['on_orgchart'] == 1) ? 'selected' : ''; ?>>Yes</option></select></div>
+                        <div class="form-group">
+                            <label>On Contacts</label>
+                            <label class="itm-checkbox-control">
+                                <input type="checkbox" name="on_contacts" value="1" <?php echo ($form['on_contacts'] == 1) ? 'checked' : ''; ?>>
+                                <span>On Contacts <span class="itm-check-indicator" aria-hidden="true"><?php echo ($form['on_contacts'] == 1) ? '✅' : '❌'; ?></span></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>On Orgchart</label>
+                            <label class="itm-checkbox-control">
+                                <input type="checkbox" name="on_orgchart" value="1" <?php echo ($form['on_orgchart'] == 1) ? 'checked' : ''; ?>>
+                                <span>On Orgchart <span class="itm-check-indicator" aria-hidden="true"><?php echo ($form['on_orgchart'] == 1) ? '✅' : '❌'; ?></span></span>
+                            </label>
+                        </div>
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
