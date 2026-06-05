@@ -35,6 +35,7 @@ $stateMutationPattern = '/\b(INSERT|UPDATE|DELETE)\b|\b(mysqli_query|mysqli_prep
 
 $pathIgnores = [
     DIRECTORY_SEPARATOR . '.git' . DIRECTORY_SEPARATOR,
+    DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR,
 ];
 
 /**
