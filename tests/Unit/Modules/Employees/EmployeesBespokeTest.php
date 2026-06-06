@@ -20,6 +20,7 @@ class EmployeesBespokeTest extends TestCase
         require_once ROOT_PATH . 'modules/employees/delete_clear_table.php';
 
         // Create a temporary company
+        mysqli_query($this->conn, "SET @app_company_id = 1;");
         mysqli_query($this->conn, "INSERT INTO companies (company, active) VALUES ('Test Company Bespoke Employees', 1)");
         $this->companyId = mysqli_insert_id($this->conn);
     }
