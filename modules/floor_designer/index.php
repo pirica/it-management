@@ -361,7 +361,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
     if ($ajax_action === 'get_switch_ports') {
         $switch_id = (int)($_POST['switch_id'] ?? 0);
-        $sql = "SELECT id, port_number, port_type FROM switch_ports WHERE equipment_id=? AND company_id=? ORDER BY port_number ASC";
+        $sql = "SELECT id, port_number, port_type FROM switch_ports WHERE equipment_id=? AND company_id=? ORDER BY (CASE WHEN port_type = 'RJ45' THEN 1 ELSE 2 END) ASC, port_number ASC";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'ii', $switch_id, $company_id);
         mysqli_stmt_execute($stmt);
