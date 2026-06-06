@@ -115,11 +115,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($expiring_action, ['index'
 
 $certificateRows = [];
 $warrantyRows = [];
+$alertRows = [];
 $fetchError = '';
 $debugInfo = [];
 $expirySummaries = [
     'certificate_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
     'warranty_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
+    'alerts_expiry' => ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0],
 ];
 
 if ($company_id > 0) {
@@ -178,10 +180,32 @@ if ($company_id > 0) {
     $datasets = [
         'certificate_expiry' => &$certificateRows,
         'warranty_expiry' => &$warrantyRows,
+        'alerts_expiry' => &$alertRows,
     ];
 
     foreach ($datasets as $field => &$targetRows) {
-        $sql = sprintf($baseSqlWithJoin, $field, $field, $field, $field, $field);
+        if ($field === 'alerts_expiry') {
+            $sql = "
+                SELECT
+                    a.id,
+                    a.title AS name,
+                    '' AS hostname,
+                    '' AS model,
+                    '' AS serial_number,
+                    a.start_datetime AS purchase_date,
+                    a.end_datetime AS expiry_date,
+                    ec.name AS equipment_type,
+                    '' AS warranty_type
+                FROM alerts a
+                LEFT JOIN event_categories ec ON ec.id = a.category_id
+                WHERE a.company_id = ?
+                  AND a.end_datetime IS NOT NULL
+                  AND a.end_datetime >= '1000-01-01'
+                ORDER BY a.end_datetime ASC, a.title ASC
+            ";
+        } else {
+            $sql = sprintf($baseSqlWithJoin, $field, $field, $field, $field, $field);
+        }
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             $initialError = (string)mysqli_error($conn);
@@ -271,12 +295,16 @@ if ($company_id > 0) {
             }
         }
 
-        $unknownSql = sprintf(
-            "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
-            $field,
-            $field,
-            $field
-        );
+        if ($field === 'alerts_expiry') {
+            $unknownSql = "SELECT COUNT(*) AS unknown_count FROM alerts WHERE company_id = ? AND (end_datetime IS NULL OR TRIM(end_datetime) = '' OR end_datetime IN ('0000-00-00', '0000-00-00 00:00:00'))";
+        } else {
+            $unknownSql = sprintf(
+                "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
+                $field,
+                $field,
+                $field
+            );
+        }
         $unknownStmt = mysqli_prepare($conn, $unknownSql);
         if ($unknownStmt) {
             mysqli_stmt_bind_param($unknownStmt, 'i', $company_id);
@@ -370,12 +398,24 @@ if ($moduleTitle === '') {
                     'rows' => $warrantyRows,
                     'empty' => 'No warranty expiration dates were found for this company.',
                 ],
+                [
+                    'emoji' => '📢',
+                    'title' => 'Alerts Expiry',
+                    'rows' => $alertRows,
+                    'empty' => 'No expiring alerts were found for this company.',
+                ],
             ];
             ?>
 
             <?php foreach ($sections as $section): ?>
                 <?php
-                $summaryField = ($section['title'] === 'Certificate Expiry') ? 'certificate_expiry' : 'warranty_expiry';
+                if ($section['title'] === 'Certificate Expiry') {
+                    $summaryField = 'certificate_expiry';
+                } elseif ($section['title'] === 'Warranty Expiry') {
+                    $summaryField = 'warranty_expiry';
+                } else {
+                    $summaryField = 'alerts_expiry';
+                }
                 $summary = $expirySummaries[$summaryField] ?? ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0];
                 ?>
                 <div class="card" style="margin-top: 16px;">
@@ -414,7 +454,7 @@ if ($moduleTitle === '') {
                             <table class="table" data-itm-db-import-endpoint="index.php">
                                 <thead>
                                 <tr>
-                                    <th>Equipment</th>
+                                    <th><?php echo ($section['title'] === 'Alerts Expiry') ? 'Alert' : 'Equipment'; ?></th>
                                     <th>Hostname</th>
                                     <th>Type</th>
                                     <th>Warranty Type</th>
@@ -429,7 +469,13 @@ if ($moduleTitle === '') {
                                 <tbody>
                                 <?php foreach ($section['rows'] as $row): ?>
                                     <tr>
-                                        <td><a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a></td>
+                                        <td>
+                                            <?php if ($section['title'] === 'Alerts Expiry'): ?>
+                                                <a class="btn-link" href="../alerts/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
+                                            <?php else: ?>
+                                                <a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?php echo sanitize($row['hostname'] !== '' ? $row['hostname'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['equipment_type'] !== '' ? $row['equipment_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['warranty_type'] !== '' ? $row['warranty_type'] : '—'); ?></td>

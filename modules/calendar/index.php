@@ -218,6 +218,47 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
+// Alerts
+$sql_alerts = "SELECT a.*, ec.name as category_name, ec.color as category_color
+               FROM alerts a
+               LEFT JOIN event_categories ec ON a.category_id = ec.id
+               WHERE a.company_id = ? AND (a.active = 1 OR a.active IS NULL)
+               AND NOT (DATE(COALESCE(a.end_datetime, a.start_datetime)) < ? OR DATE(a.start_datetime) > ?)";
+$stmt = mysqli_prepare($conn, $sql_alerts);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $start_dt = strtotime($row['start_datetime']);
+        $end_dt = $row['end_datetime'] ? strtotime($row['end_datetime']) : $start_dt;
+
+        $curr = $start_dt;
+        // For alerts spanning multiple days
+        $loop_end = strtotime(date('Y-m-d', $end_dt));
+        $curr_day = strtotime(date('Y-m-d', $start_dt));
+
+        while ($curr_day <= $loop_end) {
+            $d = date('Y-m-d', $curr_day);
+            if ($d >= $start_range && $d <= $end_range) {
+                $ev_color = $row['category_color'] ?: '#ef4444';
+                if (!preg_match('/^#[0-9a-fA-F]{6}$/i', $ev_color)) { $ev_color = '#ef4444'; }
+                $events_data[$d][] = [
+                    'type' => 'alert',
+                    'title' => $row['title'],
+                    'color' => $ev_color,
+                    'icon' => '📢',
+                    'start' => $row['start_datetime'],
+                    'end' => $row['end_datetime'],
+                    'id' => $row['id']
+                ];
+            }
+            $curr_day = strtotime('+1 day', $curr_day);
+        }
+    }
+    mysqli_stmt_close($stmt);
+}
+
 // Tickets
 $sql_tickets = "SELECT t.id, t.title, t.due_date, tp.color as priority_color
                FROM tickets t
@@ -540,6 +581,7 @@ unset($_SESSION['calendar_success']);
                                             if ($is_all_day):
                                                 $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
                                                 $link = '../events/view.php?id=' . $ev['id'];
+                                                if ($ev['type'] === 'alert') { $link = '../alerts/view.php?id=' . $ev['id']; }
                                                 if ($ev['type'] === 'ticket') { $link = '../tickets/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
@@ -622,7 +664,9 @@ unset($_SESSION['calendar_success']);
                                                 if ($is_all_day):
                                                     $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
                                                     $link = '../events/view.php?id=' . $ev['id'];
+                                                if ($ev['type'] === 'alert') { $link = '../alerts/view.php?id=' . $ev['id']; }
                                                     if ($ev['type'] === 'ticket') { $link = '../tickets/view.php?id=' . $ev['id']; }
+                                                    elseif ($ev['type'] === 'alert') { $link = '../alerts/view.php?id=' . $ev['id']; }
                                                     elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
                                                     elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
                                             ?>
@@ -664,7 +708,7 @@ unset($_SESSION['calendar_success']);
                                                                 $height = (($display_end - $display_start) / 3600) * 100;
                                                                 $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
                                                     ?>
-                                                        <div class="time-event" style="background:<?php echo $color; ?>; top:<?php echo $top; ?>%; height:<?php echo $height; ?>%;" onclick="location.href='../events/view.php?id=<?php echo $ev['id']; ?>'">
+                                                        <div class="time-event" style="background:<?php echo $color; ?>; top:<?php echo $top; ?>%; height:<?php echo $height; ?>%;" onclick="location.href='<?php echo ($ev['type'] === 'alert') ? '../alerts/view.php?id=' . $ev['id'] : '../events/view.php?id=' . $ev['id']; ?>'">
                                                             <?php echo sanitize($ev['title']); ?>
                                                         </div>
                                                     <?php endif; ?>
