@@ -51,6 +51,7 @@ Most modules that support file uploads have been upgraded to include a drag-and-
 ### 9. Explorer
 - **Path:** `modules/explorer/index.php`
 - **Description:** General file management.
+- **Implementation:** Upgraded to use standard `.itm-photo-upload-target` UI and supports background dropping of files onto the desktop area for automatic uploads.
 
 ## Technical Standards
 

@@ -2343,7 +2343,16 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
             event.stopPropagation();
             uploadTarget.classList.remove("is-dragover");
             if (event.dataTransfer.files && event.dataTransfer.files.length) {
-                photoInput.files = event.dataTransfer.files;
+                var transfer = new DataTransfer();
+                if (photoInput.files) {
+                    Array.prototype.forEach.call(photoInput.files, function (file) {
+                        transfer.items.add(file);
+                    });
+                }
+                Array.prototype.forEach.call(event.dataTransfer.files, function (file) {
+                    transfer.items.add(file);
+                });
+                photoInput.files = transfer.files;
                 photoInput.dispatchEvent(new Event("change", { bubbles: true }));
             }
         });

@@ -6,7 +6,7 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
 ?>
 <h1>Upload Floor Plans</h1>
 <p><a href="index.php" class="btn btn-sm">← Gallery</a></p>
-<form method="POST" action="index.php" enctype="multipart/form-data" class="form-grid itm-floor-plan-upload-form" style="max-width:720px;">
+<form method="POST" action="index.php" enctype="multipart/form-data" class="form-grid itm-floor-plan-upload-form" id="floorPlanCreateForm" style="max-width:720px;">
     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
     <input type="hidden" name="fp_action" value="upload_files">
     <div class="form-group">
