@@ -1,0 +1,552 @@
+{
+    "access_levels": {
+        "path": "modules/access_levels",
+        "crud_table": "access_levels",
+        "is_standard": true
+    },
+    "annual_budgets": {
+        "path": "modules/annual_budgets",
+        "crud_table": "annual_budgets",
+        "is_standard": true
+    },
+    "approvals": {
+        "path": "modules/approvals",
+        "crud_table": "approvals",
+        "is_standard": true
+    },
+    "approvals_stage": {
+        "path": "modules/approvals_stage",
+        "crud_table": "approvals_stage",
+        "is_standard": true
+    },
+    "approver_type": {
+        "path": "modules/approver_type",
+        "crud_table": "approver_type",
+        "is_standard": true
+    },
+    "approvers": {
+        "path": "modules/approvers",
+        "crud_table": "approvers",
+        "is_standard": true
+    },
+    "assignment_types": {
+        "path": "modules/assignment_types",
+        "crud_table": "assignment_types",
+        "is_standard": true
+    },
+    "attempts": {
+        "path": "modules/attempts",
+        "crud_table": "attempts",
+        "is_standard": true
+    },
+    "audit_logs": {
+        "path": "modules/audit_logs",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "backup_tape_log": {
+        "path": "modules/backup_tape_log",
+        "crud_table": "backup_tape_log",
+        "is_standard": true
+    },
+    "budget_categories": {
+        "path": "modules/budget_categories",
+        "crud_table": "budget_categories",
+        "is_standard": true
+    },
+    "budget_report": {
+        "path": "modules/budget_report",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "cable_colors": {
+        "path": "modules/cable_colors",
+        "crud_table": "cable_colors",
+        "is_standard": true
+    },
+    "calendar": {
+        "path": "modules/calendar",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "catalogs": {
+        "path": "modules/catalogs",
+        "crud_table": "catalogs",
+        "is_standard": true
+    },
+    "companies": {
+        "path": "modules/companies",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "contacts": {
+        "path": "modules/contacts",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "cost_centers": {
+        "path": "modules/cost_centers",
+        "crud_table": "cost_centers",
+        "is_standard": true
+    },
+    "departments": {
+        "path": "modules/departments",
+        "crud_table": "departments",
+        "is_standard": true
+    },
+    "employee_assignment_history": {
+        "path": "modules/employee_assignment_history",
+        "crud_table": "employee_assignment_history",
+        "is_standard": true
+    },
+    "employee_onboarding_requests": {
+        "path": "modules/employee_onboarding_requests",
+        "crud_table": "employee_onboarding_requests",
+        "is_standard": true
+    },
+    "employee_positions": {
+        "path": "modules/employee_positions",
+        "crud_table": "employee_positions",
+        "is_standard": true
+    },
+    "employee_statuses": {
+        "path": "modules/employee_statuses",
+        "crud_table": "employee_statuses",
+        "is_standard": true
+    },
+    "employee_system_access": {
+        "path": "modules/employee_system_access",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "employees": {
+        "path": "modules/employees",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "equipment": {
+        "path": "modules/equipment",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "equipment_environment": {
+        "path": "modules/equipment_environment",
+        "crud_table": "equipment_environment",
+        "is_standard": true
+    },
+    "equipment_fiber": {
+        "path": "modules/equipment_fiber",
+        "crud_table": "equipment_fiber",
+        "is_standard": true
+    },
+    "equipment_fiber_count": {
+        "path": "modules/equipment_fiber_count",
+        "crud_table": "equipment_fiber_count",
+        "is_standard": true
+    },
+    "equipment_fiber_patch": {
+        "path": "modules/equipment_fiber_patch",
+        "crud_table": "equipment_fiber_patch",
+        "is_standard": true
+    },
+    "equipment_fiber_rack": {
+        "path": "modules/equipment_fiber_rack",
+        "crud_table": "equipment_fiber_rack",
+        "is_standard": true
+    },
+    "equipment_poe": {
+        "path": "modules/equipment_poe",
+        "crud_table": "equipment_poe",
+        "is_standard": true
+    },
+    "equipment_rj45": {
+        "path": "modules/equipment_rj45",
+        "crud_table": "equipment_rj45",
+        "is_standard": true
+    },
+    "equipment_statuses": {
+        "path": "modules/equipment_statuses",
+        "crud_table": "equipment_statuses",
+        "is_standard": true
+    },
+    "equipment_types": {
+        "path": "modules/equipment_types",
+        "crud_table": "equipment_types",
+        "is_standard": true
+    },
+    "event_categories": {
+        "path": "modules/event_categories",
+        "crud_table": "event_categories",
+        "is_standard": true
+    },
+    "events": {
+        "path": "modules/events",
+        "crud_table": "events",
+        "is_standard": true
+    },
+    "expenses": {
+        "path": "modules/expenses",
+        "crud_table": "expenses",
+        "is_standard": true
+    },
+    "expiring": {
+        "path": "modules/expiring",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "explorer": {
+        "path": "modules/explorer",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "floor_designer": {
+        "path": "modules/floor_designer",
+        "crud_table": "floor_designer",
+        "is_standard": true
+    },
+    "floor_designer_points": {
+        "path": "modules/floor_designer_points",
+        "crud_table": "floor_designer_points",
+        "is_standard": true
+    },
+    "floor_plans": {
+        "path": "modules/floor_plans",
+        "crud_table": "floor_plans",
+        "is_standard": true
+    },
+    "forecast_revisions": {
+        "path": "modules/forecast_revisions",
+        "crud_table": "forecast_revisions",
+        "is_standard": true
+    },
+    "forecast_revisions_status": {
+        "path": "modules/forecast_revisions_status",
+        "crud_table": "forecast_revisions_status",
+        "is_standard": true
+    },
+    "gl_accounts": {
+        "path": "modules/gl_accounts",
+        "crud_table": "gl_accounts",
+        "is_standard": true
+    },
+    "idf_device_type": {
+        "path": "modules/idf_device_type",
+        "crud_table": "idf_device_type",
+        "is_standard": true
+    },
+    "idf_links": {
+        "path": "modules/idf_links",
+        "crud_table": "idf_links",
+        "is_standard": true
+    },
+    "idf_ports": {
+        "path": "modules/idf_ports",
+        "crud_table": "idf_ports",
+        "is_standard": true
+    },
+    "idf_positions": {
+        "path": "modules/idf_positions",
+        "crud_table": "idf_positions",
+        "is_standard": true
+    },
+    "idfs": {
+        "path": "modules/idfs",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "inventory_categories": {
+        "path": "modules/inventory_categories",
+        "crud_table": "inventory_categories",
+        "is_standard": true
+    },
+    "inventory_items": {
+        "path": "modules/inventory_items",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "ip_addresses": {
+        "path": "modules/ip_addresses",
+        "crud_table": "ip_addresses",
+        "is_standard": true
+    },
+    "ip_subnets": {
+        "path": "modules/ip_subnets",
+        "crud_table": "ip_subnets",
+        "is_standard": true
+    },
+    "is_access_point": {
+        "path": "modules/is_access_point",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_cctv": {
+        "path": "modules/is_cctv",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_firewall": {
+        "path": "modules/is_firewall",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_other": {
+        "path": "modules/is_other",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_phone": {
+        "path": "modules/is_phone",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_port_patch_panel": {
+        "path": "modules/is_port_patch_panel",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_pos": {
+        "path": "modules/is_pos",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_printer": {
+        "path": "modules/is_printer",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_router": {
+        "path": "modules/is_router",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_server": {
+        "path": "modules/is_server",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_switch": {
+        "path": "modules/is_switch",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "is_workstation": {
+        "path": "modules/is_workstation",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "it_locations": {
+        "path": "modules/it_locations",
+        "crud_table": "it_locations",
+        "is_standard": true
+    },
+    "location_types": {
+        "path": "modules/location_types",
+        "crud_table": "location_types",
+        "is_standard": true
+    },
+    "manufacturers": {
+        "path": "modules/manufacturers",
+        "crud_table": "manufacturers",
+        "is_standard": true
+    },
+    "monthly_budgets": {
+        "path": "modules/monthly_budgets",
+        "crud_table": "monthly_budgets",
+        "is_standard": true
+    },
+    "org_chart": {
+        "path": "modules/org_chart",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "patches_updates": {
+        "path": "modules/patches_updates",
+        "crud_table": "patches_updates",
+        "is_standard": true
+    },
+    "patches_updates_level": {
+        "path": "modules/patches_updates_level",
+        "crud_table": "patches_updates_level",
+        "is_standard": true
+    },
+    "patches_updates_status": {
+        "path": "modules/patches_updates_status",
+        "crud_table": "patches_updates_status",
+        "is_standard": true
+    },
+    "printer_device_types": {
+        "path": "modules/printer_device_types",
+        "crud_table": "printer_device_types",
+        "is_standard": true
+    },
+    "rack_planner": {
+        "path": "modules/rack_planner",
+        "crud_table": "rack_planner",
+        "is_standard": true
+    },
+    "rack_statuses": {
+        "path": "modules/rack_statuses",
+        "crud_table": "rack_statuses",
+        "is_standard": true
+    },
+    "racks": {
+        "path": "modules/racks",
+        "crud_table": "racks",
+        "is_standard": true
+    },
+    "registration_invitations": {
+        "path": "modules/registration_invitations",
+        "crud_table": "registration_invitations",
+        "is_standard": true
+    },
+    "rj45_speed": {
+        "path": "modules/rj45_speed",
+        "crud_table": "rj45_speed",
+        "is_standard": true
+    },
+    "role_assignment_rights": {
+        "path": "modules/role_assignment_rights",
+        "crud_table": "role_assignment_rights",
+        "is_standard": true
+    },
+    "role_hierarchy": {
+        "path": "modules/role_hierarchy",
+        "crud_table": "role_hierarchy",
+        "is_standard": true
+    },
+    "role_module_permissions": {
+        "path": "modules/role_module_permissions",
+        "crud_table": "role_module_permissions",
+        "is_standard": true
+    },
+    "settings": {
+        "path": "modules/settings",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "supplier_statuses": {
+        "path": "modules/supplier_statuses",
+        "crud_table": "supplier_statuses",
+        "is_standard": true
+    },
+    "suppliers": {
+        "path": "modules/suppliers",
+        "crud_table": "suppliers",
+        "is_standard": true
+    },
+    "switch_port_numbering_layout": {
+        "path": "modules/switch_port_numbering_layout",
+        "crud_table": "switch_port_numbering_layout",
+        "is_standard": true
+    },
+    "switch_port_types": {
+        "path": "modules/switch_port_types",
+        "crud_table": "switch_port_types",
+        "is_standard": true
+    },
+    "switch_ports": {
+        "path": "modules/switch_ports",
+        "crud_table": "switch_ports",
+        "is_standard": true
+    },
+    "switch_status": {
+        "path": "modules/switch_status",
+        "crud_table": "switch_status",
+        "is_standard": true
+    },
+    "system_access": {
+        "path": "modules/system_access",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "ticket_categories": {
+        "path": "modules/ticket_categories",
+        "crud_table": "ticket_categories",
+        "is_standard": true
+    },
+    "ticket_priorities": {
+        "path": "modules/ticket_priorities",
+        "crud_table": "ticket_priorities",
+        "is_standard": true
+    },
+    "ticket_statuses": {
+        "path": "modules/ticket_statuses",
+        "crud_table": "ticket_statuses",
+        "is_standard": true
+    },
+    "tickets": {
+        "path": "modules/tickets",
+        "crud_table": null,
+        "is_standard": false
+    },
+    "ui_configuration": {
+        "path": "modules/ui_configuration",
+        "crud_table": "ui_configuration",
+        "is_standard": true
+    },
+    "user_companies": {
+        "path": "modules/user_companies",
+        "crud_table": "user_companies",
+        "is_standard": true
+    },
+    "user_roles": {
+        "path": "modules/user_roles",
+        "crud_table": "user_roles",
+        "is_standard": true
+    },
+    "user_sidebar_preferences": {
+        "path": "modules/user_sidebar_preferences",
+        "crud_table": "user_sidebar_preferences",
+        "is_standard": true
+    },
+    "users": {
+        "path": "modules/users",
+        "crud_table": "users",
+        "is_standard": true
+    },
+    "visitors_access_log": {
+        "path": "modules/visitors_access_log",
+        "crud_table": "visitors_access_log",
+        "is_standard": true
+    },
+    "vlans": {
+        "path": "modules/vlans",
+        "crud_table": "vlans",
+        "is_standard": true
+    },
+    "warranty_types": {
+        "path": "modules/warranty_types",
+        "crud_table": "warranty_types",
+        "is_standard": true
+    },
+    "workstation_device_types": {
+        "path": "modules/workstation_device_types",
+        "crud_table": "workstation_device_types",
+        "is_standard": true
+    },
+    "workstation_modes": {
+        "path": "modules/workstation_modes",
+        "crud_table": "workstation_modes",
+        "is_standard": true
+    },
+    "workstation_office": {
+        "path": "modules/workstation_office",
+        "crud_table": "workstation_office",
+        "is_standard": true
+    },
+    "workstation_os_types": {
+        "path": "modules/workstation_os_types",
+        "crud_table": "workstation_os_types",
+        "is_standard": true
+    },
+    "workstation_os_versions": {
+        "path": "modules/workstation_os_versions",
+        "crud_table": "workstation_os_versions",
+        "is_standard": true
+    },
+    "workstation_ram": {
+        "path": "modules/workstation_ram",
+        "crud_table": "workstation_ram",
+        "is_standard": true
+    }
+}
