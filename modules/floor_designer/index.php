@@ -997,7 +997,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         openPointModal({
                             id: 0,
                             floor_designer_id: floorData.id,
-                            point_type_id: 1,
+                            point_type_name: 'RJ45',
                             x: 50, y: 50,
                             comment_x: 20, comment_y: 20,
                             label: '',
