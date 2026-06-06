@@ -555,9 +555,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
         .show-grid .grid-layer { display: block; }
         .point.is-filtered { opacity: 0.1 !important; pointer-events: none !important; }
         .comment-box.is-filtered { display: none !important; }
-        .hide-comments .comment-box { display: none !important; }
-        .hide-comments .comment-box { display: none !important; }
-        .hide-comments .comment-box { display: none !important; }
 
         /* Shape Rendering Overrides */
         .shape-square { border-radius: 0; }
@@ -711,20 +708,305 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     <div class="form-group" style="margin:0; min-width:200px;">
                         <input type="text" id="point-filter" onkeyup="filterPoints(this.value)" placeholder="Search IP, MAC, Label, Switch..." style="padding:4px 8px; font-size:12px;">
                     </div>
+
                     <div class="layer-controls">
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('RJ45', this.checked)"> RJ45</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('SFP', this.checked)"> Fiber</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
-                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access-Point', this.checked)"> APs</label>
-                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
-                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
+                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access Point', this.checked)"> APs</label>
                     </div>
-                </div>
-                <div style="margin-bottom:15px; display:flex; gap:10px;">
+
                     <button class="btn btn-sm btn-primary" onclick="addNewPoint()">📍 Add Network Point</button>
                     <button class="btn btn-sm btn-primary" onclick="addNewDoor()">🚪 Add Door</button>
                     <button class="btn btn-sm btn-primary" onclick="addNewAP()">🛜 Add Access Point</button>
                 </div>
+
+                <div class="designer-wrapper" id="designer-wrapper">
+                    <div id="designer-container" class="designer-container">
+                        <div class="grid-layer"></div>
+                        <div id="floor-shape" class="floor-shape"></div>
+                    </div>
+                </div>
+
+                <!-- Point Modal -->
+                <div id="point-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:25px; border:1px solid #d0d7de; z-index:2000; width:95%; max-width:550px; max-height: 90vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(140,149,159,0.2);">
+                    <h2 id="modal-title" style="margin-top:0; color:#0969da; font-size:18px;">Edit Network Point</h2>
+                    <input type="hidden" id="modal-point-id">
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:15px;">
+                        <div class="form-group">
+                            <label>Label</label>
+                            <input type="text" id="modal-label" placeholder="e.g. Desk 42">
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="modal-type" onchange="toggleModalFields()">
+                                <option value="">-- Select Type --</option>
+                                <?php 
+                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id ORDER BY type ASC");
+                                while ($t = mysqli_fetch_assoc($types)): ?>
+                                    <option value="<?php echo $t['id']; ?>" data-type-name="<?php echo sanitize($t['type']); ?>"><?php echo sanitize($t['type']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Switch</label>
+                            <select id="modal-switch" onchange="loadPorts(this.value)">
+                                <option value="">-- Select Switch --</option>
+                                <?php 
+                                $switches = mysqli_query($conn, "SELECT id, name FROM equipment WHERE company_id=$company_id AND active=1 AND equipment_type_id IN (SELECT id FROM equipment_types WHERE name LIKE '%Switch%') ORDER BY name ASC");
+                                while ($s = mysqli_fetch_assoc($switches)): ?>
+                                    <option value="<?php echo $s['id']; ?>"><?php echo sanitize($s['name']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Switch Port</label>
+                            <select id="modal-port"><option value="">-- Select Port --</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>IP Address</label>
+                            <input type="text" id="modal-ip">
+                        </div>
+                        <div class="form-group">
+                            <label>MAC Address</label>
+                            <input type="text" id="modal-mac">
+                        </div>
+                        <div class="form-group">
+                            <label>WLAN Address</label>
+                            <input type="text" id="modal-wlan">
+                        </div>
+                        <div class="form-group">
+                            <label>Patch Port</label>
+                            <input type="text" id="modal-patch">
+                        </div>
+                        <div class="form-group" id="group-rotation" style="display:none;">
+                            <label>Rotation (degrees)</label>
+                            <select id="modal-rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option><option value="360">360°</option><option value="other">Other…</option></select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Cable Color</label>
+                            <select id="modal-color">
+                                <option value="">-- Select Color --</option>
+                                <?php 
+                                $colors = mysqli_query($conn, "SELECT id, color_name, hex_color FROM cable_colors WHERE company_id=$company_id ORDER BY color_name ASC");
+                                while ($c = mysqli_fetch_assoc($colors)): ?>
+                                    <option value="<?php echo $c['id']; ?>" data-hex="<?php echo $c['hex_color']; ?>"><?php echo sanitize($c['color_name']); ?> (<?php echo $c['hex_color']; ?>)</option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions" style="margin-top:25px; border-top:1px solid #d0d7de; padding-top:15px; display:flex; justify-content: flex-end; gap:10px;">
+                        <button class="btn btn-primary" onclick="savePointData()">💾 Save Changes</button>
+                        <button class="btn btn-danger" id="btn-delete-point" onclick="deletePointData()">🗑️ Delete</button>
+                        <button class="btn" onclick="closeModal()">Cancel</button>
+                    </div>
+                </div>
+
+                <script>
+                    const points = <?php echo json_encode($points); ?>;
+                    const floorData = <?php echo json_encode($data); ?>;
+                    const container = document.getElementById('designer-container');
+                    const wrapper = document.getElementById('designer-wrapper');
+                    const shapeEl = document.getElementById('floor-shape');
+                    let currentZoom = 1;
+                    let snapToGrid = false;
+                    const gridSize = 25;
+
+                    function initDesigner() {
+                        renderFloor();
+                        points.forEach(p => renderPoint(p));
+                        const rotSelect = document.getElementById("modal-rotation");
+                        if (rotSelect) {
+                            rotSelect.addEventListener("change", function() {
+                                if (this.value === "other") {
+                                    const val = window.prompt("Insert custom rotation in degrees:");
+                                    if (val !== null && val.trim() !== "" && !isNaN(val)) {
+                                        setRotationValue(parseFloat(val));
+                                    } else {
+                                        this.value = "0";
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    function renderFloor() {
+                        if (floorData.floor_plan_id) {
+                            <?php 
+                            $bgUrl = '';
+                            if (!empty($data['floor_plan_id'])) {
+                                $fpq = mysqli_query($conn, "SELECT stored_filename, company_id FROM floor_plans WHERE id=" . (int)$data['floor_plan_id'] . " AND company_id=" . (int)$company_id);
+                                if ($fpr = mysqli_fetch_assoc($fpq)) {
+                                    $bgUrl = "../../floor_plans/" . (int)$fpr['company_id'] . "/" . $fpr['stored_filename'];
+                                }
+                            }
+                            ?>
+                            shapeEl.style.backgroundImage = "url('<?php echo $bgUrl; ?>')";
+                            shapeEl.style.backgroundColor = "transparent";
+                        } else {
+                            shapeEl.style.backgroundColor = "#fff";
+                        }
+
+                        const type = floorData.shape_type;
+                        shapeEl.className = 'floor-shape';
+                        if (type === 'Square') shapeEl.classList.add('shape-square');
+                        else if (type === 'Rectangular') shapeEl.classList.add('shape-rectangular');
+                        else if (type === 'Irregular east-west walls') shapeEl.classList.add('shape-irregular-ew');
+                        else if (type === 'Irregular east wall') shapeEl.classList.add('shape-irregular-e');
+                        else if (type === 'Irregular west wall') shapeEl.classList.add('shape-irregular-w');
+                        else if (type === 'Irregular north-south walls') shapeEl.classList.add('shape-irregular-ns');
+                        else if (type === 'Irregular north wall') shapeEl.classList.add('shape-irregular-n');
+                        else if (type === 'Irregular south wall') shapeEl.classList.add('shape-irregular-s');
+                    }
+
+                    function renderPoint(p) {
+                        const isSfp = String(p.point_type_name || '').includes('SFP') || String(p.point_type_name || '').includes('Fiber');
+                        const isDoor = String(p.point_type_name || '').includes('Door');
+                        const isAP = String(p.point_type_name || '').includes('Access Point');
+                        const el = document.createElement('div');
+                        el.id = 'point-' + p.id;
+                        
+                        if (isDoor) {
+                            el.className = `point point-type-Door door`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
+                            el.innerHTML = `
+                                <svg viewBox="0 0 100 100" width="60" height="60" style="pointer-events: none;">
+                                    <path d="M 10,90 L 10,10 L 90,10 A 80,80 0 0 1 10,90" fill="none" stroke="#24292f" stroke-width="3" />
+                                    <rect x="0" y="85" width="20" height="10" fill="#333" />
+                                    <rect x="80" y="85" width="20" height="10" fill="#333" />
+                                </svg>`;
+                        } else if (isAP) {
+                            el.className = `point point-type-Access-Point access-point`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
+                            el.innerHTML = `
+                                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+                                    <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                                    <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                                </svg>`;
+                        } else {
+                            el.className = `point point-type-${isSfp ? 'SFP' : 'RJ45'} ${isSfp ? 'sfp' : 'rj45'}`;
+                            el.style.left = p.x + 'px';
+                            el.style.top = p.y + 'px';
+                            if (p.hex_color) el.style.backgroundColor = p.hex_color;
+                            el.textContent = p.label ? p.label.substring(0, 2).toUpperCase() : p.id;
+                        }
+
+                        el.dataset.id = p.id;
+                        el.dataset.search = `${p.label} ${p.ip_address} ${p.mac_address} ${p.switch_name} ${p.patch_port}`.toLowerCase();
+                        
+                        makeDraggable(el, (newX, newY) => {
+                            p.x = newX; p.y = newY;
+                            updatePointPosition(p.id, newX, newY);
+                            updateCommentAbsolutePos(p);
+                        });
+                        el.onclick = (e) => { e.stopPropagation(); openPointModal(p); };
+                        container.appendChild(el);
+
+                        const cb = document.createElement('div');
+                        cb.id = 'comment-' + p.id;
+                        cb.className = `comment-box comment-type-${isDoor ? "Door" : (isAP ? "Access-Point" : (isSfp ? "SFP" : "RJ45"))}`;
+                        updateCommentAbsolutePos(p, cb);
+                        
+                        let tableHtml = `<table>`;
+                        if (p.label) tableHtml += `<tr class="label-row"><td colspan="2">${p.label}</td></tr>`;
+                        if (p.wlan_address) tableHtml += `<tr><td>Wlan:</td><td>${p.wlan_address}</td></tr>`;
+                        if (p.ip_address) tableHtml += `<tr><td>IP:</td><td>${p.ip_address}</td></tr>`;
+                        if (p.mac_address) tableHtml += `<tr><td>MAC:</td><td>${p.mac_address}</td></tr>`;
+                        if (p.patch_port) tableHtml += `<tr><td>Patch:</td><td>${p.patch_port}</td></tr>`;
+                        if (p.switch_name) tableHtml += `<tr><td>SW:</td><td>${p.switch_name}</td></tr>`;
+                        if (p.switch_port_number) tableHtml += `<tr><td>Port:</td><td>${p.switch_port_number}</td></tr>`;
+                        if (p.color_name) tableHtml += `<tr><td>Color:</td><td>${p.color_name}</td></tr>`;
+                        tableHtml += `</table>`;
+                        cb.innerHTML = tableHtml;
+
+                        makeDraggable(cb, (newAbsX, newAbsY) => {
+                            const relX = newAbsX - p.x;
+                            const relY = newAbsY - p.y;
+                            p.comment_x = relX; p.comment_y = relY;
+                            updateCommentRelPosition(p.id, relX, relY);
+                        });
+                        container.appendChild(cb);
+                    }
+
+                    function updateCommentAbsolutePos(p, cb = null) {
+                        if (!cb) cb = document.getElementById('comment-' + p.id);
+                        if (!cb) return;
+                        cb.style.left = (parseFloat(p.x) + parseFloat(p.comment_x)) + 'px';
+                        cb.style.top = (parseFloat(p.y) + parseFloat(p.comment_y)) + 'px';
+                    }
+
+                    function makeDraggable(el, onEnd) {
+                        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                        let moved = false;
+                        el.onmousedown = (e) => {
+                            e = e || window.event;
+                            if (e.button !== 0) return;
+                            e.preventDefault();
+                            pos3 = e.clientX;
+                            pos4 = e.clientY;
+                            moved = false;
+                            document.onmouseup = () => {
+                                document.onmouseup = null;
+                                document.onmousemove = null;
+                                if (moved) onEnd(parseInt(el.style.left), parseInt(el.style.top));
+                            };
+                            document.onmousemove = (e) => {
+                                e = e || window.event;
+                                e.preventDefault();
+                                moved = true;
+                                pos1 = pos3 - e.clientX;
+                                pos2 = pos4 - e.clientY;
+                                pos3 = e.clientX;
+                                pos4 = e.clientY;
+                                let newX = el.offsetLeft - (pos1 / currentZoom);
+                                let newY = el.offsetTop - (pos2 / currentZoom);
+                                if (snapToGrid) {
+                                    newX = Math.round(newX / gridSize) * gridSize;
+                                    newY = Math.round(newY / gridSize) * gridSize;
+                                }
+                                el.style.left = newX + "px";
+                                el.style.top = newY + "px";
+                            };
+                        };
+                    }
+
+
+
+                    function toggleGrid() {
+                        snapToGrid = !snapToGrid;
+                        const btn = document.getElementById('grid-toggle-btn');
+                        if (snapToGrid) {
+                            wrapper.classList.add('show-grid');
+                            btn.textContent = '🏁 Hide Grid';
+                            btn.classList.add('btn-primary');
+                        } else {
+                            wrapper.classList.remove('show-grid');
+                            btn.textContent = '🏁 Show Grid';
+                            btn.classList.remove('btn-primary');
+                        }
+                    }
+
+
+                    function addNewPoint() {
+                        openPointModal({
+                            id: 0,
+                            floor_designer_id: floorData.id,
+                            point_type_name: 'RJ45',
+                            x: 50, y: 50,
+                            comment_x: 20, comment_y: 20,
+                            label: '',
+                            rotation: 0
+                        });
+                    }
+
+                    function addNewAP() {
+                        const apTypeOpt = Array.from(document.querySelectorAll('#modal-type option')).find(opt => opt.textContent.includes('Access Point'));
                         openPointModal({
                             id: 0,
                             floor_designer_id: floorData.id,
@@ -941,14 +1223,24 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     <div class="form-group" style="margin:0; min-width:200px;">
                         <input type="text" id="point-filter" onkeyup="filterPoints(this.value)" placeholder="Search IP, MAC, Label, Switch..." style="padding:4px 8px; font-size:12px;">
                     </div>
+
                     <div class="layer-controls">
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('RJ45', this.checked)"> RJ45</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('SFP', this.checked)"> Fiber</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
-                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access-Point', this.checked)"> APs</label>
-                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
-                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
+                    </div>
                 </div>
+
+                <div class="designer-wrapper" id="designer-wrapper">
+                    <div id="designer-container" class="designer-container">
+                        <div id="floor-shape" class="floor-shape"></div>
+                    </div>
+                </div>
+
+                <script>
+                    const points = <?php echo json_encode($points); ?>;
+                    const floorData = <?php echo json_encode($data); ?>;
+                    const container = document.getElementById('designer-container');
                     const wrapper = document.getElementById('designer-wrapper');
                     const shapeEl = document.getElementById('floor-shape');
                     let currentZoom = 1;
@@ -1020,7 +1312,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             el.style.left = p.x + 'px';
                             el.style.top = p.y + 'px';
                             el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
-                            if (p.hex_color) el.style.backgroundColor = p.hex_color;
                             el.innerHTML = `
                                 <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
                                     <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
@@ -1083,21 +1374,10 @@ document.addEventListener('change', function (event) {
                         container.style.transform = 'scale(' + currentZoom + ')';
                     }
 
-                    
-                    function toggleComments(show) {
-                        if (show) container.classList.remove('hide-comments');
-                        else container.classList.add('hide-comments');
-                    }
-                    function toggleComments(show) {
-                        if (show) container.classList.remove('hide-comments');
-                        else container.classList.add('hide-comments');
-                    }
-
                     function resetZoom() {
                         currentZoom = 1;
                         container.style.transform = 'scale(1)';
                     }
-
 
                     function toggleLayer(typeName, show) {
                         const points = document.querySelectorAll('.point-type-' + typeName);
@@ -1105,6 +1385,11 @@ document.addEventListener('change', function (event) {
                         const display = show ? '' : 'none';
                         points.forEach(el => el.style.display = display);
                         comments.forEach(el => el.style.display = display);
+                    function toggleComments(show) {
+                        const comments = document.querySelectorAll(".comment-box");
+                        const display = show ? "" : "none";
+                        comments.forEach(el => el.style.display = display);
+                    }
                     }
 
                     function filterPoints(val) {
