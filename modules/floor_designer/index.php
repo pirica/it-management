@@ -714,6 +714,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('SFP', this.checked)"> Fiber</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access Point', this.checked)"> APs</label>
+                        <label style="font-size:12px; border-left: 1px solid #d0d7de; padding-left: 10px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
                     </div>
 
                     <button class="btn btn-sm btn-primary" onclick="addNewPoint()">📍 Add Network Point</button>
@@ -882,6 +883,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             el.style.left = p.x + 'px';
                             el.style.top = p.y + 'px';
                             el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
+                            if (p.hex_color) el.style.backgroundColor = p.hex_color;
                             el.innerHTML = `
                                 <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
                                     <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
@@ -1228,6 +1230,8 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('RJ45', this.checked)"> RJ45</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('SFP', this.checked)"> Fiber</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
+                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access Point', this.checked)"> APs</label>
+                        <label style="font-size:12px; border-left: 1px solid #d0d7de; padding-left: 10px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
                     </div>
                 </div>
 
@@ -1312,6 +1316,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             el.style.left = p.x + 'px';
                             el.style.top = p.y + 'px';
                             el.style.setProperty('--rotation', (p.rotation || 0) + 'deg');
+                            if (p.hex_color) el.style.backgroundColor = p.hex_color;
                             el.innerHTML = `
                                 <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
                                     <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
@@ -1380,16 +1385,18 @@ document.addEventListener('change', function (event) {
                     }
 
                     function toggleLayer(typeName, show) {
-                        const points = document.querySelectorAll('.point-type-' + typeName);
-                        const comments = document.querySelectorAll('.comment-type-' + typeName);
+                        const cls = typeName.replace(/ /g, '-');
+                        const points = document.querySelectorAll('.point-type-' + cls);
+                        const comments = document.querySelectorAll('.comment-type-' + cls);
                         const display = show ? '' : 'none';
                         points.forEach(el => el.style.display = display);
                         comments.forEach(el => el.style.display = display);
+                    }
+
                     function toggleComments(show) {
                         const comments = document.querySelectorAll(".comment-box");
                         const display = show ? "" : "none";
                         comments.forEach(el => el.style.display = display);
-                    }
                     }
 
                     function filterPoints(val) {
