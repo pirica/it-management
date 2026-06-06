@@ -713,39 +713,12 @@ unset($_SESSION['calendar_success']);
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof initTheme === 'function') {
         initTheme();
-
-    const uploadTarget = document.getElementById("icsUploadTarget");
-    const fileInput = document.getElementById("icsFileInput");
-    if (uploadTarget && fileInput) {
-        uploadTarget.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.add("is-dragover");
-        });
-        uploadTarget.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-        });
-        uploadTarget.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-        });
-        uploadTarget.addEventListener("click", () => fileInput.click());
-        uploadTarget.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
     }
+    if (typeof itmUploadHelper !== 'undefined') {
+        itmUploadHelper.setupById("icsUploadTarget", "icsFileInput");
     }
 });
 </script>
+<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

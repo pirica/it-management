@@ -22,7 +22,10 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
     </div>
     <div class="form-group">
         <label for="uploadFiles">Files (images, PDF, or AutoCAD)</label>
-        <input type="file" name="gallery_files[]" id="uploadFiles" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.dwg,.dxf,.dwf,.dws,image/*,application/pdf" multiple required>
+        <div id="floorPlanUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload floor plans">
+            <p class="itm-dropzone-hint">Drag and drop images, PDF, or AutoCAD files here, or click to browse.</p>
+            <input type="file" name="gallery_files[]" id="uploadFiles" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.dwg,.dxf,.dwf,.dws,image/*,application/pdf" multiple required>
+        </div>
     </div>
     <div class="form-group">
         <label for="uploadTagsCreate">Tags (comma-separated)</label>
@@ -33,3 +36,12 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
         <a href="index.php" class="btn">Cancel</a>
     </div>
 </form>
+
+<script src="../../js/itm-upload-helper.js"></script>
+<script>
+(function() {
+    if (typeof itmUploadHelper !== 'undefined') {
+        itmUploadHelper.setupById("floorPlanUploadTarget", "uploadFiles");
+    }
+})();
+</script>

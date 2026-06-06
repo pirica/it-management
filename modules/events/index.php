@@ -1390,39 +1390,12 @@ document.addEventListener('change', function (event) {
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 
-(function() {
-    const uploadTarget = document.getElementById("eventsIcsUploadTarget");
-    const fileInput = document.getElementById("eventsIcsFileInput");
-    if (uploadTarget && fileInput) {
-        uploadTarget.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.add("is-dragover");
-        });
-        uploadTarget.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-        });
-        uploadTarget.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-        });
-        uploadTarget.addEventListener("click", () => fileInput.click());
-        uploadTarget.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
-    }
-})();
 });
+
+if (typeof itmUploadHelper !== 'undefined') {
+    itmUploadHelper.setupById("eventsIcsUploadTarget", "eventsIcsFileInput");
+}
 </script>
+<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>
