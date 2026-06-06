@@ -691,6 +691,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
     </label>
 </div>
 ```
+* **Strict prohibition:** HTML forms for the `active` database column must use the checkbox pattern above. The use of `<input type="text" name="active" value="1">` or `<input type="text" name="active" value="0">` is strictly forbidden.
 
 
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
