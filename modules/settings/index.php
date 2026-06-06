@@ -914,6 +914,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
         </div>
     </div>
 </div>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 (function () {
     const form = document.getElementById('ui-config-form');
@@ -1160,7 +1161,6 @@ window.setTimeout(function () {
 }, 150);
 </script>
 <?php endif; ?>
-<script src="../../js/itm-upload-helper.js"></script>
 <script src="../../js/theme.js"></script>
 </body>
 </html>

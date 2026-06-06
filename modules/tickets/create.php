@@ -686,6 +686,7 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
 </div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/select-add-option.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 (function () {
     var ticketForm = document.getElementById('ticketForm');
@@ -860,6 +861,5 @@ function updateCurrentPhotoHint() {
     }
 })();
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

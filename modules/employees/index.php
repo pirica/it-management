@@ -838,36 +838,15 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
         </div>
     </div>
 </div>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 /**
  * Import Logic - Handles File Reading and CSV/Excel Parsing
  */
 (function () {
     const fileInput = document.getElementById('employeeImportFile');
-    if (typeof itmUploadHelper !== 'undefined') {
+    if (typeof itmUploadHelper !== "undefined") {
         itmUploadHelper.setupById("employeeImportTarget", "employeeImportFile");
-    });
-        uploadTarget.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-        });
-        uploadTarget.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-        });
-        uploadTarget.addEventListener("click", () => fileInput.click());
-        uploadTarget.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
     }
     const payloadInput = document.getElementById('employeeImportPayload');
     const textInput = document.getElementById('employeeImportText');
@@ -923,6 +902,5 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
     });
 })();
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

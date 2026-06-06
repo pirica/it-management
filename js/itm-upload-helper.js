@@ -27,7 +27,20 @@ var itmUploadHelper = (function() {
             e.stopPropagation();
             uploadTarget.classList.remove("is-dragover");
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
+                if (fileInput.multiple) {
+                    var dt = new DataTransfer();
+                    if (fileInput.files) {
+                        for (var i = 0; i < fileInput.files.length; i++) {
+                            dt.items.add(fileInput.files[i]);
+                        }
+                    }
+                    for (var j = 0; j < e.dataTransfer.files.length; j++) {
+                        dt.items.add(e.dataTransfer.files[j]);
+                    }
+                    fileInput.files = dt.files;
+                } else {
+                    fileInput.files = e.dataTransfer.files;
+                }
                 fileInput.dispatchEvent(new Event("change", { bubbles: true }));
             }
         });
@@ -40,8 +53,8 @@ var itmUploadHelper = (function() {
         });
 
         uploadTarget.addEventListener("keydown", function(e) {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
                 fileInput.click();
             }
         });

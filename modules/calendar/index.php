@@ -706,6 +706,7 @@ unset($_SESSION['calendar_success']);
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 /**
  * Ensures the theme is applied to the calendar elements on page load.
@@ -719,6 +720,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

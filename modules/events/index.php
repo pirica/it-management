@@ -1373,6 +1373,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 </div>
 
 <script src="../../js/theme.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script> window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>; </script>
 <script src="../../js/select-add-option.js"></script>
 <script>
@@ -1396,6 +1397,5 @@ if (typeof itmUploadHelper !== 'undefined') {
     itmUploadHelper.setupById("eventsIcsUploadTarget", "eventsIcsFileInput");
 }
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>
