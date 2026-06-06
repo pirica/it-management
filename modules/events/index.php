@@ -1133,12 +1133,16 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                     </form>
 
                     <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;">
-                        <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;width:100%;">
+                        <form method="POST" enctype="multipart/form-data" id="eventsIcsImportForm" style="width:100%;">
                             <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
-                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <div class="form-group" style="margin:0;width:100%;">
                                 <label>Import ICS (.ics)</label>
-                                <input type="file" name="ics_file" accept=".ics" required style="font-size: 0.8rem; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); width: 300px;">
-                            <button type="submit" class="btn btn-sm btn-primary">Import Events</button></div>
+                                <div id="eventsIcsUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload ICS file">
+                                    <p class="itm-dropzone-hint">Drag and drop .ics file here, or click to browse.</p>
+                                    <input type="file" name="ics_file" id="eventsIcsFileInput" accept=".ics" required style="font-size: 0.8rem; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); width: 100%;">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary" style="margin-top: 10px;">Import Events</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -1385,6 +1389,39 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
+
+(function() {
+    const uploadTarget = document.getElementById("eventsIcsUploadTarget");
+    const fileInput = document.getElementById("eventsIcsFileInput");
+    if (uploadTarget && fileInput) {
+        uploadTarget.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.add("is-dragover");
+        });
+        uploadTarget.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+        });
+        uploadTarget.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        });
+        uploadTarget.addEventListener("click", () => fileInput.click());
+        uploadTarget.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+    }
+})();
 });
 </script>
 </body>
