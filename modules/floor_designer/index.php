@@ -556,7 +556,10 @@ $moduleListHeading = '🧩 ' . $crud_title;
         .point.is-filtered { opacity: 0.1 !important; pointer-events: none !important; }
         .comment-box.is-filtered { display: none !important; }
         .hide-comments .comment-box { display: none !important; }
-/* Shape Rendering Overrides */
+        .hide-comments .comment-box { display: none !important; }
+        .hide-comments .comment-box { display: none !important; }
+
+        /* Shape Rendering Overrides */
         .shape-square { border-radius: 0; }
         .shape-rectangular { width: 1500px; }
         .shape-irregular-ew { border-radius: 150px / 80px; }
@@ -714,7 +717,8 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access-Point', this.checked)"> APs</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
-</div>
+                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
+                    </div>
                 </div>
                 <div style="margin-bottom:15px; display:flex; gap:10px;">
                     <button class="btn btn-sm btn-primary" onclick="addNewPoint()">📍 Add Network Point</button>
@@ -943,7 +947,8 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Door', this.checked)"> Doors</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleLayer('Access-Point', this.checked)"> APs</label>
                         <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
-</div>
+                        <label style="font-size:12px;"><input type="checkbox" checked onchange="toggleComments(this.checked)"> Comments</label>
+                </div>
                     const wrapper = document.getElementById('designer-wrapper');
                     const shapeEl = document.getElementById('floor-shape');
                     let currentZoom = 1;
@@ -1078,12 +1083,17 @@ document.addEventListener('change', function (event) {
                         container.style.transform = 'scale(' + currentZoom + ')';
                     }
 
-
+                    
                     function toggleComments(show) {
-                        if (show) container.classList.remove("hide-comments");
-                        else container.classList.add("hide-comments");
+                        if (show) container.classList.remove('hide-comments');
+                        else container.classList.add('hide-comments');
                     }
-function resetZoom() {
+                    function toggleComments(show) {
+                        if (show) container.classList.remove('hide-comments');
+                        else container.classList.add('hide-comments');
+                    }
+
+                    function resetZoom() {
                         currentZoom = 1;
                         container.style.transform = 'scale(1)';
                     }
