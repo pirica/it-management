@@ -45,12 +45,12 @@
             uploadTarget.classList.remove("is-dragover");
         });
         uploadTarget.addEventListener("drop", function (event) {
-            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
-                return;
-            }
             event.preventDefault();
             event.stopPropagation();
             uploadTarget.classList.remove("is-dragover");
+            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
+                return;
+            }
             var transfer = new DataTransfer();
             if (fileInput.files) {
                 Array.prototype.forEach.call(fileInput.files, function(file) {
@@ -107,20 +107,30 @@
         }
     }
 
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
 
-    function buildPreviewActionsHtml(url, downloadName) {
-        const safeUrl = escapeHtml(url);
-        const safeName = escapeHtml(downloadName || '');
-        const downloadAttr = safeName !== '' ? ' download="' + safeName + '"' : ' download';
-        return '<a class="btn btn-sm btn-primary" href="' + safeUrl + '"' + downloadAttr + '>Download file</a>'
-            + '<a class="btn btn-sm" href="' + safeUrl + '" target="_blank" rel="noopener">Open in new tab</a>';
+
+    function buildPreviewActions(url, downloadName) {
+        const fragment = document.createDocumentFragment();
+        const downloadBtn = document.createElement('a');
+        downloadBtn.className = 'btn btn-sm btn-primary';
+        downloadBtn.href = url;
+        if (downloadName) {
+            downloadBtn.setAttribute('download', downloadName);
+        } else {
+            downloadBtn.setAttribute('download', '');
+        }
+        downloadBtn.textContent = 'Download file';
+        fragment.appendChild(downloadBtn);
+
+        const openBtn = document.createElement('a');
+        openBtn.className = 'btn btn-sm';
+        openBtn.href = url;
+        openBtn.target = '_blank';
+        openBtn.rel = 'noopener';
+        openBtn.textContent = 'Open in new tab';
+        fragment.appendChild(openBtn);
+
+        return fragment;
     }
 
     function openPreview(url, type, name, downloadName) {
@@ -128,19 +138,40 @@
             return;
         }
         modalTitle.textContent = name || 'Preview';
+
         if (modalActions) {
-            modalActions.innerHTML = buildPreviewActionsHtml(url, downloadName);
+            modalActions.innerHTML = '';
+            modalActions.appendChild(buildPreviewActions(url, downloadName));
         }
-        let previewHtml = '';
+
+        modalBody.innerHTML = '';
         if (type === 'pdf') {
-            previewHtml = '<iframe class="itm-floor-plan-pdf-frame" src="' + escapeHtml(url) + '#view=FitH" title="PDF preview"></iframe>'
-                + '<p class="itm-dropzone-hint" style="margin-top:8px;">Signed or protected PDFs may disable Save in the browser viewer; use <strong>Download file</strong> above.</p>';
+            const iframe = document.createElement('iframe');
+            iframe.className = 'itm-floor-plan-pdf-frame';
+            iframe.src = url + '#view=FitH';
+            iframe.title = 'PDF preview';
+            modalBody.appendChild(iframe);
+
+            const hint = document.createElement('p');
+            hint.className = 'itm-dropzone-hint';
+            hint.style.marginTop = '8px';
+            hint.textContent = 'Signed or protected PDFs may disable Save in the browser viewer; use ';
+            const strong = document.createElement('strong');
+            strong.textContent = 'Download file';
+            hint.appendChild(strong);
+            hint.appendChild(document.createTextNode(' above.'));
+            modalBody.appendChild(hint);
         } else if (type === 'cad' || type === 'download') {
-            previewHtml = '<p>Preview is not available for this file type.</p>';
+            const p = document.createElement('p');
+            p.textContent = 'Preview is not available for this file type.';
+            modalBody.appendChild(p);
         } else {
-            previewHtml = '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name || 'Floor plan') + '">';
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = name || 'Floor plan';
+            modalBody.appendChild(img);
         }
-        modalBody.innerHTML = previewHtml;
+
         modal.hidden = false;
     }
 
