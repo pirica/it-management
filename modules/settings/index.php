@@ -1136,46 +1136,20 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 
     form.addEventListener('submit', collectAndSetHiddenFields);
 
+    root.addEventListener('change', (event) => {
+        if (event.target.classList.contains('sidebar-visible-toggle')) {
+            collectAndSetHiddenFields();
+        }
+    });
+
     applyInitialOrder();
     collectAndSetHiddenFields();
 
-    (function() {
-        function setupDragAndDrop(targetId, inputId) {
-            const uploadTarget = document.getElementById(targetId);
-            const fileInput = document.getElementById(inputId);
-            if (uploadTarget && fileInput) {
-                uploadTarget.addEventListener("dragover", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadTarget.classList.add("is-dragover");
-                });
-                uploadTarget.addEventListener("dragleave", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadTarget.classList.remove("is-dragover");
-                });
-                uploadTarget.addEventListener("drop", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadTarget.classList.remove("is-dragover");
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        fileInput.files = e.dataTransfer.files;
-                        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-                    }
-                });
-                uploadTarget.addEventListener("click", (e) => {
-                    if (e.target !== fileInput) fileInput.click();
-                });
-                uploadTarget.addEventListener("keydown", (e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        fileInput.click();
-                    }
-                });
-            }
+        (function() {
+        if (typeof itmUploadHelper !== 'undefined') {
+            itmUploadHelper.setupById("faviconUploadTarget", "favicon_file");
+            itmUploadHelper.setupById("sqlUploadTarget", "sql_file");
         }
-        setupDragAndDrop("faviconUploadTarget", "favicon_file");
-        setupDragAndDrop("sqlUploadTarget", "sql_file");
     })();
 })();
 </script>
@@ -1186,6 +1160,7 @@ window.setTimeout(function () {
 }, 150);
 </script>
 <?php endif; ?>
+<script src="../../js/itm-upload-helper.js"></script>
 <script src="../../js/theme.js"></script>
 </body>
 </html>

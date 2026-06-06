@@ -844,13 +844,9 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
  */
 (function () {
     const fileInput = document.getElementById('employeeImportFile');
-    const uploadTarget = document.getElementById("employeeImportTarget");
-    if (uploadTarget && fileInput) {
-        uploadTarget.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.add("is-dragover");
-        });
+    if (typeof itmUploadHelper !== 'undefined') {
+        itmUploadHelper.setupById("employeeImportTarget", "employeeImportFile");
+    });
         uploadTarget.addEventListener("dragleave", (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -927,5 +923,6 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
     });
 })();
 </script>
+<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

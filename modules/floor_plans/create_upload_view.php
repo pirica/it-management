@@ -22,8 +22,8 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
     </div>
     <div class="form-group">
         <label for="uploadFiles">Files (images, PDF, or AutoCAD)</label>
-        <div id="floorPlanCreateUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload floor plan files">
-            <p class="itm-dropzone-hint">Drag and drop images, PDFs, or AutoCAD files (DWG, DXF, DWF, DWS) here, or click to browse.</p>
+        <div id="floorPlanUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload floor plans">
+            <p class="itm-dropzone-hint">Drag and drop images, PDF, or AutoCAD files here, or click to browse.</p>
             <input type="file" name="gallery_files[]" id="uploadFiles" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.dwg,.dxf,.dwf,.dws,image/*,application/pdf" multiple required>
         </div>
     </div>
@@ -37,52 +37,11 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
     </div>
 </form>
 
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 (function() {
-    var uploadTarget = document.getElementById('floorPlanCreateUploadTarget');
-    var fileInput = document.getElementById('uploadFiles');
-
-    function assignFilesToInput(input, incomingFiles, mergeExisting) {
-        if (!input || !incomingFiles) return;
-        var transfer = new DataTransfer();
-        if (mergeExisting && input.files) {
-            Array.prototype.forEach.call(input.files, function(file) {
-                transfer.items.add(file);
-            });
-        }
-        Array.prototype.forEach.call(incomingFiles, function(file) {
-            transfer.items.add(file);
-        });
-        input.files = transfer.files;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (uploadTarget && fileInput) {
-        uploadTarget.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.add('is-dragover');
-        });
-        uploadTarget.addEventListener('dragleave', function(e) {
-            uploadTarget.classList.remove('is-dragover');
-        });
-        uploadTarget.addEventListener('drop', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove('is-dragover');
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                assignFilesToInput(fileInput, e.dataTransfer.files, true);
-            }
-        });
-        uploadTarget.addEventListener('click', function(e) {
-            if (e.target !== fileInput) fileInput.click();
-        });
-        uploadTarget.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
+    if (typeof itmUploadHelper !== 'undefined') {
+        itmUploadHelper.setupById("floorPlanUploadTarget", "uploadFiles");
     }
 })();
 </script>

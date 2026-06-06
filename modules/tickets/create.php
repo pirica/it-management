@@ -706,119 +706,11 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
     var selectedPhotoPreviewUrls = [];
     var pendingDeletedPhotoIndexes = new Set();
 
-    function isExternalFileDrag(event) {
-        return !!(event.dataTransfer && event.dataTransfer.types && event.dataTransfer.types.indexOf('Files') !== -1);
+    if (typeof itmUploadHelper !== 'undefined') {
+        itmUploadHelper.setupById("ticketPhotoUploadTarget", "ticketPhotoInput");
     }
 
-    function isImageFile(file) {
-        return !!(file && typeof file.type === 'string' && file.type.indexOf('image/') === 0);
-    }
-
-    function assignImageFilesToInput(input, incomingFiles, mergeExisting) {
-        if (!input || !incomingFiles) {
-            return;
-        }
-        var transfer = new DataTransfer();
-        if (mergeExisting && input.files) {
-            Array.prototype.forEach.call(input.files, function (file) {
-                if (isImageFile(file)) {
-                    transfer.items.add(file);
-                }
-            });
-        }
-        Array.prototype.forEach.call(incomingFiles, function (file) {
-            if (isImageFile(file)) {
-                transfer.items.add(file);
-            }
-        });
-        input.files = transfer.files;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (uploadTarget && photoInput) {
-        uploadTarget.addEventListener('dragover', function (event) {
-            if (!isExternalFileDrag(event)) {
-                return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
-            uploadTarget.classList.add('is-dragover');
-        });
-        uploadTarget.addEventListener('dragleave', function (event) {
-            var related = event.relatedTarget;
-            if (related && uploadTarget.contains(related)) {
-                return;
-            }
-            uploadTarget.classList.remove('is-dragover');
-        });
-        uploadTarget.addEventListener('drop', function (event) {
-            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
-                return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
-            uploadTarget.classList.remove('is-dragover');
-            assignImageFilesToInput(photoInput, event.dataTransfer.files, true);
-        });
-        uploadTarget.addEventListener('click', function (event) {
-            if (event.target === photoInput) {
-                return;
-            }
-            photoInput.click();
-        });
-        uploadTarget.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                photoInput.click();
-            }
-        });
-    }
-
-    if (ticketForm) {
-        ticketForm.addEventListener('dragover', function (event) {
-            if (isExternalFileDrag(event)) {
-                event.preventDefault();
-            }
-        });
-        ticketForm.addEventListener('drop', function (event) {
-            if (!uploadTarget || uploadTarget.contains(event.target)) {
-                return;
-            }
-            if (isExternalFileDrag(event)) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-    }
-
-    function resetPendingPhotoDeletionState() {
-        pendingDeletedPhotoIndexes.clear();
-        if (deletePhotoInput) {
-            deletePhotoInput.value = '0';
-        }
-        if (deletePhotoIndexesInput) {
-            deletePhotoIndexesInput.value = '';
-        }
-    }
-
-    function syncDeletePhotoIndexes() {
-        if (!deletePhotoIndexesInput) {
-            return;
-        }
-        deletePhotoIndexesInput.value = Array.from(pendingDeletedPhotoIndexes).sort(function (a, b) { return a - b; }).join(',');
-    }
-
-    function clearPendingPhotoPreview() {
-        selectedPhotoPreviewUrls.forEach(function (url) {
-            URL.revokeObjectURL(url);
-        });
-        selectedPhotoPreviewUrls = [];
-        if (pendingPhotoPreviewGallery) {
-            pendingPhotoPreviewGallery.innerHTML = '';
-        }
-    }
-
-    function updateCurrentPhotoHint() {
+function updateCurrentPhotoHint() {
         if (!currentPhotoHintText) {
             return;
         }
@@ -968,5 +860,6 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
     }
 })();
 </script>
+<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

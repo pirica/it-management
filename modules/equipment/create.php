@@ -2332,13 +2332,9 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.getElementById("equipmentPhotoInput");
-    var uploadTarget = document.getElementById("equipmentPhotoUploadTarget");
-    if (uploadTarget && photoInput) {
-        uploadTarget.addEventListener("dragover", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            uploadTarget.classList.add("is-dragover");
-        });
+    if (typeof itmUploadHelper !== 'undefined') {
+        itmUploadHelper.setupById("equipmentPhotoUploadTarget", "equipmentPhotoInput");
+    });
         uploadTarget.addEventListener("dragleave", function (event) {
             uploadTarget.classList.remove("is-dragover");
         });
@@ -2617,5 +2613,6 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
     }
 })();
 </script>
+<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

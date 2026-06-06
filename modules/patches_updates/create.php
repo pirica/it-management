@@ -1028,49 +1028,13 @@ document.querySelectorAll('select[name="status_id"]').forEach((selectEl) => {
     selectEl.addEventListener('change', syncColor);
     syncColor();
 
-(function() {
-    document.querySelectorAll(".itm-photo-upload-target").forEach((uploadTarget) => {
-        const fileInput = uploadTarget.querySelector("input[type='file']");
-        if (!fileInput) return;
-
-        uploadTarget.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.add("is-dragover");
-        });
-        uploadTarget.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-        });
-        uploadTarget.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                const transfer = new DataTransfer();
-                if (fileInput.files) {
-                    Array.prototype.forEach.call(fileInput.files, (file) => {
-                        transfer.items.add(file);
-                    });
-                }
-                Array.prototype.forEach.call(e.dataTransfer.files, (file) => {
-                    transfer.items.add(file);
-                });
-                fileInput.files = transfer.files;
-                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-        });
-        uploadTarget.addEventListener("click", () => fileInput.click());
-        uploadTarget.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
-    });
-})();
+    (function() {
+        if (typeof itmUploadHelper !== 'undefined') {
+            itmUploadHelper.setupByClass(".itm-photo-upload-target");
+        }
+    })();
 });
 </script>
+<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>
