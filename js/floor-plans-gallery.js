@@ -47,10 +47,10 @@
         uploadTarget.addEventListener("drop", function (event) {
             event.preventDefault();
             event.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
             if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
                 return;
             }
-            uploadTarget.classList.remove("is-dragover");
             var transfer = new DataTransfer();
             if (fileInput.files) {
                 Array.prototype.forEach.call(fileInput.files, function(file) {
