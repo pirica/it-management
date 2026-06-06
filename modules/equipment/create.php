@@ -2208,6 +2208,7 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
 </div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/select-add-option.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 (function () {
     var typeSelect = document.querySelector('select[name="equipment_type_id"]');
@@ -2332,39 +2333,8 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
     var photoInput = document.getElementById("equipmentPhotoInput");
-    if (typeof itmUploadHelper !== 'undefined') {
+    if (typeof itmUploadHelper !== "undefined") {
         itmUploadHelper.setupById("equipmentPhotoUploadTarget", "equipmentPhotoInput");
-    });
-        uploadTarget.addEventListener("dragleave", function (event) {
-            uploadTarget.classList.remove("is-dragover");
-        });
-        uploadTarget.addEventListener("drop", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            uploadTarget.classList.remove("is-dragover");
-            if (event.dataTransfer.files && event.dataTransfer.files.length) {
-                var transfer = new DataTransfer();
-                if (photoInput.files) {
-                    Array.prototype.forEach.call(photoInput.files, function (file) {
-                        transfer.items.add(file);
-                    });
-                }
-                Array.prototype.forEach.call(event.dataTransfer.files, function (file) {
-                    transfer.items.add(file);
-                });
-                photoInput.files = transfer.files;
-                photoInput.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-        });
-        uploadTarget.addEventListener("click", function () {
-            photoInput.click();
-        });
-        uploadTarget.addEventListener("keydown", function (event) {
-            if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                photoInput.click();
-            }
-        });
     }
     var equipmentForm = document.getElementById('equipmentForm');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
@@ -2613,6 +2583,5 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
     }
 })();
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
 </body>
 </html>

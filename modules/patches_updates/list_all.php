@@ -1128,6 +1128,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
@@ -1169,13 +1170,13 @@ document.querySelectorAll('select[name="status_id"]').forEach((selectEl) => {
     selectEl.addEventListener('change', syncColor);
     syncColor();
 
-    (function() {
-        if (typeof itmUploadHelper !== 'undefined') {
-            itmUploadHelper.setupByClass(".itm-photo-upload-target");
-        }
-    })();
+
 });
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
+<script>
+if (typeof itmUploadHelper !== "undefined") {
+    itmUploadHelper.setupByClass(".itm-photo-upload-target");
+}
+</script>
 </body>
 </html>

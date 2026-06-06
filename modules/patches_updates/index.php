@@ -1329,6 +1329,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
@@ -1370,13 +1371,13 @@ document.querySelectorAll('select[name="status_id"]').forEach((selectEl) => {
     selectEl.addEventListener('change', syncColor);
     syncColor();
 
-    (function() {
-        if (typeof itmUploadHelper !== 'undefined') {
-            itmUploadHelper.setupByClass(".itm-photo-upload-target");
-        }
-    })();
+
 });
 </script>
-<script src="../../js/itm-upload-helper.js"></script>
+<script>
+if (typeof itmUploadHelper !== "undefined") {
+    itmUploadHelper.setupByClass(".itm-photo-upload-target");
+}
+</script>
 </body>
 </html>
