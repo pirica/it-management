@@ -242,6 +242,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     $ajax_action = $_POST['ajax_action'];
 
     if ($ajax_action === 'save_point') {
+        if (!isset($_POST['rotation']) || !is_numeric($_POST['rotation'])) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid rotation value.']);
+            exit;
+        }
         $point_id = (int)($_POST['point_id'] ?? 0);
         $floor_designer_id = (int)($_POST['floor_designer_id'] ?? 0);
         $point_type_id = (int)($_POST['point_type_id'] ?? 0);
@@ -261,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
         if ($point_id > 0) {
             $sql = "UPDATE floor_designer_points
-                    SET point_type_id=?, x=?, y=?, comment_x=?, comment_y=?, label=?, rotation=?,
+                    SET point_type_id=?, label=?, rotation=?,
                         wlan_address=?, ip_address=?, mac_address=?, patch_port=?,
                         switch_id=?, switch_port_id=?, cable_color_id=?
                     WHERE id=? AND company_id=?";
@@ -269,8 +273,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $stmt = mysqli_prepare($conn, $sql);
             mysqli_stmt_bind_param(
                 $stmt,
-                'iddddsdssssiiiii',
-                $point_type_id, $x, $y, $comment_x, $comment_y, $label, $rotation,
+                'isdssssiiiii',
+                $point_type_id, $label, $rotation,
                 $wlan_address, $ip_address, $mac_address, $patch_port,
                 $switch_id, $switch_port_id, $cable_color_id,
                 $point_id, $company_id
@@ -771,7 +775,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         </div>
                         <div class="form-group" id="group-rotation" style="display:none;">
                             <label>Rotation (degrees)</label>
-                            <input type="number" id="modal-rotation" value="0">
+                            <select id="modal-rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option><option value="360">360°</option><option value="other">Other…</option></select>
                         </div>
                         <div class="form-group" style="grid-column: span 2;">
                             <label>Cable Color</label>
@@ -805,6 +809,19 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     function initDesigner() {
                         renderFloor();
                         points.forEach(p => renderPoint(p));
+                        const rotSelect = document.getElementById("modal-rotation");
+                        if (rotSelect) {
+                            rotSelect.addEventListener("change", function() {
+                                if (this.value === "other") {
+                                    const val = window.prompt("Insert custom rotation in degrees:");
+                                    if (val !== null && val.trim() !== "" && !isNaN(val)) {
+                                        setRotationValue(parseFloat(val));
+                                    } else {
+                                        this.value = "0";
+                                    }
+                                }
+                            });
+                        }
                     }
 
                     function renderFloor() {
@@ -1039,6 +1056,25 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         });
                     }
 
+                                        function setRotationValue(val) {
+                        const rotSelect = document.getElementById("modal-rotation");
+                        if (!rotSelect) return;
+                        let exists = false;
+                        for (let i = 0; i < rotSelect.options.length; i++) {
+                            if (rotSelect.options[i].value == val) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            const opt = document.createElement("option");
+                            opt.value = val;
+                            opt.textContent = val + "°";
+                            rotSelect.insertBefore(opt, rotSelect.lastElementChild);
+                        }
+                        rotSelect.value = val;
+                    }
+
                     function openPointModal(p) {
                         document.getElementById('modal-point-id').value = p.id;
                         document.getElementById('modal-label').value = p.label || '';
@@ -1048,7 +1084,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         document.getElementById('modal-mac').value = p.mac_address || '';
                         document.getElementById('modal-wlan').value = p.wlan_address || '';
                         document.getElementById('modal-patch').value = p.patch_port || '';
-                        document.getElementById('modal-rotation').value = p.rotation || 0;
+                        setRotationValue(p.rotation || 0);
                         document.getElementById('modal-color').value = p.cable_color_id || '';
                         document.getElementById('btn-delete-point').style.display = p.id > 0 ? 'inline-block' : 'none';
                         document.getElementById('modal-title').textContent = p.id > 0 ? 'Edit Network Point' : 'Add New Network Point';
@@ -1306,6 +1342,19 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     function initDesigner() {
                         renderFloor();
                         points.forEach(p => renderPoint(p));
+                        const rotSelect = document.getElementById("modal-rotation");
+                        if (rotSelect) {
+                            rotSelect.addEventListener("change", function() {
+                                if (this.value === "other") {
+                                    const val = window.prompt("Insert custom rotation in degrees:");
+                                    if (val !== null && val.trim() !== "" && !isNaN(val)) {
+                                        setRotationValue(parseFloat(val));
+                                    } else {
+                                        this.value = "0";
+                                    }
+                                }
+                            });
+                        }
                     }
 
                     function renderFloor() {
