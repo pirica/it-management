@@ -734,6 +734,26 @@ function updateCurrentPhotoHint() {
             : 'Selected photos: 0';
     }
 
+    function resetPendingPhotoDeletionState() {
+        pendingDeletedPhotoIndexes.clear();
+        if (deletePhotoInput) {
+            deletePhotoInput.value = '0';
+        }
+        if (deletePhotoIndexesInput) {
+            deletePhotoIndexesInput.value = '';
+        }
+        if (deletePhotoButton) {
+            deletePhotoButton.disabled = false;
+        }
+    }
+
+    function syncDeletePhotoIndexes() {
+        if (!deletePhotoIndexesInput) {
+            return;
+        }
+        deletePhotoIndexesInput.value = Array.from(pendingDeletedPhotoIndexes).sort(function (a, b) { return a - b; }).join(',');
+    }
+
     function updatePhotoPreviewActionState() {
         var visibleExistingPhotos = 0;
         if (existingPhotoPreviewGallery) {
