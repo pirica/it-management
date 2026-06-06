@@ -26,7 +26,7 @@ Most modules that support file uploads have been upgraded to include a drag-and-
 ### 4. Equipment
 - **Path:** `modules/equipment/create.php` (and `edit.php` via inclusion)
 - **Description:** Allows uploading one or more photos during equipment creation or editing.
-- **Implementation:** Upgraded to include a drag-and-drop area with photo preview integration and auto-upload on selection during edit.
+- **Implementation:** Upgraded to include a drag-and-drop area with photo preview integration and auto-upload on selection during edit. Supports merging multiple file selections/drops via `DataTransfer`.
 
 ### 5. Events
 - **Path:** `modules/events/index.php`
@@ -36,7 +36,7 @@ Most modules that support file uploads have been upgraded to include a drag-and-
 ### 6. Patches & Updates
 - **Paths:** `modules/patches_updates/create.php`, `modules/patches_updates/edit.php`, `modules/patches_updates/index.php`, `modules/patches_updates/list_all.php`, `modules/patches_updates/view.php`
 - **Description:** Includes photo upload functionality for patch records across various views.
-- **Implementation:** All relevant views upgraded to include drag-and-drop areas for photo uploads.
+- **Implementation:** All relevant views upgraded to include drag-and-drop areas for photo uploads. Supports merging multiple file selections/drops via `DataTransfer`.
 
 ### 7. Settings
 - **Path:** `modules/settings/index.php`
@@ -44,13 +44,14 @@ Most modules that support file uploads have been upgraded to include a drag-and-
 - **Implementation:** Both favicon and SQL import fields upgraded with drag-and-drop areas.
 
 ### 8. Floor Plans
-- **Path:** `modules/floor_plans/index.php`
+- **Paths:** `modules/floor_plans/gallery_index_view.php` (Gallery), `modules/floor_plans/create_upload_view.php` (Manual Upload)
 - **Description:** Allows uploading Floor Plans (Gallery/AutoCAD/PDF).
-- **Implementation:** Uses `itm-floor-plan-upload-target` for drag-and-drop support.
+- **Implementation:** Uses `itm-floor-plan-upload-target` and `itm-photo-upload-target` for drag-and-drop support. Supports merging multiple file selections/drops via `DataTransfer`.
 
 ### 9. Explorer
 - **Path:** `modules/explorer/index.php`
 - **Description:** General file management.
+- **Implementation:** Upgraded to use standard `.itm-photo-upload-target` UI and supports background dropping of files onto the desktop area for automatic uploads.
 
 ## Technical Standards
 
@@ -58,4 +59,4 @@ Most modules that support file uploads have been upgraded to include a drag-and-
   - `.itm-photo-upload-target`: The primary container for the drag-and-drop area.
   - `.is-dragover`: Applied to the target during drag events to provide visual feedback.
   - `.itm-dropzone-hint`: Used for instructional text within the dropzone.
-- **JavaScript:** Implementation typically involves preventing default drag events, handling `drop` to assign `event.dataTransfer.files` to the hidden or styled file input, and triggering a `change` event for any dependent logic (like previews or auto-uploads).
+- **JavaScript:** Implementation involves preventing default drag events, handling `drop` to assign `event.dataTransfer.files` to the hidden or styled file input (merging with existing selection using `DataTransfer` where appropriate), and triggering a `change` event for any dependent logic (like previews or auto-uploads).

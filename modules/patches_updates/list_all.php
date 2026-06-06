@@ -1189,7 +1189,16 @@ document.querySelectorAll('select[name="status_id"]').forEach((selectEl) => {
             e.stopPropagation();
             uploadTarget.classList.remove("is-dragover");
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
+                const transfer = new DataTransfer();
+                if (fileInput.files) {
+                    Array.prototype.forEach.call(fileInput.files, (file) => {
+                        transfer.items.add(file);
+                    });
+                }
+                Array.prototype.forEach.call(e.dataTransfer.files, (file) => {
+                    transfer.items.add(file);
+                });
+                fileInput.files = transfer.files;
                 fileInput.dispatchEvent(new Event("change", { bubbles: true }));
             }
         });

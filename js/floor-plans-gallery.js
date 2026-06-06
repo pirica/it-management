@@ -37,14 +37,37 @@
             event.stopPropagation();
             uploadTarget.classList.add('is-dragover');
         });
-        uploadTarget.addEventListener('dragleave', function (event) {
-            const related = event.relatedTarget;
+        uploadTarget.addEventListener("dragleave", function (event) {
+            var related = event.relatedTarget;
             if (related && uploadTarget.contains(related)) {
                 return;
             }
-            uploadTarget.classList.remove('is-dragover');
+            uploadTarget.classList.remove("is-dragover");
         });
-        uploadTarget.addEventListener('drop', function (event) {
+        uploadTarget.addEventListener("drop", function (event) {
+            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+            var transfer = new DataTransfer();
+            if (fileInput.files) {
+                Array.prototype.forEach.call(fileInput.files, function(file) {
+                    transfer.items.add(file);
+                });
+            }
+            Array.prototype.forEach.call(event.dataTransfer.files, function(file) {
+                transfer.items.add(file);
+            });
+            fileInput.files = transfer.files;
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+            }
+            Array.prototype.forEach.call(event.dataTransfer.files, function(file) {
+                transfer.items.add(file);
+            });
+            fileInput.files = transfer.files;
             if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
                 return;
             }
