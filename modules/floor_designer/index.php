@@ -381,9 +381,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $prefix = 'data:application/pdf;base64,';
         }
 
-        if (strpos($file_data, $prefix) === 0) {
-            $file_data = str_replace($prefix, '', $file_data);
-            $file_data = str_replace(' ', '+', $file_data);
+        $parts = explode(",", $file_data);
+        if (count($parts) === 2) {
+            $file_data = str_replace(' ', '+', $parts[1]);
             $decoded = base64_decode($file_data);
 
             if ($decoded) {
@@ -970,15 +970,9 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         };
                     }
 
-                    function zoom(delta) {
-                        currentZoom = Math.max(0.1, Math.min(3, currentZoom + delta));
-                        container.style.transform = `scale(${currentZoom})`;
+                    )`;
                     }
 
-                    function resetZoom() {
-                        currentZoom = 1;
-                        container.style.transform = 'scale(1)';
-                    }
 
                     function toggleGrid() {
                         snapToGrid = !snapToGrid;
@@ -994,24 +988,8 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         }
                     }
 
-                    function toggleLayer(typeName, show) {
-                        const points = document.querySelectorAll('.point-type-' + typeName);
-                        const comments = document.querySelectorAll('.comment-type-' + typeName);
-                        const display = show ? '' : 'none';
-                        points.forEach(el => el.style.display = display);
-                        comments.forEach(el => el.style.display = display);
-                    }
 
-                    function filterPoints(val) {
-                        const query = val.toLowerCase();
-                        const points = document.querySelectorAll('.point');
-                        points.forEach(el => {
-                            const match = el.dataset.search.includes(query);
-                            const comment = document.getElementById('comment-' + el.dataset.id);
-                            if (match) {
-                                el.classList.remove('is-filtered');
-                                if (comment) comment.classList.remove('is-filtered');
-                            } else {
+                     else {
                                 el.classList.add('is-filtered');
                                 if (comment) comment.classList.add('is-filtered');
                             }
@@ -1214,11 +1192,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         fetch('index.php', { method: 'POST', body: formData });
                     }
 
-                    function exportPNG() {
-                        const originalZoom = currentZoom;
-                        resetZoom();
-                        const el = document.getElementById('designer-container');
-                        html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                    ).then(canvas => {
                             const link = document.createElement('a');
                             link.download = `floor_plan_${floorData.name}_${new Date().getTime()}.png`;
                             link.href = canvas.toDataURL('image/png');
@@ -1227,13 +1201,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             container.style.transform = `scale(${currentZoom})`;
                         });
                     }
-                    function saveToGallery(format = 'image') {
-                        const originalZoom = currentZoom;
-                        resetZoom();
-                        const el = document.getElementById('designer-container');
-
-                        setTimeout(() => {
-                            html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                    ).then(canvas => {
                                 let fileData = '';
                                 let extension = 'png';
 
@@ -1275,20 +1243,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         }, 100);
                     }
 
-                    function exportPDF() {
-                        const originalZoom = currentZoom;
-                        resetZoom();
-                        const el = document.getElementById('designer-container');
-                        html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
-                            const imgData = canvas.toDataURL('image/png');
-                            const { jsPDF } = window.jspdf;
-                            const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
-                            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                            pdf.save(`floor_plan_${floorData.name}_${new Date().getTime()}.pdf`);
-                            currentZoom = originalZoom;
-                            container.style.transform = `scale(${currentZoom})`;
-                        });
-                    }
 
                     initDesigner();
                 </script>
@@ -1445,45 +1399,19 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         container.appendChild(cb);
                     }
 
-                    function zoom(delta) {
-                        currentZoom = Math.max(0.1, Math.min(3, currentZoom + delta));
-                        container.style.transform = `scale(${currentZoom})`;
+                    )`;
                     }
 
-                    function resetZoom() {
-                        currentZoom = 1;
-                        container.style.transform = 'scale(1)';
-                    }
 
-                    function toggleLayer(typeName, show) {
-                        const points = document.querySelectorAll('.point-type-' + typeName);
-                        const comments = document.querySelectorAll('.comment-type-' + typeName);
-                        const display = show ? '' : 'none';
-                        points.forEach(el => el.style.display = display);
-                        comments.forEach(el => el.style.display = display);
-                    }
 
-                    function filterPoints(val) {
-                        const query = val.toLowerCase();
-                        const points = document.querySelectorAll('.point');
-                        points.forEach(el => {
-                            const match = el.dataset.search.includes(query);
-                            const comment = document.getElementById('comment-' + el.dataset.id);
-                            if (match) {
-                                el.classList.remove('is-filtered');
-                                if (comment) comment.classList.remove('is-filtered');
-                            } else {
+                     else {
                                 el.classList.add('is-filtered');
                                 if (comment) comment.classList.add('is-filtered');
                             }
                         });
                     }
 
-                    function exportPNG() {
-                        const originalZoom = currentZoom;
-                        resetZoom();
-                        const el = document.getElementById('designer-container');
-                        html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                    ).then(canvas => {
                             const link = document.createElement('a');
                             link.download = `floor_plan_${floorData.name}_${new Date().getTime()}.png`;
                             link.href = canvas.toDataURL('image/png');
@@ -1492,14 +1420,8 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             container.style.transform = `scale(${currentZoom})`;
                         });
                     }
-                    
-                    function saveToGallery(format = 'image') {
-                        const originalZoom = currentZoom;
-                        resetZoom();
-                        const el = document.getElementById('designer-container');
 
-                        setTimeout(() => {
-                            html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                    ).then(canvas => {
                                 let fileData = '';
                                 let extension = 'png';
 
@@ -1541,11 +1463,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         }, 100);
                     }
 
-                    function exportPDF() {
-                        const originalZoom = currentZoom;
-                        resetZoom();
-                        const el = document.getElementById('designer-container');
-                        html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                    ).then(canvas => {
                             const imgData = canvas.toDataURL('image/png');
                             const { jsPDF } = window.jspdf;
                             const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
@@ -1571,6 +1489,118 @@ document.addEventListener('change', function (event) {
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
+</script>
+<script>
+                    function zoom(delta) {
+                        currentZoom = Math.max(0.1, Math.min(3, currentZoom + delta));
+                        container.style.transform = 'scale(' + currentZoom + ')';
+                    }
+
+                    function resetZoom() {
+                        currentZoom = 1;
+                        container.style.transform = 'scale(1)';
+                    }
+
+                    function toggleLayer(typeName, show) {
+                        const points = document.querySelectorAll('.point-type-' + typeName);
+                        const comments = document.querySelectorAll('.comment-type-' + typeName);
+                        const display = show ? '' : 'none';
+                        points.forEach(el => el.style.display = display);
+                        comments.forEach(el => el.style.display = display);
+                    }
+
+                    function filterPoints(val) {
+                        const query = val.toLowerCase();
+                        const points = document.querySelectorAll('.point');
+                        points.forEach(el => {
+                            const match = el.dataset.search.includes(query);
+                            const comment = document.getElementById('comment-' + el.dataset.id);
+                            if (match) {
+                                el.classList.remove('is-filtered');
+                                if (comment) comment.classList.remove('is-filtered');
+                            } else {
+                                el.classList.add('is-filtered');
+                                if (comment) comment.classList.add('is-filtered');
+                            }
+                        });
+                    }
+
+                    function exportPNG() {
+                        const originalZoom = currentZoom;
+                        resetZoom();
+                        const el = document.getElementById('designer-container');
+                        html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                            const link = document.createElement('a');
+                            link.download = 'floor_plan_' + floorData.name + '_' + new Date().getTime() + '.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                            currentZoom = originalZoom;
+                            container.style.transform = 'scale(' + currentZoom + ')';
+                        });
+                    }
+                    
+                    function saveToGallery(format = 'image') {
+                        const originalZoom = currentZoom;
+                        resetZoom();
+                        const el = document.getElementById('designer-container');
+
+                        setTimeout(() => {
+                            html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                                let fileData = '';
+                                let extension = 'png';
+
+                                if (format === 'pdf') {
+                                    const { jsPDF } = window.jspdf;
+                                    const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
+                                    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+                                    fileData = pdf.output('datauristring');
+                                    extension = 'pdf';
+                                } else {
+                                    fileData = canvas.toDataURL('image/png');
+                                    extension = 'png';
+                                }
+
+                                const formData = new FormData();
+                                formData.append('ajax_action', 'save_as_floor_plan');
+                                formData.append('data', fileData);
+                                formData.append('ext', extension);
+                                formData.append('name', floorData.name + ' Designer Export ' + new Date().toLocaleString());
+                                formData.append('csrf_token', ITM_CSRF_TOKEN);
+
+                                fetch('index.php', { method: 'POST', body: formData })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.ok) {
+                                        alert('Successfully saved to Floor Plans gallery!');
+                                    } else {
+                                        alert('Error saving to gallery: ' + data.error);
+                                    }
+                                    currentZoom = originalZoom;
+                                    container.style.transform = 'scale(' + currentZoom + ')';
+                                })
+                                .catch(err => {
+                                    alert('Network error while saving to gallery.');
+                                    currentZoom = originalZoom;
+                                    container.style.transform = 'scale(' + currentZoom + ')';
+                                });
+                            });
+                        }, 100);
+                    }
+
+                    function exportPDF() {
+                        const originalZoom = currentZoom;
+                        resetZoom();
+                        const el = document.getElementById('designer-container');
+                        html2canvas(el, { backgroundColor: '#f0f2f5', scale: 2 }).then(canvas => {
+                            const imgData = canvas.toDataURL('image/png');
+                            const { jsPDF } = window.jspdf;
+                            const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
+                            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                            pdf.save('floor_plan_' + floorData.name + '_' + new Date().getTime() + '.pdf');
+                            currentZoom = originalZoom;
+                            container.style.transform = 'scale(' + currentZoom + ')';
+                        });
+                    }
 </script>
 </body>
 </html>
