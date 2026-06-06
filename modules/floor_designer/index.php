@@ -23,6 +23,11 @@ if ($company_id <= 0) {
     exit;
 }
 
+// IMPORT EXCEL (JSON endpoint)
+if ($_SERVER["REQUEST_METHOD"] === "POST" && in_array($crud_action, ["index", "list_all"], true) && strpos((string)($_SERVER["CONTENT_TYPE"] ?? ""), "application/json") !== false) {
+    itm_handle_json_table_import($conn, $crud_table, $company_id);
+}
+
 function cr_form_display_value($value) {
     return itm_cr_form_display_value($value);
 }
@@ -590,7 +595,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     <a href="create.php" class="btn btn-primary">➕ New Floor Plan</a>
                 </div>
                 <div class="card">
-                    <table>
+                    <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <?php foreach ($uiColumns as $col): ?>
@@ -970,8 +975,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         };
                     }
 
-                    )`;
-                    }
 
 
                     function toggleGrid() {
@@ -988,13 +991,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         }
                     }
 
-
-                     else {
-                                el.classList.add('is-filtered');
-                                if (comment) comment.classList.add('is-filtered');
-                            }
-                        });
-                    }
 
                     function addNewPoint() {
                         openPointModal({
@@ -1192,57 +1188,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         fetch('index.php', { method: 'POST', body: formData });
                     }
 
-                    ).then(canvas => {
-                            const link = document.createElement('a');
-                            link.download = `floor_plan_${floorData.name}_${new Date().getTime()}.png`;
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                            currentZoom = originalZoom;
-                            container.style.transform = `scale(${currentZoom})`;
-                        });
-                    }
-                    ).then(canvas => {
-                                let fileData = '';
-                                let extension = 'png';
-
-                                if (format === 'pdf') {
-                                    const { jsPDF } = window.jspdf;
-                                    const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
-                                    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
-                                    fileData = pdf.output('datauristring');
-                                    extension = 'pdf';
-                                } else {
-                                    fileData = canvas.toDataURL('image/png');
-                                    extension = 'png';
-                                }
-
-                                const formData = new FormData();
-                                formData.append('ajax_action', 'save_as_floor_plan');
-                                formData.append('data', fileData);
-                                formData.append('ext', extension);
-                                formData.append('name', floorData.name + ' Designer Export ' + new Date().toLocaleString());
-                                formData.append('csrf_token', ITM_CSRF_TOKEN);
-
-                                fetch('index.php', { method: 'POST', body: formData })
-                                .then(r => r.json())
-                                .then(data => {
-                                    if (data.ok) {
-                                        alert('Successfully saved to Floor Plans gallery!');
-                                    } else {
-                                        alert('Error saving to gallery: ' + data.error);
-                                    }
-                                    currentZoom = originalZoom;
-                                    container.style.transform = `scale(${currentZoom})`;
-                                })
-                                .catch(err => {
-                                    alert('Network error while saving to gallery.');
-                                    currentZoom = originalZoom;
-                                    container.style.transform = `scale(${currentZoom})`;
-                                });
-                            });
-                        }, 100);
-                    }
-
 
                     initDesigner();
                 </script>
@@ -1399,81 +1344,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         container.appendChild(cb);
                     }
 
-                    )`;
-                    }
-
-
-
-                     else {
-                                el.classList.add('is-filtered');
-                                if (comment) comment.classList.add('is-filtered');
-                            }
-                        });
-                    }
-
-                    ).then(canvas => {
-                            const link = document.createElement('a');
-                            link.download = `floor_plan_${floorData.name}_${new Date().getTime()}.png`;
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                            currentZoom = originalZoom;
-                            container.style.transform = `scale(${currentZoom})`;
-                        });
-                    }
-
-                    ).then(canvas => {
-                                let fileData = '';
-                                let extension = 'png';
-
-                                if (format === 'pdf') {
-                                    const { jsPDF } = window.jspdf;
-                                    const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
-                                    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
-                                    fileData = pdf.output('datauristring');
-                                    extension = 'pdf';
-                                } else {
-                                    fileData = canvas.toDataURL('image/png');
-                                    extension = 'png';
-                                }
-
-                                const formData = new FormData();
-                                formData.append('ajax_action', 'save_as_floor_plan');
-                                formData.append('data', fileData);
-                                formData.append('ext', extension);
-                                formData.append('name', floorData.name + ' Designer Export ' + new Date().toLocaleString());
-                                formData.append('csrf_token', ITM_CSRF_TOKEN);
-
-                                fetch('index.php', { method: 'POST', body: formData })
-                                .then(r => r.json())
-                                .then(data => {
-                                    if (data.ok) {
-                                        alert('Successfully saved to Floor Plans gallery!');
-                                    } else {
-                                        alert('Error saving to gallery: ' + data.error);
-                                    }
-                                    currentZoom = originalZoom;
-                                    container.style.transform = `scale(${currentZoom})`;
-                                })
-                                .catch(err => {
-                                    alert('Network error while saving to gallery.');
-                                    currentZoom = originalZoom;
-                                    container.style.transform = `scale(${currentZoom})`;
-                                });
-                            });
-                        }, 100);
-                    }
-
-                    ).then(canvas => {
-                            const imgData = canvas.toDataURL('image/png');
-                            const { jsPDF } = window.jspdf;
-                            const pdf = new jsPDF('l', 'px', [canvas.width, canvas.height]);
-                            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                            pdf.save(`floor_plan_${floorData.name}_${new Date().getTime()}.pdf`);
-                            currentZoom = originalZoom;
-                            container.style.transform = `scale(${currentZoom})`;
-                        });
-                    }
-
                     initDesigner();
                 </script>
             <?php endif; ?>
@@ -1483,6 +1353,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
 <script src="../../js/theme.js"></script>
 <script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 <script src="../../js/select-add-option.js"></script>
+<script src="../../js/table-tools.js"></script>
 <script>
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
