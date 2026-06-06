@@ -53,8 +53,8 @@ var itmUploadHelper = (function() {
         });
 
         uploadTarget.addEventListener("keydown", function(e) {
-            if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
                 fileInput.click();
             }
         });

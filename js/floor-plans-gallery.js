@@ -63,19 +63,6 @@
             fileInput.files = transfer.files;
             fileInput.dispatchEvent(new Event("change", { bubbles: true }));
         });
-            }
-            Array.prototype.forEach.call(event.dataTransfer.files, function(file) {
-                transfer.items.add(file);
-            });
-            fileInput.files = transfer.files;
-            if (!isExternalFileDrag(event) || !event.dataTransfer.files || !event.dataTransfer.files.length) {
-                return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
-            uploadTarget.classList.remove('is-dragover');
-            fileInput.files = event.dataTransfer.files;
-        });
         uploadTarget.addEventListener('click', function (event) {
             if (event.target === fileInput) {
                 return;
