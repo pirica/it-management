@@ -253,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         }
         $point_id = (int)($_POST['point_id'] ?? 0);
         $floor_designer_id = (int)($_POST['floor_designer_id'] ?? 0);
-        $point_type_id = (int)($_POST['point_type_id'] ?? 0);
+        $point_type_id = (int)($_POST['point_type_id'] ?? 0) ?: null;
         $x = (float)($_POST['x'] ?? 0);
         $y = (float)($_POST['y'] ?? 0);
         $comment_x = (float)($_POST['comment_x'] ?? 0);
@@ -740,8 +740,9 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         <div class="form-group">
                             <label>Type</label>
                             <select id="modal-type" onchange="toggleModalFields()">
+                                <option value="">-- Select Type --</option>
                                 <?php 
-                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id OR id IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20) ORDER BY type ASC");
+                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id ORDER BY type ASC");
                                 while ($t = mysqli_fetch_assoc($types)): ?>
                                     <option value="<?php echo $t['id']; ?>" data-type-name="<?php echo sanitize($t['type']); ?>"><?php echo sanitize($t['type']); ?></option>
                                 <?php endwhile; ?>
@@ -1052,7 +1053,13 @@ $moduleListHeading = '🧩 ' . $crud_title;
                     function openPointModal(p) {
                         document.getElementById('modal-point-id').value = p.id;
                         document.getElementById('modal-label').value = p.label || '';
-                        document.getElementById('modal-type').value = p.point_type_id || '';
+                        const typeSelect = document.getElementById("modal-type");
+                        typeSelect.value = p.point_type_id || "";
+                        if (typeSelect.value === "" && p.point_type_name) {
+                            const options = Array.from(typeSelect.options);
+                            const match = options.find(opt => opt.getAttribute("data-type-name") === p.point_type_name);
+                            if (match) typeSelect.value = match.value;
+                        }
                         document.getElementById('modal-switch').value = p.switch_id || '';
                         document.getElementById('modal-ip').value = p.ip_address || '';
                         document.getElementById('modal-mac').value = p.mac_address || '';
