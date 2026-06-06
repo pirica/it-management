@@ -678,15 +678,18 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 
                         <div class="form-group" style="max-width:520px;margin-top:8px;">
                             <label for="favicon_file">Favicon (.ico)</label>
-                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                                <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid #d0d7de;border-radius:6px;background:#fff;">
-                                    <?php if ($currentFaviconUrl !== ''): ?>
-                                        <img src="<?php echo sanitize($currentFaviconUrl); ?>" alt="Current favicon" style="max-width:20px;max-height:20px;">
-                                    <?php else: ?>
-                                        <span title="No favicon configured">🧩</span>
-                                    <?php endif; ?>
-                                </span>
-                                <input id="favicon_file" name="favicon_file" type="file" accept=".ico,image/x-icon">
+                            <div id="faviconUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload Favicon" style="margin-top: 8px;">
+                                <p class="itm-dropzone-hint">Drag and drop .ico file here, or click to browse.</p>
+                                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid #d0d7de;border-radius:6px;background:#fff;">
+                                        <?php if ($currentFaviconUrl !== ''): ?>
+                                            <img src="<?php echo sanitize($currentFaviconUrl); ?>" alt="Current favicon" style="max-width:20px;max-height:20px;">
+                                        <?php else: ?>
+                                            <span title="No favicon configured">🧩</span>
+                                        <?php endif; ?>
+                                    </span>
+                                    <input id="favicon_file" name="favicon_file" type="file" accept=".ico,image/x-icon">
+                                </div>
                             </div>
                             <?php if ($currentFaviconDisplayPath !== ''): ?>
                                 <p class="form-hint" style="margin-top:6px;">Current favicon: <?php echo sanitize($currentFaviconDisplayPath); ?></p>
@@ -858,9 +861,12 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                         <form method="post" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="action" value="import_backup">
-                            <div class="form-group" style="margin:0;min-width:260px;">
+                            <div class="form-group" style="margin:0;min-width:260px;width:100%;">
                                 <label for="sql_file">SQL File</label>
-                                <input type="file" id="sql_file" name="sql_file" accept=".sql" required>
+                                <div id="sqlUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload SQL file">
+                                    <p class="itm-dropzone-hint">Drag and drop .sql file here, or click to browse.</p>
+                                    <input type="file" id="sql_file" name="sql_file" accept=".sql" required>
+                                </div>
                             </div>
                             <button class="btn" type="submit">Import SQL</button>
                         </form>
@@ -1124,12 +1130,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 
         if (up || down || sup || sdown) {
             collectAndSetHiddenFields();
-        }
-    });
 
-    root.addEventListener('change', (event) => {
-        if (event.target.matches('.sidebar-visible-toggle')) {
-            collectAndSetHiddenFields();
         }
     });
 
@@ -1137,6 +1138,45 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 
     applyInitialOrder();
     collectAndSetHiddenFields();
+
+    (function() {
+        function setupDragAndDrop(targetId, inputId) {
+            const uploadTarget = document.getElementById(targetId);
+            const fileInput = document.getElementById(inputId);
+            if (uploadTarget && fileInput) {
+                uploadTarget.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadTarget.classList.add("is-dragover");
+                });
+                uploadTarget.addEventListener("dragleave", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadTarget.classList.remove("is-dragover");
+                });
+                uploadTarget.addEventListener("drop", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadTarget.classList.remove("is-dragover");
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        fileInput.files = e.dataTransfer.files;
+                        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
+                });
+                uploadTarget.addEventListener("click", (e) => {
+                    if (e.target !== fileInput) fileInput.click();
+                });
+                uploadTarget.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        fileInput.click();
+                    }
+                });
+            }
+        }
+        setupDragAndDrop("faviconUploadTarget", "favicon_file");
+        setupDragAndDrop("sqlUploadTarget", "sql_file");
+    })();
 })();
 </script>
 <?php if (isset($_GET['ui_saved']) && $_GET['ui_saved'] === '1'): ?>

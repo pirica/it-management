@@ -2117,7 +2117,10 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
             <div class="form-row">
                 <div class="form-group">
                     <label>Photo Upload</label>
-                    <input type="file" name="photo[]" accept="image/*" multiple>
+                    <div id="equipmentPhotoUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload equipment photos">
+                        <p class="itm-dropzone-hint">Drag and drop images here, or click to browse. You can select multiple photos.</p>
+                        <input type="file" name="photo[]" id="equipmentPhotoInput" accept="image/*" multiple>
+                    </div>
                     <div class="form-hint">You can upload one or many photos at once.<?php if ($isEdit): ?> Files upload automatically after selection when editing.<?php endif; ?></div>
                     <?php if (!empty($currentPhotoFilenames)): ?>
                         <input type="hidden" name="delete_photo" id="deletePhotoInput" value="0">
@@ -2328,7 +2331,45 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
     var deletePhotoInput = document.getElementById('deletePhotoInput');
     var deletePhotoIndexesInput = document.getElementById('deletePhotoIndexesInput');
     var currentPhotoHintText = document.getElementById('currentPhotoHintText');
-    var photoInput = document.querySelector('input[name="photo[]"]');
+    var photoInput = document.getElementById("equipmentPhotoInput");
+    var uploadTarget = document.getElementById("equipmentPhotoUploadTarget");
+    if (uploadTarget && photoInput) {
+        uploadTarget.addEventListener("dragover", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.add("is-dragover");
+        });
+        uploadTarget.addEventListener("dragleave", function (event) {
+            uploadTarget.classList.remove("is-dragover");
+        });
+        uploadTarget.addEventListener("drop", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+            if (event.dataTransfer.files && event.dataTransfer.files.length) {
+                var transfer = new DataTransfer();
+                if (photoInput.files) {
+                    Array.prototype.forEach.call(photoInput.files, function (file) {
+                        transfer.items.add(file);
+                    });
+                }
+                Array.prototype.forEach.call(event.dataTransfer.files, function (file) {
+                    transfer.items.add(file);
+                });
+                photoInput.files = transfer.files;
+                photoInput.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        });
+        uploadTarget.addEventListener("click", function () {
+            photoInput.click();
+        });
+        uploadTarget.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                photoInput.click();
+            }
+        });
+    }
     var equipmentForm = document.getElementById('equipmentForm');
     var deletePhotoItemButtons = document.querySelectorAll('.delete-photo-item');
     var existingPhotoPreviewGallery = document.getElementById('existingPhotoPreviewGallery');

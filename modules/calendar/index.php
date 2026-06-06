@@ -457,10 +457,13 @@ unset($_SESSION['calendar_success']);
 
                     <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
                         <h4 style="margin-bottom: 10px; font-size: 0.8rem; opacity: 0.8;">📥 Import (.ics)</h4>
-                        <form method="POST" enctype="multipart/form-data">
+                        <form method="POST" enctype="multipart/form-data" id="icsImportForm">
                             <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
-                            <input type="file" name="ics_file" accept=".ics" required style="font-size: 0.8rem; margin-bottom: 10px; width: 100%; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary);">
-                            <button type="submit" class="btn btn-sm w-100">Import Events</button>
+                            <div id="icsUploadTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload ICS file" style="padding: 10px;">
+                                <p class="itm-dropzone-hint" style="font-size: 0.75rem;">Drag and drop .ics file here, or click to browse.</p>
+                                <input type="file" name="ics_file" id="icsFileInput" accept=".ics" required style="font-size: 0.8rem; margin-bottom: 0; width: 100%; border: 1px solid var(--border); padding: 5px; border-radius: 4px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <button type="submit" class="btn btn-sm w-100" style="margin-top: 10px;">Import Events</button>
                         </form>
                     </div>
 
@@ -710,6 +713,37 @@ unset($_SESSION['calendar_success']);
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof initTheme === 'function') {
         initTheme();
+
+    const uploadTarget = document.getElementById("icsUploadTarget");
+    const fileInput = document.getElementById("icsFileInput");
+    if (uploadTarget && fileInput) {
+        uploadTarget.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.add("is-dragover");
+        });
+        uploadTarget.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+        });
+        uploadTarget.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        });
+        uploadTarget.addEventListener("click", () => fileInput.click());
+        uploadTarget.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+    }
     }
 });
 </script>

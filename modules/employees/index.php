@@ -756,10 +756,11 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>"><input type="hidden" name="action" value="import_employees"><input type="hidden" name="import_payload" id="employeeImportPayload" value="">
                     <div class="form-group">
                         <label>Upload file (.xlsx, .xls, .csv)</label>
-                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <div id="employeeImportTarget" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload Employee file">
+                            <p class="itm-dropzone-hint">Drag and drop file here, or click to browse.</p>
                             <input type="file" id="employeeImportFile" accept=".xlsx,.xls,.csv" />
-                            <button type="submit" class="btn btn-primary">📥 Import Employees</button>
                         </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">📥 Import Employees</button>
                     </div>
                     <div class="form-group"><label>Or paste tabular data</label><textarea name="import_text" id="employeeImportText" rows="2" placeholder="Paste from Excel..."></textarea></div>
                 </form>
@@ -843,6 +844,35 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
  */
 (function () {
     const fileInput = document.getElementById('employeeImportFile');
+    const uploadTarget = document.getElementById("employeeImportTarget");
+    if (uploadTarget && fileInput) {
+        uploadTarget.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.add("is-dragover");
+        });
+        uploadTarget.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+        });
+        uploadTarget.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadTarget.classList.remove("is-dragover");
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        });
+        uploadTarget.addEventListener("click", () => fileInput.click());
+        uploadTarget.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+    }
     const payloadInput = document.getElementById('employeeImportPayload');
     const textInput = document.getElementById('employeeImportText');
 

@@ -15,7 +15,7 @@ require_once '../../config/config.php';
 // Why: Protection Zone - User needs to be logged in and have a company selected.
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
-    exit;
+    die();
 }
 
 $company_id = (int)$_SESSION['company_id'];
@@ -40,18 +40,7 @@ $username = $_SESSION['username'] ?? 'User';
 $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
-/*
-// Why: Fetch employee info to use as the correctly-scoped User label.
-$employee_id = 0;
-$display_name = $username;
-$emp_res = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE user_id = $user_id AND company_id = $company_id LIMIT 1");
-if ($emp_res && $emp_row = mysqli_fetch_assoc($emp_res)) {
-    $employee_id = (int)$emp_row['id'];
-    if (!empty($emp_row['display_name'])) {
-        $display_name = $emp_row['display_name'];
-    }
-}
-*/
+
 // Why: Ensure the root /files/{company_id} directory exists.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 if (!is_dir($storage_root)) {
@@ -150,117 +139,83 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display:flex;
+    align-items:center;
+    gap:8px;
     color: var(--text-secondary);
 }
-.tab.active {
-    background: var(--bg-primary);
-    font-weight:bold;
-    border-color: var(--border);
-    color: var(--text-primary);
-}
+.tab.active { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); border-bottom: none; }
+.tab .close { font-size:10px; opacity:0.6; }
+.tab .close:hover { opacity:1; }
 
 /* BREADCRUMBS */
 .breadcrumbs-bar {
-    background: var(--bg-primary);
-    padding: 10px 15px;
-    border-radius: 0 0 8px 8px;
-    border: 1px solid var(--border);
-    border-top: none;
-    margin-bottom: 15px;
+    background: var(--bg-secondary);
+    padding: 10px 0;
+    margin-bottom: 10px;
     font-size: 13px;
-    display: flex;
-    align-items: center;
 }
-.breadcrumbs span {
-    cursor:pointer;
-    color: var(--accent);
-}
+.breadcrumbs { display:flex; gap:5px; align-items:center; }
+.breadcrumbs span { cursor:pointer; color: var(--accent); }
 .breadcrumbs span:hover { text-decoration:underline; }
+.breadcrumbs .sep { color: var(--text-muted); cursor:default; }
 
-/* DESKTOP (FILE GRID) */
+/* GRID */
 .desktop {
-    display:flex;
-    flex-wrap:wrap;
-    gap:20px;
-    padding:25px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 20px;
+    padding: 20px;
     background: var(--bg-primary);
-    border-radius:10px;
-    min-height:400px;
-    position:relative;
     border: 1px solid var(--border);
+    border-radius: 8px;
+    min-height: 400px;
 }
-
 .icon {
-    width:100px;
-    text-align:center;
-    cursor:pointer;
-    font-size:12px;
-    user-select:none;
+    text-align: center;
+    cursor: pointer;
     padding: 10px;
     border-radius: 8px;
     transition: background 0.2s;
-    color: var(--text-primary);
+    position: relative;
+    font-size: 12px;
 }
 .icon:hover { background: var(--bg-tertiary); }
-
-.icon-emoji {
-    font-size:48px;
-    margin-bottom:8px;
-    display: block;
-}
-.icon.selected {
-    background: var(--bg-tertiary);
-    outline:1px solid var(--accent);
-}
+.icon.selected { background: var(--accent-muted); border: 1px solid var(--accent); }
+.icon span { display: block; font-size: 40px; margin-bottom: 8px; }
 
 /* CONTEXT MENU */
 .context-menu {
-    position:absolute;
-    display:none;
+    position: absolute;
     background: var(--bg-primary);
-    border:1px solid var(--border);
-    border-radius:8px;
-    width:200px;
-    z-index:9999;
-    box-shadow: var(--shadow-lg);
-    padding: 4px 0;
-    color: var(--text-primary);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    display: none;
+    border-radius: 6px;
+    padding: 5px 0;
+    min-width: 160px;
 }
-.context-menu div {
-    padding:10px 15px;
-    cursor:pointer;
-    font-size:13px;
-}
-.context-menu div:hover { background: var(--bg-tertiary); }
-.context-menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+.context-menu div { padding: 8px 15px; cursor: pointer; font-size: 13px; }
+.context-menu div:hover { background: var(--accent); color: #fff; }
+.context-menu hr { border: 0; border-top: 1px solid var(--border); margin: 5px 0; }
 
 /* PREVIEW */
 .preview {
-    margin-top:20px;
-    padding:15px;
-    background: var(--bg-primary);
-    border-radius:8px;
-    max-height:300px;
-    overflow:auto;
-    font-size:13px;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
-    color: var(--text-primary);
+    background: #000;
+    color: #0f0;
+    padding: 15px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-height: 500px;
+    overflow-y: auto;
+    border-radius: 6px;
 }
 
 /* UPLOAD */
 .upload-area {
-    border:2px dashed var(--accent);
-    padding:20px;
-    text-align:center;
-    border-radius:10px;
-    margin-bottom:15px;
-    background: var(--bg-primary);
-    transition: background 0.3s;
-    color: var(--text-primary);
+    margin-bottom: 15px;
 }
-.upload-area.dragover { background: var(--bg-tertiary); border-style: solid; }
-.upload-area input[type="file"] { cursor: pointer; }
 
 /* BADGES */
 .badge-private { font-size: 10px; background: #ff4757; color: #fff; padding: 2px 4px; border-radius: 3px; position: absolute; top: 5px; right: 5px; }
@@ -299,8 +254,9 @@ body {
         <div id="breadcrumbs" class="breadcrumbs"></div>
     </div>
 
-    <div id="uploadArea" class="upload-area">
-        Drop files here or <input type="file" multiple onchange="uploadFiles(this.files)">
+    <div id="uploadArea" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload files">
+        <p class="itm-dropzone-hint">Drag and drop files here, or click to browse.</p>
+        <input type="file" multiple onchange="uploadFiles(this.files)" style="display:none;" id="explorerFileInput">
     </div>
 
     <div id="desktop" class="desktop"></div>
@@ -331,12 +287,20 @@ const ctxMenu   = document.getElementById("contextMenu");
 const preview   = document.getElementById("preview");
 const previewCont = document.getElementById("previewContainer");
 
-btnToggle.onclick = () => sidebar.classList.toggle("open");
-
-function closeSidebar() {
-    sidebar.classList.remove("open");
+/* THEME */
+function toggleTheme() {
+    const current = document.body.getAttribute("data-theme") || "light";
+    const next = current === "light" ? "dark" : "light";
+    document.body.setAttribute("data-theme", next);
+    localStorage.setItem("itm_explorer_theme", next);
+}
+if (localStorage.getItem("itm_explorer_theme") === "dark") {
+    document.body.setAttribute("data-theme", "dark");
 }
 
+/* SIDEBAR */
+btnToggle.onclick = () => sidebar.classList.toggle("open");
+function closeSidebar() { sidebar.classList.remove("open"); }
 
 /* API WRAPPER */
 function api(action, data = {}) {
@@ -353,88 +317,86 @@ function api(action, data = {}) {
 function renderTabs() {
     const el = document.getElementById("tabs");
     el.innerHTML = "";
-    tabs.forEach((t, i) => {
-        const div = document.createElement("div");
-        div.className = "tab" + (i === activeTab ? " active" : "");
-        div.textContent = t.title || "Explorer";
-        div.title = t.path || "/";
-        div.onclick = () => {
+    tabs.forEach((tab, i) => {
+        const d = document.createElement("div");
+        d.className = "tab" + (i === activeTab ? " active" : "");
+        d.innerHTML = `
+            <span>${tab.title}</span>
+            <span class="close" onclick="closeTab(${i}, event)">✕</span>
+        `;
+        d.onclick = () => {
             activeTab = i;
-            currentPath = tabs[i].path;
-            inRecycle = false;
+            currentPath = tab.path;
             loadFolder(currentPath);
         };
-        el.appendChild(div);
+        el.appendChild(d);
     });
+    const add = document.createElement("div");
+    add.className = "tab";
+    add.innerHTML = "+";
+    add.onclick = () => {
+        tabs.push({ path: "", title: "Home" });
+        activeTab = tabs.length - 1;
+        currentPath = "";
+        loadFolder("");
+    };
+    el.appendChild(add);
+}
+function closeTab(i, e) {
+    e.stopPropagation();
+    if (tabs.length === 1) return;
+    tabs.splice(i, 1);
+    if (activeTab >= tabs.length) activeTab = tabs.length - 1;
+    currentPath = tabs[activeTab].path;
+    loadFolder(currentPath);
 }
 
 /* BREADCRUMBS */
 function renderBreadcrumbs() {
     const el = document.getElementById("breadcrumbs");
-    if (inRecycle) {
-        el.textContent = "🗑️ Trash";
-        return;
-    }
-    const parts = currentPath.split("/").filter(Boolean);
-    let html = `<span onclick="goToBreadcrumb(0)">Home</span>`;
-    let acc = "";
-    parts.forEach((p, i) => {
-        acc += "/" + p;
-        // Why: Make department IDs and usernames more readable in breadcrumbs if possible.
-        let label = p;
-        html += " / " + `<span onclick="goToBreadcrumb(${i+1})">${label}</span>`;
+    el.innerHTML = "";
+    const parts = currentPath ? currentPath.split("/") : [];
+
+    let rootSpan = document.createElement("span");
+    rootSpan.textContent = "Home";
+    rootSpan.onclick = () => loadFolder("");
+    el.appendChild(rootSpan);
+
+    let current = "";
+    parts.forEach(p => {
+        const sep = document.createElement("span");
+        sep.className = "sep";
+        sep.textContent = " / ";
+        el.appendChild(sep);
+
+        current = current ? current + "/" + p : p;
+        const s = document.createElement("span");
+        s.textContent = p;
+        const target = current;
+        s.onclick = () => loadFolder(target);
+        el.appendChild(s);
     });
-    el.innerHTML = html;
-}
-function goToBreadcrumb(index) {
-    if (index === 0) {
-        currentPath = "";
-    } else {
-        const parts = currentPath.split("/").filter(Boolean).slice(0, index);
-        currentPath = parts.join("/");
-    }
-    inRecycle = false;
-    tabs[activeTab].path = currentPath;
-    loadFolder(currentPath);
 }
 
-/* RENDER ICONS */
-let currentList = [];
-
-function renderIcons(list) {
-    currentList = list;
+/* ICONS */
+function renderIcons(items) {
     desktop.innerHTML = "";
-    selected.clear();
-
-    if (list.length === 0) {
-        desktop.innerHTML = '<div style="width:100%; text-align:center; color:#888; padding-top:50px;">This folder is empty.</div>';
-        return;
-    }
-
-    list.forEach(item => {
-        let emoji = "📄";
-        if (item.type === "folder") {
-            emoji = "📁";
-            // Special emojis for top-level access areas
-            if (currentPath === "") {
-                if (item.name === "Common") emoji = "🌐";
-                if (item.name === "Departments") emoji = "🏢";
-                if (item.name === "Private") emoji = "🔒";
-            } else if (currentPath === "Private") {
-                if (item.name === userPrivateDir) emoji = "👤";
-            }
-        }
-        if (item.type === "zip")    emoji = "🗜️";
-        if (item.type === "txt")    emoji = "📝";
-
+    items.forEach(item => {
         const div = document.createElement("div");
         div.className = "icon";
-        div.draggable = true;
         div.dataset.name = item.name;
         div.dataset.type = item.type;
+        div.draggable = true;
+
+        let icon = item.type === "folder" ? "📁" : "📄";
+        // Why: visual differentiation for special areas.
+        if (item.name === "Common") icon = "🌐";
+        if (item.name === "Departments") icon = "🏢";
+        if (item.name === "Private") icon = "🔒";
+        if (item.name === userPrivateDir) icon = "👤";
 
         div.innerHTML = `
-            <span class="icon-emoji">${emoji}</span>
+            <span>${icon}</span>
             <div style="word-break:break-all;">${item.name}</div>
         `;
 
@@ -693,13 +655,11 @@ function refreshFolder() {
 
 /* UPLOAD */
 function triggerUpload() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.onchange = () => uploadFiles(input.files);
-    input.click();
+    const fileInput = document.getElementById("explorerFileInput");
+    if (fileInput) fileInput.click();
 }
 function uploadFiles(files) {
+    if (!files || files.length === 0) return;
     const form = new FormData();
     form.append("action", "upload");
     form.append("path", currentPath);
@@ -721,10 +681,20 @@ document.addEventListener("dragstart", e => {
 });
 document.addEventListener("dragover", e => e.preventDefault());
 document.addEventListener("drop", e => {
-    e.preventDefault();
     const target = e.target.closest(".icon");
 
+    // Handle external file drops
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        const uploadArea = document.getElementById("uploadArea");
+        if (uploadArea) uploadArea.classList.remove("is-dragover");
+        uploadFiles(e.dataTransfer.files);
+        return;
+    }
+
     if (!draggedItem) return;
+    e.preventDefault();
 
     if (!target) {
         api("move", { item: draggedItem, dest: currentPath }).then(() => loadFolder(currentPath));
@@ -736,6 +706,43 @@ document.addEventListener("drop", e => {
             .then(() => loadFolder(currentPath));
     }
 });
+
+(function() {
+    const uploadArea = document.getElementById("uploadArea");
+    const desktop = document.getElementById("desktop");
+    const fileInput = document.getElementById("explorerFileInput");
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener("dragover", (e) => {
+            if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.add("is-dragover");
+            }
+        });
+        uploadArea.addEventListener("dragleave", (e) => {
+            uploadArea.classList.remove("is-dragover");
+        });
+        uploadArea.addEventListener("click", () => {
+            fileInput.click();
+        });
+        uploadArea.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+    }
+
+    if (desktop) {
+        desktop.addEventListener("dragover", (e) => {
+            if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+                e.preventDefault();
+                if (uploadArea) uploadArea.classList.add("is-dragover");
+            }
+        });
+    }
+})();
 
 /* SEARCH */
 function filterIcons() {
