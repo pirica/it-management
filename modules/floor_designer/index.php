@@ -741,7 +741,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             <label>Type</label>
                             <select id="modal-type" onchange="toggleModalFields()">
                                 <?php 
-                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id OR id IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20) ORDER BY type ASC");
+                                $types = mysqli_query($conn, "SELECT id, type FROM switch_port_types WHERE company_id=$company_id ORDER BY type ASC");
                                 while ($t = mysqli_fetch_assoc($types)): ?>
                                     <option value="<?php echo $t['id']; ?>" data-type-name="<?php echo sanitize($t['type']); ?>"><?php echo sanitize($t['type']); ?></option>
                                 <?php endwhile; ?>
