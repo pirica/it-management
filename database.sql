@@ -344,7 +344,7 @@ CREATE TABLE `floor_plan_folders` (
   UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, `parent_folder_name`, `name`),
   CONSTRAINT `floor_plan_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_name`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE==utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
