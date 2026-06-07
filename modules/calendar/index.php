@@ -477,8 +477,9 @@ unset($_SESSION['calendar_success']);
                                         <?php
                                             $icon = sanitize((string)$ev['icon']);
                                             $title = sanitize((string)$ev['title']);
-                                            if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
-                                                echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                            if ($ev['type'] === 'alert') {
+                                                $isPrivate = !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id);
+                                                echo '<a href="../alerts/view.php?id=' . (int)$ev['id'] . '" style="text-decoration: none; color: inherit;">' . ($isPrivate ? '' : '📢 ') . $title . ($isPrivate ? ' ⚠️' : '') . '</a>';
                                             } else {
                                                 echo $icon . " " . $title;
                                             }
@@ -605,7 +606,7 @@ unset($_SESSION['calendar_success']);
                                                     $icon = sanitize((string)$ev['icon']);
                                                     $title = sanitize((string)$ev['title']);
                                                     if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
-                                                        echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                        echo $title . " ⚠️";
                                                     } else {
                                                         echo $icon . " " . $title;
                                                     }
@@ -697,9 +698,9 @@ unset($_SESSION['calendar_success']);
                                                         $icon = sanitize((string)$ev['icon']);
                                                         $title = sanitize((string)$ev['title']);
                                                         if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
-                                                            echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                            echo $title . " ⚠️";
                                                         } else {
-                                                            echo $icon . " " . $title;
+                                                            echo "📢 " . $title;
                                                         }
                                                     ?>
                                                 </div>
@@ -742,9 +743,9 @@ unset($_SESSION['calendar_success']);
                                                             <?php
                                                                 $title = sanitize((string)$ev['title']);
                                                                 if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
-                                                                    echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                                    echo $title . " ⚠️";
                                                                 } else {
-                                                                    echo ($ev['type'] === 'alert' ? "📢 " : "") . $title;
+                                                                    echo "📢 " . $title;
                                                                 }
                                                             ?>
                                                         </div>
