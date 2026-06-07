@@ -43,16 +43,21 @@ $module_title = "Passwords";
 $current_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0;
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Page content starts
-include '../../includes/header.php';
 ?>
-
-<div class="content-wrapper">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo sanitize($module_title); ?> Management</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+<div class="container">
     <?php include '../../includes/sidebar.php'; ?>
-
     <div class="main-content">
-        <div class="container-fluid">
-            
+        <?php include '../../includes/header.php'; ?>
+        <div class="content">
             <?php if (empty($_SESSION['vault_key'])): ?>
                 <!-- UNLOCK VAULT VIEW -->
                 <div style="max-width: 400px; margin: 100px auto; text-align: center;" class="card">
@@ -175,13 +180,10 @@ include '../../includes/header.php';
                     </div>
                 </div>
             <?php endif; ?>
-
         </div>
     </div>
 </div>
 
-<!-- MODALS -->
-<!-- Entry Modal -->
 <div class="modal fade" id="entryModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -208,44 +210,6 @@ include '../../includes/header.php';
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Login Name</label>
-                                <input type="text" name="login_name" id="entry-login_name" class="form-control">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Password</label>
-                                <div class="input-group">
-                                    <input type="password" name="password" id="entry-password" class="form-control" required>
-                                    <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('entry-password')">👁️</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Website (URL)</label>
-                        <input type="url" name="website" id="entry-website" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Comments</label>
-                        <textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Password</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Folder Modal -->
 <div class="modal fade" id="folderModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -276,8 +240,6 @@ include '../../includes/header.php';
         </div>
     </div>
 </div>
-
-<!-- Import Modal -->
 <div class="modal fade" id="importModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -634,8 +596,41 @@ function exportVault(format) {
     const url = `export_handler.php?format=${format}&folder_id=${currentFolderId}&csrf_token=${CSRF_TOKEN}`;
     window.location.href = url;
 }
+
+function showUnlockModal() {
+    $('#unlockModal').modal('show');
+}
 </script>
 
-<?php include '../../includes/header.php'; ?>
+<div class="modal fade" id="unlockModal" tabindex="-1" role="dialog" aria-labelledby="unlockModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="unlockModalLabel">🔓 Unlock Vault</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <div class="form-group">
+                        <label>Enter Master Key</label>
+                        <input type="password" name="master_key" class="form-control" required autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Unlock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="../../js/theme.js"></script>
+<script>
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+</script>
 </body>
 </html>
