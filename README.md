@@ -12,6 +12,7 @@
 - ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
 - ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
+- ✅ Bookmarks management (Private/Shared, Folders tree, Drag-and-drop)
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
