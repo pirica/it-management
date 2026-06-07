@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "description": "Conservative allowlist for check_multi_tenant_leaks.php. Rules may downgrade classification to review-only, but must not suppress findings.",
+  "rules": [
+    {
+      "id": "dynamic_company_append_same_var",
+      "enabled": true,
+      "issue_type": "Missing company_id filter",
+      "query_types": ["SELECT", "UPDATE", "DELETE", "INSERT"],
+      "require_context_flags_all": ["dynamic_company_append_same_var"],
+      "downgrade_classification_to": "Needs review (allowlist)",
+      "reason": "Query is built in stages and appends company_id to the same SQL variable nearby."
+    },
+    {
+      "id": "scoped_var_on_same_line",
+      "enabled": true,
+      "issue_type": "Missing company_id filter",
+      "query_types": ["SELECT", "UPDATE", "DELETE", "INSERT"],
+      "require_context_flags_all": ["line_scoped_variable"],
+      "downgrade_classification_to": "Needs review (allowlist)",
+      "reason": "Same line includes a previously scoped variable in the SQL expression."
+    },
+    {
+      "id": "single_id_lookup_with_nearby_scope",
+      "enabled": true,
+      "issue_type": "Missing company_id filter",
+      "query_types": ["SELECT", "UPDATE", "DELETE"],
+      "require_context_flags_all": ["id_lookup"],
+      "require_context_flags_any": ["nearby_company_signal", "file_scope_signal"],
+      "downgrade_classification_to": "Needs review (allowlist)",
+      "reason": "Single-row id lookup appears in a nearby company-scoped context."
+    }
+  ]
+}
