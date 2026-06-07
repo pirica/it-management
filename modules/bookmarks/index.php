@@ -2,6 +2,36 @@
 require '../../config/config.php';
 require './helpers.php';
 
+// Handle Excel/CSV database import requests from table-tools.js.
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = (string)@file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+
+    // Explicit CSRF check for JSON payload
+    if (!itm_verify_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
+        http_response_code(403);
+        die('CSRF validation failed');
+    }
+
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
+    }
+
+    // Handle Folder Reordering/Reparenting via POST
+    if (isset($_POST['action']) && $_POST['action'] === 'move_folder') {
+        $fid = (int)$_POST['folder_id'];
+        $new_parent = (int)$_POST['new_parent_id'] ?: null;
+
+        $check_res = mysqli_query($conn, "SELECT user_id FROM bookmark_folders WHERE id = $fid");
+        $f_data = mysqli_fetch_assoc($check_res);
+        if ($f_data && (($_SESSION['role_name'] ?? '') === 'admin') || (int)$f_data['user_id'] === (int)($_SESSION['user_id'] ?? 0)) {
+            $stmt = mysqli_prepare($conn, "UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?");
+            mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
+            mysqli_stmt_execute($stmt);
+        }
+    }
+}
+
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 $is_admin = (($_SESSION['role_name'] ?? '') === 'admin');
@@ -11,27 +41,11 @@ if ($company_id <= 0) {
     return;
 }
 
-$selected_folder_id = isset($_GET['folder_name']) ? (int)$_GET['folder_name'] : null;
-$view_mode = isset($_GET['view']) ? $_GET['view'] : 'all'; // 'all', 'shared', 'private'
+$selected_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
+$view_mode = isset($_GET['view']) ? $_GET['view'] : 'all';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Handle Folder Reordering/Reparenting via POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'move_folder') {
-    if (itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        $fid = (int)$_POST['folder_id'];
-        $new_parent = (int)$_POST['new_parent_id'] ?: null;
-
-        $check_res = mysqli_query($conn, "SELECT user_id FROM bookmark_folders WHERE id = $fid");
-        $f_data = mysqli_fetch_assoc($check_res);
-        if ($f_data && ($is_admin || (int)$f_data['user_id'] === $user_id)) {
-            $stmt = mysqli_prepare($conn, "UPDATE bookmark_folders SET parent_folder_name = ? WHERE id = ?");
-            mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
-            mysqli_stmt_execute($stmt);
-        }
-    }
-}
-
-// Fetch folders for the sidebar tree
+// Fetch folders
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
 
@@ -43,21 +57,19 @@ if ($search !== '') {
     $bookmarks_where .= " AND (user_id = $user_id OR shared = 1)";
 } elseif ($view_mode === 'shared') {
     $bookmarks_where .= " AND shared = 1";
-    if ($selected_folder_id) $bookmarks_where .= " AND folder_name = $selected_folder_id";
+    if ($selected_folder_id) $bookmarks_where .= " AND folder_id = $selected_folder_id";
 } elseif ($view_mode === 'private') {
     $bookmarks_where .= " AND user_id = $user_id AND shared = 0";
-    if ($selected_folder_id) $bookmarks_where .= " AND folder_name = $selected_folder_id";
+    if ($selected_folder_id) $bookmarks_where .= " AND folder_id = $selected_folder_id";
 } elseif ($selected_folder_id !== null) {
-    $bookmarks_where .= " AND folder_name = $selected_folder_id";
-    // Check access to selected folder
+    $bookmarks_where .= " AND folder_id = $selected_folder_id";
     $folder_check_res = mysqli_query($conn, "SELECT user_id, shared FROM bookmark_folders WHERE id = $selected_folder_id");
     $folder_data = mysqli_fetch_assoc($folder_check_res);
     if (!$folder_data || (!$is_admin && $folder_data['user_id'] != $user_id && $folder_data['shared'] == 0)) {
         $bookmarks_where .= " AND 1=0";
     }
 } else {
-    // Root level (unfiled)
-    $bookmarks_where .= " AND (user_id = $user_id OR shared = 1) AND folder_name IS NULL";
+    $bookmarks_where .= " AND (user_id = $user_id OR shared = 1) AND folder_id IS NULL";
 }
 
 $bookmarks_sql = "SELECT * FROM bookmarks WHERE $bookmarks_where ORDER BY position ASC, title ASC";
@@ -87,7 +99,6 @@ $csrfToken = itm_get_csrf_token();
         .bookmark-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .bookmark-info { flex: 1; }
         .bookmark-actions { display: flex; gap: 8px; margin-left: 15px; }
-        .copy-btn { cursor: pointer; }
         .shared-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
         .private-badge { background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
         .itm-folder-tree-item[drag-over] { border-top: 2px solid #2196F3; }
@@ -105,7 +116,7 @@ $csrfToken = itm_get_csrf_token();
             <div class="bookmarks-sidebar">
                 <div style="margin-bottom: 15px;">
                     <form method="GET" style="display: flex; gap: 5px;">
-                        <input type="text" name="search" placeholder="Search bookmarks..." value="<?php echo sanitize($search); ?>" style="flex: 1; padding: 8px;">
+                        <input type="text" name="search" placeholder="Search..." value="<?php echo sanitize($search); ?>" style="flex: 1; padding: 8px;">
                         <button type="submit" class="btn btn-primary">🔍</button>
                     </form>
                 </div>
@@ -117,7 +128,7 @@ $csrfToken = itm_get_csrf_token();
                 </div>
 
                 <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-                    <a href="create.php<?php echo $selected_folder_id ? "?folder_name=$selected_folder_id" : ""; ?>" class="btn btn-primary" style="flex: 1; text-align: center;">➕ Add Bookmark</a>
+                    <a href="create.php<?php echo $selected_folder_id ? "?folder_id=$selected_folder_id" : ""; ?>" class="btn btn-primary" style="flex: 1; text-align: center;">➕ Add Bookmark</a>
                     <a href="create_folder.php" class="btn" title="Add Folder">➕📁</a>
                 </div>
                 <ul class="folder-tree">
@@ -127,18 +138,15 @@ $csrfToken = itm_get_csrf_token();
                     <?php echo bkm_render_folder_tree_html($folder_tree, $selected_folder_id); ?>
                 </ul>
                 <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <a href="import.php" class="btn btn-sm">📤 Import</a>
-                        <div style="position: relative; display: inline-block;">
-                            <button class="btn btn-sm" onclick="toggleExportMenu(event)">📥 Export</button>
-                            <div id="export-dropdown" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 100; min-width: 100px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                                <button onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; border: none; border-radius: 0; width: 100%; text-align: left;">Excel</button>
-                                <button onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; border: none; border-radius: 0; width: 100%; text-align: left;">CSV</button>
-                                <button onclick="exportBookmarks('pdf', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; border: none; border-radius: 0; width: 100%; text-align: left;">PDF</button>
-                                <button onclick="exportBookmarks('txt', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; border: none; border-radius: 0; width: 100%; text-align: left;">TXT</button>
-                                <button onclick="exportBookmarks('html', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; border: none; border-radius: 0; width: 100%; text-align: left;">HTML</button>
-                            </div>
-                        </div>
+                    <a href="list_all.php" class="btn btn-sm">📋 Table View</a>
+                    <a href="import.php" class="btn btn-sm">📤 Import</a>
+                    <button class="btn btn-sm" onclick="toggleExportMenu(event)">📥 Export</button>
+                    <div id="export-dropdown" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 100; min-width: 100px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        <button onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">Excel</button>
+                        <button onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">CSV</button>
+                        <button onclick="exportBookmarks('pdf', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">PDF</button>
+                        <button onclick="exportBookmarks('txt', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">TXT</button>
+                        <button onclick="exportBookmarks('html', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">HTML</button>
                     </div>
                 </div>
             </div>
@@ -164,8 +172,8 @@ $csrfToken = itm_get_csrf_token();
                 <div class="bookmarks-list">
                     <?php if (empty($bookmarks)): ?>
                         <div class="card" style="text-align: center; padding: 40px; color: #666;">
-                            <p>No bookmarks found in this view.</p>
-                            <a href="create.php<?php echo $selected_folder_id ? "?folder_name=$selected_folder_id" : ""; ?>" class="btn btn-primary">➕ Create a bookmark</a>
+                            <p>No bookmarks found here.</p>
+                            <a href="create.php<?php echo $selected_folder_id ? "?folder_id=$selected_folder_id" : ""; ?>" class="btn btn-primary">➕ Create a bookmark</a>
                         </div>
                     <?php else: ?>
                         <?php foreach ($bookmarks as $b): ?>
@@ -188,7 +196,7 @@ $csrfToken = itm_get_csrf_token();
                                     <button class="btn btn-sm copy-btn" onclick="copyUrl('<?php echo addslashes($b['url']); ?>')" title="Copy URL">🗐</button>
                                     <?php if (bkm_can_edit_bookmark($b, $user_id, $is_admin)): ?>
                                         <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm">✏️</a>
-                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this bookmark?');">
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete?');">
                                             <input type="hidden" name="id" value="<?php echo $b['id']; ?>">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>

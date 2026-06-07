@@ -11,41 +11,25 @@ if ($company_id <= 0) {
     return;
 }
 
-$id = (int)($_GET['id'] ?? 0);
-$sql = "SELECT * FROM bookmarks WHERE id = $id AND company_id = $company_id";
-$res = mysqli_query($conn, $sql);
-$data = mysqli_fetch_assoc($res);
-
-if (!$data || !bkm_can_edit_bookmark($data, $user_id, $is_admin)) {
-    die('Record not found or access denied.');
-}
-
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
 
-    $title = trim($_POST['title'] ?? '');
-    $url = trim($_POST['url'] ?? '');
-    $notes = trim($_POST['notes'] ?? '');
-    $folder_id = (int)($_POST['folder_id'] ?? 0) ?: null;
+    $name = trim($_POST['name'] ?? '');
+    $parent_folder_id = (int)($_POST['parent_folder_id'] ?? 0) ?: null;
     $shared = isset($_POST['shared']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($title === '') $errors[] = 'Title is required.';
-    if ($url === '') {
-        $errors[] = 'URL is required.';
-    } elseif (!preg_match('/^https?:\/\//i', $url)) {
-        $errors[] = 'Invalid URL. Only http:// and https:// protocols are allowed.';
-    }
+    if ($name === '') $errors[] = 'Folder name is required.';
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "UPDATE bookmarks SET folder_id = ?, title = ?, url = ?, notes = ?, shared = ?, active = ? WHERE id = ?");
-        mysqli_stmt_bind_param($stmt, 'isssiii', $folder_id, $title, $url, $notes, $shared, $active, $id);
+        $stmt = mysqli_prepare($conn, "INSERT INTO bookmark_folders (company_id, user_id, parent_folder_id, name, shared, active) VALUES (?, ?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, 'iiisii', $company_id, $user_id, $parent_folder_id, $name, $shared, $active);
 
         if (mysqli_stmt_execute($stmt)) {
-            header('Location: index.php' . ($folder_id ? "?folder_name=$folder_id" : ""));
+            header('Location: index.php');
             return;
         } else {
             $errors[] = 'Database error: ' . mysqli_error($conn);
@@ -61,7 +45,7 @@ $csrfToken = itm_get_csrf_token();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Edit Bookmark - IT Management</title>
+    <title>Add Folder - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -69,7 +53,7 @@ $csrfToken = itm_get_csrf_token();
 <div class="main-container">
     <?php include '../../includes/sidebar.php'; ?>
     <div class="content">
-        <h1>Edit Bookmark</h1>
+        <h1>Add New Folder</h1>
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">
                 <ul><?php foreach ($errors as $e): ?><li><?php echo sanitize($e); ?></li><?php endforeach; ?></ul>
@@ -78,33 +62,25 @@ $csrfToken = itm_get_csrf_token();
         <form method="POST" class="form-grid">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
             <div class="form-group">
-                <label>Title</label>
-                <input type="text" name="title" required value="<?php echo sanitize($data['title']); ?>">
+                <label>Folder Name</label>
+                <input type="text" name="name" required value="<?php echo sanitize($_POST['name'] ?? ''); ?>">
             </div>
             <div class="form-group">
-                <label>URL</label>
-                <input type="url" name="url" required value="<?php echo sanitize($data['url']); ?>">
-            </div>
-            <div class="form-group">
-                <label>Folder</label>
-                <select name="folder_id">
-                    <option value="">-- Root --</option>
-                    <?php echo bkm_render_folder_options($folder_tree, $data['folder_id']); ?>
+                <label>Parent Folder</label>
+                <select name="parent_folder_id">
+                    <option value="">-- None --</option>
+                    <?php echo bkm_render_folder_options($folder_tree); ?>
                 </select>
             </div>
             <div class="form-group">
-                <label>Notes</label>
-                <textarea name="notes"><?php echo sanitize($data['notes']); ?></textarea>
-            </div>
-            <div class="form-group">
                 <label class="itm-checkbox-control">
-                    <input type="checkbox" name="shared" value="1" <?php echo $data['shared'] ? 'checked' : ''; ?>>
+                    <input type="checkbox" name="shared" value="1" <?php echo isset($_POST['shared']) ? 'checked' : ''; ?>>
                     <span>Shared 🔓</span>
                 </label>
             </div>
             <div class="form-group">
                 <label class="itm-checkbox-control">
-                    <input type="checkbox" name="active" value="1" <?php echo $data['active'] ? 'checked' : ''; ?>>
+                    <input type="checkbox" name="active" value="1" checked>
                     <span>Active ✅</span>
                 </label>
             </div>

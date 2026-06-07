@@ -15,15 +15,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die('CSRF token validation failed.');
     }
 
-    $id = (int)($_POST['id'] ?? 0);
-    if ($id > 0) {
-        $check_res = mysqli_query($conn, "SELECT user_id FROM bookmarks WHERE id = $id AND company_id = $company_id");
-        $data = mysqli_fetch_assoc($check_res);
+    $bulkAction = (string)($_POST['bulk_action'] ?? '');
+    $ids = (array)($_POST['ids'] ?? []);
+    if ($bulkAction === 'single_delete' && isset($_POST['id'])) {
+        $ids = [(int)$_POST['id']];
+    }
 
-        if ($data && ($is_admin || (int)$data['user_id'] === $user_id)) {
-            $stmt = mysqli_prepare($conn, "UPDATE bookmarks SET active = 0 WHERE id = ?");
-            mysqli_stmt_bind_param($stmt, 'i', $id);
-            mysqli_stmt_execute($stmt);
+    if ($bulkAction === 'clear_table') {
+        $stmt = mysqli_prepare($conn, "UPDATE bookmarks SET active = 0 WHERE company_id = ? AND (user_id = ? OR shared = 1)");
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
+        mysqli_stmt_execute($stmt);
+    } elseif (!empty($ids)) {
+        foreach ($ids as $id) {
+            $id = (int)$id;
+            // Permission check
+            $check_res = mysqli_query($conn, "SELECT user_id FROM bookmarks WHERE id = $id AND company_id = $company_id");
+            $data = mysqli_fetch_assoc($check_res);
+            if ($data && ($is_admin || (int)$data['user_id'] === $user_id)) {
+                mysqli_query($conn, "UPDATE bookmarks SET active = 0 WHERE id = $id");
+            }
         }
     }
 }

@@ -20,19 +20,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $url = trim($_POST['url'] ?? '');
     $notes = trim($_POST['notes'] ?? '');
-    $folder_name = (int)($_POST['folder_name'] ?? 0) ?: null;
+    $folder_id = (int)($_POST['folder_id'] ?? 0) ?: null;
     $shared = isset($_POST['shared']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
 
     if ($title === '') $errors[] = 'Title is required.';
-    if ($url === '') $errors[] = 'URL is required.';
+    if ($url === '') {
+        $errors[] = 'URL is required.';
+    } elseif (!preg_match('/^https?:\/\//i', $url)) {
+        $errors[] = 'Invalid URL. Only http:// and https:// protocols are allowed.';
+    }
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, user_id, folder_name, title, url, notes, shared, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $user_id, $folder_name, $title, $url, $notes, $shared, $active);
+        $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, user_id, folder_id, title, url, notes, shared, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $user_id, $folder_id, $title, $url, $notes, $shared, $active);
 
         if (mysqli_stmt_execute($stmt)) {
-            header('Location: index.php' . ($folder_name ? "?folder_name=$folder_name" : ""));
+            header('Location: index.php' . ($folder_id ? "?folder_name=$folder_id" : ""));
             return;
         } else {
             $errors[] = 'Database error: ' . mysqli_error($conn);
@@ -70,13 +74,13 @@ $csrfToken = itm_get_csrf_token();
             </div>
             <div class="form-group">
                 <label>URL</label>
-                <input type="url" name="url" required value="<?php echo sanitize($_POST['url'] ?? ''); ?>">
+                <input type="url" name="url" required placeholder="https://..." value="<?php echo sanitize($_POST['url'] ?? ''); ?>">
             </div>
             <div class="form-group">
                 <label>Folder</label>
-                <select name="folder_name">
+                <select name="folder_id">
                     <option value="">-- Root --</option>
-                    <?php echo bkm_render_folder_options($folder_tree, $_GET['folder_name'] ?? null); ?>
+                    <?php echo bkm_render_folder_options($folder_tree, $_GET['folder_id'] ?? null); ?>
                 </select>
             </div>
             <div class="form-group">

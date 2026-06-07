@@ -9,6 +9,13 @@ require './helpers.php';
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = (string)@file_get_contents('php://input');
     $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+
+    // Explicit CSRF check for JSON payload
+    if (!itm_verify_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
+        http_response_code(403);
+        die('CSRF validation failed');
+    }
+
     if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
         itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
     }
@@ -41,7 +48,7 @@ if ($searchRaw !== '') {
 
 $sql = "SELECT b.*, f.name as folder_display_name
         FROM bookmarks b
-        LEFT JOIN bookmark_folders f ON b.folder_name = f.id
+        LEFT JOIN bookmark_folders f ON b.folder_id = f.id
         WHERE b.$where ORDER BY b.$sort $dir LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $sql);
 
@@ -51,6 +58,7 @@ $totalRows = mysqli_fetch_assoc($countRes)['total'];
 $totalPages = ceil($totalRows / $perPage);
 
 $csrfToken = itm_get_csrf_token();
+$showBulkActions = true;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -73,6 +81,14 @@ $csrfToken = itm_get_csrf_token();
         </div>
 
         <div class="card" style="margin-bottom:16px;">
+            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear table?');">Clear Table</button>
+            </form>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
             <form method="GET" style="display:flex; gap:10px; align-items:flex-end;">
                 <div class="form-group" style="margin:0; flex:1;">
                     <label>Search</label>
@@ -87,26 +103,33 @@ $csrfToken = itm_get_csrf_token();
             <table data-itm-db-import-endpoint="list_all.php">
                 <thead>
                     <tr>
+                        <?php if ($showBulkActions): ?>
+                            <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                        <?php endif; ?>
                         <th>Title</th>
                         <th>URL</th>
                         <th>Folder</th>
                         <th>Shared</th>
-                        <th class="itm-actions-cell">Actions</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if ($res && mysqli_num_rows($res) > 0): ?>
                         <?php while ($row = mysqli_fetch_assoc($res)): ?>
                             <tr>
+                                <?php if ($showBulkActions): ?>
+                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php endif; ?>
                                 <td><?php echo sanitize($row['title']); ?></td>
                                 <td><a href="<?php echo sanitize($row['url']); ?>" target="_blank" rel="nofollow noreferrer"><?php echo sanitize($row['url']); ?></a></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
-                                <td class="itm-actions-cell">
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo $row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete?');">
                                             <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                            <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
@@ -115,25 +138,37 @@ $csrfToken = itm_get_csrf_token();
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="5" style="text-align:center;">No bookmarks found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 6 : 5; ?>" style="text-align:center;">No bookmarks found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <?php if ($totalPages > 1): ?>
-            <div style="margin-top:20px; display:flex; gap:5px; justify-content:center;">
-                <?php if ($page > 1): ?>
-                    <a href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Prev</a>
-                <?php endif; ?>
-                <span class="btn btn-sm" style="pointer-events:none;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
-                <?php if ($page < $totalPages): ?>
-                    <a href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Next</a>
-                <?php endif; ?>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <?php if ($page > 1): ?>
+                        <a href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Previous</a>
+                    <?php endif; ?>
+                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Next</a>
+                    <?php endif; ?>
+                </div>
             </div>
         <?php endif; ?>
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
+<script>
+document.addEventListener('change', function (event) {
+    if (event.target.id === 'select-all-rows') {
+        const checkboxes = document.querySelectorAll('input[name="ids[]"]');
+        checkboxes.forEach(cb => cb.checked = event.target.checked);
+    }
+});
+</script>
 </body>
 </html>

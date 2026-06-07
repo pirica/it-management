@@ -31,7 +31,7 @@ function bkm_get_folders($conn, $company_id, $user_id, $include_shared = true) {
 function bkm_build_folder_tree(array $folders, $parentId = null) {
     $branch = [];
     foreach ($folders as $folder) {
-        $actualParent = $folder['parent_folder_name'] ? (int)$folder['parent_folder_name'] : null;
+        $actualParent = $folder['parent_folder_id'] ? (int)$folder['parent_folder_id'] : null;
         if ($actualParent === $parentId) {
             $children = bkm_build_folder_tree($folders, (int)$folder['id']);
             $folder['children'] = $children ?: [];
@@ -54,7 +54,7 @@ function bkm_render_folder_tree_html(array $tree, $selectedFolderId, $depth = 0)
 
         $html .= '<li class="itm-folder-tree-item' . $isActive . '" data-folder-id="' . $id . '" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)">';
         $html .= '<div class="itm-folder-tree-row" style="padding-left:' . $padding . 'px;">';
-        $html .= '<a href="index.php?folder_name=' . $id . '">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
+        $html .= '<a href="index.php?folder_id=' . $id . '">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
         $html .= '</div>';
 
         if (!empty($node['children'])) {

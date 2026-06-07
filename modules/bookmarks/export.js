@@ -1,39 +1,70 @@
 /**
  * Bookmarks Export JS
+ * Refactored to use document.createElement and textContent for security.
  */
 function exportBookmarks(format, folderId) {
-    // Collect bookmarks from the current DOM view
     const cards = document.querySelectorAll('.bookmark-card');
-    if (cards.length === 0 && format !== 'html' && format !== 'csv' && format !== 'txt') {
+    if (cards.length === 0 && (format === 'xlsx' || format === 'pdf')) {
         alert('No bookmarks to export in this view.');
         return;
     }
 
-    const table = document.createElement('table');
-    let html = '<thead><tr><th>Title</th><th>URL</th><th>Notes</th><th>Shared</th></tr></thead><tbody>';
+    // Use fallback to PHP for non-JS formats
+    if (format !== 'xlsx' && format !== 'pdf') {
+        window.location.href = `export.php?format=${format}${folderId ? '&folder_id=' + folderId : ''}`;
+        return;
+    }
 
-    cards.forEach(card => {
-        const title = card.querySelector('strong').textContent.trim();
-        const url = card.querySelector('a').textContent.trim();
-        const notes = card.querySelector('p') ? card.querySelector('p').textContent.trim() : '';
-        const shared = card.querySelector('.shared-badge') ? 'Yes' : 'No';
-        html += `<tr><td>${title}</td><td>${url}</td><td>${notes}</td><td>${shared}</td></tr>`;
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['Title', 'URL', 'Notes', 'Shared'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
     });
-    html += '</tbody>';
-    table.innerHTML = html;
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    cards.forEach(card => {
+        const tr = document.createElement('tr');
+
+        const titleTd = document.createElement('td');
+        titleTd.textContent = card.querySelector('strong').textContent.trim();
+        tr.appendChild(titleTd);
+
+        const urlTd = document.createElement('td');
+        urlTd.textContent = card.querySelector('a').textContent.trim();
+        tr.appendChild(urlTd);
+
+        const notesTd = document.createElement('td');
+        const notesP = card.querySelector('p');
+        notesTd.textContent = notesP ? notesP.textContent.trim() : '';
+        tr.appendChild(notesTd);
+
+        const sharedTd = document.createElement('td');
+        sharedTd.textContent = card.querySelector('.shared-badge') ? 'Yes' : 'No';
+        tr.appendChild(sharedTd);
+
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
 
     if (format === 'xlsx') {
-        const script = document.createElement('script');
-        script.src = '../../js/vendor/xlsx.full.min.js';
-        script.onload = () => {
+        if (typeof XLSX === 'undefined') {
+            const script = document.createElement('script');
+            script.src = '../../js/vendor/xlsx.full.min.js';
+            script.onload = () => {
+                const wb = XLSX.utils.table_to_book(table);
+                XLSX.writeFile(wb, 'bookmarks.xlsx');
+            };
+            document.head.appendChild(script);
+        } else {
             const wb = XLSX.utils.table_to_book(table);
             XLSX.writeFile(wb, 'bookmarks.xlsx');
-        };
-        document.head.appendChild(script);
+        }
     } else if (format === 'pdf') {
         window.print();
-    } else {
-        // Fallback to PHP-side export for CSV, TXT, HTML
-        window.location.href = `export.php?format=${format}${folderId ? '&folder_name=' + folderId : ''}`;
     }
 }

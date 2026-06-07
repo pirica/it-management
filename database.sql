@@ -6246,7 +6246,7 @@ CREATE TABLE `bookmark_folders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `user_id` int NOT NULL,
-  `parent_folder_name` int DEFAULT NULL,
+  `parent_folder_id` int DEFAULT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `position` int DEFAULT '0',
   `shared` tinyint DEFAULT '0',
@@ -6256,10 +6256,10 @@ CREATE TABLE `bookmark_folders` (
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
   KEY `user_id` (`user_id`),
-  KEY `parent_folder_name` (`parent_folder_name`),
+  KEY `parent_folder_id` (`parent_folder_id`),
   CONSTRAINT `bookmark_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmark_folders_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `bookmark_folders_ibfk_parent` FOREIGN KEY (`parent_folder_name`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
+  CONSTRAINT `bookmark_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `bookmarks`
@@ -6268,7 +6268,7 @@ CREATE TABLE `bookmarks` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `user_id` int NOT NULL,
-  `folder_name` int DEFAULT NULL,
+  `folder_id` int DEFAULT NULL,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -6280,10 +6280,10 @@ CREATE TABLE `bookmarks` (
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
   KEY `user_id` (`user_id`),
-  KEY `folder_name` (`folder_name`),
+  KEY `folder_id` (`folder_id`),
   CONSTRAINT `bookmarks_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmarks_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `bookmarks_ibfk_folder` FOREIGN KEY (`folder_name`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
+  CONSTRAINT `bookmarks_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Seed default shared bookmarks
