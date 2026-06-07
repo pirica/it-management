@@ -669,6 +669,9 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   `<input type="hidden" name="csrf_token" value="<?= itm_get_csrf_token() ?>">`
 * **XSS:** Wrap all echoed user-provided strings in `sanitize($data)`.
 
+### Directory Listing Prevention
+* Every directory in the repository MUST contain either an `index.php` or an `index.html` file to prevent directory listing.
+
 ## 🛡️ Safety & Side Effects
 * **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `user_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
 * **UI Redundancy:** Modules with custom export layouts should disable the default `table-tools.js` buttons using the `data-itm-no-export-*` attributes.
