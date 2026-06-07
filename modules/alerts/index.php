@@ -1,8 +1,8 @@
 <?php
 /**
- * Event Categories Module - Index
+ * Alerts Categories Module - Index - manages global and private notifications.
  *
- * Standalone event categories CRUD implementation.
+ * Standalone alerts categories CRUD implementation.
  *
  * Features:
  * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms
@@ -14,6 +14,11 @@
  *   category) directly from a child record's dropdown via JS.
  * - Bulk Operations: Supports multi-row deletion and table clearing.
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
+ 1. **Visibility Logic:**
+    - **Global Alerts:** `assigned_to_user_id IS NULL`. These are visible to all users within the same company.
+    - **Private Alerts:** `assigned_to_user_id = $logged_user_id`. These are visible only to the assigned user and the creator.
+2. **ICS Import:** Supports importing events from ICS files.
+3. **Multi-tenancy:** Strictly scoped by `company_id`.
  */
 
 $crud_table = 'alerts';
