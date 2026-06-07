@@ -887,6 +887,15 @@ Use this when asked to “check last N comments and reply” (Codex/Bugbot/human
 * **`Fixed`** — PR #1713 on `master`; `modules/system_access/index.php` tbody `ids[]` cells gated with `$showBulkActions`.
 * **`Not Fixed`** — intentional per AGENTS.md § Scripts directory (phpMyAdmin linked only from `scripts/index.html`, not derived per-request host).
 
+## 📚 API Examples
+The `api-examples/` directory contains standalone PHP scripts that demonstrate how to interact with the system programmatically. These scripts are intended as a reference for developers and for automated integration testing.
+
+- **Bulk Imports:** Examples for Equipment, Employees, Tickets, Catalogs, and Events using the `import_excel_rows` JSON payload.
+- **Authentication:** Helper scripts for capturing session cookies and CSRF tokens from the login process.
+- **CRUD & Filtering:** Examples for archiving tickets, deleting records, viewing single items, and filtering list views (e.g., "Open" tickets).
+
+When adding new API features or complex handlers, always consider adding a corresponding example in `api-examples/` and update `scripts/api.php` to include it in the documentation.
+
 ## Cursor Cloud specific instructions
 
 Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-installed. The update script (run automatically on VM startup) installs them via `apt-get`; agents do **not** need to repeat those steps.
