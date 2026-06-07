@@ -493,7 +493,7 @@ if ($moduleTitle === '') {
                                                     ?>
                                                 </a>
                                             <?php else: ?>
-                                                <a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
+                                                <a class="btn-link" style="text-decoration: none;" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo sanitize($row['hostname'] !== '' ? $row['hostname'] : '—'); ?></td>
