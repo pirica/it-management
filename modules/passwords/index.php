@@ -39,7 +39,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($module_title, ENT_QUOTES, 'UTF-8'); ?> Management</title>
+    <title><?php echo sanitize($module_title); ?> Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -174,8 +174,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
     </div>
 </div>
 
-<!-- Password Entry Modal -->
-<div class="modal fade" id="entryModal" tabindex="-1" role="dialog" aria-labelledby="entryModalLabel" aria-hidden="true">
+<div class="modal fade" id="entryModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -203,45 +202,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Login Name</label>
-                                <input type="text" name="login_name" id="entry-login_name" class="form-control">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Password</label>
-                                <div class="input-group">
-                                    <input type="password" name="password" id="entry-password" class="form-control" required>
-                                    <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('entry-password')">👁️</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Website</label>
-                        <input type="url" name="website" id="entry-website" class="form-control" placeholder="https://">
-                    </div>
-                    <div class="form-group">
-                        <label>Comments</label>
-                        <textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Password</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Folder Modal -->
-<div class="modal fade" id="folderModal" tabindex="-1" role="dialog" aria-labelledby="folderModalLabel" aria-hidden="true">
+<div class="modal fade" id="folderModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -273,9 +234,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         </div>
     </div>
 </div>
-
-<!-- Import Modal -->
-<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
