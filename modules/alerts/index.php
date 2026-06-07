@@ -21,15 +21,15 @@
 3. **Multi-tenancy:** Strictly scoped by `company_id`.
  */
 
+require_once '../../config/config.php';
+
 $crud_table = 'alerts';
 $crud_title = 'Alerts';
 $crud_action = $crud_action ?? 'index';
 $logged_user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 ?>
 <?php
-require_once '../../config/config.php';
 $pk = 'id';
-
 /**
  * Escapes a MySQL identifier (table/column name).
  */
@@ -249,7 +249,7 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
             $title = sanitize((string)$value);
             if (!empty($row['assigned_to_user_id'])) {
                 if ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id) {
-                    $title .= ' ⚠️ <small>Visible only to you and to the person who assigned it to you</small>';
+                    $title .= ' ⚠️';
                 }
             } else {
                 $title = '📢 ' . $title;
@@ -1114,9 +1114,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <!-- LIST VIEW -->
-                <div class="card" style="margin-bottom:16px; padding:10px; background:var(--surface-secondary); border-left:4px solid var(--accent);">
-                    <small>📢 Visible only to you and to the person who assigned it to you</small>
-                </div>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <div style="display:flex;gap:8px;">
@@ -1365,9 +1362,6 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- VIEW (DETAILS) -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
-                <div class="card" style="margin-bottom:16px; padding:10px; background:var(--surface-secondary); border-left:4px solid var(--accent);">
-                    <small>📢 Visible only to you and to the person who assigned it to you</small>
-                </div>
                 <div class="card">
                     <table>
                         <tbody>
