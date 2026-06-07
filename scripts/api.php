@@ -170,7 +170,7 @@ $projectJsonEndpoints = [
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
-            <li><strong>2026-03-29:</strong> Added <code>api-examples/</code> folder with PHP implementation examples for Equipment, Employees, Tickets, Catalogs, and Events, and authentication helpers (sessionCookie, csrfToken, authenticate).</li>
+            <li><strong>2026-03-29:</strong> Added <code>api-examples/</code> folder with PHP implementation examples for Equipment, Employees, Tickets, Catalogs, and Events, and authentication helpers (sessionCookie, csrfToken, authenticate), and CRUD operations (archive, delete, single view, edit).</li>
         </ul>
     </div>
 
@@ -197,6 +197,10 @@ $projectJsonEndpoints = [
             <li><code>api-examples/sessionCookie.php</code> - How to capture session ID from headers.</li>
             <li><code>api-examples/csrfToken.php</code> - How to extract CSRF token from page content.</li>
             <li><code>api-examples/authenticate.php</code> - Full login and token acquisition flow.</li>
+            <li><code>api-examples/ticket_archive.php</code> - Archiving a closed ticket.</li>
+            <li><code>api-examples/catalog_delete.php</code> - Deleting a single catalog record.</li>
+            <li><code>api-examples/employees_singleview.php</code> - Fetching and parsing a single record view.</li>
+            <li><code>api-examples/equipment_edit.php</code> - Updating an existing equipment item.</li>
         </ul>
     </div>
 
