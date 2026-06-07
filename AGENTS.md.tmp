@@ -1,0 +1,2 @@
+The Alerts module (`modules/alerts/`) handles global alerts when `assigned_to_user_id` is NULL and private alerts when it is set to a specific user ID.
+The `scripts/api.php` file contains a changelog of project updates and a manual list of project-wide JSON endpoints (`$projectJsonEndpoints`).
