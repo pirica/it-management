@@ -482,16 +482,30 @@ The backup tape log module (`modules/backup_tape_log/`) provides a monthly grid 
 4. **Restricted Fields:** The `tape_used_for_restore` and `ism_review` fields are only editable by Admin users or staff assigned to the IT department.
 5. **Exports:** XLSX and PDF exports must include the custom header (Year, Month, Company, Server, Unit No) and follow the requested grid layout.
 
-#### Calendar and Events integration (mandatory)
+#### Calendar, Alerts and Events integration (mandatory)
 
 The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.
 
 1. **Integration (Sync):** The calendar must automatically pull and display:
+    - Alerts from the `alerts` module. (only with `end_datetime`)
     - Events from the `events` module.
     - Tickets with a `due_date` (displayed as tasks).
     - Equipment with a `certificate_expiry`.
+    - Equipment with a `warranty_expiry`.
 2. **Standard CRUD:** The `events` and `event_categories` modules must follow the standard CRUD structure and multi-tenancy rules.
 3. **UI:** The calendar grid must follow a Monday to Sunday layout.
+
+
+#### Alerts module (mandatory)
+
+The Alerts module (`modules/alerts/`) handles global alerts when `assigned_to_user_id` is NULL and private alerts visible only to the assigned user and the creator.
+
+1. **Visibility Logic:**
+    - **Global Alerts:** `assigned_to_user_id IS NULL`. These are visible to all users within the same company.
+    - **Private Alerts:** `assigned_to_user_id = $logged_user_id`. These are visible only to the assigned user and the creator.
+    - `assigned_to_user_id = $logged_user_id OR created_by_user_id = $logged_user_id`
+2. **ICS Import:** Supports importing events from ICS files.
+3. **Multi-tenancy:** Strictly scoped by `company_id`.
 
 #### Bulk delete toolbar and Cancel button (mandatory)
 
