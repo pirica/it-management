@@ -478,12 +478,12 @@ if ($moduleTitle === '') {
                                     <tr>
                                         <td>
                                             <?php if ($section['title'] === 'Alerts Expiry'): ?>
-                                                <a class="btn-link" href="../alerts/view.php?id=<?php echo (int)$row['id']; ?>">
+                                                <a class="btn-link" style="text-decoration: none;" href="../alerts/view.php?id=<?php echo (int)$row['id']; ?>">
                                                     <?php
                                                         $title = (string)$row['equipment_title'];
                                                         if (!empty($row['assigned_to_user_id'])) {
                                                             if ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id) {
-                                                                echo sanitize($title) . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                                echo sanitize($title) . " ⚠️";
                                                             } else {
                                                                 echo sanitize($title);
                                                             }
@@ -493,7 +493,7 @@ if ($moduleTitle === '') {
                                                     ?>
                                                 </a>
                                             <?php else: ?>
-                                                <a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
+                                                <a class="btn-link" style="text-decoration: none;" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo sanitize($row['hostname'] !== '' ? $row['hostname'] : '—'); ?></td>
