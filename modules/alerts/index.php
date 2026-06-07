@@ -237,10 +237,11 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
             $catColor = sanitize((string)($row['category_color'] ?? '#3b82f6'));
             return '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background-color:' . $catColor . ';"></div>' . sanitize($catName) . '</div>';
         }
-        if ($field === 'assigned_to_user_id') {
-            $firstName = trim((string)($row['first_name'] ?? ''));
-            $lastName = trim((string)($row['last_name'] ?? ''));
-            $username = trim((string)($row['username'] ?? ''));
+        if ($field === 'assigned_to_user_id' || $field === 'created_by_user_id') {
+            $prefix = ($field === 'created_by_user_id') ? 'c_' : '';
+            $firstName = trim((string)($row[$prefix . 'first_name'] ?? ''));
+            $lastName = trim((string)($row[$prefix . 'last_name'] ?? ''));
+            $username = trim((string)($row[$prefix . 'username'] ?? ''));
             $fullName = trim($firstName . ' ' . $lastName);
             $label = ($fullName !== '') ? $fullName : $username;
             return sanitize($label !== '' ? $label : (string)$value);
@@ -249,7 +250,7 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
             $title = sanitize((string)$value);
             if (!empty($row['assigned_to_user_id'])) {
                 if ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id) {
-                    $title .= ' ⚠️';
+                    $title .= ' ⚠️' . (($GLOBALS['crud_action'] ?? '') === 'view' ? ' <small>Visible only to you and to the person who assigned it to you</small>' : '');
                 }
             } else {
                 $title = '📢 ' . $title;
@@ -1084,10 +1085,10 @@ if ($page < 1) { $page = 1; }
 if ($page > $totalPages) { $page = $totalPages; }
 $offset = ($page - 1) * $perPage;
 
-$rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
+$rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username, uc.first_name as c_first_name, uc.last_name as c_last_name, uc.username as c_username
      FROM alerts e
      LEFT JOIN event_categories ec ON e.category_id = ec.id
-     LEFT JOIN users u ON e.assigned_to_user_id = u.id
+     LEFT JOIN users u ON e.assigned_to_user_id = u.id LEFT JOIN users uc ON e.created_by_user_id = uc.id
      ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
@@ -1248,7 +1249,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="?export=ics&id=<?php echo (int)$row['id']; ?>" title="Export to ICS">📢</a>
+                                        <a class="btn btn-sm" href="?export=ics&id=<?php echo (int)$row['id']; ?>" title="Export to ICS">📅</a>
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
@@ -1369,10 +1370,10 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         // Enhanced row data for view rendering
                         $viewRow = $data;
                         if ($crud_table === 'alerts' && $editId > 0) {
-                            $sqlExt = "SELECT ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
+                            $sqlExt = "SELECT ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username, uc.first_name as c_first_name, uc.last_name as c_last_name, uc.username as c_username
                                        FROM alerts e
                                        LEFT JOIN event_categories ec ON e.category_id = ec.id
-                                       LEFT JOIN users u ON e.assigned_to_user_id = u.id
+                                       LEFT JOIN users u ON e.assigned_to_user_id = u.id LEFT JOIN users uc ON e.created_by_user_id = uc.id
                                        WHERE e.id = ? LIMIT 1";
                             $stmtExt = mysqli_prepare($conn, $sqlExt);
                             if ($stmtExt) {

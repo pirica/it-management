@@ -698,9 +698,9 @@ unset($_SESSION['calendar_success']);
                                                         $icon = sanitize((string)$ev['icon']);
                                                         $title = sanitize((string)$ev['title']);
                                                         if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
-                                                            echo "⚠️";
+                                                            echo $title . " ⚠️";
                                                         } else {
-                                                            echo "📢";
+                                                            echo "📢 " . $title;
                                                         }
                                                     ?>
                                                 </div>
@@ -743,9 +743,9 @@ unset($_SESSION['calendar_success']);
                                                             <?php
                                                                 $title = sanitize((string)$ev['title']);
                                                                 if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
-                                                                    echo "⚠️";
+                                                                    echo $title . " ⚠️";
                                                                 } else {
-                                                                    echo "📢";
+                                                                    echo "📢 " . $title;
                                                                 }
                                                             ?>
                                                         </div>
