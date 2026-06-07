@@ -1,3 +1,7 @@
+<?php
+define('ITM_CLI_SCRIPT', true);
+require_once __DIR__ . '/../config/config.php';
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -43,7 +47,7 @@
 <body>
 <nav class="scripts-top-nav" aria-label="Scripts directory sections">
     <div class="scripts-top-nav-inner">
-        <a class="scripts-top-nav-brand" href="index.html">Scripts</a>
+        <a class="scripts-top-nav-brand" href="scripts.php">Scripts</a>
         <ul class="scripts-top-nav-links">
             <li><a href="#docs">Documentation</a></li>
             <li><a href="#browser">Browser tools</a></li>
@@ -750,7 +754,7 @@
     <div class="scripts-card">
         <p class="scripts-muted" style="margin:0;">
             Back to app: <a href="../index.php">Home</a> ·
-            Catalog: <a href="index.html">index.html</a>
+            Catalog: <a href="scripts.php">scripts.php</a>
         </p>
     </div>
 </div>

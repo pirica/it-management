@@ -772,7 +772,7 @@ function mbqa_render_browser_help(): void
 
     echo '<p style="margin-top:24px;"><a href="module_browser_qa_runner.php">← Back to runner form</a> · ';
     echo '<a href="module_browser_qa_build_report.php">Build markdown report</a> · ';
-    echo '<a href="index.html">Scripts index</a></p>';
+    echo '<a href="scripts.php">Scripts index</a></p>';
     echo '</main>';
 }
 
