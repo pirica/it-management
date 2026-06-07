@@ -496,7 +496,7 @@ The calendar module (`modules/calendar/`) provides a centralized view of time-se
 
 #### Alerts module (mandatory)
 
-The Alerts module (`modules/alerts/`) manages global and private notifications.
+The Alerts module (`modules/alerts/`) handles global alerts when `assigned_to_user_id` is NULL and private alerts when it is set to a specific user ID.
 
 1. **Visibility Logic:**
     - **Global Alerts:** `assigned_to_user_id IS NULL`. These are visible to all users within the same company.
