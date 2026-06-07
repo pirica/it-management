@@ -392,7 +392,7 @@ INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at
 CREATE TABLE `floor_plans` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `folder_name` int DEFAULT NULL,
+  `folder_id` int DEFAULT NULL,
   `it_location_id` int DEFAULT NULL COMMENT 'Optional FK: floor plan links to it_locations',
   `display_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `stored_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -405,12 +405,12 @@ CREATE TABLE `floor_plans` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
-  KEY `folder_name` (`folder_name`),
+  KEY `folder_id` (`folder_id`),
   KEY `it_location_id` (`it_location_id`),
   KEY `created_by_user_id` (`created_by_user_id`),
-  UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`,(ifnull(`folder_name`,0)),`display_name`),
+  UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`,(ifnull(`folder_id`,0)),`display_name`),
   CONSTRAINT `floor_plans_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_name`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_plans_ibfk_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
