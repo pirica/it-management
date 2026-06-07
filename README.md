@@ -12,7 +12,7 @@
 - ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
 - ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
-- ✅ API (with comprehensive PHP examples)
+- ✅ API
 - ✅ Alerts — Global and private alert management
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
@@ -70,17 +70,6 @@
 <p align="center"><strong>Database schema</strong> — core table relationships for the company-scoped multi-tenant data model.</p>
 
 <p align="center"><img src="docs/readme/database-diagram.png" alt="Database schema overview" /></p>
-
-<h2 align="center">API & Examples</h2>
-
-The system includes a variety of JSON and HTML-based endpoints for integration. To help developers get started, a collection of standalone PHP scripts is available in the `api-examples/` directory:
-
-- **Authentication:** Examples for capturing `PHPSESSID` and `csrf_token` via simulated login.
-- **Bulk Import:** How to use the `import_excel_rows` API for multiple modules.
-- **CRUD Operations:** Scripts for editing, viewing, deleting, and archiving records.
-- **List Filtering:** Examples of fetching and parsing filtered results (e.g., Open tickets).
-
-Full API documentation is available in the `scripts/api.php` file (viewable in the browser as <code>/scripts/api.php</code>).
 
 <h2 align="center">Installation</h2>
 

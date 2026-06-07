@@ -22,6 +22,7 @@
  */
 
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/alerts_visibility.php';
 
 $crud_table = 'alerts';
 $crud_title = 'Alerts';
@@ -498,16 +499,27 @@ if (isset($_GET['export']) && $_GET['export'] === 'ics') {
     $export_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
     if ($export_id > 0) {
-        $sql_export = "SELECT e.* FROM alerts e WHERE e.company_id = ? AND e.id = ? LIMIT 1";
+        $exportConditions = ['e.company_id = ?', 'e.id = ?'];
+        $exportTypes = 'ii';
+        $exportParams = [$company_id, $export_id];
+        itm_alerts_append_visibility_filter($exportConditions, $exportTypes, $exportParams, $logged_user_id, 'e');
+        $sql_export = 'SELECT e.* FROM alerts e WHERE ' . implode(' AND ', $exportConditions) . ' LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql_export);
-        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $export_id);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, $exportTypes, ...$exportParams);
+        }
     } else {
         $start_export = date('Y-m-01', strtotime("-1 year"));
         $end_export = date('Y-m-t', strtotime("+1 year"));
-        $sql_export = "SELECT e.* FROM alerts e WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
-                       AND e.start_datetime BETWEEN ? AND ?";
+        $exportConditions = ['e.company_id = ?', '(e.active = 1 OR e.active IS NULL)', 'e.start_datetime BETWEEN ? AND ?'];
+        $exportTypes = 'iss';
+        $exportParams = [$company_id, $start_export, $end_export];
+        itm_alerts_append_visibility_filter($exportConditions, $exportTypes, $exportParams, $logged_user_id, 'e');
+        $sql_export = 'SELECT e.* FROM alerts e WHERE ' . implode(' AND ', $exportConditions);
         $stmt = mysqli_prepare($conn, $sql_export);
-        mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_export, $end_export);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, $exportTypes, ...$exportParams);
+        }
     }
 
     $ics_esc = function($text) {
@@ -698,15 +710,24 @@ if ($crud_action === 'delete') {
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 
-    // Clear whole table (scoped by company)
+    // Clear visible alerts only; private alerts hidden from the user must not be deleted.
     if ($bulkAction === 'clear_table') {
         $hasCompanyFilter = ($hasCompany && $company_id > 0);
-        $where = $hasCompanyFilter ? ' WHERE company_id=?' : '';
+        $conditions = [];
+        $types = '';
+        $params = [];
+        if ($hasCompanyFilter) {
+            $conditions[] = 'company_id=?';
+            $types .= 'i';
+            $params[] = (int)$company_id;
+        }
+        itm_alerts_append_visibility_filter($conditions, $types, $params, $logged_user_id);
+        $where = !empty($conditions) ? ' WHERE ' . implode(' AND ', $conditions) : '';
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
 
         $stmt = mysqli_prepare($conn, $deleteSql);
         if ($stmt) {
-            if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'i', $company_id); }
+            if ($types !== '') { mysqli_stmt_bind_param($stmt, $types, ...$params); }
             if (!mysqli_stmt_execute($stmt)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
             }
@@ -731,16 +752,20 @@ if ($crud_action === 'delete') {
             $hasCompanyFilter = ($hasCompany && $company_id > 0);
             $where = ' WHERE id IN (' . $placeholders . ')';
             if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+            $types = str_repeat('i', count($idList));
+            $params = $idList;
+            if ($hasCompanyFilter) {
+                $types .= 'i';
+                $params[] = (int)$company_id;
+            }
+            $visibilityConditions = [];
+            itm_alerts_append_visibility_filter($visibilityConditions, $types, $params, $logged_user_id);
+            $where .= ' AND ' . implode(' AND ', $visibilityConditions);
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
 
             $stmt = mysqli_prepare($conn, $deleteSql);
             if ($stmt) {
-                $types = str_repeat('i', count($idList));
-                if ($hasCompanyFilter) {
-                    $types .= 'i';
-                    $idList[] = (int)$company_id;
-                }
-                mysqli_stmt_bind_param($stmt, $types, ...$idList);
+                mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (!mysqli_stmt_execute($stmt)) {
                     $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
                 }
@@ -758,13 +783,21 @@ if ($crud_action === 'delete') {
     if ($id > 0) {
         $hasCompanyFilter = ($hasCompany && $company_id > 0);
         $where = ' WHERE id=?';
+        $types = 'i';
+        $params = [$id];
         if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+        if ($hasCompanyFilter) {
+            $types .= 'i';
+            $params[] = (int)$company_id;
+        }
+        $visibilityConditions = [];
+        itm_alerts_append_visibility_filter($visibilityConditions, $types, $params, $logged_user_id);
+        $where .= ' AND ' . implode(' AND ', $visibilityConditions);
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
 
         $stmt = mysqli_prepare($conn, $deleteSql);
         if ($stmt) {
-            if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id); }
-            else { mysqli_stmt_bind_param($stmt, 'i', $id); }
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
             if (!mysqli_stmt_execute($stmt)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
             }
@@ -817,12 +850,20 @@ $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $hasCompanyFilter = ($hasCompany && $company_id > 0);
     $where = ' WHERE id=?';
+    $types = 'i';
+    $params = [$editId];
     if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+    if ($hasCompanyFilter) {
+        $types .= 'i';
+        $params[] = (int)$company_id;
+    }
+    $visibilityConditions = [];
+    itm_alerts_append_visibility_filter($visibilityConditions, $types, $params, $logged_user_id);
+    $where .= ' AND ' . implode(' AND ', $visibilityConditions);
     $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
-        if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'ii', $editId, $company_id); }
-        else { mysqli_stmt_bind_param($stmt, 'i', $editId); }
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $data = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : [];
@@ -1019,17 +1060,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $hasCompanyFilter = ($hasCompany && $company_id > 0);
             $where = ' WHERE id=?';
             if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+            $updateTypes = $types;
+            $updateParams = $params;
+            $updateTypes .= 'i';
+            $updateParams[] = $editId;
+            if ($hasCompanyFilter) {
+                $updateTypes .= 'i';
+                $updateParams[] = $company_id;
+            }
+            $visibilityConditions = [];
+            itm_alerts_append_visibility_filter($visibilityConditions, $updateTypes, $updateParams, $logged_user_id);
+            $where .= ' AND ' . implode(' AND ', $visibilityConditions);
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
 
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                $types .= 'i';
-                $params[] = $editId;
-                if ($hasCompanyFilter) {
-                    $types .= 'i';
-                    $params[] = $company_id;
-                }
-                mysqli_stmt_bind_param($stmt, $types, ...$params);
+                mysqli_stmt_bind_param($stmt, $updateTypes, ...$updateParams);
                 if (mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
                     header('Location: ' . $listUrl);
@@ -1046,7 +1092,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 $where = '';
 if ($hasCompany && $company_id > 0) { 
     $where = ' WHERE e.company_id=' . (int)$company_id; 
-    $where .= " AND (e.assigned_to_user_id IS NULL OR e.assigned_to_user_id = $logged_user_id OR e.created_by_user_id = $logged_user_id)";
+    $where .= ' AND ' . itm_alerts_visibility_sql_literal($logged_user_id, 'e');
 }
 
 // SEARCH
@@ -1369,15 +1415,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                         <?php
                         // Enhanced row data for view rendering
                         $viewRow = $data;
-                        if ($crud_table === 'alerts' && $editId > 0) {
+                        if ($crud_table === 'alerts' && $editId > 0 && !empty($data)) {
                             $sqlExt = "SELECT ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username, uc.first_name as c_first_name, uc.last_name as c_last_name, uc.username as c_username
                                        FROM alerts e
                                        LEFT JOIN event_categories ec ON e.category_id = ec.id
                                        LEFT JOIN users u ON e.assigned_to_user_id = u.id LEFT JOIN users uc ON e.created_by_user_id = uc.id
-                                       WHERE e.id = ? LIMIT 1";
+                                       WHERE e.id = ? AND " . itm_alerts_visibility_sql('e') . " LIMIT 1";
                             $stmtExt = mysqli_prepare($conn, $sqlExt);
                             if ($stmtExt) {
-                                mysqli_stmt_bind_param($stmtExt, 'i', $editId);
+                                mysqli_stmt_bind_param($stmtExt, 'iii', $editId, $logged_user_id, $logged_user_id);
                                 mysqli_stmt_execute($stmtExt);
                                 $resExt = mysqli_stmt_get_result($stmtExt);
                                 if ($resExt && $rowExt = mysqli_fetch_assoc($resExt)) {
