@@ -1,41 +1,31 @@
 <?php
-/**
- * Passwords Module
- * 
- * Provides a private password manager with folder organization,
- * encryption at rest, and import/export capabilities.
- */
-
 require_once '../../config/config.php';
 
-// Ensure user is logged in
+// Auth Check (Custom for Passwords Module)
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ' . BASE_URL . 'login.php');
-    return;
+    header('Location: ../../login.php');
+    exit;
 }
 
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
-}
-
-$user_id = (int)$_SESSION['user_id'];
-$company_id = (int)$_SESSION['company_id'];
 $csrfToken = itm_get_csrf_token();
+$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
-// Vault Lock/Unlock Actions
+// Handle Vault Unlock if master_key is submitted via POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
+    if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die('Invalid CSRF token');
+    }
+
+    $master_key = $_POST['master_key'];
+    $_SESSION['vault_key'] = $master_key;
+    header('Location: index.php');
+    exit;
+}
+
 if (isset($_GET['action']) && $_GET['action'] === 'lock') {
     unset($_SESSION['vault_key']);
     header('Location: index.php');
-    return;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
-    if (itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        $_SESSION['vault_key'] = $_POST['master_key'];
-        header('Location: index.php');
-        return;
-    }
+    exit;
 }
 
 // Module Configuration
@@ -189,7 +179,9 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="entryModalLabel">Add Password</h5>
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <form id="entryForm">
                 <input type="hidden" name="id" id="entry-id">
@@ -215,7 +207,9 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="folderModalLabel">New Folder</h5>
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <form id="folderForm">
                 <input type="hidden" name="id" id="folder-id">
@@ -227,7 +221,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group">
                         <label>Parent Folder</label>
                         <select name="parent_id" id="folder-parent_id" class="form-control">
-                            <option value="">-- Root --</option>
+                            <option value="0">-- Root --</option>
                             <!-- Options loaded via AJAX -->
                         </select>
                     </div>
@@ -244,26 +238,29 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Import Passwords</h5>
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h5 class="modal-title" id="importModalLabel">Import Passwords</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <form id="importForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group">
                         <label>CSV File</label>
                         <input type="file" name="csv_file" class="form-control-file" accept=".csv" required>
-                        <small class="form-text text-muted">Supports Microsoft Edge and KeePass CSV formats.</small>
+                        <small class="form-text text-muted">Supports Edge (name,url,username,password) and KeePass formats.</small>
                     </div>
                     <div class="form-group">
                         <label>Target Folder</label>
                         <select name="target_folder_id" id="import-folder_id" class="form-control">
+                            <option value="0">-- Root --</option>
                             <!-- Options loaded via AJAX -->
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Start Import</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
                 </div>
             </form>
         </div>
@@ -272,38 +269,47 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 <script>
 // Global variables
-const CSRF_TOKEN = '<?php echo $csrfToken; ?>';
-let currentFolderId = <?php echo $current_folder_id; ?>;
-let searchQuery = '<?php echo addslashes($search_query); ?>';
+const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+let currentFolderId = 0;
+let searchQuery = '';
 
-/**
- * Password Generator Logic
- */
+function apiCall(action, data = {}) {
+    data.action = action;
+    data.csrf_token = CSRF_TOKEN;
+
+    const params = new URLSearchParams();
+    for (const key in data) params.append(key, data[key]);
+
+    return fetch('ajax_handler.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    }).then(r => r.json());
+}
+
 function generatePassword() {
-    const length = parseInt(document.getElementById('gen-length').value);
-    const useUpper = document.getElementById('gen-upper').checked;
-    const useLower = document.getElementById('gen-lower').checked;
-    const useNumbers = document.getElementById('gen-numbers').checked;
-    const useSymbols = document.getElementById('gen-symbols').checked;
+    const length = document.getElementById('gen-length').value;
+    const upper = document.getElementById('gen-upper').checked;
+    const lower = document.getElementById('gen-lower').checked;
+    const numbers = document.getElementById('gen-numbers').checked;
+    const symbols = document.getElementById('gen-symbols').checked;
     const excludeSimilar = document.getElementById('gen-exclude-similar').checked;
 
-    let charset = "";
-    if (useUpper) charset += "ABCDEFGHJKLMNPQRSTUVWXYZ";
-    if (useLower) charset += "abcdefghijkmnopqrstuvwxyz";
-    if (useNumbers) charset += "23456789";
-    if (useSymbols) charset += "!@#$%^&*";
+    let chars = '';
+    if (upper) chars += 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    if (lower) chars += 'abcdefghijkmnopqrstuvwxyz';
+    if (numbers) chars += '23456789';
+    if (symbols) chars += '!@#$%^&*';
     
     if (!excludeSimilar) {
-        if (useUpper) charset += "I LO";
-        if (useLower) charset += "l o";
-        if (useNumbers) charset += "1 0";
+        if (upper) chars += 'IOL';
+        if (lower) chars += 'il o';
+        if (numbers) chars += '01';
     }
 
-    let password = "";
-    if (charset.length > 0) {
-        for (let i = 0; i < length; i++) {
-            password += charset.charAt(Math.floor(Math.random() * charset.length));
-        }
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     
     document.getElementById('gen-password').value = password;
@@ -311,65 +317,57 @@ function generatePassword() {
 }
 
 function updateStrengthMeter(password) {
-    const bar = document.getElementById('strength-bar');
     let strength = 0;
     if (password.length > 8) strength += 20;
     if (password.length > 12) strength += 20;
     if (/[A-Z]/.test(password)) strength += 20;
     if (/[0-9]/.test(password)) strength += 20;
-    if (/[!@#$%^&*]/.test(password)) strength += 20;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 20;
     
-    bar.style.width = strength + '%';
-    if (strength < 40) bar.style.backgroundColor = 'red';
-    else if (strength < 80) bar.style.backgroundColor = 'orange';
-    else bar.style.backgroundColor = 'green';
+    const bar = document.getElementById('strength-bar');
+    if (bar) {
+        bar.style.width = strength + '%';
+        bar.style.backgroundColor = strength < 40 ? '#ff4d4d' : (strength < 80 ? '#ffd11a' : '#2eb82e');
+    }
 }
 
 function copyToClipboard(id) {
     const el = document.getElementById(id);
-    el.select();
-    document.execCommand('copy');
-    alert('Copied to clipboard!');
-}
-
-function saveGeneratedPassword() {
-    const pwd = document.getElementById('gen-password').value;
-    if (!pwd) return;
-    openEntryModal();
-    document.getElementById('entry-password').value = pwd;
-    togglePasswordVisibility('entry-password', true);
+    if (el) {
+        el.select();
+        document.execCommand('copy');
+        alert('Copied to clipboard!');
+    }
 }
 
 function togglePasswordVisibility(id, forceShow = false) {
     const el = document.getElementById(id);
-    if (forceShow || el.type === 'password') {
-        el.type = 'text';
-    } else {
-        el.type = 'password';
+    if (el) {
+        if (forceShow || el.type === 'password') {
+            el.type = 'text';
+        } else {
+            el.type = 'password';
+        }
     }
 }
 
-/**
- * Vault Logic (AJAX)
- */
-async function apiCall(action, data = {}) {
-    const formData = new FormData();
-    formData.append('csrf_token', CSRF_TOKEN);
-    formData.append('action', action);
-    for (const key in data) {
-        formData.append(key, data[key]);
+function saveGeneratedPassword() {
+    const pwdEl = document.getElementById('gen-password');
+    if (pwdEl) {
+        const pwd = pwdEl.value;
+        openEntryModal(0);
+        const entryPwdEl = document.getElementById('entry-password');
+        if (entryPwdEl) {
+            entryPwdEl.value = pwd;
+            togglePasswordVisibility('entry-password', true);
+        }
     }
-    
-    const response = await fetch('ajax_handler.php', {
-        method: 'POST',
-        body: formData
-    });
-    return await response.json();
 }
 
 function loadFolderTree() {
     apiCall('list_folders').then(data => {
         const tree = document.getElementById('folder-tree');
+        if (!tree) return;
         const selectEntry = document.getElementById('entry-folder_id');
         const selectFolder = document.getElementById('folder-parent_id');
         const selectImport = document.getElementById('import-folder_id');
@@ -399,9 +397,9 @@ function loadFolderTree() {
         treeHtml += '</ul>';
         
         tree.innerHTML = treeHtml;
-        selectEntry.innerHTML = optionsHtml;
-        selectFolder.innerHTML = optionsHtml;
-        selectImport.innerHTML = optionsHtml;
+        if (selectEntry) selectEntry.innerHTML = optionsHtml;
+        if (selectFolder) selectFolder.innerHTML = optionsHtml;
+        if (selectImport) selectImport.innerHTML = optionsHtml;
     });
 }
 
@@ -414,6 +412,7 @@ function selectFolder(id) {
 function loadEntries() {
     apiCall('list_entries', { folder_id: currentFolderId, search: searchQuery }).then(data => {
         const body = document.getElementById('entries-body');
+        if (!body) return;
         body.innerHTML = '';
         
         if (data.length === 0) {
@@ -487,7 +486,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function openEntryModal(id = 0) {
-    document.getElementById('entryForm').reset();
+    const form = document.getElementById('entryForm');
+    if (!form) return;
+    form.reset();
     document.getElementById('entry-id').value = id;
     document.getElementById('entryModalLabel').innerText = id ? 'Edit Password' : 'Add Password';
     
@@ -507,21 +508,24 @@ function openEntryModal(id = 0) {
     }
 }
 
-document.getElementById('entryForm').onsubmit = function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const data = {};
-    formData.forEach((value, key) => data[key] = value);
-    
-    apiCall('save_entry', data).then(res => {
-        if (res.ok) {
-            $('#entryModal').modal('hide');
-            loadEntries();
-        } else {
-            alert('Error: ' + res.message);
-        }
-    });
-};
+const entryForm = document.getElementById('entryForm');
+if (entryForm) {
+    entryForm.onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => data[key] = value);
+
+        apiCall('save_entry', data).then(res => {
+            if (res.ok) {
+                $('#entryModal').modal('hide');
+                loadEntries();
+            } else {
+                alert('Error: ' + res.message);
+            }
+        });
+    };
+}
 
 function deleteEntry(id) {
     if (confirm('Delete this password entry?')) {
@@ -532,7 +536,9 @@ function deleteEntry(id) {
 }
 
 function openFolderModal(id = 0, name = '', parentId = 0) {
-    document.getElementById('folderForm').reset();
+    const form = document.getElementById('folderForm');
+    if (!form) return;
+    form.reset();
     document.getElementById('folder-id').value = id;
     document.getElementById('folder-name').value = name;
     document.getElementById('folder-parent_id').value = parentId || '0';
@@ -540,21 +546,24 @@ function openFolderModal(id = 0, name = '', parentId = 0) {
     $('#folderModal').modal('show');
 }
 
-document.getElementById('folderForm').onsubmit = function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const data = {};
-    formData.forEach((value, key) => data[key] = value);
-    
-    apiCall('save_folder', data).then(res => {
-        if (res.ok) {
-            $('#folderModal').modal('hide');
-            loadFolderTree();
-        } else {
-            alert('Error: ' + res.message);
-        }
-    });
-};
+const folderForm = document.getElementById('folderForm');
+if (folderForm) {
+    folderForm.onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => data[key] = value);
+
+        apiCall('save_folder', data).then(res => {
+            if (res.ok) {
+                $('#folderModal').modal('hide');
+                loadFolderTree();
+            } else {
+                alert('Error: ' + res.message);
+            }
+        });
+    };
+}
 
 function deleteFolder(id) {
     if (confirm('Delete this folder and all its contents?')) {
@@ -572,25 +581,28 @@ function openImportModal() {
     $('#importModal').modal('show');
 }
 
-document.getElementById('importForm').onsubmit = function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    formData.append('csrf_token', CSRF_TOKEN);
-    formData.append('action', 'import_csv');
-    
-    fetch('ajax_handler.php', {
-        method: 'POST',
-        body: formData
-    }).then(r => r.json()).then(res => {
-        if (res.ok) {
-            alert(`Import successful!\nRows: ${res.total}\nImported: ${res.imported}\nSkipped: ${res.skipped}\nErrors: ${res.failed}`);
-            $('#importModal').modal('hide');
-            loadEntries();
-        } else {
-            alert('Error: ' + res.message);
-        }
-    });
-};
+const importForm = document.getElementById('importForm');
+if (importForm) {
+    importForm.onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.append('csrf_token', CSRF_TOKEN);
+        formData.append('action', 'import_csv');
+
+        fetch('ajax_handler.php', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(res => {
+            if (res.ok) {
+                alert(`Import successful!\nRows: ${res.total}\nImported: ${res.imported}\nSkipped: ${res.skipped}\nErrors: ${res.failed}`);
+                $('#importModal').modal('hide');
+                loadEntries();
+            } else {
+                alert('Error: ' + res.message);
+            }
+        });
+    };
+}
 
 function exportVault(format) {
     const url = `export_handler.php?format=${format}&folder_id=${currentFolderId}&csrf_token=${CSRF_TOKEN}`;
