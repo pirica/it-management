@@ -26,7 +26,6 @@ function itm_sidebar_base_structure() {
             'id' => 'management',
             'title' => '🏢 Management',
             'items' => [
-                ['id' => 'passwords', 'label' => '🔑 Passwords', 'href' => 'modules/passwords/', 'match_dir' => 'passwords'],
                 ['id' => 'equipment', 'label' => '🖥️ Equipment', 'href' => 'modules/equipment/', 'match_dir' => 'equipment'],
                 ['id' => 'is_workstation', 'label' => '💻 Is Workstation', 'href' => 'modules/is_workstation/', 'match_dir' => 'is_workstation'],
                 ['id' => 'is_server', 'label' => '🖥️ Is Server', 'href' => 'modules/is_server/', 'match_dir' => 'is_server'],
@@ -49,6 +48,7 @@ function itm_sidebar_base_structure() {
             'id' => 'employee',
             'title' => '👤 Employee',
             'items' => [
+                ['id' => 'passwords', 'label' => '🔑 Passwords', 'href' => 'modules/passwords/', 'match_dir' => 'passwords'],
                 ['id' => 'contacts', 'label' => '📓 Contacts', 'href' => 'modules/contacts/', 'match_dir' => 'contacts'],
                 ['id' => 'employees', 'label' => '👤 Employees', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
                 ['id' => 'employee_system_access', 'label' => '🔐 Employee System Access', 'href' => 'modules/employee_system_access/', 'match_dir' => 'employee_system_access'],
