@@ -168,6 +168,13 @@ $projectJsonEndpoints = [
     </div>
 
     <div class="card">
+        <h2>Recent Updates</h2>
+        <ul>
+            <li><strong>2026-03-29:</strong> Added <code>api-examples/</code> folder with PHP implementation examples for Equipment, Employees, Tickets, Catalogs, and Events, and authentication helpers (sessionCookie, csrfToken, authenticate), and CRUD operations (archive, delete, single view, edit).</li>
+        </ul>
+    </div>
+
+    <div class="card">
         <h2>Overview</h2>
         <ul>
             <li>This project uses <strong>session-based authentication + CSRF</strong> (not JWT bearer tokens).</li>
@@ -175,6 +182,25 @@ $projectJsonEndpoints = [
             <li>Multi-tenancy is enforced via session <code>company_id</code> checks in endpoints.</li>
             <li><strong>Do not send <code>company_id</code> in API payloads</strong>; tenant context is resolved server-side from the authenticated session.</li>
             <li>Many modules expose a JSON import endpoint at their own <code>modules/&lt;module&gt;/index.php</code>.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>API Examples</h2>
+        <p>Standalone PHP examples demonstrating session-based authentication and <code>import_excel_rows</code> JSON payloads:</p>
+        <ul>
+            <li><code>api-examples/equipment.php</code> - Equipment multi-row import.</li>
+            <li><code>api-examples/employees.php</code> - Employee directory import (with auto-lookup resolution).</li>
+            <li><code>api-examples/tickets.php</code> - Bulk ticket creation.</li>
+            <li><code>api-examples/catalogs.php</code> - Catalog product listing import.</li>
+            <li><code>api-examples/events.php</code> - Calendar event batch import.</li>
+            <li><code>api-examples/sessionCookie.php</code> - How to capture session ID from headers.</li>
+            <li><code>api-examples/csrfToken.php</code> - How to extract CSRF token from page content.</li>
+            <li><code>api-examples/authenticate.php</code> - Full login and token acquisition flow.</li>
+            <li><code>api-examples/ticket_archive.php</code> - Archiving a closed ticket.</li>
+            <li><code>api-examples/catalog_delete.php</code> - Deleting a single catalog record.</li>
+            <li><code>api-examples/employees_singleview.php</code> - Fetching and parsing a single record view.</li>
+            <li><code>api-examples/equipment_edit.php</code> - Updating an existing equipment item.</li>
         </ul>
     </div>
 
@@ -188,14 +214,10 @@ $projectJsonEndpoints = [
             <li>Tenant scope is automatic: requests are filtered by server-side session company; payload-level <code>company_id</code> is intentionally hidden from UI/API contracts.</li>
         </ol>
 <pre><code># 1) Login and store session cookies (example)
-curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  --data "email=Admin&amp;password=Admin&amp;csrf_token=&lt;token_from_login_form&gt;"
+curl -c cookies.txt -X POST "http://localhost/it-management/login.php"   -H "Content-Type: application/x-www-form-urlencoded"   --data "email=Admin&amp;password=Admin&amp;csrf_token=&lt;token_from_login_form&gt;"
 
 # 2) Call a protected JSON endpoint with same cookie + CSRF token
-curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.php" \
-  -H "Content-Type: application/json" \
-  -d '{"switch_id": 1, "csrf_token": "&lt;csrf_token&gt;"}'</code></pre>
+curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.php"   -H "Content-Type: application/json"   -d '{"switch_id": 1, "csrf_token": "&lt;csrf_token&gt;"}'</code></pre>
     </div>
 
     <div class="card">
@@ -229,9 +251,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.p
             </tbody>
         </table>
 <pre><code># Example: save an IDF position
-curl -b cookies.txt -X POST "http://localhost/it-management/modules/idfs/api/position_save.php" \
-  -H "Content-Type: application/json" \
-  -d '{"csrf_token":"&lt;csrf_token&gt;","id":12,"name":"U12","notes":"Reserved"}'</code></pre>
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/idfs/api/position_save.php"   -H "Content-Type: application/json"   -d '{"csrf_token":"&lt;csrf_token&gt;","id":12,"name":"U12","notes":"Reserved"}'</code></pre>
     </div>
 
     <div class="card">
@@ -251,9 +271,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/idfs/api/pos
             </tbody>
         </table>
 <pre><code># Example: table-tools.js JSON import payload
-curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/index.php" \
-  -H "Content-Type: application/json" \
-  -d '{
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/index.php"   -H "Content-Type: application/json"   -d '{
     "csrf_token":"&lt;csrf_token&gt;",
     "import_excel_rows":[
       ["Name","Active"],
