@@ -13,7 +13,6 @@
 - ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
 - ✅ API
-- ✅ Alerts — Global and private alert management
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 
@@ -107,7 +106,6 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Visitors Access Log — Track manual entry logs of visitors with inline editing and auto-timestamps
 - Backup Tape Log — Monthly grid view to track server backup tapes with auto-populated day/tape names and restricted ISM review.
 - Audit Logs
-- Alerts — Manage global and private alerts with ICS import support
 
 
 <h2 align="center">Floor Plans gallery</h2>

@@ -482,7 +482,7 @@ The backup tape log module (`modules/backup_tape_log/`) provides a monthly grid 
 4. **Restricted Fields:** The `tape_used_for_restore` and `ism_review` fields are only editable by Admin users or staff assigned to the IT department.
 5. **Exports:** XLSX and PDF exports must include the custom header (Year, Month, Company, Server, Unit No) and follow the requested grid layout.
 
-#### Calendar, Alerts and Events integration (mandatory)
+#### Calendar and Events integration (mandatory)
 
 The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.
 
@@ -492,17 +492,6 @@ The calendar module (`modules/calendar/`) provides a centralized view of time-se
     - Equipment with a `certificate_expiry`.
 2. **Standard CRUD:** The `events` and `event_categories` modules must follow the standard CRUD structure and multi-tenancy rules.
 3. **UI:** The calendar grid must follow a Monday to Sunday layout.
-
-
-#### Alerts module (mandatory)
-
-The Alerts module (`modules/alerts/`) manages global and private notifications.
-
-1. **Visibility Logic:**
-    - **Global Alerts:** `assigned_to_user_id IS NULL`. These are visible to all users within the same company.
-    - **Private Alerts:** `assigned_to_user_id = $logged_user_id`. These are visible only to the assigned user and the creator.
-2. **ICS Import:** Supports importing events from ICS files.
-3. **Multi-tenancy:** Strictly scoped by `company_id`.
 
 #### Bulk delete toolbar and Cancel button (mandatory)
 
