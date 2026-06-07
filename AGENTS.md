@@ -507,6 +507,15 @@ The Alerts module (`modules/alerts/`) handles global alerts when `assigned_to_us
 2. **ICS Import:** Supports importing events from ICS files.
 3. **Multi-tenancy:** Strictly scoped by `company_id`.
 
+#### Bookmarks module (mandatory)
+
+The Bookmarks module provides a hierarchical management system for links, featuring:
+- **Privacy Scoping:** Data is filtered by `user_id` for private bookmarks and `company_id` for shared ones.
+- **Dual-Pane UI:** A left sidebar with an emoji-enhanced folder tree (📁/📂) and a main list view.
+- **Drag-and-Drop:** Folders can be reordered or reparented via drag-and-drop interactions.
+- **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
+- **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.
