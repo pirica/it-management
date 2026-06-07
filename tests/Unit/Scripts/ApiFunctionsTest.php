@@ -5,22 +5,27 @@ class ApiFunctionsTest extends TestCase
 {
     protected function setUp(): void
     {
-        // Require the file containing functions to test
-        // We use a mock or include the file. Since api.php has side effects (HTML output),
-        // we might need to extract the functions or use a wrapper.
-        // For now, we will include it and capture output if needed.
+        if (!defined('ITM_CLI_SCRIPT')) {
+            define('ITM_CLI_SCRIPT', true);
+        }
+        if (!defined('ITM_SKIP_DB_TESTS')) {
+            define('ITM_SKIP_DB_TESTS', true);
+        }
+
         if (!function_exists("itmDocCollectModuleImportEndpoints")) {
-            require_once __DIR__ . "/../../scripts/api.php";
+            ob_start();
+            @require_once __DIR__ . "/../../../scripts/api.php";
+            ob_end_clean();
         }
     }
 
     public function testCollectModuleImportEndpoints()
     {
-        $endpoints = itmDocCollectModuleImportEndpoints(__DIR__ . "/..");
+        $rootPath = realpath(__DIR__ . "/../../../");
+        $endpoints = itmDocCollectModuleImportEndpoints($rootPath);
         $this->assertIsArray($endpoints);
         $this->assertNotEmpty($endpoints);
 
-        // Verify alerts module is detected
         $foundAlerts = false;
         foreach ($endpoints as $e) {
             if ($e["module"] === "alerts") {
@@ -33,18 +38,19 @@ class ApiFunctionsTest extends TestCase
 
     public function testCollectModulesWithoutImportEndpoint()
     {
-        $endpoints = itmDocCollectModuleImportEndpoints(__DIR__ . "/..");
-        $missing = itmDocCollectModulesWithoutImportEndpoint(__DIR__ . "/..", $endpoints);
+        $rootPath = realpath(__DIR__ . "/../../../");
+        $endpoints = itmDocCollectModuleImportEndpoints($rootPath);
+        $missing = itmDocCollectModulesWithoutImportEndpoint($rootPath, $endpoints);
         $this->assertIsArray($missing);
 
-        // explorer and audit_logs should be in missing list (no import_excel_rows)
         $this->assertContains("explorer", $missing);
         $this->assertContains("audit_logs", $missing);
     }
 
     public function testCollectIdfApiEndpoints()
     {
-        $endpoints = itmDocCollectIdfApiEndpoints(__DIR__ . "/..");
+        $rootPath = realpath(__DIR__ . "/../../../");
+        $endpoints = itmDocCollectIdfApiEndpoints($rootPath);
         $this->assertIsArray($endpoints);
         $this->assertNotEmpty($endpoints);
 

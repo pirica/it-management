@@ -190,6 +190,8 @@ if ($company_id > 0) {
                 SELECT
                     a.id,
                     a.title AS name,
+                    a.assigned_to_user_id,
+                    a.created_by_user_id,
                     '' AS hostname,
                     '' AS model,
                     '' AS serial_number,
@@ -273,6 +275,8 @@ if ($company_id > 0) {
 
                 $targetRows[] = [
                     'id' => (int)($row['id'] ?? 0),
+                    'assigned_to_user_id' => $row['assigned_to_user_id'] ?? null,
+                    'created_by_user_id' => $row['created_by_user_id'] ?? null,
                     'equipment_title' => $equipmentTitle,
                     'hostname' => (string)($row['hostname'] ?? ''),
                     'equipment_type' => (string)($row['equipment_type'] ?? ''),
@@ -422,11 +426,6 @@ if ($moduleTitle === '') {
                 $summary = $expirySummaries[$summaryField] ?? ['expired' => 0, 'unknown' => 0, 'lt30' => 0, 'gt60' => 0];
                 ?>
                 <div class="card" style="margin-top: 16px;">
-                    <?php if ($section['title'] === 'Alerts Expiry'): ?>
-                        <div style="margin-bottom:12px; padding:8px; background:var(--surface-secondary); border-left:4px solid var(--accent);">
-                            <small>📢 Visible only to you and to the person who assigned it to you</small>
-                        </div>
-                    <?php endif; ?>
                     <section class="idf-hero">
                         <div>
                             <h2><?php echo sanitize($section['emoji'] . ' ' . $section['title']); ?></h2>
@@ -479,7 +478,20 @@ if ($moduleTitle === '') {
                                     <tr>
                                         <td>
                                             <?php if ($section['title'] === 'Alerts Expiry'): ?>
-                                                <a class="btn-link" href="../alerts/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
+                                                <a class="btn-link" href="../alerts/view.php?id=<?php echo (int)$row['id']; ?>">
+                                                    <?php
+                                                        $title = (string)$row['equipment_title'];
+                                                        if (!empty($row['assigned_to_user_id'])) {
+                                                            if ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id) {
+                                                                echo sanitize($title) . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                            } else {
+                                                                echo sanitize($title);
+                                                            }
+                                                        } else {
+                                                            echo "📢 " . sanitize($title);
+                                                        }
+                                                    ?>
+                                                </a>
                                             <?php else: ?>
                                                 <a class="btn-link" href="../equipment/view.php?id=<?php echo (int)$row['id']; ?>"><?php echo sanitize($row['equipment_title']); ?></a>
                                             <?php endif; ?>

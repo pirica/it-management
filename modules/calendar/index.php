@@ -249,10 +249,12 @@ if ($stmt) {
                     'type' => 'alert',
                     'title' => $row['title'],
                     'color' => $ev_color,
-                    'icon' => '📢',
+                    'icon' => (!empty($row['assigned_to_user_id']) && ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id)) ? '⚠️' : '📢',
                     'start' => $row['start_datetime'],
                     'end' => $row['end_datetime'],
-                    'id' => $row['id']
+                    'id' => $row['id'],
+                    'assigned_to_user_id' => $row['assigned_to_user_id'] ?? null,
+                    'created_by_user_id' => $row['created_by_user_id'] ?? null
                 ];
             }
             $curr_day = strtotime('+1 day', $curr_day);
@@ -468,13 +470,20 @@ unset($_SESSION['calendar_success']);
                     </p>
 
                     <div class="side-panel-events-list" style="flex: 1;">
-                        <div style="margin-bottom:12px; padding:8px; background:var(--surface-secondary); border-left:4px solid var(--accent);">
-                            <small>📢 Visible only to you and to the person who assigned it to you</small>
-                        </div>
                         <?php if ($selected_day_events): ?>
                             <?php foreach ($selected_day_events as $ev): ?>
                                 <div class="side-event-item" style="border-left-color: <?php echo sanitize($ev['color']); ?>;">
-                                    <div style="font-weight: bold;"><?php echo sanitize($ev['icon']); ?> <?php echo sanitize($ev['title']); ?></div>
+                                    <div style="font-weight: bold;">
+                                        <?php
+                                            $icon = sanitize((string)$ev['icon']);
+                                            $title = sanitize((string)$ev['title']);
+                                            if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                            } else {
+                                                echo $icon . " " . $title;
+                                            }
+                                        ?>
+                                    </div>
                                     <?php if ($ev['type'] === 'event'): ?>
                                         <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 2px;">
                                             <?php echo date('H:i', strtotime($ev['start'])); ?> - <?php echo $ev['end'] ? date('H:i', strtotime($ev['end'])) : 'All day'; ?>
@@ -592,7 +601,15 @@ unset($_SESSION['calendar_success']);
                                                 elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
                                         ?>
                                             <div class="all-day-item" style="background:<?php echo $color; ?>;" onclick="location.href='<?php echo $link; ?>'">
-                                                <?php echo sanitize($ev['icon'] . ' ' . $ev['title']); ?>
+                                                <?php
+                                                    $icon = sanitize((string)$ev['icon']);
+                                                    $title = sanitize((string)$ev['title']);
+                                                    if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                        echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                    } else {
+                                                        echo $icon . " " . $title;
+                                                    }
+                                                ?>
                                             </div>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
@@ -676,7 +693,15 @@ unset($_SESSION['calendar_success']);
                                                     elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
                                             ?>
                                                 <div class="all-day-item" style="background:<?php echo $color; ?>; width: 100%; overflow: hidden; text-overflow: ellipsis;" onclick="location.href='<?php echo $link; ?>'" title="<?php echo sanitize($ev['title']); ?>">
-                                                    <?php echo sanitize($ev['icon'] . ' ' . $ev['title']); ?>
+                                                    <?php
+                                                        $icon = sanitize((string)$ev['icon']);
+                                                        $title = sanitize((string)$ev['title']);
+                                                        if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                            echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                        } else {
+                                                            echo $icon . " " . $title;
+                                                        }
+                                                    ?>
                                                 </div>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
@@ -714,7 +739,14 @@ unset($_SESSION['calendar_success']);
                                                                 $color = (preg_match('/^#[0-9A-F]{6}$/i', $ev['color'])) ? $ev['color'] : '#3b82f6';
                                                     ?>
                                                         <div class="time-event" style="background:<?php echo $color; ?>; top:<?php echo $top; ?>%; height:<?php echo $height; ?>%;" onclick="location.href='<?php echo ($ev['type'] === 'alert') ? '../alerts/view.php?id=' . $ev['id'] : '../events/view.php?id=' . $ev['id']; ?>'">
-                                                            <?php echo sanitize($ev['title']); ?>
+                                                            <?php
+                                                                $title = sanitize((string)$ev['title']);
+                                                                if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                                    echo $title . " ⚠️ <small>Visible only to you and to the person who assigned it to you</small>";
+                                                                } else {
+                                                                    echo ($ev['type'] === 'alert' ? "📢 " : "") . $title;
+                                                                }
+                                                            ?>
                                                         </div>
                                                     <?php endif; ?>
                                                     <?php endif; ?>

@@ -230,6 +230,7 @@ function cr_is_hidden_employee_field($field) {
  * Formats database values for UI display (badges, icons, clickable links).
  */
 function cr_render_cell_value($table, $field, $value, $row = []) {
+    global $logged_user_id;
     if ($table === 'alerts') {
         if ($field === 'category_id' && isset($row['category_name'])) {
             $catName = (string)$row['category_name'];
@@ -243,6 +244,17 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
             $fullName = trim($firstName . ' ' . $lastName);
             $label = ($fullName !== '') ? $fullName : $username;
             return sanitize($label !== '' ? $label : (string)$value);
+        }
+        if ($field === 'title') {
+            $title = sanitize((string)$value);
+            if (!empty($row['assigned_to_user_id'])) {
+                if ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id) {
+                    $title .= ' ⚠️ <small>Visible only to you and to the person who assigned it to you</small>';
+                }
+            } else {
+                $title = '📢 ' . $title;
+            }
+            return $title;
         }
     }
 
