@@ -126,6 +126,9 @@ $projectJsonEndpoints = [
     ['method' => 'POST', 'path' => 'modules/visitors_access_log/index.php', 'purpose' => 'Visitors Access Log inline editing and timestamp updates. Supports ajax_inline_edit=1 or action_timestamp=1.'],
     ['method' => 'POST', 'path' => 'modules/floor_designer/index.php', 'purpose' => 'Floor Designer AJAX actions: save_point, update_point_pos, update_comment_pos, delete_point, get_switch_ports.'],
     ['method' => 'POST', 'path' => 'modules/floor_designer_points/index.php', 'purpose' => 'Floor Designer Points save-to-database import endpoint (JSON rows from table-tools).'],
+    ["method" => "POST", "path" => "modules/alerts/index.php", "purpose" => "Alerts save-to-database import endpoint (JSON rows) or ICS file import support."],
+    ["method" => "POST", "path" => "modules/explorer/api.php", "purpose" => "Explorer file management actions (create, rename, delete, move, upload)."],
+    ["method" => "POST", "path" => "modules/patches_updates/list_all.php", "purpose" => "Patches & Updates save-to-database import endpoint (JSON rows)."],
 ];
 ?>
 <!DOCTYPE html>
@@ -293,6 +296,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/
         <h2>Recent Updates</h2>
         <p style="margin:0 0 12px;color:var(--text-muted,#57606a);">Major product and platform changes, newest first. Each entry maps to merged work on <code>master</code>; see <code>scripts/index.html</code> for runnable audit tools.</p>
         <ul>
+            <li><strong>2026-06-07:</strong> Added Alerts module support: global alerts (<code>assigned_to_user_id IS NULL</code>) and private alerts (scoped to user), including ICS import support (<code>modules/alerts/index.php</code>).</li>
             <li><strong>2026-05-22:</strong> <strong>Floor Designer Points Module:</strong> Re-implemented the module as a standalone CRUD with multi-tenancy scoping, prepared statements, and standard UI features (search, sort, pagination, bulk actions). Added a JSON import endpoint for Excel compatibility and "Add sample data" functionality.</li>
             <li><strong>2026-05-21:</strong> <strong>Companies Module:</strong> Added <code>Unit No.</code> field to the <code>companies</code> table and updated the Create, Edit, and View screens. The field is displayed on the same row as Company and InCode in forms, and appears in the detail view only when not empty. Audit triggers were updated to include the new field.</li>
             <li><strong>2026-05-20:</strong> <strong>Org Chart Security:</strong> Added cross-tenant validation check to the <code>update_hierarchy</code> AJAX handler in <code>modules/org_chart/index.php</code>; the subject employee ID is now verified against the company-scoped employee map to prevent unauthorized hierarchy manipulation across tenants.</li>
