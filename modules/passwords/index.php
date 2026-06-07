@@ -3,21 +3,22 @@ require_once '../../config/config.php';
 
 // Auth Check (Custom for Passwords Module)
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../login.php');
+    header('Location: ' . BASE_URL . 'login.php');
     exit;
 }
 
 $csrfToken = itm_get_csrf_token();
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
 
 // Handle Vault Unlock if master_key is submitted via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
-    if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('Invalid CSRF token');
     }
 
     $master_key = $_POST['master_key'];
-    $_SESSION['vault_key'] = $master_key;
+    $_SESSION['vault_key'] = hash('sha256', (string)$master_key);
     header('Location: index.php');
     exit;
 }
@@ -39,7 +40,8 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo sanitize($module_title); ?> Management</title>
+    <title><?= htmlspecialchars($module_title, ENT_QUOTES, 'UTF-8'); ?> Management</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -174,7 +176,8 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
     </div>
 </div>
 
-<div class="modal fade" id="entryModal" tabindex="-1" role="dialog">
+<!-- Password Entry Modal -->
+<div class="modal fade" id="entryModal" tabindex="-1" role="dialog" aria-labelledby="entryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -202,7 +205,45 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                             </div>
                         </div>
                     </div>
-<div class="modal fade" id="folderModal" tabindex="-1" role="dialog">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Login Name</label>
+                                <input type="text" name="login_name" id="entry-login_name" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Password</label>
+                                <div class="input-group">
+                                    <input type="password" name="password" id="entry-password" class="form-control" required>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('entry-password')">👁️</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Website</label>
+                        <input type="url" name="website" id="entry-website" class="form-control" placeholder="https://">
+                    </div>
+                    <div class="form-group">
+                        <label>Comments</label>
+                        <textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Folder Modal -->
+<div class="modal fade" id="folderModal" tabindex="-1" role="dialog" aria-labelledby="folderModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -234,7 +275,9 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         </div>
     </div>
 </div>
-<div class="modal fade" id="importModal" tabindex="-1" role="dialog">
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -269,7 +312,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 <script>
 // Global variables
-const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+const CSRF_TOKEN = <?php echo json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 let currentFolderId = 0;
 let searchQuery = '';
 
@@ -306,6 +349,19 @@ function generatePassword() {
         if (lower) chars += 'il o';
         if (numbers) chars += '01';
     }
+
+    if (chars.length === 0) return;
+
+    let password = '';
+    const array = new Uint32Array(length);
+    window.crypto.getRandomValues(array);
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(array[i] % chars.length);
+    }
+
+    document.getElementById('gen-password').value = password;
+    updateStrengthMeter(password);
+}
 
     let password = '';
     for (let i = 0; i < length; i++) {
@@ -381,14 +437,14 @@ function loadFolderTree() {
                 const isActive = f.id == currentFolderId;
                 treeHtml += `<li style="padding-left: ${level * 15}px">
                     <div class="d-flex justify-content-between align-items-center ${isActive ? 'bg-light font-weight-bold' : ''}">
-                        <a href="#" onclick="selectFolder(${f.id}); return false;">📁 ${f.name}</a>
+                        <a href="#" onclick="selectFolder(${f.id}); return false;">📁 ${sanitizeHtml(f.name)}</a>
                         <div>
                             <button class="btn btn-link btn-sm p-0" onclick="openFolderModal(${f.id}, '${f.name.replace(/'/g, "\\'")}', ${f.parent_id})">✏️</button>
                             <button class="btn btn-link btn-sm p-0 text-danger" onclick="deleteFolder(${f.id})">🗑️</button>
                         </div>
                     </div>
                 </li>`;
-                optionsHtml += `<option value="${f.id}">${'&nbsp;'.repeat(level * 2)}${f.name}</option>`;
+                optionsHtml += `<option value="${f.id}">${'&nbsp;'.repeat(level * 2)}${sanitizeHtml(f.name)}</option>`;
                 buildTree(f.id, level + 1);
             });
         };
@@ -642,7 +698,9 @@ function showUnlockModal() {
 
 <script src="../../js/theme.js"></script>
 <script>
-window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

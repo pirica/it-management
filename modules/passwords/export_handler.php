@@ -9,22 +9,32 @@ if (empty($_SESSION['vault_key'])) {
     die("Vault locked");
 }
 
-if (!itm_verify_csrf_token($_GET['csrf_token'] ?? '')) {
+if (!itm_validate_csrf_token($_GET['csrf_token'] ?? '')) {
     die("Invalid CSRF token");
 }
 
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+if (!$conn) { die('Connection failed'); }
+
 $user_id = (int)$_SESSION['user_id'];
 $folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0;
-$format = $_GET['format'] ?? 'csv';
+$format = (string)($_GET['format'] ?? 'csv');
 
-$sql = "SELECT * FROM password_entries WHERE user_id = $user_id";
+$sql = "SELECT * FROM password_entries WHERE user_id = ?";
 if ($folder_id > 0) {
-    $sql .= " AND folder_id = $folder_id";
+    $sql .= " AND folder_id = ?";
 }
 $sql .= " ORDER BY account ASC";
 
-$res = mysqli_query($conn, $sql);
+$stmt = mysqli_prepare($conn, $sql);
+if ($folder_id > 0) {
+    mysqli_stmt_bind_param($stmt, 'ii', $user_id, $folder_id);
+} else {
+    mysqli_stmt_bind_param($stmt, 'i', $user_id);
+}
+
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
 $entries = [];
 while ($row = mysqli_fetch_assoc($res)) {
     $row['password'] = itm_decrypt($row['password'], $_SESSION['vault_key']);
@@ -36,6 +46,8 @@ while ($row = mysqli_fetch_assoc($res)) {
         'Comments' => $row['comments']
     ];
 }
+mysqli_stmt_close($stmt);
+mysqli_close($conn);
 
 $filename = "passwords_export_" . date('Y-m-d_His');
 
@@ -63,7 +75,6 @@ switch ($format) {
         break;
 
     case 'xlsx':
-        // Minimal XLSX implementation or simple CSV with .xls extension for compatibility
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment; filename="' . $filename . '.xls"');
         echo "Account\tLogin Name\tPassword\tWeb Site\tComments\n";

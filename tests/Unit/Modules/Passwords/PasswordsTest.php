@@ -4,7 +4,7 @@ namespace Tests\Unit\Modules\Passwords;
 
 use PHPUnit\Framework\TestCase;
 
-class PasswordsCRUDTest extends TestCase
+class PasswordsTest extends TestCase
 {
     private $conn;
     private $userId = 1;
@@ -30,19 +30,30 @@ class PasswordsCRUDTest extends TestCase
         mysqli_stmt_close($stmt);
 
         // 2. Read
-        $res = mysqli_query($this->conn, "SELECT * FROM password_folders WHERE id = $id");
+        $sql = "SELECT name FROM password_folders WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals($name, $row['name']);
+        mysqli_stmt_close($stmt);
 
         // 3. Update
-        $newName = 'Updated Folder';
-        mysqli_query($this->conn, "UPDATE password_folders SET name = '$newName' WHERE id = $id");
-        $res = mysqli_query($this->conn, "SELECT name FROM password_folders WHERE id = $id");
-        $row = mysqli_fetch_assoc($res);
-        $this->assertEquals($newName, $row['name']);
+        $newName = 'Updated Folder ' . uniqid();
+        $sql = "UPDATE password_folders SET name = ? WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'si', $newName, $id);
+        $this->assertTrue(mysqli_stmt_execute($stmt));
+        mysqli_stmt_close($stmt);
 
         // 4. Delete
-        mysqli_query($this->conn, "DELETE FROM password_folders WHERE id = $id");
+        $sql = "DELETE FROM password_folders WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        $this->assertTrue(mysqli_stmt_execute($stmt));
+        mysqli_stmt_close($stmt);
+
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as c FROM password_folders WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals(0, (int)$row['c']);
@@ -60,14 +71,20 @@ class PasswordsCRUDTest extends TestCase
         mysqli_stmt_close($stmt);
 
         // 2. Read
-        $res = mysqli_query($this->conn, "SELECT * FROM password_entries WHERE id = $id");
+        $sql = "SELECT account FROM password_entries WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals($account, $row['account']);
+        mysqli_stmt_close($stmt);
 
         // 3. Delete
-        mysqli_query($this->conn, "DELETE FROM password_entries WHERE id = $id");
-        $res = mysqli_query($this->conn, "SELECT COUNT(*) as c FROM password_entries WHERE id = $id");
-        $row = mysqli_fetch_assoc($res);
-        $this->assertEquals(0, (int)$row['c']);
+        $sql = "DELETE FROM password_entries WHERE id = ?";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'i', $id);
+        $this->assertTrue(mysqli_stmt_execute($stmt));
+        mysqli_stmt_close($stmt);
     }
 }
