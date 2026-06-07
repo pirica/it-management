@@ -1,3 +1,7 @@
+<?php
+define('ITM_CLI_SCRIPT', true);
+require_once __DIR__ . '/../config/config.php';
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,20 +10,28 @@
     <title>IT Management — Scripts</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
-        .scripts-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 48px; }
-        .scripts-card { background: var(--card-bg, #fff); border: 1px solid var(--border-color, #d0d7de); border-radius: 8px; margin-bottom: 20px; padding: 18px 20px; }
-        .scripts-muted { color: var(--text-muted, #57606a); margin: 0 0 12px; line-height: 1.5; }
-        .scripts-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
-        .scripts-table th, .scripts-table td { border: 1px solid var(--border-color, #d0d7de); padding: 10px 12px; text-align: left; vertical-align: top; }
-        .scripts-table th { background: var(--table-header-bg, #f6f8fa); }
+        body { padding: 0; margin: 0; background-color: var(--bg-secondary, #f6f8fa); }
+        .scripts-wrap { max-width: 1400px; width: 95%; margin: 0 auto; padding: 24px 20px 48px; min-height: calc(100vh - 60px); }
+        .scripts-card { background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 8px; margin-bottom: 20px; padding: 18px 20px; }
+        .scripts-muted { color: var(--text-secondary, #57606a); margin: 0 0 12px; line-height: 1.5; }
+        .scripts-table-wrap { overflow-x: auto; margin-bottom: 20px; border: 1px solid var(--border, #d0d7de); border-radius: 8px; -webkit-overflow-scrolling: touch; background: var(--bg-primary, #fff); }
+        .scripts-table-wrap::-webkit-scrollbar { height: 8px; }
+        .scripts-table-wrap::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
+        .scripts-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .scripts-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+        .scripts-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: none; min-width: max-content; }
+        .scripts-table th, .scripts-table td { border: 1px solid var(--border, #d0d7de); padding: 12px 16px; text-align: left; vertical-align: top; }
+        .scripts-table th, .scripts-table td { white-space: nowrap; }
+        .scripts-table th { background: var(--bg-secondary, #f6f8fa); }
         .scripts-table th:first-child,
         .scripts-table td:first-child,
         .scripts-table th.scripts-access-col,
         .scripts-table td.scripts-access-cell { white-space: nowrap; width: 1%; }
         .scripts-table code { font-size: 0.88rem; word-break: break-word; }
+        .scripts-table td:last-child { white-space: normal; min-width: 300px; }
         .scripts-access-badges { display: inline-flex; flex-wrap: nowrap; gap: 4px; align-items: center; }
         .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
-        .scripts-badge-web { background: #ddf4ff; color: #0969da; }
+        .scripts-badge-web { background: #ddf4ff; color: #0969da; border: 1px solid #c0e6ff; }
         .scripts-badge-cli { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
         .scripts-toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 8px; padding: 0; list-style: none; }
         .scripts-toc a { color: #0969da; text-decoration: none; }
@@ -27,10 +39,10 @@
         .scripts-toc a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
         h1 { margin: 0 0 8px; }
         h2 { margin: 0 0 12px; font-size: 1.15rem; }
-        .scripts-cli-hint { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--table-header-bg, #f6f8fa); border: 1px solid var(--border-color, #d0d7de); font-size: 0.9rem; }
-        .scripts-top-nav { position: sticky; top: 0; z-index: 100; margin: 0 0 16px; padding: 10px 20px; background: var(--card-bg, #fff); border-bottom: 1px solid var(--border-color, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); }
-        .scripts-top-nav-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-        .scripts-top-nav-brand { font-weight: 700; color: var(--text-color, #24292f); text-decoration: none; white-space: nowrap; }
+        .scripts-cli-hint { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); font-size: 0.9rem; }
+        .scripts-top-nav { position: sticky; top: 0; z-index: 100; margin: 0 0 16px; padding: 10px 20px; background: var(--bg-primary, #fff); border-bottom: 1px solid var(--border, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); }
+        .scripts-top-nav-inner { max-width: 1400px; width: 95%; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+        .scripts-top-nav-brand { font-weight: 700; color: var(--text-primary, #24292f); text-decoration: none; white-space: nowrap; }
         .scripts-top-nav-brand:hover { text-decoration: underline; }
         .scripts-top-nav-links { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; padding: 0; list-style: none; flex: 1 1 auto; }
         .scripts-top-nav-links a { color: #0969da; text-decoration: none; font-size: 0.9rem; white-space: nowrap; }
@@ -43,7 +55,7 @@
 <body>
 <nav class="scripts-top-nav" aria-label="Scripts directory sections">
     <div class="scripts-top-nav-inner">
-        <a class="scripts-top-nav-brand" href="index.html">Scripts</a>
+        <a class="scripts-top-nav-brand" href="scripts.php">Scripts</a>
         <ul class="scripts-top-nav-links">
             <li><a href="#docs">Documentation</a></li>
             <li><a href="#browser">Browser tools</a></li>
@@ -83,7 +95,7 @@
 
     <div class="scripts-card" id="docs">
         <h2>Documentation</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -100,12 +112,12 @@
                     <td>Open in the browser after deploy. Use as the source of truth when calling <code>/modules/*/index.php</code> JSON handlers or shared APIs documented in the file.</td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div class="scripts-card" id="browser">
         <h2>Browser tools</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -163,13 +175,13 @@
                     <td>Open in browser for quick troubleshooting.</td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div class="scripts-card" id="security">
         <h2>Security (interactive)</h2>
         <p class="scripts-muted">Browser-first sandboxes and form tests. Repo-wide static scanners are under <a href="#ci">CI &amp; static analysis</a>.</p>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -251,11 +263,11 @@
                     <td>Included on all standard pages via header. IDF modals use <code>itmNotifyAjaxError()</code> so errors render inside the open modal instead of behind the backdrop.</td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 <div class="scripts-card" id="tests">
         <h2>PHPUnit</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -293,11 +305,11 @@
                     <td>CLI: <code>php scripts/test_import_user_samples.php</code></td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
     <div class="scripts-card" id="database">
         <h2>Database</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -411,12 +423,12 @@
                     <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div class="scripts-card" id="idf">
         <h2>IDF &amp; equipment</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -502,12 +514,12 @@
                     </td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div class="scripts-card" id="ui-modules">
         <h2>UI &amp; modules</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -556,13 +568,13 @@
                     <td>Open in browser or run via CLI: <code>php scripts/floor_designer_test.php</code>.</td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div class="scripts-card" id="ci">
         <h2>CI &amp; static analysis</h2>
         <p class="scripts-muted">PHP scanners support <strong>Browser</strong> (plain-text) and <strong>CLI</strong> (recommended for CI). Only <code>smoke_test.sh</code> is CLI-only (bash).</p>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -713,7 +725,7 @@
                     <td>Browser: HTML report with detailed mismatch locations. CLI: <code>php scripts/db_field_active.php</code> — run after CRUD changes to ensure schema compliance.</td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
         <p class="scripts-muted" style="margin-top:12px;">
             Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/equipment_type_modules.php</code> (canonical <code>modules/is_*</code> allowlist; safe removal of <code>*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> test scaffolds only), <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, relative module / table→module links).
         </p>
@@ -721,7 +733,7 @@
 
     <div class="scripts-card" id="deployment">
         <h2>Deployment &amp; Git</h2>
-        <table class="scripts-table">
+        <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -744,13 +756,13 @@
                     <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong></td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div class="scripts-card">
         <p class="scripts-muted" style="margin:0;">
             Back to app: <a href="../index.php">Home</a> ·
-            Catalog: <a href="index.html">index.html</a>
+            Catalog: <a href="scripts.php">scripts.php</a>
         </p>
     </div>
 </div>

@@ -113,17 +113,17 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * `config/`: Core settings and `config.php`.
 * `includes/`: UI components (headers, sidebars) and utility functions.
 * `modules/`: Feature-specific CRUD logic.
-* `scripts/`: Maintenance, security audits, and CLI tools. Catalog: `scripts/index.html`.
+* `scripts/`: Maintenance, security audits, and CLI tools. Catalog: `scripts/scripts.php`.
 * `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
-* **Mandatory script placement:** All scripts generated to debug, perform fixes, or document findings must be saved in the `scripts/` directory. Every new script added to this directory must be cataloged in `scripts/index.html`. These scripts must support execution via both Browser and CLI and include the standard Navigation Menu (relative back link to `scripts/index.html`) using `itm_script_browser_nav_echo()` when viewed in a browser.
+* **Mandatory script placement:** All scripts generated to debug, perform fixes, or document findings must be saved in the `scripts/` directory. Every new script added to this directory must be cataloged in `scripts/scripts.php`. These scripts must support execution via both Browser and CLI and include the standard Navigation Menu (relative back link to `scripts/scripts.php`) using `itm_script_browser_nav_echo()` when viewed in a browser.
 
 ### Scripts directory (`scripts/`) — mandatory for every tool
 
-The live catalog is **`scripts/index.html`**. Before merge, **verify every runnable file under `scripts/`** (and any new script you add) against this checklist.
+The live catalog is **`scripts/scripts.php`**. Before merge, **verify every runnable file under `scripts/`** (and any new script you add) against this checklist.
 
-#### 1. Catalog entry in `scripts/index.html` (required for every new script)
+#### 1. Catalog entry in `scripts/scripts.php` (required for every new script)
 
 Add a table row with:
 
@@ -134,11 +134,11 @@ Add a table row with:
 | **What it does** | Plain-language purpose (one short paragraph) |
 | **How to use** | Exact browser URL/path, query flags, env vars, and CLI command: `php scripts/<name>.php [options]` |
 
-Do not add a script under `scripts/` without updating `scripts/index.html`.
+Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 
 #### 2. Browser scripts (`scripts/*.php` opened in the browser)
 
-* **Back link (required):** Every HTML report must show **← Scripts index** at the top, linking to `scripts/index.html` (relative `index.html` from `scripts/`).
+* **Back link (required):** Every HTML report must show **← Scripts index** at the top, linking to `scripts/scripts.php` (relative `scripts.php` from `scripts/`).
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo()`.
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
 * **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
@@ -149,10 +149,10 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 
 | What appears in the report | Create a link? | How (browser) | Example |
 |---------------------------|----------------|---------------|---------|
-| **← Scripts index** | Always | `itm_script_browser_nav_echo()` | `index.html` (relative) |
+| **← Scripts index** | Always | `itm_script_browser_nav_echo()` | `scripts.php` (relative) |
 | **Module folder** (`floor_plans`, `catalogs`, …) | Always | `itm_script_format_module_link('floor_plans')` or `itm_script_format_module_path_link('modules/catalogs/')` | `../modules/floor_plans/index.php` |
 | **Database table name** (`catalogs`, `floor_plan_folders`, …) | **Only if** `modules/<table>/index.php` exists | `itm_script_format_table_link($tableName)` | `catalogs` → module link; `floor_plan_folders` → plain text only |
-| **phpMyAdmin** | **Only on `scripts/index.html`** | Hardcode in catalog: `http://localhost/phpmyadmin/` | Never in other `scripts/*.php` output |
+| **phpMyAdmin** | **Only on `scripts/scripts.php`** | Hardcode in catalog: `http://localhost/phpmyadmin/` | Never in other `scripts/*.php` output |
 | **Edit row / actions** | When useful | `itm_script_module_relative_href_from_path('modules/name/', 'edit.php?id=5')` + `itm_script_external_link_html()` | `../modules/catalogs/edit.php?id=5` |
 
 **Hard rules:**
@@ -160,7 +160,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 1. **Relative paths only** for module links from `scripts/` (`../modules/…`). Never use `BASE_URL` or absolute URLs like `https://localhost/it-management/modules/…` in script reports.
 2. **`target="_blank"`** and `rel="noopener noreferrer"` on every external/new-tab link — use `itm_script_external_link_html($href, $label)`.
 3. **Table name ≠ module name** → no link. Example: table `floor_plan_folders` is not a module folder; show `<code>floor_plan_folders</code>` or plain text. Table `equipment` matches `modules/equipment/` → link the name to that module.
-4. **phpMyAdmin** is documented and linked **only** in **`scripts/index.html`** (Laragon local MySQL). Audit/report scripts must not link table names (or anything else) to phpMyAdmin.
+4. **phpMyAdmin** is documented and linked **only** in **`scripts/scripts.php`** (Laragon local MySQL). Audit/report scripts must not link table names (or anything else) to phpMyAdmin.
 
 * **Exceptions (document in catalog):** JSON-only endpoints (e.g. `test_sql_injection.php`) and CLI entry points that redirect to a UI (e.g. `detect_fk_dropdown_ui_risk.php` → `detect_fk_dropdown_ui_risk_ui.php`) do not need HTML nav on the CLI path.
 
@@ -212,7 +212,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) and local CI use **`bash scripts/
 | 2 | `php scripts/check_csrf_coverage.php` | POST handlers / forms have CSRF |
 | 3 | `php scripts/check_sql_injection_coverage.php` | SQLi coverage audit |
 
-Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/index.html`).
+Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
@@ -257,7 +257,7 @@ cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Linux/macOS/CI (when `php` is on PATH): `php scripts/module_browser_qa_runner.php [options]`.
 
-**Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` + `module_browser_qa_build_report.php` — form → **Run QA** / **Stop** (AJAX poll). Catalog: `scripts/index.html`.
+**Browser (Laragon):** `http://localhost/it-management/scripts/module_browser_qa_runner.php` + `module_browser_qa_build_report.php` — form → **Run QA** / **Stop** (AJAX poll). Catalog: `scripts/scripts.php`.
 
 **Runner browser form (defaults):**
 
@@ -367,8 +367,8 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 When adding or changing anything under `scripts/`:
 
-1. Confirm a row exists in **`scripts/index.html`** (what / how / access).
-2. Open the script in the **browser** (if applicable) — **← Scripts index** visible; module names use `../modules/…`; table names link only when a matching module folder exists; no phpMyAdmin links outside `scripts/index.html`.
+1. Confirm a row exists in **`scripts/scripts.php`** (what / how / access).
+2. Open the script in the **browser** (if applicable) — **← Scripts index** visible; module names use `../modules/…`; table names link only when a matching module folder exists; no phpMyAdmin links outside `scripts/scripts.php`.
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
 
@@ -577,7 +577,7 @@ $displayFieldColumns = $uiColumns;
 
 4. List/view HTML may keep `foreach ($uiColumns as $col)` (or `$visibleFieldColumns`); search may use `$displayFieldColumns` or `$uiColumns` only **after** the alias line exists.
 
-**Audit / repair** (catalog: `scripts/index.html`):
+**Audit / repair** (catalog: `scripts/scripts.php`):
 
 | Script | When |
 |--------|------|
@@ -631,7 +631,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php` (use full PHP path on Windows Laragon).
   * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
   * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** under `scripts/`).
-  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/index.html` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
+  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/scripts.php` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
@@ -888,7 +888,7 @@ Use this when asked to “check last N comments and reply” (Codex/Bugbot/human
 **Reply templates (searchable labels):**
 * **`Fixed`** — merged PR #1708; `scripts/check_ui_configuration_coverage.php` now rejects inverted `perPage >= totalRows` gates.
 * **`Fixed`** — PR #1713 on `master`; `modules/system_access/index.php` tbody `ids[]` cells gated with `$showBulkActions`.
-* **`Not Fixed`** — intentional per AGENTS.md § Scripts directory (phpMyAdmin linked only from `scripts/index.html`, not derived per-request host).
+* **`Not Fixed`** — intentional per AGENTS.md § Scripts directory (phpMyAdmin linked only from `scripts/scripts.php`, not derived per-request host).
 
 ## 📚 API Examples
 The `api-examples/` directory contains standalone PHP scripts that demonstrate how to interact with the system programmatically. These scripts are intended as a reference for developers and for automated integration testing.

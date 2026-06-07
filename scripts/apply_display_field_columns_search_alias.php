@@ -8,7 +8,7 @@
 if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html><html><body><p>CLI only: <code>php scripts/apply_display_field_columns_search_alias.php</code></p>';
-    echo '<p><a href="index.html">← Scripts index</a></p></body></html>';
+    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
     exit(0);
 }
 

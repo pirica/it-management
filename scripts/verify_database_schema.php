@@ -9,7 +9,7 @@ if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>CLI only</title></head><body>';
     echo '<p>Run from repository root:</p><pre>php scripts/verify_database_schema.php</pre>';
-    echo '<p><a href="index.html">← Scripts index</a></p></body></html>';
+    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
     exit;
 }
 

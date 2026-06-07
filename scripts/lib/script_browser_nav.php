@@ -3,7 +3,7 @@
  * Shared navigation and outbound links for browser-run scripts under scripts/.
  *
  * Why: Every HTML report links back to the scripts catalog. Module/table names link to
- * modules/ only when a folder exists; phpMyAdmin is linked from scripts/index.html only.
+ * modules/ only when a folder exists; phpMyAdmin is linked from scripts/scripts.php only.
  */
 
 if (!function_exists('itm_script_is_cli_sapi')) {
@@ -26,11 +26,11 @@ if (!function_exists('itm_script_repo_root_path')) {
 
 if (!function_exists('itm_script_browser_nav_html')) {
     /**
-     * @param string $baseUrl Unused; kept for callers. Nav always uses relative scripts/index.html.
+     * @param string $baseUrl Unused; kept for callers. Nav always uses relative scripts/scripts.php.
      */
     function itm_script_browser_nav_html($baseUrl = ''): string
     {
-        $indexEsc = htmlspecialchars('index.html', ENT_QUOTES, 'UTF-8');
+        $indexEsc = htmlspecialchars('scripts.php', ENT_QUOTES, 'UTF-8');
 
         return '<nav class="itm-script-nav" aria-label="Scripts navigation" style="margin:0 0 16px;padding:10px 14px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;font-size:0.9rem;">'
             . '<a href="' . $indexEsc . '" style="color:#0969da;text-decoration:none;font-weight:600;">← Scripts index</a>'
