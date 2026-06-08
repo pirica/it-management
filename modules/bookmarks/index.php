@@ -79,7 +79,7 @@ $csrfToken = itm_get_csrf_token();
     <title>Bookmarks - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .bookmarks-layout { display: flex; gap: 20px; }
+        .bookmarks-layout { display: flex; gap: 24px; }
         .bookmarks-sidebar { width: 300px; flex-shrink: 0; background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
         .bookmarks-main { flex: 1; min-width: 0; }
         .folder-tree { list-style: none; padding: 0; margin: 0; }
@@ -92,7 +92,7 @@ $csrfToken = itm_get_csrf_token();
         .view-filters { margin-bottom: 20px; display: flex; gap: 5px; flex-wrap: wrap; }
         .view-filters a { padding: 6px 12px; border-radius: 4px; background: var(--bg-secondary); text-decoration: none; color: var(--text-secondary); font-size: 0.9em; border: 1px solid var(--border); }
         .view-filters a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .bookmarks-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .bookmarks-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
         .bookmark-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, box-shadow 0.2s; }
         .bookmark-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .bookmark-info { margin-bottom: 12px; }
@@ -108,6 +108,16 @@ $csrfToken = itm_get_csrf_token();
         /* Bulk delete styles */
         .bulk-delete-bar { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
         .bookmark-checkbox-wrap { display: none; margin-right: 10px; }
+
+        @media (max-width: 1200px) {
+            .bookmarks-layout { flex-direction: column; }
+            .bookmarks-sidebar { width: 100%; }
+        }
+
+        .dropdown-menu { display: none; position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; padding: 5px 0; margin-top: 5px; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { display: block; width: 100%; padding: 8px 15px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-primary); text-decoration: none; font-size: 0.9em; }
+        .dropdown-item:hover { background: var(--bg-secondary); }
     </style>
 </head>
 <body>
@@ -142,38 +152,41 @@ $csrfToken = itm_get_csrf_token();
                     </li>
                     <?php echo bkm_render_folder_tree_html($folder_tree, $selected_folder_id); ?>
                 </ul>
-                <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 15px;">
-                    <a href="list_all.php" class="btn btn-sm">📋 Table View</a>
-                    <a href="import.php" class="btn btn-sm">📤 Import</a>
-                    <button class="btn btn-sm" onclick="toggleExportMenu(event)">📥 Export</button>
-                    <div id="export-dropdown">
-                        <button onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')">Excel</button>
-                        <button onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')">CSV</button>
-                        <button onclick="exportBookmarks('pdf', '<?php echo $selected_folder_id; ?>')">PDF</button>
-                        <button onclick="exportBookmarks('txt', '<?php echo $selected_folder_id; ?>')">TXT</button>
-                        <button onclick="exportBookmarks('html', '<?php echo $selected_folder_id; ?>')">HTML</button>
-                    </div>
-                </div>
             </div>
             <div class="bookmarks-main">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: var(--text-primary);">
-                        <?php
-                        if ($search) {
-                            echo "Search Results for '" . sanitize($search) . "'";
-                        } elseif ($selected_folder_id) {
-                            $folder_name = 'Folder';
-                            foreach ($all_folders as $f) { if ($f['id'] == $selected_folder_id) { $folder_name = $f['name']; break; } }
-                            echo "Folder: " . sanitize($folder_name);
-                        } else {
-                            echo $view_mode === 'shared' ? "Shared Bookmarks" : ($view_mode === 'private' ? "Private Bookmarks" : "All Bookmarks");
-                        }
-                        ?>
-                    </h2>
-                    <div style="display: flex; gap: 8px;">
-                        <?php if ($selected_folder_id): ?>
-                             <a href="edit_folder.php?id=<?php echo $selected_folder_id; ?>" class="btn btn-sm">✏️ Edit Folder</a>
-                        <?php endif; ?>
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; color: var(--text-primary);">
+                            <?php
+                            if ($search) {
+                                echo "Search Results for '" . sanitize($search) . "'";
+                            } elseif ($selected_folder_id) {
+                                $folder_name = 'Folder';
+                                foreach ($all_folders as $f) { if ($f['id'] == $selected_folder_id) { $folder_name = $f['name']; break; } }
+                                echo "Folder: " . sanitize($folder_name);
+                            } else {
+                                echo $view_mode === 'shared' ? "Shared Bookmarks" : ($view_mode === 'private' ? "Private Bookmarks" : "All Bookmarks");
+                            }
+                            ?>
+                        </h2>
+                        <div style="display: flex; gap: 8px;">
+                            <?php if ($selected_folder_id): ?>
+                                <a href="edit_folder.php?id=<?php echo $selected_folder_id; ?>" class="btn btn-sm">✏️ Edit Folder</a>
+                            <?php endif; ?>
+                            <div class="dropdown" style="position: relative;">
+                                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
+                                <div class="dropdown-menu" style="right: 0; min-width: 180px;">
+                                    <a class="dropdown-item" href="list_all.php">📋 Table View</a>
+                                    <a class="dropdown-item" href="import.php">📤 Import</a>
+                                    <hr style="margin: 4px 0; border-top: 1px solid var(--border);">
+                                    <button class="dropdown-item" onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')">📥 Export Excel</button>
+                                    <button class="dropdown-item" onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')">📥 Export CSV</button>
+                                    <button class="dropdown-item" onclick="exportBookmarks('pdf', '<?php echo $selected_folder_id; ?>')">📥 Export PDF</button>
+                                    <button class="dropdown-item" onclick="exportBookmarks('txt', '<?php echo $selected_folder_id; ?>')">📥 Export TXT</button>
+                                    <button class="dropdown-item" onclick="exportBookmarks('html', '<?php echo $selected_folder_id; ?>')">📥 Export HTML</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -238,6 +251,7 @@ $csrfToken = itm_get_csrf_token();
     <input type="hidden" name="new_parent_id" id="move-new-parent-id">
 </form>
 
+<script src="../../js/vendor/jquery.min.js"></script>
 <script src="../../js/theme.js"></script>
 <script src="./export.js"></script>
 <script>
@@ -294,6 +308,11 @@ $csrfToken = itm_get_csrf_token();
         if (!confirm('Delete selected bookmarks?')) {
             e.preventDefault();
         }
+    });
+
+    // Close dropdowns when clicking outside
+    $(document).on('click', function() {
+        $('.dropdown-menu').removeClass('show');
     });
 })();
 

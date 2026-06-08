@@ -66,6 +66,12 @@ $showBulkActions = true;
     <meta charset="UTF-8">
     <title><?php echo sanitize($crud_title); ?> - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .dropdown-menu { display: none; position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; padding: 5px 0; margin-top: 5px; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { display: block; width: 100%; padding: 8px 15px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-primary); text-decoration: none; font-size: 0.9em; }
+        .dropdown-item:hover { background: var(--bg-secondary); }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -76,8 +82,14 @@ $showBulkActions = true;
         <div class="content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h1><?php echo sanitize($crud_title); ?></h1>
-            <div>
-                <a href="index.php" class="btn">📂 Tree View</a>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="dropdown" style="position: relative;">
+                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
+                    <div class="dropdown-menu" style="right: 0; min-width: 180px;">
+                        <a class="dropdown-item" href="index.php">📂 Tree View</a>
+                        <a class="dropdown-item" href="import.php">📤 Import</a>
+                    </div>
+                </div>
                 <a href="create.php" class="btn btn-primary">➕ Add Bookmark</a>
             </div>
         </div>
@@ -162,6 +174,7 @@ $showBulkActions = true;
         <?php endif; ?>
     </div>
 </div>
+<script src="../../js/vendor/jquery.min.js"></script>
 <script src="../../js/theme.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
 <script>
@@ -170,6 +183,11 @@ document.addEventListener('change', function (event) {
         const checkboxes = document.querySelectorAll('input[name="ids[]"]');
         checkboxes.forEach(cb => cb.checked = event.target.checked);
     }
+});
+
+// Close dropdowns when clicking outside
+$(document).on('click', function() {
+    $('.dropdown-menu').removeClass('show');
 });
 </script>
 </body>
