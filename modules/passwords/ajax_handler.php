@@ -33,7 +33,7 @@ switch ($action) {
     case 'save_folder':
         $id = (int)($_POST['id'] ?? 0);
         $name = (string)($_POST['name'] ?? '');
-        $parent_id = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
+        $parent_id = (!empty($_POST['parent_id']) && $_POST['parent_id'] != '0') ? (int)$_POST['parent_id'] : null;
         
         if ($id) {
             $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND user_id = ?");

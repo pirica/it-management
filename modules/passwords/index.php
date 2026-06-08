@@ -62,9 +62,21 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($module_title, ENT_QUOTES, 'UTF-8'); ?> Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <style>
-        .dropdown-item, .folder-item a { text-decoration: none !important; }
+    <!-- Bootstrap CSS removed to avoid theme conflicts -->
+    <style>        .dropdown-item, .folder-item a { text-decoration: none !important; }
+        .modal-backdrop { display: none; }
+        .modal { display: none; background: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal.show { display: block; }
+        .modal.fade .modal-dialog { transform: translate(0, -50px); transition: transform 0.3s ease-out; }
+        .modal.show .modal-dialog { transform: none; }
+        .modal-content { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); }
+        .modal-header { border-bottom: 1px solid var(--border); }
+        .modal-footer { border-top: 1px solid var(--border); }
+        .close { color: var(--text-primary); }
+        .dropdown-menu { display: none; position: absolute; background: var(--bg-primary); border: 1px solid var(--border); z-index: 1000; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { color: var(--text-primary); }
+        .dropdown-item:hover { background: var(--bg-tertiary); }
         .passwords-layout {
             display: grid;
             grid-template-columns: 320px 1fr;
@@ -176,23 +188,23 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                                 <div style="display: flex; gap: 8px;">
                                     <button class="btn btn-primary" onclick="openEntryModal()">➕ Add Password</button>
                                     <div class="btn-group">
-                                        <button type="button" class="btn dropdown-toggle" data-toggle="dropdown">Tools ⚙️</button>
+                                        <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-toggle').dropdown('hide'); return false;">📥 Import CSV</a>
-                                            <a class="dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-toggle').dropdown('hide'); return false;">📥 Import Excel</a>
+                                            <a class="dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a>
+                                            <a class="dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a>
                                             <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-toggle').dropdown('hide'); return false;">📊 Export XLSX</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-toggle').dropdown('hide'); return false;">📗 Export Excel</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-toggle').dropdown('hide'); return false;">📄 Export CSV</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-toggle').dropdown('hide'); return false;">📕 Export PDF</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-toggle').dropdown('hide'); return false;">📝 Export TXT</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div style="overflow-x: auto;">
                                 <table class="table">
-                                    <thead><tr><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th><th style="width: 100px; text-align: center;">Actions</th></tr></thead>
+                                    <thead><tr><th style="width: 100px; text-align: center;">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
                                     <tbody id="entries-body"><tr><td colspan="5" class="text-center">Loading entries...</td></tr></tbody>
                                 </table>
                             </div>
@@ -210,7 +222,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="entryModalLabel">Add Password</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="entryForm">
                 <input type="hidden" name="id" id="entry-id">
@@ -226,7 +238,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group"><label>Website</label><input type="url" name="website" id="entry-website" class="form-control" placeholder="https://"></div>
                     <div class="form-group"><label>Comments</label><textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
             </form>
         </div>
     </div>
@@ -238,7 +250,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="folderModalLabel">New Folder</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="folderForm">
                 <input type="hidden" name="id" id="folder-id">
@@ -246,7 +258,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group"><label>Folder Name</label><input type="text" name="name" id="folder-name" class="form-control" required></div>
                     <div class="form-group"><label>Parent Folder</label><select name="parent_id" id="folder-parent_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
             </form>
         </div>
     </div>
@@ -258,14 +270,14 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importModalLabel">Import Passwords</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="importForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group"><label>CSV File</label><input type="file" name="csv_file" class="form-control-file" accept=".csv" required></div>
                     <div class="form-group"><label>Target Folder</label><select name="target_folder_id" id="import-folder_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button><button type="submit" class="btn btn-primary">Import</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Close</button><button type="submit" class="btn btn-primary">Import</button></div>
             </form>
         </div>
     </div>
@@ -276,14 +288,14 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importExcelModalLabel">Import Passwords (Excel)</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="form-group"><label>Excel File (.xlsx, .xls)</label><input type="file" id="excel-file-input" class="form-control-file" accept=".xlsx, .xls" required></div>
                 <div class="form-group"><label>Target Folder</label><select id="import-excel-folder_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 <p class="text-muted small">Excel should have headers: Account, Login Name, Password, Website, Comments</p>
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="handleExcelImport()">Import</button></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Close</button><button type="button" class="btn btn-primary" onclick="handleExcelImport()">Import</button></div>
         </div>
     </div>
 </div>
@@ -387,7 +399,7 @@ function loadFolderTree() {
         let treeHtml = '';
         let optionsHtml = '<option value="0">-- Root --</option>';
         const buildTree = (parentId, level = 0) => {
-            const children = Array.isArray(data) ? data.filter(f => f.parent_id == parentId) : [];
+            const children = Array.isArray(data) ? data.filter(f => (f.parent_id == parentId) || (parentId === 0 && !f.parent_id)) : [];
             children.forEach(f => {
                 const isActive = f.id == currentFolderId;
                 treeHtml += `<div class="folder-item ${isActive ? 'active' : ''}" style="margin-left: ${level * 15}px">
@@ -424,11 +436,11 @@ function loadEntries() {
         data.forEach(e => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td style="text-align: center;"><button class="btn btn-sm btn-outline-primary" onclick="openEntryModal(${e.id})">✏️</button> <button class="btn btn-sm btn-outline-danger" onclick="deleteEntry(${e.id})">🗑️</button></td>
                 <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
                 <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
                 <td><div class="input-group input-group-sm" style="width: 140px;"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')">👁️</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('${addslashes(e.password)}')">🗐</button></div></div></td>
                 <td>${e.website ? `<a href="${sanitizeHtml(e.website)}" target="_blank">${sanitizeHtml(e.website.replace(/^https?:\/\//, ''))}</a>` : '—'}</td>
-                <td style="text-align: center;"><button class="btn btn-sm btn-outline-primary" onclick="openEntryModal(${e.id})">✏️</button> <button class="btn btn-sm btn-outline-danger" onclick="deleteEntry(${e.id})">🗑️</button></td>
             `;
             body.appendChild(row);
         });
@@ -449,11 +461,11 @@ function openEntryModal(id = 0) {
             document.getElementById('entry-website').value = data.website || '';
             document.getElementById('entry-comments').value = data.comments || '';
             document.getElementById('entry-folder_id').value = data.folder_name || '0';
-            $('#entryModal').modal('show');
+            $('#entryModal').addClass('show'); $('#entryModal').show(); $('body').addClass('modal-open');
         });
     } else {
         document.getElementById('entry-folder_id').value = currentFolderId;
-        $('#entryModal').modal('show');
+        $('#entryModal').addClass('show'); $('#entryModal').show(); $('body').addClass('modal-open');
     }
 }
 
@@ -469,19 +481,19 @@ function openFolderModal(id = 0, name = '', parentId = 0) {
     document.getElementById('folder-name').value = name;
     document.getElementById('folder-parent_id').value = parentId || '0';
     document.getElementById('folderModalLabel').innerText = id ? 'Rename Folder' : 'New Folder';
-    $('#folderModal').modal('show');
+    $('#folderModal').addClass('show'); $('#folderModal').show(); $('body').addClass('modal-open');
 }
 
 function deleteFolder(id) {
     if (confirm('Delete folder and contents?')) apiCall('delete_folder', { id }).then(res => { if (res.ok) { loadFolderTree(); loadEntries(); } });
 }
 
-function openImportModal() { $('#importModal').modal('show'); }
+function openImportModal() { $('#importModal').addClass('show'); $('#importModal').show(); $('body').addClass('modal-open'); }
 function openImportExcelModal() {
     const select = document.getElementById('import-excel-folder_id');
     const source = document.getElementById('import-folder_id');
     if (select && source) select.innerHTML = source.innerHTML;
-    $('#importExcelModal').modal('show');
+    $('#importExcelModal').addClass('show'); $('#importExcelModal').show(); $('body').addClass('modal-open');
 }
 
 function handleExcelImport() {
@@ -504,7 +516,7 @@ function handleExcelImport() {
         }).then(res => {
             if (res.ok) {
                 alert('Imported ' + res.imported + ' entries!');
-                $('#importExcelModal').modal('hide');
+                $('#importExcelModal').removeClass('show'); $('#importExcelModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
                 loadEntries();
             } else alert(res.message);
         });
@@ -513,23 +525,49 @@ function handleExcelImport() {
 }
 function exportVault(format) { window.location.href = `export_handler.php?format=${format}&folder_id=${currentFolderId}&csrf_token=${CSRF_TOKEN}`; }
 
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown-toggle')) {
+        $('.dropdown-menu').removeClass('show');
+    }
+});
 document.addEventListener('DOMContentLoaded', () => {
     generatePassword(); loadFolderTree(); loadEntries();
     document.getElementById('entryForm').onsubmit = function(e) {
         e.preventDefault();
-        const data = {}; new FormData(this).forEach((v, k) => data[k] = v);
-        apiCall('save_entry', data).then(res => { if (res.ok) { $('#entryModal').modal('hide'); loadEntries(); } else alert(res.message); });
+        const data = {};
+        new FormData(this).forEach((v, k) => data[k] = v);
+        apiCall('save_entry', data).then(res => {
+            if (res.ok) {
+                $('#entryModal').removeClass('show'); $('#entryModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
+                loadEntries();
+            } else {
+                alert(res.message);
+            }
+        });
     };
     document.getElementById('folderForm').onsubmit = function(e) {
         e.preventDefault();
-        const data = {}; new FormData(this).forEach((v, k) => data[k] = v);
-        apiCall('save_folder', data).then(res => { if (res.ok) { $('#folderModal').modal('hide'); loadFolderTree(); } else alert(res.message); });
+        const data = {};
+        new FormData(this).forEach((v, k) => data[k] = v);
+        apiCall('save_folder', data).then(res => {
+            if (res.ok) {
+                $('#folderModal').removeClass('show'); $('#folderModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
+                loadFolderTree();
+            } else {
+                alert(res.message);
+            }
+        });
     };
     document.getElementById('importForm').onsubmit = function(e) {
         e.preventDefault();
         const fd = new FormData(this); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'import_csv');
         fetch('ajax_handler.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
-            if (res.ok) { alert('Imported!'); $('#importModal').modal('hide'); loadEntries(); } else alert(res.message);
+            if (res.ok) { alert('Imported!'); $('#importModal').removeClass('show'); $('#importModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); loadEntries(); } else alert(res.message);
         });
     };
 });
