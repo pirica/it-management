@@ -174,7 +174,7 @@ $csrfToken = itm_get_csrf_token();
                                 <a href="edit_folder.php?id=<?php echo $selected_folder_id; ?>" class="btn btn-sm">✏️ Edit Folder</a>
                             <?php endif; ?>
                             <div class="dropdown" style="position: relative;">
-                                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
+                                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="this.nextElementSibling.classList.toggle('show'); event.stopPropagation();">Tools ⚙️</button>
                                 <div class="dropdown-menu" style="right: 0; min-width: 180px;">
                                     <a class="dropdown-item" href="list_all.php">📋 Table View</a>
                                     <a class="dropdown-item" href="import.php">📤 Import</a>
@@ -251,7 +251,6 @@ $csrfToken = itm_get_csrf_token();
     <input type="hidden" name="new_parent_id" id="move-new-parent-id">
 </form>
 
-<script src="../../js/vendor/jquery.min.js"></script>
 <script src="../../js/theme.js"></script>
 <script src="./export.js"></script>
 <script>
@@ -311,8 +310,10 @@ $csrfToken = itm_get_csrf_token();
     });
 
     // Close dropdowns when clicking outside
-    $(document).on('click', function() {
-        $('.dropdown-menu').removeClass('show');
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.dropdown-menu').forEach(function(el) {
+            el.classList.remove('show');
+        });
     });
 })();
 

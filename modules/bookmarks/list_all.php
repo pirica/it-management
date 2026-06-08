@@ -84,7 +84,7 @@ $showBulkActions = true;
             <h1><?php echo sanitize($crud_title); ?></h1>
             <div style="display: flex; gap: 8px; align-items: center;">
                 <div class="dropdown" style="position: relative;">
-                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
+                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="this.nextElementSibling.classList.toggle('show'); event.stopPropagation();">Tools ⚙️</button>
                     <div class="dropdown-menu" style="right: 0; min-width: 180px;">
                         <a class="dropdown-item" href="index.php">📂 Tree View</a>
                         <a class="dropdown-item" href="import.php">📤 Import</a>
@@ -174,7 +174,6 @@ $showBulkActions = true;
         <?php endif; ?>
     </div>
 </div>
-<script src="../../js/vendor/jquery.min.js"></script>
 <script src="../../js/theme.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
 <script>
@@ -186,8 +185,10 @@ document.addEventListener('change', function (event) {
 });
 
 // Close dropdowns when clicking outside
-$(document).on('click', function() {
-    $('.dropdown-menu').removeClass('show');
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-menu').forEach(function(el) {
+        el.classList.remove('show');
+    });
 });
 </script>
 </body>
