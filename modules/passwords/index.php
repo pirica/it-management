@@ -4,13 +4,12 @@ require_once '../../config/config.php';
 // Auth Check (Custom for Passwords Module)
 if (!isset($_SESSION['user_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
-    exit ;
+    exit;
 }
 
 $csrfToken = itm_get_csrf_token();
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
-
 $user_id = (int)$_SESSION['user_id'];
 // Fetch user's vault status
 $user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM users WHERE id = ?');
@@ -46,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
 if (isset($_GET['action']) && $_GET['action'] === 'lock') {
     unset($_SESSION['vault_key']);
     header('Location: index.php');
-    exit ;
+    exit;
 }
 
 // Module Configuration
