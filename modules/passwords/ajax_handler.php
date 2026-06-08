@@ -33,7 +33,7 @@ switch ($action) {
     case 'save_folder':
         $id = (int)($_POST['id'] ?? 0);
         $name = (string)($_POST['name'] ?? '');
-        $parent_id = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
+        $parent_id = (!empty($_POST['parent_id']) && $_POST['parent_id'] != '0') ? (int)$_POST['parent_id'] : null;
         
         if ($id) {
             $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND user_id = ?");
@@ -157,6 +157,41 @@ switch ($action) {
             echo json_encode(['ok' => false, 'message' => mysqli_error($conn)]);
         }
         mysqli_stmt_close($stmt);
+        break;
+
+    case 'import_rows':
+        if (empty($_SESSION['vault_key'])) {
+            echo json_encode(['ok' => false, 'message' => 'Vault locked']);
+            break;
+        }
+        $folder_id = !empty($_POST['folder_id']) ? (int)$_POST['folder_id'] : null;
+        $rows = json_decode($_POST['rows'] ?? '[]', true);
+        if (empty($rows) || count($rows) < 2) {
+            echo json_encode(['ok' => false, 'message' => 'No data']);
+            break;
+        }
+        $headers = array_map('strtolower', array_map('trim', $rows[0]));
+        $map = array_flip($headers);
+
+        $imported = 0; $failed = 0;
+        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+        for ($i = 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            $account = (string)($row[$map['account'] ?? -1] ?? '');
+            if (empty($account)) continue;
+
+            $login_name = (string)($row[$map['login name'] ?? $map['login'] ?? -1] ?? '');
+            $password = (string)($row[$map['password'] ?? -1] ?? '');
+            $website = (string)($row[$map['website'] ?? $map['url'] ?? -1] ?? '');
+            $comments = (string)($row[$map['comments'] ?? $map['notes'] ?? -1] ?? '');
+
+            $encrypted_pwd = itm_encrypt($password, $_SESSION['vault_key']);
+            mysqli_stmt_bind_param($stmt, 'iisssss', $user_id, $folder_id, $account, $login_name, $encrypted_pwd, $website, $comments);
+            if (mysqli_stmt_execute($stmt)) $imported++; else $failed++;
+        }
+        mysqli_stmt_close($stmt);
+        echo json_encode(['ok' => true, 'imported' => $imported, 'failed' => $failed]);
         break;
 
     case 'import_csv':
