@@ -23,7 +23,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['user_id'] ?? 0);
-$is_admin = (($_SESSION['role_name'] ?? '') === 'admin');
+$is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -40,19 +40,19 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = 25;
 $offset = ($page - 1) * $perPage;
 
-$where = "company_id = $company_id AND active = 1 AND (user_id = $user_id OR shared = 1)";
+$where = "b.company_id = $company_id AND b.active = 1 AND (b.user_id = $user_id OR b.shared = 1)";
 if ($searchRaw !== '') {
     $s = mysqli_real_escape_string($conn, $searchRaw);
-    $where .= " AND (title LIKE '%$s%' OR url LIKE '%$s%' OR notes LIKE '%$s%')";
+    $where .= " AND (b.title LIKE '%$s%' OR b.url LIKE '%$s%' OR b.notes LIKE '%$s%')";
 }
 
 $sql = "SELECT b.*, f.name as folder_display_name
         FROM bookmarks b
         LEFT JOIN bookmark_folders f ON b.folder_id = f.id
-        WHERE b.$where ORDER BY b.$sort $dir LIMIT $offset, $perPage";
+        WHERE $where ORDER BY b.$sort $dir LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $sql);
 
-$countSql = "SELECT COUNT(*) as total FROM bookmarks WHERE $where";
+$countSql = "SELECT COUNT(*) as total FROM bookmarks b WHERE $where";
 $countRes = mysqli_query($conn, $countSql);
 $totalRows = mysqli_fetch_assoc($countRes)['total'];
 $totalPages = ceil($totalRows / $perPage);
@@ -153,7 +153,7 @@ $showBulkActions = true;
                     <?php if ($page > 1): ?>
                         <a href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Previous</a>
                     <?php endif; ?>
-                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;"><?php echo "Page $page of $totalPages"; ?></span>
                     <?php if ($page < $totalPages): ?>
                         <a href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Next</a>
                     <?php endif; ?>
