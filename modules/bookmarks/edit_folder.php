@@ -57,6 +57,17 @@ $csrfToken = itm_get_csrf_token();
     <meta charset="UTF-8">
     <title>Edit Folder - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .danger-card {
+            width: 300px;
+            border: 1px solid var(--danger);
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 6px;
+        }
+        .danger-card h3 { color: var(--danger); margin-top: 0; }
+        .danger-card p { font-size: 0.9em; color: var(--text-secondary); }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -72,8 +83,8 @@ $csrfToken = itm_get_csrf_token();
             </div>
         <?php endif; ?>
 
-        <div style="display: flex; gap: 20px; align-items: flex-start;">
-            <form method="POST" class="form-grid" style="flex: 1;">
+        <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <form method="POST" class="form-grid" style="flex: 1; min-width: 300px;">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                 <div class="form-group">
                     <label>Folder Name</label>
@@ -105,9 +116,9 @@ $csrfToken = itm_get_csrf_token();
             </form>
 
             <?php if (bkm_can_edit_folder($data, $user_id, $is_admin)): ?>
-                <div class="card" style="width: 300px; border: 1px solid #ffcdd2; background: #fff5f5;">
-                    <h3 style="color: #d32f2f; margin-top: 0;">Danger Zone</h3>
-                    <p style="font-size: 0.9em; color: #666;">Deleting this folder will move all its bookmarks and subfolders to the root level.</p>
+                <div class="danger-card">
+                    <h3>Danger Zone</h3>
+                    <p>Deleting this folder will move all its bookmarks and subfolders to the root level.</p>
                     <form method="POST" action="delete_folder.php" onsubmit="return confirm('Are you sure you want to delete this folder? Bookmarks will be moved to root.');">
                         <input type="hidden" name="id" value="<?php echo $id; ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

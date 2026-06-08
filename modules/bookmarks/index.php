@@ -89,22 +89,25 @@ $csrfToken = itm_get_csrf_token();
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .bookmarks-layout { display: flex; gap: 20px; min-height: calc(100vh - 120px); }
-        .bookmarks-sidebar { width: 320px; border-right: 1px solid #ddd; padding-right: 20px; overflow-y: auto; }
+        .bookmarks-sidebar { width: 320px; border-right: 1px solid var(--border); padding-right: 20px; overflow-y: auto; }
         .bookmarks-main { flex: 1; overflow-y: auto; padding-left: 10px; }
         .folder-tree { list-style: none; padding: 0; }
         .folder-tree li { margin: 2px 0; }
-        .folder-tree a { text-decoration: none; color: #333; display: block; padding: 5px; border-radius: 4px; }
-        .folder-tree a:hover { background: #f0f0f0; }
-        .folder-tree .active > div > a { background: #e0e0e0; font-weight: bold; }
-        .bookmark-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .folder-tree a { text-decoration: none; color: var(--text-primary); display: block; padding: 5px; border-radius: 4px; }
+        .folder-tree a:hover { background: var(--bg-secondary); }
+        .folder-tree .active > div > a { background: var(--bg-tertiary); font-weight: bold; }
+        .bookmark-card { border: 1px solid var(--border); padding: 12px; margin-bottom: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; background: var(--bg-primary); box-shadow: var(--shadow); }
         .bookmark-info { flex: 1; }
         .bookmark-actions { display: flex; gap: 8px; margin-left: 15px; }
-        .shared-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
-        .private-badge { background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
-        .itm-folder-tree-item[drag-over] { border-top: 2px solid #2196F3; }
-        .view-filters { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .view-filters a { text-decoration: none; font-size: 0.9em; padding: 5px 10px; border-radius: 4px; color: #666; }
-        .view-filters a.active { background: #eee; color: #333; font-weight: bold; }
+        .shared-badge { background: var(--bg-tertiary); color: var(--success); padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; border: 1px solid var(--border); }
+        .private-badge { background: var(--bg-tertiary); color: var(--warning); padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; border: 1px solid var(--border); }
+        .itm-folder-tree-item[drag-over] { border-top: 2px solid var(--accent); }
+        .view-filters { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .view-filters a { text-decoration: none; font-size: 0.9em; padding: 5px 10px; border-radius: 4px; color: var(--text-secondary); }
+        .view-filters a.active { background: var(--bg-tertiary); color: var(--text-primary); font-weight: bold; }
+        #export-dropdown { display: none; position: absolute; background: var(--bg-primary); border: 1px solid var(--border); z-index: 100; min-width: 100px; box-shadow: var(--shadow-lg); }
+        #export-dropdown button { display: block; width: 100%; text-align: left; border: none; background: none; color: var(--text-primary); padding: 8px 12px; cursor: pointer; }
+        #export-dropdown button:hover { background: var(--bg-secondary); }
     </style>
 </head>
 <body>
@@ -118,7 +121,7 @@ $csrfToken = itm_get_csrf_token();
             <div class="bookmarks-sidebar">
                 <div style="margin-bottom: 15px;">
                     <form method="GET" style="display: flex; gap: 5px;">
-                        <input type="text" name="search" placeholder="Search..." value="<?php echo sanitize($search); ?>" style="flex: 1; padding: 8px;">
+                        <input type="text" name="search" placeholder="Search..." value="<?php echo sanitize($search); ?>" style="flex: 1; padding: 8px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px;">
                         <button type="submit" class="btn btn-primary">🔍</button>
                     </form>
                 </div>
@@ -131,7 +134,7 @@ $csrfToken = itm_get_csrf_token();
 
                 <div style="margin-bottom: 15px; display: flex; gap: 10px;">
                     <a href="create.php<?php echo $selected_folder_id ? "?folder_id=$selected_folder_id" : ""; ?>" class="btn btn-primary" style="flex: 1; text-align: center;">➕ Add Bookmark</a>
-                    <a href="create_folder.php" class="btn" title="Add Folder">➕📁</a>
+                    <a href="create_folder.php" class="btn" title="Add Folder" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border);">➕📁</a>
                 </div>
                 <ul class="folder-tree">
                     <li class="<?php echo ($selected_folder_id === null && $search === '') ? 'active' : ''; ?>" ondrop="drop(event)" ondragover="allowDrop(event)" data-folder-id="0">
@@ -139,22 +142,22 @@ $csrfToken = itm_get_csrf_token();
                     </li>
                     <?php echo bkm_render_folder_tree_html($folder_tree, $selected_folder_id); ?>
                 </ul>
-                <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 15px;">
                     <a href="list_all.php" class="btn btn-sm">📋 Table View</a>
                     <a href="import.php" class="btn btn-sm">📤 Import</a>
                     <button class="btn btn-sm" onclick="toggleExportMenu(event)">📥 Export</button>
-                    <div id="export-dropdown" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 100; min-width: 100px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                        <button onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">Excel</button>
-                        <button onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">CSV</button>
-                        <button onclick="exportBookmarks('pdf', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">PDF</button>
-                        <button onclick="exportBookmarks('txt', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">TXT</button>
-                        <button onclick="exportBookmarks('html', '<?php echo $selected_folder_id; ?>')" class="btn btn-sm" style="display: block; width: 100%; text-align: left; border: none; background: none;">HTML</button>
+                    <div id="export-dropdown">
+                        <button onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')">Excel</button>
+                        <button onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')">CSV</button>
+                        <button onclick="exportBookmarks('pdf', '<?php echo $selected_folder_id; ?>')">PDF</button>
+                        <button onclick="exportBookmarks('txt', '<?php echo $selected_folder_id; ?>')">TXT</button>
+                        <button onclick="exportBookmarks('html', '<?php echo $selected_folder_id; ?>')">HTML</button>
                     </div>
                 </div>
             </div>
             <div class="bookmarks-main">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">
+                    <h2 style="margin: 0; color: var(--text-primary);">
                         <?php
                         if ($search) {
                             echo "Search Results for '" . sanitize($search) . "'";
@@ -173,7 +176,7 @@ $csrfToken = itm_get_csrf_token();
                 </div>
                 <div class="bookmarks-list">
                     <?php if (empty($bookmarks)): ?>
-                        <div class="card" style="text-align: center; padding: 40px; color: #666;">
+                        <div class="card" style="text-align: center; padding: 40px; color: var(--text-tertiary);">
                             <p>No bookmarks found here.</p>
                             <a href="create.php<?php echo $selected_folder_id ? "?folder_id=$selected_folder_id" : ""; ?>" class="btn btn-primary">➕ Create a bookmark</a>
                         </div>
@@ -182,16 +185,16 @@ $csrfToken = itm_get_csrf_token();
                             <div class="bookmark-card">
                                 <div class="bookmark-info">
                                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                                        <strong style="font-size: 1.1em;"><?php echo sanitize($b['title']); ?></strong>
+                                        <strong style="font-size: 1.1em; color: var(--text-primary);"><?php echo sanitize($b['title']); ?></strong>
                                         <?php if ($b['shared']): ?>
                                             <span class="shared-badge">🔓 Shared</span>
                                         <?php else: ?>
                                             <span class="private-badge">🔒 Private</span>
                                         <?php endif; ?>
                                     </div>
-                                    <a href="<?php echo sanitize($b['url']); ?>" target="_blank" rel="nofollow noreferrer" style="color: #2196F3; text-decoration: none; word-break: break-all;">🔗 <?php echo sanitize($b['url']); ?></a>
+                                    <a href="<?php echo sanitize($b['url']); ?>" target="_blank" rel="nofollow noreferrer" style="color: var(--accent); text-decoration: none; word-break: break-all;">🔗 <?php echo sanitize($b['url']); ?></a>
                                     <?php if ($b['notes']): ?>
-                                        <p style="font-size: 0.9em; color: #555; margin: 8px 0 0 0; line-height: 1.4;"><?php echo sanitize($b['notes']); ?></p>
+                                        <p style="font-size: 0.9em; color: var(--text-secondary); margin: 8px 0 0 0; line-height: 1.4;"><?php echo sanitize($b['notes']); ?></p>
                                     <?php endif; ?>
                                 </div>
                                 <div class="bookmark-actions">
