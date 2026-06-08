@@ -8,7 +8,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
 
     // Explicit CSRF check for JSON payload
-    if (!itm_verify_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
+    if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
         http_response_code(403);
         die('CSRF validation failed');
     }
@@ -109,7 +109,7 @@ $csrfToken = itm_get_csrf_token();
 </head>
 <body>
 <?php include '../../includes/header.php'; ?>
-<div class="main-container">
+<div class="main-content">
     <?php include '../../includes/sidebar.php'; ?>
     <div class="content">
         <div class="bookmarks-layout">
