@@ -14,7 +14,7 @@ $errors = [];
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
 
@@ -75,7 +75,7 @@ $csrfToken = itm_get_csrf_token();
 </head>
 <body>
 <?php include '../../includes/header.php'; ?>
-<div class="main-container">
+<div class="main-content">
     <?php include '../../includes/sidebar.php'; ?>
     <div class="content">
         <h1>Import Bookmarks</h1>

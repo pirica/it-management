@@ -11,7 +11,7 @@ if ($company_id <= 0) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
 

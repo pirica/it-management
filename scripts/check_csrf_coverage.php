@@ -25,7 +25,7 @@ $csrfPatterns = [
     'itm_validate_csrf_token',
     'cr_require_valid_csrf_token',
     'so_require_valid_csrf_token',
-    'itm_verify_csrf_token',
+    'itm_validate_csrf_token',
     'idf_require_csrf',
 ];
 

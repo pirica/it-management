@@ -12,7 +12,7 @@ $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
 // Handle Vault Unlock if master_key is submitted via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
-    if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('Invalid CSRF token');
     }
 
