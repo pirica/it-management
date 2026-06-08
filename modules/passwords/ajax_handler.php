@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id'])) {
     return;
 }
 
-if (!itm_verify_csrf_token($_POST['csrf_token'] ?? '')) {
+if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
     echo json_encode(['ok' => false, 'message' => 'Invalid CSRF token']);
     return;
 }

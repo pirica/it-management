@@ -9,7 +9,7 @@ if (empty($_SESSION['vault_key'])) {
     die("Vault locked");
 }
 
-if (!itm_verify_csrf_token($_GET['csrf_token'] ?? '')) {
+if (!itm_validate_csrf_token($_GET['csrf_token'] ?? '')) {
     die("Invalid CSRF token");
 }
 
