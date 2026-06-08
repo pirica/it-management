@@ -22,7 +22,7 @@ $format = (string)($_GET['format'] ?? 'csv');
 
 $sql = "SELECT * FROM password_entries WHERE user_id = ?";
 if ($folder_id > 0) {
-    $sql .= " AND folder_id = ?";
+    $sql .= " AND folder_name = ?";
 }
 $sql .= " ORDER BY account ASC";
 

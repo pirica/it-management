@@ -73,7 +73,7 @@ switch ($action) {
         
         $sql = "SELECT * FROM password_entries WHERE user_id = ?";
         if ($folder_id > 0) {
-            $sql .= " AND folder_id = ?";
+            $sql .= " AND folder_name = ?";
         }
         if ($search !== '') {
             $sql .= " AND (account LIKE ? OR login_name LIKE ? OR website LIKE ? OR comments LIKE ?)";
@@ -132,10 +132,10 @@ switch ($action) {
         $comments = (string)($_POST['comments'] ?? '');
         
         if ($id) {
-            $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_id = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND user_id = ?");
+            $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_name = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND user_id = ?");
             mysqli_stmt_bind_param($stmt, 'isssssii', $folder_id, $account, $login_name, $password, $website, $comments, $id, $user_id);
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_id, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
             mysqli_stmt_bind_param($stmt, 'iisssss', $user_id, $folder_id, $account, $login_name, $password, $website, $comments);
         }
         
@@ -191,7 +191,7 @@ switch ($action) {
         }
         
         $total = 0; $imported = 0; $failed = 0; $skipped = 0;
-        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_id, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
         while (($row = fgetcsv($handle)) !== FALSE) {
             $total++;
