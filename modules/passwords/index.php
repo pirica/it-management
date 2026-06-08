@@ -130,7 +130,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <?php include '../../includes/header.php'; ?>
         <div class="content">
 
-            <?php if (false): // empty($_SESSION['vault_key']): ?>
+            <?php if (empty($_SESSION['vault_key'])): ?>
                 <div style="max-width: 400px; margin: 80px auto; text-align: center;" class="card">
                     <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
                     <h2>Vault Locked</h2>
