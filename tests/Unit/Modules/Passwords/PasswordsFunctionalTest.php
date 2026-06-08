@@ -1,5 +1,5 @@
 <?php
-define('ITM_CLI_SCRIPT', true);
+if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../../../../config/config.php';
 
 /**
@@ -79,4 +79,4 @@ $csrfToken = itm_get_csrf_token();
 $success = true;
 $success &= test_save_folder($user_id, $csrfToken);
 $success &= test_save_entry($user_id, $csrfToken);
-exit($success ? 0 : 1);
+if (PHP_SAPI === 'cli' && basename($_SERVER['PHP_SELF']) === 'PasswordsFunctionalTest.php') exit($success ? 0 : 1);
