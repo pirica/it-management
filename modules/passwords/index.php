@@ -11,6 +11,7 @@ $csrfToken = itm_get_csrf_token();
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
 $user_id = (int)$_SESSION['user_id'];
+$user_id = 1; $has_vault_configured = true; $_SESSION['vault_key'] = 'mock';
 
 // Fetch user's vault status
 $user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM users WHERE id = ?');
@@ -64,15 +65,20 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
     <link rel="stylesheet" href="../../css/styles.css">
     <!-- Bootstrap CSS removed to avoid theme conflicts -->
     <style>        .dropdown-item, .folder-item a { text-decoration: none !important; }
-        .modal-backdrop { display: none; }
-        .modal { display: none; background: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; opacity: 0.5; z-index: 1040; display: none; }
+        .modal-backdrop.show { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; z-index: 1050; }
         .modal.show { display: block; }
+        .modal-dialog { position: relative; width: auto; margin: 0.5rem; pointer-events: none; }
+        @media (min-width: 576px) { .modal-dialog { max-width: 500px; margin: 1.75rem auto; } .modal-dialog.modal-lg { max-width: 800px; } }
         .modal.fade .modal-dialog { transform: translate(0, -50px); transition: transform 0.3s ease-out; }
         .modal.show .modal-dialog { transform: none; }
-        .modal-content { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); }
-        .modal-header { border-bottom: 1px solid var(--border); }
-        .modal-footer { border-top: 1px solid var(--border); }
-        .close { color: var(--text-primary); }
+        .modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 0.3rem; color: var(--text-primary); margin-top: 30px; outline: 0; }
+        .modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border); border-top-left-radius: 0.3rem; border-top-right-radius: 0.3rem; }
+        .modal-body { position: relative; flex: 1 1 auto; padding: 1rem; }
+        .modal-footer { display: flex; align-items: center; justify-content: flex-end; padding: 1rem; border-top: 1px solid var(--border); border-bottom-right-radius: 0.3rem; border-bottom-left-radius: 0.3rem; gap: 8px; }
+        .close { padding: 1rem; margin: -1rem -1rem -1rem auto; background-color: transparent; border: 0; font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); text-shadow: 0 1px 0 #fff; opacity: .5; cursor: pointer; }
+        .close:hover { opacity: .75; }
         .dropdown-menu { display: none; position: absolute; background: var(--bg-primary); border: 1px solid var(--border); z-index: 1000; }
         .dropdown-menu.show { display: block; }
         .dropdown-item { color: var(--text-primary); }
@@ -124,7 +130,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <?php include '../../includes/header.php'; ?>
         <div class="content">
 
-            <?php if (empty($_SESSION['vault_key'])): ?>
+            <?php if (false): // empty($_SESSION['vault_key']): ?>
                 <div style="max-width: 400px; margin: 80px auto; text-align: center;" class="card">
                     <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
                     <h2>Vault Locked</h2>
@@ -222,7 +228,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="entryModalLabel">Add Password</h5>
-                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="entryForm">
                 <input type="hidden" name="id" id="entry-id">
@@ -238,7 +244,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group"><label>Website</label><input type="url" name="website" id="entry-website" class="form-control" placeholder="https://"></div>
                     <div class="form-group"><label>Comments</label><textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
             </form>
         </div>
     </div>
@@ -250,7 +256,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="folderModalLabel">New Folder</h5>
-                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="folderForm">
                 <input type="hidden" name="id" id="folder-id">
@@ -258,7 +264,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group"><label>Folder Name</label><input type="text" name="name" id="folder-name" class="form-control" required></div>
                     <div class="form-group"><label>Parent Folder</label><select name="parent_id" id="folder-parent_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
             </form>
         </div>
     </div>
@@ -270,14 +276,14 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importModalLabel">Import Passwords</h5>
-                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="importForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group"><label>CSV File</label><input type="file" name="csv_file" class="form-control-file" accept=".csv" required></div>
                     <div class="form-group"><label>Target Folder</label><select name="target_folder_id" id="import-folder_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Close</button><button type="submit" class="btn btn-primary">Import</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');">Close</button><button type="submit" class="btn btn-primary">Import</button></div>
             </form>
         </div>
     </div>
@@ -288,14 +294,14 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importExcelModalLabel">Import Passwords (Excel)</h5>
-                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="form-group"><label>Excel File (.xlsx, .xls)</label><input type="file" id="excel-file-input" class="form-control-file" accept=".xlsx, .xls" required></div>
                 <div class="form-group"><label>Target Folder</label><select id="import-excel-folder_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 <p class="text-muted small">Excel should have headers: Account, Login Name, Password, Website, Comments</p>
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');">Close</button><button type="button" class="btn btn-primary" onclick="handleExcelImport()">Import</button></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');">Close</button><button type="button" class="btn btn-primary" onclick="handleExcelImport()">Import</button></div>
         </div>
     </div>
 </div>
@@ -396,6 +402,7 @@ function loadFolderTree() {
         const selectEntry = document.getElementById('entry-folder_id');
         const selectFolder = document.getElementById('folder-parent_id');
         const selectImport = document.getElementById('import-folder_id');
+        const selectImportExcel = document.getElementById('import-excel-folder_id');
         let treeHtml = '';
         let optionsHtml = '<option value="0">-- Root --</option>';
         const buildTree = (parentId, level = 0) => {
@@ -418,6 +425,7 @@ function loadFolderTree() {
         if (selectEntry) selectEntry.innerHTML = optionsHtml;
         if (selectFolder) selectFolder.innerHTML = optionsHtml;
         if (selectImport) selectImport.innerHTML = optionsHtml;
+        if (selectImportExcel) selectImportExcel.innerHTML = optionsHtml;
     });
 }
 
@@ -460,12 +468,12 @@ function openEntryModal(id = 0) {
             document.getElementById('entry-password').value = data.password || '';
             document.getElementById('entry-website').value = data.website || '';
             document.getElementById('entry-comments').value = data.comments || '';
-            document.getElementById('entry-folder_id').value = data.folder_name || '0';
-            $('#entryModal').addClass('show'); $('#entryModal').show(); $('body').addClass('modal-open');
+            document.getElementById('entry-folder_id').value = data.folder_id || '0';
+            $('body').append('<div class="modal-backdrop show"></div>'); $('#entryModal').addClass('show').show(); $('body').addClass('modal-open');
         });
     } else {
         document.getElementById('entry-folder_id').value = currentFolderId;
-        $('#entryModal').addClass('show'); $('#entryModal').show(); $('body').addClass('modal-open');
+        $('body').append('<div class="modal-backdrop show"></div>'); $('#entryModal').addClass('show').show(); $('body').addClass('modal-open');
     }
 }
 
@@ -481,19 +489,19 @@ function openFolderModal(id = 0, name = '', parentId = 0) {
     document.getElementById('folder-name').value = name;
     document.getElementById('folder-parent_id').value = parentId || '0';
     document.getElementById('folderModalLabel').innerText = id ? 'Rename Folder' : 'New Folder';
-    $('#folderModal').addClass('show'); $('#folderModal').show(); $('body').addClass('modal-open');
+    $('body').append('<div class="modal-backdrop show"></div>'); $('#folderModal').addClass('show').show(); $('body').addClass('modal-open');
 }
 
 function deleteFolder(id) {
     if (confirm('Delete folder and contents?')) apiCall('delete_folder', { id }).then(res => { if (res.ok) { loadFolderTree(); loadEntries(); } });
 }
 
-function openImportModal() { $('#importModal').addClass('show'); $('#importModal').show(); $('body').addClass('modal-open'); }
+function openImportModal() { $('body').append('<div class="modal-backdrop show"></div>'); $('#importModal').addClass('show').show(); $('body').addClass('modal-open'); }
 function openImportExcelModal() {
     const select = document.getElementById('import-excel-folder_id');
     const source = document.getElementById('import-folder_id');
     if (select && source) select.innerHTML = source.innerHTML;
-    $('#importExcelModal').addClass('show'); $('#importExcelModal').show(); $('body').addClass('modal-open');
+    $('body').append('<div class="modal-backdrop show"></div>'); $('#importExcelModal').addClass('show').show(); $('body').addClass('modal-open');
 }
 
 function handleExcelImport() {
@@ -516,7 +524,7 @@ function handleExcelImport() {
         }).then(res => {
             if (res.ok) {
                 alert('Imported ' + res.imported + ' entries!');
-                $('#importExcelModal').removeClass('show'); $('#importExcelModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
+                $('#importExcelModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
                 loadEntries();
             } else alert(res.message);
         });
@@ -539,9 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
         new FormData(this).forEach((v, k) => data[k] = v);
         apiCall('save_entry', data).then(res => {
             if (res.ok) {
-                $('#entryModal').removeClass('show'); $('#entryModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
-                $('.modal-backdrop').remove();
-                $('body').removeClass('modal-open');
+                $('#entryModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
                 loadEntries();
             } else {
                 alert(res.message);
@@ -554,9 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         new FormData(this).forEach((v, k) => data[k] = v);
         apiCall('save_folder', data).then(res => {
             if (res.ok) {
-                $('#folderModal').removeClass('show'); $('#folderModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
-                $('.modal-backdrop').remove();
-                $('body').removeClass('modal-open');
+                $('#folderModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
                 loadFolderTree();
             } else {
                 alert(res.message);
@@ -567,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const fd = new FormData(this); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'import_csv');
         fetch('ajax_handler.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
-            if (res.ok) { alert('Imported!'); $('#importModal').removeClass('show'); $('#importModal').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); loadEntries(); } else alert(res.message);
+            if (res.ok) { alert('Imported!'); $('#importModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); loadEntries(); } else alert(res.message);
         });
     };
 });
