@@ -6279,3 +6279,8 @@ CREATE TABLE `bookmarks` (
   CONSTRAINT `bookmarks_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmarks_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Seed default shared bookmarks
+INSERT INTO `bookmarks` (`company_id`, `user_id`, `title`, `url`, `shared`, `active`) VALUES
+(1, 1, 'ServiceNow', 'https://www.servicenow.com/', 1, 1),
+(1, 1, 'Splunk', 'https://www.splunk.com/', 1, 1),
+(1, 1, 'M365', 'https://m365.cloud.microsoft/', 1, 1);
