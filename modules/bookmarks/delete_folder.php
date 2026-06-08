@@ -3,7 +3,7 @@ require '../../config/config.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['user_id'] ?? 0);
-$is_admin = (($_SESSION['role_name'] ?? '') === 'admin');
+$is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -22,11 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($data && ($is_admin || (int)$data['user_id'] === $user_id)) {
             // Update bookmarks in this folder to be root
-            mysqli_query($conn, "UPDATE bookmarks SET folder_id = NULL WHERE folder_id = $id");
+            itm_run_query($conn, "UPDATE bookmarks SET folder_id = NULL WHERE folder_id = $id");
             // Update subfolders to be root
-            mysqli_query($conn, "UPDATE bookmark_folders SET parent_folder_id = NULL WHERE parent_folder_id = $id");
+            itm_run_query($conn, "UPDATE bookmark_folders SET parent_folder_id = NULL WHERE parent_folder_id = $id");
             // Soft delete the folder
-            mysqli_query($conn, "UPDATE bookmark_folders SET active = 0 WHERE id = $id");
+            itm_run_query($conn, "UPDATE bookmark_folders SET active = 0 WHERE id = $id");
         }
     }
 }

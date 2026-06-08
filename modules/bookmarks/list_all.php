@@ -23,7 +23,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['user_id'] ?? 0);
-$is_admin = (($_SESSION['role_name'] ?? '') === 'admin');
+$is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -40,19 +40,19 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = 25;
 $offset = ($page - 1) * $perPage;
 
-$where = "company_id = $company_id AND active = 1 AND (user_id = $user_id OR shared = 1)";
+$where = "b.company_id = $company_id AND b.active = 1 AND (b.user_id = $user_id OR b.shared = 1)";
 if ($searchRaw !== '') {
     $s = mysqli_real_escape_string($conn, $searchRaw);
-    $where .= " AND (title LIKE '%$s%' OR url LIKE '%$s%' OR notes LIKE '%$s%')";
+    $where .= " AND (b.title LIKE '%$s%' OR b.url LIKE '%$s%' OR b.notes LIKE '%$s%')";
 }
 
 $sql = "SELECT b.*, f.name as folder_display_name
         FROM bookmarks b
         LEFT JOIN bookmark_folders f ON b.folder_id = f.id
-        WHERE b.$where ORDER BY b.$sort $dir LIMIT $offset, $perPage";
+        WHERE $where ORDER BY b.$sort $dir LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $sql);
 
-$countSql = "SELECT COUNT(*) as total FROM bookmarks WHERE $where";
+$countSql = "SELECT COUNT(*) as total FROM bookmarks b WHERE $where";
 $countRes = mysqli_query($conn, $countSql);
 $totalRows = mysqli_fetch_assoc($countRes)['total'];
 $totalPages = ceil($totalRows / $perPage);
@@ -66,6 +66,12 @@ $showBulkActions = true;
     <meta charset="UTF-8">
     <title><?php echo sanitize($crud_title); ?> - IT Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .dropdown-menu { display: none; position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; padding: 5px 0; margin-top: 5px; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { display: block; width: 100%; padding: 8px 15px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-primary); text-decoration: none; font-size: 0.9em; }
+        .dropdown-item:hover { background: var(--bg-secondary); }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -76,8 +82,14 @@ $showBulkActions = true;
         <div class="content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h1><?php echo sanitize($crud_title); ?></h1>
-            <div>
-                <a href="index.php" class="btn">📂 Tree View</a>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="dropdown" style="position: relative;">
+                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
+                    <div class="dropdown-menu" style="right: 0; min-width: 180px;">
+                        <a class="dropdown-item" href="index.php">📂 Tree View</a>
+                        <a class="dropdown-item" href="import.php">📤 Import</a>
+                    </div>
+                </div>
                 <a href="create.php" class="btn btn-primary">➕ Add Bookmark</a>
             </div>
         </div>
@@ -153,7 +165,7 @@ $showBulkActions = true;
                     <?php if ($page > 1): ?>
                         <a href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Previous</a>
                     <?php endif; ?>
-                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;"><?php echo "Page $page of $totalPages"; ?></span>
                     <?php if ($page < $totalPages): ?>
                         <a href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Next</a>
                     <?php endif; ?>
@@ -162,6 +174,7 @@ $showBulkActions = true;
         <?php endif; ?>
     </div>
 </div>
+<script src="../../js/vendor/jquery.min.js"></script>
 <script src="../../js/theme.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
 <script>
@@ -170,6 +183,11 @@ document.addEventListener('change', function (event) {
         const checkboxes = document.querySelectorAll('input[name="ids[]"]');
         checkboxes.forEach(cb => cb.checked = event.target.checked);
     }
+});
+
+// Close dropdowns when clicking outside
+$(document).on('click', function() {
+    $('.dropdown-menu').removeClass('show');
 });
 </script>
 </body>
