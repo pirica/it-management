@@ -7,7 +7,7 @@
  */
 
 // Define that we are in a CLI script context to bypass web-only auth/logic
-define('ITM_CLI_SCRIPT', true);
+if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 
 // Define ROOT_PATH if not already defined
 if (!defined('ROOT_PATH')) {

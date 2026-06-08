@@ -1,5 +1,5 @@
 <?php
-define('ITM_CLI_SCRIPT', true);
+if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../../../../config/config.php';
 
 /**
