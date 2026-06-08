@@ -204,6 +204,7 @@ define('UPLOAD_URL', BASE_URL . 'images/');
 define('TICKET_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'tickets_photos'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('TICKET_UPLOAD_URL', BASE_URL . 'tickets_photos/');
 define('BACKUP_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'backups'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+define('DUPLICATE_BACKUP_PATH', '/www/');
 define('BACKUP_URL', BASE_URL . 'backups/');
 define('FLOOR_PLAN_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'floor_plans'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('FLOOR_PLAN_UPLOAD_URL', BASE_URL . 'floor_plans/');
@@ -240,6 +241,7 @@ require_once ROOT_PATH . 'includes/user_dropdown_helpers.php';
 itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
 itm_ensure_upload_directory(TICKET_UPLOAD_PATH, 'upload');
 itm_ensure_upload_directory(BACKUP_PATH, 'deny_all');
+itm_ensure_upload_directory(DUPLICATE_BACKUP_PATH, 'deny_all');
 itm_ensure_upload_directory(FLOOR_PLAN_UPLOAD_PATH, 'upload');
 
 // Load secondary configuration and library files

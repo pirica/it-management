@@ -1,0 +1,18 @@
+<<<<<<< SEARCH
+            } elseif (file_put_contents(, ) === false) {
+                 = 'Unable to write backup file.';
+            } else {
+                 = 'Backup created: ' . ;
+            }
+=======
+            } elseif (file_put_contents(, ) === false) {
+                 = 'Unable to write backup file.';
+            } else {
+                 = 'Backup created: ' . ;
+
+                // Create a duplicate backup in the secondary location (best effort)
+                if (defined('DUPLICATE_BACKUP_PATH') && !empty(DUPLICATE_BACKUP_PATH)) {
+                    @file_put_contents(DUPLICATE_BACKUP_PATH . , );
+                }
+            }
+>>>>>>> REPLACE

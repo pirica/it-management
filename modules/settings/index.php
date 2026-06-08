@@ -352,6 +352,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Unable to write backup file.';
             } else {
                 $message = 'Backup created: ' . $filename;
+
+                // Create a duplicate backup in the secondary location (best effort)
+                if (defined('DUPLICATE_BACKUP_PATH') && !empty(DUPLICATE_BACKUP_PATH)) {
+                    @file_put_contents(DUPLICATE_BACKUP_PATH . $filename, $dump);
+                }
             }
         }
     }
