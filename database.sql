@@ -329,9 +329,6 @@ INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `
 (4, 4, 10, 10, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
 (5, 5, 13, 13, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL);
 -- Table structure for `floor_plan_folders`
-DROP TABLE IF EXISTS `floor_plan_item_tags`;
-DROP TABLE IF EXISTS `floor_plans`;
-DROP TABLE IF EXISTS `floor_plan_tags`;
 DROP TABLE IF EXISTS `floor_plan_folders`;
 CREATE TABLE `floor_plan_folders` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -344,15 +341,10 @@ CREATE TABLE `floor_plan_folders` (
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
   KEY `parent_folder_name` (`parent_folder_name`),
-  UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`,(ifnull(`parent_folder_name`,0)),`name`),
+  UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, `parent_folder_name`, `name`),
   CONSTRAINT `floor_plan_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_name`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Manual migration (existing databases only):
--- Do NOT add UNIQUE (`company_id`, `folder_name`) on `floor_plans` — that allows only one file per folder.
--- ALTER TABLE `floor_plan_folders` DROP INDEX `uq_floor_plan_folders_company_name`;
--- ALTER TABLE `floor_plan_folders` ADD UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, (IFNULL(`parent_folder_name`, 0)), `name`);
--- ALTER TABLE `floor_plans` ADD UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`, (IFNULL(`folder_name`, 0)), `display_name`);
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
@@ -364,6 +356,7 @@ INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `nam
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('9', '5', NULL, 'General', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('10', '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
 -- Table structure for `floor_plan_tags`
+DROP TABLE IF EXISTS `floor_plan_tags`;
 CREATE TABLE `floor_plan_tags` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
@@ -389,10 +382,11 @@ INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('9', '5', 'Ground Floor', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES ('10', '5', 'Building A', '1', '2026-01-01 00:00:01');
 -- Table structure for `floor_plans`
+DROP TABLE IF EXISTS `floor_plans`;
 CREATE TABLE `floor_plans` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `folder_name` int DEFAULT NULL,
+  `folder_id` int DEFAULT NULL,
   `it_location_id` int DEFAULT NULL COMMENT 'Optional FK: floor plan links to it_locations',
   `display_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `stored_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -405,18 +399,17 @@ CREATE TABLE `floor_plans` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
-  KEY `folder_name` (`folder_name`),
+  KEY `folder_id` (`folder_id`),
   KEY `it_location_id` (`it_location_id`),
   KEY `created_by_user_id` (`created_by_user_id`),
-  UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`,(ifnull(`folder_name`,0)),`display_name`),
+  UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`,(ifnull(`folder_id`,0)),`display_name`),
   CONSTRAINT `floor_plans_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_name`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_plans_ibfk_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Manual migration (existing databases only):
--- ALTER TABLE `floor_plans` ADD COLUMN `it_location_id` int DEFAULT NULL AFTER `folder_name`, ADD KEY `it_location_id` (`it_location_id`), ADD CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL;
 -- Table structure for `floor_plan_item_tags`
+DROP TABLE IF EXISTS `floor_plan_item_tags`;
 CREATE TABLE `floor_plan_item_tags` (
   `floor_plan_id` int NOT NULL,
   `tag_id` int NOT NULL,
@@ -4865,15 +4858,15 @@ DROP TRIGGER IF EXISTS `trg_floor_plans_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_floor_plans_audit_insert` AFTER INSERT ON `floor_plans` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plans', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'folder_name', NEW.`folder_name`, 'it_location_id', NEW.`it_location_id`, 'display_name', NEW.`display_name`, 'stored_filename', NEW.`stored_filename`, 'mime_type', NEW.`mime_type`, 'file_ext', NEW.`file_ext`, 'file_size', NEW.`file_size`, 'created_by_user_id', NEW.`created_by_user_id`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plans', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'folder_id', NEW.`folder_id`, 'it_location_id', NEW.`it_location_id`, 'display_name', NEW.`display_name`, 'stored_filename', NEW.`stored_filename`, 'mime_type', NEW.`mime_type`, 'file_ext', NEW.`file_ext`, 'file_size', NEW.`file_size`, 'created_by_user_id', NEW.`created_by_user_id`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_floor_plans_audit_update` AFTER UPDATE ON `floor_plans` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plans', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'folder_name', OLD.`folder_name`, 'it_location_id', OLD.`it_location_id`, 'display_name', OLD.`display_name`, 'stored_filename', OLD.`stored_filename`, 'mime_type', OLD.`mime_type`, 'file_ext', OLD.`file_ext`, 'file_size', OLD.`file_size`, 'created_by_user_id', OLD.`created_by_user_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'folder_name', NEW.`folder_name`, 'it_location_id', NEW.`it_location_id`, 'display_name', NEW.`display_name`, 'stored_filename', NEW.`stored_filename`, 'mime_type', NEW.`mime_type`, 'file_ext', NEW.`file_ext`, 'file_size', NEW.`file_size`, 'created_by_user_id', NEW.`created_by_user_id`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plans', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'folder_id', OLD.`folder_id`, 'it_location_id', OLD.`it_location_id`, 'display_name', OLD.`display_name`, 'stored_filename', OLD.`stored_filename`, 'mime_type', OLD.`mime_type`, 'file_ext', OLD.`file_ext`, 'file_size', OLD.`file_size`, 'created_by_user_id', OLD.`created_by_user_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'folder_id', NEW.`folder_id`, 'it_location_id', NEW.`it_location_id`, 'display_name', NEW.`display_name`, 'stored_filename', NEW.`stored_filename`, 'mime_type', NEW.`mime_type`, 'file_ext', NEW.`file_ext`, 'file_size', NEW.`file_size`, 'created_by_user_id', NEW.`created_by_user_id`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_floor_plans_audit_delete` AFTER DELETE ON `floor_plans` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plans', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'folder_name', OLD.`folder_name`, 'it_location_id', OLD.`it_location_id`, 'display_name', OLD.`display_name`, 'stored_filename', OLD.`stored_filename`, 'mime_type', OLD.`mime_type`, 'file_ext', OLD.`file_ext`, 'file_size', OLD.`file_size`, 'created_by_user_id', OLD.`created_by_user_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plans', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'folder_id', OLD.`folder_id`, 'it_location_id', OLD.`it_location_id`, 'display_name', OLD.`display_name`, 'stored_filename', OLD.`stored_filename`, 'mime_type', OLD.`mime_type`, 'file_ext', OLD.`file_ext`, 'file_size', OLD.`file_size`, 'created_by_user_id', OLD.`created_by_user_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_forecast_revisions_audit_insert`;
