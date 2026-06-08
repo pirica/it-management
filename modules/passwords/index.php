@@ -62,7 +62,9 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($module_title, ENT_QUOTES, 'UTF-8'); ?> Management</title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <style>
+        .dropdown-item, .folder-item a { text-decoration: none !important; }
         .passwords-layout {
             display: grid;
             grid-template-columns: 320px 1fr;
@@ -138,7 +140,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                         <div class="card">
                             <h3>🔐 Generator</h3>
                             <div style="display: flex; gap: 4px; margin-bottom: 10px;">
-                                <input type="text" id="gen-password" class="form-control" readonly style="flex: 1; font-family: monospace;">
+                                <input type="text" id="gen-password" class="form-control" style="flex: 1; font-family: monospace;">
                                 <button class="btn btn-sm" type="button" onclick="copyToClipboard('gen-password')" title="Copy">🗐</button>
                                 <button class="btn btn-sm" type="button" onclick="generatePassword()" title="Regenerate">🔄</button>
                             </div>
@@ -176,12 +178,14 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" data-toggle="dropdown">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item" href="#" onclick="openImportModal(); return false;">📥 Import CSV</a>
+                                            <a class="dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-toggle').dropdown('hide'); return false;">📥 Import CSV</a>
+                                            <a class="dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-toggle').dropdown('hide'); return false;">📥 Import Excel</a>
                                             <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); return false;">📊 Export XLSX</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); return false;">📄 Export CSV</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); return false;">📕 Export PDF</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); return false;">📝 Export TXT</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-toggle').dropdown('hide'); return false;">📊 Export XLSX</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-toggle').dropdown('hide'); return false;">📗 Export Excel</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-toggle').dropdown('hide'); return false;">📄 Export CSV</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-toggle').dropdown('hide'); return false;">📕 Export PDF</a>
+                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-toggle').dropdown('hide'); return false;">📝 Export TXT</a>
                                         </div>
                                     </div>
                                 </div>
@@ -263,6 +267,23 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                 </div>
                 <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button><button type="submit" class="btn btn-primary">Import</button></div>
             </form>
+        </div>
+    </div>
+</div>
+<!-- Import Excel Modal -->
+<div class="modal fade" id="importExcelModal" tabindex="-1" role="dialog" aria-labelledby="importExcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importExcelModalLabel">Import Passwords (Excel)</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>Excel File (.xlsx, .xls)</label><input type="file" id="excel-file-input" class="form-control-file" accept=".xlsx, .xls" required></div>
+                <div class="form-group"><label>Target Folder</label><select id="import-excel-folder_id" class="form-control"><option value="0">-- Root --</option></select></div>
+                <p class="text-muted small">Excel should have headers: Account, Login Name, Password, Website, Comments</p>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="handleExcelImport()">Import</button></div>
         </div>
     </div>
 </div>
@@ -456,6 +477,40 @@ function deleteFolder(id) {
 }
 
 function openImportModal() { $('#importModal').modal('show'); }
+function openImportExcelModal() {
+    const select = document.getElementById('import-excel-folder_id');
+    const source = document.getElementById('import-folder_id');
+    if (select && source) select.innerHTML = source.innerHTML;
+    $('#importExcelModal').modal('show');
+}
+
+function handleExcelImport() {
+    const fileInput = document.getElementById('excel-file-input');
+    const folderId = document.getElementById('import-excel-folder_id').value;
+    if (!fileInput.files[0]) { alert('Select a file'); return; }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+        if (rows.length < 2) { alert('No data found'); return; }
+
+        apiCall('import_rows', {
+            folder_id: folderId,
+            rows: JSON.stringify(rows)
+        }).then(res => {
+            if (res.ok) {
+                alert('Imported ' + res.imported + ' entries!');
+                $('#importExcelModal').modal('hide');
+                loadEntries();
+            } else alert(res.message);
+        });
+    };
+    reader.readAsArrayBuffer(fileInput.files[0]);
+}
 function exportVault(format) { window.location.href = `export_handler.php?format=${format}&folder_id=${currentFolderId}&csrf_token=${CSRF_TOKEN}`; }
 
 document.addEventListener('DOMContentLoaded', () => {
