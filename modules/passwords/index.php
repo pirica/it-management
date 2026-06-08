@@ -191,18 +191,18 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-primary" onclick="openEntryModal()">➕ Add Password</button>
+                                    <button class="btn btn-primary" onclick="openEntryModal()">➕</button>
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a>
-                                            <a class="dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a>
-                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a>
+                                            <a class="dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a><br />
+                                            <a class="dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a><br />
+                                        <!--    <div class="dropdown-divider"></div> -->
+                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a><br />
+                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a><br />
+                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a><br />
+                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a><br />
+                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a><br />
                                         </div>
                                     </div>
                                 </div>
@@ -228,6 +228,11 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
             <div class="modal-header">
                 <h5 class="modal-title" id="entryModalLabel">Add Password</h5>
                 <button type="button" class="close" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <!-- 
+                <button type="button" class="close" onclick=".removeClass('show').hide(); .remove(); .removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>                          
+                <button type="button" class="close" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                -->
+            
             </div>
             <form id="entryForm">
                 <input type="hidden" name="id" id="entry-id">
