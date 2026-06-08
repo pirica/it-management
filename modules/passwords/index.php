@@ -452,7 +452,7 @@ function loadEntries() {
                 <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
                 <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
                 <td><div class="input-group input-group-sm" style="width: 140px;"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')">👁️</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('${addslashes(e.password)}')">🗐</button></div></div></td>
-                <td>${e.website ? `<a href="${sanitizeHtml(e.website)}" target="_blank" style="text-decoration: none;">${sanitizeHtml(e.website.replace(/^https?:\/\//, ''))}</a>` : '—'}</td>
+                <td>${e.website ? `<a href="${sanitizeHtml(e.website)}" target="_blank" rel="noopener noreferrer nofollow" style="text-decoration: none !important;">${sanitizeHtml(e.website.replace(/^https?:\/\//, ''))}</a>` : '—'}</td>
             `;
             body.appendChild(row);
         });
