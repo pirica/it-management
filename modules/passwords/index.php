@@ -11,7 +11,6 @@ $csrfToken = itm_get_csrf_token();
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
 $user_id = (int)$_SESSION['user_id'];
-$user_id = 1; $has_vault_configured = true; $_SESSION['vault_key'] = 'mock';
 
 // Fetch user's vault status
 $user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM users WHERE id = ?');
