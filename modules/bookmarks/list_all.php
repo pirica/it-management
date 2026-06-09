@@ -136,7 +136,7 @@ $showBulkActions = true;
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php endif; ?>
                                 <td><?php echo sanitize($row['title']); ?></td>
-                                <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
+                                <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); style="text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
