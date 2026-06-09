@@ -258,7 +258,7 @@ $csrfToken = itm_get_csrf_token();
     <td style="padding:8px;">
         <a href="<?php echo sanitize($b['url']); ?>"
            target="_blank"
-           rel="nofollow noreferrer"
+           rel="nofollow noreferrer noopener"
            style="color:var(--accent); text-decoration:none;">
             <?php echo sanitize($b['url']); ?>
         </a>
