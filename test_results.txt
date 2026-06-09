@@ -1,0 +1,16 @@
+Running command: '/usr/bin/php7.4' '/app/phpunit.phar' -c '/app/phpunit.xml' 2>&1
+
+Testing save_folder (Root)... PASS
+Testing save_folder (Child)... PASS
+Testing save_entry... PASS
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 7.4.33
+Configuration: /app/phpunit.xml
+
+...............................................................  63 / 111 ( 56%)
+................................................                111 / 111 (100%)
+
+Time: 00:01.911, Memory: 26.00 MB
+
+OK (111 tests, 785 assertions)
