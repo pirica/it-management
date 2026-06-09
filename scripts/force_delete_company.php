@@ -131,22 +131,24 @@ while ($row = mysqli_fetch_assoc($res)) {
     <title>Force Delete Company</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
-        body { padding: 20px; background-color: #f6f8fa; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 24px; }
-        .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid transparent; }
+        body { padding: 40px 20px; background-color: var(--bg-secondary, #f6f8fa); display: block; height: auto; min-height: 100vh; overflow-y: auto; }
+        .fdc-wrap { max-width: 800px; margin: 0 auto; background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 8px; padding: 32px; box-shadow: var(--shadow, 0 1px 3px rgba(0,0,0,0.1)); }
+        .alert { padding: 16px; border-radius: 6px; margin-bottom: 24px; border: 1px solid transparent; line-height: 1.5; }
         .alert-info { background: #ddf4ff; color: #0969da; border-color: #c0e6ff; }
         .alert-error { background: #ffebe9; color: #cf222e; border-color: #ffc1c0; }
         .alert-success { background: #dafbe1; color: #1a7f37; border-color: #aff5b4; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; }
-        select { width: 100%; padding: 8px; border: 1px solid #d0d7de; border-radius: 6px; }
-        .btn-danger { background-color: #cf222e; color: #fff; border: 1px solid rgba(27,31,36,0.15); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        .btn-danger:hover { background-color: #a40e26; }
-        .warning-box { background: #fff8c5; border: 1px solid #d4a72c; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; }
+        .form-group { margin-bottom: 24px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary); }
+        select { width: 100%; padding: 10px; border: 1px solid var(--border, #d0d7de); border-radius: 6px; background-color: var(--bg-primary); color: var(--text-primary); font-size: 14px; }
+        .btn-danger { background-color: var(--danger, #da3633); color: #fff; border: 1px solid rgba(27,31,36,0.15); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .btn-danger:hover { opacity: 0.9; }
+        .warning-box { background: #fff8c5; border: 1px solid #d4a72c; padding: 16px; border-radius: 6px; margin-bottom: 24px; font-size: 0.95rem; line-height: 1.6; color: #24292f; }
+        h1 { margin-top: 0; margin-bottom: 20px; font-size: 24px; color: var(--text-primary); }
+        .itm-script-nav { margin-bottom: 24px !important; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="fdc-wrap">
         <?php itm_script_browser_nav_echo(); ?>
         <h1>Force Delete Company</h1>
 
