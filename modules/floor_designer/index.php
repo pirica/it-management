@@ -875,8 +875,6 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             el.innerHTML = `
                                 <svg viewBox="0 0 100 100" width="60" height="60" style="pointer-events: none;">
                                     <path d="M 10,90 L 10,10 L 90,10 A 80,80 0 0 1 10,90" fill="none" stroke="#24292f" stroke-width="3" />
-                                    <rect x="0" y="85" width="20" height="10" fill="#333" />
-                                    <rect x="80" y="85" width="20" height="10" fill="#333" />
                                 </svg>`;
                         } else if (isAP) {
                             el.className = `point point-type-Access-Point access-point`;
