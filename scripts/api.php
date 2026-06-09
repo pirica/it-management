@@ -170,6 +170,7 @@ $projectJsonEndpoints = [
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-06-09:</strong> Added sortable column headers and state-preserving pagination to the Bookmarks List view.</li>
             <li><strong>2026-06-07:</strong> Refactored Passwords UI to match standardized layout, moved it to the Employee sidebar section, and added unit tests for vault data management.</li>
             <li><strong>2026-03-29:</strong> Added <code>api-examples/</code> folder with PHP implementation examples for Equipment, Employees, Tickets, Catalogs, and Events, and authentication helpers (sessionCookie, csrfToken, authenticate), and CRUD operations (archive, delete, single view, edit, and list filtering (Open tickets, Active catalogs).</li>
         </ul>

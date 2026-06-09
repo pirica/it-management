@@ -33,8 +33,27 @@ if ($company_id <= 0) {
 $crud_table = 'bookmarks';
 $crud_title = 'Bookmarks List';
 
-$sort = isset($_GET['sort']) ? $_GET['sort'] : 'title';
-$dir = isset($_GET['dir']) ? $_GET['dir'] : 'ASC';
+$sort = $_GET['sort'] ?? 'title';
+$dir = (strtoupper($_GET['dir'] ?? '') === 'DESC') ? 'DESC' : 'ASC';
+
+$allowedSorts = ['title', 'url', 'folder', 'shared'];
+if (!in_array($sort, $allowedSorts)) {
+    $sort = 'title';
+}
+
+// Extra safety check as per plan
+if (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($sort)) {
+    $sort = 'title';
+}
+
+$orderByMap = [
+    'title'  => 'b.title',
+    'url'    => 'b.url',
+    'folder' => 'f.name',
+    'shared' => 'b.shared'
+];
+$orderBy = $orderByMap[$sort] ?? 'b.title';
+
 $searchRaw = isset($_GET['search']) ? $_GET['search'] : '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = 25;
@@ -49,7 +68,7 @@ if ($searchRaw !== '') {
 $sql = "SELECT b.*, f.name as folder_display_name
         FROM bookmarks b
         LEFT JOIN bookmark_folders f ON b.folder_id = f.id
-        WHERE $where ORDER BY b.$sort $dir LIMIT $offset, $perPage";
+        WHERE $where ORDER BY $orderBy $dir LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $sql);
 
 $countSql = "SELECT COUNT(*) as total FROM bookmarks b WHERE $where";
@@ -121,10 +140,23 @@ $showBulkActions = true;
                         <?php if ($showBulkActions): ?>
                             <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                         <?php endif; ?>
-                        <th>Title</th>
-                        <th>URL</th>
-                        <th>Folder</th>
-                        <th>Shared</th>
+                        <?php
+                        $columns = [
+                            'title'  => 'Title',
+                            'url'    => 'URL',
+                            'folder' => 'Folder',
+                            'shared' => 'Shared'
+                        ];
+                        foreach ($columns as $colKey => $colLabel):
+                            $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
+                            $arrow = ($sort === $colKey) ? ($dir === 'ASC' ? ' ▲' : ' ▼') : '';
+                        ?>
+                            <th>
+                                <a href="?sort=<?php echo urlencode($colKey); ?>&dir=<?php echo $nextDir; ?>&search=<?php echo urlencode($searchRaw); ?>" style="text-decoration:none;color:inherit;">
+                                    <?php echo sanitize($colLabel) . $arrow; ?>
+                                </a>
+                            </th>
+                        <?php endforeach; ?>
                         <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                 </thead>
@@ -136,7 +168,7 @@ $showBulkActions = true;
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php endif; ?>
                                 <td><?php echo sanitize($row['title']); ?></td>
-                                <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); style="text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
+                                <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
@@ -164,11 +196,11 @@ $showBulkActions = true;
                 <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
                     <?php if ($page > 1): ?>
-                        <a href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Previous</a>
+                        <a href="?page=<?php echo $page-1; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>" class="btn btn-sm">Previous</a>
                     <?php endif; ?>
                     <span class="btn btn-sm" style="pointer-events:none;opacity:.8;"><?php echo "Page $page of $totalPages"; ?></span>
                     <?php if ($page < $totalPages): ?>
-                        <a href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($searchRaw); ?>" class="btn btn-sm">Next</a>
+                        <a href="?page=<?php echo $page+1; ?>&search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>" class="btn btn-sm">Next</a>
                     <?php endif; ?>
                 </div>
             </div>
