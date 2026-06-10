@@ -757,6 +757,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_login.php</code> — Follow CLI instructions to hijack the session in your browser using Developer Tools.</td>
                 </tr>
+                            <tr>
+                    <td><code>take_screenshots.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of Bookmarks and Passwords modules. Requires Playwright.</td>
+                    <td><code>python3 scripts/take_screenshots.py</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
