@@ -98,13 +98,13 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 
 <h2 align="center">Modules</h2>
 
-- Passwords — Secure private password manager with vault encryption, folder hierarchy, and LastPass-style generator
+
 - Equipment — Manage IT equipment with Switch Port Manager
 - IDFs — Rack layout, positions, ports, and cable links
 - IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment (includes **Network Discovery** TCP scan under IP Subnets)
 - Rack planner — Visual rack elevation and component placement
 - Floor Plans — Image/PDF/CAD gallery with nested folders, tags, optional IT Location link, and drag-and-drop moves ([details](#floor-plans-gallery))
-- Explorer — Advanced web-based file explorer with Common, Department, and Private storage areas, localised to UK English.
+- Explorer — Advanced web-based file explorer with Common, Department, and Private storage areas
 - Printers — Track printers and supplies
 - Workstations — Manage workstations
 - Tickets — Support ticket system
@@ -119,7 +119,9 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Planning — Shared Calendar and Events management
 - Visitors Access Log — Track manual entry logs of visitors with inline editing and auto-timestamps
 - Backup Tape Log — Monthly grid view to track server backup tapes with auto-populated day/tape names and restricted ISM review.
-- Audit Logs
+- Audit Logs — Essential for compliance and debugging
+- Passwords — Secure private password manager with vault encryption, folder hierarchy, and Password generator with csv and others import/export
+- Bookmarks — Shared Bookmarks and private, with csv and others import/export    
 - Alerts — Manage global and private alerts with ICS import support
 
 
