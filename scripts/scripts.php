@@ -64,6 +64,7 @@ require_once __DIR__ . '/../config/config.php';
             <li><a href="#database">Database</a></li>
             <li><a href="#idf">IDF &amp; equipment</a></li>
             <li><a href="#ui-modules">UI &amp; modules</a></li>
+            <li><a href="#admin-tools">Administrative Tools</a></li>
             <li><a href="http://myhome.dynip.sapo.pt/phpmyadmin/" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
             <li><a href="https://github.com/pirica/it-management" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">Github</a></li>
         </ul>
@@ -735,6 +736,29 @@ require_once __DIR__ . '/../config/config.php';
         <p class="scripts-muted" style="margin-top:12px;">
             Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/equipment_type_modules.php</code> (canonical <code>modules/is_*</code> allowlist; safe removal of <code>*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> test scaffolds only), <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, relative module / table→module links).
         </p>
+    </div>
+
+    
+    <div class="scripts-card" id="admin-tools">
+        <h2>Administrative Tools</h2>
+        <div class="scripts-table-wrap"><table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>bypass_login.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
+                    <td><code>php scripts/bypass_login.php</code> — Follow CLI instructions to hijack the session in your browser using Developer Tools.</td>
+                </tr>
+            </tbody>
+        </table></div>
     </div>
 
     <div class="scripts-card" id="deployment">
