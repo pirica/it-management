@@ -25,6 +25,8 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **run_tests.php** — central test runner.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **data/** — contains excluded modules and prefixes for audits.
+- **bypass_login.php** — CLI utility to authenticate as Admin without the UI.
+- **take_screenshots.py** — Python script using Playwright to automate screenshot capture.
 
 ## 8. Multi-Tenant Rules
 - Maintenance scripts usually operate across all tenants or allow specifying a `company_id` via CLI arguments.
@@ -48,5 +50,31 @@ bash scripts/smoke_test.sh
 php scripts/run_tests.php
 ```
 
-## 12. Module Owner Notes (Optional)
+### Bypassing Login for Debugging or Screenshots
+This script is essential for rapid development, debugging errors as an Admin, or automating UI tasks like taking screenshots.
+```bash
+# Get a valid session ID for the Admin user
+php scripts/bypass_login.php
+
+# Get session for a specific user or company
+php scripts/bypass_login.php --user=johndoe --company=2
+```
+
+## 12. Bypass Login (CLI Information)
+The `scripts/bypass_login.php` script allows you to:
+- **Faster Screenshots**: Quickly authenticate an automated browser (like Playwright) by setting the `PHPSESSID` cookie.
+- **Debug as Admin**: Directly establish an authenticated state to test admin-only logic or view protected modules without manual login.
+- **Unlock Vault**: Automatically sets the `vault_key` session variable required for the Passwords module.
+- **CLI Permissions**: The script automatically adjusts session file permissions (`0644`) so the web server (Apache) can read the session created in the CLI context.
+
+### Usage with curl
+```bash
+# 1. Generate session
+SESSION_ID=$(php scripts/bypass_login.php | grep "Session ID:" | awk '{print $3}')
+
+# 2. Access protected page
+curl -b "PHPSESSID=$SESSION_ID" http://localhost/dashboard.php
+```
+
+## 13. Module Owner Notes (Optional)
 This directory is the toolbox for system administrators and developers.
