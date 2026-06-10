@@ -936,6 +936,21 @@ bash scripts/smoke_test.sh
 
 All three checks (php -l lint, CSRF coverage, SQLi coverage) run with the `php` binary on PATH (PHP 7.4.33 via `ondrej/php` PPA).
 
+
+### Bypassing Login (Dev/Test)
+
+For rapid development or testing, you can bypass the login screen and pre-authenticate as an Admin:
+
+1. Run the bypass script via CLI:
+   ```bash
+   php scripts/bypass_login.php
+   ```
+2. The script will output a `Session ID`.
+3. Open the app in your browser (e.g., `http://localhost/it-management/`).
+4. Open Browser DevTools -> Application -> Cookies.
+5. Replace the value of `PHPSESSID` with the `Session ID` from step 2.
+6. Refresh the page to be logged in as Admin with Company 1 (TechCorp Global) selected and the Passwords Vault unlocked.
+
 ### App login
 
 Default credentials: username `Admin`, password `Admin`. After login, select a company (e.g. TechCorp Global) to access modules.
