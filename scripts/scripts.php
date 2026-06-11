@@ -76,7 +76,7 @@ require_once __DIR__ . '/../config/config.php';
         <h1>Scripts directory</h1>
         <p class="scripts-muted">
             Maintenance, audits, and developer tools for the IT Management System.
-            <strong>Browser</strong> = open the script URL (HTML UI when built; otherwise a plain-text report). Access requires login OR authorized source (IP <code>127.0.0.1</code> / <code>::1</code>, or <code>ITM_MAINTENANCE_TOKEN</code> via <code>?token=</code> or <code>X-ITM-Maintenance-Token</code> header). Every browser script must show <strong>← Scripts index</strong> back to this page (use <code>scripts/lib/script_browser_nav.php</code>).
+            <strong>Browser</strong> = open the script URL (HTML UI when built; otherwise a plain-text report). Access requires login OR authorized source (IP <code>127.0.0.1</code> / <code>::1</code>, or <code>ITM_MAINTENANCE_TOKEN</code> via <code>?token=</code> or <code>X-ITM-Maintenance-Token</code> header). Every browser script must show <strong>← Scripts index</strong> back to this page (use <code>scripts/lib/script_browser_nav.php</code>, <code>lib/utf8_file.php</code> (UTF-8 BOM file I/O), <code>lib/mbqa_import_helpers.php</code> (QA import resolution), <code>lib/mbqa_report_paths.php</code> (QA report naming)).
             <strong>CLI</strong> = terminal or CI from the project root with PHP 7.4+ (preferred for exit codes and long scans).
             <strong>CLI-only</strong> = <code>smoke_test.sh</code> (bash), explicit <code>PHP_SAPI !== 'cli'</code> guards, or unsafe unattended file writes.
         </p>
@@ -734,7 +734,7 @@ require_once __DIR__ . '/../config/config.php';
             </tbody>
         </table></div>
         <p class="scripts-muted" style="margin-top:12px;">
-            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/equipment_type_modules.php</code> (canonical <code>modules/is_*</code> allowlist; safe removal of <code>*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> test scaffolds only), <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code> (<strong>← Scripts index</strong>, relative module / table→module links).
+            Library (not run directly): <code>lib/sql_injection_detector.php</code>, <code>lib/equipment_type_modules.php</code> (canonical <code>modules/is_*</code> allowlist; safe removal of <code>*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> test scaffolds only), <code>lib/script_cli_output.php</code> (wraps browser output in <code>&lt;pre&gt;</code> + shared nav), <code>lib/script_browser_nav.php</code>, <code>lib/utf8_file.php</code> (UTF-8 BOM file I/O), <code>lib/mbqa_import_helpers.php</code> (QA import resolution), <code>lib/mbqa_report_paths.php</code> (QA report naming) (<strong>← Scripts index</strong>, relative module / table→module links).
         </p>
     </div>
 
