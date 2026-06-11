@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = "Edit Private Contact";
-include '../../templates/header.php';
+include '../../includes/header.php';
 ?>
 
 <div class="container-fluid">
@@ -84,7 +84,7 @@ include '../../templates/header.php';
     </div>
 
     <form method="POST" enctype="multipart/form-data">
-        <?php itm_csrf_token_field(); ?>
+        <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
         <?php include 'edit_form.php'; ?>
         <div class="card mt-4 mb-5">
             <div class="card-body text-center">
@@ -95,4 +95,4 @@ include '../../templates/header.php';
     </form>
 </div>
 
-<?php include '../../templates/footer.php'; ?>
+</body></html>

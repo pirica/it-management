@@ -20,7 +20,7 @@ if (!$contact) {
 }
 
 $pageTitle = "View Contact - " . htmlspecialchars($contact['first_name'] . ' ' . $contact['last_name']);
-include '../../templates/header.php';
+include '../../includes/header.php';
 ?>
 
 <div class="container-fluid">
@@ -189,4 +189,4 @@ include '../../templates/header.php';
     </div>
 </div>
 
-<?php include '../../templates/footer.php'; ?>
+</body></html>

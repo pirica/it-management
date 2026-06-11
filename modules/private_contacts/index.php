@@ -1,7 +1,7 @@
 <?php
 require_once 'index_logic.php';
 $pageTitle = "Private Contacts";
-include '../../templates/header.php';
+include '../../includes/header.php';
 ?>
 
 <div class="container-fluid">
@@ -75,7 +75,7 @@ include '../../templates/header.php';
                                 <td class="text-right itm-actions-cell" data-itm-actions-origin="1">
                                     <a href="edit.php?id=<?php echo $contact['id']; ?>" class="btn btn-sm btn-outline-secondary mr-1"><i class="fas fa-edit"></i></a>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
-                                        <?php itm_csrf_token_field(); ?>
+                                        <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $contact['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -111,4 +111,4 @@ $(document).ready(function() {
 });
 </script>
 
-<?php include '../../templates/footer.php'; ?>
+</body></html>
