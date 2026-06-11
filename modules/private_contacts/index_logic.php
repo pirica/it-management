@@ -12,9 +12,7 @@ $companyId = $_SESSION['company_id'];
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!itm_is_safe_request()) {
-        die("Invalid request (CSRF failure)");
-    }
+    itm_require_post_csrf();
 
     // Handle Favorite Toggle (AJAX)
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_favorite') {

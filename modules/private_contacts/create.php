@@ -7,9 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!itm_is_safe_request()) {
-        die("Invalid request");
-    }
+    itm_require_post_csrf();
 
     $photo = '';
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
