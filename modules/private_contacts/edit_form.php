@@ -5,25 +5,22 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-auto">
-                        <div class="position-relative">
+                        <div class="position-relative itm-photo-upload-target cursor-pointer text-center" style="border: 2px dashed #ccc; border-radius: 50%; padding: 5px; width: 110px; height: 110px;">
                             <?php if (isset($contact['photo']) && $contact['photo']): ?>
-                                <img src="../../files/<?php echo $_SESSION[company_id]; ?>/Private/<?php echo $_SESSION[username] . "_" . $_SESSION[user_id]; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle border" width="100" height="100" style="object-fit: cover;">
+                                <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
                             <?php else: ?>
-                                <div id="photo-placeholder" class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                <div id="photo-placeholder" class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                     <i class="fas fa-user text-muted fa-3x"></i>
                                 </div>
-                                <img src="" id="photo-preview" class="rounded-circle border d-none" width="100" height="100" style="object-fit: cover;">
+                                <img src="" id="photo-preview" class="rounded-circle d-none" width="100" height="100" style="object-fit: cover;">
                             <?php endif; ?>
+                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*">
                         </div>
+                        <small class="text-muted d-block text-center mt-1">Click or Drag & Drop</small>
                     </div>
                     <div class="col">
-                        <div class="form-group mb-0">
-                            <label>Photo</label>
-                            <div class="custom-file">
-                                <input type="file" name="photo" class="custom-file-input" id="photo-input" accept="image/*">
-                                <label class="custom-file-label" for="photo-input">Choose File</label>
-                            </div>
-                        </div>
+                        <h5 class="mb-1">Contact Photo</h5>
+                        <p class="text-muted mb-0 small">Recommended: Square image, max 2MB.</p>
                     </div>
                     <div class="col-auto">
                         <div class="custom-control custom-checkbox">
@@ -187,10 +184,10 @@
                     <div class="col-md-4 form-group">
                         <label>Postcode</label>
                         <input type="text" name="address1_postcode" class="form-control" value="<?php echo htmlspecialchars($contact['address1_postcode'] ?? ''); ?>">
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>PO Box</label>
                         <input type="text" name="address1_po_box" class="form-control" value="<?php echo htmlspecialchars($contact['address1_po_box'] ?? ''); ?>">
-                    </div>
                     </div>
                 </div>
                 <div class="row">
@@ -264,15 +261,27 @@
     </div>
 </div>
 
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
-document.getElementById('photo-input').onchange = evt => {
-    const [file] = evt.target.files;
-    if (file) {
-        document.getElementById('photo-preview').src = URL.createObjectURL(file);
-        document.getElementById('photo-preview').classList.remove('d-none');
-        if (document.getElementById('photo-placeholder')) {
-            document.getElementById('photo-placeholder').classList.add('d-none');
+document.addEventListener('DOMContentLoaded', function() {
+    itmUploadHelper.setupByClass(".itm-photo-upload-target");
+
+    var photoInput = document.getElementById('photo-input');
+    photoInput.addEventListener('change', function(evt) {
+        var [file] = evt.target.files;
+        if (file) {
+            document.getElementById('photo-preview').src = URL.createObjectURL(file);
+            document.getElementById('photo-preview').classList.remove('d-none');
+            if (document.getElementById('photo-placeholder')) {
+                document.getElementById('photo-placeholder').classList.add('d-none');
+            }
         }
-    }
-}
+    });
+});
 </script>
+<style>
+.itm-photo-upload-target.is-dragover {
+    border-color: #007bff !important;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+</style>
