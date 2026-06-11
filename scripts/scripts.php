@@ -757,7 +757,13 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_login.php</code> — Follow CLI instructions to hijack the session in your browser using Developer Tools.</td>
                 </tr>
-                            <tr>
+                <tr>
+                    <td><a href="sql_insert.php">sql_insert.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Allows administrators to paste and execute raw SQL <code>INSERT</code> commands with optional Foreign Key check toggling. Maintains audit logging.</td>
+                    <td>Browser: <a href="sql_insert.php">sql_insert.php</a> (form).<br>CLI: <code>php scripts/sql_insert.php --file=path/to/file.sql [--disable-fk]</code></td>
+                </tr>
+                <tr>
                     <td><code>take_screenshots.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of Bookmarks and Passwords modules. Requires Playwright.</td>
@@ -767,7 +773,7 @@ require_once __DIR__ . '/../config/config.php';
         </table></div>
     </div>
 
-    <div class="scripts-card" id="deployment">
+    <div class="scripts-card" >
         <h2>Deployment &amp; Git</h2>
         <div class="scripts-table-wrap"><table class="scripts-table">
             <thead>
