@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         birthday, event1_label, event1_value, relation1_label, relation1_value,
         website1_label, website1_value, custom_field1_label, custom_field1_value,
         notes, labels, is_favorite
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
 
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $birthday = $_POST['birthday'] ?: null;
     $event1_value = $_POST['event1_value'] ?: null;
 
-    $stmt->bind_param("iisssssssssssssssssssssssssssssssssssi",
+    $stmt->bind_param("iissssssssssssssssssssssssssssssssssssi",
         $companyId, $userId, $_POST['name_prefix'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'], $_POST['name_suffix'],
         $_POST['phonetic_first_name'], $_POST['phonetic_middle_name'], $_POST['phonetic_last_name'], $_POST['nickname'], $_POST['file_as'],
         $_POST['email1_label'], $_POST['email1_value'], $_POST['phone1_label'], $_POST['phone1_value'],
@@ -43,11 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
         $insertId = $stmt->insert_id;
-        $photo = '';
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
             $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
             $photoFilename = $insertId . '_photo.' . $ext;
-            $dir = "../../files/$companyId/Private/{$_SESSION['username']}_{$userId}/private_contacts";
+            $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
             if (!is_dir($dir)) {
                 mkdir($dir, 0777, true);
             }
@@ -65,25 +64,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = "Add Private Contact";
-include '../../includes/header.php';
 ?>
-
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="index.php" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back</a>
-        <h1>Create Private Contact</h1>
-    </div>
-
-    <form method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
-        <?php include 'edit_form.php'; ?>
-        <div class="card mt-4 mb-5">
-            <div class="card-body text-center">
-                <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fas fa-save"></i> Save Contact</button>
-                <a href="index.php" class="btn btn-link text-muted">Cancel</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($pageTitle); ?> Management</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+<div class="container">
+    <?php include '../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <?php include '../../includes/header.php'; ?>
+        <div class="content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="index.php" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+                <h1>Create Private Contact</h1>
             </div>
-        </div>
-    </form>
-</div>
 
-</body></html>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                <?php include 'edit_form.php'; ?>
+                <div class="form-actions" style="margin-top:20px; display:flex; gap:10px;">
+                    <button class="btn btn-primary" type="submit">💾 Save Contact</button>
+                    <a href="index.php" class="btn">🔙 Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="../../js/theme.js"></script>
+</body>
+</html>

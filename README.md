@@ -136,12 +136,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 
 
 
-<h2 align="center">Private Contacts</h2>
 
-<p align="center">Private, user-scoped contact management. Includes photo uploads, phonetic name fields, multiple addresses, and important dates tracking.</p>
-
-<p align="center"><img src="docs/readme/private_contacts_index.png" alt="Private Contacts Index" /></p>
-<p align="center"><img src="docs/readme/private_contacts_view.png" alt="Private Contacts View" /></p>
 
 <h2 align="center">Floor Plans gallery</h2>
 

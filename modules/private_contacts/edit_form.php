@@ -1,97 +1,87 @@
 <div class="row">
-    <!-- Profile & Name -->
+    <!-- Basic Information -->
     <div class="col-md-12 mb-4">
         <div class="card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <div class="position-relative itm-photo-upload-target cursor-pointer text-center" style="border: 2px dashed #ccc; border-radius: 50%; padding: 5px; width: 110px; height: 110px;">
-                            <?php if (isset($contact['photo']) && $contact['photo']): ?>
-                                <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
-                            <?php else: ?>
-                                <div id="photo-placeholder" class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                                    <i class="fas fa-user text-muted fa-3x"></i>
-                                </div>
-                                <img src="" id="photo-preview" class="rounded-circle d-none" width="100" height="100" style="object-fit: cover;">
-                            <?php endif; ?>
-                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*">
-                        </div>
-                        <small class="text-muted d-block text-center mt-1">Click or Drag & Drop</small>
-                    </div>
-                    <div class="col">
-                        <h5 class="mb-1">Contact Photo</h5>
-                        <p class="text-muted mb-0 small">Recommended: Square image, max 2MB.</p>
-                    </div>
-                    <div class="col-auto">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" name="is_favorite" class="custom-control-input" id="chkFavorite" <?php echo (isset($contact['is_favorite']) && $contact['is_favorite']) ? 'checked' : ''; ?>>
-                            <label class="custom-control-label" for="chkFavorite"><i class="fas fa-star text-warning"></i> Favorite</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Name Section -->
-    <div class="col-md-12 mb-4">
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0">Name</h5></div>
+            <div class="card-header"><h5 class="mb-0">Basic Information</h5></div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-2 form-group">
-                        <label>Prefix</label>
-                        <input type="text" name="name_prefix" class="form-control" value="<?php echo htmlspecialchars($contact['name_prefix'] ?? ''); ?>">
+                    <div class="col-md-3 text-center">
+                        <div class="position-relative itm-photo-upload-target cursor-pointer text-center mx-auto" style="border: 2px dashed currentColor; border-radius: 50%; padding: 5px; width: 110px; height: 110px;">
+                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*">
+                            <label for="photo-input" class="mb-0 cursor-pointer">
+                                <?php if ($contact['photo']): ?>
+                                    <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
+                                <?php else: ?>
+                                    <div id="photo-placeholder" class="rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                        <i class="fas fa-camera fa-2x text-muted"></i>
+                                    </div>
+                                    <img src="" id="photo-preview" class="rounded-circle d-none" width="100" height="100" style="object-fit: cover;">
+                                <?php endif; ?>
+                            </label>
+                            <div class="position-absolute" style="bottom: 0; right: 0; background: #007bff; color: white; border-radius: 50%; width: 30px; height: 30px; line-height: 30px; text-align: center;">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-2">Click to upload photo</small>
                     </div>
-                    <div class="col-md-3 form-group">
-                        <label>First Name</label>
-                        <input type="text" name="first_name" class="form-control" value="<?php echo htmlspecialchars($contact['first_name'] ?? ''); ?>">
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label>Middle Name</label>
-                        <input type="text" name="middle_name" class="form-control" value="<?php echo htmlspecialchars($contact['middle_name'] ?? ''); ?>">
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label>Last Name</label>
-                        <input type="text" name="last_name" class="form-control" value="<?php echo htmlspecialchars($contact['last_name'] ?? ''); ?>">
-                    </div>
-                    <div class="col-md-1 form-group">
-                        <label>Suffix</label>
-                        <input type="text" name="name_suffix" class="form-control" value="<?php echo htmlspecialchars($contact['name_suffix'] ?? ''); ?>">
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-md-2 form-group">
+                                <label>Prefix</label>
+                                <input type="text" name="name_prefix" class="form-control" placeholder="Mr/Ms" value="<?php echo htmlspecialchars($contact['name_prefix'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>First Name</label>
+                                <input type="text" name="first_name" class="form-control" required value="<?php echo htmlspecialchars($contact['first_name'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-2 form-group">
+                                <label>Middle</label>
+                                <input type="text" name="middle_name" class="form-control" value="<?php echo htmlspecialchars($contact['middle_name'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Last Name</label>
+                                <input type="text" name="last_name" class="form-control" value="<?php echo htmlspecialchars($contact['last_name'] ?? ''); ?>">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-2 form-group">
+                                <label>Suffix</label>
+                                <input type="text" name="name_suffix" class="form-control" value="<?php echo htmlspecialchars($contact['name_suffix'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-5 form-group">
+                                <label>Nickname</label>
+                                <input type="text" name="nickname" class="form-control" value="<?php echo htmlspecialchars($contact['nickname'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-5 form-group">
+                                <label>File as</label>
+                                <input type="text" name="file_as" class="form-control" placeholder="Lastname, Firstname" value="<?php echo htmlspecialchars($contact['file_as'] ?? ''); ?>">
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="row mt-2">
-                    <div class="col-md-3 form-group">
+
+                <div class="row mt-3">
+                    <div class="col-md-4 form-group">
                         <label>Phonetic First</label>
                         <input type="text" name="phonetic_first_name" class="form-control" value="<?php echo htmlspecialchars($contact['phonetic_first_name'] ?? ''); ?>">
                     </div>
-                    <div class="col-md-3 form-group">
+                    <div class="col-md-4 form-group">
                         <label>Phonetic Middle</label>
                         <input type="text" name="phonetic_middle_name" class="form-control" value="<?php echo htmlspecialchars($contact['phonetic_middle_name'] ?? ''); ?>">
                     </div>
-                    <div class="col-md-3 form-group">
+                    <div class="col-md-4 form-group">
                         <label>Phonetic Last</label>
                         <input type="text" name="phonetic_last_name" class="form-control" value="<?php echo htmlspecialchars($contact['phonetic_last_name'] ?? ''); ?>">
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label>Nickname</label>
-                        <input type="text" name="nickname" class="form-control" value="<?php echo htmlspecialchars($contact['nickname'] ?? ''); ?>">
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-md-4 form-group">
-                        <label>File As</label>
-                        <input type="text" name="file_as" class="form-control" value="<?php echo htmlspecialchars($contact['file_as'] ?? ''); ?>">
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Contact Methods -->
+    <!-- Contact & Online -->
     <div class="col-md-12 mb-4">
         <div class="card">
-            <div class="card-header"><h5 class="mb-0">Contact Methods</h5></div>
+            <div class="card-header"><h5 class="mb-0">Contact & Online</h5></div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
@@ -99,7 +89,7 @@
                         <div class="input-group mb-3">
                             <div class="input-group-prepend">
                                 <select name="email1_label" class="form-control rounded-0">
-                                    <?php foreach(['Work','Home','Other'] as $lbl): ?>
+                                    <?php foreach(['Work','Personal','Other'] as $lbl): ?>
                                         <option value="<?php echo $lbl; ?>" <?php echo (($contact['email1_label'] ?? '') === $lbl) ? 'selected' : ''; ?>><?php echo $lbl; ?></option>
                                     <?php endforeach; ?>
                                 </select>
@@ -155,7 +145,7 @@
         </div>
     </div>
 
-    <!-- Address (UK localized labels) -->
+    <!-- Address -->
     <div class="col-md-12 mb-4">
         <div class="card">
             <div class="card-header"><h5 class="mb-0">Address</h5></div>
