@@ -11,7 +11,7 @@ def get_session_id():
 
 def take_screenshots():
     session_id = get_session_id()
-    base_url = "http://localhost:8080"
+    base_url = "http://localhost:8000"
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -35,6 +35,18 @@ def take_screenshots():
         time.sleep(2)
         print("URL after bookmark creation:", page.url)
         page.screenshot(path="bookmark_created.png")
+
+        # 3. Private Contacts
+        print("Taking Private Contacts screenshot...")
+        page.goto(f"{base_url}/modules/private_contacts/index.php")
+        page.wait_for_load_state("networkidle")
+        time.sleep(2)
+        page.screenshot(path="docs/readme/private_contacts_index.png")
+
+        page.goto(f"{base_url}/modules/private_contacts/view.php?id=1")
+        page.wait_for_load_state("networkidle")
+        time.sleep(2)
+        page.screenshot(path="docs/readme/private_contacts_view.png")
 
         # 2. Password
         print("Creating Password...")
