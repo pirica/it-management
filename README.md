@@ -13,6 +13,7 @@
 - ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
 - ✅ Bookmarks management (Private/Shared, Folders tree, Drag-and-drop)
+- ✅ Private Contacts (User-scoped, UK localization, multi-field CRUD)
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
@@ -34,6 +35,10 @@
 
 <p align="center"><img src="docs/readme/demo_equipment.png" alt="Equipment module list" /></p>
 
+<p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
+
+<p align="center"><img src="docs/readme/private_contacts.png" alt="Private Contacts module" /></p>
+
 <h2 align="center">Screenshots</h2>
 
 <p align="center">Captured from a local Laragon-style install at <code>http://localhost/it-management/</code> (default light theme after sign-in).</p>
@@ -45,6 +50,10 @@
 <p align="center"><strong>Equipment</strong> — module list with search, sort, and table tools (export / import).</p>
 
 <p align="center"><img src="docs/readme/equipment.png" alt="Equipment module list" /></p>
+
+<p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
+
+<p align="center"><img src="docs/readme/private_contacts.png" alt="Private Contacts module" /></p>
 
 <p align="center"><strong>IDF rack</strong> — visual rack layout with positions, port grid, and linked device management.</p>
 
