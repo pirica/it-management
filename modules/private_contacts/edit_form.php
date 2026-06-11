@@ -7,7 +7,8 @@
                 <div class="row">
                     <div class="col-md-3 text-center">
                         <div class="position-relative itm-photo-upload-target cursor-pointer text-center mx-auto" style="border: 2px dashed currentColor; border-radius: 50%; padding: 5px; width: 110px; height: 110px;">
-                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*" style="display: none;">
+                            <input type="file" name="photo" id="photo-input" class="d-none" accept=".png" style="display: none;">
+                            <input type="hidden" name="confirm_replace" id="confirm_replace" value="0">
                             <label for="photo-input" class="mb-0 cursor-pointer d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                 <?php if (!empty($contact['photo'])): ?>
                                     <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
@@ -261,13 +262,26 @@ document.addEventListener('DOMContentLoaded', function() {
     itmUploadHelper.setupByClass(".itm-photo-upload-target");
 
     var photoInput = document.getElementById('photo-input');
-    photoInput.addEventListener('change', function(evt) {
+    photoInput.addEventListener("change", function(evt) {
         var [file] = evt.target.files;
         if (file) {
-            document.getElementById('photo-preview').src = URL.createObjectURL(file);
-            document.getElementById('photo-preview').classList.remove('d-none');
-            if (document.getElementById('photo-placeholder')) {
-                document.getElementById('photo-placeholder').classList.add('d-none');
+            if (!file.name.toLowerCase().endsWith(".png")) {
+                alert("Only .png files are allowed.");
+                evt.target.value = "";
+                return;
+            }
+            <?php if (!empty($contact["photo"])): ?>
+            if (confirm("A photo already exists. Do you want to replace it?")) {
+                document.getElementById("confirm_replace").value = "1";
+            } else {
+                evt.target.value = "";
+                return;
+            }
+            <?php endif; ?>
+            document.getElementById("photo-preview").src = URL.createObjectURL(file);
+            document.getElementById("photo-preview").classList.remove("d-none");
+            if (document.getElementById("photo-placeholder")) {
+                document.getElementById("photo-placeholder").classList.add("d-none");
             }
         }
     });
