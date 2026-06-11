@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
+$contact = [];
 $pageTitle = "Add Private Contact";
 ?>
 <!DOCTYPE html>

@@ -7,9 +7,9 @@
                 <div class="row">
                     <div class="col-md-3 text-center">
                         <div class="position-relative itm-photo-upload-target cursor-pointer text-center mx-auto" style="border: 2px dashed currentColor; border-radius: 50%; padding: 5px; width: 110px; height: 110px;">
-                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*">
-                            <label for="photo-input" class="mb-0 cursor-pointer">
-                                <?php if ($contact['photo']): ?>
+                            <input type="file" name="photo" id="photo-input" class="d-none" accept="image/*" style="display: none;">
+                            <label for="photo-input" class="mb-0 cursor-pointer d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                <?php if (!empty($contact['photo'])): ?>
                                     <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
                                 <?php else: ?>
                                     <div id="photo-placeholder" class="rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
@@ -53,6 +53,10 @@
                                 <input type="text" name="nickname" class="form-control" value="<?php echo htmlspecialchars($contact['nickname'] ?? ''); ?>">
                             </div>
                             <div class="col-md-5 form-group">
+                                <div class="custom-control custom-checkbox mt-4">
+                                    <input type="checkbox" name="is_favorite" class="custom-control-input" id="is_favorite" <?php echo (!empty($contact["is_favorite"])) ? "checked" : ""; ?>>
+                                    <label class="custom-control-label" for="is_favorite">⭐ Favorite</label>
+                                </div>
                                 <label>File as</label>
                                 <input type="text" name="file_as" class="form-control" placeholder="Lastname, Firstname" value="<?php echo htmlspecialchars($contact['file_as'] ?? ''); ?>">
                             </div>
