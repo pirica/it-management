@@ -9,15 +9,9 @@ if (!isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $photo = '';
-    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
-        $photo = uniqid() . '.' . $ext;
-        if (!is_dir('../../files/contacts')) {
-            mkdir('../../files/contacts', 0777, true);
-        }
-        move_uploaded_file($_FILES['photo']['tmp_name'], '../../files/contacts/' . $photo);
-    }
+    $userId = $_SESSION['user_id'];
+    $companyId = $_SESSION['company_id'];
+    $username = $_SESSION['username'];
 
     $sql = "INSERT INTO private_contacts (
         company_id, user_id, name_prefix, first_name, middle_name, last_name, name_suffix,
@@ -27,8 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         organization_name, organization_title, organization_department,
         birthday, event1_label, event1_value, relation1_label, relation1_value,
         website1_label, website1_value, custom_field1_label, custom_field1_value,
-        notes, labels, photo, is_favorite
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        notes, labels, is_favorite
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
 
@@ -36,18 +30,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $birthday = $_POST['birthday'] ?: null;
     $event1_value = $_POST['event1_value'] ?: null;
 
-    $stmt->bind_param("iisssssssssssssssssssssssssssssssssssii",
-        $_SESSION['company_id'], $_SESSION['user_id'], $_POST['name_prefix'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'], $_POST['name_suffix'],
+    $stmt->bind_param("iisssssssssssssssssssssssssssssssssssi",
+        $companyId, $userId, $_POST['name_prefix'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'], $_POST['name_suffix'],
         $_POST['phonetic_first_name'], $_POST['phonetic_middle_name'], $_POST['phonetic_last_name'], $_POST['nickname'], $_POST['file_as'],
         $_POST['email1_label'], $_POST['email1_value'], $_POST['phone1_label'], $_POST['phone1_value'],
         $_POST['address1_label'], $_POST['address1_country'], $_POST['address1_street'], $_POST['address1_extended'], $_POST['address1_city'], $_POST['address1_region'], $_POST['address1_postcode'], $_POST['address1_po_box'],
         $_POST['organization_name'], $_POST['organization_title'], $_POST['organization_department'],
         $birthday, $_POST['event1_label'], $event1_value, $_POST['relation1_label'], $_POST['relation1_value'],
         $_POST['website1_label'], $_POST['website1_value'], $_POST['custom_field1_label'], $_POST['custom_field1_value'],
-        $_POST['notes'], $_POST['labels'], $photo, $is_favorite
+        $_POST['notes'], $_POST['labels'], $is_favorite
     );
 
     if ($stmt->execute()) {
+        $insertId = $stmt->insert_id;
+        $photo = '';
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
+            $photoFilename = $insertId . '_photo.' . $ext;
+            $dir = "../../files/$companyId/Private/{$_SESSION['username']}_{$userId}/private_contacts";
+            if (!is_dir($dir)) {
+                mkdir($dir, 0777, true);
+            }
+            if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
+                $updateStmt = $conn->prepare("UPDATE private_contacts SET photo = ? WHERE id = ?");
+                $updateStmt->bind_param("si", $photoFilename, $insertId);
+                $updateStmt->execute();
+            }
+        }
         header("Location: index.php?msg=created");
     } else {
         echo "Error: " . $stmt->error;

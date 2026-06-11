@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $id = (int)($_GET['id'] ?? 0);
 $userId = $_SESSION['user_id'];
+$companyId = $_SESSION['company_id'];
 
 $stmt = $conn->prepare("SELECT * FROM private_contacts WHERE id = ? AND user_id = ?");
 $stmt->bind_param("ii", $id, $userId);
@@ -25,11 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $photo = $contact['photo'];
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
         $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
-        $photo = uniqid() . '.' . $ext;
-        if (!is_dir('../../files/contacts')) {
-            mkdir('../../files/contacts', 0777, true);
+        $photoFilename = $id . '_photo.' . $ext;
+        $dir = "../../files/$companyId/Private/{$_SESSION['username']}_{$userId}/private_contacts";
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
         }
-        move_uploaded_file($_FILES['photo']['tmp_name'], '../../files/contacts/' . $photo);
+        if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
+            $photo = $photoFilename;
+        }
     }
 
     $sql = "UPDATE private_contacts SET
