@@ -26,14 +26,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $photo = $contact['photo'];
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
-        $photoFilename = $id . '_photo.' . $ext;
-        $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
-            $photo = $photoFilename;
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($_FILES['photo']['tmp_name']);
+        if ($mime === 'image/png') {
+            $photoFilename = $id . '_photo.png';
+            $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
+
+            // Debug
+            echo "DIR: $dir\n";
+            echo "REALPATH (parent): " . realpath(dirname($dir)) . "\n";
+            error_log("Creating directory: " . realpath(dirname($dir)) . " -> $dir");
+
+            $can_write = true;
+            if (file_exists("$dir/$photoFilename") && ($_POST['confirm_replace'] ?? '0') !== '1') {
+                $can_write = false;
+            }
+
+            if ($can_write) {
+                if (!is_dir($dir)) {
+                    if (!mkdir($dir, 0777, true)) {
+                        echo "MKDIR FAILED\n";
+                        echo "Last error: ";
+                        print_r(error_get_last());
+                        error_log("MKDIR FAILED: $dir");
+                        @chmod($dir, 0777);
+                    } else {
+                        echo "MKDIR SUCCESS\n";
+                        chmod($dir, 0777);
+                    }
+                } else {
+                    chmod($dir, 0777);
+                }
+
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
+                    $photo = $photoFilename;
+                }
+            }
         }
     }
 

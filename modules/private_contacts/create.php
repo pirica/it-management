@@ -44,16 +44,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($stmt->execute()) {
         $insertId = $stmt->insert_id;
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-            $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
-            $photoFilename = $insertId . '_photo.' . $ext;
-            $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
-            if (!is_dir($dir)) {
-                mkdir($dir, 0777, true);
-            }
-            if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
-                $updateStmt = $conn->prepare("UPDATE private_contacts SET photo = ? WHERE id = ?");
-                $updateStmt->bind_param("si", $photoFilename, $insertId);
-                $updateStmt->execute();
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($_FILES['photo']['tmp_name']);
+            if ($mime === 'image/png') {
+                $photoFilename = $insertId . '_photo.png';
+                $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
+
+                // Debug
+                error_log("Creating directory: " . realpath(dirname($dir)) . " -> $dir");
+
+                if (!is_dir($dir)) {
+                    if (!mkdir($dir, 0777, true)) {
+                        error_log("MKDIR FAILED: $dir");
+                        // Fallback chmod attempt if folder exists but restricted
+                        @chmod($dir, 0777);
+                    } else {
+                        chmod($dir, 0777);
+                    }
+                } else {
+                    chmod($dir, 0777);
+                }
+
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
+                    $updateStmt = $conn->prepare("UPDATE private_contacts SET photo = ? WHERE id = ?");
+                    $updateStmt->bind_param("si", $photoFilename, $insertId);
+                    $updateStmt->execute();
+                }
             }
         }
         header("Location: index.php?msg=created");
