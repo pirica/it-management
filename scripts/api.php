@@ -170,6 +170,7 @@ $projectJsonEndpoints = [
     <div class="card">
         <h2>Recent Updates</h2>
         <ul>
+            <li><strong>2026-06-12:</strong> Added new To-Do module with support for global and private tasks, importance levels, completion tracking, and list categorization.</li>
             <li><strong>2026-06-10:</strong> Added new Private Contacts module with user-scoped data privacy, UK localization, and full CRUD support.</li>
             <li><strong>2026-06-09:</strong> Added sortable column headers and state-preserving pagination to the Bookmarks List view.</li>
             <li><strong>2026-06-07:</strong> Refactored Passwords UI to match standardized layout, moved it to the Employee sidebar section, and added unit tests for vault data management.</li>

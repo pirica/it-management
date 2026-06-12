@@ -80,6 +80,7 @@ function itm_sidebar_base_structure() {
             'id' => 'planning',
             'title' => '🗓️ Planning',
             'items' => [
+                ['id' => 'todo', 'label' => '📝 To-Do', 'href' => 'modules/todo/', 'match_dir' => 'todo'],
                 ['id' => 'calendar', 'label' => '📅 Calendar', 'href' => 'modules/calendar/', 'match_dir' => 'calendar'],
                 ['id' => 'events', 'label' => '📅 Events', 'href' => 'modules/events/', 'match_dir' => 'events'],
                 ['id' => 'alerts', 'label' => '📢 Alerts', 'href' => 'modules/alerts/', 'match_dir' => 'alerts'],
