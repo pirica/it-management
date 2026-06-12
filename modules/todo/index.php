@@ -229,6 +229,9 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
     <div class="main-content">
         <div class="todo-container">
             <div class="todo-sidebar">
+                <a href="index.php" class="todo-sidebar-item">
+                    <i>📝</i> To Do
+                </a>
                 <a href="?filter=my_day" class="todo-sidebar-item <?php echo $filter === "my_day" ? "active" : ""; ?>">
                     <i>☀️</i> My Day
                 </a>
