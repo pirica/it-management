@@ -132,6 +132,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Audit Logs — Essential for compliance and debugging
 - Passwords — Secure private password manager with vault encryption, folder hierarchy, and Password generator with csv and others import/export
 - Bookmarks — Shared Bookmarks and private, with csv and others import/export    
+- To-Do — Manage global and private tasks with importance and completion tracking
 - Alerts — Manage global and private alerts with ICS import support
 
 
