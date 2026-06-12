@@ -1,0 +1,98 @@
+<?php
+require '../../config/config.php';
+require './helpers.php';
+
+$company_id = (int)($_SESSION['company_id'] ?? 0);
+$user_id = (int)($_SESSION['user_id'] ?? 0);
+$is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
+
+if ($company_id <= 0) {
+    header('Location: ../../index.php');
+    return;
+}
+
+$errors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        die('CSRF token validation failed.');
+    }
+
+    $name = trim($_POST['name'] ?? '');
+    $parent_folder_id = (int)($_POST['parent_folder_id'] ?? 0) ?: null;
+    $shared = isset($_POST['shared']) ? 1 : 0;
+    $active = isset($_POST['active']) ? 1 : 0;
+
+    if ($name === '') $errors[] = 'Folder name is required.';
+
+    if (empty($errors)) {
+        $stmt = mysqli_prepare($conn, "INSERT INTO bookmark_folders (company_id, user_id, parent_folder_id, name, shared, active) VALUES (?, ?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, 'iiisii', $company_id, $user_id, $parent_folder_id, $name, $shared, $active);
+
+        if (mysqli_stmt_execute($stmt)) {
+            header('Location: index.php');
+            return;
+        } else {
+            $errors[] = 'Database error: ' . mysqli_error($conn);
+        }
+    }
+}
+
+$all_folders = bkm_get_folders($conn, $company_id, $user_id);
+$folder_tree = bkm_build_folder_tree($all_folders);
+$csrfToken = itm_get_csrf_token();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Folder - IT Management</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+<div class="container">
+    <?php include '../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <?php include '../../includes/header.php'; ?>
+
+        <div class="content">
+        <h1>Add New Folder</h1>
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <ul><?php foreach ($errors as $e): ?><li><?php echo sanitize($e); ?></li><?php endforeach; ?></ul>
+            </div>
+        <?php endif; ?>
+        <form method="POST" class="form-grid">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+            <div class="form-group">
+                <label>Folder Name</label>
+                <input type="text" name="name" required value="<?php echo sanitize($_POST['name'] ?? ''); ?>">
+            </div>
+            <div class="form-group">
+                <label>Parent Folder</label>
+                <select name="parent_folder_id">
+                    <option value="">-- None --</option>
+                    <?php echo bkm_render_folder_options($folder_tree); ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="itm-checkbox-control">
+                    <input type="checkbox" name="shared" value="1" <?php echo isset($_POST['shared']) ? 'checked' : ''; ?>>
+                    <span>Shared 🔓</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="itm-checkbox-control">
+                    <input type="checkbox" name="active" value="1" checked>
+                    <span>Active ✅</span>
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Save</button>
+                <a href="index.php" class="btn">🔙 Back</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="../../js/theme.js"></script>
+</body>
+</html>
