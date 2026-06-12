@@ -135,7 +135,8 @@ $table = $_POST['table'] ?? '';
 $idCol = $_POST['id_col'] ?? 'id';
 $labelCol = $_POST['label_col'] ?? 'name';
 $newValue = trim((string)($_POST['new_value'] ?? ''));
-$companyScoped = (int)($_POST['company_scoped'] ?? 0) === 1;
+$companyScoped = (int)($_POST["company_scoped"] ?? 0) === 1;
+$logged_user_id = isset($_SESSION["user_id"]) ? (int)$_SESSION["user_id"] : 0;
 $extraFieldsRaw = (string)($_POST['extra_fields'] ?? '');
 
 // Parse extra metadata (e.g. hex colors, codes). 
@@ -264,6 +265,11 @@ if ($existing && mysqli_num_rows($existing) > 0) {
         $insertValues[] = '1';
     }
 
+    if (isset($columns['cat_from_user_id']) && $logged_user_id > 0) {
+        $insertFields[] = '`cat_from_user_id`';
+        $insertValues[] = (string)(int)$logged_user_id;
+    }
+
     /**
      * Dynamic Requirement Check
      * 
@@ -278,7 +284,7 @@ if ($existing && mysqli_num_rows($existing) > 0) {
         $isNullable = strtoupper((string)$meta['Null']) === 'YES';
 
         if ($isAutoIncrement || $hasDefault || $isNullable) { continue; }
-        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active'], true)) { continue; }
+        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active', 'cat_from_user_id'], true)) { continue; }
 
         if (!array_key_exists($field, $extraFields) || $extraFields[$field] === '') {
             $missingRequiredFields[] = $field;
@@ -298,7 +304,7 @@ if ($existing && mysqli_num_rows($existing) > 0) {
     // Apply extra field data
     foreach ($extraFields as $field => $value) {
         if (!isset($columns[$field]) || $value === '') { continue; }
-        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active'], true)) { continue; }
+        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active', 'cat_from_user_id'], true)) { continue; }
         $insertFields[] = so_escape_identifier($field);
         $insertValues[] = "'" . mysqli_real_escape_string($conn, $value) . "'";
     }

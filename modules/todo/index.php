@@ -163,6 +163,15 @@ if ($crud_action === "index") {
         header("Location: index.php");
         die();
     }
+} elseif ($crud_action === "create") {
+    $data = [];
+    if ($filter === "my_day") {
+        $data["due_date"] = date("Y-m-d H:i:s");
+    } elseif ($filter === "important") {
+        $data["importance"] = 1;
+    } elseif ($filter === "planned") {
+        $data["due_date"] = date("Y-m-d H:i:s");
+    }
 }
 
 // Metadata
@@ -236,7 +245,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                     <i>🏠</i> Tasks
                 </a>
                 <div class="todo-sidebar-footer">
-                    <a href="create.php" class="todo-sidebar-item" style="color: var(--accent);">
+                    <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);">
                         <i>➕</i> New List
                     </a>
                 </div>
@@ -316,7 +325,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                         </div>
                         <div class="form-group">
                             <label>Department</label>
-                            <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-friendly="department">
+                            <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-friendly="department" data-add-company-scoped="1">
                                 <option value="">-- None --</option>
                                 <option value="__add_new__">➕</option>
                                 <?php foreach ($departments as $dept): ?>
@@ -326,7 +335,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                         </div>
                         <div class="form-group">
                             <label>Category</label>
-                            <select name="category_id" data-addable-select="1" data-add-table="todo_categories" data-add-friendly="category">
+                            <select name="category_id" data-addable-select="1" data-add-table="todo_categories" data-add-friendly="category" data-add-company-scoped="1">
                                 <option value="">-- None --</option>
                                 <option value="__add_new__">➕</option>
                                 <?php foreach ($categories as $cat): ?>
