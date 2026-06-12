@@ -1,5 +1,11 @@
 <?php
+/**
+ * Todo Module - List All
+ */
+
 $crud_table = 'todo';
 $crud_title = 'Todo';
 $crud_action = 'list_all';
-require __DIR__ . '/../manufacturers/list_all.php';
+
+require_once '../../config/config.php';
+require 'index.php';
