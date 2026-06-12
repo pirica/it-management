@@ -131,6 +131,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'cat_from_user_id' => 'Category from User',
     ];
 
     if (isset($map[$label])) {
@@ -163,6 +164,25 @@ function cr_render_cell_value($table, $field, $value) {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
+
+    if ($field === 'cat_from_user_id' && $value > 0) {
+        $conn = $GLOBALS['conn'] ?? null;
+        if ($conn) {
+            $stmt = mysqli_prepare($conn, 'SELECT username FROM users WHERE id = ?');
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $value);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_bind_result($stmt, $username);
+                if (mysqli_stmt_fetch($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    return sanitize($username);
+                }
+                mysqli_stmt_close($stmt);
+            }
+        }
+    }
+
+
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
@@ -896,6 +916,14 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                        if ($name === 'cat_from_user_id') {
+                            $val = (string)($data[$name] ?? '');
+                            if ($crud_action === 'create') {
+                                $val = (string)($_SESSION['user_id'] ?? '');
+                            }
+                            echo '<input type="hidden" name="cat_from_user_id" value="' . sanitize($val) . '">';
+                            continue;
+                        }
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
