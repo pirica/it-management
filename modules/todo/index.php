@@ -43,8 +43,14 @@ if (isset($_GET["ajax_action"])) {
     if ($_GET["ajax_action"] === "quick_add") {
         $title = trim((string)($_POST["title"] ?? ""));
         if ($title === "") { echo json_encode(["ok" => false]); die(); }
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, created_by_user_id, assigned_to_user_id, active) VALUES (?, ?, ?, ?, 1)");
-        $stmt->bind_param("isii", $company_id, $title, $logged_user_id, $logged_user_id);
+        $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
+
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, created_by_user_id, assigned_to_user_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)");
+        $stmt->bind_param("issssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $logged_user_id, $logged_user_id);
         if ($stmt->execute()) {
             echo json_encode(["ok" => true, "id" => $conn->insert_id]);
         } else {
@@ -87,6 +93,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $title = $_POST["title"] ?? "";
         $description = $_POST["description"] ?? "";
         $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
         $category_id = !empty($_POST["category_id"]) ? (int)$_POST["category_id"] : null;
         $department_id = !empty($_POST["department_id"]) ? (int)$_POST["department_id"] : null;
         $assigned_to_user_id = !empty($_POST["assigned_to_user_id"]) ? (int)$_POST["assigned_to_user_id"] : null;
@@ -94,11 +102,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $completed = isset($_POST["completed"]) ? 1 : 0;
 
         if ($crud_action === "edit" && $editId > 0) {
-            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, category_id=?, department_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=?");
-            $stmt->bind_param("sssiiiiiii", $title, $description, $due_date, $category_id, $department_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id);
+            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=?");
+            $stmt->bind_param("sssssiiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, category_id, department_id, assigned_to_user_id, created_by_user_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("isssiiiiii", $company_id, $title, $description, $due_date, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance, $completed);
+            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssssiiiiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance, $completed);
         }
 
         if ($stmt->execute()) {
@@ -220,6 +228,19 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         .task-star.active { color: var(--accent); }
         .empty-state { text-align: center; padding: 100px 50px; color: var(--text-tertiary); }
         .todo-sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
+        .quick-add-actions { display: flex; gap: 10px; margin-top: 10px; padding-left: 35px; }
+        .quick-add-btn { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; padding: 5px 10px; font-size: 13px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; }
+        .quick-add-btn:hover { background: var(--bg-tertiary); }
+        .quick-add-dropdown { position: absolute; top: 100%; left: 0; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-lg); z-index: 1000; min-width: 240px; display: none; margin-top: 5px; }
+        .quick-add-dropdown.show { display: block; }
+        .quick-add-dropdown-header { padding: 8px 15px; border-bottom: 1px solid var(--border); font-weight: 600; text-align: center; font-size: 12px; color: var(--text-secondary); }
+        .quick-add-dropdown-item { padding: 10px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary); transition: background 0.2s; }
+        .quick-add-dropdown-item:hover { background: var(--bg-tertiary); }
+        .quick-add-dropdown-item i { width: 16px; text-align: center; font-style: normal; }
+        .quick-add-dropdown-item .item-label { flex: 1; }
+        .quick-add-dropdown-item .item-suffix { color: var(--text-tertiary); font-size: 12px; }
+        .quick-add-dropdown-item.danger { color: var(--danger); border-top: 1px solid var(--border); margin-top: 5px; }
+
     </style>
 </head>
 <body>
@@ -268,10 +289,83 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                         <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
                     </div>
 
-                    <div class="quick-add">
-                        <div class="quick-add-icon" onclick="quickAdd()">＋</div>
-                        <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()">
-                        <button class="btn btn-sm btn-primary" onclick="quickAdd()">Add</button>
+                                                            <div class="quick-add" style="display: block;">
+                        <div style="display: flex; align-items: center;">
+                            <div class="quick-add-icon" onclick="quickAdd()">＋</div>
+                            <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()">
+                            <button class="btn btn-sm btn-primary" onclick="quickAdd()">Add</button>
+                        </div>
+                        <div class="quick-add-actions">
+                            <div class="quick-add-btn" id="deadlineBtn" onclick="toggleQuickDropdown(event, 'deadlineDropdown')">
+                                <i id="deadlineIcon">📅</i> <span id="deadlineLabel">Deadline</span>
+                                <div class="quick-add-dropdown" id="deadlineDropdown">
+                                    <div class="quick-add-dropdown-header">Deadline</div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'today', event)"><i>📅</i> <span class="item-label">Today</span> <span class="item-suffix"><?php echo date("D"); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'tomorrow', event)"><i>📅</i> <span class="item-label">Tomorrow</span> <span class="item-suffix"><?php echo date("D", strtotime("+1 day")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'next_week', event)"><i>📅</i> <span class="item-label">Next week</span> <span class="item-suffix"><?php echo date("D", strtotime("next monday")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'choose', event)"><i>📅</i> <span class="item-label">Choose a date</span></div>
+                                    <div class="quick-add-dropdown-item danger" onclick="setQuickValue('deadline', 'remove', event)"><i>🗑️</i> <span class="item-label">Remove due date</span></div>
+                                </div>
+                            </div>
+                            <div class="quick-add-btn" id="reminderBtn" onclick="toggleQuickDropdown(event, 'reminderDropdown')">
+                                <i id="reminderIcon">🔔</i> <span id="reminderLabel">Reminder</span>
+                                <div class="quick-add-dropdown" id="reminderDropdown">
+                                    <div class="quick-add-dropdown-header">Reminder</div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'later', event)"><i>🕒</i> <span class="item-label">Later today</span> <span class="item-suffix"><?php echo date("g:i a", strtotime("+3 hours")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'tomorrow', event)"><i>🕒</i> <span class="item-label">Tomorrow</span> <span class="item-suffix"><?php echo date("D, 9:00 am", strtotime("+1 day 9:00:00")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'next_week', event)"><i>🕒</i> <span class="item-label">Next week</span> <span class="item-suffix"><?php echo date("D, 9:00 a.m.", strtotime("next monday 9:00:00")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'choose', event)"><i>🕒</i> <span class="item-label">Choose a date and time</span></div>
+                                    <div class="quick-add-dropdown-item danger" onclick="setQuickValue('reminder', 'remove', event)"><i>🗑️</i> <span class="item-label">Remove Reminder</span></div>
+                                </div>
+                            </div>
+                            <div class="quick-add-btn" id="repeatBtn" onclick="toggleQuickDropdown(event, 'repeatDropdown')">
+                                <i id="repeatIcon">🔄</i> <span id="repeatLabel">Repeat</span>
+                                <div class="quick-add-dropdown" id="repeatDropdown">
+                                    <div class="quick-add-dropdown-header">Repeat</div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'daily', event)"><i>📅</i> <span class="item-label">Daily</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'weekdays', event)"><i>📅</i> <span class="item-label">On weekdays</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'weekly', event)"><i>📅</i> <span class="item-label">Weekly</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'monthly', event)"><i>📅</i> <span class="item-label">Monthly</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'annually', event)"><i>📅</i> <span class="item-label">Annually</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'personalized', event)"><i>📅</i> <span class="item-label">Personalized</span></div>
+                                    <div class="quick-add-dropdown-item danger" onclick="setQuickValue('repeat', 'remove', event)"><i>🗑️</i> <span class="item-label">Never repeat</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="quickAddDueDate">
+                        <input type="hidden" id="quickAddReminderAt">
+                        <input type="hidden" id="quickAddRepeatPattern">
+                    </div>
+
+                            </div>
+                            <div class="quick-add-btn" id="reminderBtn" onclick="toggleQuickDropdown(event, 'reminderDropdown')">
+                                <i id="reminderIcon">🔔</i> <span id="reminderLabel">Reminder</span>
+                                <div class="quick-add-dropdown" id="reminderDropdown">
+                                    <div class="quick-add-dropdown-header">Reminder</div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'later', event)"><i>🕒</i> <span class="item-label">Later today</span> <span class="item-suffix"><?php echo date("g:i a", strtotime("+3 hours")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'tomorrow', event)"><i>🕒</i> <span class="item-label">Tomorrow</span> <span class="item-suffix"><?php echo date("D, 9:00 am", strtotime("+1 day 9:00:00")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'next_week', event)"><i>🕒</i> <span class="item-label">Next week</span> <span class="item-suffix"><?php echo date("D, 9:00 a.m.", strtotime("next monday 9:00:00")); ?></span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('reminder', 'choose', event)"><i>🕒</i> <span class="item-label">Choose a date and time</span></div>
+                                    <div class="quick-add-dropdown-item danger" onclick="setQuickValue('reminder', 'remove', event)"><i>🗑️</i> <span class="item-label">Remove Reminder</span></div>
+                                </div>
+                            </div>
+                            <div class="quick-add-btn" id="repeatBtn" onclick="toggleQuickDropdown(event, 'repeatDropdown')">
+                                <i id="repeatIcon">🔄</i> <span id="repeatLabel">Repeat</span>
+                                <div class="quick-add-dropdown" id="repeatDropdown">
+                                    <div class="quick-add-dropdown-header">Repeat</div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'daily', event)"><i>📅</i> <span class="item-label">Daily</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'weekdays', event)"><i>📅</i> <span class="item-label">On weekdays</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'weekly', event)"><i>📅</i> <span class="item-label">Weekly</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'monthly', event)"><i>📅</i> <span class="item-label">Monthly</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'annually', event)"><i>📅</i> <span class="item-label">Annually</span></div>
+                                    <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'personalized', event)"><i>📅</i> <span class="item-label">Personalized</span></div>
+                                    <div class="quick-add-dropdown-item danger" onclick="setQuickValue('repeat', 'remove', event)"><i>🗑️</i> <span class="item-label">Never repeat</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="quickAddDueDate">
+                        <input type="hidden" id="quickAddReminderAt">
+                        <input type="hidden" id="quickAddRepeatPattern">
                     </div>
 
                     <div class="task-list" id="taskList">
@@ -293,6 +387,12 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                                             <?php endif; ?>
                                             <?php if ($task["due_date"]): ?>
                                                 <span>• 📅 <?php echo date("M j", strtotime($task["due_date"])); ?></span>
+                                            <?php endif; ?>
+                                            <?php if ($task["reminder_at"]): ?>
+                                                <span title="Reminder set">• 🔔</span>
+                                            <?php endif; ?>
+                                            <?php if ($task["repeat_pattern"]): ?>
+                                                <span title="Repeat: <?php echo sanitize($task['repeat_pattern']); ?>">• 🔄</span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -325,6 +425,21 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                         <div class="form-group">
                             <label>Due Date</label>
                             <input type="datetime-local" name="due_date" value="<?php echo isset($data["due_date"]) ? str_replace(" ", "T", substr($data["due_date"], 0, 16)) : ""; ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Reminder</label>
+                            <input type="datetime-local" name="reminder_at" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Repeat Pattern</label>
+                            <select name="repeat_pattern">
+                                <option value="">-- None --</option>
+                                <option value="daily" <?php echo (isset($data["repeat_pattern"]) && $data["repeat_pattern"] === 'daily') ? 'selected' : ''; ?>>Daily</option>
+                                <option value="weekdays" <?php echo (isset($data["repeat_pattern"]) && $data["repeat_pattern"] === 'weekdays') ? 'selected' : ''; ?>>On weekdays</option>
+                                <option value="weekly" <?php echo (isset($data["repeat_pattern"]) && $data["repeat_pattern"] === 'weekly') ? 'selected' : ''; ?>>Weekly</option>
+                                <option value="monthly" <?php echo (isset($data["repeat_pattern"]) && $data["repeat_pattern"] === 'monthly') ? 'selected' : ''; ?>>Monthly</option>
+                                <option value="annually" <?php echo (isset($data["repeat_pattern"]) && $data["repeat_pattern"] === 'annually') ? 'selected' : ''; ?>>Annually</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Department</label>
@@ -399,6 +514,18 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                                 <td>📅 <?php echo date("M j, Y H:i", strtotime($data["due_date"])); ?></td>
                             </tr>
                             <?php endif; ?>
+                            <?php if ($data["reminder_at"]): ?>
+                            <tr>
+                                <th style="text-align: left; padding-right: 20px;">Reminder</th>
+                                <td>🔔 <?php echo date("M j, Y H:i", strtotime($data["reminder_at"])); ?></td>
+                            </tr>
+                            <?php endif; ?>
+                            <?php if ($data["repeat_pattern"]): ?>
+                            <tr>
+                                <th style="text-align: left; padding-right: 20px;">Repeat</th>
+                                <td>🔄 <?php echo sanitize(ucfirst($data["repeat_pattern"])); ?></td>
+                            </tr>
+                            <?php endif; ?>
                             <tr>
                                 <th style="text-align: left; padding-right: 20px;">Department</th>
                                 <td><?php
@@ -438,6 +565,95 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
 
 <script>
     const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+    function toggleQuickDropdown(event, id) {
+        event.stopPropagation();
+        const el = document.getElementById(id);
+        const isShown = el.classList.contains('show');
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+        if (!isShown) el.classList.add('show');
+    }
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+    });
+
+    function setQuickValue(type, value, event) {
+        event.stopPropagation();
+        const inputMap = {
+            'deadline': 'quickAddDueDate',
+            'reminder': 'quickAddReminderAt',
+            'repeat': 'quickAddRepeatPattern'
+        };
+        const labelMap = {
+            'deadline': 'deadlineLabel',
+            'reminder': 'reminderLabel',
+            'repeat': 'repeatLabel'
+        };
+        const btnMap = {
+            'deadline': 'deadlineBtn',
+            'reminder': 'reminderBtn',
+            'repeat': 'repeatBtn'
+        };
+
+        let displayValue = '';
+        let dbValue = '';
+
+        if (value === 'remove') {
+            displayValue = type === 'deadline' ? 'Deadline' : (type === 'reminder' ? 'Reminder' : 'Repeat');
+            dbValue = '';
+            document.getElementById(btnMap[type]).style.color = '';
+        } else if (value === 'choose') {
+            const dateStr = prompt("Enter date (YYYY-MM-DD HH:MM):");
+            if (!dateStr) return;
+            dbValue = dateStr;
+            displayValue = dateStr;
+            document.getElementById(btnMap[type]).style.color = 'var(--accent)';
+        } else {
+            // Mapping friendly values to relative dates for the backend or JS date objects
+            const now = new Date();
+            if (type === 'deadline') {
+                if (value === 'today') {
+                    dbValue = now.toISOString().split('T')[0] + ' 23:59:59';
+                    displayValue = 'Today';
+                } else if (value === 'tomorrow') {
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(now.getDate() + 1);
+                    dbValue = tomorrow.toISOString().split('T')[0] + ' 23:59:59';
+                    displayValue = 'Tomorrow';
+                } else if (value === 'next_week') {
+                    const nextMonday = new Date(now);
+                    nextMonday.setDate(now.getDate() + ((1 + 7 - now.getDay()) % 7 || 7));
+                    dbValue = nextMonday.toISOString().split('T')[0] + ' 09:00:00';
+                    displayValue = 'Next week';
+                }
+            } else if (type === 'reminder') {
+                 if (value === 'later') {
+                    const later = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+                    dbValue = later.toISOString().slice(0, 19).replace('T', ' ');
+                    displayValue = 'Later today';
+                } else if (value === 'tomorrow') {
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(now.getDate() + 1);
+                    dbValue = tomorrow.toISOString().split('T')[0] + ' 09:00:00';
+                    displayValue = 'Tomorrow';
+                } else if (value === 'next_week') {
+                    const nextMonday = new Date(now);
+                    nextMonday.setDate(now.getDate() + ((1 + 7 - now.getDay()) % 7 || 7));
+                    dbValue = nextMonday.toISOString().split('T')[0] + ' 09:00:00';
+                    displayValue = 'Next week';
+                }
+            } else if (type === 'repeat') {
+                dbValue = value;
+                displayValue = value.charAt(0).toUpperCase() + value.slice(1);
+            }
+            document.getElementById(btnMap[type]).style.color = 'var(--accent)';
+        }
+
+        document.getElementById(inputMap[type]).value = dbValue;
+        document.getElementById(labelMap[type]).textContent = displayValue;
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+    }
+
 
     function quickAdd() {
         const input = document.getElementById("quickAddInput");
@@ -447,6 +663,9 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         const formData = new FormData();
         formData.append("csrf_token", CSRF_TOKEN);
         formData.append("title", title);
+        formData.append("due_date", document.getElementById("quickAddDueDate").value);
+        formData.append("reminder_at", document.getElementById("quickAddReminderAt").value);
+        formData.append("repeat_pattern", document.getElementById("quickAddRepeatPattern").value);
 
         fetch("index.php?ajax_action=quick_add", {
             method: "POST",
