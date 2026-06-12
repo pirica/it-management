@@ -1,5 +1,11 @@
 <?php
+/**
+ * Todo Module - View
+ */
+
 $crud_table = 'todo';
 $crud_title = 'Todo';
 $crud_action = 'view';
-require __DIR__ . '/../manufacturers/view.php';
+
+require_once '../../config/config.php';
+require 'index.php';
