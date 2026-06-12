@@ -43,8 +43,8 @@ if (isset($_GET["ajax_action"])) {
     if ($_GET["ajax_action"] === "quick_add") {
         $title = trim((string)($_POST["title"] ?? ""));
         if ($title === "") { echo json_encode(["ok" => false]); die(); }
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, created_by_user_id, active) VALUES (?, ?, ?, 1)");
-        $stmt->bind_param("isi", $company_id, $title, $logged_user_id);
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, created_by_user_id, assigned_to_user_id, active) VALUES (?, ?, ?, ?, 1)");
+        $stmt->bind_param("isii", $company_id, $title, $logged_user_id, $logged_user_id);
         if ($stmt->execute()) {
             echo json_encode(["ok" => true, "id" => $conn->insert_id]);
         } else {
@@ -88,16 +88,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $description = $_POST["description"] ?? "";
         $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
         $category_id = !empty($_POST["category_id"]) ? (int)$_POST["category_id"] : null;
+        $department_id = !empty($_POST["department_id"]) ? (int)$_POST["department_id"] : null;
         $assigned_to_user_id = !empty($_POST["assigned_to_user_id"]) ? (int)$_POST["assigned_to_user_id"] : null;
         $importance = isset($_POST["importance"]) ? 1 : 0;
         $completed = isset($_POST["completed"]) ? 1 : 0;
 
         if ($crud_action === "edit" && $editId > 0) {
-            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, category_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=?");
-            $stmt->bind_param("sssiiiiii", $title, $description, $due_date, $category_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id);
+            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, category_id=?, department_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=?");
+            $stmt->bind_param("sssiiiiiii", $title, $description, $due_date, $category_id, $department_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, category_id, assigned_to_user_id, created_by_user_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("isssiiiii", $company_id, $title, $description, $due_date, $category_id, $assigned_to_user_id, $logged_user_id, $importance, $completed);
+            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, category_id, department_id, assigned_to_user_id, created_by_user_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssiiiiii", $company_id, $title, $description, $due_date, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance, $completed);
         }
 
         if ($stmt->execute()) {
@@ -112,10 +113,11 @@ $filter = $_GET["filter"] ?? "tasks";
 $search = $_GET["search"] ?? "";
 
 if ($crud_action === "index") {
-    $sql = "SELECT t.*, tc.name as category_name, u.username as assigned_username
+    $sql = "SELECT t.*, tc.name as category_name, u.username as assigned_username, d.name as department_name
             FROM todo t
             LEFT JOIN todo_categories tc ON t.category_id = tc.id
             LEFT JOIN users u ON t.assigned_to_user_id = u.id
+            LEFT JOIN departments d ON t.department_id = d.id
             WHERE t.company_id = ? AND t.active = 1";
 
     $params = [$company_id];
@@ -171,6 +173,10 @@ if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[] = $row
 $users = [];
 $resUser = mysqli_query($conn, "SELECT id, username FROM users");
 if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[] = $row; } }
+
+$departments = [];
+$resDept = mysqli_query($conn, "SELECT id, name FROM departments WHERE company_id = $company_id");
+if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $row; } }
 
 ?>
 <!DOCTYPE html>
@@ -282,6 +288,11 @@ if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[] = $row; }
                                         <?php echo $task["importance"] ? "★" : "☆"; ?>
                                     </div>
                                     <a href="edit.php?id=<?php echo $task["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
+                                    <form method="POST" action="index.php?id=<?php echo $task["id"]; ?>" style="display:inline;" onsubmit="return confirm('Delete this task?');">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
+                                        <button class="btn btn-sm" type="submit" style="background:none;border:none;padding:0;margin-left:5px;" title="Delete">🗑️</button>
+                                    </form>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -304,9 +315,20 @@ if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[] = $row; }
                             <input type="datetime-local" name="due_date" value="<?php echo isset($data["due_date"]) ? str_replace(" ", "T", substr($data["due_date"], 0, 16)) : ""; ?>">
                         </div>
                         <div class="form-group">
-                            <label>Category</label>
-                            <select name="category_id">
+                            <label>Department</label>
+                            <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-friendly="department">
                                 <option value="">-- None --</option>
+                                <option value="__add_new__">➕</option>
+                                <?php foreach ($departments as $dept): ?>
+                                    <option value="<?php echo $dept["id"]; ?>" <?php echo (isset($data["department_id"]) && $data["department_id"] == $dept["id"]) ? "selected" : ""; ?>><?php echo sanitize($dept["name"]); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category_id" data-addable-select="1" data-add-table="todo_categories" data-add-friendly="category">
+                                <option value="">-- None --</option>
+                                <option value="__add_new__">➕</option>
                                 <?php foreach ($categories as $cat): ?>
                                     <option value="<?php echo $cat["id"]; ?>" <?php echo (isset($data["category_id"]) && $data["category_id"] == $cat["id"]) ? "selected" : ""; ?>><?php echo sanitize($cat["name"]); ?></option>
                                 <?php endforeach; ?>
@@ -314,10 +336,11 @@ if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[] = $row; }
                         </div>
                         <div class="form-group">
                             <label>Assign To</label>
-                            <select name="assigned_to_user_id">
+                            <select name="assigned_to_user_id" data-addable-select="1" data-add-table="users" data-add-friendly="user">
                                 <option value="">-- Unassigned --</option>
+                                <option value="__add_new__">➕</option>
                                 <?php foreach ($users as $user): ?>
-                                    <option value="<?php echo $user["id"]; ?>" <?php echo (isset($data["assigned_to_user_id"]) && $data["assigned_to_user_id"] == $user["id"]) ? "selected" : ""; ?>><?php echo sanitize($user["username"]); ?></option>
+                                    <option value="<?php echo $user["id"]; ?>" <?php echo ((isset($data["assigned_to_user_id"]) && $data["assigned_to_user_id"] == $user["id"]) || ($crud_action === "create" && !isset($data["assigned_to_user_id"]) && $user["id"] == $logged_user_id)) ? "selected" : ""; ?>><?php echo sanitize($user["username"]); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -364,6 +387,14 @@ if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[] = $row; }
                                 <td>📅 <?php echo date("M j, Y H:i", strtotime($data["due_date"])); ?></td>
                             </tr>
                             <?php endif; ?>
+                            <tr>
+                                <th style="text-align: left; padding-right: 20px;">Department</th>
+                                <td><?php
+                                    $deptName = "None";
+                                    foreach ($departments as $d) { if ($d["id"] == $data["department_id"]) $deptName = $d["name"]; }
+                                    echo sanitize($deptName);
+                                ?></td>
+                            </tr>
                             <tr>
                                 <th style="text-align: left; padding-right: 20px;">Category</th>
                                 <td><?php
@@ -462,6 +493,10 @@ if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[] = $row; }
             }
         });
     }
+</script>
+<script src="../../js/select-add-option.js"></script>
+<script>
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
 </body>
 </html>

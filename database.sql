@@ -6067,26 +6067,33 @@ CREATE TABLE `private_contacts` (
   CONSTRAINT `private_contacts_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `private_contacts_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `todo_categories` (
+CREATE TABLE `todo_categories` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
+  `cat_from_user_id` int NOT NULL,
+  `department_id` int DEFAULT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `active` tinyint NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name_company` (`company_id`,`name`),
+  UNIQUE KEY `company_user_name` (`company_id`,`cat_from_user_id`,`name`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `todo_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+  KEY `cat_from_user_id` (`cat_from_user_id`),
+  KEY `department_id` (`department_id`),
+  CONSTRAINT `todo_categories_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `todo_categories_ibfk_user` FOREIGN KEY (`cat_from_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `todo_categories_ibfk_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `todo` (
+CREATE TABLE `todo` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` longtext COLLATE utf8mb4_unicode_ci,
   `due_date` datetime DEFAULT NULL,
   `category_id` int DEFAULT NULL,
+  `department_id` int DEFAULT NULL,
   `assigned_to_user_id` int DEFAULT NULL,
   `created_by_user_id` int DEFAULT NULL,
   `completed` tinyint NOT NULL DEFAULT '0',
@@ -6097,10 +6104,50 @@ CREATE TABLE IF NOT EXISTS `todo` (
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
   KEY `category_id` (`category_id`),
+  KEY `department_id` (`department_id`),
   KEY `assigned_to_user_id` (`assigned_to_user_id`),
   KEY `created_by_user_id` (`created_by_user_id`),
   CONSTRAINT `todo_ibfk_assigned` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `todo_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `todo_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `todo_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `todo_ibfk_created` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  CONSTRAINT `todo_ibfk_created` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `todo_ibfk_dept_task` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Triggers for todo_categories
+DROP TRIGGER IF EXISTS `trg_todo_categories_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_todo_categories_audit_update`;
+DROP TRIGGER IF EXISTS `trg_todo_categories_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_todo_categories_audit_insert` AFTER INSERT ON `todo_categories` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'todo_categories', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'cat_from_user_id', NEW.`cat_from_user_id`, 'department_id', NEW.`department_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_todo_categories_audit_update` AFTER UPDATE ON `todo_categories` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'todo_categories', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cat_from_user_id', OLD.`cat_from_user_id`, 'department_id', OLD.`department_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'cat_from_user_id', NEW.`cat_from_user_id`, 'department_id', NEW.`department_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_todo_categories_audit_delete` AFTER DELETE ON `todo_categories` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'todo_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cat_from_user_id', OLD.`cat_from_user_id`, 'department_id', OLD.`department_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+
+-- Triggers for todo
+DROP TRIGGER IF EXISTS `trg_todo_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_todo_audit_update`;
+DROP TRIGGER IF EXISTS `trg_todo_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_todo_audit_insert` AFTER INSERT ON `todo` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'todo', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'due_date', NEW.`due_date`, 'category_id', NEW.`category_id`, 'department_id', NEW.`department_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'completed', NEW.`completed`, 'importance', NEW.`importance`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_todo_audit_update` AFTER UPDATE ON `todo` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'todo', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'due_date', OLD.`due_date`, 'category_id', OLD.`category_id`, 'department_id', OLD.`department_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'completed', OLD.`completed`, 'importance', OLD.`importance`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'due_date', NEW.`due_date`, 'category_id', NEW.`category_id`, 'department_id', NEW.`department_id`, 'assigned_to_user_id', NEW.`assigned_to_user_id`, 'created_by_user_id', NEW.`created_by_user_id`, 'completed', NEW.`completed`, 'importance', NEW.`importance`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_todo_audit_delete` AFTER DELETE ON `todo` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'todo', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'due_date', OLD.`due_date`, 'category_id', OLD.`category_id`, 'department_id', OLD.`department_id`, 'assigned_to_user_id', OLD.`assigned_to_user_id`, 'created_by_user_id', OLD.`created_by_user_id`, 'completed', OLD.`completed`, 'importance', OLD.`importance`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
