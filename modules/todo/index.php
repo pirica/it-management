@@ -249,7 +249,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                 </a>
                 <div class="todo-sidebar-footer">
                     <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);">
-                        <i>➕</i> New List
+                        <i>➕</i> New Task
                     </a>
                 </div>
             </div>
