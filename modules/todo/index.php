@@ -227,6 +227,8 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row[
         .todo-sidebar-item:hover { background: var(--bg-tertiary); }
         .todo-sidebar-item.active { background: #e7f3ff; color: var(--accent); font-weight: 500; }
         .todo-header .date-subtitle { color: var(--text-secondary); font-size: 14px; }
+        .todo-content { flex: 1; padding: 30px 50px; overflow-y: auto; position: relative; }
+        .todo-header { margin-bottom: 30px; }
         .quick-add { background: var(--bg-secondary); border-radius: 4px; padding: 15px 20px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
         .quick-add-icon { color: var(--accent); margin-right: 15px; font-size: 20px; cursor: pointer; }
         .quick-add input { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; transition: border-color 0.2s; margin-right: 10px; }
