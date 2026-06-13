@@ -1,47 +1,25 @@
 <?php
 /**
- * Bookmarks Module - List All (Table View)
+ * Bookmarks List View (Flat)
  */
-require '../../config/config.php';
-require './helpers.php';
-
-// Handle Excel/CSV database import requests from table-tools.js.
-if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    $itmImportRawBody = (string)@file_get_contents('php://input');
-    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
-
-    // Explicit CSRF check for JSON payload
-    if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
-        http_response_code(403);
-        die('CSRF validation failed');
-    }
-
-    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
-        itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
-    }
+require_once '../../config/config.php';
+// require_once '../../includes/auth.php';
+if (!isset($_SESSION["user_id"])) {
+    header("Location: ../../login.php");
+    exit;
 }
+require_once './helpers.php';
 
-$company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = $_SESSION['user_id'];
+$company_id = $_SESSION['company_id'];
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
-if ($company_id <= 0) {
-    header('Location: ../../index.php');
-    return;
-}
+$crud_title = "All Bookmarks";
 
-$crud_table = 'bookmarks';
-$crud_title = 'Bookmarks List';
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'title';
+$dir = (isset($_GET['dir']) && strtoupper($_GET['dir']) === 'DESC') ? 'DESC' : 'ASC';
 
-$sort = $_GET['sort'] ?? 'title';
-$dir = (strtoupper($_GET['dir'] ?? '') === 'DESC') ? 'DESC' : 'ASC';
-
-$allowedSorts = ['title', 'url', 'folder', 'shared'];
-if (!in_array($sort, $allowedSorts)) {
-    $sort = 'title';
-}
-
-// Extra safety check as per plan
+// Validate sort field - matching against columns map or allow itm check as per plan
 if (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($sort)) {
     $sort = 'title';
 }
@@ -50,7 +28,8 @@ $orderByMap = [
     'title'  => 'b.title',
     'url'    => 'b.url',
     'folder' => 'f.name',
-    'shared' => 'b.shared'
+    'shared' => 'b.shared',
+    'notes'  => 'b.notes'
 ];
 $orderBy = $orderByMap[$sort] ?? 'b.title';
 
@@ -143,11 +122,17 @@ $showBulkActions = true;
                         <?php
                         $columns = [
                             'title'  => 'Title',
+                            'favicon' => 'Favicon',
                             'url'    => 'URL',
+                            'notes'  => 'Notes',
                             'folder' => 'Folder',
                             'shared' => 'Shared'
                         ];
                         foreach ($columns as $colKey => $colLabel):
+                            if ($colKey === 'favicon') {
+                                echo '<th>' . sanitize($colLabel) . '</th>';
+                                continue;
+                            }
                             $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
                             $arrow = ($sort === $colKey) ? ($dir === 'ASC' ? ' ▲' : ' ▼') : '';
                         ?>
@@ -168,7 +153,14 @@ $showBulkActions = true;
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php endif; ?>
                                 <td><?php echo sanitize($row['title']); ?></td>
+                                <td style="text-align:center;">
+                                    <img src="<?php echo bkm_get_favicon_url($row['url']); ?>"
+                                         alt="favicon"
+                                         style="width:16px; height:16px; vertical-align:middle;"
+                                         onerror="this.style.display='none';">
+                                </td>
                                 <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
+                                <td><?php echo sanitize($row['notes']); ?></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
@@ -185,7 +177,7 @@ $showBulkActions = true;
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="<?php echo $showBulkActions ? 6 : 5; ?>" style="text-align:center;">No bookmarks found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No bookmarks found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

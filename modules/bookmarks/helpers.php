@@ -113,3 +113,31 @@ function bkm_parse_html_bookmarks($html) {
     }
     return $bookmarks;
 }
+
+/**
+ * Extracts base domain and returns Google Favicon service URL.
+ */
+function bkm_get_favicon_url($url) {
+    $host = parse_url($url, PHP_URL_HOST);
+    if (!$host) return '';
+
+    $parts = explode('.', $host);
+    $count = count($parts);
+
+    // Default to full host if it's already short
+    $domain = $host;
+
+    if ($count >= 2) {
+        // Simple heuristic for .co.uk, .com.au etc.
+        $last2 = $parts[$count-2] . '.' . $parts[$count-1];
+        $known_multi_tlds = ['co.uk', 'com.au', 'net.au', 'org.uk', 'co.jp', 'com.br', 'com.mx'];
+
+        if (in_array($last2, $known_multi_tlds) && $count >= 3) {
+             $domain = $parts[$count-3] . '.' . $last2;
+        } else {
+             $domain = $last2;
+        }
+    }
+
+    return "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://www." . urlencode($domain) . "&size=32";
+}
