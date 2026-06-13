@@ -228,7 +228,7 @@ if ($crud_action === "index") {
     } elseif ($filter === "planned") {
         $sql .= " AND t.due_date IS NOT NULL";
     } elseif ($filter === "assigned") {
-        $sql .= " AND t.assigned_to_user_id = ?";
+        $sql .= " AND FIND_IN_SET(?, t.assigned_to_user_id)";
         $types .= "i";
         $params[] = $logged_user_id;
     }
@@ -245,7 +245,8 @@ if ($crud_action === "index") {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    $tasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $res = $stmt->get_result();
+    $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     $stmt = $conn->prepare("SELECT * FROM todo WHERE id = ? AND company_id = ? AND active = 1");
     $stmt->bind_param("ii", $editId, $company_id);
