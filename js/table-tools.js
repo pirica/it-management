@@ -84,6 +84,8 @@
     function cloneTableWithoutActions(table) {
         const { actionsIndex } = tableMeta(table);
         const clone = table.cloneNode(true);
+        clone.style.display = '';
+        if (clone.style.setProperty) clone.style.setProperty('display', 'table', 'important');
 
         clone.querySelectorAll('[data-itm-export-value]').forEach((node) => {
             node.textContent = node.getAttribute('data-itm-export-value') || '';
@@ -732,6 +734,8 @@
         const heading = table.closest('.content')?.querySelector('h1');
         const filenameBase = sanitizeFilename(heading ? heading.textContent : document.title);
         const clone = table.cloneNode(true);
+        clone.style.display = '';
+        if (clone.style.setProperty) clone.style.setProperty('display', 'table', 'important');
         const previewHtml = buildViewPdfPreviewHtml(table);
         const printWindow = window.open('', '_blank');
 
