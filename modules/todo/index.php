@@ -295,11 +295,11 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row[
                     <?php if ($crud_action === "index"): ?>
                         <div class="todo-header">
                             <h1>
-                                                    <div>
+                                
                         <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);">
                             ➕ New Task
-                        </a>
-                    </div>
+                        </a><br>
+                  
                                 <?php
                                     if ($filter === "my_day") echo "☀️ My Day";
                                     elseif ($filter === "important") echo "⭐ Important";
