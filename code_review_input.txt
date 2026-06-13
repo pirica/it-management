@@ -1,0 +1,9 @@
+I have fixed the "Add" button and ➕ functionality in the Todo module.
+
+Changes:
+1. Implemented missing AJAX handlers for `quick_add`, `toggle_completed`, and `toggle_importance` in `modules/todo/index.php`.
+2. Fixed a broken HTML tag (`<id="assignIcon">` to `<span>`).
+3. Restyled the `.quick-add` container and `.quick-add-actions` to improve the UI. The container now has a vertical layout with the input row on top and action buttons as a toolbar below it.
+4. Ensured that icons use `<span>` instead of `<i>` to avoid italic styling, and added CSS to keep them normal.
+5. Updated the screenshot script to refresh the `todo.png` documentation.
+6. Verified the fix via PHPUnit tests (after initializing the database table) and automated Playwright verification.

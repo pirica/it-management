@@ -148,6 +148,63 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     }
 }
 
+if (isset($_GET["ajax_action"])) {
+    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? $_POST["CSRF_TOKEN"] ?? "")) {
+        echo json_encode(["ok" => false, "error" => "CSRF token mismatch"]);
+        die();
+    }
+
+    $action = $_GET["ajax_action"];
+    if ($action === "quick_add") {
+        $title = $_POST["title"] ?? "";
+        if (empty($title)) {
+            echo json_encode(["ok" => false, "error" => "Title is required"]);
+            die();
+        }
+        $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
+
+        $category_id = isset($_POST["category_id"]) ? implode(",", array_filter(array_map("intval", $_POST["category_id"]))) : null;
+        $department_id = isset($_POST["department_id"]) ? implode(",", array_filter(array_map("intval", $_POST["department_id"]))) : null;
+        $assigned_to_user_id = isset($_POST["assigned_to_user_id"]) ? implode(",", array_filter(array_map("intval", $_POST["assigned_to_user_id"]))) : null;
+
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssssssi", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id);
+
+        if ($stmt->execute()) {
+            echo json_encode(["ok" => true]);
+        } else {
+            echo json_encode(["ok" => false, "error" => $stmt->error]);
+        }
+        die();
+    }
+    if ($action === "toggle_completed") {
+        $id = (int)($_POST["id"] ?? 0);
+        $completed = (int)($_POST["completed"] ?? 0);
+        $stmt = $conn->prepare("UPDATE todo SET completed = ? WHERE id = ? AND company_id = ?");
+        $stmt->bind_param("iii", $completed, $id, $company_id);
+        if ($stmt->execute()) {
+            echo json_encode(["ok" => true]);
+        } else {
+            echo json_encode(["ok" => false]);
+        }
+        die();
+    }
+    if ($action === "toggle_importance") {
+        $id = (int)($_POST["id"] ?? 0);
+        $importance = (int)($_POST["importance"] ?? 0);
+        $stmt = $conn->prepare("UPDATE todo SET importance = ? WHERE id = ? AND company_id = ?");
+        $stmt->bind_param("iii", $importance, $id, $company_id);
+        if ($stmt->execute()) {
+            echo json_encode(["ok" => true]);
+        } else {
+            echo json_encode(["ok" => false]);
+        }
+        die();
+    }
+}
+
 // Data fetching
 $filter = $_GET["filter"] ?? "tasks";
 $search = $_GET["search"] ?? "";
@@ -171,7 +228,7 @@ if ($crud_action === "index") {
     } elseif ($filter === "planned") {
         $sql .= " AND t.due_date IS NOT NULL";
     } elseif ($filter === "assigned") {
-        $sql .= " AND t.assigned_to_user_id = ?";
+        $sql .= " AND FIND_IN_SET(?, t.assigned_to_user_id)";
         $types .= "i";
         $params[] = $logged_user_id;
     }
@@ -188,7 +245,8 @@ if ($crud_action === "index") {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    $tasks = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $res = $stmt->get_result();
+    $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     $stmt = $conn->prepare("SELECT * FROM todo WHERE id = ? AND company_id = ? AND active = 1");
     $stmt->bind_param("ii", $editId, $company_id);
@@ -226,9 +284,10 @@ if ($crud_action === "index") {
         .todo-header .date-subtitle { color: var(--text-secondary); font-size: 14px; }
         .todo-content { flex: 1; padding: 30px 50px; overflow-y: auto; position: relative; }
         .todo-header { margin-bottom: 30px; }
-        .quick-add { background: var(--bg-secondary); border-radius: 4px; padding: 15px 20px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
-        .quick-add-icon { color: var(--accent); margin-right: 15px; font-size: 20px; cursor: pointer; }
-        .quick-add input { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; transition: border-color 0.2s; margin-right: 10px; }
+        .quick-add { background: var(--bg-secondary); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: box-shadow 0.2s; }
+        .quick-add:focus-within { box-shadow: var(--shadow); border-color: var(--accent); }
+        .quick-add-icon { color: var(--accent); margin-right: 12px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+        .quick-add input { background: transparent; border: none; padding: 8px 0; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; margin-right: 10px; }
         .quick-add input:focus { border-color: var(--accent); }
         .task-item { background: var(--bg-primary); border-radius: 4px; padding: 12px 15px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .task-item:hover { background-color: var(--bg-secondary); }
@@ -243,16 +302,16 @@ if ($crud_action === "index") {
         .task-star.active { color: var(--accent); }
         .empty-state { text-align: center; padding: 100px 50px; color: var(--text-tertiary); }
         .todo-sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
-        .quick-add-actions { display: flex; gap: 10px; margin-top: 10px; padding-left: 35px; }
-        .quick-add-btn { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; padding: 5px 10px; font-size: 13px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; }
-        .quick-add-btn i { font-style: normal; }
-        .quick-add-btn:hover { background: var(--bg-tertiary); }
+        .quick-add-actions { display: flex; gap: 10px; padding-left: 35px; flex-wrap: wrap; }
+        .quick-add-btn { background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 4px 8px; font-size: 14px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; position: relative; transition: all 0.2s; }
+        .quick-add-btn i, .quick-add-btn span { font-style: normal; }
+        .quick-add-btn:hover { background: var(--bg-tertiary); border-color: var(--border); }
         .quick-add-dropdown { position: absolute; top: 100%; left: 0; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-lg); z-index: 1000; min-width: 240px; display: none; margin-top: 5px; }
         .quick-add-dropdown.show { display: block; }
         .quick-add-dropdown-header { padding: 8px 15px; border-bottom: 1px solid var(--border); font-weight: 600; text-align: center; font-size: 12px; color: var(--text-secondary); }
         .quick-add-dropdown-item { padding: 10px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary); transition: background 0.2s; }
         .quick-add-dropdown-item:hover { background: var(--bg-tertiary); }
-        .quick-add-dropdown-item.active { background: #e7f3ff; color: var(--accent); }
+        .quick-add-dropdown-item.active { background: var(--bg-tertiary); color: var(--accent); font-weight: 500; }
         .quick-add-dropdown-item i { width: 16px; text-align: center; font-style: normal; }
         .quick-add-dropdown-item .item-label { flex: 1; }
         .quick-add-dropdown-item .item-suffix { color: var(--text-tertiary); font-size: 12px; }
@@ -371,17 +430,17 @@ if ($crud_action === "index") {
                             </table>
                             </div>
                         </div>
-                       <div class="quick-add" style="display: block;">
-                            <div style="display: flex; align-items: center;">
-                                <div class="quick-add-icon" onclick="quickAdd()">➕</div>
-                                <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()">
-                                <button class="btn btn-sm btn-primary" onclick="quickAdd()">Add</button>
+                       <div class="quick-add">
+                            <div style="display: flex; align-items: center; width: 100%;">
+                                <div class="quick-add-icon" onclick="quickAdd()" style="cursor: pointer; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">➕</div>
+                                <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()" style="flex: 1; border: none; background: transparent; font-size: 16px; padding: 10px 0; margin-right: 15px;">
+                                <button class="btn btn-primary" onclick="quickAdd()" style="padding: 6px 20px; font-weight: 500; border-radius: 6px;">Add</button>
                             </div>
   <div class="quick-add-actions">
 
     <!-- DEADLINE -->
     <div class="quick-add-btn" id="deadlineBtn" onclick="toggleQuickDropdown(event, 'deadlineDropdown')">
-        <i id="deadlineIcon">📅
+        <span id="deadlineIcon">📅</span>
         <span id="deadlineLabel">Deadline</span>
 
         <div class="quick-add-dropdown" id="deadlineDropdown">
@@ -419,7 +478,7 @@ if ($crud_action === "index") {
 
     <!-- REMINDER -->
     <div class="quick-add-btn" id="reminderBtn" onclick="toggleQuickDropdown(event, 'reminderDropdown')">
-        <i id="reminderIcon">🔔
+        <span id="reminderIcon">🔔</span>
         <span id="reminderLabel">Reminder</span>
 
         <div class="quick-add-dropdown" id="reminderDropdown">
@@ -457,7 +516,7 @@ if ($crud_action === "index") {
 
     <!-- REPEAT -->
     <div class="quick-add-btn" id="repeatBtn" onclick="toggleQuickDropdown(event, 'repeatDropdown')">
-        <i id="repeatIcon">🔄
+        <span id="repeatIcon">🔄</span>
         <span id="repeatLabel">Repeat</span>
 
         <div class="quick-add-dropdown" id="repeatDropdown">
@@ -497,7 +556,7 @@ if ($crud_action === "index") {
 
     <!-- DEPARTMENT -->
     <div class="quick-add-btn" id="depBtn" onclick="toggleQuickDropdown(event, 'depDropdown')">
-        <i id="depIcon">🏢
+        <span id="depIcon">🏢</span>
         <span id="depLabel">Department</span>
 
         <div class="quick-add-dropdown" id="depDropdown">
@@ -517,7 +576,7 @@ if ($crud_action === "index") {
 
     <!-- CATEGORY -->
     <div class="quick-add-btn" id="catBtn" onclick="toggleQuickDropdown(event, 'catDropdown')">
-        <i id="catIcon">🏷️
+        <span id="catIcon">🏷️</span>
         <span id="catLabel">Category</span>
 
         <div class="quick-add-dropdown" id="catDropdown">
@@ -537,7 +596,7 @@ if ($crud_action === "index") {
 
     <!-- ASSIGN TO -->
     <div class="quick-add-btn" id="assignBtn" onclick="toggleQuickDropdown(event, 'assignDropdown')">
-        <id="assignIcon">👤
+        <span id="assignIcon">👤</span>
         <span id="assignLabel">Assign To</span>
 
         <div class="quick-add-dropdown" id="assignDropdown">

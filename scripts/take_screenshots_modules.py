@@ -22,7 +22,7 @@ def take_screenshots():
         os.makedirs(output_dir)
 
     modules_dir = "modules"
-    modules = ["bookmarks", "todo"]
+    modules = ["todo"]
     modules.sort()
 
     with sync_playwright() as p:
@@ -35,9 +35,6 @@ def take_screenshots():
         for module in modules:
             screenshot_path = os.path.join(output_dir, f"{module}.png")
 
-            if os.path.exists(screenshot_path):
-                print(f"Skipping {module}, screenshot already exists.")
-                continue
 
             url = f"{base_url}/modules/{module}/index.php"
             print(f"Taking screenshot of {module} at {url}...")
