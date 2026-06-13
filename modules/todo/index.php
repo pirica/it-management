@@ -6,73 +6,85 @@
 require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/todo_visibility.php";
 
-// Handle Excel/CSV database import requests from table-tools.js.
-if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    $itmImportRawBody = file_get_contents('php://input');
-    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
-    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
-        itm_handle_json_table_import($conn, 'todo', (int)($company_id ?? 0));
-    }
-}
-
 $crud_table = "todo";
 $crud_title = "Todo";
 $crud_action = $crud_action ?? "index";
 $logged_user_id = isset($_SESSION["user_id"]) ? (int)$_SESSION["user_id"] : 0;
 $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 
-// AJAX Handlers
-if (isset($_GET["ajax_action"])) {
-    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? "")) {
-        header("Content-Type: application/json");
-        echo json_encode(["ok" => false, "message" => "CSRF token mismatch"]);
-        die();
-    }
-    header("Content-Type: application/json");
-    $id = (int)($_POST["id"] ?? 0);
+// Metadata
+$categories = [];
+$resCat = mysqli_query($conn, "SELECT id, name FROM todo_categories WHERE company_id = $company_id OR company_id IS NULL");
+if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id']] = $row; } }
 
-    if ($_GET["ajax_action"] === "toggle_completed") {
-        if ($id <= 0) { echo json_encode(["ok" => false]); die(); }
-        $val = (int)($_POST["completed"] ?? 0);
-        $stmt = $conn->prepare("UPDATE todo SET completed = ? WHERE id = ? AND company_id = ?");
-        $stmt->bind_param("iii", $val, $id, $company_id);
-        echo json_encode(["ok" => $stmt->execute()]);
-        die();
-    }
+$users = [];
+$resUser = mysqli_query($conn, "SELECT id, username FROM users");
+if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']] = $row; } }
 
-    if ($_GET["ajax_action"] === "toggle_importance") {
-        if ($id <= 0) { echo json_encode(["ok" => false]); die(); }
-        $val = (int)($_POST["importance"] ?? 0);
-        $stmt = $conn->prepare("UPDATE todo SET importance = ? WHERE id = ? AND company_id = ?");
-        $stmt->bind_param("iii", $val, $id, $company_id);
-        echo json_encode(["ok" => $stmt->execute()]);
-        die();
-    }
+$departments = [];
+$resDept = mysqli_query($conn, "SELECT id, name, code FROM departments WHERE company_id = $company_id OR company_id IS NULL");
+if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row['id']] = $row; } }
 
-    if ($_GET["ajax_action"] === "quick_add") {
-        $title = trim((string)($_POST["title"] ?? ""));
-        if ($title === "") { echo json_encode(["ok" => false]); die(); }
-        $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
-        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
-        $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
-        
-        $category_ids = $_POST["category_id"] ?? [];
-        $category_id = is_array($category_ids) ? implode(",", array_filter(array_map("intval", $category_ids))) : null;
-        
-        $department_ids = $_POST["department_id"] ?? [];
-        $department_id = is_array($department_ids) ? implode(",", array_filter(array_map("intval", $department_ids))) : null;
-        
-        $assigned_to_user_ids = $_POST["assigned_to_user_id"] ?? [];
-        $assigned_to_user_id = is_array($assigned_to_user_ids) ? implode(",", array_filter(array_map("intval", $assigned_to_user_ids))) : ($logged_user_id ?: null);
+// Handle Excel/CSV database import requests from table-tools.js.
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        $catMap = []; foreach ($categories as $id => $cat) { $catMap[strtolower($cat['name'])] = $id; }
+        $userMap = []; foreach ($users as $id => $u) { $userMap[strtolower($u['username'])] = $id; }
+        $deptMap = []; foreach ($departments as $id => $d) { $deptMap[strtolower($d['name'])] = $id; if (!empty($d['code'])) $deptMap[strtolower($d['code'])] = $id; }
 
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
-        $stmt->bind_param("isssssssi", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id);
-        if ($stmt->execute()) { echo json_encode(["ok" => true, "id" => $conn->insert_id]); } else { echo json_encode(["ok" => false, "error" => $conn->error]); }
-        die();
+        $rows = $itmImportJsonBody['import_excel_rows'];
+        if (count($rows) > 1) {
+            $header_row = array_map('strtolower', $rows[0]);
+            $catIdx = array_search('category', $header_row);
+            $deptIdx = array_search('department', $header_row);
+            $userIdx = array_search('assigned to user', $header_row);
+            $compIdx = array_search('completed', $header_row);
+            $impIdx = array_search('importance', $header_row);
+
+            for ($i = 1; $i < count($rows); $i++) {
+                if ($catIdx !== false && !empty($rows[$i][$catIdx])) {
+                    $ids = [];
+                    foreach (explode(',', $rows[$i][$catIdx]) as $val) {
+                        $val = strtolower(trim($val));
+                        if (isset($catMap[$val])) $ids[] = $catMap[$val];
+                        elseif (ctype_digit($val)) $ids[] = $val;
+                    }
+                    $rows[$i][$catIdx] = implode(',', $ids);
+                }
+                if ($deptIdx !== false && !empty($rows[$i][$deptIdx])) {
+                    $ids = [];
+                    foreach (explode(',', $rows[$i][$deptIdx]) as $val) {
+                        $val = strtolower(trim($val));
+                        if (isset($deptMap[$val])) $ids[] = $deptMap[$val];
+                        elseif (ctype_digit($val)) $ids[] = $val;
+                    }
+                    $rows[$i][$deptIdx] = implode(',', $ids);
+                }
+                if ($userIdx !== false && !empty($rows[$i][$userIdx])) {
+                    $ids = [];
+                    foreach (explode(',', $rows[$i][$userIdx]) as $val) {
+                        $val = strtolower(trim($val));
+                        if (isset($userMap[$val])) $ids[] = $userMap[$val];
+                        elseif (ctype_digit($val)) $ids[] = $val;
+                    }
+                    $rows[$i][$userIdx] = implode(',', $ids);
+                }
+                if ($compIdx !== false) {
+                    $v = strtolower(trim($rows[$i][$compIdx]));
+                    $rows[$i][$compIdx] = (in_array($v, ['yes', '1', 'true'])) ? 1 : 0;
+                }
+                if ($impIdx !== false) {
+                    $v = strtolower(trim($rows[$i][$impIdx]));
+                    $rows[$i][$impIdx] = (in_array($v, ['yes', '1', 'true'])) ? 1 : 0;
+                }
+            }
+            $itmImportJsonBody['import_excel_rows'] = $rows;
+        }
+        itm_handle_json_table_import($conn, 'todo', (int)($company_id ?? 0), $itmImportJsonBody);
     }
 }
-
-
 // Standard CRUD processing
 $editId = (int)($_GET["id"] ?? 0);
 $csrfToken = itm_get_csrf_token();
@@ -197,21 +209,6 @@ if ($crud_action === "index") {
     }
 }
 
-// Metadata
-$categories = [];
-$resCat = mysqli_query($conn, "SELECT id, name FROM todo_categories WHERE company_id = $company_id OR company_id IS NULL");
-if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id']] = $row; } }
-
-$users = [];
-$resUser = mysqli_query($conn, "SELECT id, username FROM users");
-if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']] = $row; } }
-
-$departments = [];
-$resDept = mysqli_query($conn, "SELECT id, name, code FROM departments WHERE company_id = $company_id OR company_id IS NULL");
-if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row['id']] = $row; } }
-
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -324,7 +321,8 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row[
                                     <a href="index.php?filter=<?php echo urlencode($filter); ?>" class="btn">Clear</a>
                                 </div>
                             </form>
-                            <table data-itm-db-import-endpoint="index.php" style="display:none;">
+                            <!-- EXPORT_TABLE_START --><div class="itm-export-container" style="display:none;">
+                            <table data-itm-db-import-endpoint="index.php">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
@@ -349,15 +347,31 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row[
                                         <td><?php echo sanitize($t['due_date']); ?></td>
                                         <td><?php echo sanitize($t['reminder_at']); ?></td>
                                         <td><?php echo sanitize($t['repeat_pattern']); ?></td>
-                                        <td><?php echo (int)$t['importance']; ?></td>
-                                        <td><?php echo (int)$t['completed']; ?></td>
-                                        <td><?php echo sanitize($t['category_name'] ?? ''); ?></td>
-                                        <td><?php echo sanitize($t['department_name'] ?? ''); ?></td>
-                                        <td><?php echo sanitize($t['assigned_username'] ?? ''); ?></td>
+                                        <td><?php echo $t['importance'] ? 'Yes' : 'No'; ?></td>
+                                        <td><?php echo $t['completed'] ? 'Yes' : 'No'; ?></td>
+                                        <td><?php
+                                            $cIds = explode(',', (string)$t['category_id']);
+                                            $cNames = [];
+                                            foreach ($cIds as $cid) { if (isset($categories[$cid])) $cNames[] = $categories[$cid]['name']; }
+                                            echo sanitize(implode(', ', $cNames));
+                                        ?></td>
+                                        <td><?php
+                                            $dIds = explode(',', (string)$t['department_id']);
+                                            $dNames = [];
+                                            foreach ($dIds as $did) { if (isset($departments[$did])) $dNames[] = (!empty($departments[$did]['code']) ? $departments[$did]['code'] : $departments[$did]['name']); }
+                                            echo sanitize(implode(', ', $dNames));
+                                        ?></td>
+                                        <td><?php
+                                            $uIds = explode(',', (string)$t['assigned_to_user_id']);
+                                            $uNames = [];
+                                            foreach ($uIds as $uid) { if (isset($users[$uid])) $uNames[] = $users[$uid]['username']; }
+                                            echo sanitize(implode(', ', $uNames));
+                                        ?></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                        <div class="quick-add" style="display: block;">
                             <div style="display: flex; align-items: center;">
