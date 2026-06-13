@@ -223,7 +223,8 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         .todo-header .date-subtitle { color: var(--text-secondary); font-size: 14px; }
         .quick-add { background: var(--bg-secondary); border-radius: 4px; padding: 15px 20px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
         .quick-add-icon { color: var(--accent); margin-right: 15px; font-size: 20px; cursor: pointer; }
-        .quick-add input { background: transparent; border: none; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; }
+        .quick-add input { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; transition: border-color 0.2s; margin-right: 10px; }
+        .quick-add input:focus { border-color: var(--accent); }
         .task-item { background: var(--bg-primary); border-radius: 4px; padding: 12px 15px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .task-item:hover { background-color: var(--bg-secondary); }
         .task-checkbox { width: 22px; height: 22px; border: 2px solid var(--text-tertiary); border-radius: 50%; margin-right: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
@@ -239,6 +240,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         .todo-sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
         .quick-add-actions { display: flex; gap: 10px; margin-top: 10px; padding-left: 35px; }
         .quick-add-btn { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; padding: 5px 10px; font-size: 13px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative; }
+        .quick-add-btn i { font-style: normal; }
         .quick-add-btn:hover { background: var(--bg-tertiary); }
         .quick-add-dropdown { position: absolute; top: 100%; left: 0; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-lg); z-index: 1000; min-width: 240px; display: none; margin-top: 5px; }
         .quick-add-dropdown.show { display: block; }
@@ -350,7 +352,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
 
                         <div class="quick-add" style="display: block;">
                             <div style="display: flex; align-items: center;">
-                                <div class="quick-add-icon" onclick="quickAdd()">＋</div>
+                                <div class="quick-add-icon" onclick="quickAdd()">➕</div>
                                 <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()">
                                 <button class="btn btn-sm btn-primary" onclick="quickAdd()">Add</button>
                             </div>
@@ -715,7 +717,10 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
     function quickAdd() {
         const input = document.getElementById("quickAddInput");
         const title = input.value.trim();
-        if (!title) return;
+        if (!title) {
+            alert("Please add a title, cannot be empty.");
+            return;
+        }
 
         const formData = new FormData();
         formData.append("csrf_token", CSRF_TOKEN);
