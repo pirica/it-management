@@ -143,11 +143,17 @@ $showBulkActions = true;
                         <?php
                         $columns = [
                             'title'  => 'Title',
+                            'favicon' => 'Favicon',
                             'url'    => 'URL',
+                            'notes'  => 'Notes',
                             'folder' => 'Folder',
                             'shared' => 'Shared'
                         ];
                         foreach ($columns as $colKey => $colLabel):
+                            if ($colKey === "favicon") {
+                                echo "<th>" . sanitize($colLabel) . "</th>";
+                                continue;
+                            }
                             $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
                             $arrow = ($sort === $colKey) ? ($dir === 'ASC' ? ' ▲' : ' ▼') : '';
                         ?>
@@ -168,6 +174,13 @@ $showBulkActions = true;
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php endif; ?>
                                 <td><?php echo sanitize($row['title']); ?></td>
+                                <td style="text-align:center;">
+                                    <img src="<?php echo bkm_get_favicon_url($row['url']); ?>"
+                                         alt="favicon"
+                                         style="width:16px; height:16px; vertical-align:middle;"
+                                         onerror="this.style.display='none';">
+                                </td>
+                                <td><?php echo sanitize($row['notes']); ?></td>
                                 <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
@@ -185,7 +198,7 @@ $showBulkActions = true;
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="<?php echo $showBulkActions ? 6 : 5; ?>" style="text-align:center;">No bookmarks found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No bookmarks found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

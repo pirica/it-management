@@ -15,14 +15,14 @@ def take_screenshots():
         print("Failed to get session ID")
         return
 
-    base_url = "http://localhost:8080"
-    output_dir = "it-management/docs/readme/"
+    base_url = "http://localhost:8000"
+    output_dir = "docs/readme/"
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     modules_dir = "modules"
-    modules = ["todo"]
+    modules = ["bookmarks", "todo"]
     modules.sort()
 
     with sync_playwright() as p:

@@ -223,15 +223,19 @@ $csrfToken = itm_get_csrf_token();
         <th style="padding:8px; cursor:pointer;" onclick="sortTable(1, this)">
             Title <span class="sort-arrow"></span>
         </th>
-        <th style="padding:8px; cursor:pointer;" onclick="sortTable(2, this)">
+        <th style="padding:8px;">
+            Favicon
+        </th>
+        </th>
+        <th style="padding:8px; cursor:pointer;" onclick="sortTable(5, this)">
             URL <span class="sort-arrow"></span>
         </th>
 
-        <th style="padding:8px; cursor:pointer;" onclick="sortTable(3, this)">
+        <th style="padding:8px; cursor:pointer;" onclick="sortTable(5, this)">
             Notes <span class="sort-arrow"></span>
         </th>
 
-        <th style="padding:8px; cursor:pointer; width:120px;" onclick="sortTable(4, this)">
+        <th style="padding:8px; cursor:pointer; width:120px;" onclick="sortTable(5, this)">
             Visibility <span class="sort-arrow"></span>
         </th>
 		<th style="padding:8px; width:120px;" class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
@@ -251,6 +255,14 @@ $csrfToken = itm_get_csrf_token();
     <!-- Title -->
     <td style="padding:8px;">
         <?php echo sanitize($b['title']); ?>
+    </td>
+
+    <!-- Favicon -->
+    <td style="padding:8px; text-align:center;">
+        <img src="<?php echo bkm_get_favicon_url($b['url']); ?>"
+             alt="favicon"
+             style="width:16px; height:16px; vertical-align:middle;"
+             onerror="this.style.display='none';">
     </td>
 
     <!-- URL -->
@@ -306,7 +318,7 @@ $csrfToken = itm_get_csrf_token();
     <?php endif; ?>
 </div>
 
-                
+
             </div>
         </div>
     </div>
