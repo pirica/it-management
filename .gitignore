@@ -1,0 +1,12 @@
+.env
+.editorconfig
+.gitattributes
+up.bat
+up.ps1
+.cursor/
+.phpunit.result.cache
+php_server.log
+test-results
+qa-reports
+error_log.txt
+mysql_import.err
