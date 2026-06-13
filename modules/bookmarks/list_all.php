@@ -180,8 +180,8 @@ $showBulkActions = true;
                                          style="width:16px; height:16px; vertical-align:middle;"
                                          onerror="this.style.display='none';">
                                 </td>
-                                <td><?php echo sanitize($row['notes']); ?></td>
                                 <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
+                                <td><?php echo sanitize($row['notes']); ?></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">

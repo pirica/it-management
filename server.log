@@ -1,0 +1,13 @@
+[Sat Jun 13 22:26:15 2026] PHP 7.4.33 Development Server (http://localhost:8080) started
+[Sat Jun 13 22:26:18 2026] [::1]:44440 Accepted
+[Sat Jun 13 22:26:18 2026] [::1]:44440 [200]: GET /modules/bookmarks/list_all.php
+[Sat Jun 13 22:26:18 2026] [::1]:44440 Closing
+[Sat Jun 13 22:26:18 2026] [::1]:44446 Accepted
+[Sat Jun 13 22:26:18 2026] [::1]:44462 Accepted
+[Sat Jun 13 22:26:18 2026] [::1]:44446 [200]: GET /css/styles.css
+[Sat Jun 13 22:26:18 2026] [::1]:44470 Accepted
+[Sat Jun 13 22:26:18 2026] [::1]:44446 Closing
+[Sat Jun 13 22:26:18 2026] [::1]:44462 [200]: GET /js/theme.js
+[Sat Jun 13 22:26:18 2026] [::1]:44470 [200]: GET /js/bulk-delete-selection.js
+[Sat Jun 13 22:26:18 2026] [::1]:44462 Closing
+[Sat Jun 13 22:26:18 2026] [::1]:44470 Closing
