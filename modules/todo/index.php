@@ -67,25 +67,10 @@ if (isset($_GET["ajax_action"])) {
 
         $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
         $stmt->bind_param("isssssssi", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id);
-        if ($stmt->execute()) {
-            echo json_encode(["ok" => true, "id" => $conn->insert_id]);
-        } else {
-            echo json_encode(["ok" => false, "error" => $conn->error]);
-        }
-        die(); }
-        $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
-        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
-        $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
-
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, created_by_user_id, assigned_to_user_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)");
-        $stmt->bind_param("issssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $logged_user_id, $logged_user_id);
-        if ($stmt->execute()) {
-            echo json_encode(["ok" => true, "id" => $conn->insert_id]);
-        } else {
-            echo json_encode(["ok" => false]);
-        }
+        if ($stmt->execute()) { echo json_encode(["ok" => true, "id" => $conn->insert_id]); } else { echo json_encode(["ok" => false, "error" => $conn->error]); }
         die();
     }
+}
 
 
 // Standard CRUD processing
@@ -225,9 +210,7 @@ $departments = [];
 $resDept = mysqli_query($conn, "SELECT id, name, code FROM departments WHERE company_id = $company_id OR company_id IS NULL");
 if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row['id']] = $row; } }
 
-$departments = [];
-$resDept = mysqli_query($conn, "SELECT id, name FROM departments WHERE company_id = $company_id");
-if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $row; } }
+
 
 ?>
 <!DOCTYPE html>
@@ -243,10 +226,6 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         .todo-sidebar-item { padding: 10px 25px; display: flex; align-items: center; cursor: pointer; color: var(--text-primary); text-decoration: none; transition: background 0.2s; }
         .todo-sidebar-item:hover { background: var(--bg-tertiary); }
         .todo-sidebar-item.active { background: #e7f3ff; color: var(--accent); font-weight: 500; }
-        .todo-sidebar-item i { margin-right: 12px; width: 20px; text-align: center; font-style: normal; }
-        .todo-content { flex: 1; padding: 30px 50px; overflow-y: auto; position: relative; }
-        .todo-header { margin-bottom: 30px; }
-        .todo-header h1 { font-size: 28px; font-weight: 600; margin-bottom: 5px; }
         .todo-header .date-subtitle { color: var(--text-secondary); font-size: 14px; }
         .quick-add { background: var(--bg-secondary); border-radius: 4px; padding: 15px 20px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
         .quick-add-icon { color: var(--accent); margin-right: 15px; font-size: 20px; cursor: pointer; }
@@ -274,6 +253,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         .quick-add-dropdown-header { padding: 8px 15px; border-bottom: 1px solid var(--border); font-weight: 600; text-align: center; font-size: 12px; color: var(--text-secondary); }
         .quick-add-dropdown-item { padding: 10px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary); transition: background 0.2s; }
         .quick-add-dropdown-item:hover { background: var(--bg-tertiary); }
+        .quick-add-dropdown-item.active { background: #e7f3ff; color: var(--accent); }
         .quick-add-dropdown-item i { width: 16px; text-align: center; font-style: normal; }
         .quick-add-dropdown-item .item-label { flex: 1; }
         .quick-add-dropdown-item .item-suffix { color: var(--text-tertiary); font-size: 12px; }
@@ -507,7 +487,12 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
 
         <div class="quick-add-dropdown" id="depDropdown">
             <div class="quick-add-dropdown-header">Department</div>
-
+            <?php foreach ($departments as $dept): ?>
+                <div class="quick-add-dropdown-item" onclick="setQuickValue('department', '<?php echo $dept['id']; ?>', event)" data-id="<?php echo $dept['id']; ?>">
+                    <i>🏢</i>
+                    <span class="item-label"><?php echo sanitize(!empty($dept['code']) ? $dept['code'] : $dept['name']); ?></span>
+                </div>
+            <?php endforeach; ?>
             <div class="quick-add-dropdown-item danger" onclick="setQuickValue('department', 'remove', event)">
                 <i>🗑️</i>
                 <span class="item-label">Remove</span>
@@ -522,7 +507,12 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
 
         <div class="quick-add-dropdown" id="catDropdown">
             <div class="quick-add-dropdown-header">Category</div>
-
+            <?php foreach ($categories as $cat): ?>
+                <div class="quick-add-dropdown-item" onclick="setQuickValue('category', '<?php echo $cat['id']; ?>', event)" data-id="<?php echo $cat['id']; ?>">
+                    <i>🏷️</i>
+                    <span class="item-label"><?php echo sanitize($cat['name']); ?></span>
+                </div>
+            <?php endforeach; ?>
             <div class="quick-add-dropdown-item danger" onclick="setQuickValue('category', 'remove', event)">
                 <i>🗑️</i>
                 <span class="item-label">Remove</span>
@@ -537,7 +527,12 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
 
         <div class="quick-add-dropdown" id="assignDropdown">
             <div class="quick-add-dropdown-header">Assign To</div>
-
+            <?php foreach ($users as $user): ?>
+                <div class="quick-add-dropdown-item" onclick="setQuickValue('assign', '<?php echo $user['id']; ?>', event)" data-id="<?php echo $user['id']; ?>">
+                    <i>👤</i>
+                    <span class="item-label"><?php echo sanitize($user['username']); ?></span>
+                </div>
+            <?php endforeach; ?>
             <div class="quick-add-dropdown-item danger" onclick="setQuickValue('assign', 'remove', event)">
                 <i>🗑️</i>
                 <span class="item-label">Remove</span>
@@ -549,6 +544,9 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
                             <input type="hidden" id="quickAddDueDate">
                             <input type="hidden" id="quickAddReminderAt">
                             <input type="hidden" id="quickAddRepeatPattern">
+                            <input type="hidden" id="quickAddDept">
+                            <input type="hidden" id="quickAddCat">
+                            <input type="hidden" id="quickAddUser">
                         </div>
 
                         <div class="todo-list">
@@ -817,34 +815,73 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         const inputMap = {
             'deadline': 'quickAddDueDate',
             'reminder': 'quickAddReminderAt',
-            'repeat': 'quickAddRepeatPattern'
+            'repeat': 'quickAddRepeatPattern',
+            'department': 'quickAddDept',
+            'category': 'quickAddCat',
+            'assign': 'quickAddUser'
         };
         const labelMap = {
             'deadline': 'deadlineLabel',
             'reminder': 'reminderLabel',
-            'repeat': 'repeatLabel'
+            'repeat': 'repeatLabel',
+            'department': 'depLabel',
+            'category': 'catLabel',
+            'assign': 'assignLabel'
         };
         const btnMap = {
             'deadline': 'deadlineBtn',
             'reminder': 'reminderBtn',
-            'repeat': 'repeatBtn'
+            'repeat': 'repeatBtn',
+            'department': 'depBtn',
+            'category': 'catBtn',
+            'assign': 'assignBtn'
         };
 
+        const isMulti = ['department', 'category', 'assign'].includes(type);
         let displayValue = '';
         let dbValue = '';
 
         if (value === 'remove') {
-            displayValue = type === 'deadline' ? 'Deadline' : (type === 'reminder' ? 'Reminder' : 'Repeat');
             dbValue = '';
+            displayValue = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'assign') displayValue = 'Assign To';
             document.getElementById(btnMap[type]).style.color = '';
+            if (isMulti) {
+                document.querySelectorAll(`#${type}Dropdown .quick-add-dropdown-item`).forEach(i => i.classList.remove('active'));
+            }
         } else if (value === 'choose') {
             const dateStr = prompt("Enter date (YYYY-MM-DD HH:MM):");
             if (!dateStr) return;
             dbValue = dateStr;
             displayValue = dateStr;
             document.getElementById(btnMap[type]).style.color = 'var(--accent)';
+        } else if (isMulti) {
+            const input = document.getElementById(inputMap[type]);
+            let currentIds = input.value ? input.value.split(',').filter(x => x) : [];
+            const valStr = value.toString();
+
+            if (currentIds.includes(valStr)) {
+                currentIds = currentIds.filter(id => id !== valStr);
+                event.currentTarget.classList.remove('active');
+            } else {
+                currentIds.push(valStr);
+                event.currentTarget.classList.add('active');
+            }
+
+            dbValue = currentIds.join(',');
+            const count = currentIds.length;
+            if (count === 0) {
+                displayValue = type === 'assign' ? 'Assign To' : (type.charAt(0).toUpperCase() + type.slice(1));
+                document.getElementById(btnMap[type]).style.color = '';
+            } else {
+                displayValue = count + ' selected';
+                document.getElementById(btnMap[type]).style.color = 'var(--accent)';
+            }
+            // Don't close dropdown for multi-select
+            input.value = dbValue;
+            document.getElementById(labelMap[type]).textContent = displayValue;
+            return;
         } else {
-            // Mapping friendly values to relative dates for the backend or JS date objects
             const now = new Date();
             if (type === 'deadline') {
                 if (value === 'today') {
@@ -904,9 +941,15 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
         formData.append("due_date", document.getElementById("quickAddDueDate").value);
         formData.append("reminder_at", document.getElementById("quickAddReminderAt").value);
         formData.append("repeat_pattern", document.getElementById("quickAddRepeatPattern").value);
-        formData.append("department_id[]", document.getElementById("quickAddDept").value);
-        formData.append("category_id[]", document.getElementById("quickAddCat").value);
-        formData.append("assigned_to_user_id[]", document.getElementById("quickAddUser").value);
+
+        const deptIds = document.getElementById("quickAddDept").value.split(',').filter(x => x);
+        deptIds.forEach(id => formData.append("department_id[]", id));
+
+        const catIds = document.getElementById("quickAddCat").value.split(',').filter(x => x);
+        catIds.forEach(id => formData.append("category_id[]", id));
+
+        const userIds = document.getElementById("quickAddUser").value.split(',').filter(x => x);
+        userIds.forEach(id => formData.append("assigned_to_user_id[]", id));
 
         fetch("index.php?ajax_action=quick_add", {
             method: "POST",
@@ -917,7 +960,7 @@ if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[] = $
             if (data.ok) {
                 location.reload();
             } else {
-                alert("Error adding task");
+                alert("Error adding task: " + (data.error || "Unknown error"));
             }
         });
     }
