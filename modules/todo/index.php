@@ -731,8 +731,9 @@ if ($crud_action === "index") {
                                                             'annually' => 'Annually'
                                                         ];
                                                         $repLabel = $repeatLabels[$task['repeat_pattern']] ?? ucfirst($task['repeat_pattern']);
+                                                        $repStyle = ($task['repeat_pattern'] === 'daily') ? 'style="color: var(--danger); font-weight: 600;"' : '';
                                                     ?>
-                                                    <span>• 🔄 <?php echo sanitize($repLabel); ?></span>
+                                                    <span <?php echo $repStyle; ?>>• 🔄 <?php echo sanitize($repLabel); ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
