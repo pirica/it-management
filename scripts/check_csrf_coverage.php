@@ -184,6 +184,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: scripts/repro_vulnerabilities.php is a reproduction/test script; $_POST is mocked for internal API calls.
+    if ($relativePath === 'scripts/repro_vulnerabilities.php') {
+        $skipped[] = [
+            $relativePath,
+            'CLI/Browser reproduction script: mocks $_POST for internal API inclusions; not a standard CRUD endpoint',
+        ];
+        continue;
+    }
+
     // Why: scripts/explorer_human_test.php is a CLI integration test; $_POST is mocked for internal API calls.
     if ($relativePath === 'scripts/explorer_human_test.php') {
         $skipped[] = [
