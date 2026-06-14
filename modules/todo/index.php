@@ -325,9 +325,11 @@ if ($crud_action === "index") {
         .modal.show { display: block; }
         .modal-dialog { position: relative; width: auto; margin: 0.5rem; pointer-events: none; }
         @media (min-width: 576px) { .modal-dialog { max-width: 500px; margin: 1.75rem auto; } }
-        .modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 0.3rem; color: var(--text-primary); margin-top: 30px; outline: 0; }
-        .modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border); border-top-left-radius: 0.3rem; border-top-right-radius: 0.3rem; }
-        .modal-body { position: relative; flex: 1 1 auto; padding: 1rem; }
+        .modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background-color: #fff; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 0.3rem; color: var(--text-primary); margin-top: 30px; outline: 0; box-shadow: var(--shadow-lg); font-style: normal; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border); border-top-left-radius: 0.3rem; border-top-right-radius: 0.3rem; }
+        .modal-title { font-size: 18px; margin: 0; font-weight: 600; font-style: normal; }
+        .modal-body { position: relative; flex: 1 1 auto; padding: 1.5rem; font-style: normal; }
+        .modal-body label { font-size: 14px; font-weight: 500; margin-bottom: 8px; display: block; color: var(--text-secondary); font-style: normal; }
         .modal-footer { display: flex; align-items: center; justify-content: flex-end; padding: 1rem; border-top: 1px solid var(--border); border-bottom-right-radius: 0.3rem; border-bottom-left-radius: 0.3rem; gap: 8px; }
         .close { padding: 1rem; margin: -1rem -1rem -1rem auto; background-color: transparent; border: 0; font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); text-shadow: 0 1px 0 #fff; opacity: .5; cursor: pointer; }
         .close:hover { opacity: .75; }
@@ -649,7 +651,7 @@ if ($crud_action === "index") {
                         <div class="todo-list">
                             <?php if (empty($tasks)): ?>
                                 <div class="empty-state">
-                                    <i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋
+                                    <i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i>
                                     <p>No tasks found. Try adding one!</p>
                                 </div>
                             <?php else: ?>
