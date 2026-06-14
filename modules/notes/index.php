@@ -182,6 +182,7 @@ if (isset($_GET["ajax_action"])) {
     if ($action === "quick_add") {
         $title = $_POST["title"] ?? "";
         $is_checklist = (int)($_POST["is_checklist"] ?? 0);
+        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
         $image_files = [];
         if (!empty($_FILES['images'])) {
             $upload_dir = ROOT_PATH . "files/$company_id/Private/{$_SESSION['username']}_$logged_user_id/notes/";
@@ -195,9 +196,13 @@ if (isset($_GET["ajax_action"])) {
         }
         $images_json = !empty($image_files) ? json_encode($image_files) : null;
         $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, is_checklist, images_json, reminder_at) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("iisiss", $company_id, $logged_user_id, $title, $is_checklist, $images_json, $reminder_at);
-        if ($stmt->execute()) echo json_encode(["ok" => true]);
-        else echo json_encode(["ok" => false, "error" => $stmt->error]);
+        if ($stmt) {
+            $stmt->bind_param("iisiss", $company_id, $logged_user_id, $title, $is_checklist, $images_json, $reminder_at);
+            if ($stmt->execute()) echo json_encode(["ok" => true]);
+            else echo json_encode(["ok" => false, "error" => $stmt->error]);
+        } else {
+            echo json_encode(["ok" => false, "error" => $conn->error]);
+        }
         die();
     }
     if ($action === "toggle_pinned") {
@@ -358,7 +363,16 @@ if ($crud_action === "index") {
         .empty-state { text-align: center; padding: 100px 50px; color: var(--text-tertiary); }
         .quick-add { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--bg-secondary); margin-bottom: 24px; }
         .quick-add input { flex: 1; border: none; background: transparent; outline: none; font-size: 16px; color: var(--text-primary); }
-        .quick-add-icon { cursor: pointer; color: var(--text-secondary); font-size: 20px; }
+        .quick-add-icon { cursor: pointer; color: var(--text-secondary); font-size: 20px; position: relative; }
+        .quick-add-dropdown { position: absolute; top: 100%; right: 0; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-lg); z-index: 1000; min-width: 180px; display: none; margin-top: 5px; }
+        .quick-add-dropdown.show { display: block; }
+        .quick-add-dropdown-header { padding: 8px 15px; border-bottom: 1px solid var(--border); font-weight: 600; text-align: center; font-size: 12px; color: var(--text-secondary); }
+        .quick-add-dropdown-item { padding: 10px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-primary); transition: background 0.2s; font-size: 14px; text-align: left; }
+        .quick-add-dropdown-item:hover { background: var(--bg-tertiary); }
+        .quick-add-dropdown-item i { width: 16px; text-align: center; font-style: normal; }
+        .quick-add-dropdown-item .item-label { flex: 1; }
+        .quick-add-dropdown-item.danger { color: var(--danger); border-top: 1px solid var(--border); margin-top: 5px; }
+
         /* Modal Styles */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; opacity: 0.5; z-index: 1040; display: none; }
         .modal-backdrop.show { display: block; }
@@ -416,7 +430,17 @@ if ($crud_action === "index") {
                                 <div style="display: flex; gap: 15px; margin-left: 10px;">
                                     <div class="quick-add-icon" onclick="toggleChecklistMode()" title="New list">☑️</div>
                                     <div class="quick-add-icon" onclick="triggerQuickImageUpload()" title="New note with image">🖼️</div>
-                                    <div class="quick-add-icon" onclick="triggerQuickReminder()" title="New note with reminder">🔔</div>
+                                    <div class="quick-add-icon" id="quickReminderBtn" onclick="toggleQuickReminderDropdown(event)" title="New note with reminder">
+                                        🔔
+                                        <div class="quick-add-dropdown" id="quickReminderDropdown">
+                                            <div class="quick-add-dropdown-header">Reminder</div>
+                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('later', event)">🕒 <span class="item-label">Later today</span></div>
+                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('tomorrow', event)">🕒 <span class="item-label">Tomorrow</span></div>
+                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('next_week', event)">🕒 <span class="item-label">Next week</span></div>
+                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('choose', event)">🕒 <span class="item-label">Pick a date</span></div>
+                                            <div class="quick-add-dropdown-item danger" onclick="setQuickReminder('remove', event)">🗑️ <span class="item-label">Remove</span></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <input type="file" id="quickAddImageInput" multiple accept="image/*" style="display: none;" onchange="handleQuickImageSelect(event)">
@@ -494,6 +518,7 @@ if ($crud_action === "index") {
                                     <label style="cursor: pointer;" class="color-option"><input type="radio" name="color" value="<?php echo $hex; ?>" <?php echo ($data['color'] ?? 'var(--bg-secondary)') === $hex ? 'checked' : ''; ?> style="display: none;" onchange="updateColorSelection(this)"><div style="width: 30px; height: 30px; border-radius: 50%; background: <?php echo $hex; ?>; border: 2px solid <?php echo ($data['color'] ?? 'var(--bg-secondary)') === $hex ? 'var(--accent)' : 'transparent'; ?>;"></div></label>
                                 <?php endforeach; ?>
                             </div></div>
+                            <div class="form-group"><label>Shared With</label>
                                 <select name="shared_with_json[]" multiple size="5" data-addable-select="1" data-add-table="users" data-add-label-col="username" data-add-company-scoped="1">
                                     <option value="">-- None --</option><option value="__add_new__">➕</option>
                                 <?php
@@ -546,6 +571,9 @@ if ($crud_action === "index") {
                             <?php endif; ?>
                             <?php if (!empty($data["content"])): ?><div style="margin-bottom: 20px; white-space: pre-wrap;"><?php echo sanitize($data["content"]); ?></div><?php endif; ?>
                             <table class="table" style="width: auto;">
+                                <?php if (!empty($data['reminder_at'])): ?>
+                                    <tr><th style="text-align: left; padding-right: 20px;">Reminder</th><td>🔔 <?php echo date("M j, Y H:i", strtotime($data['reminder_at'])); ?></td></tr>
+                                <?php endif; ?>
                                 <tr><th style="text-align: left; padding-right: 20px;">Tags</th><td><?php $lbls = []; $noteId = (int)$data['id']; $stmtVL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtVL->bind_param("i", $noteId); $stmtVL->execute(); $resL = $stmtVL->get_result(); while ($rowL = mysqli_fetch_assoc($resL)) $lbls[] = $rowL['label']; echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
                                 <tr><th style="text-align: left; padding-right: 20px;">Shared With</th><td><?php $uIds = json_decode($data['shared_with_json'] ?? '[]', true); if (empty($uIds)) echo "Private"; else { $names = []; foreach ($uIds as $uid) { if (isset($users[$uid])) $names[] = $users[$uid]['username']; } echo sanitize(implode(', ', $names)); } ?></td></tr>
                             </table>
@@ -563,11 +591,70 @@ if ($crud_action === "index") {
     let quickAddFiles = [];
     function toggleChecklistMode() { const input = document.getElementById('quickAddIsChecklist'); if (!input) return; const icon = document.querySelector('.quick-add-icon[onclick="toggleChecklistMode()"]'); if (input.value === '1') { input.value = '0'; icon.style.color = 'var(--text-secondary)'; } else { input.value = '1'; icon.style.color = 'var(--accent)'; } }
     function triggerQuickImageUpload() { const el = document.getElementById('quickAddImageInput'); if (el) el.click(); }
-    function triggerQuickReminder() { const dt = prompt("Enter reminder date & time (YYYY-MM-DD HH:MM):", new Date().toISOString().slice(0,16).replace("T", " ")); if (dt) { document.getElementById("quickAddReminderAt").value = dt; document.querySelector(".quick-add-icon[onclick="triggerQuickReminder()"]").style.color = "var(--accent)"; } }
+    function toggleQuickReminderDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('quickReminderDropdown');
+        const isShown = dropdown.classList.contains('show');
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+        if (!isShown) dropdown.classList.add('show');
+    }
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+    });
+    function setQuickReminder(type, event) {
+        event.stopPropagation();
+        const input = document.getElementById('quickAddReminderAt');
+        const btn = document.getElementById('quickReminderBtn');
+        const now = new Date();
+        let dbValue = '';
+
+        if (type === 'later') {
+            const later = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+            dbValue = later.toISOString().slice(0, 19).replace('T', ' ');
+        } else if (type === 'tomorrow') {
+            const tomorrow = new Date(now);
+            tomorrow.setDate(now.getDate() + 1);
+            tomorrow.setHours(9, 0, 0, 0);
+            dbValue = tomorrow.toISOString().slice(0, 19).replace('T', ' ');
+        } else if (type === 'next_week') {
+            const nextMon = new Date(now);
+            nextMon.setDate(now.getDate() + ((1 + 7 - now.getDay()) % 7 || 7));
+            nextMon.setHours(9, 0, 0, 0);
+            dbValue = nextMon.toISOString().slice(0, 19).replace('T', ' ');
+        } else if (type === 'choose') {
+            const dt = prompt("Enter reminder date & time (YYYY-MM-DD HH:MM):", now.toISOString().slice(0,16).replace("T", " "));
+            if (dt) dbValue = dt;
+            else return;
+        } else if (type === 'remove') {
+            dbValue = '';
+        }
+
+        input.value = dbValue;
+        btn.style.color = dbValue ? 'var(--accent)' : 'var(--text-secondary)';
+        document.getElementById('quickReminderDropdown').classList.remove('show');
+    }
     function handleQuickImageSelect(event) { quickAddFiles = quickAddFiles.concat(Array.from(event.target.files)); renderQuickPreview(); }
     function renderQuickPreview() { const preview = document.getElementById('quickAddPreview'); if (!preview) return; preview.innerHTML = ''; quickAddFiles.forEach((file, index) => { const div = document.createElement('div'); div.style.position = 'relative'; const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 4px;'; const close = document.createElement('span'); close.innerHTML = '&times;'; close.style.cssText = 'position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;'; close.onclick = () => { quickAddFiles.splice(index, 1); renderQuickPreview(); }; div.appendChild(img); div.appendChild(close); preview.appendChild(div); }); }
-    function quickAdd() { const input = document.getElementById("quickAddInput"); if (!input) return; const title = input.value.trim(); if (!title && quickAddFiles.length === 0) { alert("Please add a title or an image."); return; } const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("title", title); const isCL = document.getElementById("quickAddIsChecklist"); formData.append("is_checklist", isCL ? isCL.value : '0'); quickAddFiles.forEach((file) => formData.append("images[]", file)); fetch("index.php?ajax_action=quick_add", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); else alert("Error adding note: " + (data.error || "Unknown error")); }); }
-        formData.append("reminder_at", document.getElementById("quickAddReminderAt").value);
+    function quickAdd() {
+        const input = document.getElementById("quickAddInput");
+        if (!input) return;
+        const title = input.value.trim();
+        if (!title && quickAddFiles.length === 0) {
+            alert("Please add a title or an image.");
+            return;
+        }
+        const formData = new FormData();
+        formData.append("csrf_token", CSRF_TOKEN);
+        formData.append("title", title);
+        const isCL = document.getElementById("quickAddIsChecklist");
+        formData.append("is_checklist", isCL ? isCL.value : '0');
+        const reminderInput = document.getElementById("quickAddReminderAt");
+        if (reminderInput) formData.append("reminder_at", reminderInput.value);
+        quickAddFiles.forEach((file) => formData.append("images[]", file));
+        fetch("index.php?ajax_action=quick_add", { method: "POST", body: formData })
+            .then(r => r.json())
+            .then(data => { if (data.ok) location.reload(); else alert("Error adding note: " + (data.error || "Unknown error")); });
+    }
     function togglePinned(id, el) { const newVal = el.dataset.pinned === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_pinned", newVal); fetch("index.php?ajax_action=toggle_pinned", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
     function toggleImportant(id, el) { const newVal = el.dataset.important === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_important", newVal); fetch("index.php?ajax_action=toggle_important", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
     function openImageModal(src) { document.getElementById('modalImage').src = src; document.getElementById('downloadModalImage').href = src; document.getElementById('imageModal').classList.add('show'); document.getElementById('modalBackdrop').classList.add('show'); }

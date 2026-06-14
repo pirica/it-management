@@ -22,7 +22,7 @@ def take_screenshots():
         os.makedirs(output_dir)
 
     modules_dir = "modules"
-    modules = ["todo"]
+    modules = ["todo", "notes"]
     modules.sort()
 
     with sync_playwright() as p:
