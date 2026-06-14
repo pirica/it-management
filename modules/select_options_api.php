@@ -270,6 +270,11 @@ if ($existing && mysqli_num_rows($existing) > 0) {
         $insertValues[] = (string)(int)$logged_user_id;
     }
 
+    if (isset($columns['user_id']) && $logged_user_id > 0 && !isset($extraFields['user_id'])) {
+        $insertFields[] = '`user_id`';
+        $insertValues[] = (string)(int)$logged_user_id;
+    }
+
     /**
      * Dynamic Requirement Check
      * 
@@ -284,7 +289,7 @@ if ($existing && mysqli_num_rows($existing) > 0) {
         $isNullable = strtoupper((string)$meta['Null']) === 'YES';
 
         if ($isAutoIncrement || $hasDefault || $isNullable) { continue; }
-        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active', 'cat_from_user_id'], true)) { continue; }
+        if (in_array($field, [$idCol, $labelCol, 'company_id', 'active', 'cat_from_user_id', 'user_id'], true)) { continue; }
 
         if (!array_key_exists($field, $extraFields) || $extraFields[$field] === '') {
             $missingRequiredFields[] = $field;

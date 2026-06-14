@@ -673,13 +673,18 @@
 
         const fileLinksHtml = buildFloorPlanFileLinksHtml(card);
 
-        const image = preview.querySelector('img.itm-floor-plan-view-image');
-        if (image && image.src) {
-            const alt = escapeHtml(image.getAttribute('alt') || 'Floor plan');
-            return `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;text-align:center;">`
-                + `<img src="${escapeHtml(image.src)}" alt="${alt}" style="max-width:100%;height:auto;display:block;margin:0 auto;">`
-                + fileLinksHtml
-                + `</div>`;
+        const images = Array.from(preview.querySelectorAll('img.itm-floor-plan-view-image'));
+        if (images.length > 0) {
+            let html = `<div class="itm-pdf-preview-wrap" style="margin:0 0 16px;text-align:center;display:flex;flex-wrap:wrap;justify-content:center;gap:15px;">`;
+            images.forEach(image => {
+                if (image.src) {
+                    const alt = escapeHtml(image.getAttribute('alt') || 'Note image');
+                    const style = images.length === 1 ? 'max-width:100%;height:auto;' : 'max-width:300px;height:auto;border:1px solid #ddd;border-radius:4px;';
+                    html += `<img src="${escapeHtml(image.src)}" alt="${alt}" style="${style}display:block;margin:0 auto;">`;
+                }
+            });
+            html += `</div>` + fileLinksHtml;
+            return html;
         }
 
         const previewKind = (card.getAttribute('data-itm-pdf-preview-kind') || '').toLowerCase();
@@ -714,20 +719,34 @@
     }
 
     function triggerViewPdfPrint(printWindow) {
-        const previewImage = printWindow.document.querySelector('.itm-pdf-preview-wrap img');
+        const images = Array.from(printWindow.document.querySelectorAll('img'));
         const finish = () => {
             printWindow.focus();
             printWindow.print();
             setTimeout(() => printWindow.close(), 200);
         };
 
-        if (previewImage && !previewImage.complete) {
-            previewImage.addEventListener('load', finish, { once: true });
-            previewImage.addEventListener('error', finish, { once: true });
+        if (images.length === 0) {
+            finish();
             return;
         }
 
-        finish();
+        let loadedCount = 0;
+        const onImageLoad = () => {
+            loadedCount++;
+            if (loadedCount === images.length) {
+                finish();
+            }
+        };
+
+        images.forEach(img => {
+            if (img.complete) {
+                onImageLoad();
+            } else {
+                img.addEventListener('load', onImageLoad, { once: true });
+                img.addEventListener('error', onImageLoad, { once: true });
+            }
+        });
     }
 
     function exportViewAsPdf(table) {
