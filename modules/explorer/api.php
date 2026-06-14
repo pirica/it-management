@@ -132,9 +132,9 @@ if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 $trash_root = ROOT_PATH . 'files/' . $company_id . '/Trash';
 
-// Why: Auto-create basic structure if it doesn't exist.
-if (!is_dir($storage_root)) mkdir($storage_root, 0777, true);
-if (!is_dir($trash_root)) mkdir($trash_root, 0777, true);
+// Why: Auto-create basic structure if it doesn't exist and ensure script execution is disabled.
+if (!is_dir($storage_root)) itm_ensure_upload_directory($storage_root, 'upload');
+if (!is_dir($trash_root)) itm_ensure_upload_directory($trash_root, 'upload');
 
 /**
  * Synchronises a filesystem change to the explorer database table.
@@ -485,6 +485,14 @@ case "upload":
             $tmp = $_FILES['files']['tmp_name'][$i];
             if (!$tmp) continue;
             $safe_name = basename($name);
+            $ext = strtolower(pathinfo($safe_name, PATHINFO_EXTENSION));
+
+            // Why: Block potentially executable scripts to prevent RCE.
+            $blocked = ['php', 'phtml', 'php3', 'php4', 'php5', 'phar', 'cgi', 'pl', 'py', 'asp', 'aspx', 'jsp', 'sh', 'exe', 'bat', 'cmd'];
+            if (in_array($ext, $blocked)) {
+                continue;
+            }
+
             if (@move_uploaded_file($tmp, $dir . "/" . $safe_name)) {
                 sync_db($conn, $company_id, $user_id, $dept_id, $path, $safe_name, 'file');
             }

@@ -775,6 +775,18 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of modules. Requires Playwright.</td>
                     <td><code>python3 scripts/take_screenshots_modules.py</code></td>
                 </tr>
+                <tr>
+                    <td><code>repro_bug.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction and verification script for Todo module visibility and security bugs (multi-assignment and IDOR).</td>
+                    <td><code>php scripts/repro_bug.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_vulnerabilities.php">repro_vulnerabilities.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions.</td>
+                    <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
