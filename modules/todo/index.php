@@ -96,10 +96,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
 
     $action = $_POST["bulk_action"] ?? "";
     if ($action === "delete" && !empty($_POST["ids"])) {
+        $visSql = itm_todo_visibility_sql();
         $ids = array_map("intval", $_POST["ids"]);
         foreach ($ids as $id) {
-            $stmt = $conn->prepare("UPDATE todo SET active = 0 WHERE id = ? AND company_id = ?");
-            $stmt->bind_param("ii", $id, $company_id);
+            $stmt = $conn->prepare("UPDATE todo SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
             $stmt->execute();
         }
         header("Location: index.php?msg=deleted");
@@ -107,8 +108,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     }
 
     if ($action === "single_delete" && $editId > 0) {
-        $stmt = $conn->prepare("UPDATE todo SET active = 0 WHERE id = ? AND company_id = ?");
-        $stmt->bind_param("ii", $editId, $company_id);
+        $visSql = itm_todo_visibility_sql();
+        $stmt = $conn->prepare("UPDATE todo SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmt->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
         $stmt->execute();
         header("Location: index.php?msg=deleted");
         die();
@@ -134,8 +136,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $completed = isset($_POST["completed"]) ? 1 : 0;
 
         if ($crud_action === "edit" && $editId > 0) {
-            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=?");
-            $stmt->bind_param("ssssssssiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id);
+            $visSql = itm_todo_visibility_sql();
+            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=? AND ($visSql)");
+            $stmt->bind_param("ssssssssiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id, $logged_user_id, $logged_user_id);
         } else {
             $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("issssssssiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance, $completed);
@@ -181,10 +184,11 @@ if (isset($_GET["ajax_action"])) {
         die();
     }
     if ($action === "toggle_completed") {
+        $visSql = itm_todo_visibility_sql();
         $id = (int)($_POST["id"] ?? 0);
         $completed = (int)($_POST["completed"] ?? 0);
-        $stmt = $conn->prepare("UPDATE todo SET completed = ? WHERE id = ? AND company_id = ?");
-        $stmt->bind_param("iii", $completed, $id, $company_id);
+        $stmt = $conn->prepare("UPDATE todo SET completed = ? WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmt->bind_param("iiiii", $completed, $id, $company_id, $logged_user_id, $logged_user_id);
         if ($stmt->execute()) {
             echo json_encode(["ok" => true]);
         } else {
@@ -193,10 +197,11 @@ if (isset($_GET["ajax_action"])) {
         die();
     }
     if ($action === "toggle_importance") {
+        $visSql = itm_todo_visibility_sql();
         $id = (int)($_POST["id"] ?? 0);
         $importance = (int)($_POST["importance"] ?? 0);
-        $stmt = $conn->prepare("UPDATE todo SET importance = ? WHERE id = ? AND company_id = ?");
-        $stmt->bind_param("iii", $importance, $id, $company_id);
+        $stmt = $conn->prepare("UPDATE todo SET importance = ? WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmt->bind_param("iiiii", $importance, $id, $company_id, $logged_user_id, $logged_user_id);
         if ($stmt->execute()) {
             echo json_encode(["ok" => true]);
         } else {
@@ -249,8 +254,9 @@ if ($crud_action === "index") {
     $res = $stmt->get_result();
     $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 } elseif ($crud_action === "edit" || $crud_action === "view") {
-    $stmt = $conn->prepare("SELECT * FROM todo WHERE id = ? AND company_id = ? AND active = 1");
-    $stmt->bind_param("ii", $editId, $company_id);
+    $visSql = itm_todo_visibility_sql();
+    $stmt = $conn->prepare("SELECT * FROM todo WHERE id = ? AND company_id = ? AND active = 1 AND ($visSql)");
+    $stmt->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
     $stmt->execute();
     $data = $stmt->get_result()->fetch_assoc();
     if (!$data) {
