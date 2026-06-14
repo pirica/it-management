@@ -6276,3 +6276,97 @@ END$$
 
 DELIMITER ;
 
+
+-- Table structure for `notes`
+DROP TABLE IF EXISTS `notes`;
+CREATE TABLE `notes` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `company_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `title` VARCHAR(255),
+  `content` LONGTEXT,
+  `is_checklist` TINYINT DEFAULT 0,
+  `checklist_json` JSON DEFAULT NULL,
+  `images_json` JSON DEFAULT NULL,
+  `color` VARCHAR(20) DEFAULT NULL,
+  `is_pinned` TINYINT DEFAULT 0,
+  `is_archived` TINYINT DEFAULT 0,
+  `reminder_json` JSON DEFAULT NULL,
+  `shared_with_json` JSON DEFAULT NULL,
+  `active` TINYINT DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `notes_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `note_labels`
+DROP TABLE IF EXISTS `note_labels`;
+CREATE TABLE `note_labels` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `company_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `note_id` INT NOT NULL,
+  `label` VARCHAR(100) NOT NULL,
+  `active` TINYINT DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `note_id` (`note_id`),
+  KEY `company_id` (`company_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `note_labels_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `note_labels_ibfk_note` FOREIGN KEY (`note_id`) REFERENCES `notes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Triggers for `notes`
+DELIMITER $$
+CREATE TRIGGER `trg_notes_audit_insert` AFTER INSERT ON `notes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'notes', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_archived', NEW.`is_archived`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_notes_audit_update` AFTER UPDATE ON `notes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'notes', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_archived', NEW.`is_archived`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_notes_audit_delete` AFTER DELETE ON `notes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'notes', OLD.`id`, 'DELETE',
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+
+-- Triggers for `note_labels`
+DELIMITER $$
+CREATE TRIGGER `trg_note_labels_audit_insert` AFTER INSERT ON `note_labels` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'note_labels', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_note_labels_audit_update` AFTER UPDATE ON `note_labels` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'note_labels', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_note_labels_audit_delete` AFTER DELETE ON `note_labels` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'note_labels', OLD.`id`, 'DELETE',
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
