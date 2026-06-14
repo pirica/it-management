@@ -175,6 +175,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>System overview (DB, tables, PHP version, extensions, and file permissions).</td>
                     <td>Open in browser for quick troubleshooting.</td>
                 </tr>
+                <tr>
+                    <td><a href="health.php">health.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Lightweight health check endpoint for monitoring.</td>
+                    <td>Open in browser or use with monitoring tools.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -305,6 +311,30 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Verifies the JSON table import logic against specific user-provided sample data for the employees module.</td>
                     <td>CLI: <code>php scripts/test_import_user_samples.php</code></td>
                 </tr>
+                <tr>
+                    <td>test_ajax.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Test utility for AJAX endpoints.</td>
+                    <td>CLI: <code>php scripts/test_ajax.php</code></td>
+                </tr>
+                <tr>
+                    <td>test_edit.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Test utility for record editing logic.</td>
+                    <td>CLI: <code>php scripts/test_edit.php</code></td>
+                </tr>
+                <tr>
+                    <td>test_session.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verifies session handling and persistence.</td>
+                    <td>CLI: <code>php scripts/test_session.php</code></td>
+                </tr>
+                <tr>
+                    <td>verify_api_coverage.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audits API endpoint coverage and consistency.</td>
+                    <td>CLI: <code>php scripts/verify_api_coverage.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -429,6 +459,18 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Comprehensive SQL audit script for database.sql (delimiters, duplicates, references).</td>
                     <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
                 </tr>
+                <tr>
+                    <td>fix_sql.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Utility to fix common SQL errors in database.sql.</td>
+                    <td>CLI: <code>php scripts/fix_sql.php</code></td>
+                </tr>
+                <tr>
+                    <td>fix_sql_broad.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Broad-spectrum SQL cleanup utility.</td>
+                    <td>CLI: <code>php scripts/fix_sql_broad.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -520,6 +562,12 @@ require_once __DIR__ . '/../config/config.php';
                         Browser: static checks only (no DB mutations). MySQL regression requires CLI: <code>php scripts/employees_delete_clear_table_test.php</code>.
                     </td>
                 </tr>
+                <tr>
+                    <td>check_points.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audits network points and connections.</td>
+                    <td>CLI: <code>php scripts/check_points.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -573,6 +621,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Validates Floor Designer module logic, AJAX endpoints, and schema mapping.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/floor_designer_test.php</code>.</td>
+                </tr>
+                <tr>
+                    <td>list_active_and_checkboxes.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audit utility for active flags and checkbox inputs in module forms.</td>
+                    <td>CLI: <code>php scripts/list_active_and_checkboxes.php</code></td>
                 </tr>
             </tbody>
         </table></div>
@@ -774,6 +828,42 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of modules. Requires Playwright.</td>
                     <td><code>python3 scripts/take_screenshots_modules.py</code></td>
+                </tr>
+                <tr>
+                    <td><code>take_screenshots_modules_all.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Bulk UI screenshot utility for all modules. Requires Playwright.</td>
+                    <td><code>python3 scripts/take_screenshots_modules_all.py</code></td>
+                </tr>
+                <tr>
+                    <td><code>test_notes_human.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Playwright-based human-flow regression for Notes module.</td>
+                    <td><code>python3 scripts/test_notes_human.py</code></td>
+                </tr>
+                <tr>
+                    <td><code>update_display.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Display update utility.</td>
+                    <td><code>python3 scripts/update_display.py</code></td>
+                </tr>
+                <tr>
+                    <td><code>verify_dnd.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Verifies Drag and Drop functionality in UI.</td>
+                    <td><code>python3 scripts/verify_dnd.py</code></td>
+                </tr>
+                <tr>
+                    <td><code>verify_todo.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Verifies Todo module functionality via Playwright.</td>
+                    <td><code>python3 scripts/verify_todo.py</code></td>
+                </tr>
+                <tr>
+                    <td><code>verify_todo_categories.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Verifies Todo categories functionality via Playwright.</td>
+                    <td><code>python3 scripts/verify_todo_categories.py</code></td>
                 </tr>
                 <tr>
                     <td><code>repro_bug.php</code></td>

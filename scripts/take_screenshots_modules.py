@@ -33,20 +33,30 @@ def take_screenshots():
         page.set_viewport_size({"width": 1280, "height": 800})
 
         for module in modules:
+            # Index
             screenshot_path = os.path.join(output_dir, f"{module}.png")
-
-
             url = f"{base_url}/modules/{module}/index.php"
-            print(f"Taking screenshot of {module} at {url}...")
-
+            print(f"Taking screenshot of {module} index at {url}...")
             try:
                 page.goto(url)
-                # Wait 3 seconds as requested
                 time.sleep(3)
                 page.screenshot(path=screenshot_path)
                 print(f"Saved {screenshot_path}")
             except Exception as e:
-                print(f"Failed to take screenshot of {module}: {e}")
+                print(f"Failed to take screenshot of {module} index: {e}")
+
+            # Create
+            create_screenshot_path = os.path.join(output_dir, f"{module}_create.png")
+            if module == 'notes': create_url = f"{base_url}/modules/{module}/edit.php?id=4"
+            else: create_url = f"{base_url}/modules/{module}/create.php"
+            print(f"Taking screenshot of {module} create at {create_url}...")
+            try:
+                page.goto(create_url)
+                time.sleep(3)
+                page.screenshot(path=create_screenshot_path)
+                print(f"Saved {create_screenshot_path}")
+            except Exception as e:
+                print(f"Failed to take screenshot of {module} create: {e}")
 
         browser.close()
 

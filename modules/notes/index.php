@@ -213,6 +213,21 @@ if (isset($_GET["ajax_action"])) {
         if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
         die();
     }
+    if ($action === "toggle_archived") {
+        $id = (int)($_POST["id"] ?? 0);
+        $is_archived = (int)($_POST["is_archived"] ?? 0);
+        $stmt = $conn->prepare("UPDATE notes SET is_archived = ? WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt->bind_param("iiii", $is_archived, $id, $company_id, $logged_user_id);
+        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
+        die();
+    }
+    if ($action === "single_delete") {
+        $id = (int)($_POST["id"] ?? 0);
+        $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
+        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
+        die();
+    }
     if ($action === "toggle_important") {
         $id = (int)($_POST["id"] ?? 0);
         $is_important = (int)($_POST["is_important"] ?? 0);
@@ -308,6 +323,8 @@ if ($crud_action === "index") {
         $params[] = $label_filter;
     } elseif ($filter === "archive") {
         $sql .= " AND t.is_archived = 1";
+    } elseif ($filter === "checklist") {
+        $sql .= " AND t.is_checklist = 1 AND t.is_archived = 0";
     } elseif ($filter === "pinned") {
         $sql .= " AND t.is_pinned = 1 AND t.is_archived = 0";
     } elseif ($filter === "images") {
@@ -402,6 +419,7 @@ if ($crud_action === "index") {
                     <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;">✏️ Edit tags</a>
                     <a href="?filter=archive" class="notes-sidebar-item <?php echo $filter === "archive" ? "active" : ""; ?>">📥 Archive</a>
                     <a href="?filter=garbage" class="notes-sidebar-item <?php echo $filter === "garbage" ? "active" : ""; ?>">🗑️ Garbage</a>
+                    <a href="?filter=checklist" class="notes-sidebar-item <?php echo $filter === "checklist" ? "active" : ""; ?>">☑️ Checklist</a>
                     <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
                     <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
                     <?php if ($hasImportant): ?><a href="?filter=important" class="notes-sidebar-item <?php echo $filter === "important" ? "active" : ""; ?>">★ Important</a><?php endif; ?>
@@ -415,6 +433,7 @@ if ($crud_action === "index") {
                                     elseif ($filter === "tag") echo "🏷️ " . sanitize($_GET["label"] ?? "");
                                     elseif ($filter === "archive") echo "📥 Archive";
                                     elseif ($filter === "garbage") echo "🗑️ Garbage";
+                                    elseif ($filter === "checklist") echo "☑️ Checklist";
                                     elseif ($filter === "pinned") echo "📌 Pinned";
                                     elseif ($filter === "images") echo "🖼️ Images";
                                     elseif ($filter === "important") echo "★ Important";
@@ -428,7 +447,6 @@ if ($crud_action === "index") {
                             <div style="display: flex; align-items: center; width: 100%;">
                                 <input type="text" id="quickAddInput" placeholder="Take a note..." onkeypress="if(event.key==='Enter') quickAdd()">
                                 <div style="display: flex; gap: 15px; margin-left: 10px;">
-                                    <div class="quick-add-icon" onclick="toggleChecklistMode()" title="New list">☑️</div>
                                     <div class="quick-add-icon" onclick="triggerQuickImageUpload()" title="New note with image">🖼️</div>
                                     <div class="quick-add-icon" id="quickReminderBtn" onclick="toggleQuickReminderDropdown(event)" title="New note with reminder">
                                         🔔
@@ -462,7 +480,14 @@ if ($crud_action === "index") {
                                                 <?php if ($note['is_pinned']): ?><span>• 📌</span><?php endif; ?>
                                                 <?php if (!empty($note['images_json'])): ?><span>• 🖼️</span><?php endif; ?>
                                                 <?php if ($note['is_checklist']): ?><span>• ☑️</span><?php endif; ?>
-                                                <?php if (!empty($note['reminder_at'])): ?><span>• 🔔 <?php echo date("M j, H:i", strtotime($note['reminder_at'])); ?></span><?php endif; ?>
+                                                <?php if (!empty($note['reminder_at'])): ?>
+                                                    <?php
+                                                    $isToday = date("Y-m-d", strtotime($note["reminder_at"])) === date("Y-m-d");
+                                                    $remLabel = $isToday ? "TODAY, " . date("H:i", strtotime($note["reminder_at"])) : date("M j, H:i", strtotime($note["reminder_at"]));
+                                                    $remStyle = $isToday ? 'style="color: var(--danger); font-weight: 600;"' : '';
+                                                    ?>
+                                                    <span <?php echo $remStyle; ?>>• 🔔 <?php echo $remLabel; ?></span>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                         <div class="note-star <?php echo $note["is_pinned"] ? "active" : ""; ?>" onclick="togglePinned(<?php echo $note["id"]; ?>, this)" data-pinned="<?php echo $note['is_pinned']; ?>" title="Pin">
@@ -471,10 +496,13 @@ if ($crud_action === "index") {
                                         <div class="note-star <?php echo $note["is_important"] ? "active" : ""; ?>" onclick="toggleImportant(<?php echo $note["id"]; ?>, this)" data-important="<?php echo $note['is_important']; ?>" title="Important" style="margin-left: 10px;">
                                             <?php echo $note["is_important"] ? "★" : "☆"; ?>
                                         </div>
-										<div class="note-star <?php echo $note["is_important"] ? "active" : ""; ?>" onclick="toggleImportant(<?php echo $note["id"]; ?>, this)" data-important="<?php echo $note['is_archived']; ?>" title="Archived" style="margin-left: 10px;">
-                                            <?php echo $note["is_archived"] ? "📥" : "📥"; ?>
+                                        <div class="note-star <?php echo $note["is_archived"] ? "active" : ""; ?>" onclick="toggleArchived(<?php echo $note["id"]; ?>, this)" data-archived="<?php echo $note['is_archived']; ?>" title="Archive" style="margin-left: 10px;">
+                                            📥
                                         </div>
-                                        <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;">✏️</a>
+                                        <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
+                                        <div class="note-star" onclick="deleteNote(<?php echo $note["id"]; ?>)" title="Delete" style="margin-left: 10px; color: var(--danger);">
+                                            🗑️
+                                        </div>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -485,7 +513,10 @@ if ($crud_action === "index") {
                         <form method="POST" class="form-grid" style="max-width: 800px;" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                             <div class="form-group"><label>Title</label><input type="text" name="title" value="<?php echo sanitize($data["title"] ?? ""); ?>" autofocus></div>
-                            <div class="form-group"><label>Content</label><textarea name="content" rows="5"><?php echo sanitize($data["content"] ?? ""); ?></textarea></div>
+                            <div class="form-group" id="content-section" style="<?php echo !empty($data['is_checklist']) ? 'display: none;' : ''; ?>">
+                                <label>Content</label>
+                                <textarea name="content" rows="5"><?php echo sanitize($data["content"] ?? ""); ?></textarea>
+                            </div>
                             <div class="form-group"><label>Images</label>
                                 <div id="image-drop-zone" style="border: 2px dashed var(--border); padding: 20px; text-align: center; border-radius: 8px; cursor: pointer;" ondragover="event.preventDefault();" ondrop="handleDrop(event)" onclick="document.getElementById('file-input').click()">
                                     <p>Drag and drop images here or click to upload</p>
@@ -497,19 +528,27 @@ if ($crud_action === "index") {
                                     <?php endforeach; endif; ?>
                                 </div>
                             </div>
-                            <div class="form-group" id="reminder-section" style="<?php echo !empty($data["reminder_at"]) ? "" : "display: none;"; ?>"><label>Reminder Date & Time</label><input type="datetime-local" name="reminder_at" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>"></div>
+                            <div class="form-group" id="reminder-section" style="<?php echo !empty($data['reminder_at']) ? '' : 'display: none;'; ?>">
+                                <label>Reminder 🔔</label>
+                                <input type="datetime-local" name="reminder_at" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>">
+                            </div>
                             <div class="form-group" id="checklist-section" style="<?php echo !empty($data['is_checklist']) ? '' : 'display: none;'; ?>">
                                 <label>Checklist</label>
                                 <div id="checklist-container">
                                     <?php $checklist = json_decode($data['checklist_json'] ?? '[]', true); if (is_array($checklist)): foreach ($checklist as $item): ?>
-                                        <div class="checklist-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;"><input type="checkbox" name="checklist_completed[]" value="1" <?php echo !empty($item['completed']) ? 'checked' : ''; ?>><input type="text" name="checklist_text[]" value="<?php echo sanitize($item['text'] ?? ''); ?>" style="flex: 1;"><span onclick="this.parentElement.remove()" style="cursor: pointer; color: var(--danger);">&times;</span></div>
+                                        <div class="checklist-item" style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                            <input type="checkbox" name="checklist_completed[]" value="1" <?php echo !empty($item['completed']) ? 'checked' : ''; ?> style="width: 18px; height: 18px;">
+                                            <input type="text" name="checklist_text[]" value="<?php echo sanitize($item['text'] ?? ''); ?>" style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;">
+                                            <span onclick="this.parentElement.remove()" style="cursor: pointer; color: var(--danger); font-size: 18px;">&times;</span>
+                                        </div>
                                     <?php endforeach; endif; ?>
                                 </div>
-                                <button type="button" class="btn btn-sm" onclick="addChecklistItem()" style="margin-top: 10px;">➕ Add item</button>
+                                <button type="button" class="btn btn-sm" onclick="addChecklistItem()" style="margin-top: 10px; display: flex; align-items: center; gap: 5px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 8px 15px;">
+                                    <span style="color: var(--accent); font-weight: bold; font-size: 18px;">+</span> Add item
+                                </button>
                             </div>
                             <div class="form-group"><label>Tags</label>
                                 <select name="category_id[]" multiple size="5" data-addable-select="1" data-add-table="note_labels" data-add-label-col="label" data-add-company-scoped="1">
-                                    <option value="">-- None --</option><option value="__add_new__">➕</option>
                                     <option value="">-- None --</option><option value="__add_new__">➕</option>
                                     <?php $nId = $data['id'] ?? 0; $selL = []; if ($nId > 0) { $stmtL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtL->bind_param("i", $nId); $stmtL->execute(); $rL = $stmtL->get_result(); while ($rowL = mysqli_fetch_assoc($rL)) $selL[] = $rowL['label']; }
                                     foreach ($user_tags as $ul): ?><option value="<?php echo sanitize($ul); ?>" <?php echo in_array($ul, $selL) ? "selected" : ""; ?>><?php echo sanitize($ul); ?></option><?php endforeach; ?>
@@ -534,7 +573,7 @@ if ($crud_action === "index") {
                                     while ($rowU = mysqli_fetch_assoc($resULoad)) { $users[$rowU["id"]] = $rowU; }
                                 }
                                 $sharedUsers = json_decode($data['shared_with_json'] ?? '[]', true);
-                                foreach ($users as $u): if ($u['id'] == $logged_user_id) continue; ?>
+                                foreach ($users as $u): ?>
                                     <option value="<?php echo $u["id"]; ?>" <?php echo is_array($sharedUsers) && in_array($u["id"], $sharedUsers) ? "selected" : ""; ?>><?php echo sanitize($u["username"]); ?></option>
                                 <?php endforeach; ?>
                             </select></div>
@@ -543,7 +582,7 @@ if ($crud_action === "index") {
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_pinned" value="1" <?php echo !empty($data["is_pinned"]) ? "checked" : ""; ?>><span>Pinned 📌</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_important" value="1" <?php echo !empty($data["is_important"]) ? "checked" : ""; ?>><span>Important ★</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_archived" value="1" <?php echo !empty($data["is_archived"]) ? "checked" : ""; ?>><span>Archived 📥</span></label>
-                                <label class="itm-checkbox-control"><input type="checkbox" name="is_reminder" value="1" <?php echo !empty($data["reminder_at"]) ? "checked" : ""; ?> onchange="toggleReminderSection(this.checked)"><span>Reminder 🔔</span></label>
+                                <label class="itm-checkbox-control"><input type="checkbox" onchange="toggleReminderSection(this.checked)" <?php echo !empty($data['reminder_at']) ? 'checked' : ''; ?>><span>Reminder 🔔</span></label>
                             </div>
                             <div class="form-actions" style="margin-top: 30px;"><button class="btn btn-primary" type="submit">💾 Save</button><a href="index.php" class="btn">🔙 Cancel</a>
                                 <?php if ($crud_action === "edit"): ?><button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this note?')">🗑️ Delete</button><?php endif; ?>
@@ -566,7 +605,7 @@ if ($crud_action === "index") {
                                 <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;"><?php foreach ($vimgs as $img): $imgPath = "../../files/{$company_id}/Private/{$_SESSION['username']}_{$logged_user_id}/notes/{$img}"; ?>
                                     <div style="text-align: center;">
                                         <img src="<?php echo $imgPath; ?>" onclick="openImageModal('<?php echo $imgPath; ?>')" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 5px; cursor: pointer;">
-                                        <div style="font-size: 12px; display: flex; justify-content: center; gap: 10px;"><a href="#" onclick="openImageModal('<?php echo $imgPath; ?>'); return false;">👁️ Preview</a><a href="<?php echo $imgPath; ?>" download>📥 Download</a></div>
+                                        <div style="font-size: 12px; display: flex; justify-content: center; gap: 10px;"><a href="#" onclick="openImageModal('<?php echo $imgPath; ?>'); return false;" style="text-decoration: none;">👁️ Preview</a><a href="<?php echo $imgPath; ?>" download style="text-decoration: none;">📥 Download</a></div>
                                     </div><?php endforeach; ?></div>
                             <?php endif; ?>
                             <?php $vcl = json_decode($data['checklist_json'] ?? '[]', true); if (!empty($vcl)): ?>
@@ -604,6 +643,43 @@ if ($crud_action === "index") {
     document.addEventListener('click', () => {
         document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
     });
+    function openDatePickerModal() {
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+        const modal = document.getElementById('datePickerModal');
+        const backdrop = document.getElementById('modalBackdrop');
+        const input = document.getElementById('modalDatePickerInput');
+
+        const currentVal = document.getElementById('quickAddReminderAt').value;
+        if (currentVal) {
+            input.value = currentVal.replace(' ', 'T').substring(0, 16);
+        } else {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            input.value = now.toISOString().substring(0, 16);
+        }
+
+        modal.classList.add('show');
+        backdrop.classList.add('show');
+    }
+
+    function closeDatePickerModal() {
+        document.getElementById('datePickerModal').classList.remove('show');
+        document.getElementById('modalBackdrop').classList.remove('show');
+    }
+
+    function saveQuickDate() {
+        const input = document.getElementById('modalDatePickerInput');
+        const val = input.value;
+        if (!val) {
+            alert("Please select a date");
+            return;
+        }
+        const dbValue = val.replace('T', ' ') + ':00';
+        document.getElementById('quickAddReminderAt').value = dbValue;
+        document.getElementById('quickReminderBtn').style.color = 'var(--accent)';
+        closeDatePickerModal();
+    }
+
     function setQuickReminder(type, event) {
         event.stopPropagation();
         const input = document.getElementById('quickAddReminderAt');
@@ -625,9 +701,8 @@ if ($crud_action === "index") {
             nextMon.setHours(9, 0, 0, 0);
             dbValue = nextMon.toISOString().slice(0, 19).replace('T', ' ');
         } else if (type === 'choose') {
-            const dt = prompt("Enter reminder date & time (YYYY-MM-DD HH:MM):", now.toISOString().slice(0,16).replace("T", " "));
-            if (dt) dbValue = dt;
-            else return;
+            openDatePickerModal();
+            return;
         } else if (type === 'remove') {
             dbValue = '';
         }
@@ -660,6 +735,8 @@ if ($crud_action === "index") {
     }
     function togglePinned(id, el) { const newVal = el.dataset.pinned === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_pinned", newVal); fetch("index.php?ajax_action=toggle_pinned", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
     function toggleImportant(id, el) { const newVal = el.dataset.important === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_important", newVal); fetch("index.php?ajax_action=toggle_important", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
+    function toggleArchived(id, el) { const newVal = el.dataset.archived === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_archived", newVal); fetch("index.php?ajax_action=toggle_archived", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
+    function deleteNote(id) { if (!confirm('Delete this note?')) return; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); fetch("index.php?ajax_action=single_delete", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
     function openImageModal(src) { document.getElementById('modalImage').src = src; document.getElementById('downloadModalImage').href = src; document.getElementById('imageModal').classList.add('show'); document.getElementById('modalBackdrop').classList.add('show'); }
     function closeImageModal() { document.getElementById('imageModal').classList.remove('show'); document.getElementById('modalBackdrop').classList.remove('show'); }
     function downloadAllImages(id) { const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); fetch("index.php?ajax_action=download_all_images", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) window.location.href = data.zip_url; else alert(data.error || "Error downloading images"); }); }
@@ -670,9 +747,22 @@ if ($crud_action === "index") {
     function addTag() { const input = document.getElementById('newTagName'); const name = input.value.trim(); if (!name) return; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("name", name); fetch("index.php?ajax_action=add_tag", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) { input.value = ''; renderTagsModal(); } else alert(data.error || "Error adding tag"); }); }
     function renderTagsModal() { fetch(location.href).then(r => r.text()).then(html => { const parser = new DOMParser(); const doc = parser.parseFromString(html, 'text/html'); document.getElementById('tags-list').innerHTML = doc.getElementById('tags-list').innerHTML; }); }
     function updateColorSelection(radio) { document.querySelectorAll('.color-option div').forEach(div => div.style.borderColor = 'transparent'); radio.nextElementSibling.style.borderColor = 'var(--accent)'; }
-    function addChecklistItem() { const container = document.getElementById('checklist-container'); const div = document.createElement('div'); div.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 5px;'; div.innerHTML = '<input type="checkbox" name="checklist_completed[]" value="1"><input type="text" name="checklist_text[]" placeholder="List item" style="flex: 1;"><span onclick="this.parentElement.remove()" style="cursor: pointer; color: var(--danger);">&times;</span>'; container.appendChild(div); div.querySelector('input[type="text"]').focus(); }
-    function toggleChecklistSection(checked) { document.getElementById('checklist-section').style.display = checked ? '' : 'none'; }
-    function toggleReminderSection(checked) { document.getElementById("reminder-section").style.display = checked ? "" : "none"; }
+    function addChecklistItem() {
+        const container = document.getElementById('checklist-container');
+        const div = document.createElement('div');
+        div.className = 'checklist-item';
+        div.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
+        div.innerHTML = '<input type="checkbox" name="checklist_completed[]" value="1" style="width: 18px; height: 18px;"><input type="text" name="checklist_text[]" placeholder="List item" style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;"><span onclick="this.parentElement.remove()" style="cursor: pointer; color: var(--danger); font-size: 18px;">&times;</span>';
+        container.appendChild(div);
+        div.querySelector('input[type="text"]').focus();
+    }
+    function toggleChecklistSection(checked) {
+        document.getElementById('checklist-section').style.display = checked ? '' : 'none';
+        document.getElementById('content-section').style.display = checked ? 'none' : '';
+    }
+    function toggleReminderSection(checked) {
+        document.getElementById("reminder-section").style.display = checked ? "" : "none";
+    }
     function handleDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); }
     function handleFileSelect(e) { handleFiles(e.target.files); }
     function handleFiles(files) { const container = document.getElementById('image-preview-container'); Array.from(files).forEach(file => { if (!file.type.startsWith('image/')) return; const reader = new FileReader(); reader.onload = (e) => { const div = document.createElement('div'); div.className = 'image-item'; div.style.position = 'relative'; const img = document.createElement('img'); img.src = e.target.result; img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 4px;'; const span = document.createElement('span'); span.innerHTML = '&times;'; span.style.cssText = 'position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;'; span.onclick = () => div.remove(); div.appendChild(img); div.appendChild(span); container.appendChild(div); }; reader.readAsDataURL(file); }); }
@@ -682,6 +772,27 @@ if ($crud_action === "index") {
     <div class="modal-dialog" role="document" style="max-width: 90%;"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Image Preview</h5><button type="button" class="close" onclick="closeImageModal()">&times;</button></div>
     <div class="modal-body" style="text-align: center;"><img id="modalImage" src="" style="max-width: 100%; max-height: 80vh; border-radius: 4px;"></div>
     <div class="modal-footer"><a id="downloadModalImage" href="" download class="btn btn-primary">📥 Download</a><button type="button" class="btn" onclick="closeImageModal()">Close</button></div></div></div>
+</div>
+
+<div class="modal" id="datePickerModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Choose Date</h5>
+                <button type="button" class="close" onclick="closeDatePickerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Select Date and Time</label>
+                    <input type="datetime-local" id="modalDatePickerInput">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeDatePickerModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickDate()">Set Date</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="modal" id="editTagsModal" tabindex="-1" role="dialog">

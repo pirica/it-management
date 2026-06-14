@@ -80,6 +80,7 @@ function itm_sidebar_base_structure() {
             'id' => 'planning',
             'title' => '🗓️ Planning',
             'items' => [
+                ['id' => 'notes', 'label' => '📋 Notes', 'href' => 'modules/notes/', 'match_dir' => 'notes'],
                 ['id' => 'todo', 'label' => '📝 To-Do', 'href' => 'modules/todo/', 'match_dir' => 'todo'],
                 ['id' => 'calendar', 'label' => '📅 Calendar', 'href' => 'modules/calendar/', 'match_dir' => 'calendar'],
                 ['id' => 'events', 'label' => '📅 Events', 'href' => 'modules/events/', 'match_dir' => 'events'],
@@ -169,6 +170,7 @@ function itm_sidebar_humanize_table_name($tableName) {
 function itm_sidebar_module_default_label($moduleName) {
     $moduleName = trim((string)$moduleName);
     $labels = [
+        'notes' => '📋 Notes',
         'passwords' => '🔑 Passwords',
         'inventory_items' => '📦 Inventory',
         'patches_updates' => '🛠️ Patches Updates',
