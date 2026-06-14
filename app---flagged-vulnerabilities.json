@@ -23,6 +23,38 @@
             "detected_at_pst": "2026-06-14T10:15:00-07:00",
             "reported_link": "",
             "location": "modules/role_module_permissions/index.php"
+        },
+        {
+            "title": "Multi-tenant IDOR and Data Corruption via Shared JSON Import",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "config/config.php"
+        },
+        {
+            "title": "Unauthorized Full Company Deletion and Data Purge",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "modules/companies/delete.php"
+        },
+        {
+            "title": "Sensitive Information Disclosure (Password Reset Tokens) in User View",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "modules/users/index.php"
+        },
+        {
+            "title": "Cross-User and Cross-Department Data Leak via Explorer ZIP Download",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "modules/explorer/api.php"
         }
     ]
 }
