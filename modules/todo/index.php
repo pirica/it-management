@@ -318,6 +318,22 @@ if ($crud_action === "index") {
         .quick-add-dropdown-item .item-suffix { color: var(--text-tertiary); font-size: 12px; }
         .quick-add-dropdown-item.danger { color: var(--danger); border-top: 1px solid var(--border); margin-top: 5px; }
 
+        /* Modal Styles */
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; opacity: 0.5; z-index: 1040; display: none; }
+        .modal-backdrop.show { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; z-index: 1050; }
+        .modal.show { display: block; }
+        .modal-dialog { position: relative; width: auto; margin: 0.5rem; pointer-events: none; }
+        @media (min-width: 576px) { .modal-dialog { max-width: 500px; margin: 1.75rem auto; } }
+        .modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background-color: #fff; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 0.3rem; color: var(--text-primary); margin-top: 30px; outline: 0; box-shadow: var(--shadow-lg); font-style: normal; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border); border-top-left-radius: 0.3rem; border-top-right-radius: 0.3rem; }
+        .modal-title { font-size: 18px; margin: 0; font-weight: 600; font-style: normal; }
+        .modal-body { position: relative; flex: 1 1 auto; padding: 1.5rem; font-style: normal; }
+        .modal-body label { font-size: 14px; font-weight: 500; margin-bottom: 8px; display: block; color: var(--text-secondary); font-style: normal; }
+        .modal-footer { display: flex; align-items: center; justify-content: flex-end; padding: 1rem; border-top: 1px solid var(--border); border-bottom-right-radius: 0.3rem; border-bottom-left-radius: 0.3rem; gap: 8px; }
+        .close { padding: 1rem; margin: -1rem -1rem -1rem auto; background-color: transparent; border: 0; font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); text-shadow: 0 1px 0 #fff; opacity: .5; cursor: pointer; }
+        .close:hover { opacity: .75; }
+
     </style>
 </head>
 <body>
@@ -434,7 +450,7 @@ if ($crud_action === "index") {
                        <div class="quick-add">
                             <div style="display: flex; align-items: center; width: 100%;">
                                 <div class="quick-add-icon" onclick="quickAdd()" style="cursor: pointer; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">➕</div>
-                                <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()" style="flex: 1; margin-right: 15px;">
+                                <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()" style="flex: 1; margin-right: 15px; border: 1px solid var(--border);">
                                 <button class="btn btn-primary" onclick="quickAdd()" style="padding: 6px 20px; font-weight: 500; border-radius: 6px;">Add</button>
                             </div>
   <div class="quick-add-actions">
@@ -635,7 +651,7 @@ if ($crud_action === "index") {
                         <div class="todo-list">
                             <?php if (empty($tasks)): ?>
                                 <div class="empty-state">
-                                    <i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋
+                                    <i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i>
                                     <p>No tasks found. Try adding one!</p>
                                 </div>
                             <?php else: ?>
@@ -680,13 +696,44 @@ if ($crud_action === "index") {
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                                 <?php if ($task["due_date"]): ?>
-                                                    <span>• 📅 <?php echo date("M j", strtotime($task["due_date"])); ?></span>
+                                                    <?php
+                                                        $isToday = date("Y-m-d", strtotime($task["due_date"])) === date("Y-m-d");
+                                                        $dateLabel = $isToday ? "Today" : date("M j", strtotime($task["due_date"]));
+                                                        $dateStyle = $isToday ? 'style="color: var(--danger); font-weight: 600;"' : '';
+                                                    ?>
+                                                    <span <?php echo $dateStyle; ?>>• 📅 <?php echo $dateLabel; ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($task["reminder_at"]): ?>
-                                                    <span title="Reminder set">• 🔔</span>
+                                                    <?php
+                                                        $remDate = date("Y-m-d", strtotime($task["reminder_at"]));
+                                                        $today = date("Y-m-d");
+                                                        $tomorrow = date("Y-m-d", strtotime("+1 day"));
+                                                        $nextWeek = date("Y-m-d", strtotime("next monday"));
+
+                                                        $remStyle = '';
+                                                        if ($remDate === $today) {
+                                                            $remLabel = "Later today";
+                                                            $remStyle = 'style="color: var(--danger); font-weight: 600;"';
+                                                        }
+                                                        elseif ($remDate === $tomorrow) { $remLabel = "Tomorrow"; }
+                                                        elseif ($remDate === $nextWeek) { $remLabel = "Next week"; }
+                                                        else { $remLabel = date("M j", strtotime($task["reminder_at"])); }
+                                                    ?>
+                                                    <span <?php echo $remStyle; ?>>• 🔔 <?php echo sanitize($remLabel); ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($task["repeat_pattern"]): ?>
-                                                    <span title="Repeat: <?php echo sanitize($task['repeat_pattern']); ?>">• 🔄</span>
+                                                    <?php
+                                                        $repeatLabels = [
+                                                            'daily' => 'Daily',
+                                                            'weekdays' => 'Weekdays',
+                                                            'weekly' => 'Weekly',
+                                                            'monthly' => 'Monthly',
+                                                            'annually' => 'Annually'
+                                                        ];
+                                                        $repLabel = $repeatLabels[$task['repeat_pattern']] ?? ucfirst($task['repeat_pattern']);
+                                                        $repStyle = ($task['repeat_pattern'] === 'daily') ? 'style="color: var(--danger); font-weight: 600;"' : '';
+                                                    ?>
+                                                    <span <?php echo $repStyle; ?>>• 🔄 <?php echo sanitize($repLabel); ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -881,6 +928,72 @@ if ($crud_action === "index") {
 
 <script>
     const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+    let activeDateType = null;
+
+    function openDatePickerModal(type) {
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+        activeDateType = type;
+        const modal = document.getElementById('datePickerModal');
+        const backdrop = document.getElementById('modalBackdrop');
+        const title = document.getElementById('datePickerTitle');
+        const label = document.getElementById('datePickerLabel');
+        const input = document.getElementById('modalDatePickerInput');
+
+        if (type === 'deadline') {
+            title.textContent = 'Choose Deadline';
+            label.textContent = 'Select Deadline Date and Time';
+        } else {
+            title.textContent = 'Choose Reminder';
+            label.textContent = 'Select Reminder Date and Time';
+        }
+
+        // Pre-fill with current value if exists
+        const currentVal = document.getElementById(type === 'deadline' ? 'quickAddDueDate' : 'quickAddReminderAt').value;
+        if (currentVal) {
+            input.value = currentVal.replace(' ', 'T').substring(0, 16);
+        } else {
+            // Default to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            input.value = now.toISOString().substring(0, 16);
+        }
+
+        modal.classList.add('show');
+        backdrop.classList.add('show');
+    }
+
+    function closeDatePickerModal() {
+        const modal = document.getElementById('datePickerModal');
+        const backdrop = document.getElementById('modalBackdrop');
+        modal.classList.remove('show');
+        backdrop.classList.remove('show');
+        activeDateType = null;
+    }
+
+    function saveQuickDate() {
+        if (!activeDateType) return;
+        const input = document.getElementById('modalDatePickerInput');
+        const val = input.value;
+        if (!val) {
+            alert("Please select a date");
+            return;
+        }
+
+        const dbValue = val.replace('T', ' ') + ':00';
+        const displayValue = val.replace('T', ' ');
+
+        const inputMap = { 'deadline': 'quickAddDueDate', 'reminder': 'quickAddReminderAt' };
+        const labelMap = { 'deadline': 'deadlineLabel', 'reminder': 'reminderLabel' };
+        const btnMap = { 'deadline': 'deadlineBtn', 'reminder': 'reminderBtn' };
+
+        document.getElementById(inputMap[activeDateType]).value = dbValue;
+        document.getElementById(labelMap[activeDateType]).textContent = displayValue;
+        document.getElementById(btnMap[activeDateType]).style.color = 'var(--accent)';
+
+        closeDatePickerModal();
+        document.querySelectorAll('.quick-add-dropdown').forEach(d => d.classList.remove('show'));
+    }
+
     function toggleQuickDropdown(event, id) {
         event.stopPropagation();
         const el = document.getElementById(id);
@@ -933,11 +1046,8 @@ if ($crud_action === "index") {
                 document.querySelectorAll(`#${type}Dropdown .quick-add-dropdown-item`).forEach(i => i.classList.remove('active'));
             }
         } else if (value === 'choose') {
-            const dateStr = prompt("Enter date (YYYY-MM-DD HH:MM):");
-            if (!dateStr) return;
-            dbValue = dateStr;
-            displayValue = dateStr;
-            document.getElementById(btnMap[type]).style.color = 'var(--accent)';
+            openDatePickerModal(type);
+            return;
         } else if (isMulti) {
             const input = document.getElementById(inputMap[type]);
             let currentIds = input.value ? input.value.split(',').filter(x => x) : [];
@@ -1116,5 +1226,29 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
 <script src="../../js/vendor/xlsx.full.min.js"></script>
 <script src="../../js/table-tools.js"></script>
+
+<!-- Date Picker Modal -->
+<div class="modal" id="datePickerModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="datePickerTitle">Choose Date</h5>
+                <button type="button" class="close" onclick="closeDatePickerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label id="datePickerLabel">Select Date and Time</label>
+                    <input type="datetime-local" id="modalDatePickerInput">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeDatePickerModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickDate()">Set Date</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop" id="modalBackdrop"></div>
+
 </body>
 </html>
