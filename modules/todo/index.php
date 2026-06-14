@@ -696,13 +696,39 @@ if ($crud_action === "index") {
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                                 <?php if ($task["due_date"]): ?>
-                                                    <span>• 📅 <?php echo date("M j", strtotime($task["due_date"])); ?></span>
+                                                    <?php
+                                                        $isToday = date("Y-m-d", strtotime($task["due_date"])) === date("Y-m-d");
+                                                        $dateLabel = $isToday ? "Today" : date("M j", strtotime($task["due_date"]));
+                                                        $dateStyle = $isToday ? 'style="color: var(--danger); font-weight: 600;"' : '';
+                                                    ?>
+                                                    <span <?php echo $dateStyle; ?>>• 📅 <?php echo $dateLabel; ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($task["reminder_at"]): ?>
-                                                    <span title="Reminder set">• 🔔</span>
+                                                    <?php
+                                                        $remDate = date("Y-m-d", strtotime($task["reminder_at"]));
+                                                        $today = date("Y-m-d");
+                                                        $tomorrow = date("Y-m-d", strtotime("+1 day"));
+                                                        $nextWeek = date("Y-m-d", strtotime("next monday"));
+
+                                                        if ($remDate === $today) { $remLabel = "Later today"; }
+                                                        elseif ($remDate === $tomorrow) { $remLabel = "Tomorrow"; }
+                                                        elseif ($remDate === $nextWeek) { $remLabel = "Next week"; }
+                                                        else { $remLabel = date("M j", strtotime($task["reminder_at"])); }
+                                                    ?>
+                                                    <span>• 🔔 <?php echo sanitize($remLabel); ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($task["repeat_pattern"]): ?>
-                                                    <span title="Repeat: <?php echo sanitize($task['repeat_pattern']); ?>">• 🔄</span>
+                                                    <?php
+                                                        $repeatLabels = [
+                                                            'daily' => 'Daily',
+                                                            'weekdays' => 'Weekdays',
+                                                            'weekly' => 'Weekly',
+                                                            'monthly' => 'Monthly',
+                                                            'annually' => 'Annually'
+                                                        ];
+                                                        $repLabel = $repeatLabels[$task['repeat_pattern']] ?? ucfirst($task['repeat_pattern']);
+                                                    ?>
+                                                    <span>• 🔄 <?php echo sanitize($repLabel); ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
