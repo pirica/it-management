@@ -1,0 +1,28 @@
+{
+    "findings": [
+        {
+            "title": "Authenticated Remote Code Execution (RCE) via File Upload in Explorer Module",
+            "status": "active",
+            "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
+            "detected_at_pst": "2026-06-14T10:15:00-07:00",
+            "reported_link": "",
+            "location": "modules/explorer/api.php"
+        },
+        {
+            "title": "Privilege Escalation via User Profile Modification",
+            "status": "active",
+            "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
+            "detected_at_pst": "2026-06-14T10:15:00-07:00",
+            "reported_link": "",
+            "location": "modules/users/index.php"
+        },
+        {
+            "title": "Unauthorized Access to Role Module Permissions Management",
+            "status": "active",
+            "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
+            "detected_at_pst": "2026-06-14T10:15:00-07:00",
+            "reported_link": "",
+            "location": "modules/role_module_permissions/index.php"
+        }
+    ]
+}
