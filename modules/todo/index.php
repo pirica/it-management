@@ -375,7 +375,7 @@ if ($crud_action === "index") {
                         <div class="todo-header">
                             
                                 
-                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);">➕</a><br>
+                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);">➕ New Task</a><br>
 							<h1>
                                 <?php
                                     if ($filter === "my_day") echo "☀️ My Day";
