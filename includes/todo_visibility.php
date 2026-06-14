@@ -21,7 +21,7 @@ function itm_todo_visibility_sql($alias = '')
 {
     $prefix = itm_todo_normalize_sql_alias($alias);
     return '(' . $prefix . 'assigned_to_user_id IS NULL OR '
-        . $prefix . 'assigned_to_user_id = ? OR '
+        . 'FIND_IN_SET(?, ' . $prefix . 'assigned_to_user_id) OR '
         . $prefix . 'created_by_user_id = ?)';
 }
 
@@ -30,7 +30,7 @@ function itm_todo_visibility_sql_literal($loggedUserId, $alias = '')
     $userId = (int)$loggedUserId;
     $prefix = itm_todo_normalize_sql_alias($alias);
     return '(' . $prefix . 'assigned_to_user_id IS NULL OR '
-        . $prefix . 'assigned_to_user_id = ' . $userId . ' OR '
+        . 'FIND_IN_SET(' . $userId . ', ' . $prefix . 'assigned_to_user_id) OR '
         . $prefix . 'created_by_user_id = ' . $userId . ')';
 }
 
