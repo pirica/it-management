@@ -710,12 +710,16 @@ if ($crud_action === "index") {
                                                         $tomorrow = date("Y-m-d", strtotime("+1 day"));
                                                         $nextWeek = date("Y-m-d", strtotime("next monday"));
 
-                                                        if ($remDate === $today) { $remLabel = "Later today"; }
+                                                        $remStyle = '';
+                                                        if ($remDate === $today) {
+                                                            $remLabel = "Later today";
+                                                            $remStyle = 'style="color: var(--danger); font-weight: 600;"';
+                                                        }
                                                         elseif ($remDate === $tomorrow) { $remLabel = "Tomorrow"; }
                                                         elseif ($remDate === $nextWeek) { $remLabel = "Next week"; }
                                                         else { $remLabel = date("M j", strtotime($task["reminder_at"])); }
                                                     ?>
-                                                    <span>• 🔔 <?php echo sanitize($remLabel); ?></span>
+                                                    <span <?php echo $remStyle; ?>>• 🔔 <?php echo sanitize($remLabel); ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($task["repeat_pattern"]): ?>
                                                     <?php
