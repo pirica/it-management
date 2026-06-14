@@ -6290,6 +6290,7 @@ CREATE TABLE `notes` (
   `images_json` JSON DEFAULT NULL,
   `color` VARCHAR(20) DEFAULT NULL,
   `is_pinned` TINYINT DEFAULT 0,
+  `is_important` TINYINT DEFAULT 0,
   `is_archived` TINYINT DEFAULT 0,
   `reminder_json` JSON DEFAULT NULL,
   `shared_with_json` JSON DEFAULT NULL,
@@ -6308,7 +6309,7 @@ CREATE TABLE `note_labels` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `company_id` INT NOT NULL,
   `user_id` INT NOT NULL,
-  `note_id` INT NOT NULL,
+  `note_id` INT DEFAULT NULL,
   `label` VARCHAR(100) NOT NULL,
   `active` TINYINT DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -6326,15 +6327,15 @@ DELIMITER $$
 CREATE TRIGGER `trg_notes_audit_insert` AFTER INSERT ON `notes` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'notes', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_archived', NEW.`is_archived`, 'active', NEW.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'active', NEW.`active`),
   @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_notes_audit_update` AFTER UPDATE ON `notes` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'notes', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`),
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_archived', NEW.`is_archived`, 'active', NEW.`active`),
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`user_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_important', OLD.`is_important`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`user_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'active', NEW.`active`),
   @app_ip_address, @app_user_agent);
 END$$
 
