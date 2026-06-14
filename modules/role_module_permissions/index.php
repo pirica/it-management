@@ -6,6 +6,25 @@ if (!isset($crud_action)) { $crud_action = 'index'; }
 <?php
 require '../../config/config.php';
 
+// Why: Only administrators are allowed to manage role module permissions.
+$currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$currentUserIsAdmin = false;
+if ($currentUserId > 0) {
+    $adminCheckSql = 'SELECT 1
+        FROM `users` u
+        LEFT JOIN `user_roles` ur ON ur.id = u.role_id
+        WHERE u.id=' . $currentUserId . '
+          AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(COALESCE(u.username, "")) = "admin")
+        LIMIT 1';
+    $adminCheckResult = mysqli_query($conn, $adminCheckSql);
+    $currentUserIsAdmin = $adminCheckResult && mysqli_num_rows($adminCheckResult) > 0;
+}
+
+if (!$currentUserIsAdmin) {
+    header('Location: ' . BASE_URL . 'dashboard.php');
+    exit;
+}
+
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
