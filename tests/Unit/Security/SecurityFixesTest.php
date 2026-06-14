@@ -85,7 +85,8 @@ echo ob_get_clean();
     public function testUserRoleEscalationBlocked()
     {
         // 1. Create a non-admin user
-        mysqli_query($this->conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'attacker', 'attacker@example.com', 'pass', 5, 2, 1)");
+        $stmt = $this->conn->prepare("INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'attacker', 'attacker@example.com', 'pass', 5, 2, 1)");
+        $stmt->execute();
         $attacker_id = mysqli_insert_id($this->conn);
 
         $session = [
@@ -110,12 +111,17 @@ echo ob_get_clean();
         $this->runIsolated(ROOT_PATH . 'modules/users/index.php', $session, $post, $get, $globals);
 
         // 3. Verify role was NOT updated
-        $res = mysqli_query($this->conn, "SELECT role_id FROM users WHERE id = $attacker_id");
+        $stmtV = $this->conn->prepare("SELECT role_id FROM users WHERE id = ?");
+        $stmtV->bind_param("i", $attacker_id);
+        $stmtV->execute();
+        $res = $stmtV->get_result();
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals(5, (int)$row['role_id'], "Non-admin user should not be able to update their role to Admin.");
 
         // Cleanup
-        mysqli_query($this->conn, "DELETE FROM users WHERE id = $attacker_id");
+        $stmtC = $this->conn->prepare("DELETE FROM users WHERE id = ?");
+        $stmtC->bind_param("i", $attacker_id);
+        $stmtC->execute();
     }
 
     public function testRoleModulePermissionsAdminOnly()
