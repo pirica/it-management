@@ -16,6 +16,7 @@ define('ITM_CONFIG_LOADED', true);
 /**
  * Why: Local `.env` keeps API keys out of git while remaining optional for Laragon/dev installs.
  */
+if (!function_exists('itm_load_dotenv_file')) {
 function itm_load_dotenv_file($path)
 {
     if (!is_string($path) || $path === '' || !is_readable($path)) {
@@ -50,6 +51,7 @@ function itm_load_dotenv_file($path)
             $_ENV[$name] = $value;
         }
     }
+}
 }
 
 itm_load_dotenv_file(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env');

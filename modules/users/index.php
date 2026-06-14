@@ -597,6 +597,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
+
+        // Why: Prevent non-admin users from escalating their own or others' privileges.
+        if (!$currentUserIsAdmin && in_array($name, ['role_id', 'access_level_id'])) {
+            if ($crud_action === 'edit' && isset($data[$name])) {
+                $sqlValues[$name] = (string)(int)$data[$name];
+            } else {
+                $sqlValues[$name] = 'NULL';
+            }
+            continue;
+        }
+
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
         if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
