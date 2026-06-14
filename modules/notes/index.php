@@ -1,0 +1,462 @@
+<?php
+/**
+ * Notes Module - Index - manages notes with a Google Keep style UI.
+ */
+
+require_once "../../config/config.php";
+require_once ROOT_PATH . "includes/notes_visibility.php";
+
+$crud_table = "notes";
+$crud_title = "Notes";
+$crud_action = $crud_action ?? "index";
+$logged_user_id = isset($_SESSION["user_id"]) ? (int)$_SESSION["user_id"] : 0;
+$company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
+
+// Metadata
+$user_labels = [];
+$stmtUL = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND user_id = ? AND active = 1 ORDER BY label ASC");
+$stmtUL->bind_param("ii", $company_id, $logged_user_id);
+$stmtUL->execute();
+$resUserLabels = $stmtUL->get_result();
+if ($resUserLabels) { while ($row = mysqli_fetch_assoc($resUserLabels)) { $user_labels[] = $row["label"]; } }
+
+$categories = [];
+$stmtCat = $conn->prepare("SELECT id, label as name FROM note_labels WHERE (company_id = ? AND user_id = ?) OR (company_id IS NULL)");
+$stmtCat->bind_param("ii", $company_id, $logged_user_id);
+$stmtCat->execute();
+$resCat = $stmtCat->get_result();
+if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id']] = $row; } }
+
+$users = [];
+$resUser = mysqli_query($conn, "SELECT id, username FROM users");
+if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']] = $row; } }
+
+$departments = [];
+$stmtDept = $conn->prepare("SELECT id, name, code FROM departments WHERE company_id = ? OR company_id IS NULL");
+$stmtDept->bind_param("i", $company_id);
+$stmtDept->execute();
+$resDept = $stmtDept->get_result();
+if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row['id']] = $row; } }
+
+// Standard CRUD processing
+$editId = (int)($_GET["id"] ?? 0);
+$csrfToken = itm_get_csrf_token();
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
+    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? "")) {
+        die("CSRF token mismatch");
+    }
+
+    $action = $_POST["bulk_action"] ?? "";
+    if ($action === "delete" && !empty($_POST["ids"])) {
+        $ids = array_map("intval", $_POST["ids"]);
+        foreach ($ids as $id) {
+            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+            $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
+            $stmt->execute();
+        }
+        header("Location: index.php?msg=deleted");
+        die();
+    }
+
+    if ($action === "single_delete" && $editId > 0) {
+        $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt->bind_param("iii", $editId, $company_id, $logged_user_id);
+        $stmt->execute();
+        header("Location: index.php?msg=deleted");
+        die();
+    }
+
+    if (in_array($crud_action, ["create", "edit"], true)) {
+        $title = $_POST["title"] ?? "";
+        $content = $_POST["description"] ?? "";
+        $is_checklist = isset($_POST["is_checklist"]) ? 1 : 0;
+        $color = $_POST["color"] ?? null;
+        $is_pinned = isset($_POST["is_pinned"]) ? 1 : 0;
+        $is_archived = isset($_POST["is_archived"]) ? 1 : 0;
+
+        $image_files = $_POST['existing_images'] ?? [];
+        if (!empty($_FILES['images'])) {
+            $upload_dir = ROOT_PATH . "files/$company_id/Private/{$_SESSION['username']}_$logged_user_id/notes/";
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            foreach ($_FILES['images']['tmp_name'] as $i => $tmp_name) {
+                if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK) {
+                    $name = basename($_FILES['images']['name'][$i]);
+                    $ext = pathinfo($name, PATHINFO_EXTENSION);
+                    $safe_name = uniqid('note_') . '.' . $ext;
+                    if (move_uploaded_file($tmp_name, $upload_dir . $safe_name)) $image_files[] = $safe_name;
+                }
+            }
+        }
+        $images_json = !empty($image_files) ? json_encode(array_values($image_files)) : null;
+
+        $shared_users = $_POST["shared_with_json"] ?? [];
+        $shared_with_json = !empty($shared_users) ? json_encode(array_map('intval', $shared_users)) : null;
+
+        $checklist_data = [];
+        if ($is_checklist && !empty($_POST['checklist_text'])) {
+            foreach ($_POST['checklist_text'] as $i => $text) {
+                if (trim($text) !== '') {
+                    $checklist_data[] = ['text' => $text, 'completed' => isset($_POST['checklist_completed'][$i]) ? 1 : 0];
+                }
+            }
+        }
+        $checklist_json = !empty($checklist_data) ? json_encode($checklist_data) : null;
+
+        if ($crud_action === "edit" && $editId > 0) {
+            $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_archived=?, checklist_json=?, images_json=?, shared_with_json=? WHERE id=? AND company_id=? AND user_id=?");
+            $stmt->bind_param("ssissssssiii", $title, $content, $is_checklist, $color, $is_pinned, $is_archived, $checklist_json, $images_json, $shared_with_json, $editId, $company_id, $logged_user_id);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, is_checklist, color, is_pinned, is_archived, checklist_json, images_json, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iississssss", $company_id, $logged_user_id, $title, $content, $is_checklist, $color, $is_pinned, $is_archived, $checklist_json, $images_json, $shared_with_json);
+        }
+
+        if ($stmt->execute()) {
+            if ($crud_action === "edit") { $stmtD = $conn->prepare("DELETE FROM note_labels WHERE note_id = ?"); $stmtD->bind_param("i", $editId); $stmtD->execute(); $noteId = $editId; }
+            else $noteId = mysqli_insert_id($conn);
+
+            $labels = $_POST["category_id"] ?? [];
+            foreach ($labels as $label_id) {
+                if (empty($label_id) || $label_id == '__add_new__') continue;
+                $label_name = is_numeric($label_id) ? null : $label_id;
+                if (is_numeric($label_id)) {
+                    $stmtGL = $conn->prepare("SELECT label FROM note_labels WHERE id = ?"); $stmtGL->bind_param("i", $label_id); $stmtGL->execute(); $resL = $stmtGL->get_result();
+                    if ($rowL = mysqli_fetch_assoc($resL)) $label_name = $rowL['label'];
+                }
+                if (!empty($label_name)) {
+                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, user_id, note_id, label) VALUES (?, ?, ?, ?)");
+                    $stmtL->bind_param("iiis", $company_id, $logged_user_id, $noteId, $label_name);
+                    $stmtL->execute();
+                }
+            }
+            header("Location: index.php?msg=saved");
+            die();
+        }
+    }
+}
+
+if (isset($_GET["ajax_action"])) {
+    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? $_POST["CSRF_TOKEN"] ?? "")) {
+        echo json_encode(["ok" => false, "error" => "CSRF token mismatch"]);
+        die();
+    }
+
+    $action = $_GET["ajax_action"];
+    if ($action === "quick_add") {
+        $title = $_POST["title"] ?? "";
+        $is_checklist = (int)($_POST["is_checklist"] ?? 0);
+        $image_files = [];
+        if (!empty($_FILES['images'])) {
+            $upload_dir = ROOT_PATH . "files/$company_id/Private/{$_SESSION['username']}_$logged_user_id/notes/";
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            foreach ($_FILES['images']['tmp_name'] as $i => $tmp_name) {
+                if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK) {
+                    $safe_name = uniqid('note_') . '.' . pathinfo($_FILES['images']['name'][$i], PATHINFO_EXTENSION);
+                    if (move_uploaded_file($tmp_name, $upload_dir . $safe_name)) $image_files[] = $safe_name;
+                }
+            }
+        }
+        $images_json = !empty($image_files) ? json_encode($image_files) : null;
+        $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, is_checklist, images_json) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("iiiis", $company_id, $logged_user_id, $title, $is_checklist, $images_json);
+        if ($stmt->execute()) echo json_encode(["ok" => true]);
+        else echo json_encode(["ok" => false, "error" => $stmt->error]);
+        die();
+    }
+    if ($action === "toggle_pinned") {
+        $id = (int)($_POST["id"] ?? 0);
+        $is_pinned = (int)($_POST["is_pinned"] ?? 0);
+        $stmt = $conn->prepare("UPDATE notes SET is_pinned = ? WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt->bind_param("iiii", $is_pinned, $id, $company_id, $logged_user_id);
+        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
+        die();
+    }
+    if ($action === "rename_tag") {
+        $old = $_POST["old_name"] ?? "";
+        $new = $_POST["new_name"] ?? "";
+        if ($new === "") { echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]); die(); }
+        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE user_id = ? AND label = ? AND company_id = ? LIMIT 1");
+        $stmtC->bind_param("isi", $logged_user_id, $new, $company_id);
+        $stmtC->execute();
+        if ($stmtC->get_result()->fetch_assoc()) { echo json_encode(["ok" => false, "error" => "Tag already exists"]); die(); }
+        $stmt = $conn->prepare("UPDATE note_labels SET label = ? WHERE label = ? AND user_id = ? AND company_id = ?");
+        $stmt->bind_param("ssii", $new, $old, $logged_user_id, $company_id);
+        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
+        die();
+    }
+    if ($action === "delete_tag") {
+        $name = $_POST["name"] ?? "";
+        $stmt = $conn->prepare("DELETE FROM note_labels WHERE label = ? AND user_id = ? AND company_id = ?");
+        $stmt->bind_param("sii", $name, $logged_user_id, $company_id);
+        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
+        die();
+    }
+}
+
+// Data fetching
+$filter = $_GET["filter"] ?? "all";
+$search = $_GET["search"] ?? "";
+
+if ($crud_action === "index") {
+    if ($filter === "garbage") {
+        $sql = "SELECT t.* FROM notes t WHERE t.company_id = ? AND t.active = 0";
+    } else {
+        $sql = "SELECT t.* FROM notes t WHERE t.company_id = ? AND t.active = 1";
+    }
+    $params = [$company_id];
+    $types = "i";
+    $visibilitySql = itm_notes_visibility_sql("t");
+    $sql .= " AND ($visibilitySql)";
+    $types .= "ii";
+    $params[] = $logged_user_id;
+    $params[] = $logged_user_id;
+
+    if ($filter === "reminders") {
+        $sql .= " AND t.reminder_json IS NOT NULL";
+    } elseif ($filter === "label") {
+        $label_filter = $_GET["label"] ?? "";
+        $sql .= " AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label = ? AND nl.active = 1)";
+        $types .= "s";
+        $params[] = $label_filter;
+    } elseif ($filter === "archive") {
+        $sql .= " AND t.is_archived = 1";
+    } elseif ($filter === "all") {
+        $sql .= " AND t.is_archived = 0";
+    } else {
+        $sql .= " AND t.is_archived = 0";
+    }
+
+    if ($search !== "") {
+        $sql .= " AND (t.title LIKE ? OR t.content LIKE ? OR t.description LIKE ?)";
+        $types .= "sss";
+        $searchTerm = "%$search%";
+        $params[] = $searchTerm; $params[] = $searchTerm; $params[] = $searchTerm;
+    }
+
+    $sql .= " ORDER BY t.is_pinned DESC, t.created_at DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $notes = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+} elseif ($crud_action === "edit" || $crud_action === "view") {
+    $stmt = $conn->prepare("SELECT * FROM notes WHERE id = ? AND company_id = ? AND active = 1");
+    $stmt->bind_param("ii", $editId, $company_id);
+    $stmt->execute();
+    $data = $stmt->get_result()->fetch_assoc();
+    if (!$data) { header("Location: index.php"); die(); }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Management - Notes</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .notes-container { display: flex; height: calc(100vh - 120px); background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .notes-sidebar { width: 280px; background: var(--bg-secondary); border-right: 1px solid var(--border); padding: 20px 0; display: flex; flex-direction: column; }
+        .notes-sidebar-item { padding: 10px 25px; display: flex; align-items: center; cursor: pointer; color: var(--text-primary); text-decoration: none; transition: background 0.2s; }
+        .notes-sidebar-item:hover { background: var(--bg-tertiary); }
+        .notes-sidebar-item.active { background: #e7f3ff; color: var(--accent); font-weight: 500; }
+        .notes-content { flex: 1; padding: 30px 50px; overflow-y: auto; position: relative; }
+        .note-item { border-radius: 8px; padding: 12px 15px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); transition: transform 0.1s; }
+        .note-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+        .note-star { cursor: pointer; font-size: 20px; color: var(--text-tertiary); margin-left: 10px; }
+        .note-star.active { color: var(--accent); }
+        .empty-state { text-align: center; padding: 100px 50px; color: var(--text-tertiary); }
+        .quick-add { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--bg-secondary); margin-bottom: 24px; }
+        .quick-add input { flex: 1; border: none; background: transparent; outline: none; font-size: 16px; color: var(--text-primary); }
+        .quick-add-icon { cursor: pointer; color: var(--text-secondary); font-size: 20px; }
+        /* Modal Styles */
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; opacity: 0.5; z-index: 1040; display: none; }
+        .modal-backdrop.show { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; z-index: 1050; }
+        .modal.show { display: block; }
+        .modal-dialog { position: relative; width: auto; margin: 1.75rem auto; max-width: 500px; pointer-events: none; }
+        .modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 0.3rem; outline: 0; box-shadow: var(--shadow-lg); }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border); }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { padding: 1rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+        .close { background: transparent; border: 0; font-size: 1.5rem; cursor: pointer; color: var(--text-primary); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <?php include ROOT_PATH . "includes/sidebar.php"; ?>
+    <div class="main-content">
+	    <?php include ROOT_PATH . "includes/header.php"; ?>
+        <div class="content">
+            <div class="notes-container">
+                <div class="notes-sidebar">
+                    <a href="index.php" class="notes-sidebar-item <?php echo ($filter === "all" || $filter === "") ? "active" : ""; ?>">💡 Notes</a>
+                    <a href="?filter=reminders" class="notes-sidebar-item <?php echo $filter === "reminders" ? "active" : ""; ?>">🔔 Reminders</a>
+                    <?php foreach ($user_labels as $ul): ?>
+                        <a href="?filter=label&label=<?php echo urlencode($ul); ?>" class="notes-sidebar-item <?php echo ($filter === "label" && ($_GET["label"] ?? "") === $ul) ? "active" : ""; ?>">🏷️ <?php echo sanitize($ul); ?></a>
+                    <?php endforeach; ?>
+                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;">✏️ Edit tags</a>
+                    <a href="?filter=archive" class="notes-sidebar-item <?php echo $filter === "archive" ? "active" : ""; ?>">📥 Archive</a>
+                    <a href="?filter=garbage" class="notes-sidebar-item <?php echo $filter === "garbage" ? "active" : ""; ?>">🗑️ Garbage</a>
+                </div>
+                <div class="notes-content">
+                    <?php if ($crud_action === "index"): ?>
+                        <div class="notes-header">
+                            <h1>
+                                <?php
+                                    if ($filter === "reminders") echo "🔔 Reminders";
+                                    elseif ($filter === "label") echo "🏷️ " . sanitize($_GET["label"] ?? "");
+                                    elseif ($filter === "archive") echo "📥 Archive";
+                                    elseif ($filter === "garbage") echo "🗑️ Garbage";
+                                    else echo "💡 Notes";
+                                ?>
+                            </h1>
+                            <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
+                        </div>
+
+                        <div class="quick-add">
+                            <div style="display: flex; align-items: center; width: 100%;">
+                                <input type="text" id="quickAddInput" placeholder="Take a note..." onkeypress="if(event.key==='Enter') quickAdd()">
+                                <div style="display: flex; gap: 15px; margin-left: 10px;">
+                                    <div class="quick-add-icon" onclick="toggleChecklistMode()" title="New list">☑️</div>
+                                    <div class="quick-add-icon" onclick="triggerQuickImageUpload()" title="New note with image">🖼️</div>
+                                </div>
+                            </div>
+                            <input type="file" id="quickAddImageInput" multiple accept="image/*" style="display: none;" onchange="handleQuickImageSelect(event)">
+                            <div id="quickAddPreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
+                            <input type="hidden" id="quickAddIsChecklist" value="0">
+                        </div>
+
+                        <div class="notes-list">
+                            <?php if (empty($notes)): ?>
+                                <div class="empty-state"><i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i><p>No notes found.</p></div>
+                            <?php else: ?>
+                                <?php foreach ($notes as $note): ?>
+                                    <div class="note-item" style="background-color: <?php echo $note["color"] ?? "var(--bg-primary)"; ?>;">
+                                        <div class="note-main" onclick="location.href='view.php?id=<?php echo $note["id"]; ?>'" style="flex: 1; cursor: pointer;">
+                                            <div class="note-title" style="font-weight: 600;"><?php echo sanitize($note["title"] ?: '(Untitled)'); ?></div>
+                                            <div class="note-meta" style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px;">
+                                                <span>Notes</span>
+                                                <?php if ($note['is_pinned']): ?><span>• 📌</span><?php endif; ?>
+                                                <?php if (!empty($note['images_json'])): ?><span>• 🖼️</span><?php endif; ?>
+                                                <?php if ($note['is_checklist']): ?><span>• ☑️</span><?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="note-star <?php echo $note["is_pinned"] ? "active" : ""; ?>" onclick="togglePinned(<?php echo $note["id"]; ?>, this)" data-pinned="<?php echo $note['is_pinned']; ?>">
+                                            <?php echo $note["is_pinned"] ? "★" : "☆"; ?>
+                                        </div>
+                                        <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;">✏️</a>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+
+                    <?php elseif ($crud_action === "edit" || $crud_action === "create"): ?>
+                        <h1><?php echo $crud_action === "edit" ? "Edit Note" : "New Note"; ?></h1>
+                        <form method="POST" class="form-grid" style="max-width: 800px;" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                            <div class="form-group"><label>Title</label><input type="text" name="title" value="<?php echo sanitize($data["title"] ?? ""); ?>" autofocus></div>
+                            <div class="form-group"><label>Content</label><textarea name="description" rows="5"><?php echo sanitize($data["content"] ?? $data["description"] ?? ""); ?></textarea></div>
+                            <div class="form-group"><label>Images</label>
+                                <div id="image-drop-zone" style="border: 2px dashed var(--border); padding: 20px; text-align: center; border-radius: 8px; cursor: pointer;" ondragover="event.preventDefault();" ondrop="handleDrop(event)" onclick="document.getElementById('file-input').click()">
+                                    <p>Drag and drop images here or click to upload</p>
+                                    <input type="file" id="file-input" name="images[]" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                                </div>
+                                <div id="image-preview-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                                    <?php $imgs = json_decode($data['images_json'] ?? '[]', true); if (is_array($imgs)): foreach ($imgs as $img): $imgPath = "../../files/{$company_id}/Private/{$_SESSION['username']}_{$logged_user_id}/notes/{$img}"; ?>
+                                        <div class="image-item" style="position: relative;"><img src="<?php echo $imgPath; ?>" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;"><input type="hidden" name="existing_images[]" value="<?php echo sanitize($img); ?>"><span onclick="this.parentElement.remove()" style="position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;">&times;</span></div>
+                                    <?php endforeach; endif; ?>
+                                </div>
+                            </div>
+                            <div class="form-group" id="checklist-section" style="<?php echo !empty($data['is_checklist']) ? '' : 'display: none;'; ?>">
+                                <label>Checklist</label>
+                                <div id="checklist-container">
+                                    <?php $checklist = json_decode($data['checklist_json'] ?? '[]', true); if (is_array($checklist)): foreach ($checklist as $item): ?>
+                                        <div class="checklist-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;"><input type="checkbox" name="checklist_completed[]" value="1" <?php echo !empty($item['completed']) ? 'checked' : ''; ?>><input type="text" name="checklist_text[]" value="<?php echo sanitize($item['text'] ?? ''); ?>" style="flex: 1;"><span onclick="this.parentElement.remove()" style="cursor: pointer; color: var(--danger);">&times;</span></div>
+                                    <?php endforeach; endif; ?>
+                                </div>
+                                <button type="button" class="btn btn-sm" onclick="addChecklistItem()" style="margin-top: 10px;">➕ Add item</button>
+                            </div>
+                            <div class="form-group"><label>Labels</label>
+                                <select name="category_id[]" multiple size="5" data-addable-select="1" data-add-table="note_labels" data-add-friendly="label" data-add-company-scoped="1">
+                                    <option value="">-- None --</option><option value="__add_new__">➕</option>
+                                    <?php $nId = $data['id'] ?? 0; $selL = []; if ($nId > 0) { $stmtL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtL->bind_param("i", $nId); $stmtL->execute(); $rL = $stmtL->get_result(); while ($rowL = mysqli_fetch_assoc($rL)) $selL[] = $rowL['label']; }
+                                    foreach ($user_labels as $ul): ?><option value="<?php echo sanitize($ul); ?>" <?php echo in_array($ul, $selL) ? "selected" : ""; ?>><?php echo sanitize($ul); ?></option><?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Note Color</label><div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <?php $colors = ['default' => 'var(--bg-secondary)', 'red' => '#f28b82', 'orange' => '#fbbc04', 'yellow' => '#fff475', 'green' => '#ccff90', 'teal' => '#a7ffeb', 'blue' => '#cbf0f8', 'darkblue' => '#aecbfa', 'purple' => '#d7aefb', 'pink' => '#fdcfe8', 'brown' => '#e6c9a8', 'gray' => '#e8eaed'];
+                                foreach ($colors as $hex): ?>
+                                    <label style="cursor: pointer;"><input type="radio" name="color" value="<?php echo $hex; ?>" <?php echo ($data['color'] ?? 'var(--bg-secondary)') === $hex ? 'checked' : ''; ?> style="display: none;"><div style="width: 30px; height: 30px; border-radius: 50%; background: <?php echo $hex; ?>; border: 2px solid <?php echo ($data['color'] ?? 'var(--bg-secondary)') === $hex ? 'var(--accent)' : 'transparent'; ?>;"></div></label>
+                                <?php endforeach; ?>
+                            </div></div>
+                            <div class="form-group"><label>Shared With</label><select name="shared_with_json[]" multiple size="5">
+                                <?php $sharedUsers = json_decode($data['shared_with_json'] ?? '[]', true); foreach ($users as $u): if ($u['id'] == $logged_user_id) continue; ?>
+                                    <option value="<?php echo $u["id"]; ?>" <?php echo is_array($sharedUsers) && in_array($u["id"], $sharedUsers) ? "selected" : ""; ?>><?php echo sanitize($u["username"]); ?></option>
+                                <?php endforeach; ?>
+                            </select></div>
+                            <div style="display: flex; gap: 30px; margin-top: 10px;">
+                                <label class="itm-checkbox-control"><input type="checkbox" name="is_checklist" value="1" <?php echo !empty($data["is_checklist"]) ? "checked" : ""; ?> onchange="toggleChecklistSection(this.checked)"><span>Checklist ☑️</span></label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="is_pinned" value="1" <?php echo !empty($data["is_pinned"]) ? "checked" : ""; ?>><span>Pinned 📌</span></label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="is_archived" value="1" <?php echo !empty($data["is_archived"]) ? "checked" : ""; ?>><span>Archived 📥</span></label>
+                            </div>
+                            <div class="form-actions" style="margin-top: 30px;"><button class="btn btn-primary" type="submit">💾 Save</button><a href="index.php" class="btn">🔙 Cancel</a>
+                                <?php if ($crud_action === "edit"): ?><button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this note?')">🗑️ Delete</button><?php endif; ?>
+                            </div>
+                        </form>
+
+                    <?php elseif ($crud_action === "view"): ?>
+                        <h1>Note Details</h1>
+                        <div class="card" style="max-width: 800px; background-color: <?php echo $data["color"] ?? "var(--bg-primary)"; ?>; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+                            <h2 style="margin: 0;"><?php echo sanitize($data["title"] ?: '(Untitled)'); ?></h2>
+                            <div style="color: var(--text-secondary); margin-bottom: 20px;">Created on <?php echo date("M j, Y", strtotime($data["created_at"])); ?></div>
+                            <?php $vimgs = json_decode($data['images_json'] ?? '[]', true); if (!empty($vimgs)): ?>
+                                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;"><?php foreach ($vimgs as $img): $imgPath = "../../files/{$company_id}/Private/{$_SESSION['username']}_{$logged_user_id}/notes/{$img}"; ?>
+                                    <div style="text-align: center;"><a href="<?php echo $imgPath; ?>" target="_blank"><img src="<?php echo $imgPath; ?>" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 5px;"></a>
+                                    <div style="font-size: 12px; display: flex; justify-content: center; gap: 10px;"><a href="<?php echo $imgPath; ?>" target="_blank">👁️ Preview</a><a href="<?php echo $imgPath; ?>" download>📥 Download</a></div></div><?php endforeach; ?></div>
+                            <?php endif; ?>
+                            <?php $vcl = json_decode($data['checklist_json'] ?? '[]', true); if (!empty($vcl)): ?>
+                                <div style="margin-bottom: 20px;"><?php foreach ($vcl as $item): ?><div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;"><input type="checkbox" disabled <?php echo !empty($item['completed']) ? 'checked' : ''; ?>><span style="<?php echo !empty($item['completed']) ? 'text-decoration: line-through; color: var(--text-tertiary);' : ''; ?>"><?php echo sanitize($item['text']); ?></span></div><?php endforeach; ?></div>
+                            <?php endif; ?>
+                            <?php if ($data["content"] || $data["description"]): ?><div style="margin-bottom: 20px; white-space: pre-wrap;"><?php echo sanitize($data["content"] ?? $data["description"]); ?></div><?php endif; ?>
+                            <table class="table" style="width: auto;">
+                                <tr><th style="text-align: left; padding-right: 20px;">Labels</th><td><?php $lbls = []; $noteId = (int)$data['id']; $stmtVL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtVL->bind_param("i", $noteId); $stmtVL->execute(); $resL = $stmtVL->get_result(); while ($rowL = mysqli_fetch_assoc($resL)) $lbls[] = $rowL['label']; echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
+                                <tr><th style="text-align: left; padding-right: 20px;">Shared With</th><td><?php $uIds = json_decode($data['shared_with_json'] ?? '[]', true); if (empty($uIds)) echo "Private"; else { $names = []; foreach ($uIds as $uid) { if (isset($users[$uid])) $names[] = $users[$uid]['username']; } echo sanitize(implode(', ', $names)); } ?></td></tr>
+                            </table>
+                            <div class="form-actions" style="margin-top: 30px;"><a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary">✏️ Edit</a><a href="index.php" class="btn">🔙 Back</a></div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+    let quickAddFiles = [];
+    function toggleChecklistMode() { const input = document.getElementById('quickAddIsChecklist'); const icon = document.querySelector('.quick-add-icon[onclick="toggleChecklistMode()"]'); if (input.value === '1') { input.value = '0'; icon.style.color = 'var(--text-secondary)'; } else { input.value = '1'; icon.style.color = 'var(--accent)'; } }
+    function triggerQuickImageUpload() { document.getElementById('quickAddImageInput').click(); }
+    function handleQuickImageSelect(event) { quickAddFiles = quickAddFiles.concat(Array.from(event.target.files)); renderQuickPreview(); }
+    function renderQuickPreview() { const preview = document.getElementById('quickAddPreview'); preview.innerHTML = ''; quickAddFiles.forEach((file, index) => { const div = document.createElement('div'); div.style.position = 'relative'; const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 4px;'; const close = document.createElement('span'); close.innerHTML = '&times;'; close.style.cssText = 'position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;'; close.onclick = () => { quickAddFiles.splice(index, 1); renderQuickPreview(); }; div.appendChild(img); div.appendChild(close); preview.appendChild(div); }); }
+    function quickAdd() { const input = document.getElementById("quickAddInput"); const title = input.value.trim(); if (!title && quickAddFiles.length === 0) { alert("Please add a title or an image."); return; } const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("title", title); formData.append("is_checklist", document.getElementById("quickAddIsChecklist").value); quickAddFiles.forEach((file) => formData.append("images[]", file)); fetch("index.php?ajax_action=quick_add", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); else alert("Error adding note: " + (data.error || "Unknown error")); }); }
+    function togglePinned(id, el) { const newVal = el.dataset.pinned === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_pinned", newVal); fetch("index.php?ajax_action=toggle_pinned", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
+    function openEditTagsModal() { document.getElementById('editTagsModal').classList.add('show'); document.getElementById('modalBackdrop').classList.add('show'); }
+    function closeEditTagsModal() { document.getElementById('editTagsModal').classList.remove('show'); document.getElementById('modalBackdrop').classList.remove('show'); location.reload(); }
+    function renameTag(oldName, newName) { if (!newName || oldName === newName) return; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("old_name", oldName); formData.append("new_name", newName); fetch("index.php?ajax_action=rename_tag", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (!data.ok) alert(data.error || "Error renaming tag"); }); }
+    function deleteTag(name) { if (!confirm('Are you sure?')) return; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("name", name); fetch("index.php?ajax_action=delete_tag", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); else alert(data.error || "Error deleting tag"); }); }
+    function addChecklistItem() { const container = document.getElementById('checklist-container'); const div = document.createElement('div'); div.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 5px;'; div.innerHTML = '<input type="checkbox" name="checklist_completed[]" value="1"><input type="text" name="checklist_text[]" placeholder="List item" style="flex: 1;"><span onclick="this.parentElement.remove()" style="cursor: pointer; color: var(--danger);">&times;</span>'; container.appendChild(div); div.querySelector('input[type="text"]').focus(); }
+    function toggleChecklistSection(checked) { document.getElementById('checklist-section').style.display = checked ? '' : 'none'; }
+    function handleDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); }
+    function handleFileSelect(e) { handleFiles(e.target.files); }
+    function handleFiles(files) { const container = document.getElementById('image-preview-container'); Array.from(files).forEach(file => { if (!file.type.startsWith('image/')) return; const reader = new FileReader(); reader.onload = (e) => { const div = document.createElement('div'); div.className = 'image-item'; div.style.position = 'relative'; const img = document.createElement('img'); img.src = e.target.result; img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 4px;'; const span = document.createElement('span'); span.innerHTML = '&times;'; span.style.cssText = 'position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;'; span.onclick = () => div.remove(); div.appendChild(img); div.appendChild(span); container.appendChild(div); }; reader.readAsDataURL(file); }); }
+</script>
+
+<div class="modal" id="editTagsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Edit tags</h5><button type="button" class="close" onclick="closeEditTagsModal()">&times;</button></div>
+    <div class="modal-body"><div id="tags-list"><?php foreach ($user_labels as $ul): ?><div class="tag-edit-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;"><span onclick="deleteTag('<?php echo addslashes($ul); ?>')" style="cursor: pointer;">🗑️</span><input type="text" value="<?php echo sanitize($ul); ?>" onchange="renameTag('<?php echo addslashes($ul); ?>', this.value)" style="flex: 1; border: none; background: transparent; border-bottom: 1px solid transparent;" onfocus="this.style.borderBottom='1px solid var(--accent)'" onblur="this.style.borderBottom='1px solid transparent'"></div><?php endforeach; ?></div></div>
+    <div class="modal-footer"><button type="button" class="btn" onclick="closeEditTagsModal()">Done</button></div></div></div>
+</div>
+<div class="modal-backdrop" id="modalBackdrop"></div>
+</body>
+</html>
