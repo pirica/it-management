@@ -168,9 +168,10 @@ if (isset($_GET["ajax_action"])) {
         $category_id = isset($_POST["category_id"]) ? implode(",", array_filter(array_map("intval", $_POST["category_id"]))) : null;
         $department_id = isset($_POST["department_id"]) ? implode(",", array_filter(array_map("intval", $_POST["department_id"]))) : null;
         $assigned_to_user_id = isset($_POST["assigned_to_user_id"]) ? implode(",", array_filter(array_map("intval", $_POST["assigned_to_user_id"]))) : null;
+        $importance = (int)($_POST["importance"] ?? 0);
 
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssssssi", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id);
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssssssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance);
 
         if ($stmt->execute()) {
             echo json_encode(["ok" => true]);
@@ -287,8 +288,8 @@ if ($crud_action === "index") {
         .quick-add { background: var(--bg-secondary); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: box-shadow 0.2s; }
         .quick-add:focus-within { box-shadow: var(--shadow); border-color: var(--accent); }
         .quick-add-icon { color: var(--accent); margin-right: 12px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
-        .quick-add input { background: transparent; border: none; padding: 8px 0; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; margin-right: 10px; }
-        .quick-add input:focus { border-color: var(--accent); }
+        .quick-add input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; flex: 1; font-size: 16px; color: var(--text-primary); outline: none !important; margin-right: 10px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .quick-add input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0, 120, 215, 0.15); }
         .task-item { background: var(--bg-primary); border-radius: 4px; padding: 12px 15px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .task-item:hover { background-color: var(--bg-secondary); }
         .task-checkbox { width: 22px; height: 22px; border: 2px solid var(--text-tertiary); border-radius: 50%; margin-right: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
@@ -433,7 +434,7 @@ if ($crud_action === "index") {
                        <div class="quick-add">
                             <div style="display: flex; align-items: center; width: 100%;">
                                 <div class="quick-add-icon" onclick="quickAdd()" style="cursor: pointer; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">➕</div>
-                                <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()" style="flex: 1; border: none; background: transparent; font-size: 16px; padding: 10px 0; margin-right: 15px;">
+                                <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()" style="flex: 1; margin-right: 15px;">
                                 <button class="btn btn-primary" onclick="quickAdd()" style="padding: 6px 20px; font-weight: 500; border-radius: 6px;">Add</button>
                             </div>
   <div class="quick-add-actions">
@@ -613,6 +614,12 @@ if ($crud_action === "index") {
             </div>
         </div>
     </div>
+
+    <!-- IMPORTANT -->
+    <div class="quick-add-btn" id="importantBtn" onclick="toggleQuickImportance(event)">
+        <span id="importantIcon">☆</span>
+        <span id="importantLabel">Important</span>
+    </div>
       </div>
     
 
@@ -622,6 +629,7 @@ if ($crud_action === "index") {
                             <input type="hidden" id="quickAddDept">
                             <input type="hidden" id="quickAddCat">
                             <input type="hidden" id="quickAddUser">
+                            <input type="hidden" id="quickAddImportance" value="0">
                         </div>
 
                         <div class="todo-list">
@@ -1025,6 +1033,7 @@ if ($crud_action === "index") {
 
         const userIds = document.getElementById("quickAddUser").value.split(',').filter(x => x);
         userIds.forEach(id => formData.append("assigned_to_user_id[]", id));
+        formData.append("importance", document.getElementById("quickAddImportance").value);
 
         fetch("index.php?ajax_action=quick_add", {
             method: "POST",
@@ -1060,6 +1069,23 @@ if ($crud_action === "index") {
                 el.closest(".task-item").classList.toggle("completed");
             }
         });
+    }
+
+    function toggleQuickImportance(event) {
+        event.stopPropagation();
+        const input = document.getElementById('quickAddImportance');
+        const btn = document.getElementById('importantBtn');
+        const icon = document.getElementById('importantIcon');
+
+        if (input.value === '1') {
+            input.value = '0';
+            btn.style.color = '';
+            icon.textContent = '☆';
+        } else {
+            input.value = '1';
+            btn.style.color = 'var(--accent)';
+            icon.textContent = '★';
+        }
     }
 
     function toggleImportance(id, el) {
