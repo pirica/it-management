@@ -112,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         }
 
         if ($stmt->execute()) {
-            if ($crud_action === "edit") { mysqli_query($conn, "DELETE FROM note_labels WHERE note_id = $editId"); $noteId = $editId; }
+            if ($crud_action === "edit") { $stmtD = $conn->prepare("DELETE FROM note_labels WHERE note_id = ?"); $stmtD->bind_param("i", $editId); $stmtD->execute(); $noteId = $editId; }
             else $noteId = mysqli_insert_id($conn);
 
             $labels = $_POST["category_id"] ?? [];
@@ -120,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
                 if (empty($label_id) || $label_id == '__add_new__') continue;
                 $label_name = is_numeric($label_id) ? null : $label_id;
                 if (is_numeric($label_id)) {
-                    $resL = mysqli_query($conn, "SELECT label FROM note_labels WHERE id = " . (int)$label_id);
+                    $stmtGL = $conn->prepare("SELECT label FROM note_labels WHERE id = ?"); $stmtGL->bind_param("i", $label_id); $stmtGL->execute(); $resL = $stmtGL->get_result();
                     if ($rowL = mysqli_fetch_assoc($resL)) $label_name = $rowL['label'];
                 }
                 if (!empty($label_name)) {
@@ -380,7 +380,7 @@ if ($crud_action === "index") {
                             <div class="form-group"><label>Labels</label>
                                 <select name="category_id[]" multiple size="5" data-addable-select="1" data-add-table="note_labels" data-add-friendly="label" data-add-company-scoped="1">
                                     <option value="">-- None --</option><option value="__add_new__">➕</option>
-                                    <?php $nId = $data['id'] ?? 0; $selL = []; if ($nId > 0) { $rL = mysqli_query($conn, "SELECT label FROM note_labels WHERE note_id = $nId AND active = 1"); while ($rowL = mysqli_fetch_assoc($rL)) $selL[] = $rowL['label']; }
+                                    <?php $nId = $data['id'] ?? 0; $selL = []; if ($nId > 0) { $stmtL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtL->bind_param("i", $nId); $stmtL->execute(); $rL = $stmtL->get_result(); while ($rowL = mysqli_fetch_assoc($rL)) $selL[] = $rowL['label']; }
                                     foreach ($user_labels as $ul): ?><option value="<?php echo sanitize($ul); ?>" <?php echo in_array($ul, $selL) ? "selected" : ""; ?>><?php echo sanitize($ul); ?></option><?php endforeach; ?>
                                 </select>
                             </div>
@@ -420,7 +420,7 @@ if ($crud_action === "index") {
                             <?php endif; ?>
                             <?php if ($data["content"] || $data["description"]): ?><div style="margin-bottom: 20px; white-space: pre-wrap;"><?php echo sanitize($data["content"] ?? $data["description"]); ?></div><?php endif; ?>
                             <table class="table" style="width: auto;">
-                                <tr><th style="text-align: left; padding-right: 20px;">Labels</th><td><?php $lbls = []; $resL = mysqli_query($conn, "SELECT label FROM note_labels WHERE note_id = ".(int)$data['id']." AND active = 1"); while ($rowL = mysqli_fetch_assoc($resL)) $lbls[] = $rowL['label']; echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
+                                <tr><th style="text-align: left; padding-right: 20px;">Labels</th><td><?php $lbls = []; $noteId = (int)$data['id']; $stmtVL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtVL->bind_param("i", $noteId); $stmtVL->execute(); $resL = $stmtVL->get_result(); while ($rowL = mysqli_fetch_assoc($resL)) $lbls[] = $rowL['label']; echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
                                 <tr><th style="text-align: left; padding-right: 20px;">Shared With</th><td><?php $uIds = json_decode($data['shared_with_json'] ?? '[]', true); if (empty($uIds)) echo "Private"; else { $names = []; foreach ($uIds as $uid) { if (isset($users[$uid])) $names[] = $users[$uid]['username']; } echo sanitize(implode(', ', $names)); } ?></td></tr>
                             </table>
                             <div class="form-actions" style="margin-top: 30px;"><a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary">✏️ Edit</a><a href="index.php" class="btn">🔙 Back</a></div>
