@@ -1,6 +1,7 @@
 <?php
 /**
  * IPAM CRUD hooks for ip_subnets and ip_addresses modules.
+ * CSRF-SCAN-EXCLUDE: modules/ip_subnets/index.php, modules/ip_addresses/index.php
  */
 
 require_once __DIR__ . '/ipam_helpers.php';

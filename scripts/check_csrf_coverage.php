@@ -184,6 +184,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: scripts/test_ajax.php and test_edit.php are CLI-only test scripts.
+    if ($relativePath === 'scripts/test_ajax.php' || $relativePath === 'scripts/test_edit.php') {
+        $skipped[] = [
+            $relativePath,
+            'CLI-only test script that mocks session/POST; not a web-accessible endpoint',
+        ];
+        continue;
+    }
+
     // Why: scripts/repro_vulnerabilities.php is a reproduction/test script; $_POST is mocked for internal API calls.
     if ($relativePath === 'scripts/repro_vulnerabilities.php') {
         $skipped[] = [

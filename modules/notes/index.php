@@ -21,13 +21,6 @@ $stmtUL->execute();
 $resUserLabels = $stmtUL->get_result();
 if ($resUserLabels) { while ($row = mysqli_fetch_assoc($resUserLabels)) { $user_tags[] = $row["label"]; } }
 
-$categories = [];
-$stmtCat = $conn->prepare("SELECT id, label as name FROM note_labels WHERE (company_id = ? AND user_id = ?) OR (company_id IS NULL)");
-$stmtCat->bind_param("ii", $company_id, $logged_user_id);
-$stmtCat->execute();
-$resCat = $stmtCat->get_result();
-if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id']] = $row; } }
-
 $users = [];
 $stmtUsers = $conn->prepare("SELECT id, username FROM users WHERE company_id = ? AND active = 1");
 $stmtUsers->bind_param("i", $company_id);
@@ -54,16 +47,37 @@ $stmtImp->bind_param("ii", $company_id, $logged_user_id);
 $stmtImp->execute();
 if ($stmtImp->get_result()->fetch_assoc()) $hasImportant = true;
 
-$departments = [];
-$stmtDept = $conn->prepare("SELECT id, name, code FROM departments WHERE company_id = ? OR company_id IS NULL");
-$stmtDept->bind_param("i", $company_id);
-$stmtDept->execute();
-$resDept = $stmtDept->get_result();
-if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row['id']] = $row; } }
-
 // Standard CRUD processing
 $editId = (int)($_GET["id"] ?? 0);
 $csrfToken = itm_get_csrf_token();
+
+// JSON API for Import Excel
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
+    $rawBody = file_get_contents('php://input');
+    $jsonBody = json_decode((string)$rawBody, true);
+    if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
+        header('Content-Type: application/json');
+        if (!itm_validate_csrf_token($jsonBody['csrf_token'] ?? '')) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']); exit;
+        }
+        $importRows = $jsonBody['import_excel_rows'];
+        $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
+        $inserted = 0;
+        for ($i = 1; $i < count($importRows); $i++) {
+            $row = $importRows[$i];
+            $titleIdx = array_search('Title', $headerRow);
+            $contentIdx = array_search('Content', $headerRow);
+            $title = ($titleIdx !== false) ? ($row[$titleIdx] ?? '') : '';
+            $content = ($contentIdx !== false) ? ($row[$contentIdx] ?? '') : '';
+            if ($title === '' && $content === '') continue;
+            $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiss", $company_id, $logged_user_id, $title, $content);
+            if ($stmt->execute()) $inserted++;
+        }
+        echo json_encode(['ok' => true, 'inserted' => $inserted]);
+        exit;
+    }
+}
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     if (!itm_validate_csrf_token($_POST["csrf_token"] ?? "")) {
@@ -83,7 +97,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     }
 
     if ($action === "single_delete" && $editId > 0) {
-        $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmtCheck = $conn->prepare("SELECT active FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmtCheck->bind_param("iii", $editId, $company_id, $logged_user_id);
+        $stmtCheck->execute();
+        $resCheck = $stmtCheck->get_result()->fetch_assoc();
+        if ($resCheck && (int)$resCheck['active'] === 0) {
+            $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+        } else {
+            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+        }
         $stmt->bind_param("iii", $editId, $company_id, $logged_user_id);
         $stmt->execute();
         header("Location: index.php?msg=deleted");
@@ -130,7 +152,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
 
         if ($crud_action === "edit" && $editId > 0) {
             $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=? WHERE id=? AND company_id=? AND user_id=?");
-            $stmt->bind_param("ssisiiisssiiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $editId, $company_id, $logged_user_id);
+            $stmt->bind_param("ssisiiissssiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $editId, $company_id, $logged_user_id);
         } else {
             $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("iissisiiissss", $company_id, $logged_user_id, $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json);
@@ -228,7 +250,7 @@ if (isset($_GET["ajax_action"])) {
         $stmtCheck->bind_param("iii", $id, $company_id, $logged_user_id);
         $stmtCheck->execute();
         $resCheck = $stmtCheck->get_result()->fetch_assoc();
-        if ($resCheck && $resCheck['active'] == 0) {
+        if ($resCheck && (int)$resCheck['active'] === 0) {
             $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
         } else {
             $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
@@ -309,51 +331,74 @@ if (isset($_GET["ajax_action"])) {
 $filter = $_GET["filter"] ?? "all";
 $search = $_GET["search"] ?? "";
 
-if ($crud_action === "index") {
+// Pagination for Table View
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $perPage;
+
+if ($crud_action === "index" || $crud_action === "list_all") {
     if ($filter === "garbage") {
-        $sql = "SELECT t.* FROM notes t WHERE t.company_id = ? AND t.active = 0";
+        $baseSql = "FROM notes t WHERE t.company_id = ? AND t.active = 0";
     } else {
-        $sql = "SELECT t.* FROM notes t WHERE t.company_id = ? AND t.active = 1";
+        $baseSql = "FROM notes t WHERE t.company_id = ? AND t.active = 1";
     }
     $params = [$company_id];
     $types = "i";
     $visibilitySql = itm_notes_visibility_sql("t");
-    $sql .= " AND ($visibilitySql)";
+    $baseSql .= " AND ($visibilitySql)";
     $types .= "ii";
     $params[] = $logged_user_id;
     $params[] = $logged_user_id;
 
     if ($filter === "reminders") {
-        $sql .= " AND t.reminder_at IS NOT NULL";
+        $baseSql .= " AND t.reminder_at IS NOT NULL";
     } elseif ($filter === "tag") {
         $label_filter = $_GET["label"] ?? "";
-        $sql .= " AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label = ? AND nl.active = 1)";
+        $baseSql .= " AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label = ? AND nl.active = 1)";
         $types .= "s";
         $params[] = $label_filter;
     } elseif ($filter === "archive") {
-        $sql .= " AND t.is_archived = 1";
+        $baseSql .= " AND t.is_archived = 1";
     } elseif ($filter === "checklist") {
-        $sql .= " AND t.is_checklist = 1 AND t.is_archived = 0";
+        $baseSql .= " AND t.is_checklist = 1 AND t.is_archived = 0";
     } elseif ($filter === "pinned") {
-        $sql .= " AND t.is_pinned = 1 AND t.is_archived = 0";
+        $baseSql .= " AND t.is_pinned = 1 AND t.is_archived = 0";
     } elseif ($filter === "images") {
-        $sql .= " AND t.images_json IS NOT NULL AND t.is_archived = 0";
+        $baseSql .= " AND t.images_json IS NOT NULL AND t.is_archived = 0";
     } elseif ($filter === "important") {
-        $sql .= " AND t.is_important = 1 AND t.is_archived = 0";
+        $baseSql .= " AND t.is_important = 1 AND t.is_archived = 0";
     } elseif ($filter === "all") {
-        $sql .= " AND t.is_archived = 0";
+        $baseSql .= " AND t.is_archived = 0";
     } else {
-        $sql .= " AND t.is_archived = 0";
+        $baseSql .= " AND t.is_archived = 0";
     }
 
     if ($search !== "") {
-        $sql .= " AND (t.title LIKE ? OR t.content LIKE ?)";
-        $types .= "ss";
+        $baseSql .= " AND (t.title LIKE ? OR t.content LIKE ? OR EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label LIKE ?))";
+        $types .= "sss";
         $searchTerm = "%$search%";
-        $params[] = $searchTerm; $params[] = $searchTerm;
+        $params[] = $searchTerm; $params[] = $searchTerm; $params[] = $searchTerm;
     }
 
+    // Count total rows
+    $countSql = "SELECT COUNT(*) as total $baseSql";
+    $stmtCount = $conn->prepare($countSql);
+    $stmtCount->bind_param($types, ...$params);
+    $stmtCount->execute();
+    $totalRows = $stmtCount->get_result()->fetch_assoc()['total'];
+    $totalPages = max(1, ceil($totalRows / $perPage));
+
+    $sql = "SELECT t.* $baseSql";
     $sql .= " ORDER BY t.is_pinned DESC, t.created_at DESC";
+
+    if ($crud_action === "list_all") {
+        $sql .= " LIMIT ?, ?";
+        $types .= "ii";
+        $params[] = $offset;
+        $params[] = $perPage;
+    }
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
@@ -366,6 +411,9 @@ if ($crud_action === "index") {
     $data = $stmt->get_result()->fetch_assoc();
     if (!$data) { header("Location: index.php"); die(); }
 }
+
+$uiColumns = [['Field'=>'id'],['Field'=>'title'],['Field'=>'content'],['Field'=>'reminder_at'],['Field'=>'tags'],['Field'=>'shared_with'],['Field'=>'is_pinned'],['Field'=>'is_important'],['Field'=>'is_archived']];
+$displayFieldColumns = $uiColumns;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -410,6 +458,11 @@ if ($crud_action === "index") {
         .modal-body { padding: 1.5rem; }
         .modal-footer { padding: 1rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
         .close { background: transparent; border: 0; font-size: 1.5rem; cursor: pointer; color: var(--text-primary); }
+
+        /* Table styles override for dark mode */
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        th { background: var(--bg-secondary); }
     </style>
 </head>
 <body>
@@ -432,102 +485,199 @@ if ($crud_action === "index") {
                     <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
                     <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
                     <?php if ($hasImportant): ?><a href="?filter=important" class="notes-sidebar-item <?php echo $filter === "important" ? "active" : ""; ?>">★ Important</a><?php endif; ?>
+                    <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
+                    <a href="list_all.php" class="notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
                 </div>
                 <div class="notes-content">
-                    <?php if ($crud_action === "index"): ?>
+                    <?php if ($crud_action === "index" || $crud_action === "list_all"): ?>
                         <div class="notes-header">
-                            <h1>
-                                <?php
-                                    if ($filter === "reminders") echo "🔔 Reminders";
-                                    elseif ($filter === "tag") echo "🏷️ " . sanitize($_GET["label"] ?? "");
-                                    elseif ($filter === "archive") echo "📥 Archive";
-                                    elseif ($filter === "garbage") echo "🗑️ Garbage";
-                                    elseif ($filter === "checklist") echo "☑️ Checklist";
-                                    elseif ($filter === "pinned") echo "📌 Pinned";
-                                    elseif ($filter === "images") echo "🖼️ Images";
-                                    elseif ($filter === "important") echo "★ Important";
-                                    else echo "💡 Notes";
-                                ?>
-                            </h1>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h1>
+                                    <?php
+                                        if ($filter === "reminders") echo "🔔 Reminders";
+                                        elseif ($filter === "tag") echo "🏷️ " . sanitize($_GET["label"] ?? "");
+                                        elseif ($filter === "archive") echo "📥 Archive";
+                                        elseif ($filter === "garbage") echo "🗑️ Garbage";
+                                        elseif ($filter === "checklist") echo "☑️ Checklist";
+                                        elseif ($filter === "pinned") echo "📌 Pinned";
+                                        elseif ($filter === "images") echo "🖼️ Images";
+                                        elseif ($filter === "important") echo "★ Important";
+                                        else echo "💡 Notes";
+                                    ?>
+                                </h1>
+                                <div style="display: flex; gap: 10px;">
+                                    <?php if ($crud_action === 'index'): ?>
+                                        <a href="list_all.php" class="btn btn-sm">📊 Table View</a>
+                                    <?php else: ?>
+                                        <a href="index.php" class="btn btn-sm">💡 Keep View</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                             <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
                         </div>
 
-                        <div class="quick-add">
-                            <div style="display: flex; align-items: center; width: 100%;">
-                                <input type="text" id="quickAddInput" placeholder="Take a note..." onkeypress="if(event.key==='Enter') quickAdd()">
-                                <div style="display: flex; gap: 15px; margin-left: 10px;">
-                                    <div class="quick-add-icon" onclick="triggerQuickImageUpload()" title="New note with image">🖼️</div>
-                                    <div class="quick-add-icon" id="quickReminderBtn" onclick="toggleQuickReminderDropdown(event)" title="New note with reminder">
-                                        🔔
-                                        <div class="quick-add-dropdown" id="quickReminderDropdown">
-                                            <div class="quick-add-dropdown-header">Reminder</div>
-                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('later', event)">🕒 <span class="item-label">Later today</span></div>
-                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('tomorrow', event)">🕒 <span class="item-label">Tomorrow</span></div>
-                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('next_week', event)">🕒 <span class="item-label">Next week</span></div>
-                                            <div class="quick-add-dropdown-item" onclick="setQuickReminder('choose', event)">🕒 <span class="item-label">Pick a date</span></div>
-                                            <div class="quick-add-dropdown-item danger" onclick="setQuickReminder('remove', event)">🗑️ <span class="item-label">Remove</span></div>
+                        <div class="card" style="margin-bottom:16px; margin-top: 20px;">
+                            <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                                <input type="hidden" name="filter" value="<?php echo sanitize($filter); ?>">
+                                <?php if ($filter === 'tag' && isset($_GET['label'])): ?>
+                                    <input type="hidden" name="label" value="<?php echo sanitize($_GET['label']); ?>">
+                                <?php endif; ?>
+                                <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                    <label for="moduleSearch">Search (all fields)</label>
+                                    <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($search); ?>" placeholder="Type to search records...">
+                                </div>
+                                <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                    <a href="<?php echo $crud_action === 'list_all' ? 'list_all.php' : 'index.php'; ?>" class="btn">🔙</a>
+                                </div>
+                            </form>
+                        </div>
+
+                        <?php if ($crud_action === "index"): ?>
+                            <div class="quick-add">
+                                <div style="display: flex; align-items: center; width: 100%;">
+                                    <input type="text" id="quickAddInput" placeholder="Take a note..." onkeypress="if(event.key==='Enter') quickAdd()">
+                                    <div style="display: flex; gap: 15px; margin-left: 10px;">
+                                        <div class="quick-add-icon" onclick="triggerQuickImageUpload()" title="New note with image">🖼️</div>
+                                        <div class="quick-add-icon" id="quickReminderBtn" onclick="toggleQuickReminderDropdown(event)" title="New note with reminder">
+                                            🔔
+                                            <div class="quick-add-dropdown" id="quickReminderDropdown">
+                                                <div class="quick-add-dropdown-header">Reminder</div>
+                                                <div class="quick-add-dropdown-item" onclick="setQuickReminder('later', event)">🕒 <span class="item-label">Later today</span></div>
+                                                <div class="quick-add-dropdown-item" onclick="setQuickReminder('tomorrow', event)">🕒 <span class="item-label">Tomorrow</span></div>
+                                                <div class="quick-add-dropdown-item" onclick="setQuickReminder('next_week', event)">🕒 <span class="item-label">Next week</span></div>
+                                                <div class="quick-add-dropdown-item" onclick="setQuickReminder('choose', event)">🕒 <span class="item-label">Pick a date</span></div>
+                                                <div class="quick-add-dropdown-item danger" onclick="setQuickReminder('remove', event)">🗑️ <span class="item-label">Remove</span></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                                <input type="file" id="quickAddImageInput" multiple accept="image/*" style="display: none;" onchange="handleQuickImageSelect(event)">
+                                <div id="quickAddPreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
+                                <div id="quickAddReminderPreview" style="display: none; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; color: var(--accent); font-weight: 600;">
+                                    <span>🔔</span> <span id="quickAddReminderText"></span>
+                                    <span onclick="setQuickReminder('remove', event)" style="cursor: pointer; color: var(--danger); font-size: 18px; margin-left: 5px;">&times;</span>
+                                </div>
+                                <input type="hidden" id="quickAddIsChecklist" value="0">
+                                <input type="hidden" id="quickAddReminderAt" value="">
                             </div>
-                            <input type="file" id="quickAddImageInput" multiple accept="image/*" style="display: none;" onchange="handleQuickImageSelect(event)">
-                            <div id="quickAddPreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
-                            <input type="hidden" id="quickAddIsChecklist" value="0">
-                            <input type="hidden" id="quickAddReminderAt" value="">
-                        </div>
 
-                        <div class="notes-list">
-                            <?php if (empty($notes)): ?>
-                                <div class="empty-state"><i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i><p>No notes found.</p></div>
-                            <?php else: ?>
-                                <?php foreach ($notes as $note): ?>
-                                    <div class="note-item" style="background-color: <?php echo $note["color"] ?? "var(--bg-primary)"; ?>;">
-                                        <div class="note-main" onclick="location.href='view.php?id=<?php echo $note["id"]; ?>'" style="flex: 1; cursor: pointer;">
-                                            <div class="note-title" style="font-weight: 600;"><?php echo sanitize($note["title"] ?: '(Untitled)'); ?></div>
-                                            <div class="note-meta" style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px;">
-                                                <span>Notes</span>
-                                                <?php if ($note['is_pinned']): ?><span>• 📌</span><?php endif; ?>
-                                                <?php if (!empty($note['images_json'])): ?><span>• 🖼️</span><?php endif; ?>
-                                                <?php if ($note['is_checklist']): ?><span>• ☑️</span><?php endif; ?>
-                                                <?php 
-                                                $shared_ids = json_decode($note['shared_with_json'] ?? '[]', true);
-                                                if (!empty($shared_ids)) {
-                                                    $shared_names = [];
-                                                    foreach ($shared_ids as $sid) {
-                                                        if (isset($users[$sid])) $shared_names[] = $users[$sid]['username'];
-                                                    }
-                                                    if (!empty($shared_names)) {
-                                                        echo '<span>• 👥 ' . sanitize(implode(' - ', $shared_names)) . '</span>';
-                                                    }
-                                                }
-                                                ?>
-                                                <?php if (!empty($note['reminder_at'])): ?>
+                            <div class="notes-list">
+                                <?php if (empty($notes)): ?>
+                                    <div class="empty-state"><i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i><p>No notes found.</p></div>
+                                <?php else: ?>
+                                    <?php foreach ($notes as $note): ?>
+                                        <div class="note-item" style="background-color: <?php echo $note["color"] ?? "var(--bg-primary)"; ?>;">
+                                            <div class="note-main" onclick="location.href='view.php?id=<?php echo $note["id"]; ?>'" style="flex: 1; cursor: pointer;">
+                                                <div class="note-title" style="font-weight: 600;"><?php echo sanitize($note["title"] ?: '(Untitled)'); ?></div>
+                                                <div class="note-meta" style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px;">
+                                                    <span>Notes</span>
+                                                    <?php if ($note['is_pinned']): ?><span>• 📌</span><?php endif; ?>
+                                                    <?php if (!empty($note['images_json'])): ?><span>• 🖼️</span><?php endif; ?>
+                                                    <?php if ($note['is_checklist']): ?><span>• ☑️</span><?php endif; ?>
                                                     <?php
-                                                    $isToday = date("Y-m-d", strtotime($note["reminder_at"])) === date("Y-m-d");
-                                                    $remLabel = $isToday ? "TODAY, " . date("H:i", strtotime($note["reminder_at"])) : date("M j, H:i", strtotime($note["reminder_at"]));
-                                                    $remStyle = $isToday ? 'style="color: var(--danger); font-weight: 600;"' : '';
+                                                    $shared_ids = json_decode($note['shared_with_json'] ?? '[]', true);
+                                                    if (!empty($shared_ids)) {
+                                                        $shared_names = [];
+                                                        foreach ($shared_ids as $sid) {
+                                                            if (isset($users[$sid])) $shared_names[] = $users[$sid]['username'];
+                                                        }
+                                                        if (!empty($shared_names)) {
+                                                            echo '<span>• 👥 ' . sanitize(implode(' - ', $shared_names)) . '</span>';
+                                                        }
+                                                    }
                                                     ?>
-                                                    <span <?php echo $remStyle; ?>>• 🔔 <?php echo $remLabel; ?></span>
-                                                <?php endif; ?>
+                                                    <?php if (!empty($note['reminder_at'])): ?>
+                                                        <?php
+                                                        $isToday = date("Y-m-d", strtotime($note["reminder_at"])) === date("Y-m-d");
+                                                        $remLabel = $isToday ? "TODAY, " . date("H:i", strtotime($note["reminder_at"])) : date("M j, H:i", strtotime($note["reminder_at"]));
+                                                        $remStyle = $isToday ? 'style="color: var(--danger); font-weight: 600;"' : '';
+                                                        ?>
+                                                        <span <?php echo $remStyle; ?>>• 🔔 <?php echo $remLabel; ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="note-star <?php echo $note["is_pinned"] ? "active" : ""; ?>" onclick="togglePinned(<?php echo $note["id"]; ?>, this)" data-pinned="<?php echo $note['is_pinned']; ?>" title="Pin">
+                                                <?php echo $note["is_pinned"] ? "📌" : "📌"; ?>
+                                            </div>
+                                            <div class="note-star <?php echo $note["is_important"] ? "active" : ""; ?>" onclick="toggleImportant(<?php echo $note["id"]; ?>, this)" data-important="<?php echo $note['is_important']; ?>" title="Important" style="margin-left: 10px;">
+                                                <?php echo $note["is_important"] ? "★" : "☆"; ?>
+                                            </div>
+                                            <div class="note-star <?php echo $note["is_archived"] ? "active" : ""; ?>" onclick="toggleArchived(<?php echo $note["id"]; ?>, this)" data-archived="<?php echo $note['is_archived']; ?>" title="Archive" style="margin-left: 10px;">
+                                                📥
+                                            </div>
+                                            <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
+                                            <div class="note-star" onclick="deleteNote(<?php echo $note["id"]; ?>)" title="Delete" style="margin-left: 10px; color: var(--danger);">
+                                                🗑️
                                             </div>
                                         </div>
-                                        <div class="note-star <?php echo $note["is_pinned"] ? "active" : ""; ?>" onclick="togglePinned(<?php echo $note["id"]; ?>, this)" data-pinned="<?php echo $note['is_pinned']; ?>" title="Pin">
-                                            <?php echo $note["is_pinned"] ? "📌" : "📌"; ?>
-                                        </div>
-                                        <div class="note-star <?php echo $note["is_important"] ? "active" : ""; ?>" onclick="toggleImportant(<?php echo $note["id"]; ?>, this)" data-important="<?php echo $note['is_important']; ?>" title="Important" style="margin-left: 10px;">
-                                            <?php echo $note["is_important"] ? "★" : "☆"; ?>
-                                        </div>
-                                        <div class="note-star <?php echo $note["is_archived"] ? "active" : ""; ?>" onclick="toggleArchived(<?php echo $note["id"]; ?>, this)" data-archived="<?php echo $note['is_archived']; ?>" title="Archive" style="margin-left: 10px;">
-                                            📥
-                                        </div>
-                                        <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
-                                        <div class="note-star" onclick="deleteNote(<?php echo $note["id"]; ?>)" title="Delete" style="margin-left: 10px; color: var(--danger);">
-                                            🗑️
-                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                            <!-- Toolbar for Tools (Excel/PDF) in Keep View -->
+                            <div class="card" style="margin-top: 20px;">
+                                <div style="height: 0; overflow: hidden; opacity: 0; position: absolute; pointer-events: none;">
+                                    <table data-itm-db-import-endpoint="index.php">
+                                        <thead><tr><th>Title</th><th>Content</th><th>Reminder</th><th>Tags</th><th>Shared With</th><th>Pinned</th><th>Important</th><th>Archived</th></tr></thead>
+                                        <tbody><?php foreach ($notes as $note): ?><tr><td><?=sanitize($note['title'])?></td><td><?=sanitize($note['content'])?></td><td><?=$note['reminder_at']?></td><td><?php $lbls=[]; $nid=(int)$note['id']; $st=$conn->prepare("SELECT label FROM note_labels WHERE note_id=? AND active=1"); $st->bind_param("i",$nid); $st->execute(); $rl=$st->get_result(); while($ol=$rl->fetch_assoc())$lbls[]=$ol['label']; echo sanitize(implode(", ",$lbls)); ?></td><td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td><td><?=$note['is_pinned']?'Yes':'No'?></td><td><?=$note['is_important']?'Yes':'No'?></td><td><?=$note['is_archived']?'Yes':'No'?></td></tr><?php endforeach; ?></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <!-- TABLE VIEW -->
+                            <div class="card" style="overflow:auto;">
+                                <table data-itm-db-import-endpoint="index.php">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Reminder</th>
+                                            <th>Tags</th>
+                                            <th>Shared With</th>
+                                            <th>Pinned</th>
+                                            <th>Important</th>
+                                            <th>Archived</th>
+                                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($notes)): ?>
+                                            <tr><td colspan="8" style="text-align:center;">No records found.</td></tr>
+                                        <?php else: foreach ($notes as $note): ?>
+                                            <tr style="background-color: <?php echo $note['color']; ?>22;">
+                                                <td><?php echo sanitize($note['title'] ?: '(Untitled)'); ?></td>
+                                                <td><?php echo $note['reminder_at'] ? date("M j, H:i", strtotime($note['reminder_at'])) : '—'; ?></td>
+                                                <td><?php $lbls=[]; $nid=(int)$note['id']; $st=$conn->prepare("SELECT label FROM note_labels WHERE note_id=? AND active=1"); $st->bind_param("i",$nid); $st->execute(); $rl=$st->get_result(); while($ol=$rl->fetch_assoc())$lbls[]=$ol['label']; echo sanitize(implode(", ",$lbls)); ?></td>
+                                                <td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td>
+                                                <td><?php echo $note['is_pinned'] ? '✅' : '❌'; ?></td>
+                                                <td><?php echo $note['is_important'] ? '✅' : '❌'; ?></td>
+                                                <td><?php echo $note['is_archived'] ? '✅' : '❌'; ?></td>
+                                                <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                                    <div class="itm-actions-wrap">
+                                                        <a class="btn btn-sm" href="view.php?id=<?php echo $note['id']; ?>">🔎</a>
+                                                        <a class="btn btn-sm" href="edit.php?id=<?php echo $note['id']; ?>">✏️</a>
+                                                        <button class="btn btn-sm btn-danger" onclick="deleteNote(<?php echo $note['id']; ?>)">🗑️</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <?php if ($totalPages > 1): ?>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+                                    <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                                    <div style="display:flex;gap:6px;">
+                                        <?php if ($page > 1): ?>
+                                            <a class="btn btn-sm" href="?filter=<?php echo urlencode($filter); ?>&search=<?php echo urlencode($search); ?>&page=<?php echo $page - 1; ?>" title="◀️ Previous">Previous</a>
+                                        <?php endif; ?>
+                                        <span class="btn btn-sm" style="pointer-events:none;"><?php echo $page; ?> / <?php echo $totalPages; ?></span>
+                                        <?php if ($page < $totalPages): ?>
+                                            <a class="btn btn-sm" href="?filter=<?php echo urlencode($filter); ?>&search=<?php echo urlencode($search); ?>&page=<?php echo $page + 1; ?>" title="▶️ Next">Next</a>
+                                        <?php endif; ?>
                                     </div>
-                                <?php endforeach; ?>
+                                </div>
                             <?php endif; ?>
-                        </div>
+                        <?php endif; ?>
 
                     <?php elseif ($crud_action === "edit" || $crud_action === "create"): ?>
                         <h1><?php echo $crud_action === "edit" ? "Edit Note" : "New Note"; ?></h1>
@@ -549,11 +699,11 @@ if ($crud_action === "index") {
                                     <?php endforeach; endif; ?>
                                 </div>
                             </div>
-                            <div class="form-group" id="reminder-section" style="<?php echo !empty($data['reminder_at']) ? 'display: block;' : 'display: none;'; ?>">
+                            <div class="form-group" id="reminder-section">
                                 <label>Reminder 🔔</label>
-                                <input type="datetime-local" name="reminder_at" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>">
+                                <input type="datetime-local" name="reminder_at" id="reminder_at_input" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>" onchange="updateReminderCheckbox()">
                             </div>
-                            <div class="form-group" id="checklist-section" style="<?php echo !empty($data['is_checklist']) || !empty($data['checklist_json']) ? 'display: block;' : 'display: none;'; ?>">
+                            <div class="form-group" id="checklist-section">
                                 <label>Checklist</label>
                                 <div id="checklist-container">
                                     <?php $checklist = json_decode($data['checklist_json'] ?? '[]', true); if (is_array($checklist)): foreach ($checklist as $item): ?>
@@ -599,11 +749,11 @@ if ($crud_action === "index") {
                                 <?php endforeach; ?>
                             </select></div>
                             <div style="display: flex; gap: 30px; margin-top: 10px;">
-                                <label class="itm-checkbox-control"><input type="checkbox" name="is_checklist" value="1" <?php echo !empty($data["is_checklist"]) || !empty($data['checklist_json']) ? "checked" : ""; ?> onchange="toggleChecklistSection(this.checked)"><span>Checklist ☑️</span></label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="is_checklist" value="1" <?php echo (!empty($data["is_checklist"]) || !empty($data['checklist_json'])) ? "checked" : ""; ?> onchange="toggleChecklistSection(this.checked)"><span>Checklist ☑️</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_pinned" value="1" <?php echo !empty($data["is_pinned"]) ? "checked" : ""; ?>><span>Pinned 📌</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_important" value="1" <?php echo !empty($data["is_important"]) ? "checked" : ""; ?>><span>Important ★</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_archived" value="1" <?php echo !empty($data["is_archived"]) ? "checked" : ""; ?>><span>Archived 📥</span></label>
-                                <label class="itm-checkbox-control"><input type="checkbox" onchange="toggleReminderSection(this.checked)" <?php echo !empty($data['reminder_at']) ? 'checked' : ''; ?>><span>Reminder 🔔</span></label>
+                                <label class="itm-checkbox-control"><input type="checkbox" id="reminder_checkbox" onchange="toggleReminderSection(this.checked)" <?php echo !empty($data['reminder_at']) ? 'checked' : ''; ?>><span>Reminder 🔔</span></label>
                             </div>
                             <div class="form-actions" style="margin-top: 30px;"><button class="btn btn-primary" type="submit">💾 Save</button><a href="index.php" class="btn">🔙 Cancel</a>
                                 <?php if ($crud_action === "edit"): ?><button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this note?')">🗑️ Delete</button><?php endif; ?>
@@ -648,6 +798,11 @@ if ($crud_action === "index") {
         </div>
     </div>
 </div>
+
+<script src="../../js/theme.js"></script>
+<script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
+<script src="../../js/xlsx.full.min.js"></script>
+<script src="../../js/table-tools.js"></script>
 
 <script>
     const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
@@ -730,6 +885,16 @@ if ($crud_action === "index") {
 
         input.value = dbValue;
         btn.style.color = dbValue ? 'var(--accent)' : 'var(--text-secondary)';
+
+        const preview = document.getElementById('quickAddReminderPreview');
+        const text = document.getElementById('quickAddReminderText');
+        if (dbValue) {
+            preview.style.display = 'flex';
+            text.innerText = dbValue;
+        } else {
+            preview.style.display = 'none';
+        }
+
         document.getElementById('quickReminderDropdown').classList.remove('show');
     }
     function handleQuickImageSelect(event) { quickAddFiles = quickAddFiles.concat(Array.from(event.target.files)); renderQuickPreview(); }
@@ -782,11 +947,15 @@ if ($crud_action === "index") {
         div.querySelector('input[type="text"]').focus(); 
     }
     function toggleChecklistSection(checked) { 
-        document.getElementById('checklist-section').style.display = checked ? '' : 'none'; 
         document.getElementById('content-section').style.display = checked ? 'none' : '';
     }
     function toggleReminderSection(checked) { 
-        document.getElementById("reminder-section").style.display = checked ? "" : "none"; 
+        if (!checked) document.getElementById("reminder_at_input").value = "";
+    }
+    function updateReminderCheckbox() {
+        const val = document.getElementById("reminder_at_input").value;
+        const cb = document.getElementById("reminder_checkbox");
+        if (cb) cb.checked = (val !== "");
     }
     function handleDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); }
     function handleFileSelect(e) { handleFiles(e.target.files); }

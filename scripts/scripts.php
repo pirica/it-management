@@ -854,13 +854,13 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>python3 scripts/verify_dnd.py</code></td>
                 </tr>
                 <tr>
-                    <td><code>verify_todo.py</code></td>
+                    <td><a href="verify_todo.py">verify_todo.py</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Verifies Todo module functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_todo.py</code></td>
                 </tr>
                 <tr>
-                    <td><code>verify_todo_categories.py</code></td>
+                    <td><a href="verify_todo_categories.py">verify_todo_categories.py</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Verifies Todo categories functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_todo_categories.py</code></td>
