@@ -202,6 +202,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: scripts/repro_auth_bypass_v3.php mocks $_POST in isolated subprocesses for auth-bypass PoC only.
+    if ($relativePath === 'scripts/repro_auth_bypass_v3.php') {
+        $skipped[] = [
+            $relativePath,
+            'CLI/Browser reproduction script: mocks $_POST for internal module inclusions; not a standard CRUD endpoint',
+        ];
+        continue;
+    }
+
     // Why: scripts/explorer_human_test.php is a CLI integration test; $_POST is mocked for internal API calls.
     if ($relativePath === 'scripts/explorer_human_test.php') {
         $skipped[] = [
