@@ -657,9 +657,10 @@ if ($crud_action === "index") {
                         <div class="todo-list">
                             <?php if (empty($tasks)): ?>
                                 <div class="empty-state">
-                                    <i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i>
+                                    <span style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📝</span>
                                     <p>No tasks found. Try adding one!</p>
                                 </div>
+							<!-- <div class="empty-state">  <span style="font-size:48px; display:block; margin-bottom:20px; opacity:0.5;">📋</span><p>No notes found.</p></div> -->
                             <?php else: ?>
                                 <?php foreach ($tasks as $task): ?>
                                     <div class="task-item <?php echo $task["completed"] ? "completed" : ""; ?>">
