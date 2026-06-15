@@ -6,6 +6,8 @@ This report reviews the IT Management System's API handlers and controller endpo
 
 The system follows a procedural PHP architecture where API endpoints are often implemented as standalone scripts or embedded within module `index.php` files. While session-based authentication and CSRF protection are widely applied via `config/config.php` and helper functions, several critical vulnerabilities and areas for improvement were identified. Key concerns include privilege escalation in generic APIs, potential remote code execution (RCE) in file management, and inconsistent request validation.
 
+Analysis of `api-examples/` further confirms these patterns, demonstrating a heavy reliance on session cookies and manual scraping of HTML for data retrieval in the absence of comprehensive "read" APIs.
+
 ## 2. Flagged Endpoints & Findings
 
 ### 2.1 Generic Select Options API (`modules/select_options_api.php`)
@@ -55,7 +57,7 @@ The system follows a procedural PHP architecture where API endpoints are often i
 ## 3. General Observations & Patterns
 
 1.  **Tenant Scoping:** The system generally derives `company_id` from the session (`$_SESSION['company_id']`), which is a good practice. However, generic APIs (like `select_options_api.php`) sometimes take a `company_scoped` flag from the client, which determines whether the session's `company_id` is applied. This logic should be inverted: if a table has a `company_id` column, scoping should be mandatory.
-2.  **Validation:** There is a lack of a centralized validation framework. Most validation is procedural and repetitive.
+2.  **Validation:** There is a lack of a centralized validation framework. Most validation is procedural and repetitive. `api-examples/employees_singleview.php` and `api-examples/tickets_listall_open.php` highlight that the system lacks structured JSON "read" APIs, forcing clients to use regex or DOM parsing on HTML views for data extraction, which is brittle and insecure.
 3.  **Error Handling:** HTTP status codes are inconsistently used. 200 OK is often returned even when the application logic fails (with an `error` field in JSON), which can be misleading for API clients.
 4.  **Rate Limiting:** No centralized rate limiting was found for API endpoints. High-volume endpoints or those performing expensive operations (like ZIP generation or bulk imports) are vulnerable to denial-of-service or abuse.
 
@@ -71,3 +73,4 @@ The system follows a procedural PHP architecture where API endpoints are often i
     *   `500 Internal Server Error`: Database or server failures (mask internal details).
 4.  **Enforce Mandatory Tenant Scoping:** Ensure that all database queries involving multi-tenant tables automatically include a `company_id` filter derived *only* from the session, never from the request body or parameters.
 5.  **Implement Rate Limiting:** Add application-level throttling for sensitive or resource-intensive API actions.
+6.  **Introduce Structured Read APIs:** Develop JSON-based endpoints for retrieving record details and lists to replace the current reliance on HTML scraping demonstrated in `api-examples/`.
