@@ -25,6 +25,8 @@ Empty `index.html` content (managed — do not edit by hand):
 <!DOCTYPE html><html><head><title></title></head><body></body></html>
 ```
 
+**Every folder** in an upload tree (every path segment, not only the leaf) **must** have an empty `index.html`. Missing placeholders are a directory-listing risk; deleted placeholders must be restored on the next ensure or backfill run.
+
 **Do not** create upload folders with bare `mkdir()` and add `.htaccess` / `index.html` manually in a follow-up step — call the helper once so both files are written atomically for that path.
 
 ## Upload hardening policies
@@ -155,9 +157,20 @@ Options -Indexes -ExecCGI
 | `modules/settings/index.php` | `itm_ensure_upload_directory($faviconsDirFs, 'upload')` | `.htaccess` + empty `index.html` |
 | `modules/equipment/create.php` | `itm_ensure_upload_directory(UPLOAD_PATH, 'upload')` | `.htaccess` + empty `index.html` |
 
-## Maintenance script
+## Maintenance scripts
 
-Backfill managed `.htaccess` and empty `index.html` on every directory segment under existing `files/` trees (idempotent — overwrites both files):
+| Script | Scope | What it force-writes |
+|--------|-------|----------------------|
+| `php scripts/empty_folders.php` | **All** upload roots (`images/`, `tickets_photos/`, `floor_plans/`, `backups/`, `files/`) | Empty `index.html` + managed `.htaccess` on **every** folder in each tree |
+| `php scripts/ensure_files_htaccess_chain.php` | `files/` only | `deny_http` `.htaccess` + empty `index.html` on every segment (idempotent) |
+
+Run `empty_folders.php` after deploy or when folders were created with bare `mkdir()`:
+
+```bash
+php scripts/empty_folders.php
+```
+
+`files/` only (faster when other roots are already correct):
 
 ```bash
 php scripts/ensure_files_htaccess_chain.php
