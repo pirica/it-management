@@ -47,6 +47,12 @@ $stmtImp->bind_param("ii", $company_id, $logged_user_id);
 $stmtImp->execute();
 if ($stmtImp->get_result()->fetch_assoc()) $hasImportant = true;
 
+$hasShared = false;
+$stmtS = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND (shared_with_json IS NOT NULL AND shared_with_json != '[]') AND active = 1 AND (" . itm_notes_visibility_sql() . ") LIMIT 1");
+$stmtS->bind_param("iii", $company_id, $logged_user_id, $logged_user_id);
+$stmtS->execute();
+if ($stmtS->get_result()->fetch_assoc()) $hasShared = true;
+
 // Standard CRUD processing
 $editId = (int)($_GET["id"] ?? 0);
 $csrfToken = itm_get_csrf_token();
@@ -60,21 +66,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         if (!itm_validate_csrf_token($jsonBody['csrf_token'] ?? '')) {
             echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']); exit;
         }
+
+        // Map Tag names to labels and Usernames to IDs for this company
+        $tagMap = [];
+        $stmtT = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND user_id = ?");
+        $stmtT->bind_param("ii", $company_id, $logged_user_id);
+        $stmtT->execute();
+        $resTags = $stmtT->get_result();
+        while ($row = mysqli_fetch_assoc($resTags)) { $tagMap[strtolower($row['label'])] = $row['label']; }
+
+        $userMap = [];
+        $stmtU = $conn->prepare("SELECT id, username FROM users WHERE company_id = ?");
+        $stmtU->bind_param("i", $company_id);
+        $stmtU->execute();
+        $resU = $stmtU->get_result();
+        while ($row = mysqli_fetch_assoc($resU)) { $userMap[strtolower($row['username'])] = $row['id']; }
+
         $importRows = $jsonBody['import_excel_rows'];
         $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
-        $inserted = 0;
+        $inserted = 0; $updated = 0;
         for ($i = 1; $i < count($importRows); $i++) {
             $row = $importRows[$i];
+            $idIdx = array_search('ID', $headerRow);
             $titleIdx = array_search('Title', $headerRow);
             $contentIdx = array_search('Content', $headerRow);
+            $remIdx = array_search('Reminder', $headerRow);
+            $tagIdx = array_search('Tags', $headerRow);
+            $sharedIdx = array_search('Shared With', $headerRow);
+            $pinIdx = array_search('Pinned', $headerRow);
+            $impIdx = array_search('Important', $headerRow);
+            $arcIdx = array_search('Archived', $headerRow);
+
+            $id = ($idIdx !== false) ? (int)($row[$idIdx] ?? 0) : 0;
             $title = ($titleIdx !== false) ? ($row[$titleIdx] ?? '') : '';
             $content = ($contentIdx !== false) ? ($row[$contentIdx] ?? '') : '';
+            $remAt = ($remIdx !== false && !empty($row[$remIdx])) ? $row[$remIdx] : null;
+            $isPin = ($pinIdx !== false && in_array(strtolower($row[$pinIdx] ?? ''), ['yes', '1', 'true', '✅'])) ? 1 : 0;
+            $isImp = ($impIdx !== false && in_array(strtolower($row[$impIdx] ?? ''), ['yes', '1', 'true', '✅'])) ? 1 : 0;
+            $isArc = ($arcIdx !== false && in_array(strtolower($row[$arcIdx] ?? ''), ['yes', '1', 'true', '✅'])) ? 1 : 0;
+
             if ($title === '' && $content === '') continue;
-            $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("iiss", $company_id, $logged_user_id, $title, $content);
-            if ($stmt->execute()) $inserted++;
+
+            $sharedIds = [];
+            if ($sharedIdx !== false && !empty($row[$sharedIdx])) {
+                foreach (explode(',', $row[$sharedIdx]) as $uName) {
+                    $uName = strtolower(trim($uName));
+                    if (isset($userMap[$uName])) $sharedIds[] = $userMap[$uName];
+                }
+            }
+            $sharedJson = !empty($sharedIds) ? json_encode(array_values($sharedIds)) : null;
+
+            $existingId = 0;
+            if ($id > 0) {
+                $stmtCheckNote = $conn->prepare("SELECT id FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+                $stmtCheckNote->bind_param("iii", $id, $company_id, $logged_user_id);
+                $stmtCheckNote->execute();
+                if ($stmtCheckNote->get_result()->fetch_assoc()) $existingId = $id;
+            }
+
+            if ($existingId > 0) {
+                $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, reminder_at=?, is_pinned=?, is_important=?, is_archived=?, shared_with_json=? WHERE id=?");
+                $stmt->bind_param("sssiiisi", $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $existingId);
+                if ($stmt->execute()) { $updated++; $noteId = $existingId; }
+            } else {
+                $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("iisssiiis", $company_id, $logged_user_id, $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson);
+                if ($stmt->execute()) { $inserted++; $noteId = mysqli_insert_id($conn); }
+            }
+
+            if (isset($noteId) && $tagIdx !== false && !empty($row[$tagIdx])) {
+                $stmtDelL = $conn->prepare("DELETE FROM note_labels WHERE note_id = ?");
+                $stmtDelL->bind_param("i", $noteId);
+                $stmtDelL->execute();
+
+                foreach (explode(',', $row[$tagIdx]) as $tagName) {
+                    $tagName = trim($tagName);
+                    if ($tagName === '') continue;
+                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, user_id, note_id, label) VALUES (?, ?, ?, ?)");
+                    $stmtL->bind_param("iiis", $company_id, $logged_user_id, $noteId, $tagName);
+                    $stmtL->execute();
+                }
+            }
         }
-        echo json_encode(['ok' => true, 'inserted' => $inserted]);
+        echo json_encode(['ok' => true, 'inserted' => $inserted, 'updated' => $updated]);
         exit;
     }
 }
@@ -368,6 +442,8 @@ if ($crud_action === "index" || $crud_action === "list_all") {
         $baseSql .= " AND t.images_json IS NOT NULL AND t.is_archived = 0";
     } elseif ($filter === "important") {
         $baseSql .= " AND t.is_important = 1 AND t.is_archived = 0";
+    } elseif ($filter === "shared_with") {
+        $baseSql .= " AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND t.is_archived = 0";
     } elseif ($filter === "all") {
         $baseSql .= " AND t.is_archived = 0";
     } else {
@@ -404,6 +480,20 @@ if ($crud_action === "index" || $crud_action === "list_all") {
     $stmt->execute();
     $res = $stmt->get_result();
     $notes = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+
+    // Pre-fetch tags for all notes to avoid N+1 query problem
+    $note_tags_map = [];
+    if (!empty($notes)) {
+        $note_ids = array_column($notes, 'id');
+        $placeholders = implode(',', array_fill(0, count($note_ids), '?'));
+        $stmtTags = $conn->prepare("SELECT note_id, label FROM note_labels WHERE note_id IN ($placeholders) AND active = 1");
+        $stmtTags->bind_param(str_repeat('i', count($note_ids)), ...$note_ids);
+        $stmtTags->execute();
+        $resTags = $stmtTags->get_result();
+        while ($rowTags = $resTags->fetch_assoc()) {
+            $note_tags_map[$rowTags['note_id']][] = $rowTags['label'];
+        }
+    }
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     $stmt = $conn->prepare("SELECT * FROM notes WHERE id = ? AND company_id = ? AND active = 1");
     $stmt->bind_param("ii", $editId, $company_id);
@@ -475,22 +565,27 @@ $displayFieldColumns = $uiColumns;
                 <div class="notes-sidebar">
                     <a href="index.php" class="notes-sidebar-item <?php echo ($filter === "all" || $filter === "") ? "active" : ""; ?>">💡 Notes</a>
                     <a href="?filter=reminders" class="notes-sidebar-item <?php echo $filter === "reminders" ? "active" : ""; ?>">🔔 Reminders</a>
+                    <?php if ($hasImportant): ?><a href="?filter=important" class="notes-sidebar-item <?php echo $filter === "important" ? "active" : ""; ?>">★ Important</a><?php endif; ?>
+                    <?php if ($hasShared): ?><a href="?filter=shared_with" class="notes-sidebar-item <?php echo $filter === "shared_with" ? "active" : ""; ?>">👤 Shared With</a><?php endif; ?>
+
                     <?php foreach ($user_tags as $ul): ?>
                         <a href="?filter=tag&label=<?php echo urlencode($ul); ?>" class="notes-sidebar-item <?php echo ($filter === "tag" && ($_GET["label"] ?? "") === $ul) ? "active" : ""; ?>">🏷️ <?php echo sanitize($ul); ?></a>
                     <?php endforeach; ?>
-                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;">✏️ Edit tags</a>
+
                     <a href="?filter=archive" class="notes-sidebar-item <?php echo $filter === "archive" ? "active" : ""; ?>">📥 Archive</a>
                     <a href="?filter=garbage" class="notes-sidebar-item <?php echo $filter === "garbage" ? "active" : ""; ?>">🗑️ Garbage</a>
                     <a href="?filter=checklist" class="notes-sidebar-item <?php echo $filter === "checklist" ? "active" : ""; ?>">☑️ Checklist</a>
                     <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
                     <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
-                    <?php if ($hasImportant): ?><a href="?filter=important" class="notes-sidebar-item <?php echo $filter === "important" ? "active" : ""; ?>">★ Important</a><?php endif; ?>
-                    <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
+                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;">✏️ Edit tags</a>
                     <a href="list_all.php" class="notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
+
+                    <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
                 </div>
                 <div class="notes-content">
                     <?php if ($crud_action === "index" || $crud_action === "list_all"): ?>
                         <div class="notes-header">
+                            <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="btn btn-sm" style="margin-bottom: 20px;">➕ New Note</a>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <h1>
                                     <?php
@@ -502,6 +597,7 @@ $displayFieldColumns = $uiColumns;
                                         elseif ($filter === "pinned") echo "📌 Pinned";
                                         elseif ($filter === "images") echo "🖼️ Images";
                                         elseif ($filter === "important") echo "★ Important";
+                                        elseif ($filter === "shared_with") echo "👤 Shared With";
                                         else echo "💡 Notes";
                                     ?>
                                 </h1>
@@ -533,7 +629,16 @@ $displayFieldColumns = $uiColumns;
                             </form>
                         </div>
 
+                        <!-- Toolbar for Tools (Excel/PDF) -->
+                        <div class="card" style="margin-bottom: 20px;">
+                            <table data-itm-db-import-endpoint="index.php" style="display:none;">
+                                <thead><tr><th>ID</th><th>Title</th><th>Content</th><th>Reminder</th><th>Tags</th><th>Shared With</th><th>Pinned</th><th>Important</th><th>Archived</th></tr></thead>
+                                <tbody><?php foreach ($notes as $note): ?><tr><td><?=$note['id']?></td><td><?=sanitize($note['title'])?></td><td><?=sanitize($note['content'])?></td><td><?=$note['reminder_at']?></td><td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td><td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td><td><?=$note['is_pinned']?'Yes':'No'?></td><td><?=$note['is_important']?'Yes':'No'?></td><td><?=$note['is_archived']?'Yes':'No'?></td></tr><?php endforeach; ?></tbody>
+                            </table>
+                        </div>
+
                         <?php if ($crud_action === "index"): ?>
+
                             <div class="quick-add">
                                 <div style="display: flex; align-items: center; width: 100%;">
                                     <input type="text" id="quickAddInput" placeholder="Take a note..." onkeypress="if(event.key==='Enter') quickAdd()">
@@ -570,11 +675,17 @@ $displayFieldColumns = $uiColumns;
                                         <div class="note-item" style="background-color: <?php echo $note["color"] ?? "var(--bg-primary)"; ?>;">
                                             <div class="note-main" onclick="location.href='view.php?id=<?php echo $note["id"]; ?>'" style="flex: 1; cursor: pointer;">
                                                 <div class="note-title" style="font-weight: 600;"><?php echo sanitize($note["title"] ?: '(Untitled)'); ?></div>
-                                                <div class="note-meta" style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px;">
-                                                    <span>Notes</span>
+                                                <div class="note-meta" style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px; flex-wrap: wrap;">
                                                     <?php if ($note['is_pinned']): ?><span>• 📌</span><?php endif; ?>
-                                                    <?php if (!empty($note['images_json'])): ?><span>• 🖼️</span><?php endif; ?>
                                                     <?php if ($note['is_checklist']): ?><span>• ☑️</span><?php endif; ?>
+                                                    <?php
+                                                    $note_tags = $note_tags_map[$note['id']] ?? [];
+                                                    if (!empty($note_tags)) {
+                                                        $formatted_tags = array_map(function($tag) { return '🏷️ ' . sanitize($tag); }, $note_tags);
+                                                        echo '<span>• ' . implode(' - ', $formatted_tags) . '</span>';
+                                                    }
+                                                    ?>
+                                                    <?php if (!empty($note['images_json'])): ?><span>• 🖼️</span><?php endif; ?>
                                                     <?php
                                                     $shared_ids = json_decode($note['shared_with_json'] ?? '[]', true);
                                                     if (!empty($shared_ids)) {
@@ -614,15 +725,6 @@ $displayFieldColumns = $uiColumns;
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
-                            <!-- Toolbar for Tools (Excel/PDF) in Keep View -->
-                            <div class="card" style="margin-top: 20px;">
-                                <div style="height: 0; overflow: hidden; opacity: 0; position: absolute; pointer-events: none;">
-                                    <table data-itm-db-import-endpoint="index.php">
-                                        <thead><tr><th>Title</th><th>Content</th><th>Reminder</th><th>Tags</th><th>Shared With</th><th>Pinned</th><th>Important</th><th>Archived</th></tr></thead>
-                                        <tbody><?php foreach ($notes as $note): ?><tr><td><?=sanitize($note['title'])?></td><td><?=sanitize($note['content'])?></td><td><?=$note['reminder_at']?></td><td><?php $lbls=[]; $nid=(int)$note['id']; $st=$conn->prepare("SELECT label FROM note_labels WHERE note_id=? AND active=1"); $st->bind_param("i",$nid); $st->execute(); $rl=$st->get_result(); while($ol=$rl->fetch_assoc())$lbls[]=$ol['label']; echo sanitize(implode(", ",$lbls)); ?></td><td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td><td><?=$note['is_pinned']?'Yes':'No'?></td><td><?=$note['is_important']?'Yes':'No'?></td><td><?=$note['is_archived']?'Yes':'No'?></td></tr><?php endforeach; ?></tbody>
-                                    </table>
-                                </div>
-                            </div>
                         <?php else: ?>
                             <!-- TABLE VIEW -->
                             <div class="card" style="overflow:auto;">
@@ -646,7 +748,7 @@ $displayFieldColumns = $uiColumns;
                                             <tr style="background-color: <?php echo $note['color']; ?>22;">
                                                 <td><?php echo sanitize($note['title'] ?: '(Untitled)'); ?></td>
                                                 <td><?php echo $note['reminder_at'] ? date("M j, H:i", strtotime($note['reminder_at'])) : '—'; ?></td>
-                                                <td><?php $lbls=[]; $nid=(int)$note['id']; $st=$conn->prepare("SELECT label FROM note_labels WHERE note_id=? AND active=1"); $st->bind_param("i",$nid); $st->execute(); $rl=$st->get_result(); while($ol=$rl->fetch_assoc())$lbls[]=$ol['label']; echo sanitize(implode(", ",$lbls)); ?></td>
+                                                <td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td>
                                                 <td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td>
                                                 <td><?php echo $note['is_pinned'] ? '✅' : '❌'; ?></td>
                                                 <td><?php echo $note['is_important'] ? '✅' : '❌'; ?></td>
@@ -853,6 +955,14 @@ $displayFieldColumns = $uiColumns;
         const dbValue = val.replace('T', ' ') + ':00';
         document.getElementById('quickAddReminderAt').value = dbValue;
         document.getElementById('quickReminderBtn').style.color = 'var(--accent)';
+
+        const preview = document.getElementById('quickAddReminderPreview');
+        const text = document.getElementById('quickAddReminderText');
+        if (preview && text) {
+            preview.style.display = 'flex';
+            text.innerText = dbValue;
+        }
+
         closeDatePickerModal();
     }
 
