@@ -670,7 +670,8 @@ $displayFieldColumns = $uiColumns;
 
                             <div class="notes-list">
                                 <?php if (empty($notes)): ?>
-                                    <div class="empty-state"><i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i><p>No notes found.</p></div>
+                                <!--    <div class="empty-state"><i style="font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.5;">📋</i><p>No notes found.</p></div> -->
+								<div class="empty-state">  <span style="font-size:48px; display:block; margin-bottom:20px; opacity:0.5;">📋</span><p>No notes found.</p></div>
                                 <?php else: ?>
                                     <?php foreach ($notes as $note): ?>
                                         <div class="note-item" style="background-color: <?php echo $note["color"] ?? "var(--bg-primary)"; ?>;">
