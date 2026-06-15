@@ -244,6 +244,7 @@ itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
 itm_ensure_upload_directory(TICKET_UPLOAD_PATH, 'upload');
 itm_ensure_upload_directory(BACKUP_PATH, 'deny_all');
 itm_ensure_upload_directory(FLOOR_PLAN_UPLOAD_PATH, 'upload');
+itm_ensure_upload_directory(itm_files_storage_root(), 'deny_http');
 
 // Load secondary configuration and library files
 require_once ROOT_PATH . 'includes/ui_config.php';

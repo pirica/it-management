@@ -41,11 +41,9 @@ $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
-// Why: Ensure the root /files/{company_id} directory exists.
+// Why: Ensure the root /files/{company_id} directory exists with deny_http on every segment.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
-if (!is_dir($storage_root)) {
-    @mkdir($storage_root, 0777, true);
-}
+itm_ensure_files_storage_directory($storage_root);
 
 ?>
 <!DOCTYPE html>

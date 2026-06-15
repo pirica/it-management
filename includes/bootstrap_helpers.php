@@ -392,10 +392,58 @@ HTACCESS;
 }
 
 /**
+ * Why: Tenant files under /files/ must not be served directly by Apache; PHP proxies enforce ACLs.
+ */
+if (!function_exists('itm_upload_dir_htaccess_deny_http_policy')) {
+    function itm_upload_dir_htaccess_deny_http_policy()
+    {
+        return <<<'HTACCESS'
+# ITM files hardening — do not remove (managed by itm_ensure_upload_directory)
+RewriteEngine On
+RewriteRule ^ - [F]
+Options -Indexes -ExecCGI
+HTACCESS;
+    }
+}
+
+if (!function_exists('itm_upload_directory_policy_marker')) {
+    function itm_upload_directory_policy_marker($policy)
+    {
+        if ($policy === 'deny_all') {
+            return 'ITM backup hardening';
+        }
+        if ($policy === 'deny_http') {
+            return 'ITM files hardening';
+        }
+        return 'ITM upload hardening';
+    }
+}
+
+if (!function_exists('itm_upload_directory_policy_body')) {
+    function itm_upload_directory_policy_body($policy)
+    {
+        if ($policy === 'deny_all') {
+            return itm_upload_dir_htaccess_deny_all_policy();
+        }
+        if ($policy === 'deny_http') {
+            return itm_upload_dir_htaccess_deny_http_policy();
+        }
+        return itm_upload_dir_htaccess_upload_policy();
+    }
+}
+
+if (!function_exists('itm_files_storage_root')) {
+    function itm_files_storage_root()
+    {
+        return rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'files'), DIRECTORY_SEPARATOR);
+    }
+}
+
+/**
  * Creates a directory (0775) and writes Apache rules so uploaded files are not executed.
  *
  * @param string $directory Absolute path with or without trailing separator
- * @param string $policy upload|deny_all
+ * @param string $policy upload|deny_all|deny_http
  * @return bool
  */
 if (!function_exists('itm_ensure_upload_directory')) {
@@ -410,23 +458,10 @@ if (!function_exists('itm_ensure_upload_directory')) {
             return false;
         }
 
-        $marker = 'ITM upload hardening';
-        if ($policy === 'deny_all') {
-            $marker = 'ITM backup hardening';
-            $htaccessBody = itm_upload_dir_htaccess_deny_all_policy();
-        } else {
-            $htaccessBody = itm_upload_dir_htaccess_upload_policy();
-        }
-
+        $htaccessBody = itm_upload_directory_policy_body($policy);
         $htaccessPath = $directory . DIRECTORY_SEPARATOR . '.htaccess';
-        $shouldWriteHtaccess = true;
-        if (is_file($htaccessPath)) {
-            $existing = @file_get_contents($htaccessPath);
-            $shouldWriteHtaccess = !is_string($existing) || strpos($existing, $marker) === false;
-        }
-        if ($shouldWriteHtaccess) {
-            @file_put_contents($htaccessPath, $htaccessBody, LOCK_EX);
-        }
+        // Why: Always overwrite managed policy files so uploaded .htaccess cannot append RCE directives.
+        @file_put_contents($htaccessPath, $htaccessBody, LOCK_EX);
 
         if ($policy !== 'deny_all') {
             $indexPath = $directory . DIRECTORY_SEPARATOR . 'index.html';
@@ -436,5 +471,69 @@ if (!function_exists('itm_ensure_upload_directory')) {
         }
 
         return is_dir($directory) && is_file($htaccessPath);
+    }
+}
+
+/**
+ * Why: Every segment in a tenant upload tree needs its own .htaccess, not only the leaf folder.
+ *
+ * @param string $absolutePath Absolute directory path (created when missing)
+ * @param string $policy upload|deny_all|deny_http
+ * @param string $anchorRoot Absolute path where the chain starts (defaults to $absolutePath)
+ * @return bool
+ */
+if (!function_exists('itm_ensure_upload_directory_chain')) {
+    function itm_ensure_upload_directory_chain($absolutePath, $policy = 'upload', $anchorRoot = '')
+    {
+        $absolutePath = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string) $absolutePath), DIRECTORY_SEPARATOR);
+        $anchorRoot = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, (string) $anchorRoot), DIRECTORY_SEPARATOR);
+        if ($absolutePath === '') {
+            return false;
+        }
+        if ($anchorRoot === '') {
+            return itm_ensure_upload_directory($absolutePath, $policy);
+        }
+
+        $normalizedAnchor = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $anchorRoot), DIRECTORY_SEPARATOR);
+        if ($normalizedAnchor === '' || strpos($absolutePath, $normalizedAnchor) !== 0) {
+            return itm_ensure_upload_directory($absolutePath, $policy);
+        }
+
+        $relative = ltrim(substr($absolutePath, strlen($normalizedAnchor)), DIRECTORY_SEPARATOR);
+        $parts = $relative === '' ? [] : explode(DIRECTORY_SEPARATOR, $relative);
+        $current = $normalizedAnchor;
+        $ok = itm_ensure_upload_directory($current, $policy);
+        foreach ($parts as $part) {
+            if ($part === '' || $part === '.' || $part === '..') {
+                continue;
+            }
+            $current .= DIRECTORY_SEPARATOR . $part;
+            if (!itm_ensure_upload_directory($current, $policy)) {
+                $ok = false;
+            }
+        }
+
+        return $ok && is_dir($absolutePath);
+    }
+}
+
+/**
+ * Why: Central helper for /files/{company_id}/… trees with deny_http on every path segment.
+ */
+if (!function_exists('itm_ensure_files_storage_directory')) {
+    function itm_ensure_files_storage_directory($absolutePath)
+    {
+        return itm_ensure_upload_directory_chain($absolutePath, 'deny_http', itm_files_storage_root());
+    }
+}
+
+/**
+ * Why: Modules must serve /files/ assets through the authenticated Explorer proxy after deny_http hardening.
+ */
+if (!function_exists('itm_files_serve_url')) {
+    function itm_files_serve_url($relativePath, $moduleRelativePrefix = '../../modules/explorer/file.php')
+    {
+        $relativePath = ltrim(str_replace('\\', '/', (string) $relativePath), '/');
+        return rtrim((string) $moduleRelativePrefix, '?') . '?path=' . rawurlencode($relativePath);
     }
 }

@@ -1,21 +1,4 @@
-# ITM upload hardening — do not remove (managed by itm_ensure_upload_directory)
-Options -Indexes -ExecCGI -MultiViews
-<IfModule mod_php7.c>
-    php_flag engine off
-</IfModule>
-<IfModule mod_php.c>
-    php_flag engine off
-</IfModule>
-<IfModule mod_authz_core.c>
-    <FilesMatch "(?i)\.(php|phtml|php3|php4|php5|phar|cgi|pl|py|asp|aspx|jsp|sh|exe|bat|cmd)$">
-        Require all denied
-    </FilesMatch>
-</IfModule>
-<IfModule !mod_authz_core.c>
-    <FilesMatch "(?i)\.(php|phtml|php3|php4|php5|phar|cgi|pl|py|asp|aspx|jsp|sh|exe|bat|cmd)$">
-        Order allow,deny
-        Deny from all
-    </FilesMatch>
-</IfModule>
-RemoveHandler .php .phtml .phar .cgi .pl .py
-RemoveType .php .phtml .phar .cgi .pl .py
+# ITM files hardening — do not remove (managed by itm_ensure_upload_directory)
+RewriteEngine On
+RewriteRule ^ - [F]
+Options -Indexes -ExecCGI

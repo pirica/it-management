@@ -132,12 +132,15 @@ if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 $trash_root = ROOT_PATH . 'files/' . $company_id . '/Trash';
 
-// Why: Auto-create basic structure if it doesn't exist and ensure script execution is disabled.
-if (!is_dir($storage_root)) itm_ensure_upload_directory($storage_root, 'upload');
-if (!is_dir($trash_root)) itm_ensure_upload_directory($trash_root, 'upload');
+// Why: Auto-create basic structure if it doesn't exist and deny direct HTTP access on every segment.
+itm_ensure_files_storage_directory($storage_root);
+itm_ensure_files_storage_directory($trash_root);
 
-// Why: Ensure the base files/ directory is protected even if specific company folders aren't created yet.
-itm_ensure_upload_directory(ROOT_PATH . 'files', 'upload');
+if (!function_exists('explorer_ensure_dir')) {
+function explorer_ensure_dir($absolutePath) {
+    return itm_ensure_files_storage_directory($absolutePath);
+}
+}
 
 /**
  * Synchronises a filesystem change to the explorer database table.
@@ -164,7 +167,7 @@ function sync_db($conn, $company_id, $user_id, $dept_id, $path, $name, $type, $a
 if (!function_exists('copyDir')) {
 function copyDir($src, $dst) {
     if (!is_dir($src)) return false;
-    @mkdir($dst, 0777, true);
+    explorer_ensure_dir($dst);
     $dir = opendir($src);
     while(false !== ($file = readdir($dir))) {
         if ($file == "." || $file == "..") continue;
@@ -209,11 +212,11 @@ case "list":
 
     // Why: Existing company storage may predate scoped private folders.
     if ($path === '') {
-        @mkdir("$dir/Common", 0777, true);
-        @mkdir("$dir/Private", 0777, true);
-        @mkdir("$dir/Departments", 0777, true);
-        @mkdir("$dir/Private/$user_private_dir", 0777, true);
-        if ($dept_id > 0) @mkdir("$dir/Departments/$dept_id", 0777, true);
+        explorer_ensure_dir("$dir/Common");
+        explorer_ensure_dir("$dir/Private");
+        explorer_ensure_dir("$dir/Departments");
+        explorer_ensure_dir("$dir/Private/$user_private_dir");
+        if ($dept_id > 0) explorer_ensure_dir("$dir/Departments/$dept_id");
     }
 
     $items = [];
@@ -269,7 +272,7 @@ case "createFolder":
     }
 
     $name = basename($_POST['name'] ?? 'New Folder');
-    if ($dir && @mkdir($dir . "/" . $name, 0777, true)) {
+    if ($dir && explorer_ensure_dir($dir . "/" . $name)) {
         sync_db($conn, $company_id, $user_id, $dept_id, $path, $name, 'folder');
         echo json_encode(["ok" => 1]);
     } else {
@@ -297,7 +300,7 @@ case "delete":
     // Why: Move to trash.
     $rel = trim($path ? "$path/$item" : $item, "/");
     $dst = $trash_root . "/" . $rel;
-    @mkdir(dirname($dst), 0777, true);
+    explorer_ensure_dir(dirname($dst));
 
     if (@rename($src, $dst)) {
         sync_db($conn, $company_id, $user_id, $dept_id, $path, $item, '', 'delete');
@@ -488,6 +491,9 @@ case "upload":
             $tmp = $_FILES['files']['tmp_name'][$i];
             if (!$tmp) continue;
             $safe_name = basename($name);
+            if ($safe_name === '' || $safe_name[0] === '.') {
+                continue;
+            }
             $ext = strtolower(pathinfo($safe_name, PATHINFO_EXTENSION));
 
             // Why: Block potentially executable scripts to prevent RCE.
@@ -513,7 +519,7 @@ case "createYear":
     $cur = (int)date('Y');
     foreach ([$cur - 1, $cur, $cur + 1] as $y) {
         if (!is_dir("$dir/$y")) {
-            @mkdir("$dir/$y", 0777, true);
+            explorer_ensure_dir("$dir/$y");
             sync_db($conn, $company_id, $user_id, $dept_id, $path, (string)$y, 'folder');
         }
     }
@@ -532,7 +538,7 @@ case "createMonths":
     ];
     foreach ($months as $m) {
         if (!is_dir("$dir/$m")) {
-            @mkdir("$dir/$m", 0777, true);
+            explorer_ensure_dir("$dir/$m");
             sync_db($conn, $company_id, $user_id, $dept_id, $path, $m, 'folder');
         }
     }
@@ -564,7 +570,7 @@ case "createDays":
     for ($i = 1; $i <= $daysCount; $i++) {
         $d = str_pad($i, 2, '0', STR_PAD_LEFT);
         if (!is_dir("$dir/$d")) {
-            @mkdir("$dir/$d", 0777, true);
+            explorer_ensure_dir("$dir/$d");
             sync_db($conn, $company_id, $user_id, $dept_id, $path, $d, 'folder');
         }
     }
@@ -585,7 +591,7 @@ case "createYearMonthDay":
 
     $full_path = "$dir/$y/$m_folder/$d";
     if (!is_dir($full_path)) {
-        @mkdir($full_path, 0777, true);
+        explorer_ensure_dir($full_path);
         sync_db($conn, $company_id, $user_id, $dept_id, $path, $y, 'folder');
         sync_db($conn, $company_id, $user_id, $dept_id, "$path/$y", $m_folder, 'folder');
         sync_db($conn, $company_id, $user_id, $dept_id, "$path/$y/$m_folder", $d, 'folder');
@@ -617,7 +623,7 @@ case "restore":
     $src = $trash_root . "/" . $item;
     $dst = $storage_root . "/" . $item;
 
-    @mkdir(dirname($dst), 0777, true);
+    explorer_ensure_dir(dirname($dst));
     if (@rename($src, $dst)) {
         $path = dirname($item);
         if ($path === '.') $path = '';
@@ -632,7 +638,7 @@ case "restore":
 
 case "emptyRecycle":
     rrmdir($trash_root);
-    @mkdir($trash_root, 0777, true);
+    explorer_ensure_dir($trash_root);
     echo json_encode(["ok" => 1]);
     break;
 

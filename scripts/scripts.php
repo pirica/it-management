@@ -941,6 +941,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/repro_auth_bypass_v3.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="ensure_files_htaccess_chain.php">ensure_files_htaccess_chain.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Backfill <code>deny_http</code> managed <code>.htaccess</code> on every directory segment under <code>files/</code> (idempotent).</td>
+                    <td><code>php scripts/ensure_files_htaccess_chain.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_explorer_rce_htaccess.php">verify_explorer_rce_htaccess.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for .htaccess-based RCE in the Explorer module.</td>

@@ -86,6 +86,7 @@ function colorText($text, $type) {
 ## 4. Path Handling
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.
 - Avoid platform-specific separators; use `DIRECTORY_SEPARATOR` or normalize to forward slashes.
+- **Upload / tenant file trees:** do not call bare `mkdir()` for `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, or `files/`. Use `itm_ensure_upload_directory()` / `itm_ensure_upload_directory_chain()` / `itm_ensure_files_storage_directory()` from `includes/bootstrap_helpers.php`. Policies: `upload` (public assets), `deny_http` (`files/` chain — `RewriteRule ^ - [F]` per segment), `deny_all` (`backups/`). Backfill: `php scripts/ensure_files_htaccess_chain.php`. See `docs/file_upload_modules.md`.
 
 ## 5. Verification & Testing
 - New scripts should ideally be accompanied by a unit test or a verification PoC.

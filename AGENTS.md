@@ -215,6 +215,7 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
     - Creation or upload of items is blocked directly in `Home` (root), `Private` root, and `Departments` root.
 3. **Protected Folders:** Top-level system folders (`Common`, `Departments`, `Private`) and the user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
 4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
+5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which writes managed `.htaccess` on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{user_id}/`, leaf folders, etc.). Canonical rules: `RewriteEngine On` + `RewriteRule ^ - [F]`. Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer. Managed `.htaccess` is **always overwritten** on ensure — never skip when an ITM marker is present. See `docs/file_upload_modules.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
 
 #### Org Chart and Hierarchy (mandatory)
 
@@ -453,6 +454,13 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 ### Directory Listing Prevention
 * Every publicly accessible directory MUST contain an `index.php` or `index.html` file to prevent directory listing (unless listing is disabled via server configuration).
+
+### Upload directory hardening (mandatory)
+* **Never bare `mkdir()`** for application upload paths — use `itm_ensure_upload_directory()` or `itm_ensure_upload_directory_chain()` from `includes/bootstrap_helpers.php`.
+* **`upload` policy:** `images/`, `tickets_photos/`, `floor_plans/` — allow static files; disable PHP execution.
+* **`deny_http` policy:** `files/` and every segment under `files/{company_id}/…` — `RewriteEngine On` + `RewriteRule ^ - [F]`; serve UI assets via `itm_files_serve_url()` → `modules/explorer/file.php`.
+* **`deny_all` policy:** `backups/` — block all HTTP access.
+* **Backfill existing trees:** `php scripts/ensure_files_htaccess_chain.php`. Full module map: `docs/file_upload_modules.md`.
 
 ## 🛡️ Safety & Side Effects
 * **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `user_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
