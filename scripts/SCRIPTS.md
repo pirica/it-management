@@ -90,7 +90,7 @@ function colorText($text, $type) {
 - **Every project folder must have empty `index.html`:** applies to **every directory under the repository root** (`modules/`, `includes/`, `css/`, `js/`, upload trees, etc.). Folders that already have `index.php` still get `index.html`. Skips VCS/metadata dot dirs (`.git`, `.github`, …). Upload paths additionally receive managed `.htaccess`.
 - **Force-create contract:** every `itm_ensure_upload_directory()` call **overwrites** both managed `.htaccess` (policy body) and an empty `index.html` on that folder. Applies to all policies and every chain segment. Never add `.htaccess` or `index.html` manually after `mkdir()`.
 - **Policies:** `upload` (public assets — static files allowed), `deny_http` (`files/` chain — `RewriteRule ^ - [F]` per segment), `deny_all` (`backups/`).
-- **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; upload roots also get `.htaccess`.
+- **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; lists each affected repo-relative `…/index.html` path before the summary; upload roots also get `.htaccess`.
 - **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. See `docs/file_upload_modules.md` for the full module/storage map.
 
 ## 5. Verification & Testing

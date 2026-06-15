@@ -91,6 +91,20 @@ if (!function_exists('empty_folders_force_index_html')) {
     }
 }
 
+if (!function_exists('empty_folders_relative_index_path')) {
+    function empty_folders_relative_index_path($absolutePath)
+    {
+        $projectRoot = empty_folders_normalized_path(ROOT_PATH);
+        $absolutePath = empty_folders_normalized_path($absolutePath);
+        $relative = ltrim(substr($absolutePath, strlen($projectRoot)), DIRECTORY_SEPARATOR);
+        $relative = str_replace(DIRECTORY_SEPARATOR, '/', $relative);
+        if ($relative === '') {
+            return 'index.html';
+        }
+        return $relative . '/index.html';
+    }
+}
+
 if (!function_exists('empty_folders_collect_project_dirs')) {
     function empty_folders_collect_project_dirs()
     {
@@ -129,6 +143,7 @@ if (empty($dirs)) {
 $totalFolders = 0;
 $uploadHardened = 0;
 $failures = 0;
+$affectedPaths = [];
 
 foreach ($dirs as $dir) {
     $policy = empty_folders_upload_policy_for_path($dir);
@@ -149,12 +164,18 @@ foreach ($dirs as $dir) {
         continue;
     }
 
+    $affectedPaths[] = empty_folders_relative_index_path($dir);
     $totalFolders++;
 }
 
 if ($failures > 0) {
     echo '[FAIL] ' . $failures . ' folder(s) could not be updated.' . $nl;
     exit(1);
+}
+
+sort($affectedPaths, SORT_STRING);
+foreach ($affectedPaths as $relativeIndexPath) {
+    echo $relativeIndexPath . $nl;
 }
 
 echo '[PASS] Ensured empty index.html on ' . $totalFolders . ' folder(s) under '
