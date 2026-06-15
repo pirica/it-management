@@ -118,43 +118,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
                     <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
-
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
-                <tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
             </tbody>
         </table></div>
     </div>
@@ -389,12 +352,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audits API endpoint coverage and consistency.</td>
                     <td>CLI: <code>php scripts/verify_api_coverage.php</code></td>
-                </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
