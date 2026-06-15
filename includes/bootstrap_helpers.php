@@ -439,12 +439,19 @@ if (!function_exists('itm_files_storage_root')) {
     }
 }
 
+if (!function_exists('itm_upload_directory_empty_index_html')) {
+    function itm_upload_directory_empty_index_html()
+    {
+        return "<!DOCTYPE html><html><head><title></title></head><body></body></html>\n";
+    }
+}
+
 /**
  * Creates a directory (0775) and writes Apache rules so uploaded files are not executed.
  *
  * @param string $directory Absolute path with or without trailing separator
  * @param string $policy upload|deny_all|deny_http
- * @return bool
+ * @return bool True when directory, managed .htaccess, and empty index.html all exist
  */
 if (!function_exists('itm_ensure_upload_directory')) {
     function itm_ensure_upload_directory($directory, $policy = 'upload')
@@ -460,17 +467,13 @@ if (!function_exists('itm_ensure_upload_directory')) {
 
         $htaccessBody = itm_upload_directory_policy_body($policy);
         $htaccessPath = $directory . DIRECTORY_SEPARATOR . '.htaccess';
+        $indexPath = $directory . DIRECTORY_SEPARATOR . 'index.html';
         // Why: Always overwrite managed policy files so uploaded .htaccess cannot append RCE directives.
         @file_put_contents($htaccessPath, $htaccessBody, LOCK_EX);
+        // Why: Always recreate empty index.html so directory listing stays blocked after manual deletes.
+        @file_put_contents($indexPath, itm_upload_directory_empty_index_html(), LOCK_EX);
 
-        if ($policy !== 'deny_all') {
-            $indexPath = $directory . DIRECTORY_SEPARATOR . 'index.html';
-            if (!is_file($indexPath)) {
-                @file_put_contents($indexPath, "<!DOCTYPE html><html><head><title></title></head><body></body></html>\n", LOCK_EX);
-            }
-        }
-
-        return is_dir($directory) && is_file($htaccessPath);
+        return is_dir($directory) && is_file($htaccessPath) && is_file($indexPath);
     }
 }
 

@@ -44,6 +44,8 @@ Options -Indexes -ExecCGI
 | `itm_ensure_files_storage_directory($absolutePath)` | Any path under `files/` — applies `deny_http` from `files/` root |
 | `itm_files_serve_url($relativePath)` | Build `../../modules/explorer/file.php?path=…` for UI `<img>` / download links |
 
+Each call to `itm_ensure_upload_directory()` **force-writes** both `.htaccess` (policy body) and an empty `index.html` on that folder — existing files are overwritten, not skipped.
+
 ### Is `RewriteRule ^ - [F]` the best approach?
 
 **For `files/` — yes, as the primary control**, combined with:
