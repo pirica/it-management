@@ -443,7 +443,8 @@ if ($crud_action === "index" || $crud_action === "list_all") {
     } elseif ($filter === "important") {
         $baseSql .= " AND t.is_important = 1 AND t.is_archived = 0";
     } elseif ($filter === "shared_with") {
-        $baseSql .= " AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND t.is_archived = 0";
+       // $baseSql .= " AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND t.is_archived = 0";
+		$baseSql .= "AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND JSON_CONTAINS(t.shared_with_json, CAST($logged_user_id AS JSON), '$') AND t.is_archived = 0";
     } elseif ($filter === "all") {
         $baseSql .= " AND t.is_archived = 0";
     } else {
@@ -577,9 +578,9 @@ $displayFieldColumns = $uiColumns;
                     <a href="?filter=checklist" class="notes-sidebar-item <?php echo $filter === "checklist" ? "active" : ""; ?>">☑️ Checklist</a>
                     <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
                     <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
+					<hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
                     <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;">✏️ Edit tags</a>
                     <a href="list_all.php" class="notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
-
                     <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
                 </div>
                 <div class="notes-content">
