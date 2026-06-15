@@ -116,11 +116,11 @@ foreach ($iterator as $fileInfo) {
 
 // Reporting
 if (empty($issues)) {
-    echo "SQL injection static check passed. Scanned {$scanned} PHP files and found no high-confidence direct-query findings.\n";
+    echo "SQL injection static check passed. Scanned {$scanned} PHP files and found no high-confidence direct-query findings." . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     exit(0);
 }
 
-echo "SQL injection static check found potential issues:\n";
+echo "SQL injection static check found potential issues:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
 foreach ($issues as $issue) {
     echo sprintf(" - %s:%d %s\n", $issue['path'], $issue['line'], $issue['reason']);
 }

@@ -55,6 +55,30 @@
             "detected_at_pst": "2026-06-14T12:45:00-07:00",
             "reported_link": "",
             "location": "modules/explorer/api.php"
+        },
+        {
+            "title": "Unauthorized Remote Reset of Git History and Database Wipe",
+            "status": "active",
+            "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
+            "detected_at_pst": "2026-06-15T06:25:34-07:00",
+            "reported_link": "",
+            "location": "reset_git_history.php"
+        },
+        {
+            "title": "Administrative Privilege Escalation via Select Options API",
+            "status": "active",
+            "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
+            "detected_at_pst": "2026-06-15T06:25:34-07:00",
+            "reported_link": "",
+            "location": "modules/select_options_api.php"
+        },
+        {
+            "title": "Cross-user IDOR and Unauthorized Account Deletion in Users Module",
+            "status": "active",
+            "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
+            "detected_at_pst": "2026-06-15T06:25:34-07:00",
+            "reported_link": "",
+            "location": "modules/users/delete.php"
         }
     ]
 }

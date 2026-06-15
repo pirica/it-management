@@ -7,12 +7,14 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+
 if (PHP_SAPI !== 'cli') {
     itm_script_output_begin('Security Vulnerability Reproduction');
 }
 
-function test_explorer_rce($conn) {
-    echo "Testing Explorer RCE...\n";
+function test_explorer_rce($conn, $nl) {
+    echo "Testing Explorer RCE..." . $nl;
     $company_id = 1;
     $_SESSION['company_id'] = $company_id;
     $_SESSION['user_id'] = 1;
@@ -44,10 +46,10 @@ function test_explorer_rce($conn) {
 
     $target_path = ROOT_PATH . "files/$company_id/Common/shell.php";
     if (file_exists($target_path)) {
-        echo "[FAIL] Explorer RCE: PHP file uploaded successfully to $target_path\n";
+        echo "[FAIL] Explorer RCE: PHP file uploaded successfully to $target_path" . $nl;
         unlink($target_path);
     } else {
-        echo "[PASS] Explorer RCE: PHP file upload blocked.\n";
+        echo "[PASS] Explorer RCE: PHP file upload blocked." . $nl;
     }
 
     unset($_FILES['files']);
@@ -74,8 +76,8 @@ echo ob_get_clean();
     return $output;
 }
 
-function test_user_privilege_escalation($conn) {
-    echo "Testing User Privilege Escalation...\n";
+function test_user_privilege_escalation($conn, $nl) {
+    echo "Testing User Privilege Escalation..." . $nl;
     // Create a dummy user
     mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'victim', 'victim@example.com', 'pass', 5, 2, 1)");
     $victim_id = mysqli_insert_id($conn);
@@ -103,16 +105,16 @@ function test_user_privilege_escalation($conn) {
     $res = mysqli_query($conn, "SELECT role_id FROM users WHERE id = $victim_id");
     $row = mysqli_fetch_assoc($res);
     if ($row && $row['role_id'] == 1) {
-        echo "[FAIL] User Privilege Escalation: Non-admin user successfully updated their own role to Admin.\n";
+        echo "[FAIL] User Privilege Escalation: Non-admin user successfully updated their own role to Admin." . $nl;
     } else {
-        echo "[PASS] User Privilege Escalation: Role update blocked.\n";
+        echo "[PASS] User Privilege Escalation: Role update blocked." . $nl;
     }
 
     mysqli_query($conn, "DELETE FROM users WHERE id = $victim_id");
 }
 
-function test_role_module_permissions_access($conn) {
-    echo "Testing Role Module Permissions Unauthorized Access...\n";
+function test_role_module_permissions_access($conn, $nl) {
+    echo "Testing Role Module Permissions Unauthorized Access..." . $nl;
     $session = [
         'company_id' => 1,
         'user_id' => 999,
@@ -123,17 +125,17 @@ function test_role_module_permissions_access($conn) {
     $output = run_isolated(__DIR__ . '/../modules/role_module_permissions/index.php', $session);
 
     if (strpos($output, 'Role Module Permissions Management') !== false) {
-        echo "[FAIL] Role Module Permissions: Non-admin user can access management page.\n";
+        echo "[FAIL] Role Module Permissions: Non-admin user can access management page." . $nl;
     } else {
-        echo "[PASS] Role Module Permissions: Access restricted.\n";
+        echo "[PASS] Role Module Permissions: Access restricted." . $nl;
     }
 }
 
-echo "Starting vulnerability reproduction...\n";
-test_explorer_rce($conn);
-test_user_privilege_escalation($conn);
-test_role_module_permissions_access($conn);
-echo "Reproduction complete.\n";
+echo "Starting vulnerability reproduction..." . $nl;
+test_explorer_rce($conn, $nl);
+test_user_privilege_escalation($conn, $nl);
+test_role_module_permissions_access($conn, $nl);
+echo "Reproduction complete." . $nl;
 
 if (PHP_SAPI !== 'cli') {
     itm_script_output_end();

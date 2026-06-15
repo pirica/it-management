@@ -112,6 +112,49 @@ require_once __DIR__ . '/../config/config.php';
                     <td>HTML reference for JSON API endpoints (auth, CSRF, module import routes, request/response examples).</td>
                     <td>Open in the browser after deploy. Use as the source of truth when calling <code>/modules/*/index.php</code> JSON handlers or shared APIs documented in the file.</td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
+
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
+                <tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -180,6 +223,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Lightweight health check endpoint for monitoring.</td>
                     <td>Open in browser or use with monitoring tools.</td>
+                </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -269,6 +318,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Global JS helpers <code>itmNotifyError()</code>, <code>itmNotifyAjaxError()</code> (modal-aware), and <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
                     <td>Included on all standard pages via header. IDF modals use <code>itmNotifyAjaxError()</code> so errors render inside the open modal instead of behind the backdrop.</td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -334,6 +389,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audits API endpoint coverage and consistency.</td>
                     <td>CLI: <code>php scripts/verify_api_coverage.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -471,6 +532,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Broad-spectrum SQL cleanup utility.</td>
                     <td>CLI: <code>php scripts/fix_sql_broad.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -568,6 +635,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Audits network points and connections.</td>
                     <td>CLI: <code>php scripts/check_points.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -627,6 +700,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audit utility for active flags and checkbox inputs in module forms.</td>
                     <td>CLI: <code>php scripts/list_active_and_checkboxes.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -785,6 +864,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Identifies tables missing the mandatory <code>active</code> column and detects code mismatches where queries expect this field on tables that lack it.</td>
                     <td>Browser: HTML report with detailed mismatch locations. CLI: <code>php scripts/db_field_active.php</code> — run after CRUD changes to ensure schema compliance.</td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
         <p class="scripts-muted" style="margin-top:12px;">
@@ -877,9 +962,151 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
+    <div class="scripts-card" id="verification">
+        <h2>Verification (June 2026 Security Review)</h2>
+        <div class="scripts-table-wrap"><table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="verify_select_options_escalation.php">verify_select_options_escalation.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for administrative privilege escalation via Select Options API.</td>
+                    <td><code>php scripts/verify_select_options_escalation.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_user_idor.php">verify_user_idor.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized user account deletion via IDOR.</td>
+                    <td><code>php scripts/verify_user_idor.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_reset_git_history_access.php">verify_reset_git_history_access.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Confirms lack of access control on destructive Git history reset utility.</td>
+                    <td><code>php scripts/verify_reset_git_history_access.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_zip_leak.php">verify_explorer_zip_leak.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for multi-tenant data leak via root ZIP downloads in Explorer.</td>
+                    <td><code>php scripts/verify_explorer_zip_leak.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_company_deletion.php">verify_company_deletion.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized company deletion by regular users.</td>
+                    <td><code>php scripts/verify_company_deletion.php</code></td>
+                </tr>
+            </tbody>
+        </table></div>
+    </div>
+    <div class="scripts-card" id="verification">
+        <h2>Verification (June 2026 Security Review)</h2>
+        <div class="scripts-table-wrap"><table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="verify_select_options_escalation.php">verify_select_options_escalation.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for administrative privilege escalation via Select Options API.</td>
+                    <td><code>php scripts/verify_select_options_escalation.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_user_idor.php">verify_user_idor.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized user account deletion via IDOR.</td>
+                    <td><code>php scripts/verify_user_idor.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_reset_git_history_access.php">verify_reset_git_history_access.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Confirms lack of access control on destructive Git history reset utility.</td>
+                    <td><code>php scripts/verify_reset_git_history_access.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_zip_leak.php">verify_explorer_zip_leak.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for multi-tenant data leak via root ZIP downloads in Explorer.</td>
+                    <td><code>php scripts/verify_explorer_zip_leak.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_company_deletion.php">verify_company_deletion.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized company deletion by regular users.</td>
+                    <td><code>php scripts/verify_company_deletion.php</code></td>
+                </tr>
+            </tbody>
+        </table></div>
+    </div>
+    <div class="scripts-card" id="verification">
+        <h2>Verification (June 2026 Security Review)</h2>
+        <div class="scripts-table-wrap"><table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="verify_select_options_escalation.php">verify_select_options_escalation.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for administrative privilege escalation via Select Options API.</td>
+                    <td><code>php scripts/verify_select_options_escalation.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_user_idor.php">verify_user_idor.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized user account deletion via IDOR.</td>
+                    <td><code>php scripts/verify_user_idor.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_reset_git_history_access.php">verify_reset_git_history_access.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Confirms lack of access control on destructive Git history reset utility.</td>
+                    <td><code>php scripts/verify_reset_git_history_access.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_zip_leak.php">verify_explorer_zip_leak.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for multi-tenant data leak via root ZIP downloads in Explorer.</td>
+                    <td><code>php scripts/verify_explorer_zip_leak.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_company_deletion.php">verify_company_deletion.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized company deletion by regular users.</td>
+                    <td><code>php scripts/verify_company_deletion.php</code></td>
+                </tr>
+            </tbody>
+        </table></div>
+    </div>
+
 
     <div class="scripts-card" >
         <h2>Deployment &amp; Git</h2>
@@ -905,6 +1132,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Completely reset Git history and force push a clean master branch.</td>
                     <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong></td>
                 </tr>
+                <tr>
+                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
+                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -918,3 +1151,6 @@ require_once __DIR__ . '/../config/config.php';
 </div>
 </body>
 </html>
+
+<!-- Standard: scripts/SCRIPTS.md -->
+<!-- Newline: (php_sapi_name() === 'cli' ? "\n" : "<br><br>") -->

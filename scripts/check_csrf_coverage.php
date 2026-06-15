@@ -237,30 +237,30 @@ foreach ($iterator as $fileInfo) {
 
 // Final output of results
 if (empty($missing)) {
-    echo "CSRF coverage check passed. Scanned {$scanned} PHP files and {$handlerScanned} POST handlers with no uncovered state-changing POST handlers.\n";
+    echo "CSRF coverage check passed. Scanned {$scanned} PHP files and {$handlerScanned} POST handlers with no uncovered state-changing POST handlers." . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     if ($handlersSkippedNoMutation > 0) {
-        echo "POST handlers skipped (read-only / no state mutation in block): {$handlersSkippedNoMutation}\n";
+        echo "POST handlers skipped (read-only / no state mutation in block): {$handlersSkippedNoMutation}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     }
     if (!empty($skipped)) {
-        echo "\nSkipped (trusted — not direct POST endpoints):\n";
+        echo "\nSkipped (trusted — not direct POST endpoints):" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         foreach ($skipped as $entry) {
-            echo " - {$entry[0]}: {$entry[1]}\n";
+            echo " - {$entry[0]}: {$entry[1]}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         }
     }
     exit(0);
 }
 
-echo "CSRF coverage check found potential gaps:\n";
+echo "CSRF coverage check found potential gaps:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
 foreach ($missing as $entry) {
     $path = $entry[0];
     $reason = $entry[1];
     $relative = csrf_coverage_relative_path($root, $path);
-    echo " - {$relative}: {$reason}\n";
+    echo " - {$relative}: {$reason}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
 }
 if (!empty($skipped)) {
-    echo "\nSkipped (trusted — not direct POST endpoints):\n";
+    echo "\nSkipped (trusted — not direct POST endpoints):" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     foreach ($skipped as $entry) {
-        echo " - {$entry[0]}: {$entry[1]}\n";
+        echo " - {$entry[0]}: {$entry[1]}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     }
 }
 exit(1);
