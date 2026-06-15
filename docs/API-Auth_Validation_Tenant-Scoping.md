@@ -247,7 +247,7 @@ Agent options Review API handlers and controller endpoints for missing authentic
 
 
 - Don't delete any files
-- Before start read all last report:
+- Before start read last report:
  docs/API-Auth_Validation_Tenant-Scoping.md
 - AGENTS.md 
 - scripts/scripts.php
