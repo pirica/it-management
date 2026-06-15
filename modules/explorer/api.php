@@ -136,6 +136,9 @@ $trash_root = ROOT_PATH . 'files/' . $company_id . '/Trash';
 if (!is_dir($storage_root)) itm_ensure_upload_directory($storage_root, 'upload');
 if (!is_dir($trash_root)) itm_ensure_upload_directory($trash_root, 'upload');
 
+// Why: Ensure the base files/ directory is protected even if specific company folders aren't created yet.
+itm_ensure_upload_directory(ROOT_PATH . 'files', 'upload');
+
 /**
  * Synchronises a filesystem change to the explorer database table.
  */

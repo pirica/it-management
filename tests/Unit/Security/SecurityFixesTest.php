@@ -137,4 +137,62 @@ echo ob_get_clean();
 
         $this->assertStringNotContainsString('Role Module Permissions Management', $output, "Non-admin users should be redirected from Role Module Permissions.");
     }
+
+    public function testCompanyModuleAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'user_id' => 999,
+            'username' => 'nobody'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'modules/companies/index.php', $session);
+        $this->assertStringNotContainsString('Companies Management', $output, "Non-admin users should be redirected from Companies module.");
+    }
+
+    public function testSensitiveImportAdminOnly()
+    {
+        // 1. Create a non-admin user
+        $stmt = $this->conn->prepare("INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'attacker_import', 'attacker_import@example.com', 'pass', 5, 2, 1)");
+        $stmt->execute();
+        $attacker_id = mysqli_insert_id($this->conn);
+
+        $session = [
+            'company_id' => 1,
+            'user_id' => $attacker_id,
+            'username' => 'attacker_import',
+            'csrf_token' => 'test_token'
+        ];
+
+        $payload = [
+            'csrf_token' => 'test_token',
+            'import_excel_rows' => [
+                ['id', 'company', 'incode'],
+                [1, 'Hacked', 'HACKED']
+            ]
+        ];
+
+        // 2. Attempt to import companies
+        $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+require_once '" . ROOT_PATH . "config/config.php';
+\$_SESSION['user_id'] = $attacker_id;
+\$_SESSION['company_id'] = 1;
+\$_SESSION['csrf_token'] = 'test_token';
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['CONTENT_TYPE'] = 'application/json';
+\$payload = " . var_export($payload, true) . ";
+echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload, true));
+?>";
+        $tmp_file = tempnam(sys_get_temp_dir(), 'import_test');
+        file_put_contents($tmp_file, $code);
+        $output = shell_exec("php $tmp_file");
+        unlink($tmp_file);
+
+        $result = json_decode($output, true);
+        $this->assertFalse($result['ok'] ?? true, "Import should fail for non-admin user on sensitive table.");
+
+        // Cleanup
+        $this->conn->query("DELETE FROM users WHERE id = $attacker_id");
+    }
 }
