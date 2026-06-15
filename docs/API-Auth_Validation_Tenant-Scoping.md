@@ -1,73 +1,236 @@
 # API Security Audit Report: Authentication, Validation, and Tenant Scoping
 
-This report reviews the IT Management System's API handlers and controller endpoints for security best practices regarding authentication, authorization, multi-tenant scoping, and request validation.
-
 ## 1. Executive Summary
 
-The system follows a procedural PHP architecture where API endpoints are implemented as standalone scripts, internal AJAX handlers, or embedded within module `index.php` files. While session-based authentication and CSRF protection are widely applied via `config/config.php` and helper functions, several critical vulnerabilities and areas for improvement were identified. Key concerns include privilege escalation in generic APIs, potential remote code execution (RCE) in file management, and inconsistent request validation.
+This report reviews the IT Management System's API handlers and controller endpoints for security best practices related to authentication, authorization, multi-tenant scoping, and request validation.
 
-Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms a heavy reliance on session cookies and manual scraping of HTML for data retrieval in the absence of comprehensive "read" APIs.
+The system follows a procedural PHP architecture where API endpoints are implemented as standalone scripts, internal AJAX handlers, or embedded within module `index.php` files. Session-based authentication and CSRF protection are widely applied; however, several critical vulnerabilities and security weaknesses were identified.
+
+Key concerns include:
+
+• Privilege escalation in generic APIs.
+• Potential authenticated remote code execution (RCE) through file uploads.
+• Weak and inconsistent request validation.
+• Inconsistent API response handling.
+• Risks associated with generic table-based APIs.
+
+Analysis of `api-examples/` and documentation in `scripts/api.php` confirms a heavy reliance on session cookies and HTML scraping for data retrieval due to the absence of comprehensive JSON-based read APIs.
+
+---
 
 ## 2. Flagged Endpoints & Findings
 
 ### 2.1 Generic Select Options API (`modules/select_options_api.php`)
 
-*   **Description:** Provides a generic endpoint for creating new reference records (options) on-the-fly.
-*   **Issues:**
-    *   **Privilege Escalation:** A regular user can create records in sensitive tables like `users`, including creating new Admin users by supplying `role_id` and `access_level_id` in the `extra_fields` JSON payload.
-    *   **Trusting User-Supplied Identifiers:** The script trusts the `table`, `id_col`, and `label_col` parameters from the POST request. While it checks for "safe identifiers" (regex), it does not restrict the list of allowed tables.
-    *   **Weak Validation:** `extra_fields` are accepted without schema-based runtime validation beyond basic type checks during insertion.
-    *   **Mixed Reads and Writes:** The endpoint performs both record insertion and returns a refreshed list of options, making side effects harder to reason about in a single request.
-*   **Recommendation:** Implement an allow-list of tables permitted for "Quick Add". Block sensitive tables (users, roles, permissions). Validate `extra_fields` against a predefined schema per table.
+**Description**
+
+Provides a generic endpoint for creating reference records ("Quick Add" functionality).
+
+**Findings**
+
+**Confirmed Privilege Escalation**
+
+A regular user can create records in sensitive tables such as `users`, including creating new administrator accounts by supplying `role_id` and `access_level_id` values through the `extra_fields` JSON payload.
+
+**Trusting User-Supplied Identifiers**
+
+The endpoint accepts `table`, `id_col`, and `label_col` parameters directly from the client. Although basic identifier validation is performed using regular expressions, there is no allow-list restricting which database tables may be accessed.
+
+**Weak Validation**
+
+`extra_fields` are accepted without schema-based validation, allowing arbitrary field injection.
+
+**Recommendation**
+
+• Implement a strict allow-list of permitted tables and columns.
+• Block sensitive tables such as `users`, `roles`, and `permissions`.
+• Validate `extra_fields` against predefined schemas.
+• Separate record creation from option retrieval operations.
+
+---
 
 ### 2.2 Explorer API (`modules/explorer/api.php`)
 
-*   **Description:** Handles file and folder operations.
-*   **Issues:**
-    *   **Authenticated RCE:** (Known Vulnerability) The `upload` action allows uploading files to the `files/` directory. While it blocks some extensions, the protection is inconsistent with other upload directories.
-    *   **Multi-tenant Data Leak:** (Known Vulnerability) The `downloadZip` functionality has been flagged for potential multi-tenant leaks if path traversal or improper scoping is exploited.
-    *   **Sensitive Internal Errors:** Some error cases return generic messages, but the reliance on `basename()` and manual path concatenation is error-prone.
-*   **Recommendation:** Move all uploaded files outside the web root or strictly enforce non-executable permissions via server configuration. Hardened path validation is required for ZIP generation.
+**Description**
 
-### 2.3 JSON Import Endpoints (Shared & Module-Specific)
+Handles file and folder management operations.
 
-*   **Description:** Endpoints (often in `modules/*/index.php`) that accept `import_excel_rows` in a JSON body.
-*   **Issues:**
-    *   **Missing Runtime Validation:** While `itm_handle_json_table_import` performs basic type checking, it lacks robust validation (like Zod schemas or DTOs) to enforce business logic rules.
-    *   **Trusting User-Supplied IDs:** Some import handlers allow updating existing records by supplying an `id`. If tenant scoping is not strictly enforced in the `UPDATE` query, this could lead to IDOR.
-    *   **Inconsistent Status Codes:** Error responses often return 200 OK with an `ok: false` field, which is misleading for automated tools.
-*   **Recommendation:** Centralize and harden the import logic. Ensure every `UPDATE` or `DELETE` operation includes a `company_id = ?` clause derived strictly from the session.
+**Findings**
 
-### 2.4 Specialized AJAX Handlers (Switch Ports, Rack Planner, Org Chart)
+**Verified Path Traversal Protection**
 
-*   **Description:** High-interaction modules use specialized handlers like `includes/get_ports.php`, `includes/update_port.php`, and `modules/rack_planner/index.php`.
-*   **Issues:**
-    *   **Complex Side Effects:** Endpoints like `update_port.php` synchronize data across multiple tables (`switch_ports`, `idf_ports`, `equipment`). The complexity of these operations makes it difficult to verify consistent scoping and authorization across all affected records.
-    *   **Implicit Scoping:** These scripts often rely on the global `$company_id` from `config.php`. While generally correct, the lack of explicit per-query scoping in some paths increases the risk of tenant leaks.
-    *   **Ad-hoc Validation:** Validation is performed using scattered basic checks (`is_numeric`, `ctype_digit`) rather than a structured schema.
-*   **Recommendation:** Encapsulate complex multi-table synchronizations into transaction-aware functions. Implement structural validation for complex JSON payloads (e.g., Rack Planner layout JSON).
+Testing confirmed that attempts to access paths such as `../../` are blocked by path normalization routines.
 
-### 2.5 Documented Internal & Security APIs (`scripts/api.php`, `scripts/test_sql_injection.php`)
+**Authenticated RCE Risk**
 
-*   **Description:** Maintenance and security tools are documented as APIs for shared use.
-*   **Issues:**
-    *   **Exposure of Sensitive Logic:** `test_sql_injection.php` explicitly demonstrates internal SQL injection signatures. Its exposure should be strictly limited.
-    *   **RBAC Gaps:** Documented tools like `module_browser_qa_runner.php` and `compare_database_sql_modules.php` perform sensitive operations. If not properly guarded by Admin role checks, they could be abused by regular users.
-*   **Recommendation:** Explicitly verify Admin role membership for all scripts in the `scripts/` directory and any documented maintenance APIs. Disable security test scripts in production.
+The upload functionality permits authenticated users to upload files into the `files/` directory. Extension filtering exists but is not consistently enforced across all upload locations.
 
-## 3. General Observations & Patterns
+**Potential Multi-Tenant Data Leakage**
 
-1.  **Tenant Scoping:** The system generally derives `company_id` from the session, but some generic APIs take a `company_scoped` flag from the client. This should be inverted: if a table has a `company_id` column, scoping must be mandatory and derived solely from the session.
-2.  **Validation:** There is a lack of a centralized validation framework. Most validation is procedural and repetitive. `api-examples/` confirm that the absence of structured JSON "read" APIs forces insecure and brittle HTML scraping for data retrieval.
-3.  **Error Handling:** HTTP status codes are inconsistently used. Sensitive internal errors (e.g., `mysqli_error`) are occasionally returned to the client.
-4.  **Rate Limiting:** No centralized rate limiting was found. Resource-intensive actions (ZIP generation, bulk imports) are vulnerable to DoS.
+ZIP archive generation may expose data across tenants if path validation or scoping controls are bypassed.
 
-## 4. Recommendations for Remediation
+**Recommendation**
 
-1.  **Strict Table Allow-lists:** For any generic API (like Select Options), implement a strict allow-list of permitted tables and columns.
-2.  **Schema-Based Validation:** Introduce a structured way to validate incoming JSON payloads against expected schemas.
-3.  **Standardize Response Contract:** Define a consistent JSON response format and appropriate HTTP status codes (400, 401, 403, 404, 500) for all API endpoints.
-4.  **Enforce Mandatory Tenant Scoping:** Ensure all database queries involving multi-tenant tables include a `company_id` filter derived *only* from the session.
-5.  **Implement Rate Limiting:** Add application-level throttling for sensitive or resource-intensive API actions.
-6.  **Introduce Structured Read APIs:** Develop JSON-based endpoints for retrieving record details to replace current HTML scraping patterns.
-7.  **RBAC for Maintenance Tools:** Ensure all documented maintenance and security tools require the Admin role.
+• Store uploaded files outside the web root.
+• Enforce non-executable permissions on upload directories.
+• Strengthen ZIP generation path validation and tenant isolation checks.
+
+---
+
+### 2.3 JSON Import Endpoints
+
+**Description**
+
+Module-specific endpoints that process `import_excel_rows` JSON payloads.
+
+**Findings**
+
+**Confirmed Weak Data Validation**
+
+Invalid data types are accepted and silently converted to `NULL` or default values rather than generating validation errors.
+
+**Trusting User-Supplied Record IDs**
+
+Some import handlers allow updates to existing records through client-supplied identifiers. If tenant scoping is not consistently enforced, this creates an IDOR risk.
+
+**Inconsistent Status Codes**
+
+Many failures return HTTP 200 responses containing `{"ok": false}` rather than using appropriate HTTP error codes.
+
+**Recommendation**
+
+• Centralize import processing logic.
+• Implement schema-based validation.
+• Reject invalid payloads with HTTP 400 responses.
+• Ensure all `UPDATE` and `DELETE` queries include mandatory tenant scoping using session-derived `company_id`.
+
+---
+
+### 2.4 Specialized AJAX Handlers
+
+Examples include switch port management, rack planner, organizational chart, and note management handlers.
+
+**Findings**
+
+**Misleading Success Responses**
+
+Some endpoints return success responses even when no record was modified due to tenant isolation or missing records.
+
+**Complex Side Effects**
+
+Certain handlers synchronize data across multiple tables, increasing the risk of inconsistent authorization and tenant-scoping enforcement.
+
+**Implicit Scoping**
+
+Many scripts rely on the global `$company_id` value rather than applying explicit tenant constraints within each query.
+
+**Recommendation**
+
+• Use transaction-aware service functions for multi-table updates.
+• Implement consistent validation schemas.
+• Return accurate status codes and responses when operations affect zero records.
+
+---
+
+### 2.5 Internal Maintenance and Security APIs (`scripts/`)
+
+**Description**
+
+Administrative and diagnostic scripts documented for internal use.
+
+**Findings**
+
+**Exposure of Sensitive Logic**
+
+Security testing utilities expose attack patterns and internal implementation details.
+
+**Potential RBAC Gaps**
+
+Maintenance scripts perform sensitive operations and could be abused if administrative access controls are incomplete.
+
+**Recommendation**
+
+• Restrict all maintenance tools to administrators.
+• Disable testing and security assessment utilities in production environments.
+• Audit all scripts under the `scripts/` directory for proper RBAC enforcement.
+
+---
+
+## 3. Security Test Results
+
+| Endpoint                      | Test Action                         | Expected Result  | Actual Result                     | Status  |
+| ----------------------------- | ----------------------------------- | ---------------- | --------------------------------- | ------- |
+| `select_options_api.php`      | Regular user creating administrator | Blocked          | Administrator created             | 🔴 FAIL |
+| `equipment/view.php`          | Access another company's asset      | Redirect/404     | Redirect to login                 | 🟢 PASS |
+| `notes/index.php` (AJAX)      | Delete another company's note       | Blocked          | Returned success without deletion | 🟡 WARN |
+| `catalogs/index.php` (Import) | Import invalid price type           | Validation error | Inserted as NULL                  | 🔴 FAIL |
+| `catalogs/index.php` (Import) | Supply custom `company_id`          | Ignored          | Session company used              | 🟢 PASS |
+| `explorer/api.php`            | Path traversal (`../../`)           | Blocked          | Access prevented                  | 🟢 PASS |
+
+Status Legend
+
+🟢 PASS – Security control works as expected.
+
+🟡 WARN – No direct security bypass observed, but behavior is misleading, inconsistent, or could complicate monitoring and auditing.
+
+🔴 FAIL – Confirmed security weakness, vulnerability, or control failure requiring remediation.
+---
+
+## 4. Architectural Observations
+
+### Reliance on HTML Scraping
+
+Examples in `api-examples/` demonstrate that developers frequently parse HTML responses using regular expressions or DOM processing because structured JSON read APIs are unavailable. This approach is fragile and tightly couples integrations to UI implementation details.
+
+### Implicit Tenant Scoping
+
+The system generally derives `company_id` from the session, but authorization rules are not consistently visible or enforced at the endpoint level.
+
+### Generic Table APIs
+
+APIs that accept table names and column names directly from user input introduce significant attack surface and should be replaced with purpose-built endpoints.
+
+### Validation Strategy
+
+Validation is largely procedural, duplicated across modules, and lacks a centralized schema-driven framework.
+
+### Error Handling
+
+HTTP status codes are used inconsistently, making automation and monitoring more difficult.
+
+### Rate Limiting
+
+No centralized rate-limiting controls were identified. Bulk imports, ZIP generation, and similar resource-intensive operations may be susceptible to denial-of-service attacks.
+
+---
+
+## 5. Remediation Recommendations
+
+### High Priority
+
+1. Implement strict allow-lists for all generic APIs.
+2. Block access to sensitive tables through generic endpoints.
+3. Enforce mandatory tenant scoping on all multi-tenant queries.
+4. Move uploaded files outside the web root and disable execution.
+5. Apply consistent RBAC controls to administrative and maintenance scripts.
+
+### Medium Priority
+
+6. Introduce schema-based request validation.
+7. Standardize API response formats and HTTP status codes.
+8. Refactor complex multi-table operations into transaction-aware services.
+9. Return accurate success and failure responses.
+
+### Long-Term Improvements
+
+10. Develop structured JSON read APIs to eliminate HTML scraping.
+11. Introduce centralized rate limiting and request throttling.
+12. Establish a unified validation and authorization framework across all modules.
+
+---
+
+## Conclusion
+
+The application demonstrates generally effective session-based authentication and tenant isolation practices; however, several high-impact vulnerabilities remain, most notably privilege escalation through generic APIs, weak validation within import functionality, and file upload risks.
+
+Addressing these issues through stricter authorization controls, schema-based validation, mandatory tenant scoping, and purpose-built APIs will significantly improve the platform's security posture and reduce the likelihood of privilege escalation, data leakage, and unauthorized access.
