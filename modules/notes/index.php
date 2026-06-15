@@ -893,7 +893,7 @@ $displayFieldColumns = $uiColumns;
                                 <tr><th style="text-align: left; padding-right: 20px;">Tags</th><td><?php $lbls = []; $noteId = (int)$data['id']; $stmtVL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtVL->bind_param("i", $noteId); $stmtVL->execute(); $resL = $stmtVL->get_result(); while ($rowL = mysqli_fetch_assoc($resL)) $lbls[] = $rowL['label']; echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
                                 <tr><th style="text-align: left; padding-right: 20px;">Shared With</th><td><?php $uIds = json_decode($data['shared_with_json'] ?? '[]', true); if (empty($uIds)) echo "Private"; else { $names = []; foreach ($uIds as $uid) { if (isset($users[$uid])) $names[] = $users[$uid]['username']; } echo sanitize(implode(', ', $names)); } ?></td></tr>
                             </table>
-                            <div class="form-actions" style="margin-top: 30px;"><a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary">✏️ Edit</a><a href="index.php" class="btn">🔙 Back</a></div>
+                            <div class="form-actions" style="margin-top: 30px;"><a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary">✏️</a><a href="index.php" class="btn">🔙</a></div>
                         </div>
                     <?php endif; ?>
                 </div>
