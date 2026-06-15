@@ -90,7 +90,7 @@ function colorText($text, $type) {
 - **Every project folder must have empty `index.html`:** applies to **every directory under the repository root** (`modules/`, `includes/`, `css/`, `js/`, upload trees, etc.). Folders that already have `index.php` still get `index.html`. Skips VCS/metadata dot dirs (`.git`, `.github`, …). Upload paths additionally receive managed `.htaccess`.
 - **Force-create contract:** every `itm_ensure_upload_directory()` call **overwrites** both managed `.htaccess` (policy body) and an empty `index.html` on that folder. Applies to all policies and every chain segment. Never add `.htaccess` or `index.html` manually after `mkdir()`.
 - **Policies:** `upload` (public assets — static files allowed), `deny_http` (`files/` chain — `RewriteRule ^ - [F]` per segment), `deny_all` (`backups/`).
-- **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; lists each affected repo-relative `…/index.html` path before the summary; upload roots also get `.htaccess`.
+- **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; lists only **new or changed** repo-relative `…/index.html` paths before the summary; upload roots also get `.htaccess`.
 - **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. See `docs/file_upload_modules.md` for the full module/storage map.
 
 ## 5. Verification & Testing
@@ -153,7 +153,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | File | Use |
 |------|-----|
 | `scripts/lib/script_browser_nav.php` | **← Scripts index**, relative module links, table→module links when folder exists (`target="_blank"`) |
-| `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav |
+| `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav; `colorText()` for pass/fail/warn/info |
 | `scripts/lib/utf8_file.php` | UTF-8 writes for `qa-reports/*.md` and `.json` (optional BOM for Windows viewers) |
 | `scripts/lib/mbqa_report_paths.php` | Timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` / `.xlsx` paths; stable `module-browser-qa.md` for build report |
 | `scripts/lib/mbqa_runner_tiers.php` | Canonical `$bespokeSmoke` (Tier D) and `$skipClear` lists; tier reference markdown/HTML for build reports |
