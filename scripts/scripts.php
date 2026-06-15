@@ -943,7 +943,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="empty_folders.php">empty_folders.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Backfill empty <code>index.html</code> (and managed <code>.htaccess</code>) on <strong>every</strong> folder under all upload roots: <code>images/</code>, <code>tickets_photos/</code>, <code>floor_plans/</code>, <code>backups/</code>, and <code>files/</code> (idempotent).</td>
+                    <td>Backfill empty <code>index.html</code> on <strong>every</strong> folder under the project root (skips <code>.git</code>, <code>.github</code>, and other dot dirs). Upload paths (<code>images/</code>, <code>tickets_photos/</code>, <code>floor_plans/</code>, <code>backups/</code>, <code>files/</code>) also receive managed <code>.htaccess</code> (idempotent).</td>
                     <td><code>php scripts/empty_folders.php</code></td>
                 </tr>
                 <tr>

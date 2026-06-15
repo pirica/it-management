@@ -457,8 +457,8 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 ### Directory Listing Prevention
 * Every publicly accessible directory MUST contain an `index.php` or `index.html` file to prevent directory listing (unless listing is disabled via server configuration).
-* **Every upload folder:** every directory segment under `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, and `files/` **must** have an empty `index.html` (via `itm_upload_directory_empty_index_html()`). No exceptions for leaf-only placement — parent segments need placeholders too.
-* **Upload paths:** `itm_ensure_upload_directory()` force-writes an empty `index.html` on every call (all policies). Do not rely on a one-time manual `index.html` — the helper overwrites it on each ensure so deleted placeholders are restored.
+* **Every project folder:** every directory under the repository root **must** have an empty `index.html` (via `itm_upload_directory_empty_index_html()`). Run `php scripts/empty_folders.php` to backfill the full tree (skips `.git`, `.github`, and other dot directories).
+* **Upload paths:** under `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, and `files/`, `itm_ensure_upload_directory()` also force-writes managed `.htaccess`. Do not rely on a one-time manual `index.html` — helpers overwrite on each ensure so deleted placeholders are restored.
 
 ### Upload directory hardening (mandatory)
 * **Never bare `mkdir()`** for application upload paths — use `itm_ensure_upload_directory()` or `itm_ensure_upload_directory_chain()` from `includes/bootstrap_helpers.php`.
@@ -466,7 +466,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **`upload` policy:** `images/`, `tickets_photos/`, `floor_plans/` — allow static files; disable PHP execution; force `.htaccess` + empty `index.html`.
 * **`deny_http` policy:** `files/` and every segment under `files/{company_id}/…` — `RewriteEngine On` + `RewriteRule ^ - [F]`; force `.htaccess` + empty `index.html` per segment; serve UI assets via `itm_files_serve_url()` → `modules/explorer/file.php`.
 * **`deny_all` policy:** `backups/` — block all HTTP access; force `.htaccess` + empty `index.html`.
-* **Backfill all upload roots:** `php scripts/empty_folders.php` — empty `index.html` (and managed `.htaccess`) on every folder under `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, and `files/`.
+* **Backfill entire project:** `php scripts/empty_folders.php` — empty `index.html` on every folder under the repo root; upload paths also get managed `.htaccess`.
 * **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. Full module map: `docs/file_upload_modules.md`.
 
 ## 🛡️ Safety & Side Effects
