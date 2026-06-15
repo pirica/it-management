@@ -217,7 +217,7 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
 4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
 5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{user_id}/`, leaf folders, etc.):
     - **`.htaccess`** — canonical `RewriteEngine On` + `RewriteRule ^ - [F]` body (always overwritten).
-    - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten).
+    - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten; **required on every folder segment**, not only leaves).
     Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer. See `docs/file_upload_modules.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
 
 #### Org Chart and Hierarchy (mandatory)
@@ -457,6 +457,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 ### Directory Listing Prevention
 * Every publicly accessible directory MUST contain an `index.php` or `index.html` file to prevent directory listing (unless listing is disabled via server configuration).
+* **Every upload folder:** every directory segment under `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, and `files/` **must** have an empty `index.html` (via `itm_upload_directory_empty_index_html()`). No exceptions for leaf-only placement — parent segments need placeholders too.
 * **Upload paths:** `itm_ensure_upload_directory()` force-writes an empty `index.html` on every call (all policies). Do not rely on a one-time manual `index.html` — the helper overwrites it on each ensure so deleted placeholders are restored.
 
 ### Upload directory hardening (mandatory)
@@ -465,7 +466,8 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **`upload` policy:** `images/`, `tickets_photos/`, `floor_plans/` — allow static files; disable PHP execution; force `.htaccess` + empty `index.html`.
 * **`deny_http` policy:** `files/` and every segment under `files/{company_id}/…` — `RewriteEngine On` + `RewriteRule ^ - [F]`; force `.htaccess` + empty `index.html` per segment; serve UI assets via `itm_files_serve_url()` → `modules/explorer/file.php`.
 * **`deny_all` policy:** `backups/` — block all HTTP access; force `.htaccess` + empty `index.html`.
-* **Backfill existing trees:** `php scripts/ensure_files_htaccess_chain.php` (rewrites both files on every segment). Full module map: `docs/file_upload_modules.md`.
+* **Backfill all upload roots:** `php scripts/empty_folders.php` — empty `index.html` (and managed `.htaccess`) on every folder under `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, and `files/`.
+* **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. Full module map: `docs/file_upload_modules.md`.
 
 ## 🛡️ Safety & Side Effects
 * **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `user_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
