@@ -187,12 +187,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Lightweight health check endpoint for monitoring.</td>
                     <td>Open in browser or use with monitoring tools.</td>
                 </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
             </tbody>
         </table></div>
     </div>
@@ -280,12 +274,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Global JS helpers <code>itmNotifyError()</code>, <code>itmNotifyAjaxError()</code> (modal-aware), and <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
                     <td>Included on all standard pages via header. IDF modals use <code>itmNotifyAjaxError()</code> so errors render inside the open modal instead of behind the backdrop.</td>
-                </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -489,12 +477,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Broad-spectrum SQL cleanup utility.</td>
                     <td>CLI: <code>php scripts/fix_sql_broad.php</code></td>
                 </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
             </tbody>
         </table></div>
     </div>
@@ -592,12 +574,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Audits network points and connections.</td>
                     <td>CLI: <code>php scripts/check_points.php</code></td>
                 </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
             </tbody>
         </table></div>
     </div>
@@ -657,12 +633,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audit utility for active flags and checkbox inputs in module forms.</td>
                     <td>CLI: <code>php scripts/list_active_and_checkboxes.php</code></td>
-                </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -821,12 +791,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Identifies tables missing the mandatory <code>active</code> column and detects code mismatches where queries expect this field on tables that lack it.</td>
                     <td>Browser: HTML report with detailed mismatch locations. CLI: <code>php scripts/db_field_active.php</code> — run after CRUD changes to ensure schema compliance.</td>
                 </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
             </tbody>
         </table></div>
         <p class="scripts-muted" style="margin-top:12px;">
@@ -919,12 +883,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
-                </tr>
             </tbody>
         </table></div>
     </div>
@@ -996,12 +954,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Completely reset Git history and force push a clean master branch.</td>
                     <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong></td>
-                </tr>
-                <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
-                    <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
             </tbody>
         </table></div>
