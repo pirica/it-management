@@ -13,6 +13,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 itm_script_output_begin('List Active Fields and Checkboxes (Constrained by DB Column)');
 
 $modules_dir = realpath(__DIR__ . '/../modules');
@@ -87,31 +88,31 @@ $count_active = 0; foreach($active_input_results as $files) $count_active += cou
 $count_text = 0; foreach($active_text_results as $files) $count_text += count($files);
 $count_checkbox = 0; foreach($active_checkbox_results as $files) $count_checkbox += count($files);
 
-echo "Count: " . $count_active . "\n";
-echo "### Modules with 'active' input field:\n";
+echo "Count: " . $count_active . $nl;
+echo "### Modules with 'active' input field:" . $nl;
 foreach ($active_input_results as $name => $files) {
     foreach ($files as $f) {
-        echo $f . format_module_link_v2($name) . "\n";
+        echo $f . format_module_link_v2($name) . $nl;
     }
 }
 
-echo "\nCount: " . $count_text . "\n";
-echo "### Modules with <input type=\"text\" name=\"active\">:\n";
+echo $nl . "Count: " . $count_text . $nl;
+echo "### Modules with <input type=\"text\" name=\"active\">:" . $nl;
 if (empty($active_text_results)) {
-    echo "None found.\n";
+    echo "None found." . $nl;
 } else {
     foreach ($active_text_results as $name => $files) {
         foreach ($files as $f) {
-            echo $f . format_module_link_v2($name) . "\n";
+            echo $f . format_module_link_v2($name) . $nl;
         }
     }
 }
 
-echo "\nCount: " . $count_checkbox . "\n";
-echo "### Modules with checkboxes (only if DB has active field):\n";
+echo $nl . "Count: " . $count_checkbox . $nl;
+echo "### Modules with checkboxes (only if DB has active field):" . $nl;
 foreach ($active_checkbox_results as $name => $files) {
     foreach ($files as $f) {
-        echo $f . format_module_link_v2($name) . "\n";
+        echo $f . format_module_link_v2($name) . $nl;
     }
 }
 

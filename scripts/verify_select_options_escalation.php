@@ -36,7 +36,8 @@ require basename('$script_path');
     return $output;
 }
 
-echo "Verifying Select Options API Escalation...\n";
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+echo "Verifying Select Options API Escalation..." . $nl;
 
 $username = 'testuser_' . uniqid();
 $email = $username . '@example.com';
@@ -72,10 +73,10 @@ $res = mysqli_query($conn, "SELECT id, role_id FROM users WHERE username = '$evi
 $row = mysqli_fetch_assoc($res);
 
 if ($row && $row['role_id'] == 1) {
-    echo "[FAIL] Select Options API: Regular user successfully created an Admin user!\n";
+    echo "[FAIL] Select Options API: Regular user successfully created an Admin user!" . $nl;
     mysqli_query($conn, "DELETE FROM users WHERE id = " . $row['id']);
 } else {
-    echo "[PASS] Select Options API: Admin creation failed. Output: $output\n";
+    echo "[PASS] Select Options API: Admin creation failed. Output: $output" . $nl;
 }
 
 mysqli_query($conn, "DELETE FROM users WHERE id = $userId");

@@ -1529,39 +1529,39 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>";
 } else {
-    echo "Multi-Tenant Leak Audit\n";
-    echo "========================\n";
-    echo "CREATE TABLE entries found: {$total_tables}\n";
-    echo "Scoped tables with company_id: " . count($scoped_tables) . "\n";
-    echo "Non-scoped tables (" . count($non_scoped_tables) . "): " . join_or_dash($display_non_scoped_tables) . "\n";
-    echo "Allowlist rules loaded: " . count($allowlist_rules) . "\n";
+    echo "Multi-Tenant Leak Audit" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "========================" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "CREATE TABLE entries found: {$total_tables}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "Scoped tables with company_id: " . count($scoped_tables) . "" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "Non-scoped tables (" . count($non_scoped_tables) . "): " . join_or_dash($display_non_scoped_tables) . "" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "Allowlist rules loaded: " . count($allowlist_rules) . "" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     if ($raw_create_count !== $total_tables) {
-        echo "Parse note: raw CREATE TABLE count is {$raw_create_count}, parsed count is {$total_tables}.\n";
+        echo "Parse note: raw CREATE TABLE count is {$raw_create_count}, parsed count is {$total_tables}." . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     }
-    echo "Total issues found: " . count($issues) . "\n";
+    echo "Total issues found: " . count($issues) . "" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
     if (!empty($class_counts)) {
-        echo "By classification:\n";
+        echo "By classification:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         foreach ($class_counts as $class => $count) {
-            echo "- {$class}: {$count}\n";
+            echo "- {$class}: {$count}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         }
     }
     if (!empty($issue_counts)) {
-        echo "By issue type:\n";
+        echo "By issue type:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         foreach ($issue_counts as $type => $count) {
-            echo "- {$type}: {$count}\n";
+            echo "- {$type}: {$count}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         }
     }
     if (!empty($allowlist_tag_counts)) {
-        echo "Allowlist rule matches:\n";
+        echo "Allowlist rule matches:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         foreach ($allowlist_tag_counts as $rule_id => $count) {
-            echo "- {$rule_id}: {$count}\n";
+            echo "- {$rule_id}: {$count}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         }
     }
-    echo "\n";
+    echo "" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
 }
 
 if (empty($issues)) {
-    echo "No leaks detected! (Based on current heuristics)\n";
+    echo "No leaks detected! (Based on current heuristics)" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
 } else {
     if (!$is_cli) {
         echo "<table id='issues-table'><thead><tr>";
@@ -1598,12 +1598,12 @@ if (empty($issues)) {
     } else {
         foreach ($issues as $issue) {
             $allowlist_rules = (isset($issue['allowlist_rules']) && is_array($issue['allowlist_rules'])) ? join_or_dash($issue['allowlist_rules']) : '-';
-            echo "[!] {$issue['classification']} | {$issue['file']}:{$issue['line']} | {$issue['query_type']} | {$issue['issue_type']} | table={$issue['table']}\n";
-            echo "    allowlist_rules: {$allowlist_rules}\n";
-            echo "    file_scope_signal: {$issue['file_scope_signal']}\n";
-            echo "    scope_signals: {$issue['scope_signals']}\n";
-            echo "    context_hints: {$issue['context_hints']}\n";
-            echo "    snippet: {$issue['snippet']}\n\n";
+            echo "[!] {$issue['classification']} | {$issue['file']}:{$issue['line']} | {$issue['query_type']} | {$issue['issue_type']} | table={$issue['table']}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+            echo "    allowlist_rules: {$allowlist_rules}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+            echo "    file_scope_signal: {$issue['file_scope_signal']}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+            echo "    scope_signals: {$issue['scope_signals']}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+            echo "    context_hints: {$issue['context_hints']}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+            echo "    snippet: {$issue['snippet']}\n" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
         }
     }
 }

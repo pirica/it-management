@@ -37,7 +37,8 @@ require basename('$script_path');
     return $output;
 }
 
-echo "Verifying User Management IDOR...\n";
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+echo "Verifying User Management IDOR..." . $nl;
 
 // 1. Create a victim user in the same company
 mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'victim', 'victim@example.com', 'pass', 2, 2, 1)");
@@ -62,8 +63,8 @@ $output = run_isolated_post(realpath(__DIR__ . '/../modules/users/delete.php'), 
 
 $res = mysqli_query($conn, "SELECT id FROM users WHERE id = $victimId");
 if (mysqli_num_rows($res) === 0) {
-    echo "[FAIL] Users Module: Regular user successfully deleted another user via IDOR!\n";
+    echo "[FAIL] Users Module: Regular user successfully deleted another user via IDOR!" . $nl;
 } else {
-    echo "[PASS] Users Module: IDOR deletion blocked. Output: $output\n";
+    echo "[PASS] Users Module: IDOR deletion blocked. Output: $output" . $nl;
     mysqli_query($conn, "DELETE FROM users WHERE id = $victimId");
 }

@@ -37,9 +37,9 @@ echo ob_get_clean();
     return $output;
 }
 
-echo "Verifying Explorer ZIP Leak...\n";
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+echo "Verifying Explorer ZIP Leak..." . $nl;
 
-// Ensure files/1/Private exists
 $storage_root = ROOT_PATH . 'files/1';
 if (!is_dir($storage_root . '/Private')) {
     @mkdir($storage_root . '/Private', 0777, true);
@@ -58,7 +58,7 @@ $get = [
 $output = run_isolated_get(realpath(__DIR__ . '/../modules/explorer/api.php'), $session, $get);
 
 if (strpos($output, "Invalid path or permission denied") === false) {
-    echo "[FAIL] Explorer: ZIP download for root 'Private' folder permitted!\n";
+    echo "[FAIL] Explorer: ZIP download for root 'Private' folder permitted!" . $nl;
 } else {
-    echo "[PASS] Explorer: ZIP leak blocked.\n";
+    echo "[PASS] Explorer: ZIP leak blocked." . $nl;
 }

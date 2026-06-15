@@ -4,37 +4,41 @@
  */
 
 require_once __DIR__ . "/../scripts/api.php";
-echo "<pre>";
-echo "--- API Documentation Coverage Report ---\n";
-echo "Date: " . date("Y-m-d H:i:s") . "\n\n";
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+
+if (php_sapi_name() !== 'cli') {
+    echo "<pre>";
+}
+echo "--- API Documentation Coverage Report ---" . $nl;
+echo "Date: " . date("Y-m-d H:i:s") . $nl . $nl;
 
 $root = __DIR__ . "/..";
 $endpoints = itmDocCollectModuleImportEndpoints($root);
 $missing = itmDocCollectModulesWithoutImportEndpoint($root, $endpoints);
 
-echo "1. Modules without Import Endpoint:\n";
+echo "1. Modules without Import Endpoint:" . $nl;
 if (empty($missing)) {
-    echo "   [OK] All modules have import endpoints.\n";
+    echo "   [OK] All modules have import endpoints." . $nl;
 } else {
     foreach ($missing as $m) {
-        echo "   - $m\n";
+        echo "   - $m" . $nl;
     }
 }
 
-echo "\n2. Bespoke Endpoints Validation:\n";
+echo $nl . "2. Bespoke Endpoints Validation:" . $nl;
 $bespoke = $projectJsonEndpoints;
 foreach ($bespoke as $b) {
     $path = $root . "/" . ltrim($b["path"], "/");
     // Handle query params in path
     $actualPath = explode("?", $path)[0];
     if (file_exists($actualPath)) {
-        echo "   [OK] $actualPath exists.\n";
+        echo "   [OK] $actualPath exists." . $nl;
     } else {
-        echo "   [FAIL] $actualPath does NOT exist.\n";
+        echo "   [FAIL] $actualPath does NOT exist." . $nl;
     }
 }
 
-echo "\n3. Checking for undocumented module AJAX handlers:\n";
+echo $nl . "3. Checking for undocumented module AJAX handlers:" . $nl;
 // Heuristic: search for $_POST and Content-Type: application/json in modules
 foreach (glob($root . "/modules/*/*.php") as $file) {
     if (basename($file) === "index.php") continue;
@@ -50,9 +54,9 @@ foreach (glob($root . "/modules/*/*.php") as $file) {
             }
         }
         if (!$found) {
-            echo "   [WARN] Undocumented JSON handler: $relPath\n";
+            echo "   [WARN] Undocumented JSON handler: $relPath" . $nl;
         }
     }
 }
 
-echo "\n--- End of Report ---\n";
+echo $nl . "--- End of Report ---" . $nl;

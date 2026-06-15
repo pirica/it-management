@@ -36,9 +36,9 @@ require basename('$script_path');
     return $output;
 }
 
-echo "Verifying Unauthorized Company Deletion...\n";
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+echo "Verifying Unauthorized Company Deletion..." . $nl;
 
-// Create a dummy company to delete
 mysqli_query($conn, "INSERT INTO companies (company, incode, active) VALUES ('Temp Delete Me', 'TMPDEL', 1)");
 $targetId = mysqli_insert_id($conn);
 
@@ -58,8 +58,8 @@ $output = run_isolated_post(realpath(__DIR__ . '/../modules/companies/delete.php
 
 $res = mysqli_query($conn, "SELECT id FROM companies WHERE id = $targetId");
 if (mysqli_num_rows($res) === 0) {
-    echo "[FAIL] Companies Module: Regular user successfully deleted a company!\n";
+    echo "[FAIL] Companies Module: Regular user successfully deleted a company!" . $nl;
 } else {
-    echo "[PASS] Companies Module: Deletion failed or blocked. Output: $output\n";
+    echo "[PASS] Companies Module: Deletion failed or blocked. Output: $output" . $nl;
     mysqli_query($conn, "DELETE FROM companies WHERE id = $targetId");
 }
