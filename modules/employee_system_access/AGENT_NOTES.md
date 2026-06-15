@@ -12,6 +12,7 @@ Manages and tracks the various systems and applications an employee has access t
 - **employee_system_access** → depends on **system_access** (lookup table).
 
 ## 4. Business Rules (Critical for Agents)
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Tenant Isolation**: Only manage access for employees in the current company.
 - **Revocation**: When an employee leaves, access should be marked as revoked or inactive.
 

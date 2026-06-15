@@ -12,5 +12,12 @@ Lookup table for severity or priority levels of patches (e.g., "Critical", "Reco
 ## 4. Business Rules (Critical for Agents)
 - **Unique Name**: Level name must be unique per company.
 
+## 7. File Structure
+- Standard CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+
 ## 12. Module Owner Notes (Optional)
 Used to prioritize patching tasks.

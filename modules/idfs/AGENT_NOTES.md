@@ -12,8 +12,11 @@ Manages Intermediate Distribution Frames (IDFs), including their location, rack 
 - **idfs** → depends on **racks** (optional).
 
 ## 4. Business Rules (Critical for Agents)
-- **Unique Name**: IDF name must be unique per company.
-- **Physical Link**: Every IDF should be tied to a physical location.
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
+- **IDF sync guardrail (mandatory):** all Create/Edit/Update/Delete/Copy/Move across IDF workflows must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` synchronized — use transactions; rollback on failure. Run `php scripts/idfs_sync_human_test.php` after changes.
+- **Unique Name:** IDF name must be unique per company.
+- **Physical Link:** Every IDF should be tied to a physical location.
+- **API:** `modules/idfs/api/` handles async position/port/link operations — see that folder's `AGENT_NOTES.md`.
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.

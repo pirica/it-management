@@ -1,33 +1,38 @@
 # AGENT_NOTES.md - Rack Planner
 
 ## 1. Module Purpose
-Provides a visual tool for planning and documenting the physical placement of equipment within server racks.
+Visual rack elevation planner. Stores layout JSON per named rack plan and references devices from catalogs, equipment, and unlinked IDF positions.
 
 ## 2. Key Tables
-- Reads from **racks** and **equipment**.
-- May use a specific mapping table if implemented (check for `rack_equipment` or similar).
+- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence).
+- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**.
 
 ## 3. Required Relationships
-- Depends on **companies**.
-- Depends on **it_locations**.
+- **rack_planner** → **companies**.
+- Layout device codes: `catalog:<id>`, `equipment:<id>`, `idf_unlinked:<token>`.
 
 ## 4. Business Rules (Critical for Agents)
-- **Visual Elevation**: Renders a vertical grid representing Rack Units (U).
-- **Unit Occupancy**: Each piece of equipment occupies one or more 'U' positions.
+- **Price source sync (mandatory):** on save/autosave, price edits must persist to source tables:
+  - `catalog:<id>` → `catalogs.price`
+  - `equipment:<id>` → `equipment.purchase_cost`
+  - `idf_unlinked:<token>` → `idf_positions.price` (token-style `equipment_id` `^[0-9]{4}-[0-9]{4}$`)
+- Do not keep price changes only inside `layout_json`.
+- **Tier D** bespoke module — navigation smoke in module browser QA; not standard flattened CRUD.
 
 ## 5. UI Behavior Requirements
-- **Visual Drag & Drop**: Often allows moving assets within the rack.
-- **Legend**: Color coding based on equipment type.
-
-## 6. API Actions (If Applicable)
-- None (Visualization mostly).
+- Vertical rack-unit grid; drag/drop placement.
+- Custom handlers in `includes/handlers.php` — disable redundant default exports when custom layout applies.
 
 ## 7. File Structure
-- **index.php** — main planner UI.
-- **view.php** — detailed rack view.
+- `index.php` — main planner UI.
+- `includes/bootstrap.php`, `functions.php`, `handlers.php`, `partials/render.php`.
 
 ## 8. Multi-Tenant Rules
-- Scoped by `company_id`.
+- Scoped by `company_id`; unique rack plan name per company (`rack_planner_name_company`).
+
+## 10. Common Pitfalls
+- There is no `rack_equipment` mapping table — layout lives in `layout_json`.
+- Partial price sync breaks catalog/equipment/IDF reporting — always update source row.
 
 ## 12. Module Owner Notes (Optional)
-Physical layer management for the data center.
+See `modules/rack_planner/includes/AGENT_NOTES.md` for partial/handler details.

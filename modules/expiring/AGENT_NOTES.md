@@ -1,32 +1,36 @@
 # AGENT_NOTES.md - Expiring
 
 ## 1. Module Purpose
-Tracks assets or contracts with expiration dates (e.g., "Warranties", "Domain Names", "SSL Certificates").
+Read-only dashboard for upcoming and past expirations. Aggregates dates from **equipment** (warranty, certificate) and **alerts** (end dates) — there is **no** `expiring` table.
 
-## 2. Key Tables
-- **expiring** — main storage for expiring items.
+## 2. Key Tables (read-only sources)
+- **equipment** — `warranty_expiry`, `certificate_expiry` (joined to **warranty_types** for labels).
+- **alerts** — `end_datetime` (only alerts with a valid end date are listed; null/empty end dates count as "unknown").
 
 ## 3. Required Relationships
-- **expiring** → depends on **companies**.
+- **equipment** → **companies**, **warranty_types**.
+- **alerts** → **companies**, visibility via assigned user / creator (same rules as Alerts module).
 
 ## 4. Business Rules (Critical for Agents)
-- **Threshold Alerts**: Often used to trigger notifications as expiration dates approach.
+- **No CRUD on this module** — Tier D bespoke smoke; do not add an `expiring` table or standard delete/import flows.
+- **Badge thresholds:** expired (red), ≤30 days (red), ≤90 days (warning), else success (`expiring_days_left_badge()`).
+- **Alert visibility:** respects private vs global alert rules when counting/listing alert expirations.
+- **Date parsing:** supports `Y-m-d`, `d/m/Y`, `m/d/Y` via `expiring_parse_date()`.
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
-- **Color Coding**: Items nearing expiration are often highlighted (e.g., Red for expired, Yellow for 30 days).
-
-## 6. API Actions (If Applicable)
-- **import_excel_rows** — handles bulk JSON import.
+- Summary counts per field (expired, unknown, &lt;30d, &gt;60d).
+- Tabbed or sectioned lists for certificate vs warranty rows.
+- No bulk delete / import / sample-data CRUD on a dedicated table.
 
 ## 7. File Structure
-- Standard CRUD structure.
+- `index.php` — dashboard, queries equipment + alerts, helper functions for badges/dates.
 
 ## 8. Multi-Tenant Rules
-- Scoped by `company_id`.
+- All queries filter by active `company_id` from session.
 
-## 9. Audit Logging Requirements
-- Managed via database triggers.
+## 10. Common Pitfalls
+- Do not document or query a fictional **`expiring`** table.
+- Warranty join may fall back without `warranty_types` when join fails — preserve fallback query path.
 
 ## 12. Module Owner Notes (Optional)
-Used for proactive maintenance and renewal management.
+Module browser QA: Tier D navigation smoke only (`list`, `search`, `sort`).

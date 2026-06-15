@@ -11,11 +11,13 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 - **backup_tape_log** → depends on **equipment** (via `server_id`, restricted to `equipment_type` = 'Server').
 
 ## 4. Business Rules (Critical for Agents)
-- **Role-Based Access**:
-    - Admin and IT staff have full edit access.
-    - Regular users may have restricted access (e.g., cannot edit future dates or ISM reviews).
-- **Date Logic**: `btl_format_datetime` handles `1970-01-01` as "—" (null equivalent for display).
-- **Monthly Scoping**: Data is displayed in a grid for a specific month and year.
+- **Monthly grid:** one row per day of selected month/year/server; `log_date` and `tape_to_be_used` (day name) auto-derived.
+- **Sunday highlighting:** Sunday rows highlighted in yellow on the grid.
+- **Immutability:** records not from **today** locked for edit/delete.
+- **Restricted fields:** `tape_used_for_restore` and `ism_review` editable only by Admin or IT department staff.
+- **Role-Based Access:** Admin and IT staff full access; regular users may have restricted fields/dates.
+- **Date Logic:** `btl_format_datetime` treats `1970-01-01` as "—" for display.
+- **Exports:** XLSX and PDF must include custom header (Year, Month, Company, Server, Unit No) and grid layout.
 
 ## 5. UI Behavior Requirements
 - **Grid View**: A custom interactive grid instead of a standard list.

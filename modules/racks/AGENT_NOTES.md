@@ -21,5 +21,12 @@ Manages physical server racks, including their size (total units), location, and
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
 
+## 7. File Structure
+- Standard CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+
 ## 12. Module Owner Notes (Optional)
 The physical enclosure for server infrastructure.

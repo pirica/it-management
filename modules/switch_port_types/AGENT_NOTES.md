@@ -13,5 +13,12 @@ Lookup table for types of switch ports (e.g., "RJ45", "SFP", "Door", "Access Poi
 ## 4. Business Rules (Critical for Agents)
 - **Name-Based Fallback**: The UI often uses name-based matching (e.g., 'RJ45') as a fallback if IDs don't match across companies.
 
+## 7. File Structure
+- Standard CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+
 ## 12. Module Owner Notes (Optional)
 Core categorization for network ports.

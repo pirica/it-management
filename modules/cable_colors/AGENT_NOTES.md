@@ -11,6 +11,7 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 - **cable_colors** → referenced by network point and connection modules.
 
 ## 4. Business Rules (Critical for Agents)
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Unique Name**: `color_name` must be unique within a `company_id`.
 - **Hex Code**: `hex_color` should be a valid CSS hex color string (e.g., "#808080").
 

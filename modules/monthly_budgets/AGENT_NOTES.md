@@ -21,6 +21,13 @@ Breaks down the annual budget into monthly allocations for finer financial contr
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
 
+## 7. File Structure
+- Standard CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+
 ## 11. Examples of Safe Code Patterns
 
 ### Safe SELECT
