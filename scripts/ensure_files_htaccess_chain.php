@@ -39,5 +39,5 @@ foreach ($iterator as $fileInfo) {
     $segments++;
 }
 
-echo '[PASS] Ensured deny_http .htaccess on ' . $segments . ' directory segment(s) under ' . $filesRoot . '.' . $nl;
+echo '[PASS] Ensured deny_http .htaccess and empty index.html on ' . $segments . ' directory segment(s) under ' . $filesRoot . '.' . $nl;
 exit($failures > 0 ? 1 : 0);
