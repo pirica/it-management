@@ -943,13 +943,13 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="empty_folders.php">empty_folders.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Backfill empty <code>index.html</code> on <strong>every</strong> folder under the project root (skips <code>.git</code>, <code>.github</code>, and other dot dirs). Lists each affected repo-relative <code>path/index.html</code> before the summary. Upload paths (<code>images/</code>, <code>tickets_photos/</code>, <code>floor_plans/</code>, <code>backups/</code>, <code>files/</code>) also receive managed <code>.htaccess</code> (idempotent).</td>
+                    <td>Backfill empty <code>index.html</code> on <strong>every</strong> folder under the project root (skips <code>.git</code>, <code>.github</code>, and other dot dirs). Lists only <strong>new or changed</strong> repo-relative <code>path/index.html</code> paths before the summary. Upload paths (<code>images/</code>, <code>tickets_photos/</code>, <code>floor_plans/</code>, <code>backups/</code>, <code>files/</code>) also receive managed <code>.htaccess</code> (idempotent).</td>
                     <td><code>php scripts/empty_folders.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="ensure_files_htaccess_chain.php">ensure_files_htaccess_chain.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Backfill <code>deny_http</code> managed <code>.htaccess</code> and empty <code>index.html</code> on every directory segment under <code>files/</code> only (idempotent).</td>
+                    <td>Backfill <code>deny_http</code> managed <code>.htaccess</code> and empty <code>index.html</code> on every directory segment under <code>files/</code> only. Lists only <strong>new or changed</strong> segments before the summary (idempotent).</td>
                     <td><code>php scripts/ensure_files_htaccess_chain.php</code></td>
                 </tr>
                 <tr>

@@ -164,19 +164,29 @@ Options -Indexes -ExecCGI
 | `php scripts/empty_folders.php` | **Entire project** (every folder under repo root; skips `.git`, `.github`, and other dot dirs) | Empty `index.html` on **every** folder; managed `.htaccess` + `index.html` on upload paths (`images/`, `tickets_photos/`, `floor_plans/`, `backups/`, `files/`) |
 | `php scripts/ensure_files_htaccess_chain.php` | `files/` only | `deny_http` `.htaccess` + empty `index.html` on every segment (idempotent) |
 
-Run `empty_folders.php` after deploy, when adding new directories, or when folders were created without placeholders. The script lists each affected path (repo-relative `index.html`) before the summary line:
+Run `empty_folders.php` after deploy, when adding new directories, or when folders were created without placeholders. The script lists only **new or changed** paths (repo-relative `index.html`) before the summary line. A second run on an unchanged tree prints `No new or changed folders.` and reports how many folders were already current.
 
 ```bash
 php scripts/empty_folders.php
 ```
 
-Example output:
+Example output (first run after adding folders):
 
 ```
+Scanning project folders for missing or outdated index.html...
+
 modules/new_module1/index.html
 modules/new_module2/index.html
-modules/new_module3/index.html
-[PASS] Ensured empty index.html on 251 folder(s) under /path/to/it-management (10 upload-hardened with managed .htaccess).
+[PASS] Updated 2 folder(s) under /path/to/it-management (0 upload-hardened). 249 already current (251 scanned).
+```
+
+Example output (subsequent run — nothing to do):
+
+```
+Scanning project folders for missing or outdated index.html...
+
+No new or changed folders.
+[PASS] Updated 0 folder(s) under /path/to/it-management (0 upload-hardened). 251 already current (251 scanned).
 ```
 
 `files/` only (faster when other roots are already correct):

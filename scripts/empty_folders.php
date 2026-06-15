@@ -11,7 +11,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Empty index.html on project folders');
 
-$nl = (php_sapi_name() === 'cli' ? "\n" : '<br>');
+$nl = (php_sapi_name() === 'cli' ? "\n" : '<br><br>');
 
 if (!function_exists('empty_folders_normalized_path')) {
     function empty_folders_normalized_path($path)
@@ -78,6 +78,46 @@ if (!function_exists('empty_folders_upload_policy_for_path')) {
     }
 }
 
+if (!function_exists('empty_folders_read_file_content')) {
+    function empty_folders_read_file_content($absolutePath)
+    {
+        if (!is_file($absolutePath)) {
+            return null;
+        }
+        $content = @file_get_contents($absolutePath);
+        return $content === false ? null : $content;
+    }
+}
+
+if (!function_exists('empty_folders_index_is_current')) {
+    function empty_folders_index_is_current($absolutePath)
+    {
+        $absolutePath = empty_folders_normalized_path($absolutePath);
+        if ($absolutePath === '') {
+            return false;
+        }
+        $indexPath = $absolutePath . DIRECTORY_SEPARATOR . 'index.html';
+        $actual = empty_folders_read_file_content($indexPath);
+        return $actual !== null && $actual === itm_upload_directory_empty_index_html();
+    }
+}
+
+if (!function_exists('empty_folders_upload_is_current')) {
+    function empty_folders_upload_is_current($absolutePath, $policy)
+    {
+        $absolutePath = empty_folders_normalized_path($absolutePath);
+        if ($absolutePath === '') {
+            return false;
+        }
+        if (!empty_folders_index_is_current($absolutePath)) {
+            return false;
+        }
+        $htaccessPath = $absolutePath . DIRECTORY_SEPARATOR . '.htaccess';
+        $actual = empty_folders_read_file_content($htaccessPath);
+        return $actual !== null && $actual === itm_upload_directory_policy_body($policy);
+    }
+}
+
 if (!function_exists('empty_folders_force_index_html')) {
     function empty_folders_force_index_html($absolutePath)
     {
@@ -136,49 +176,74 @@ if (!function_exists('empty_folders_collect_project_dirs')) {
 
 $dirs = empty_folders_collect_project_dirs();
 if (empty($dirs)) {
-    echo '[FAIL] Project root is missing or not readable: ' . empty_folders_normalized_path(ROOT_PATH) . $nl;
+    echo colorText('[FAIL] Project root is missing or not readable: ' . empty_folders_normalized_path(ROOT_PATH), 'fail') . $nl;
     exit(1);
 }
 
-$totalFolders = 0;
-$uploadHardened = 0;
+echo colorText('Scanning project folders for missing or outdated index.html...', 'info') . $nl;
+
+$scannedFolders = 0;
+$alreadyCurrent = 0;
+$uploadHardenedUpdated = 0;
 $failures = 0;
-$affectedPaths = [];
+$updatedPaths = [];
 
 foreach ($dirs as $dir) {
+    $scannedFolders++;
     $policy = empty_folders_upload_policy_for_path($dir);
     $ok = false;
+    $wasUpdated = false;
 
     if ($policy !== null) {
+        if (empty_folders_upload_is_current($dir, $policy)) {
+            $alreadyCurrent++;
+            continue;
+        }
         $ok = itm_ensure_upload_directory($dir, $policy);
         if ($ok) {
-            $uploadHardened++;
+            $uploadHardenedUpdated++;
+            $wasUpdated = true;
         }
     } else {
+        if (empty_folders_index_is_current($dir)) {
+            $alreadyCurrent++;
+            continue;
+        }
         $ok = empty_folders_force_index_html($dir);
+        if ($ok) {
+            $wasUpdated = true;
+        }
     }
 
     if (!$ok) {
-        echo '[FAIL] ' . $dir . $nl;
+        echo colorText('[FAIL] ' . $dir, 'fail') . $nl;
         $failures++;
         continue;
     }
 
-    $affectedPaths[] = empty_folders_relative_index_path($dir);
-    $totalFolders++;
+    if ($wasUpdated) {
+        $updatedPaths[] = empty_folders_relative_index_path($dir);
+    }
 }
 
 if ($failures > 0) {
-    echo '[FAIL] ' . $failures . ' folder(s) could not be updated.' . $nl;
+    echo colorText('[FAIL] ' . $failures . ' folder(s) could not be updated.', 'fail') . $nl;
     exit(1);
 }
 
-sort($affectedPaths, SORT_STRING);
-foreach ($affectedPaths as $relativeIndexPath) {
-    echo $relativeIndexPath . $nl;
+$updatedCount = count($updatedPaths);
+if ($updatedCount === 0) {
+    echo colorText('No new or changed folders.', 'info') . $nl;
+} else {
+    sort($updatedPaths, SORT_STRING);
+    foreach ($updatedPaths as $relativeIndexPath) {
+        echo $relativeIndexPath . $nl;
+    }
 }
 
-echo '[PASS] Ensured empty index.html on ' . $totalFolders . ' folder(s) under '
+$summary = '[PASS] Updated ' . $updatedCount . ' folder(s) under '
     . empty_folders_normalized_path(ROOT_PATH)
-    . ' (' . $uploadHardened . ' upload-hardened with managed .htaccess).' . $nl;
+    . ' (' . $uploadHardenedUpdated . ' upload-hardened). '
+    . $alreadyCurrent . ' already current (' . $scannedFolders . ' scanned).';
+echo colorText($summary, 'pass') . $nl;
 exit(0);

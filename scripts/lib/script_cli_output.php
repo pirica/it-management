@@ -56,4 +56,35 @@ if (!function_exists('itm_script_cli_is_cli')) {
         }
         echo '</body></html>';
     }
+
+    /** Why: SCRIPTS.md cross-environment pass/fail/warn/info colouring for CLI and browser audits. */
+    function colorText($text, $type)
+    {
+        $isCli = itm_script_cli_is_cli();
+
+        switch ($type) {
+            case 'pass':
+                return $isCli
+                    ? "\033[32m$text\033[0m"
+                    : "<span style='color: green;'>$text</span>";
+
+            case 'fail':
+                return $isCli
+                    ? "\033[31m$text\033[0m"
+                    : "<span style='color: red;'>$text</span>";
+
+            case 'warn':
+                return $isCli
+                    ? "\033[33m$text\033[0m"
+                    : "<span style='color: goldenrod;'>$text</span>";
+
+            case 'info':
+                return $isCli
+                    ? "\033[34m$text\033[0m"
+                    : "<span style='color: dodgerblue;'>$text</span>";
+
+            default:
+                return $text;
+        }
+    }
 }
