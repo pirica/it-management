@@ -21,6 +21,8 @@
 
 # Scripts Development Standards
 
+> **Canonical source:** All rules for the `scripts/` directory live in this file. **`AGENTS.md` delegates here** — agents must read **`scripts/SCRIPTS.md` completely** at session start and again before any work under `scripts/`. Do not duplicate these standards in `AGENTS.md`; update this file instead.
+
 This document defines the rules for creating and updating tools within the `scripts/` directory.
 
 ## 1. Catalog Registration
@@ -186,6 +188,8 @@ Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_tab
 Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate PR #1993-style per-company lookup seed additions (updates inserts only).
 
 #### Full-module browser QA (5 companies, Laragon)
+
+Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Runner FK/delete improvements: [PR #1722](https://github.com/pirica/it-management/pull/1722). Add-step / bulk-order / error-log scope: [PR #1742](https://github.com/pirica/it-management/pull/1742). Bulk skip notes: [PR #1740](https://github.com/pirica/it-management/pull/1740). Sample-data FK parents + seed-only id remap: [PR #1744](https://github.com/pirica/it-management/pull/1744). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
 
 | Script | Role |
 |--------|------|
