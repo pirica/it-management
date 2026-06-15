@@ -119,6 +119,24 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
 
+### AGENT_NOTES.md (mandatory per folder)
+
+Every **project folder that contains source code or agent-relevant assets** must include an **`AGENT_NOTES.md`** file. Use **`templates/AGENT_NOTES.md`** as the canonical section outline (sections 1–12).
+
+| Scope | Requirement |
+|--------|-------------|
+| **Repo root** | `AGENT_NOTES.md` — whole-system context; read with `AGENTS.md` at session start. |
+| **Top-level dirs** | `config/`, `includes/`, `modules/`, `scripts/`, `tests/`, `css/`, `js/`, `.github/`, etc. |
+| **Each module** | `modules/<slug>/AGENT_NOTES.md` — purpose, tables, FKs, business rules, UI, pitfalls. |
+| **Code subfolders** | e.g. `scripts/lib/`, `modules/*/api/`, `modules/*/includes/` — document that subfolder's role. |
+| **Test mirrors** | `tests/Unit/.../AGENT_NOTES.md` — what is tested and which module it maps to. |
+
+**Exemptions (no `AGENT_NOTES.md` required):** runtime tenant upload trees under `files/{company_id}/**`, and other directories created only at runtime (user uploads, QA temp files).
+
+**When adding a folder:** copy the section headings from `templates/AGENT_NOTES.md`, fill in folder-specific facts from `database.sql`, module PHP, and `scripts/scripts.php`. Do **not** bulk-generate module notes without reading the code — the template explicitly forbids blind automation for `modules/`.
+
+**Agent workflow:** before editing a folder, read that folder's `AGENT_NOTES.md` (and parent `AGENT_NOTES.md` when the subfolder is a partial). Update the file when you change business rules, tables, or API contracts in that folder.
+
 ### Scripts directory (`scripts/`) — see `scripts/SCRIPTS.md`
 
 **Canonical source:** All rules for creating, cataloging, running, and verifying tools under `scripts/` live in **`scripts/SCRIPTS.md`**. Do not duplicate scripts standards in this file. When updating scripts-related rules, change **only** `scripts/SCRIPTS.md` and keep this section as a short pointer.
