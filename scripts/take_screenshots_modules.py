@@ -45,6 +45,19 @@ def take_screenshots():
             except Exception as e:
                 print(f"Failed to take screenshot of {module} index: {e}")
 
+            # List All (Table View)
+            if module == 'notes':
+                table_screenshot_path = os.path.join(output_dir, f"{module}_table.png")
+                table_url = f"{base_url}/modules/{module}/list_all.php"
+                print(f"Taking screenshot of {module} table view at {table_url}...")
+                try:
+                    page.goto(table_url)
+                    time.sleep(3)
+                    page.screenshot(path=table_screenshot_path)
+                    print(f"Saved {table_screenshot_path}")
+                except Exception as e:
+                    print(f"Failed to take screenshot of {module} table view: {e}")
+
             # Create
             create_screenshot_path = os.path.join(output_dir, f"{module}_create.png")
             if module == 'notes': create_url = f"{base_url}/modules/{module}/edit.php?id=4"
