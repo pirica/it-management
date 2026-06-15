@@ -171,16 +171,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     }
 
     if ($action === "single_delete" && $editId > 0) {
-        $stmtCheck = $conn->prepare("SELECT active FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
-        $stmtCheck->bind_param("iii", $editId, $company_id, $logged_user_id);
+        $visSql = itm_notes_visibility_sql();
+        $stmtCheck = $conn->prepare("SELECT active FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmtCheck->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
         $stmtCheck->execute();
         $resCheck = $stmtCheck->get_result()->fetch_assoc();
         if ($resCheck && (int)$resCheck['active'] === 0) {
-            $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+            $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
         } else {
-            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
         }
-        $stmt->bind_param("iii", $editId, $company_id, $logged_user_id);
+        $stmt->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
         $stmt->execute();
         header("Location: index.php?msg=deleted");
         die();
@@ -278,6 +279,7 @@ if (isset($_GET["ajax_action"])) {
     $action = $_GET["ajax_action"];
     if ($action === "quick_add") {
         $title = $_POST["title"] ?? "";
+        $content = $_POST["content"] ?? "";
         $is_checklist = (int)($_POST["is_checklist"] ?? 0);
         $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
         $image_files = [];
@@ -292,9 +294,9 @@ if (isset($_GET["ajax_action"])) {
             }
         }
         $images_json = !empty($image_files) ? json_encode($image_files) : null;
-        $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, is_checklist, images_json, reminder_at) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, is_checklist, images_json, reminder_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
-            $stmt->bind_param("iisiss", $company_id, $logged_user_id, $title, $is_checklist, $images_json, $reminder_at);
+            $stmt->bind_param("iississ", $company_id, $logged_user_id, $title, $content, $is_checklist, $images_json, $reminder_at);
             if ($stmt->execute()) echo json_encode(["ok" => true]);
             else echo json_encode(["ok" => false, "error" => $stmt->error]);
         } else {
@@ -318,18 +320,27 @@ if (isset($_GET["ajax_action"])) {
         if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
         die();
     }
+    if ($action === "restore") {
+        $id = (int)($_POST["id"] ?? 0);
+        $visSql = itm_notes_visibility_sql();
+        $stmt = $conn->prepare("UPDATE notes SET active = 1 WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
+        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
+        die();
+    }
     if ($action === "single_delete") {
         $id = (int)($_POST["id"] ?? 0);
-        $stmtCheck = $conn->prepare("SELECT active FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
-        $stmtCheck->bind_param("iii", $id, $company_id, $logged_user_id);
+        $visSql = itm_notes_visibility_sql();
+        $stmtCheck = $conn->prepare("SELECT active FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmtCheck->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
         $stmtCheck->execute();
         $resCheck = $stmtCheck->get_result()->fetch_assoc();
         if ($resCheck && (int)$resCheck['active'] === 0) {
-            $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+            $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
         } else {
-            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
         }
-        $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
+        $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
         if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false, "error" => $stmt->error]);
         die();
     }
@@ -445,6 +456,8 @@ if ($crud_action === "index" || $crud_action === "list_all") {
     } elseif ($filter === "shared_with") {
        // $baseSql .= " AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND t.is_archived = 0";
 		$baseSql .= "AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND JSON_CONTAINS(t.shared_with_json, CAST($logged_user_id AS JSON), '$') AND t.is_archived = 0";
+    } elseif ($filter === "garbage") {
+        // No additional filter for archived state needed in garbage
     } elseif ($filter === "all") {
         $baseSql .= " AND t.is_archived = 0";
     } else {
@@ -526,8 +539,11 @@ $displayFieldColumns = $uiColumns;
         .note-star.active { color: var(--accent); }
         .color-option input[type="radio"]:checked + div { border-color: var(--accent) !important; }
         .empty-state { text-align: center; padding: 100px 50px; color: var(--text-tertiary); }
-        .quick-add { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--bg-secondary); margin-bottom: 24px; }
-        .quick-add input { flex: 1; border: none; background: transparent; outline: none; font-size: 16px; color: var(--text-primary); }
+        .quick-add { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-secondary); margin-bottom: 24px; }
+        .quick-add input { flex: 1; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); padding: 8px 12px; outline: none; font-size: 16px; color: var(--text-primary); transition: border-color 0.2s; }
+        .quick-add input:focus { border-color: var(--border) !important; box-shadow: none !important; }
+        .quick-add textarea { border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); padding: 8px 12px; outline: none; font-size: 14px; color: var(--text-primary); transition: border-color 0.2s; resize: vertical; }
+        .quick-add textarea:focus { border-color: var(--border) !important; box-shadow: none !important; }
         .quick-add-icon { cursor: pointer; color: var(--text-secondary); font-size: 20px; position: relative; }
         .quick-add-dropdown { position: absolute; top: 100%; right: 0; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; box-shadow: var(--shadow-lg); z-index: 1000; min-width: 180px; display: none; margin-top: 5px; }
         .quick-add-dropdown.show { display: block; }
@@ -658,6 +674,7 @@ $displayFieldColumns = $uiColumns;
                                         </div>
                                     </div>
                                 </div>
+                                <textarea id="quickAddContent" rows="6" cols="80" placeholder="Content..." style="margin-top: 10px; width: 100%; display: block;" onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); quickAdd(); }"></textarea>
                                 <input type="file" id="quickAddImageInput" multiple accept="image/*" style="display: none;" onchange="handleQuickImageSelect(event)">
                                 <div id="quickAddPreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
                                 <div id="quickAddReminderPreview" style="display: none; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; color: var(--accent); font-weight: 600;">
@@ -720,6 +737,11 @@ $displayFieldColumns = $uiColumns;
                                                 📥
                                             </div>
                                             <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
+                                            <?php if ($filter === "garbage"): ?>
+                                                <div class="note-star" onclick="restoreNote(<?php echo $note["id"]; ?>)" title="Restore" style="margin-left: 10px; color: var(--success);">
+                                                    🔄
+                                                </div>
+                                            <?php endif; ?>
                                             <div class="note-star" onclick="deleteNote(<?php echo $note["id"]; ?>)" title="Delete" style="margin-left: 10px; color: var(--danger);">
                                                 🗑️
                                             </div>
@@ -759,6 +781,9 @@ $displayFieldColumns = $uiColumns;
                                                     <div class="itm-actions-wrap">
                                                         <a class="btn btn-sm" href="view.php?id=<?php echo $note['id']; ?>">🔎</a>
                                                         <a class="btn btn-sm" href="edit.php?id=<?php echo $note['id']; ?>">✏️</a>
+                                                        <?php if ($filter === "garbage"): ?>
+                                                            <button class="btn btn-sm btn-success" onclick="restoreNote(<?php echo $note['id']; ?>)">🔄</button>
+                                                        <?php endif; ?>
                                                         <button class="btn btn-sm btn-danger" onclick="deleteNote(<?php echo $note['id']; ?>)">🗑️</button>
                                                     </div>
                                                 </td>
@@ -1013,15 +1038,18 @@ $displayFieldColumns = $uiColumns;
     function renderQuickPreview() { const preview = document.getElementById('quickAddPreview'); if (!preview) return; preview.innerHTML = ''; quickAddFiles.forEach((file, index) => { const div = document.createElement('div'); div.style.position = 'relative'; const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 4px;'; const close = document.createElement('span'); close.innerHTML = '&times;'; close.style.cssText = 'position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;'; close.onclick = () => { quickAddFiles.splice(index, 1); renderQuickPreview(); }; div.appendChild(img); div.appendChild(close); preview.appendChild(div); }); }
     function quickAdd() {
         const input = document.getElementById("quickAddInput");
+        const contentInput = document.getElementById("quickAddContent");
         if (!input) return;
         const title = input.value.trim();
-        if (!title && quickAddFiles.length === 0) {
-            alert("Please add a title or an image.");
+        const content = contentInput ? contentInput.value.trim() : "";
+        if (!title && !content && quickAddFiles.length === 0) {
+            alert("Please add a title, content or an image.");
             return;
         }
         const formData = new FormData();
         formData.append("csrf_token", CSRF_TOKEN);
         formData.append("title", title);
+        formData.append("content", content);
         const isCL = document.getElementById("quickAddIsChecklist");
         formData.append("is_checklist", isCL ? isCL.value : '0');
         const reminderInput = document.getElementById("quickAddReminderAt");
@@ -1034,6 +1062,14 @@ $displayFieldColumns = $uiColumns;
     function togglePinned(id, el) { const newVal = el.dataset.pinned === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_pinned", newVal); fetch("index.php?ajax_action=toggle_pinned", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
     function toggleImportant(id, el) { const newVal = el.dataset.important === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_important", newVal); fetch("index.php?ajax_action=toggle_important", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
     function toggleArchived(id, el) { const newVal = el.dataset.archived === '1' ? 0 : 1; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); formData.append("is_archived", newVal); fetch("index.php?ajax_action=toggle_archived", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) location.reload(); }); }
+    function restoreNote(id) {
+        const formData = new FormData();
+        formData.append("csrf_token", CSRF_TOKEN);
+        formData.append("id", id);
+        fetch("index.php?ajax_action=restore", { method: "POST", body: formData })
+            .then(r => r.json())
+            .then(data => { if (data.ok) location.reload(); else alert("Error restoring note."); });
+    }
     function deleteNote(id) { 
         const isGarbage = new URLSearchParams(window.location.search).get('filter') === 'garbage';
         if (!confirm(isGarbage ? 'Delete this note forever?' : 'Move this note to garbage?')) return;
