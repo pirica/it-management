@@ -13,12 +13,13 @@ Before making any change, replying, running commands, editing files, or proposin
 1. **Read `AGENTS.md` completely** at session start (and when resuming after a long gap or context switch).
 2. **Read `scripts/SCRIPTS.md` completely** at session start and **again before any reply** that adds, changes, runs, or documents anything under `scripts/` (catalog entries, QA runners, smoke checks, audit tools, or new CLI/browser scripts). For scripts topics, **`scripts/SCRIPTS.md` is authoritative** — do not rely on stale copies elsewhere.
 3. **Stop and ask clarification questions** if any part of `AGENTS.md` or `scripts/SCRIPTS.md` (when in scope) is unclear, ambiguous, missing, conflicting, or not fully understood — do not guess or proceed on assumptions.
-4. **Update docs when needed:** agent-workflow and repo-wide rules → **`AGENTS.md`**; scripts directory standards → **`scripts/SCRIPTS.md`**. Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
-5. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
-6. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, ship via **FRESH PR only**: **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. **Do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). There is **no** push to update PR #N. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
-7. **Never push to an existing PR branch (hard fail):** agents **do not** `git push` (including `git push`, `git push origin <branch>`, or force-push) to any branch that already has **open or merged PR #N** for this work. Follow-ups, review fixes, and corrections use a **new branch name** + **new push** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to https://github.com/…/pull/1860”, “updated PR #1860”, “added commits to the open PR”, “you can push after the diff check”.
-8. **Never local-only commits (hard fail):** `git commit` without the **first-publish** **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” — **you** complete the fresh-PR sequence in the same turn.
-9. **Pre-push full diff review (hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** on that deliverable, run and **read** the full patch against `origin/master` (see **Change Hygiene → Pre-push diff review**). Do **not** publish a branch whose diff removes unrelated functions, reverts a just-merged fix, or shows large deletions you did not intend.
+4. **Update docs when needed:** agent-workflow and repo-wide rules → **`AGENTS.md`**; scripts directory standards → **`scripts/SCRIPTS.md`**; folder-local context → **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**). Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
+5. **Always create and update `AGENT_NOTES.md` (hard fail):** for every in-scope folder you read or change, **read** that folder's `AGENT_NOTES.md` first (and the parent folder's file when editing a subfolder). **Create** the file from `templates/AGENT_NOTES.md` when it is missing. **Update** it in the **same PR** whenever your work changes purpose, tables, FKs, business rules, UI behaviour, API actions, file layout, tenant rules, audit coverage, or known pitfalls. Do not mark a deliverable complete while notes are missing, empty, or stale for a folder you touched.
+6. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
+7. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, ship via **FRESH PR only**: **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. **Do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). There is **no** push to update PR #N. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
+8. **Never push to an existing PR branch (hard fail):** agents **do not** `git push` (including `git push`, `git push origin <branch>`, or force-push) to any branch that already has **open or merged PR #N** for this work. Follow-ups, review fixes, and corrections use a **new branch name** + **new push** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to https://github.com/…/pull/1860”, “updated PR #1860”, “added commits to the open PR”, “you can push after the diff check”.
+9. **Never local-only commits (hard fail):** `git commit` without the **first-publish** **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” — **you** complete the fresh-PR sequence in the same turn.
+10. **Pre-push full diff review (hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** on that deliverable, run and **read** the full patch against `origin/master` (see **Change Hygiene → Pre-push diff review**). Do **not** publish a branch whose diff removes unrelated functions, reverts a just-merged fix, or shows large deletions you did not intend.
 
 Only after `AGENTS.md` and (when in scope) `scripts/SCRIPTS.md` have been checked, understood, and updated when required may you continue with implementation.
 
@@ -118,6 +119,28 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
+
+### AGENT_NOTES.md (mandatory per folder — always create and update)
+
+Every **project folder that contains source code or agent-relevant assets** must include an **`AGENT_NOTES.md`** file. Use **`templates/AGENT_NOTES.md`** as the canonical section outline (sections 1–12).
+
+| Scope | Requirement |
+|--------|-------------|
+| **Repo root** | `AGENT_NOTES.md` — whole-system context; read with `AGENTS.md` at session start. |
+| **Top-level dirs** | `config/`, `includes/`, `modules/`, `scripts/`, `tests/`, `css/`, `js/`, `.github/`, etc. |
+| **Each module** | `modules/<slug>/AGENT_NOTES.md` — purpose, tables, FKs, business rules, UI, pitfalls. |
+| **Code subfolders** | e.g. `scripts/lib/`, `modules/*/api/`, `modules/*/includes/` — document that subfolder's role. |
+| **Test mirrors** | `tests/Unit/.../AGENT_NOTES.md` — what is tested and which module it maps to. |
+
+**Exemptions (no `AGENT_NOTES.md` required):** runtime tenant upload trees under `files/{company_id}/**`, and other directories created only at runtime (user uploads, QA temp files).
+
+**Mandatory agent contract (read → create → update):**
+
+1. **Read** — before editing any in-scope folder, read that folder's `AGENT_NOTES.md` (and the parent's file when the folder is a subfolder).
+2. **Create** — when adding a new in-scope folder, or when audit finds a gap, add `AGENT_NOTES.md` in the **same PR** using section headings from `templates/AGENT_NOTES.md` and facts from `database.sql`, module PHP, and `scripts/scripts.php`. Do **not** bulk-generate module notes without reading the code — the template forbids blind automation for `modules/`.
+3. **Update** — whenever a change alters purpose, tables, relationships, business rules, UI behaviour, API actions, file layout, multi-tenant rules, audit requirements, or pitfalls, **update the matching `AGENT_NOTES.md` in the same deliverable**. Stale or missing notes are a **hard fail** for that task.
+
+**Completion gate:** code changes under a folder are not done until its `AGENT_NOTES.md` exists and reflects the current behaviour.
 
 ### Scripts directory (`scripts/`) — see `scripts/SCRIPTS.md`
 

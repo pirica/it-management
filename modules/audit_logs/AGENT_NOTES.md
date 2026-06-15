@@ -11,6 +11,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 - **audit_logs** → depends on **users** (via `user_id`).
 
 ## 4. Business Rules (Critical for Agents)
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Immutable**: Audit logs should generally not be editable. The UI only supports viewing and deletion (for maintenance).
 - **JSON Metadata**: Old and new values are stored as JSON strings.
 - **Automatic Triggering**: Most audit logging is handled by MySQL triggers (`trg_{table}_audit_*`).

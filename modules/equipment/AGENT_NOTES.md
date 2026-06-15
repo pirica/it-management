@@ -14,8 +14,11 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **equipment** → links to **employees** (via `assigned_to_employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
-- **Asset Tagging**: Each item should ideally have a unique serial or asset number within the company.
-- **Type-Specific Logic**: Modules like `is_switch` or `is_server` might extend the logic for specific equipment types.
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
+- **IDF synchronization:** Create/Edit/Update/Delete/Copy/Move must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` aligned — transactions required; run `php scripts/idfs_sync_human_test.php` after changes.
+- **Asset Tagging:** Each item should ideally have a unique serial or asset number within the company.
+- **Type-Specific Logic:** `modules/is_*` façades delegate here; do not delete canonical `is_switch`, `is_server`, etc.
+- **Switch port tiles:** RJ45/SFP icon mapping per AGENTS.md (Unknown vs active PNG paths).
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.

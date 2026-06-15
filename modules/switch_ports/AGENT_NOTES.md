@@ -14,14 +14,23 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - **switch_ports** → links to **vlans**.
 
 ## 4. Business Rules (Critical for Agents)
-- **Port Sorting**: In the UI, ports are typically sorted to prioritize 'RJ45' types before others using a CASE statement in ORDER BY.
-- **Foreign Key Mapping**: AJAX handlers must map empty/0 IDs to NULL.
+- **IDF synchronization:** port create/update/delete must stay aligned with **idf_ports** and linked **idf_links** / **equipment** — same transaction rules as `modules/idfs/` (see AGENTS.md IDF guardrail).
+- **Wrapper routing:** `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` may set `$crud_action` before requiring `index.php` — **do not overwrite** wrapper-provided `$crud_action` in `index.php`.
+- **Port Sorting:** UI sorts RJ45 before other types via CASE in ORDER BY.
+- **Foreign Key Mapping:** AJAX handlers map empty/0 IDs to NULL.
 
 ## 5. UI Behavior Requirements
 - **Grid Layout**: Often rendered in a grid mimicking the physical switch layout.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
+
+## 7. File Structure
+- `index.php` — list/grid and CRUD routing (may absorb wrapper actions).
+- `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — optional wrappers.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; ports must match parent switch/equipment tenant.
 
 ## 10. Common Pitfalls
 - **Mismatched IDs**: Ensure the port belongs to the correct switch and company.

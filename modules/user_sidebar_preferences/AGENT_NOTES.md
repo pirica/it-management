@@ -13,5 +13,12 @@ Stores the custom order and visibility of sidebar modules for each user.
 ## 4. Business Rules (Critical for Agents)
 - **Immediate Effect**: Sidebar must reflect these preferences on every page load.
 
+## 7. File Structure
+- Standard CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+
 ## 12. Module Owner Notes (Optional)
 Allows users to personalize their navigation experience.

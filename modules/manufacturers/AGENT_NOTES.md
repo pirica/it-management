@@ -22,6 +22,10 @@ Lookup table for equipment and inventory manufacturers (e.g., "Dell", "Cisco", "
 ## 7. File Structure
 - Standard CRUD structure.
 
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+
 ## 11. Examples of Safe Code Patterns
 
 ### Safe SELECT

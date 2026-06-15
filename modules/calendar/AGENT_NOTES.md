@@ -1,47 +1,41 @@
 # AGENT_NOTES.md - Calendar
 
 ## 1. Module Purpose
-Provides a central calendar view for managing and visualizing scheduled events and alerts.
+Central calendar grid aggregating time-sensitive records from multiple modules into one company-scoped view.
 
-## 2. Key Tables
-- Reads from **events** and **alerts**.
+## 2. Key Tables (read-only sources)
+- **events** — scheduled events.
+- **event_categories** — colour/label for events.
+- **alerts** — only rows with **`end_datetime`** set.
+- **tickets** — tasks with **`due_date`**.
+- **equipment** — **`certificate_expiry`** and **`warranty_expiry`**.
+- **patches_updates** — patch/update schedule dates (when configured in calendar sync).
 
 ## 3. Required Relationships
-- Depends on **companies**.
-- Linked to **event_categories** for color coding.
+- All sources → **companies** (tenant filter on every query).
 
 ## 4. Business Rules (Critical for Agents)
-- **Aggregated View**: This is a visualization module for other record types.
-- **Tenant Isolation**: Only shows records belonging to the active `company_id`.
+- **Aggregated view only** — mutations happen in source modules, not on a calendar table.
+- **Alerts:** include only alerts that have `end_datetime` populated.
+- **Grid layout:** Monday–Sunday week columns (UK English labels).
+- **Tenant isolation:** never mix companies on the grid.
 
 ## 5. UI Behavior Requirements
-- **Interactive Calendar**: Typically uses a library like FullCalendar (but check local implementation).
-- **Filtering**: Allows filtering by event category or alert type.
-
-## 6. API Actions (If Applicable)
-- None (Visualization only).
+- Month/week grid with category/type colour coding.
+- Filtering by event category or source type where implemented.
 
 ## 7. File Structure
-- **index.php** — main calendar interface.
+- `index.php` — calendar UI and aggregated queries.
 
 ## 8. Multi-Tenant Rules
-- All data fetch operations must filter by `company_id`.
+- Every fetch uses session `company_id`.
 
 ## 9. Audit Logging Requirements
-- None for the calendar itself; mutations happen in the source modules (Events/Alerts).
+- None on calendar itself; source modules log changes.
 
 ## 10. Common Pitfalls
-- **Timezone Mismatches**: Ensure dates are correctly formatted for the calendar library.
-- **Overlapping Events**: High density of events can make the calendar difficult to read.
-
-## 11. Examples of Safe Code Patterns
-
-### Safe SELECT (Events for Calendar)
-```php
-$stmt = $conn->prepare("SELECT id, title, start_datetime as start, end_datetime as end FROM events WHERE company_id = ? AND active = 1");
-$stmt->bind_param("i", $companyId);
-$stmt->execute();
-```
+- Timezone/date formatting mismatches with grid library.
+- Omitting equipment or ticket due dates from sync when adding new calendar sources.
 
 ## 12. Module Owner Notes (Optional)
-Central hub for planning.
+When adding a new date source, update calendar sync logic and this file in the same PR.

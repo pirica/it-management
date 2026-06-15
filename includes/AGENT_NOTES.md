@@ -15,7 +15,12 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 
 ## 7. File Structure
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
+- **notes_visibility.php** — owner + `shared_with_json` filter for Notes module.
+- **todo_visibility.php** — global/assigned/creator filter for Todo module.
 - **delete_functions.php** — shared logic for complex deletions (e.g., equipment).
+
+## 8. Multi-Tenant Rules
+- Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
 
 ## 11. Examples of Safe Code Patterns
 

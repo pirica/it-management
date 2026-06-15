@@ -1,11 +1,23 @@
 # AGENT_NOTES.md - Modules
 
 ## 1. Module Purpose
-Contains the core functional units of the application. Each subdirectory here represents a standalone or integrated module (e.g., Equipment, Tickets, Users).
+Core functional units of the application. Each subdirectory is a module (CRUD, bespoke UI, or equipment-type façade).
+
+## 2. Key Tables
+- One primary table per module in most cases (see each `modules/<slug>/AGENT_NOTES.md`).
 
 ## 4. Business Rules (Critical for Agents)
-- Each module subdirectory must contain its own `AGENT_NOTES.md`.
-- Standard CRUD modules often share a common structure (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`).
+- Every module folder **must** have its own `AGENT_NOTES.md` (template: `templates/AGENT_NOTES.md`).
+- **Protection Zone** modules (`equipment`, `employees`, `contacts`, `idfs*`, `audit_logs`, `settings`, `user_companies`, `employee_system_access`, `cable_colors`, `ui_configuration`) — no logic changes unless explicitly requested.
+- Standard flattened CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+- **`is_*` façades** delegate to `modules/equipment/` — do not delete canonical wrappers.
+
+## 7. File Structure
+- `modules/<slug>/` — module entry files + `AGENT_NOTES.md`.
+- Subfolders such as `api/`, `includes/` — own `AGENT_NOTES.md` when they hold code.
 
 ## 8. Multi-Tenant Rules
-- Almost all modules here are strictly scoped by `company_id`.
+- Almost all modules scope data by `company_id` from session.
+
+## 12. Module Owner Notes (Optional)
+Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` Protection Zone / bespoke sections.

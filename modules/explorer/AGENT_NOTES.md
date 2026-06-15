@@ -1,56 +1,38 @@
 # AGENT_NOTES.md - Explorer
 
 ## 1. Module Purpose
-Provides a web-based file management system with multi-tenant isolation. It supports private, department-level, and common company storage.
+Secure multi-tenant file manager. Physical files under `files/{company_id}/` with metadata in **explorer** (when used).
 
 ## 2. Key Tables
-- **explorer** — tracks file metadata and ownership (the physical files are in the `files/` directory).
+- **explorer** — file/folder metadata (optional tracking).
+- **Physical storage:** `files/{company_id}/Common/`, `Departments/{dept_id}/`, `Private/{username}_{user_id}/`.
 
 ## 3. Required Relationships
-- **explorer** → depends on **companies**.
-- **explorer** → depends on **users** (for private files).
-- **explorer** → depends on **departments** (for department files).
+- **explorer** → **companies**, **users**, **departments** (department segment access).
 
 ## 4. Business Rules (Critical for Agents)
-- **Storage Scoping**:
-    - **Common**: Visible to all users in the company.
-    - **Department**: Visible only to users in that department.
-    - **Private**: Visible only to the owner.
-- **Physical Isolation**: Files are stored in `files/{company_id}/...`.
-- **Path Safety**: Filenames and paths must be sanitized to prevent traversal.
+- **Storage segments:**
+  - `Common/` — all company users.
+  - `Departments/{dept_id}/` — department members only.
+  - `Private/{username}_{user_id}/` — owner only.
+- **Blocked creation/upload** at Home root, `Private` root, and `Departments` root.
+- **Protected folders:** top-level `Common`, `Departments`, `Private`, and the user's primary private folder cannot be renamed, moved, or deleted.
+- **Path validation:** use segment-boundary checks (exact `Private/{owner}` or prefix with trailing slash) — prevent traversal.
+- **Localisation:** UK English (en-GB) UI labels (Favourites, Trash, etc.).
 
 ## 5. UI Behavior Requirements
-- **Breadcrumb Navigation**: Supports folder-based navigation.
-- **File Actions**: Upload, Download, Delete, Rename, Favorite.
-
-## 6. API Actions (If Applicable)
-- **api.php** — handles async file operations (upload, delete, list).
+- Breadcrumb navigation; upload, download, delete, rename, favourite.
+- `api.php` for async operations; `file.php` for delivery.
 
 ## 7. File Structure
-- **index.php** — main explorer UI.
-- **api.php** — backend API for file operations.
-- **file.php** — handles file delivery (downloads).
-- **setup.php** — ensures storage directories exist.
+- `index.php`, `api.php`, `file.php`, `setup.php`.
 
 ## 8. Multi-Tenant Rules
-- Strictly scoped by `company_id`.
-- Use `storage_root = ROOT_PATH . 'files/' . $company_id` for physical file operations.
-
-## 9. Audit Logging Requirements
-- Managed via database triggers for metadata changes.
+- `storage_root = ROOT_PATH . 'files/' . $company_id`; never cross company boundaries.
 
 ## 10. Common Pitfalls
-- **Path Traversal**: Always validate `folder_path` and `file_name` against the storage root.
-- **Mime Types**: Validate file types on upload to prevent malicious scripts.
-
-## 11. Examples of Safe Code Patterns
-
-### Safe SELECT
-```php
-$stmt = $conn->prepare("SELECT * FROM explorer WHERE company_id = ? AND folder_path = ?");
-$stmt->bind_param("is", $companyId, $folderPath);
-$stmt->execute();
-```
+- Path traversal if `folder_path` / `file_name` not validated against storage root.
+- Allowing upload in blocked roots (Home, Private root, Departments root).
 
 ## 12. Module Owner Notes (Optional)
-Integrated file storage for all system entities.
+Integrated file storage for company, department, and private scopes.

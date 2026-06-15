@@ -1,57 +1,37 @@
 # AGENT_NOTES.md - Bookmarks
 
 ## 1. Module Purpose
-Manages user and company bookmarks (URLs). Supports folders, sharing, and custom positioning.
+Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — main storage for bookmark records.
+- **bookmarks** — URL records (`title`, `url`, `shared`, `user_id`, `folder_id`).
+- **bookmark_folders** — folder tree (emoji icons in sidebar).
 
 ## 3. Required Relationships
-- **bookmarks** → depends on **companies**.
-- **bookmarks** → depends on **users**.
-- **bookmarks** → depends on **bookmark_folders** (via `folder_id`).
+- **bookmarks** → **companies**, **users**, **bookmark_folders**.
 
 ## 4. Business Rules (Critical for Agents)
-- **Visibility**: A bookmark is visible if (`user_id` matches OR `shared = 1`) AND `company_id` matches.
-- **Deletion**: Single deletions must include `bulk_action = 'single_delete'` for compatibility with shared logic.
+- **Privacy:** filter by `user_id` for private bookmarks and `company_id` for shared ones.
+- **Visibility:** row visible when `(user_id = logged user OR shared = 1)` and `company_id` matches.
+- **Permissions:** shared bookmarks read-only for regular users; admins and creators retain full CRUD.
+- **Dual-pane UI:** left folder tree (📁/📂), main list view.
+- **Drag-and-drop:** folders reordered/reparented via DnD interactions.
+- **Import/export:** browser HTML bookmark files, CSV, and XLSX.
+- **Deletion:** single delete may require `bulk_action = 'single_delete'` for shared-handler compatibility.
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
-- **Import/Export**: Supports importing and exporting bookmarks (often via JSON or HTML).
-
-## 6. API Actions (If Applicable)
-- **import_excel_rows** — handles bulk JSON import.
+- Folder tree + list; standard export/import tools where enabled.
 
 ## 7. File Structure
-- **index.php** — list view and bulk action handler.
-- **create.php**, **edit.php**, **delete.php** — standard CRUD.
-- **import.php** / **export.php** — data mobility tools.
+- `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+- Import/export endpoints as implemented in module.
 
 ## 8. Multi-Tenant Rules
-- Scoped by `company_id`.
-
-## 9. Audit Logging Requirements
-- Managed via database triggers.
+- `company_id` on all rows; private rows also scoped by `user_id`.
 
 ## 10. Common Pitfalls
-- **SQL Ambiguity**: Join queries with `bookmark_folders` must use explicit aliases for `active`, `user_id`, etc.
-- **URL Validation**: Ensure URLs are properly sanitized and prepended with `http://` or `https://` if missing.
-
-## 11. Examples of Safe Code Patterns
-
-### Safe SELECT
-```php
-$stmt = $conn->prepare("SELECT b.* FROM bookmarks b WHERE b.company_id = ? AND (b.user_id = ? OR b.shared = 1)");
-$stmt->bind_param("ii", $companyId, $userId);
-$stmt->execute();
-```
-
-### Safe INSERT
-```php
-$stmt = $conn->prepare("INSERT INTO bookmarks (company_id, user_id, folder_id, title, url, shared) VALUES (?, ?, ?, ?, ?, ?)");
-$stmt->bind_param("iiissi", $companyId, $userId, $folderId, $title, $url, $shared);
-$stmt->execute();
-```
+- SQL ambiguity when joining `bookmark_folders` — alias `active`, `user_id`.
+- URLs missing scheme — prepend `http://` or `https://` when saving.
 
 ## 12. Module Owner Notes (Optional)
-Core productivity feature for users.
+Core productivity feature; folder module: `modules/bookmark_folders/`.

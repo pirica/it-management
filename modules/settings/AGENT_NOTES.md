@@ -13,6 +13,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - Sidebar preferences linked to **users**.
 
 ## 4. Business Rules (Critical for Agents)
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **UI Persistence**: Changes to button positions or pagination must call `collectAndSetHiddenFields()` in the UI.
 - **Database Maintenance**: Allows triggering schema verification and table repairs.
 - **Backup/Restore**: Handles SQL dump generation and manual SQL imports.
