@@ -15,6 +15,42 @@ To ensure compatibility between CLI and Browser execution, use a conditional new
 ```php
 echo "Message text" . (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 ```
+Example:
+```php
+$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+echo "Verifying User Management IDOR..." . $nl;
+```
+```php
+function colorText($text, $type) {
+    $isCli = (php_sapi_name() === 'cli');
+
+    switch ($type) {
+        case 'pass':
+            return $isCli
+                ? "\033[32m$text\033[0m"   // green
+                : "<span style='color: green;'>$text</span>";
+
+        case 'fail':
+            return $isCli
+                ? "\033[31m$text\033[0m"   // red
+                : "<span style='color: red;'>$text</span>";
+
+        case 'warn':
+            return $isCli
+                ? "\033[33m$text\033[0m"   // yellow
+                : "<span style='color: goldenrod;'>$text</span>";
+
+        case 'info':
+            return $isCli
+                ? "\033[34m$text\033[0m"   // blue
+                : "<span style='color: dodgerblue;'>$text</span>";
+
+        default:
+            return $text;
+    }
+}
+```
+
 
 ## 3. Security & Authentication
 - Scripts that perform destructive actions or access sensitive data MUST include role-based access control.
@@ -28,7 +64,7 @@ echo "Message text" . (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 
 ## 5. Verification & Testing
 - New scripts should ideally be accompanied by a unit test or a verification PoC.
-- Clean up any temporary artifacts (files, database rows) created during execution.
+- Store temporary artifacts created during execution in the `scripts/` directory unless explicitly instructed, register artifacts `scripts/scripts.php` created during execution.
 
 ## 6. Retention Rule
 - **MANDATORY**: Do not delete existing files in the `scripts/` directory unless explicitly instructed.
