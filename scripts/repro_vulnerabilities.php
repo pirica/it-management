@@ -46,10 +46,10 @@ function test_explorer_rce($conn, $nl) {
 
     $target_path = ROOT_PATH . "files/$company_id/Common/shell.php";
     if (file_exists($target_path)) {
-        echo "[FAIL] Explorer RCE: PHP file uploaded successfully to $target_path" . $nl;
+        echo colorText("[FAIL] Explorer RCE: PHP file uploaded successfully to $target_path", 'fail') . $nl;
         unlink($target_path);
     } else {
-        echo "[PASS] Explorer RCE: PHP file upload blocked." . $nl;
+        echo colorText("[PASS] Explorer RCE: PHP file upload blocked.", 'pass') . $nl;
     }
 
     unset($_FILES['files']);
@@ -105,9 +105,9 @@ function test_user_privilege_escalation($conn, $nl) {
     $res = mysqli_query($conn, "SELECT role_id FROM users WHERE id = $victim_id");
     $row = mysqli_fetch_assoc($res);
     if ($row && $row['role_id'] == 1) {
-        echo "[FAIL] User Privilege Escalation: Non-admin user successfully updated their own role to Admin." . $nl;
+        echo colorText("[FAIL] User Privilege Escalation: Non-admin user successfully updated their own role to Admin.", 'fail') . $nl;
     } else {
-        echo "[PASS] User Privilege Escalation: Role update blocked." . $nl;
+        echo colorText("[PASS] User Privilege Escalation: Role update blocked.", 'pass') . $nl;
     }
 
     mysqli_query($conn, "DELETE FROM users WHERE id = $victim_id");
@@ -125,9 +125,9 @@ function test_role_module_permissions_access($conn, $nl) {
     $output = run_isolated(__DIR__ . '/../modules/role_module_permissions/index.php', $session);
 
     if (strpos($output, 'Role Module Permissions Management') !== false) {
-        echo "[FAIL] Role Module Permissions: Non-admin user can access management page." . $nl;
+        echo colorText("[FAIL] Role Module Permissions: Non-admin user can access management page.", 'fail') . $nl;
     } else {
-        echo "[PASS] Role Module Permissions: Access restricted." . $nl;
+        echo colorText("[PASS] Role Module Permissions: Access restricted.", 'pass') . $nl;
     }
 }
 

@@ -19,6 +19,7 @@ define('ITM_CLI_SCRIPT', true);
 
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 require $projectRoot . '/includes/detect_fk_dropdown_ui_risk_lib.php';
 require $projectRoot . '/modules/tickets/sample_seed_helpers.php';
 require $projectRoot . '/modules/equipment/delete_functions.php';
@@ -30,8 +31,7 @@ function tradt_is_cli(): bool
 
 function tradt_out($message)
 {
-    $line = (string)$message;
-    echo tradt_is_cli() ? $line . PHP_EOL : htmlspecialchars($line, ENT_QUOTES, 'UTF-8') . "<br>\n";
+    echo itm_script_format_status_line((string) $message) . itm_script_output_nl();
 }
 
 function tradt_fail($message)
@@ -165,7 +165,7 @@ function tradt_run_db_integration(mysqli $conn): void
     );
 
     tradt_delete_sample_ticket($conn, $companyId);
-    tradt_out('[PASS] removed temporary TCK-0001 ticket after assertions');
+    tradt_out(colorText('[PASS] removed temporary TCK-0001 ticket after assertions', 'pass'));
 }
 
 if (!tradt_is_cli()) {

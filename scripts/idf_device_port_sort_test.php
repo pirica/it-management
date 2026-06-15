@@ -17,6 +17,7 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
 require_once dirname(__DIR__) . '/includes/idf_device_port_sort_sql.php';
 
 /** @var bool */
@@ -37,7 +38,7 @@ function itmdf_sort_is_cli(): bool
 
 function itmdf_sort_eol(): string
 {
-    return itmdf_sort_is_cli() ? PHP_EOL : '<br>' . PHP_EOL;
+    return itm_script_output_nl();
 }
 
 function itmdf_sort_esc(string $text): string

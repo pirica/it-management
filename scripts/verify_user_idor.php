@@ -66,8 +66,8 @@ $output = run_isolated_post(realpath(__DIR__ . '/../modules/users/delete.php'), 
 
 $res = mysqli_query($conn, "SELECT id FROM users WHERE id = $victimId");
 if (mysqli_num_rows($res) === 0) {
-    echo "[FAIL] Users Module: Regular user successfully deleted another user via IDOR!" . $nl;
+    echo colorText("[FAIL] Users Module: Regular user successfully deleted another user via IDOR!", 'fail') . $nl;
 } else {
-    echo "[PASS] Users Module: IDOR deletion blocked. Output: $output" . $nl;
+    echo colorText("[PASS] Users Module: IDOR deletion blocked. Output: $output", 'pass') . $nl;
     mysqli_query($conn, "DELETE FROM users WHERE id = $victimId");
 }

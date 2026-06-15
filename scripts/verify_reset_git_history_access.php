@@ -52,12 +52,12 @@ $get = ['confirm' => '1'];
 $output = run_isolated_logic(realpath(__DIR__ . '/../reset_git_history.php'), $session, $get);
 
 if (strpos($output, 'Starting Git history reset') !== false) {
-    echo "[FAIL] reset_git_history.php: Regular user reached destructive logic!" . $nl;
+    echo colorText("[FAIL] reset_git_history.php: Regular user reached destructive logic!", 'fail') . $nl;
 } else {
     $content = file_get_contents(__DIR__ . '/../reset_git_history.php');
     if (strpos($content, "role_name") === false && strpos($content, "isAdmin") === false) {
-        echo "[FAIL] reset_git_history.php: Script lacks admin/role checks in code." . $nl;
+        echo colorText("[FAIL] reset_git_history.php: Script lacks admin/role checks in code.", 'fail') . $nl;
     } else {
-        echo "[PASS] reset_git_history.php: Role checks found." . $nl;
+        echo colorText("[PASS] reset_git_history.php: Role checks found.", 'pass') . $nl;
     }
 }

@@ -22,17 +22,18 @@ if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
 $failures = 0;
 
 function itm_test_assert($label, $condition) {
     global $failures;
     if ($condition) {
-        fwrite(STDOUT, "[PASS] {$label}\n");
+        fwrite(STDOUT, colorText("[PASS] {$label}\n", 'pass'));
         return;
     }
     $failures++;
-    fwrite(STDOUT, "[FAIL] {$label}\n");
+    fwrite(STDOUT, colorText("[FAIL] {$label}\n", 'fail'));
 }
 
 $employeeNull = itm_format_db_constraint_error(1048, "Column 'employee_id' cannot be null");

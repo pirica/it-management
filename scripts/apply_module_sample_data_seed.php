@@ -626,7 +626,7 @@ foreach ($companyIds as $companyId) {
 }
 
 if ($addedCount === 0) {
-    echo "[OK] No missing sample rows for table '{$table}'. Nothing to update.\n";
+    echo colorText("[OK] No missing sample rows for table '{$table}'. Nothing to update.", 'pass') . itm_script_output_nl();
     echo 'Companies checked: ' . count($companyIds) . "\n";
     exit(0);
 }
@@ -669,4 +669,4 @@ if (file_put_contents($schemaPath, $newSql) === false) {
     exit(2);
 }
 
-echo "[OK] database.sql updated successfully.\n";
+echo colorText("[OK] database.sql updated successfully.", 'pass') . itm_script_output_nl();

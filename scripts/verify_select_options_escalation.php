@@ -76,10 +76,10 @@ $res = mysqli_query($conn, "SELECT id, role_id FROM users WHERE username = '$evi
 $row = mysqli_fetch_assoc($res);
 
 if ($row && $row['role_id'] == 1) {
-    echo "[FAIL] Select Options API: Regular user successfully created an Admin user!" . $nl;
+    echo colorText("[FAIL] Select Options API: Regular user successfully created an Admin user!", 'fail') . $nl;
     mysqli_query($conn, "DELETE FROM users WHERE id = " . $row['id']);
 } else {
-    echo "[PASS] Select Options API: Admin creation failed. Output: $output" . $nl;
+    echo colorText("[PASS] Select Options API: Admin creation failed. Output: $output", 'pass') . $nl;
 }
 
 mysqli_query($conn, "DELETE FROM users WHERE id = $userId");

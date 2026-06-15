@@ -61,8 +61,8 @@ $output = run_isolated_post(realpath(__DIR__ . '/../modules/companies/delete.php
 
 $res = mysqli_query($conn, "SELECT id FROM companies WHERE id = $targetId");
 if (mysqli_num_rows($res) === 0) {
-    echo "[FAIL] Companies Module: Regular user successfully deleted a company!" . $nl;
+    echo colorText("[FAIL] Companies Module: Regular user successfully deleted a company!", 'fail') . $nl;
 } else {
-    echo "[PASS] Companies Module: Deletion failed or blocked. Output: $output" . $nl;
+    echo colorText("[PASS] Companies Module: Deletion failed or blocked. Output: $output", 'pass') . $nl;
     mysqli_query($conn, "DELETE FROM companies WHERE id = $targetId");
 }

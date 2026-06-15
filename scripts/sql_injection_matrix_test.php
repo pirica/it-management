@@ -117,23 +117,23 @@ foreach ($tests as $test) {
 
     if ($result['suspicious'] !== $test['expect_suspicious']) {
         $ok = false;
-        echo "[FAIL] {$test['id']} suspicious mismatch. expected="
+        echo colorText("[FAIL] {$test['id']} suspicious mismatch. expected="
             . ($test['expect_suspicious'] ? 'true' : 'false')
-            . " actual=" . ($result['suspicious'] ? 'true' : 'false') . PHP_EOL;
+            . ' actual=' . ($result['suspicious'] ? 'true' : 'false'), 'fail') . PHP_EOL;
     }
 
     if ($result['decision'] !== $test['expect_decision']) {
         $ok = false;
-        echo "[FAIL] {$test['id']} decision mismatch. expected={$test['expect_decision']} actual={$result['decision']}" . PHP_EOL;
+        echo colorText("[FAIL] {$test['id']} decision mismatch. expected={$test['expect_decision']} actual={$result['decision']}", 'fail') . PHP_EOL;
     }
 
     if (isset($test['expect_rules_any'])) {
         $intersection = array_values(array_intersect($result['matched_rules'], $test['expect_rules_any']));
         if (count($intersection) === 0) {
             $ok = false;
-            echo "[FAIL] {$test['id']} expected any rules ["
+            echo colorText("[FAIL] {$test['id']} expected any rules ["
                 . implode(', ', $test['expect_rules_any'])
-                . "] got [" . implode(', ', $result['matched_rules']) . "]" . PHP_EOL;
+                . '] got [' . implode(', ', $result['matched_rules']) . ']', 'fail') . PHP_EOL;
         }
     }
 
@@ -144,15 +144,15 @@ foreach ($tests as $test) {
         sort($actual);
         if ($expectedExact !== $actual) {
             $ok = false;
-            echo "[FAIL] {$test['id']} expected exact rules ["
+            echo colorText("[FAIL] {$test['id']} expected exact rules ["
                 . implode(', ', $expectedExact)
-                . "] got [" . implode(', ', $actual) . "]" . PHP_EOL;
+                . '] got [' . implode(', ', $actual) . ']', 'fail') . PHP_EOL;
         }
     }
 
     if ($ok) {
         $passed++;
-        echo "[PASS] {$test['id']}" . PHP_EOL;
+        echo colorText("[PASS] {$test['id']}", 'pass') . PHP_EOL;
     } else {
         $failed++;
     }

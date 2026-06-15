@@ -49,7 +49,7 @@ if (empty($userEmail)) {
 $subject = "Welcome to our platform! (Test)";
 $html = "<h1>Welcome!</h1><p>Thanks for creating an account with us. This is a test message.</p>";
 
-$nl = (PHP_SAPI === 'cli') ? "\n" : "<br>";
+$nl = itm_script_output_nl();
 echo "Attempting to send test welcome email to: " . sanitize($userEmail) . $nl;
 $result = itm_send_email($userEmail, $subject, $html);
 

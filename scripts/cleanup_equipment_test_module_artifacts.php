@@ -30,35 +30,36 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
 define('ITM_CLI_SCRIPT', true);
 require dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 require __DIR__ . '/lib/equipment_type_modules.php';
 
 $modulesRoot = dirname(__DIR__) . '/modules';
 $cleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesRoot);
 
 if ($cleanup['dirs_removed'] > 0) {
-    fwrite(STDOUT, "[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)\n");
+    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)", 'pass') . "\n");
 } else {
-    fwrite(STDOUT, "[OK] No regression-test module folders to remove\n");
+    fwrite(STDOUT, colorText('[OK] No regression-test module folders to remove', 'pass') . "\n");
 }
 
 if ($cleanup['companies_deleted'] > 0) {
-    fwrite(STDOUT, "[OK] Removed {$cleanup['companies_deleted']} ITM test compan" . ($cleanup['companies_deleted'] === 1 ? 'y' : 'ies') . "\n");
+    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['companies_deleted']} ITM test compan" . ($cleanup['companies_deleted'] === 1 ? 'y' : 'ies'), 'pass') . "\n");
 }
 
 if ($cleanup['types_deleted'] > 0) {
-    fwrite(STDOUT, "[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)\n");
+    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)", 'pass') . "\n");
 } elseif ($cleanup['ok']) {
-    fwrite(STDOUT, "[OK] No equipment_types test rows to remove\n");
+    fwrite(STDOUT, colorText('[OK] No equipment_types test rows to remove', 'pass') . "\n");
 }
 
 if ($cleanup['sidebar_deleted'] > 0) {
-    fwrite(STDOUT, "[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)\n");
+    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)", 'pass') . "\n");
 }
 
-fwrite(STDOUT, "[OK] Verified canonical modules/is_* façades ({$cleanup['canonical_ensured']} scaffold pass(es))\n");
+fwrite(STDOUT, colorText("[OK] Verified canonical modules/is_* façades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . "\n");
 
 foreach ($cleanup['errors'] as $errorLine) {
-    fwrite(STDERR, '[FAIL] ' . $errorLine . "\n");
+    fwrite(STDERR, colorText('[FAIL] ' . $errorLine, 'fail') . "\n");
 }
 
 fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; canonical is_* modules preserved.\n");
