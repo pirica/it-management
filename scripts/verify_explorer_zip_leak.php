@@ -61,7 +61,7 @@ $get = [
 $output = run_isolated_get(realpath(__DIR__ . '/../modules/explorer/api.php'), $session, $get);
 
 if (strpos($output, "Invalid path or permission denied") === false) {
-    echo "[FAIL] Explorer: ZIP download for root 'Private' folder permitted!" . $nl;
+    echo colorText("[FAIL] Explorer: ZIP download for root 'Private' folder permitted!", 'fail') . $nl;
 } else {
-    echo "[PASS] Explorer: ZIP leak blocked." . $nl;
+    echo colorText("[PASS] Explorer: ZIP leak blocked.", 'pass') . $nl;
 }

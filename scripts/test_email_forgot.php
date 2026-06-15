@@ -52,7 +52,7 @@ $html = "<h3>Password Reset Request</h3>
          <p>Click the link below to reset your password:</p>
          <p><a href='{$resetLink}'>{$resetLink}</a></p>";
 
-$nl = (PHP_SAPI === 'cli') ? "\n" : "<br>";
+$nl = itm_script_output_nl();
 echo "Attempting to send test forgot-password email to: " . sanitize($userEmail) . $nl;
 $result = itm_send_email($userEmail, $subject, $html);
 

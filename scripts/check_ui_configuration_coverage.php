@@ -964,7 +964,8 @@ foreach ($modules as $module) {
 
         $label = str_pad($status, 4, ' ', STR_PAD_RIGHT);
         $moduleLabel = itm_script_format_module_link($module);
-        echo "[{$label}] {$moduleLabel} :: {$checkName} - {$result['details']}\n";
+        $statusType = ($status === 'pass') ? 'pass' : (($status === 'fail') ? 'fail' : 'warn');
+        echo colorText("[{$label}] {$moduleLabel} :: {$checkName} - {$result['details']}", $statusType) . itm_script_output_nl();
 
         if ($status === 'fail') {
             $moduleFailures[$module][] = "{$checkName}: {$result['details']}";

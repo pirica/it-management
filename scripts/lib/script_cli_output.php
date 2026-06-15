@@ -57,6 +57,31 @@ if (!function_exists('itm_script_cli_is_cli')) {
         echo '</body></html>';
     }
 
+    /** Why: SCRIPTS.md cross-environment newline for CLI and browser script output. */
+    function itm_script_output_nl()
+    {
+        return itm_script_cli_is_cli() ? "\n" : '<br><br>';
+    }
+
+    /** Why: Colour pass/fail/warn/info prefixes when present; leave other lines unchanged. */
+    function itm_script_format_status_line($message)
+    {
+        $text = (string) $message;
+        if (preg_match('/^\[(PASS|OK)\]/', $text)) {
+            return colorText($text, 'pass');
+        }
+        if (preg_match('/^\[FAIL\]/', $text)) {
+            return colorText($text, 'fail');
+        }
+        if (preg_match('/^\[WARN\]/', $text)) {
+            return colorText($text, 'warn');
+        }
+        if (preg_match('/^\[INFO\]/', $text)) {
+            return colorText($text, 'info');
+        }
+        return $text;
+    }
+
     /** Why: SCRIPTS.md cross-environment pass/fail/warn/info colouring for CLI and browser audits. */
     function colorText($text, $type)
     {

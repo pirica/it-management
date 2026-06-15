@@ -22,6 +22,7 @@ define('ITM_CLI_SCRIPT', true);
 
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 require $projectRoot . '/modules/floor_plans/gallery_helpers.php';
 
 function fp_test_is_cli(): bool
@@ -31,7 +32,7 @@ function fp_test_is_cli(): bool
 
 function fp_test_eol(): string
 {
-    return fp_test_is_cli() ? PHP_EOL : '<br>' . PHP_EOL;
+    return itm_script_output_nl();
 }
 
 function fp_test_esc(string $text): string
@@ -41,7 +42,7 @@ function fp_test_esc(string $text): string
 
 function fp_test_out($message)
 {
-    echo fp_test_esc((string)$message) . fp_test_eol();
+    echo itm_script_format_status_line(fp_test_esc((string)$message)) . fp_test_eol();
     if (!fp_test_is_cli() && function_exists('flush')) {
         @flush();
     }

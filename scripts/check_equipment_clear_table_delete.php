@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;">';
@@ -26,15 +28,15 @@ function itm_eqct_assert(string $label, bool $condition): void
 {
     global $failures;
     if ($condition) {
-        fwrite(STDOUT, "[PASS] {$label}\n");
+        fwrite(STDOUT, colorText("[PASS] {$label}\n", 'pass'));
         return;
     }
     $failures++;
-    fwrite(STDOUT, "[FAIL] {$label}\n");
+    fwrite(STDOUT, colorText("[FAIL] {$label}\n", 'fail'));
 }
 
 if (!is_file($deletePath) || !is_file($functionsPath)) {
-    fwrite(STDOUT, "[FAIL] equipment delete helper files missing\n");
+    fwrite(STDOUT, colorText("[FAIL] equipment delete helper files missing\n", 'fail'));
     exit(1);
 }
 

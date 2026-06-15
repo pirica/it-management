@@ -24,6 +24,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 function itm_test_is_cli()
 {
     return PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
@@ -31,7 +33,7 @@ function itm_test_is_cli()
 
 function itm_test_eol()
 {
-    return itm_test_is_cli() ? PHP_EOL : '<br>' . PHP_EOL;
+    return itm_script_output_nl();
 }
 
 function itm_test_esc_line($message)
@@ -83,7 +85,7 @@ function itm_test_ensure_plain_text_response_headers()
 
 function itm_test_write_line($message, $isError = false)
 {
-    $line = itm_test_esc_line($message) . itm_test_eol();
+    $line = itm_script_format_status_line(itm_test_esc_line($message)) . itm_test_eol();
 
     if (itm_test_is_cli()) {
         $stream = null;

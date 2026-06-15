@@ -1,4 +1,8 @@
 <?php
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Explorer Human Test');
+
 /**
  * Explorer Module - Human-Like Integration Test
  *
@@ -130,10 +134,10 @@ function assert_test($condition, $message) {
     global $test_failures;
 
     if ($condition) {
-        echo "[PASS] $message\n";
+        echo colorText("[PASS] $message", 'pass') . itm_script_output_nl();
     } else {
         $test_failures++;
-        echo "[FAIL] $message\n";
+        echo colorText("[FAIL] $message", 'fail') . itm_script_output_nl();
     }
 }
 

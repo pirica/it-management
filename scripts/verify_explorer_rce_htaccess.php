@@ -80,12 +80,12 @@ $htaccess_path = $target_dir . "/.htaccess";
 if (file_exists($htaccess_path)) {
     $content = file_get_contents($htaccess_path);
     if (strpos($content, "AddType") !== false) {
-        echo "[FAIL] Explorer RCE: Malicious .htaccess uploaded!\n";
+        echo colorText("[FAIL] Explorer RCE: Malicious .htaccess uploaded!", 'fail') . itm_script_output_nl();
     } else {
-        echo "[PASS] .htaccess upload blocked or overwritten by system policy.\n";
+        echo colorText("[PASS] .htaccess upload blocked or overwritten by system policy.", 'pass') . itm_script_output_nl();
     }
 } else {
-    echo "[PASS] .htaccess not found.\n";
+    echo colorText("[PASS] .htaccess not found.", 'pass') . itm_script_output_nl();
 }
 
 @unlink($htaccess_path);

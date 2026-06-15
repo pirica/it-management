@@ -430,6 +430,6 @@ $output = str_replace('DELIMITER __ITM_SEMICOLON__', 'DELIMITER ;', $output);
 $output = preg_replace('/^DELIMITER;\s*$/m', 'DELIMITER ;', $output) ?? $output;
 
 file_put_contents($schemaPath, $output);
-echo "[OK] Updated created_at in {$updatedCount} INSERT statement(s).\n";
+echo colorText("[OK] Updated created_at in {$updatedCount} INSERT statement(s).", 'pass') . itm_script_output_nl();
 echo "Target value: {$targetCreatedAt}\n";
 echo 'Tables with created_at column: ' . count($tablesWithCreatedAt) . "\n";

@@ -42,8 +42,9 @@ echo "Message text" . (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 ```
 Example:
 ```php
-$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
-echo "Verifying User Management IDOR..." . $nl;
+$nl = itm_script_output_nl(); // or: (php_sapi_name() === 'cli' ? "\n" : "<br><br>")
+echo colorText('Verifying User Management IDOR...', 'info') . $nl;
+echo itm_script_format_status_line('[PASS] Check completed') . $nl;
 ```
 ```php
 function colorText($text, $type) {
@@ -153,7 +154,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | File | Use |
 |------|-----|
 | `scripts/lib/script_browser_nav.php` | **← Scripts index**, relative module links, table→module links when folder exists (`target="_blank"`) |
-| `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav; `colorText()` for pass/fail/warn/info |
+| `scripts/lib/script_cli_output.php` | Wrap browser audit output in `<pre>` + shared nav; `itm_script_output_nl()`, `colorText()`, `itm_script_format_status_line()` |
 | `scripts/lib/utf8_file.php` | UTF-8 writes for `qa-reports/*.md` and `.json` (optional BOM for Windows viewers) |
 | `scripts/lib/mbqa_report_paths.php` | Timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` / `.xlsx` paths; stable `module-browser-qa.md` for build report |
 | `scripts/lib/mbqa_runner_tiers.php` | Canonical `$bespokeSmoke` (Tier D) and `$skipClear` lists; tier reference markdown/HTML for build reports |

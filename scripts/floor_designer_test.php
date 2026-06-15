@@ -12,7 +12,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('Floor Designer Test');
 
 function itm_test_log(string $msg): void {
-    echo $msg . PHP_EOL;
+    echo itm_script_format_status_line($msg) . itm_script_output_nl();
 }
 
 $errors = 0;

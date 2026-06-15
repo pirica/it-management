@@ -23,6 +23,7 @@ define('ITM_CLI_SCRIPT', true);
 
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 require $projectRoot . '/modules/equipment/delete_functions.php';
 require __DIR__ . '/lib/equipment_type_modules.php';
 
@@ -33,8 +34,7 @@ function eqdct_is_cli(): bool
 
 function eqdct_out($message)
 {
-    $line = (string)$message;
-    echo eqdct_is_cli() ? $line . PHP_EOL : htmlspecialchars($line, ENT_QUOTES, 'UTF-8') . "<br>\n";
+    echo itm_script_format_status_line((string) $message) . itm_script_output_nl();
 }
 
 function eqdct_fail($message)
@@ -305,7 +305,7 @@ function eqdct_run_db_integration(mysqli $conn): void
         eqdct_assert(eqdct_count_equipment($conn, $companyId) === 0, 'no equipment left after successful delete');
     } finally {
         eqdct_delete_company($conn, $companyId);
-        eqdct_out('[PASS] removed temporary test company');
+        eqdct_out(colorText('[PASS] removed temporary test company', 'pass'));
         $scaffoldRemoved = eqdct_cleanup_test_scaffold_modules();
         if ($scaffoldRemoved > 0) {
             eqdct_out('[PASS] removed ' . $scaffoldRemoved . ' accidental equipment-type module folder(s)');

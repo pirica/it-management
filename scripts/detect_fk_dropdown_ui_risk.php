@@ -1,21 +1,7 @@
 <?php
-/**
- * Detect cross-tenant FK data and CRUD modules at risk of duplicate/wrong select options.
- *
- * Why: Seeded rows often store company-1 FK ids on other tenants; company-scoped dropdowns
- * plus "append persisted FK" then show two labels for the same logical value.
- *
- * Usage (CLI):
- *   php scripts/detect_fk_dropdown_ui_risk.php
- *   php scripts/detect_fk_dropdown_ui_risk.php --company=4
- *   php scripts/detect_fk_dropdown_ui_risk.php --json
- *   php scripts/detect_fk_dropdown_ui_risk.php --code-only
- *
- * Usage (Web — form with selects, no CLI):
- *   /scripts/detect_fk_dropdown_ui_risk_ui.php
- */
-
 declare(strict_types=1);
+
+require_once __DIR__ . '/lib/script_cli_output.php';
 
 if (PHP_SAPI !== 'cli') {
     require __DIR__ . '/detect_fk_dropdown_ui_risk_ui.php';
@@ -150,9 +136,9 @@ if ($options['json']) {
     }
 
     if ($dataIssues === [] && $codeIssues === []) {
-        fwrite(STDOUT, "\n[OK] No FK dropdown UI risks detected.\n");
+        fwrite(STDOUT, colorText("\n[OK] No FK dropdown UI risks detected.\n", 'pass'));
     } else {
-        fwrite(STDOUT, "\n[FAIL] Review rows above. duplicate_dropdown_risk = two select options for the same logical FK value.\n");
+        fwrite(STDOUT, colorText("\n[FAIL] Review rows above. duplicate_dropdown_risk = two select options for the same logical FK value.\n", 'fail'));
     }
 }
 

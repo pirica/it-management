@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 /**
  * Browser/CLI helper to run the same cleanup that module_browser_qa_runner.php
  * executes before/after QA runs.
@@ -541,28 +543,28 @@ $exitCode = $cleanup['ok'] ? 0 : 1;
 
 if (mbqa_clean_tests_is_cli()) {
     if ($cleanup['dirs_removed'] > 0) {
-        fwrite(STDOUT, "[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)\n");
+        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)", 'pass') . "\n");
     } else {
-        fwrite(STDOUT, "[OK] No regression-test module folders to remove\n");
+        fwrite(STDOUT, colorText('[OK] No regression-test module folders to remove', 'pass') . "\n");
     }
 
     if ($cleanup['companies_deleted'] > 0) {
         $noun = $cleanup['companies_deleted'] === 1 ? 'y' : 'ies';
-        fwrite(STDOUT, "[OK] Removed {$cleanup['companies_deleted']} ITM test compan{$noun}\n");
+        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['companies_deleted']} ITM test compan{$noun}", 'pass') . "\n");
     }
 
     if ($cleanup['types_deleted'] > 0) {
-        fwrite(STDOUT, "[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)\n");
+        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)", 'pass') . "\n");
     } elseif ($cleanup['ok']) {
-        fwrite(STDOUT, "[OK] No equipment_types test rows to remove\n");
+        fwrite(STDOUT, colorText('[OK] No equipment_types test rows to remove', 'pass') . "\n");
     }
 
     if ($cleanup['sidebar_deleted'] > 0) {
-        fwrite(STDOUT, "[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)\n");
+        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)", 'pass') . "\n");
     }
 
     if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {
-        fwrite(STDOUT, "[OK] Cleaned MBQA/QA-IMPORT signature data:\n");
+        fwrite(STDOUT, colorText('[OK] Cleaned MBQA/QA-IMPORT signature data:', 'pass') . "\n");
         foreach ($cleanup['runner_table_details'] as $table => $counts) {
             $parts = [];
             if ($counts['deleted'] > 0) {
@@ -575,16 +577,16 @@ if (mbqa_clean_tests_is_cli()) {
         }
         fwrite(STDOUT, "     Total: {$cleanup['runner_rows_deleted']} row(s) deleted, {$cleanup['runner_rows_detached']} FK(s) detached across {$cleanup['runner_tables_touched']} table(s)\n");
     } elseif ($cleanup['ok']) {
-        fwrite(STDOUT, "[OK] No MBQA/QA-IMPORT signature rows found across DB tables\n");
+        fwrite(STDOUT, colorText('[OK] No MBQA/QA-IMPORT signature rows found across DB tables', 'pass') . "\n");
     }
 
-    fwrite(STDOUT, "[OK] Verified canonical modules/is_* facades ({$cleanup['canonical_ensured']} scaffold pass(es))\n");
+    fwrite(STDOUT, colorText("[OK] Verified canonical modules/is_* facades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . "\n");
 
     foreach ($cleanup['errors'] as $errorLine) {
-        fwrite(STDERR, '[FAIL] ' . $errorLine . "\n");
+        fwrite(STDERR, colorText('[FAIL] ' . $errorLine, 'fail') . "\n");
     }
     foreach (($cleanup['warnings'] ?? []) as $warningLine) {
-        fwrite(STDOUT, '[WARN] ' . $warningLine . "\n");
+        fwrite(STDOUT, colorText('[WARN] ' . $warningLine, 'warn') . "\n");
     }
 
     fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; {$cleanup['runner_rows_detached']} FK(s) detached; canonical is_* modules preserved.\n");
