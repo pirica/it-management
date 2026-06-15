@@ -87,10 +87,10 @@ function colorText($text, $type) {
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.
 - Avoid platform-specific separators; use `DIRECTORY_SEPARATOR` or normalize to forward slashes.
 - **Upload / tenant file trees:** do not call bare `mkdir()` for `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, or `files/`. Use `itm_ensure_upload_directory()` / `itm_ensure_upload_directory_chain()` / `itm_ensure_files_storage_directory()` from `includes/bootstrap_helpers.php`.
-- **Every upload folder must have empty `index.html`:** applies to every directory segment in `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, and `files/` — parent and leaf folders alike. Use `itm_ensure_upload_directory()` / chain helpers; never bare `mkdir()` without a follow-up ensure.
+- **Every project folder must have empty `index.html`:** applies to **every directory under the repository root** (`modules/`, `includes/`, `css/`, `js/`, upload trees, etc.). Folders that already have `index.php` still get `index.html`. Skips VCS/metadata dot dirs (`.git`, `.github`, …). Upload paths additionally receive managed `.htaccess`.
 - **Force-create contract:** every `itm_ensure_upload_directory()` call **overwrites** both managed `.htaccess` (policy body) and an empty `index.html` on that folder. Applies to all policies and every chain segment. Never add `.htaccess` or `index.html` manually after `mkdir()`.
 - **Policies:** `upload` (public assets — static files allowed), `deny_http` (`files/` chain — `RewriteRule ^ - [F]` per segment), `deny_all` (`backups/`).
-- **Backfill all upload roots:** `php scripts/empty_folders.php` — repairs empty `index.html` (and `.htaccess`) on every folder in each upload tree.
+- **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; upload roots also get `.htaccess`.
 - **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. See `docs/file_upload_modules.md` for the full module/storage map.
 
 ## 5. Verification & Testing
