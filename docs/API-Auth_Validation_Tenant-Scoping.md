@@ -234,3 +234,33 @@ No centralized rate-limiting controls were identified. Bulk imports, ZIP generat
 The application demonstrates generally effective session-based authentication and tenant isolation practices; however, several high-impact vulnerabilities remain, most notably privilege escalation through generic APIs, weak validation within import functionality, and file upload risks.
 
 Addressing these issues through stricter authorization controls, schema-based validation, mandatory tenant scoping, and purpose-built APIs will significantly improve the platform's security posture and reduce the likelihood of privilege escalation, data leakage, and unauthorized access.
+
+
+## Prompt
+
+
+
+
+Require API Auth, Validation, and Tenant Scoping
+
+Agent options Review API handlers and controller endpoints for missing authentication, authorization, tenant scoping, and request validation.
+
+
+- Don't delete any files
+- Before start read all last report:
+ docs/API-Auth_Validation_Tenant-Scoping.md
+- AGENTS.md 
+- scripts/scripts.php
+- scripts/SCRIPTS.md
+- scripts/api.php
+- api-examples/*
+
+-- Update report docs/API-Auth_Validation_Tenant-Scoping.md
+Add a "Test Results" section documenting the specific payloads and outcomes of the tests.
+Provide concrete evidence for the identified vulnerabilities.
+
+
+Flag new or modified endpoints that:
+
+Accept request bodies without runtime validation, such as Zod schemas, DTOs, or framework-native validators. Trust user-supplied identifiers for tenant, organization, or account access instead of deriving access from the authenticated session. Return sensitive internal errors or use inconsistent HTTP status codes for 400, 401, 403, 404, and 500 cases. Mix reads and writes in a way that makes side effects hard to reason about. Add public or high-volume endpoints without rate limiting or abuse controls.
+
