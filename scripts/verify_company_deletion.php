@@ -1,6 +1,9 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Company Deletion Verification');
 
 function run_isolated_post($script_path, $session_data = [], $post_data = []) {
     $session_init = "";

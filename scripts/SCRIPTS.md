@@ -104,6 +104,7 @@ Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 
 #### 2. Browser scripts (`scripts/*.php` opened in the browser)
 
+* **Special Case: `scripts/health.php` (MANDATORY):** This script is used for automated health monitoring and must NOT be modified. Do not add navigation links, headers, or any logic that changes its output format.
 * **Back link (required):** Every HTML report must show **← Scripts index** at the top, linking to `scripts/scripts.php` (relative `scripts.php` from `scripts/`).
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo()`.
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.

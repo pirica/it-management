@@ -1,6 +1,9 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Explorer ZIP Leak Verification');
 
 function run_isolated_get($script_path, $session_data = [], $get_data = []) {
     $session_init = "";

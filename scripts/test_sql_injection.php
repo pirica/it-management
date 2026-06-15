@@ -11,7 +11,13 @@
 
 require __DIR__ . '/../config/config.php';
 
-header('Content-Type: application/json; charset=utf-8');
+if (isset($_GET['browser'])) {
+    require_once __DIR__ . '/lib/script_browser_nav.php';
+    header('Content-Type: text/html; charset=utf-8');
+    itm_script_browser_nav_echo();
+} else {
+    header('Content-Type: application/json; charset=utf-8');
+}
 ini_set('display_errors', '0');
 
 // Method validation

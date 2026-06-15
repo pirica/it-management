@@ -7,6 +7,9 @@
  */
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Auth Bypass v3 Reproduction');
 
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Reproduction Auth Bypass v3" . $nl;

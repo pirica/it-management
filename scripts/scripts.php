@@ -872,6 +872,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>python3 scripts/verify_todo_categories.py</code></td>
                 </tr>
                 <tr>
+                    <td><code>verify_notes_ui.py</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Verifies Notes module functionality via Playwright.</td>
+                    <td><code>python3 scripts/verify_notes_ui.py</code></td>
+                </tr>
+                <tr>
                     <td><code>repro_bug.php</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction and verification script for Todo module visibility and security bugs (multi-assignment and IDOR).</td>
@@ -927,6 +933,24 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for unauthorized company deletion by regular users.</td>
                     <td><code>php scripts/verify_company_deletion.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_auth_bypass_v3.php">repro_auth_bypass_v3.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for Auth Bypass v3 vulnerability.</td>
+                    <td><code>php scripts/repro_auth_bypass_v3.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_rce_htaccess.php">verify_explorer_rce_htaccess.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for .htaccess-based RCE in the Explorer module.</td>
+                    <td><code>php scripts/verify_explorer_rce_htaccess.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_rce_marker.php">verify_explorer_rce_marker.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for .htaccess-based RCE in the Explorer module using a specific marker to bypass filters.</td>
+                    <td><code>php scripts/verify_explorer_rce_marker.php</code></td>
                 </tr>
             </tbody>
         </table></div>
