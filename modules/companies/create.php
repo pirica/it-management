@@ -8,6 +8,10 @@
  */
 
 require '../../config/config.php';
+if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+    header('Location: ' . BASE_URL . 'dashboard.php');
+    exit;
+}
 itm_ensure_companies_company_unique($conn);
 
 // Determine if we are in Edit mode based on the presence of an ID
