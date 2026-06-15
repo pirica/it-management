@@ -30,35 +30,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mime = $finfo->file($_FILES['photo']['tmp_name']);
         if ($mime === 'image/png') {
             $photoFilename = $id . '_photo.png';
-            $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
-
-            // Debug
-            echo "DIR: $dir\n";
-            echo "REALPATH (parent): " . realpath(dirname($dir)) . "\n";
-            error_log("Creating directory: " . realpath(dirname($dir)) . " -> $dir");
+            $dir = ROOT_PATH . "files/$companyId/Private/{$username}_{$userId}/private_contacts";
 
             $can_write = true;
-            if (file_exists("$dir/$photoFilename") && ($_POST['confirm_replace'] ?? '0') !== '1') {
+            if (file_exists($dir . '/' . $photoFilename) && ($_POST['confirm_replace'] ?? '0') !== '1') {
                 $can_write = false;
             }
 
             if ($can_write) {
-                if (!is_dir($dir)) {
-                    if (!mkdir($dir, 0777, true)) {
-                        echo "MKDIR FAILED\n";
-                        echo "Last error: ";
-                        print_r(error_get_last());
-                        error_log("MKDIR FAILED: $dir");
-                        @chmod($dir, 0777);
-                    } else {
-                        echo "MKDIR SUCCESS\n";
-                        chmod($dir, 0777);
-                    }
-                } else {
-                    chmod($dir, 0777);
-                }
+                itm_ensure_files_storage_directory($dir);
 
-                if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $dir . '/' . $photoFilename)) {
                     $photo = $photoFilename;
                 }
             }

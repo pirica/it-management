@@ -52,7 +52,7 @@ $pageTitle = "View Contact - " . $contact['first_name'] . ' ' . $contact['last_n
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <?php if ($contact['photo']): ?>
-                            <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" class="rounded-circle border" width="120" height="120" style="object-fit: cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
+                            <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['user_id'] . '/private_contacts/' . $contact['photo']) ?>" class="rounded-circle border" width="120" height="120" style="object-fit: cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
                         <?php else: ?>
                             <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
                                 <i class="fas fa-user text-muted fa-4x"></i>

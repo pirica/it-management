@@ -200,7 +200,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $image_files = $_POST['existing_images'] ?? [];
         if (!empty($_FILES['images'])) {
             $upload_dir = ROOT_PATH . "files/$company_id/Private/{$_SESSION['username']}_$logged_user_id/notes/";
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            itm_ensure_files_storage_directory(rtrim($upload_dir, '/'));
             foreach ($_FILES['images']['tmp_name'] as $i => $tmp_name) {
                 if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK) {
                     $name = basename($_FILES['images']['name'][$i]);
@@ -285,7 +285,7 @@ if (isset($_GET["ajax_action"])) {
         $image_files = [];
         if (!empty($_FILES['images'])) {
             $upload_dir = ROOT_PATH . "files/$company_id/Private/{$_SESSION['username']}_$logged_user_id/notes/";
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            itm_ensure_files_storage_directory(rtrim($upload_dir, '/'));
             foreach ($_FILES['images']['tmp_name'] as $i => $tmp_name) {
                 if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK) {
                     $safe_name = uniqid('note_') . '.' . pathinfo($_FILES['images']['name'][$i], PATHINFO_EXTENSION);
@@ -823,7 +823,7 @@ $displayFieldColumns = $uiColumns;
                                     <input type="file" id="file-input" name="images[]" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
                                 </div>
                                 <div id="image-preview-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
-                                    <?php $imgs = json_decode($data['images_json'] ?? '[]', true); if (is_array($imgs)): foreach ($imgs as $img): $imgPath = "../../files/{$company_id}/Private/{$_SESSION['username']}_{$logged_user_id}/notes/{$img}"; ?>
+                                    <?php $imgs = json_decode($data['images_json'] ?? '[]', true); if (is_array($imgs)): foreach ($imgs as $img): $imgPath = itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $logged_user_id . '/notes/' . $img); ?>
                                         <div class="image-item" style="position: relative;"><img src="<?php echo $imgPath; ?>" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;"><input type="hidden" name="existing_images[]" value="<?php echo sanitize($img); ?>"><span onclick="this.parentElement.remove()" style="position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;">&times;</span></div>
                                     <?php endforeach; endif; ?>
                                 </div>
@@ -902,7 +902,7 @@ $displayFieldColumns = $uiColumns;
                                 <?php endif; ?>
                             </div>
                             <?php $vimgs = json_decode($data['images_json'] ?? '[]', true); if (!empty($vimgs)): ?>
-                                <div class="itm-floor-plan-view-preview" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;"><?php foreach ($vimgs as $img): $imgPath = "../../files/{$company_id}/Private/{$_SESSION['username']}_{$logged_user_id}/notes/{$img}"; ?>
+                                <div class="itm-floor-plan-view-preview" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;"><?php foreach ($vimgs as $img): $imgPath = itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $logged_user_id . '/notes/' . $img); ?>
                                     <div style="text-align: center;">
                                         <img src="<?php echo $imgPath; ?>" class="itm-floor-plan-view-image" onclick="openImageModal('<?php echo $imgPath; ?>')" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 5px; cursor: pointer;">
                                         <div style="font-size: 12px; display: flex; justify-content: center; gap: 10px;"><a href="#" onclick="openImageModal('<?php echo $imgPath; ?>'); return false;" style="text-decoration: none;">👁️ Preview</a><a href="<?php echo $imgPath; ?>" download style="text-decoration: none;">📥 Download</a></div>

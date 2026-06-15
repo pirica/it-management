@@ -48,24 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mime = $finfo->file($_FILES['photo']['tmp_name']);
             if ($mime === 'image/png') {
                 $photoFilename = $insertId . '_photo.png';
-                $dir = "../../files/$companyId/Private/{$username}_{$userId}/private_contacts";
+                $dir = ROOT_PATH . "files/$companyId/Private/{$username}_{$userId}/private_contacts";
+                itm_ensure_files_storage_directory($dir);
 
-                // Debug
-                error_log("Creating directory: " . realpath(dirname($dir)) . " -> $dir");
-
-                if (!is_dir($dir)) {
-                    if (!mkdir($dir, 0777, true)) {
-                        error_log("MKDIR FAILED: $dir");
-                        // Fallback chmod attempt if folder exists but restricted
-                        @chmod($dir, 0777);
-                    } else {
-                        chmod($dir, 0777);
-                    }
-                } else {
-                    chmod($dir, 0777);
-                }
-
-                if (move_uploaded_file($_FILES['photo']['tmp_name'], "$dir/$photoFilename")) {
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $dir . '/' . $photoFilename)) {
                     $updateStmt = $conn->prepare("UPDATE private_contacts SET photo = ? WHERE id = ?");
                     $updateStmt->bind_param("si", $photoFilename, $insertId);
                     $updateStmt->execute();

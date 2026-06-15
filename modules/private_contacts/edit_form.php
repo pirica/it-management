@@ -11,7 +11,7 @@
                             <input type="hidden" name="confirm_replace" id="confirm_replace" value="0">
                             <label for="photo-input" class="mb-0 cursor-pointer d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                 <?php if (!empty($contact['photo'])): ?>
-                                    <img src="../../files/<?php echo $_SESSION['company_id']; ?>/Private/<?php echo $_SESSION['username'] . "_" . $_SESSION['user_id']; ?>/private_contacts/<?php echo htmlspecialchars($contact['photo']); ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
+                                    <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['user_id'] . '/private_contacts/' . $contact['photo']) ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
                                 <?php else: ?>
                                     <div id="photo-placeholder" class="rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                         <i class="fas fa-camera fa-2x text-muted"></i>
