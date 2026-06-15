@@ -64,7 +64,7 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 ### Generated QA reports (`qa-reports/`)
 
-* `module_browser_qa_runner.php` and `module_browser_qa_build_report.php` write **UTF-8** via `scripts/lib/utf8_file.php` (`itm_write_utf8_text_file`).
+* Runner/build-report behaviour, commands, and UTF-8 write helpers: **`scripts/SCRIPTS.md`** (Full-module browser QA; shared libraries).
 * **`.md` under `qa-reports/`** may be written **with a UTF-8 BOM** (`EF BB BF`) so **Windows Notepad** opens them correctly.
 * **`.json` under `qa-reports/`** is UTF-8 **without BOM** — `json_decode()` rejects a leading BOM; the report builder strips BOM on read if an older file still has one.
 
@@ -81,7 +81,7 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 1. **Cursor / VS Code:** `"files.encoding": "utf8"`; reopen file with encoding **UTF-8**.
 2. **PowerShell:** `Get-Content -Encoding utf8 path\to\file.md` (default encoding is not UTF-8 on Windows).
-3. **Re-build QA markdown:** `php scripts/module_browser_qa_build_report.php --date=YYYY-MM-DD` after pulling encoding fixes.
+3. **Re-build QA markdown** per **`scripts/SCRIPTS.md`** (Full-module browser QA) after pulling encoding fixes.
 4. **Do not** use Notepad “Save as” ANSI or Excel “CSV ANSI” on UTF-8 exports.
 
 **Agents:** never replace `—` / `…` / emoji with ASCII substitutes just to avoid display glitches in one tool; preserve UTF-8 and document viewer settings.
@@ -118,21 +118,12 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 * `js/` & `css/`: Assets (use `css/styles.css`).
 * **Required Dirs:** `images/`, `tickets_photos/`, `backups/`, and `files/` must exist with write permissions.
 * `scripts/api.php`: API Documentation
-* **Mandatory script placement:** All debug/fix/document tools go under `scripts/` — see **`scripts/SCRIPTS.md`**.
 
 ### Scripts directory (`scripts/`) — see `scripts/SCRIPTS.md`
 
-**Canonical source:** All rules for creating, cataloging, running, and verifying tools under `scripts/` live in **`scripts/SCRIPTS.md`**. Do not duplicate scripts standards in this file.
+**Canonical source:** All rules for creating, cataloging, running, and verifying tools under `scripts/` live in **`scripts/SCRIPTS.md`**. Do not duplicate scripts standards in this file. When updating scripts-related rules, change **only** `scripts/SCRIPTS.md` and keep this section as a short pointer.
 
-**Agent requirement (hard fail):** Read **`scripts/SCRIPTS.md` completely** at session start and again before any work under `scripts/`. If this file and `SCRIPTS.md` disagree on scripts topics, follow **`SCRIPTS.md`**.
-
-Quick pointers (full detail in `SCRIPTS.md`):
-
-* Live catalog: **`scripts/scripts.php`**
-* Smoke CI: `bash scripts/smoke_test.sh` (php -l, CSRF, SQLi only)
-* Full-module browser QA: `module_browser_qa_runner.php` + `module_browser_qa_build_report.php`
-* New or changed scripts rules ship in **`SCRIPTS.md`** on a fresh branch + PR
-
+---
 
 ## 🏗 Coding Standards
 
@@ -323,7 +314,7 @@ $showBulkActions = ($totalRows >= $perPage);
 | **Pagination footer** (`Previous` / `Next`) | `$totalRows > $perPage` |
 | **Rejected (inverted)** | `$perPage >= $totalRows` or `if ($perPage >= $totalRows)` before bulk markup — hides bulk UI when QA expects `bulk_delete` / `clear_table` |
 
-`scripts/check_ui_configuration_coverage.php` fails inverted gates. Module browser QA skips bulk steps with `N/A (N rows < perPage 25 …)` when the gate is correct but the tenant has fewer rows than `records_per_page`.
+`scripts/check_ui_configuration_coverage.php` fails inverted gates. Module browser QA bulk-step skip behaviour: **`scripts/SCRIPTS.md`** (Full-module browser QA).
 
 **Reference parents with inbound FKs:** when `inventory_items` (or other children) reference the module table without `ON DELETE CASCADE`, detach or clear child FK columns for the active `company_id` **before** `DELETE` on the parent (`inventory_categories`: `UPDATE inventory_items SET category_id = NULL …` then delete categories). Otherwise `bulk_delete`, `clear_table`, and `single_delete` can return HTTP 200 while rows remain and QA reports “still listed”.
 
@@ -346,14 +337,14 @@ $displayFieldColumns = $uiColumns;
 
 4. List/view HTML may keep `foreach ($uiColumns as $col)` (or `$visibleFieldColumns`); search may use `$displayFieldColumns` or `$uiColumns` only **after** the alias line exists.
 
-**Audit / repair** (catalog: `scripts/scripts.php`):
+**Audit / repair** (see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`**):
 
 | Script | When |
 |--------|------|
 | `php scripts/check_display_field_columns_search.php` | After changing flattened `index.php` search or list column variables; exit `1` if any index uses `$displayFieldColumns` without assignment |
 | `php scripts/apply_display_field_columns_search_alias.php` | CLI-only maintenance to add the alias on modules missing it (idempotent; re-run when scaffolding new flattened modules) |
 
-Not part of smoke — run manually when CRUD template or search logic changes. Bulk fix: [PR #1796](https://github.com/pirica/it-management/pull/1796).
+Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk fix: [PR #1796](https://github.com/pirica/it-management/pull/1796).
 
 ### 6. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.
@@ -396,11 +387,10 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
 * **Testing/reporting guardrail (mandatory):**
   * Do not claim “No tests run” when checks were executed.
-  * **Windows Laragon:** run and document PHP tests with the **full PHP binary path** and correct shell syntax — **PowerShell:** `& "C:\...\php.exe" scripts/...`; **cmd:** `"C:\...\php.exe" scripts\...` (see **Setup & Debugging → PHP CLI tests — full binary path (mandatory)**).
+  * **Windows Laragon:** use the full PHP binary path from **Setup & Debugging** below; script catalog, smoke, MBQA, and CLI conventions: **`scripts/SCRIPTS.md`**.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php` (use full PHP path on Windows Laragon).
   * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
-  * Optional broad QA (all modules × five companies): `php scripts/module_browser_qa_runner.php` then `php scripts/module_browser_qa_build_report.php` — list exact pass/fail counts in the PR when run (see **Full-module browser QA** in `scripts/SCRIPTS.md`).
-  * After employees/equipment `clear_table` changes: `php scripts/check_employees_clear_table_transaction.php`, `php scripts/check_equipment_clear_table_delete.php`; optional DB regression per `scripts/scripts.php` (`employees_delete_clear_table_test.php`, `equipment_delete_clear_table_test.php`). Run `php scripts/cleanup_equipment_test_module_artifacts.php` when equipment regression tests touched the database.
+  * Optional broad QA, equipment/employees clear-table regression, and other script suites: **`scripts/SCRIPTS.md`**.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).
 * **IDF synchronization guardrail (mandatory for `modules/idfs/view.php`, `modules/equipment/`, `modules/switch_ports/`, and `modules/idfs/device.php`):**
@@ -502,32 +492,20 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 ### PHP CLI tests — full binary path (mandatory — Windows Laragon)
 
-On **Windows Laragon** (Nelson's environment), **always** use the **full absolute path** to the PHP 7.4.33 binary when running PHP tests, audits, and `scripts/*.php` — do **not** rely on bare `php` on PATH.
+On **Windows Laragon** (Nelson's environment), **always** use the **full absolute path** to the PHP 7.4.33 binary when running PHP tests, audits, and `scripts/*.php` — do **not** rely on bare `php` on PATH. For script catalog, smoke, MBQA commands, and CLI conventions, see **`scripts/SCRIPTS.md`**.
 
 | Rule | Detail |
 |------|--------|
-| **Shell** | Nelson's default terminal is **PowerShell** — a quoted path alone is a string, not a command. Prefix with the call operator **`&`**. Use **cmd** syntax only inside `cmd /c` or a `.cmd` session. |
+| **Shell** | Nelson's default terminal is **PowerShell** — prefix the quoted `php.exe` path with **`&`**. |
 | **Run commands (PowerShell)** | From repo root: `& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/<script>.php [options]` |
 | **Run commands (cmd.exe)** | `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\<script>.php [options]` |
-| **PR test plans / agent replies** | List the **exact full-path command** executed for the shell used (PowerShell with `&`, or cmd) — not shortened `php scripts/...` |
-| **Verification example (PowerShell)** | `& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1` |
+| **PR test plans / agent replies** | List the **exact full-path command** executed — not shortened `php scripts/...` |
 
-**PowerShell error:** `Unexpected token 'scripts/module_browser_qa_runner.php'` means the line is missing **`&`** before the quoted `php.exe` path.
+**PowerShell error:** `Unexpected token 'scripts/...'` means the line is missing **`&`** before the quoted `php.exe` path.
 
 On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/...` remains acceptable.
 
-  * **CLI example (repo root — PowerShell):**
-    ```powershell
-    cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-    & "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/module_browser_qa_runner.php --module=cable_colors --company=1
-    ```
-  * **CLI example (repo root — cmd.exe):**
-    ```cmd
-    cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-    "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\module_browser_qa_runner.php
-    ```
-    On Windows, run the three `scripts/smoke_test.sh` checks individually with that PHP binary, or use Git Bash: `bash scripts/smoke_test.sh`.
-  * **Import `database.sql` (full file — do not strip the first lines):**
+* **Import `database.sql` (full file — do not strip the first lines):**
     ```cmd
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
     "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
@@ -539,10 +517,8 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
   * `http://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
   * Note: `https://nelsonsalvador.myddns.me/phpmyadmin/` currently returns upstream TLS/certificate errors; use HTTP for phpMyAdmin checks.
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
-* **Testing:** Browser screenshots are not supported; rely on verbose error logging. For full-module CRUD/button regression across five companies, see **`scripts/SCRIPTS.md`** (Full-module browser QA).
-* **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled.
-  * **Linux, macOS, CI, and any host where `php` is on PATH:** `php scripts/<script>.php`
-  * **Windows (Laragon) when `php` is not on PATH:** use `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` from **Windows Laragon portable — local paths** above.
+* **Testing:** Browser screenshots are not supported; rely on verbose error logging. Script suites and full-module QA: **`scripts/SCRIPTS.md`**.
+* **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled — conventions and catalog in **`scripts/SCRIPTS.md`**; Laragon binary path in **PHP CLI tests** above.
 
 ---
 
@@ -619,8 +595,8 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
   * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
-  * Smoke/CI: `bash scripts/smoke_test.sh` when `.github/workflows/smoke.yml` applies (php -l, CSRF, SQLi only); list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
-* **CI and repo scripts stay authoritative:** the smoke workflow must pass on PRs; run other maintenance scripts (for example `check_audit_logs_coverage.php`, `check_database_sql_company_name_uniques.php`, `check_index_table_compliance.php`) manually when the change scope requires them.
+  * Smoke/CI: see **`scripts/SCRIPTS.md`** (Smoke tests) when `.github/workflows/smoke.yml` applies; list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
+* **CI and repo scripts stay authoritative:** the smoke workflow must pass on PRs; see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** for other maintenance scripts to run when the change scope requires them.
 
 ### GitHub PR review comments (mandatory)
 * **Read all GitHub PR feedback** before considering a PR merge-ready: use `gh pr view`, `gh api repos/{owner}/{repo}/pulls/{number}/comments`, GraphQL review-thread endpoints, or the PR URL. Include human reviewers, **Bugbot**, **Codex**, and actionable CI/check annotations when present.
@@ -688,13 +664,11 @@ The update script creates `/etc/apache2/conf-available/it-management.conf` which
 
 ### Smoke tests
 
-Standard commands from `scripts/SCRIPTS.md` (Smoke tests) work as-is:
+See **`scripts/SCRIPTS.md`** (Smoke tests). On Cloud Agent VMs:
 
 ```bash
 bash scripts/smoke_test.sh
 ```
-
-All three checks (php -l lint, CSRF coverage, SQLi coverage) run with the `php` binary on PATH (PHP 7.4.33 via `ondrej/php` PPA).
 
 
 ### Bypassing Login (Dev/Test)
