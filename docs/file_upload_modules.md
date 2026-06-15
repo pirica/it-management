@@ -8,17 +8,36 @@ Most modules that support file uploads have been upgraded to include a drag-and-
 
 Upload and tenant file trees are hardened by `itm_ensure_upload_directory()` and `itm_ensure_upload_directory_chain()` in `includes/bootstrap_helpers.php`. **Do not** call bare `mkdir()` for application upload paths.
 
+## Force-create contract (mandatory)
+
+Every `itm_ensure_upload_directory()` call — including each segment walked by `itm_ensure_upload_directory_chain()` — **must force-create** two managed files on that folder:
+
+| File | Behaviour |
+|------|-----------|
+| **`.htaccess`** | Always **overwritten** with the canonical policy body for that directory (`upload`, `deny_http`, or `deny_all`). Never skip when a file already exists or contains an ITM marker. |
+| **`index.html`** | Always **overwritten** with an empty placeholder from `itm_upload_directory_empty_index_html()`. Applies to **all** policies (including `backups/`). |
+
+Success requires all three to exist: the directory, `.htaccess`, and `index.html`.
+
+Empty `index.html` content (managed — do not edit by hand):
+
+```html
+<!DOCTYPE html><html><head><title></title></head><body></body></html>
+```
+
+**Do not** create upload folders with bare `mkdir()` and add `.htaccess` / `index.html` manually in a follow-up step — call the helper once so both files are written atomically for that path.
+
 ## Upload hardening policies
 
-| Policy | Directories | `.htaccess` behaviour | HTTP access |
-|--------|-------------|----------------------|-------------|
-| `upload` | `images/`, `tickets_photos/`, `floor_plans/` | Disables PHP execution; blocks script extensions | Static files served directly by Apache |
-| `deny_http` | `files/` and every segment under `files/{company_id}/…` | `RewriteEngine On` + `RewriteRule ^ - [F]` on **each** folder in the chain | **Denied** — serve through `modules/explorer/file.php` |
-| `deny_all` | `backups/` | `Require all denied` | Fully blocked |
+| Policy | Directories | `.htaccess` (force-written) | `index.html` (force-written) | HTTP access |
+|--------|-------------|----------------------------|------------------------------|-------------|
+| `upload` | `images/`, `tickets_photos/`, `floor_plans/` | Disables PHP execution; blocks script extensions | Empty placeholder | Static files served directly by Apache |
+| `deny_http` | `files/` and every segment under `files/{company_id}/…` | `RewriteEngine On` + `RewriteRule ^ - [F]` on **each** folder in the chain | Empty placeholder | **Denied** — serve through `modules/explorer/file.php` |
+| `deny_all` | `backups/` | `Require all denied` | Empty placeholder | Fully blocked |
 
 ### `/files/` chain example
 
-For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the system writes managed `.htaccess` (and `index.html`) on:
+For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
 
 - `files/`
 - `files/{company_id}/`
@@ -39,12 +58,11 @@ Options -Indexes -ExecCGI
 
 | Helper | When to use |
 |--------|-------------|
-| `itm_ensure_upload_directory($path, $policy)` | Single directory (bootstrap paths, `images/favicons/`, company floor-plan folder) |
-| `itm_ensure_upload_directory_chain($path, $policy, $anchorRoot)` | Ensure `.htaccess` on every segment from anchor to leaf |
-| `itm_ensure_files_storage_directory($absolutePath)` | Any path under `files/` — applies `deny_http` from `files/` root |
+| `itm_ensure_upload_directory($path, $policy)` | Single directory — force-writes `.htaccess` + empty `index.html` |
+| `itm_ensure_upload_directory_chain($path, $policy, $anchorRoot)` | Walk anchor→leaf; force-writes `.htaccess` + empty `index.html` on **every** segment |
+| `itm_ensure_files_storage_directory($absolutePath)` | Any path under `files/` — `deny_http` chain from `files/` root |
 | `itm_files_serve_url($relativePath)` | Build `../../modules/explorer/file.php?path=…` for UI `<img>` / download links |
-
-Each call to `itm_ensure_upload_directory()` **force-writes** both `.htaccess` (policy body) and an empty `index.html` on that folder — existing files are overwritten, not skipped.
+| `itm_upload_directory_empty_index_html()` | Canonical empty `index.html` body (used internally; do not duplicate) |
 
 ### Is `RewriteRule ^ - [F]` the best approach?
 
@@ -52,7 +70,7 @@ Each call to `itm_ensure_upload_directory()` **force-writes** both `.htaccess` (
 
 1. **PHP proxy serving** (`modules/explorer/file.php`) so authorised users still see images/files after direct HTTP is blocked.
 2. **Per-segment `.htaccess`** so a malicious upload cannot relax rules in a child folder when parent rules are missing.
-3. **Always overwriting** managed `.htaccess` (never “skip if marker exists”) so uploaded `.htaccess` files cannot append RCE directives.
+3. **Force-overwriting** managed `.htaccess` and empty `index.html` on every ensure (never “skip if exists”) so uploaded `.htaccess` files cannot append RCE directives and deleted `index.html` files are restored.
 4. **Upload filters** (blocked extensions and dotfiles) in `modules/explorer/api.php`.
 
 **For public asset dirs** (`images/`, `tickets_photos/`, `floor_plans/`) use the `upload` policy instead — those URLs must remain directly servable. `RewriteRule ^ - [F]` alone is insufficient there; the existing `upload` policy disables script execution while allowing images/PDFs.
@@ -126,20 +144,20 @@ Each call to `itm_ensure_upload_directory()` **force-writes** both `.htaccess` (
 
 ## Folder creation map (code references)
 
-| Location | Helper / policy |
-|----------|-----------------|
-| `config/config.php` | `upload` on `images/`, `tickets_photos/`, `floor_plans/`; `deny_all` on `backups/`; `deny_http` on `files/` |
-| `modules/explorer/api.php` | `itm_ensure_files_storage_directory()` for all folder operations |
-| `modules/explorer/setup.php` | `itm_ensure_files_storage_directory()` |
-| `modules/private_contacts/create.php`, `edit.php` | `itm_ensure_files_storage_directory()` |
-| `modules/notes/index.php` | `itm_ensure_files_storage_directory()` |
-| `modules/floor_plans/gallery_helpers.php` | `itm_ensure_upload_directory($base, 'upload')` |
-| `modules/settings/index.php` | `itm_ensure_upload_directory($faviconsDirFs, 'upload')` |
-| `modules/equipment/create.php` | `itm_ensure_upload_directory(UPLOAD_PATH, 'upload')` |
+| Location | Helper / policy | Force-created files per folder |
+|----------|-----------------|--------------------------------|
+| `config/config.php` | `upload` on `images/`, `tickets_photos/`, `floor_plans/`; `deny_all` on `backups/`; `deny_http` on `files/` | `.htaccess` + empty `index.html` |
+| `modules/explorer/api.php` | `itm_ensure_files_storage_directory()` for all folder operations | `.htaccess` + empty `index.html` on each chain segment |
+| `modules/explorer/setup.php` | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
+| `modules/private_contacts/create.php`, `edit.php` | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
+| `modules/notes/index.php` | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
+| `modules/floor_plans/gallery_helpers.php` | `itm_ensure_upload_directory($base, 'upload')` | `.htaccess` + empty `index.html` |
+| `modules/settings/index.php` | `itm_ensure_upload_directory($faviconsDirFs, 'upload')` | `.htaccess` + empty `index.html` |
+| `modules/equipment/create.php` | `itm_ensure_upload_directory(UPLOAD_PATH, 'upload')` | `.htaccess` + empty `index.html` |
 
 ## Maintenance script
 
-Backfill `.htaccess` on existing tenant trees:
+Backfill managed `.htaccess` and empty `index.html` on every directory segment under existing `files/` trees (idempotent — overwrites both files):
 
 ```bash
 php scripts/ensure_files_htaccess_chain.php
