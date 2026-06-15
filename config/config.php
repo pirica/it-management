@@ -1572,6 +1572,16 @@ if (!function_exists('itm_handle_json_table_import')) {
             exit;
         }
 
+        // Why: Sensitive tables must only be imported by administrators.
+        $sensitiveTables = ['companies', 'users', 'user_roles', 'access_levels', 'role_module_permissions'];
+        if (in_array($tableName, $sensitiveTables, true)) {
+            if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Unauthorized: Only administrators can import data for this module.']);
+                exit;
+            }
+        }
+
         $importRows = $jsonBody['import_excel_rows'];
         if (!is_array($importRows) || count($importRows) < 2) {
             http_response_code(400);
@@ -1999,6 +2009,40 @@ if (!function_exists('itm_handle_json_table_import')) {
 
         echo json_encode($response);
         exit;
+    }
+}
+
+/**
+ * Checks if a user has administrative privileges.
+ *
+ * @param mysqli $conn
+ * @param int $userId
+ * @return bool
+ */
+if (!function_exists('itm_is_admin')) {
+    function itm_is_admin($conn, $userId) {
+        if (!$conn || $userId <= 0) {
+            return false;
+        }
+
+        $sql = 'SELECT 1
+            FROM `users` u
+            LEFT JOIN `user_roles` ur ON ur.id = u.role_id
+            WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(COALESCE(u.username, "")) = "admin")
+            LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'i', $userId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $isAdmin = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($stmt);
+
+        return $isAdmin;
     }
 }
 

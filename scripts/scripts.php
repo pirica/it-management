@@ -877,6 +877,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="repro_auth_bypass_v3.php">repro_auth_bypass_v3.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction and verification script for Authorization Bypass in Companies and Users modules.</td>
+                    <td>Open in browser or run via CLI: <code>php scripts/repro_auth_bypass_v3.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>

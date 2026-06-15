@@ -7,6 +7,10 @@
  */
 
 require '../../config/config.php';
+if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+    header('Location: ' . BASE_URL . 'dashboard.php');
+    exit;
+}
 itm_ensure_companies_company_unique($conn);
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
