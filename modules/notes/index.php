@@ -585,7 +585,7 @@ $displayFieldColumns = $uiColumns;
                 <div class="notes-content">
                     <?php if ($crud_action === "index" || $crud_action === "list_all"): ?>
                         <div class="notes-header">
-                            <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="btn btn-sm" style="margin-bottom: 20px;">➕ New Note</a>
+                            <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="btn btn-sm" style="margin-bottom: 20px;">➕</a>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <h1>
                                     <?php
