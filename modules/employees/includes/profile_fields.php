@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared profile fields for employee create/edit forms.
+ * Shared profile photo field for employee create/edit forms.
  *
  * Expects: $form (array), optional $employee row for edit preview.
  */
@@ -11,10 +11,11 @@ $empPhotoEmployee = [
 ];
 $empPhotoUrl = emp_profile_photo_url($empPhotoEmployee);
 $empCanUploadPhoto = emp_profile_photo_can_store($empPhotoEmployee);
+$empHasExistingPhoto = $empPhotoUrl !== '';
 ?>
 <div class="form-group" style="grid-column: 1 / -1;">
     <label>Profile Photo</label>
-    <div class="position-relative itm-photo-upload-target cursor-pointer text-center" style="border: 2px dashed currentColor; border-radius: 50%; padding: 5px; width: 110px; height: 110px;<?= $empCanUploadPhoto ? '' : ' opacity:0.6; pointer-events:none;' ?>">
+    <div class="position-relative itm-photo-upload-target cursor-pointer text-center mx-auto" style="border: 2px dashed currentColor; border-radius: 50%; padding: 5px; width: 110px; height: 110px;<?= $empCanUploadPhoto ? '' : ' opacity:0.6; pointer-events:none;' ?>">
         <input type="file" name="photo" id="employee-photo-input" class="d-none" accept=".png,.jpg,.jpeg,image/png,image/jpeg" style="display:none;" <?= $empCanUploadPhoto ? '' : 'disabled' ?>>
         <label for="employee-photo-input" class="mb-0 cursor-pointer d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
             <?php if ($empPhotoUrl !== ''): ?>
@@ -27,24 +28,13 @@ $empCanUploadPhoto = emp_profile_photo_can_store($empPhotoEmployee);
             <?php endif; ?>
         </label>
     </div>
-    <small class="text-muted d-block mt-2">
+    <small class="text-muted d-block mt-2 text-center">
         <?php if ($empCanUploadPhoto): ?>
-            Drag and drop or click to upload PNG/JPG. Saved as Private/<?= sanitize(emp_profile_photo_safe_username($empPhotoEmployee['username'])) ?>_<?= (int)$empPhotoEmployee['user_id'] ?>/profile/.
+            Drag and drop or click to upload PNG/JPG.
         <?php else: ?>
             Set username and link a user account to enable profile photo upload.
         <?php endif; ?>
     </small>
-</div>
-<div class="form-group">
-    <label>Birthday</label>
-    <input type="date" name="birthday" value="<?= sanitize((string)($form['birthday'] ?? '')) ?>">
-</div>
-<div class="form-group">
-    <label>Hide Year</label>
-    <label class="itm-checkbox-control">
-        <input type="checkbox" name="hide_year" value="1" <?= ((int)($form['hide_year'] ?? 0) === 1) ? 'checked' : '' ?>>
-        <span>Hide Year <span class="itm-check-indicator" aria-hidden="true"><?= ((int)($form['hide_year'] ?? 0) === 1) ? '✅' : '❌' ?></span></span>
-    </label>
 </div>
 <script src="../../js/itm-upload-helper.js"></script>
 <script>
@@ -56,9 +46,20 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!photoInput) {
         return;
     }
+    var hasExistingPhoto = <?= $empHasExistingPhoto ? 'true' : 'false' ?>;
     photoInput.addEventListener('change', function (evt) {
         var file = evt.target.files && evt.target.files[0];
         if (!file) {
+            return;
+        }
+        var lowerName = (file.name || '').toLowerCase();
+        if (!lowerName.endsWith('.png') && !lowerName.endsWith('.jpg') && !lowerName.endsWith('.jpeg')) {
+            alert('Only PNG and JPG profile photos are allowed.');
+            evt.target.value = '';
+            return;
+        }
+        if (hasExistingPhoto && !confirm('A photo already exists. Do you want to replace it?')) {
+            evt.target.value = '';
             return;
         }
         var preview = document.getElementById('employee-photo-preview');
@@ -74,5 +75,9 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <style>
-.itm-photo-upload-target.is-dragover { opacity: 0.85; }
+.itm-photo-upload-target.is-dragover {
+    border-color: #007bff !important;
+    background-color: rgba(0, 123, 255, 0.05);
+    opacity: 0.85;
+}
 </style>

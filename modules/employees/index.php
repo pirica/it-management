@@ -22,6 +22,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 }
 
 require '../../includes/employee_system_access.php';
+require_once '../../includes/employee_profile_photo.php';
 
 // Lazy-initialize required tables if missing
 esa_ensure_table($conn);
@@ -580,7 +581,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','workstation_mode_id','assignment_type_id','comments'];
+$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','request_date','requested_by','termination_requested_by','termination_date','employment_status_id','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
 $hiddenColumns = ['company_id','employee_code','location','location_id','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
@@ -657,6 +658,7 @@ function emp_label($field) {
     if ($field === 'employee_position_id') return 'Position Title';
     if ($field === 'reports_to') return 'Reports To';
     if ($field === 'employment_status_id') return 'Employment Status';
+    if ($field === 'hide_year') return 'Hide Year';
     if ($field === 'workstation_mode_id') return 'Workstation Mode';
     if ($field === 'assignment_type_id') return 'Assignment Type';
     if ($field === 'external_id') return 'External ID';
@@ -792,6 +794,12 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                     <?php elseif ($col === 'employee_position_id'): ?><?php echo sanitize((string)($row['position_name'] ?? '')); ?>
                                     <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($row['manager_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employment_status_id'): ?><?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'birthday'): ?><?php echo sanitize(emp_format_birthday_display($row['birthday'] ?? null, $row['hide_year'] ?? 0)); ?>
+                                    <?php elseif ($col === 'photo'): ?>
+                                        <?php $empListPhotoUrl = emp_profile_photo_url($row); ?>
+                                        <?php if ($empListPhotoUrl !== ''): ?>
+                                            <img src="<?= sanitize($empListPhotoUrl) ?>" alt="" class="rounded-circle" width="30" height="30" style="object-fit:cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
+                                        <?php else: ?>—<?php endif; ?>
                                     <?php elseif ($col === 'workstation_mode_id'): ?><?php echo sanitize((string)($row['workstation_mode_name'] ?? '')); ?>
                                     <?php elseif ($col === 'assignment_type_id'): ?><?php echo sanitize((string)($row['assignment_type_name'] ?? '')); ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
