@@ -23,12 +23,24 @@ Before making any change, replying, running commands, editing files, or proposin
    | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
    | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
 
-   **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands — do **not** embed **specific** pull request numbers, `pull/…` URLs that include a PR id, or “post PR …” / “merged in PR …” history in:
+   **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands. The following are **forbidden** in all docs and comments:
 
-   - `AGENT_NOTES.md`, `docs/`, module notes, feature sections of **`AGENTS.md`**, **`scripts/SCRIPTS.md`**, or **`scripts/scripts.php`** catalog prose
-   - **Code comments** and file headers (`// Why:`, `/** … */`) — **keep the comment**; remove only the numbered PR cite (e.g. write “added manually across companies”, not “a prior PR added …”)
+   - Any explicit pull request reference with digits, such as:
+     - `PR #<digits>`, `PR#<digits>`, `PR  #  <digits>`
+     - GitHub URLs containing `/pull/<digits>` (for example: `https://github.com/owner/repo/pull/<digits>`)
+     - Phrases like “post PR #<digits>”, “merged in PR #<digits>”, or similar history keyed to a numbered PR.
 
-   **Allowed:** generic git-workflow placeholders in **`AGENTS.md`** only — e.g. `PR #N`, “fresh PR”, “do not push to an open PR” — with **no digits** and no `https://…/pull/` examples.
+   These must **not** appear in:
+
+   - `AGENT_NOTES.md`, `docs/`, module notes, or feature sections of **`AGENTS.md`**, **`scripts/SCRIPTS.md`**, or **`scripts/scripts.php`** catalog prose
+   - **Code comments** and file headers (`// Why:`, `/** … */`) — **keep the comment**; remove only the numbered PR cite (for example, write “added manually across companies”, not “PR #<digits> added …”).
+
+   **Allowed (`AGENTS.md` only):** a single generic placeholder that refers to PRs without digits:
+
+   - The **literal** placeholder `PR #N` (uppercase `PR`, one space, `#`, uppercase `N`).
+   - Generic phrases like “fresh PR” or “do not push to an open PR”.
+
+   Digits are **never** allowed inside the placeholder — only the literal `PR #N` is valid. No `https://…/pull/` examples are allowed anywhere.
 
    **When editing stale text:** strip the number/URL; do not delete the surrounding explanation.
 
