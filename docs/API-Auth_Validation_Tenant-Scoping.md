@@ -13,8 +13,8 @@ Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms 
 ### 2.1 Generic Select Options API (`modules/select_options_api.php`)
 
 *   **Description:** Provides a generic endpoint for creating new reference records (options) on-the-fly.
-*   **Key Find:** **CONFIRMED PRIVILEGE ESCALATION.** A regular user can create records in sensitive tables like `users`, including creating new Admin users by supplying `role_id` and `access_level_id` in the `extra_fields` JSON payload.
-*   **Trusting User-Supplied Identifiers:** The script trusts the `table`, `id_col`, and `label_col` parameters from the POST request. While it checks for "safe identifiers" (regex), it does not restrict the list of allowed tables.
+*   **Key Find:** **REMEDIATED (table whitelist).** Quick-add inserts are restricted to lookup tables in `includes/itm_select_options_policy.php`. Sensitive tables (`users`, `user_roles`, `role_module_permissions`, `access_levels`, and related identity/RBAC tables) are blocked; privilege fields such as `role_id` and `access_level_id` are stripped from `extra_fields`.
+*   **Trusting User-Supplied Identifiers:** The script still accepts `id_col` and `label_col` from POST, but `table` must pass the server-side allow-list before any insert runs.
 *   **Weak Validation:** `extra_fields` are accepted without schema-based runtime validation.
 *   **Recommendation:** Implement an allow-list of tables permitted for "Quick Add". Block sensitive tables (users, roles, permissions). Validate `extra_fields` against a predefined schema per table.
 
@@ -57,7 +57,7 @@ Targeted tests were executed using sample data and established session contexts 
 
 | Endpoint | Test Action | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `select_options_api.php` | Regular user creating Admin | Blocked | **Success (Admin created)** | 🔴 FAIL |
+| `select_options_api.php` | Regular user creating Admin | Blocked | Blocked (HTTP 403, no row inserted) | 🟢 PASS |
 | `equipment/view.php` | Accessing other company asset | Redirect/404 | 302 Redirect to Login | 🟢 PASS |
 | `notes/index.php` (AJAX) | Deleting other company note | Blocked | Returned `{"ok":true}` (No deletion) | 🟡 WARN |
 | `catalogs/index.php` (Import) | Importing invalid price type | 400 Bad Request | **Success (Inserted as NULL)** | 🔴 FAIL |
@@ -67,8 +67,10 @@ Targeted tests were executed using sample data and established session contexts 
 
 ### 3.2 Evidence of Vulnerabilities
 
-#### Privilege Escalation in Select Options API
-A regular user (ID: 2) successfully created a new Admin user by targeting the `users` table via `modules/select_options_api.php`:
+#### Privilege Escalation in Select Options API (remediated)
+A regular user attempting to create an Admin via the `users` table receives HTTP 403 and no database row is inserted. Verification: `php scripts/verify_select_options_escalation.php`.
+
+Previously vulnerable payload (now blocked):
 ```bash
 # Payload sent as RegularUser
 POST /modules/select_options_api.php
@@ -80,7 +82,7 @@ POST /modules/select_options_api.php
   "new_value": "EvilAdmin",
   "extra_fields": "{\"email\":\"evil@evil.com\",\"password\":\"evil\",\"role_id\":1,\"access_level_id\":1}"
 }
-# Result: A new Admin user was created in the database.
+# Result: Request rejected; no Admin user is created.
 ```
 
 #### Weak Data Validation in JSON Import

@@ -22,6 +22,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **get_ports.php** / **update_port.php** — switch port AJAX endpoints; guarded + shared helpers in **switch_port_api_helpers.php**.
 - **itm_script_entry_guard.php** — `itm_skip_http_entry_unless_direct()`, `itm_skip_view_partial_unless_context()`, PHPUnit processing detection.
 - **switch_port_api_helpers.php** — shared lookup/VLAN helpers for port AJAX endpoints (avoids redeclare fatals during coverage).
+- **itm_select_options_policy.php** — whitelist and blocked-table policy for `modules/select_options_api.php` quick-add inserts.
 - **itm_it_location_linked_floor_plans.php** — IT Locations view partial; skips HTML when `$conn` / PHPUnit context missing.
 
 ## 8. Multi-Tenant Rules

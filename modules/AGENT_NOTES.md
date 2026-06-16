@@ -21,3 +21,8 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 
 ## 12. Module Owner Notes (Optional)
 Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` Protection Zone / bespoke sections.
+
+### `select_options_api.php` (module root)
+- Shared JSON endpoint for dropdown quick-add (`js/select-add-option.js`).
+- **Table policy:** inserts are allowed only for tables listed in `includes/itm_select_options_policy.php`; `users`, `user_roles`, `role_module_permissions`, and other identity/RBAC tables are blocked.
+- Regression: `php scripts/verify_select_options_escalation.php` (expects PASS — admin user creation via `users` table rejected).

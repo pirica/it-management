@@ -13,11 +13,14 @@
  *   are provided in the `extra_fields` payload.
  * - Multi-tenant Safety: Handles `company_id` scoping for both lookups 
  *   and insertions.
+ * - Table policy: Only whitelisted reference tables may be inserted; see
+ *   `includes/itm_select_options_policy.php`.
  * - Response: Returns the newly created ID and the full refreshed list of 
  *   options for the dropdown.
  */
 
 require '../config/config.php';
+require_once ROOT_PATH . 'includes/itm_select_options_policy.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -159,6 +162,15 @@ if (!so_identifier($table) || !so_identifier($idCol) || !so_identifier($labelCol
     echo json_encode(['ok' => false, 'error' => 'Invalid table configuration.']);
     exit;
 }
+
+// Why: quick-add is only for reference lookups; block identity/RBAC tables and unknown targets.
+if (!itm_select_options_is_table_allowed($table)) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'This list cannot be updated from quick-add.']);
+    exit;
+}
+
+$extraFields = itm_select_options_filter_extra_fields($extraFields);
 
 
 
@@ -339,11 +351,6 @@ $options = [];
 if ($table === 'equipment_poe') {
     $options = itm_equipment_poe_options_rows($conn, (int)$company_id);
     itm_equipment_poe_append_persisted_row($conn, $options, (int)$selectedId, (int)$company_id);
-} elseif ($table === 'users') {
-    // Why: duplicate quick-add can return an inactive or out-of-scope user id; append keeps selected_id in options.
-    $userCompanyId = ($companyScoped && $company_id > 0) ? (int)$company_id : 0;
-    $options = itm_user_options_for_company($conn, $userCompanyId);
-    $options = itm_user_append_selected_option($conn, $userCompanyId, $options, (int)$selectedId);
 } else {
     $listSelect = so_escape_identifier($idCol) . ' AS id, ' . so_escape_identifier($labelCol) . ' AS label';
     if ($table === 'cable_colors' && isset($columns['hex_color'])) {
