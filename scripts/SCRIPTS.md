@@ -221,23 +221,32 @@ Linux/macOS/CI: bare `php scripts/run_tests.php` when PHP 7.4 is on PATH.
 
 **PHPUnit config:** `phpunit/phpunit.xml` — `verbose="true"`, `<coverage processUncoveredFiles="true">` with HTML output under `coverage/html`. See also `phpunit/AGENT_NOTES.md` and `phpunit/tests/PREFERENCES.md`.
 
-##### HTML coverage — “headers already sent” (guardrails)
+##### HTML coverage — report generation guardrails
 
-If HTML coverage finishes tests but warns during report generation (often naming `includes/get_ports.php`, `includes/update_port.php`, or `includes/companies_view_redirect.php`):
+If HTML coverage finishes tests (`OK (… tests, … assertions)`) but fails or warns during **Generating code coverage report in HTML format …**, PHPUnit’s `processUncoveredFiles="true"` is **`require`ing uncovered PHP files** after the suite while PHPUnit `Printer` output may already be on stdout.
 
-**Root causes (fixed in PR #2228; `get_ports.php` / `update_port.php` guarded in follow-up):**
+Common symptoms:
 
-1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time**. PHPUnit loads every `*Test.php` under `phpunit/tests/Unit/`; load-time output breaks coverage finalization.
-2. **Bare HTTP entry scripts in `includes/`** (`companies_view_redirect.php`, **`get_ports.php`**, **`update_port.php`**) called **`header()` / `echo` at top level**. With `processUncoveredFiles="true"`, PHPUnit can **`require` uncovered files** after the suite (while PHPUnit `Printer` output is already on stdout); those scripts then send headers and JSON/error bodies.
+| Symptom | Typical file |
+|---------|----------------|
+| `Cannot modify header information - headers already sent` | `includes/get_ports.php`, `includes/update_port.php`, `includes/companies_view_redirect.php` |
+| HTML fragment + `Undefined variable: conn` / type error on `mysqli` | View partials such as `includes/itm_it_location_linked_floor_plans.php` |
+
+**Root causes:**
+
+1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time** (fixed PR #2228).
+2. **Bare HTTP entry scripts** called **`header()` / `echo` / `exit` at top level** (fixed PR #2228, #2230).
+3. **View partials** (`require` from module screens) output HTML and assume **`$conn`**, **`$data`**, **`$company_id`** from the parent — bare `require` during coverage emits markup and fatals on missing context.
 
 **Fixes (keep these patterns):**
 
 | Area | Rule |
 |------|------|
 | **Test files** | Use proper **`PHPUnit\Framework\TestCase`** classes with `test*` methods and assertions — **no top-level execution**, **no `echo`** in files matched by `suffix="Test.php"`. |
-| **Redirect / AJAX entry scripts** | **`header()` / `echo` / `exit` only on direct HTTP access** (e.g. `realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)` and `PHP_SAPI !== 'cli'`). When included by tooling, **`return`** early instead of sending headers or JSON. Examples: `includes/companies_view_redirect.php`, `includes/get_ports.php`, `includes/update_port.php`. |
+| **Redirect / AJAX entry scripts** | **`header()` / `echo` / `exit` only on direct HTTP access** (e.g. `realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)` and `PHP_SAPI !== 'cli'`). When included by tooling, **`return`** early. Examples: `includes/companies_view_redirect.php`, `includes/get_ports.php`, `includes/update_port.php`. |
+| **View partials** | **`return` before any HTML** when required context is missing (e.g. `!isset($conn) \|\| !($conn instanceof mysqli)`). Parent modules (`it_locations` etc.) always set `$conn` before `require`. Example: `includes/itm_it_location_linked_floor_plans.php`. |
 
-**When adding tests or includes that send HTTP headers:** run HTML coverage once (`php scripts/run_tests.php --coverage` with Xdebug/PCOV) and confirm report generation completes without header warnings.
+**When adding includes under coverage paths:** run HTML coverage once (`php scripts/run_tests.php --coverage` with Xdebug/PCOV) and confirm **`phpunit/coverage/html/coverage.html`** is created without warnings or PHP notices.
 
 #### Full-module browser QA (5 companies, Laragon)
 

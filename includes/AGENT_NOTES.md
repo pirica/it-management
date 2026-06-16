@@ -20,6 +20,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **delete_functions.php** — shared logic for complex deletions (e.g., equipment).
 - **companies_view_redirect.php** — legacy company view redirect; runs `header()` only on direct HTTP access (guarded so PHPUnit coverage can require the file safely).
 - **get_ports.php** / **update_port.php** — switch port AJAX endpoints; JSON `header()` / response body only on direct HTTP access (same guard for HTML coverage).
+- **itm_it_location_linked_floor_plans.php** — IT Locations view partial (linked floor plans table); **`return`** before HTML when `$conn` is not set (PHPUnit coverage safe).
 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
