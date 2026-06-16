@@ -189,7 +189,7 @@ Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tabl
 
 Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, `itm_api_generate_key()` seed, browser URL with `api_key` query param, optional HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
-Each run prints a **Browser probe URL** such as `http://localhost/it-management/scripts/api.php?rate_limit=1&api_key=…`. The disposable row remains until the next apitest run for that slot.
+Each run prints a **Browser probe URL** such as `http://localhost/it-management/scripts/api.php?rate_limit=1&api_key=…`. The probe returns JSON without a PHP session (`ITM_API_RATE_LIMIT_PROBE` in `scripts/api.php` / `config/config.php`). The disposable row remains until the next apitest run for that slot.
 
 **Verify after rate-limit helper or tier cap changes:**
 
