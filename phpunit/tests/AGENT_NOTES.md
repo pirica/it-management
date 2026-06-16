@@ -10,7 +10,9 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 - **Procedural legacy tests:** Avoid new procedural `*Test.php` files; convert to `TestCase` with assertions.
 
 ## 7. File Structure
-- **Unit/** — test classes organised by concern (Config, CRUD, Database, Modules, MultiTenancy, Scripts, Security).
+- **Unit/** — test classes organised by concern (Config, CRUD, Database, **Includes**, Modules, MultiTenancy, Scripts, Security, Support).
+- **Unit/Includes/** — DB-free unit tests for `includes/` visibility, MBQA, and coverage guard helpers (`docs/PHPUNIT_PLAN.md` Phase 1).
+- **Unit/Support/** — shared test traits (e.g. `ItmScriptCliTestTrait` for CLI audit script subprocess tests).
 - **bootstrap.php** — test bootstrap (`ROOT_PATH` = two levels up to repository root; `ITM_CLI_SCRIPT`).
 - **PREFERENCES.md** — framework preferences, coverage URLs, naming conventions.
 - **../phpunit.xml** — PHPUnit config (verbose, `<coverage processUncoveredFiles="false">`, HTML report under `coverage/html/`).

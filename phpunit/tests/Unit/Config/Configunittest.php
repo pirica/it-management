@@ -51,4 +51,18 @@ class ConfigUnittest extends TestCase
         $this->assertFalse(itm_field_looks_like_fk_select('first_name'));
         $this->assertFalse(itm_field_looks_like_fk_select('active'));
     }
+
+    /**
+     * Test itm_resolve_records_per_page() from ui_config helpers.
+     */
+    public function testResolveRecordsPerPage()
+    {
+        require_once ROOT_PATH . 'includes/ui_config.php';
+
+        $this->assertSame(25, itm_resolve_records_per_page([]));
+        $this->assertSame(50, itm_resolve_records_per_page(['records_per_page' => '50']));
+        $this->assertSame(1000000, itm_resolve_records_per_page(['records_per_page' => 'all']));
+        $this->assertSame(25, itm_resolve_records_per_page(['records_per_page' => 'invalid']));
+        $this->assertSame(25, itm_resolve_records_per_page(['records_per_page' => '0']));
+    }
 }

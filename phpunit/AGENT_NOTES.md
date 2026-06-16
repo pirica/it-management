@@ -8,6 +8,7 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 - **phpunit.xml** — bootstrap `tests/bootstrap.php`, verbose output, `<coverage>` HTML paths. **`processUncoveredFiles="false"`** so HTML report generation does not bare-`require` every uncovered module/script entry file.
 - **coverage/html/** — generated HTML coverage (gitignored). Entry file **`coverage.html`** after `run_tests.php` renames PHPUnit’s `index.html`.
 - **tests/** — suite root (`bootstrap.php`, `Unit/`, `PREFERENCES.md`, `AGENT_NOTES.md`).
+- **tests/Unit/Includes/** — helper coverage tests mapped to `includes/*.php` (see `tests/Unit/Includes/AGENT_NOTES.md`).
 
 ## 10. Common Pitfalls
 - Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu).
