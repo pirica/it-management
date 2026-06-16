@@ -30,7 +30,7 @@ The central module for managing employee records, including contact info, hierar
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Profile fields (create/edit):** `includes/profile_fields.php` — drag-and-drop photo (`.itm-photo-upload-target`, `js/itm-upload-helper.js`, same pattern as private contacts). `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload disabled until `username` and `user_id` are set.
+- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS; no Bootstrap utility classes). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload disabled until `username` and `user_id` are set.
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
