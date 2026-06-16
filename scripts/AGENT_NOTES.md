@@ -19,13 +19,14 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **Browser vs CLI**: Many scripts provide both a plain-text/HTML browser view and a CLI output mode.
 
 ## 6. API Actions (If Applicable)
-- **api.php** — browser HTML catalogue of JSON/AJAX endpoints (session + CSRF). Documents Explorer file actions (list, upload, rename, delete, restore, copy, move, zip, unzip, date folders, Trash), `file.php` / `downloadZip` downloads, IDF `api/*`, module `import_excel_rows` imports (auto-scanned), passwords vault, notes/todo AJAX, and curated shared endpoints. Collector helpers are covered by `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`. Maintenance rules: **`scripts/SCRIPTS.md` → API documentation (`scripts/api.php`)**.
+- **api.php** — browser HTML catalogue of JSON/AJAX endpoints (session + CSRF). Documents Explorer file actions (list, upload, rename, delete, restore, copy, move, zip, unzip, date folders, Trash), `file.php` / `downloadZip` downloads, IDF `api/*`, module `import_excel_rows` imports (auto-scanned), passwords vault, notes/todo AJAX, API key rate limits, and tier regression runners (`apitest_tier_free.php`, `apitest_tier_basic.php`). Collector helpers are covered by `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`. Maintenance rules: **`scripts/SCRIPTS.md` → API documentation (`scripts/api.php`)**.
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.
 - **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV; post-run link to `phpunit/coverage/html/coverage.html`. Browser coverage URL: `run_tests.php?run=1&mode=coverage`. Full docs: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **verify_select_options_escalation.php** — regression for Select Options API table whitelist (`includes/itm_select_options_policy.php`); see **`scripts/SCRIPTS.md` → Select Options API verification**.
+- **apitest_tier_free.php** / **apitest_tier_basic.php** — disposable `ui_configuration` tier rate-limit regressions; shared **`scripts/lib/itm_api_tier_test_helpers.php`**.
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI utility to authenticate as Admin without the UI.

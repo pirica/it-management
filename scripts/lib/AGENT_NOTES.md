@@ -17,6 +17,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `mbqa_step_display.php` | Step slug → label mapping |
 | `sql_injection_detector.php` | SQLi signature tests |
 | `equipment_type_modules.php` | Canonical `is_*` allowlist and cleanup |
+| `itm_api_tier_test_helpers.php` | Disposable `ui_configuration` seed/cleanup and optional HTTP probe for `apitest_tier_*.php` |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.

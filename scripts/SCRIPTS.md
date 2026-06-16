@@ -180,6 +180,24 @@ php scripts/run_tests.php --filter ApiFunctionsTest
 
 Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tables render.
 
+#### API tier rate-limit regression (`apitest_tier_*.php`)
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/apitest_tier_free.php` | Disposable `ui_configuration` row on **Free** tier: status is unlimited and repeated `itm_api_consume_rate_limit()` calls stay allowed. Optional HTTP probe via `scripts/api.php?rate_limit=1`. |
+| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. Optional HTTP probe. |
+
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, seed/cleanup, optional curl probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+
+**Verify after rate-limit helper or tier cap changes:**
+
+```bash
+php -l scripts/apitest_tier_free.php
+php -l scripts/apitest_tier_basic.php
+php scripts/apitest_tier_free.php
+php scripts/apitest_tier_basic.php
+```
+
 #### 2. Browser scripts (`scripts/*.php` opened in the browser)
 
 * **Special Case: `scripts/health.php` (MANDATORY):** This script is used for automated health monitoring and must NOT be modified. Do not add navigation links, headers, or any logic that changes its output format.
