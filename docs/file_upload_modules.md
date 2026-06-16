@@ -222,7 +222,7 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 ### 13. Birthdays
 - **Path:** `modules/birthdays/index.php`
 - **Storage:** None — read-only monthly list; no file uploads.
-- **Description:** Lists employees with a `birthday` in the selected month whose **Employment Status** is **Active** or **On Leave**. Name column shows optional profile thumbnails (same storage as **§11 Employee profile photos**). Day column uses `emp_format_birthday_day_only()` (day of month without leading zeros). Search queries name, day, `departments.code`, and `departments.name`.
+- **Description:** Lists employees with a `birthday` in the selected month, filtered by **Employment Status** (multi-select; default **Active** and **On Leave**). Name column shows optional profile thumbnails (same storage as **§11 Employee profile photos**). Day column uses `emp_format_birthday_day_only()` (day of month without leading zeros). Search queries name, day, `departments.code`, and `departments.name`.
 - **Implementation:** Thumbnails served via `emp_profile_photo_url()` → `itm_files_serve_url()` → `modules/explorer/file.php`. Month filter and **Search (all fields)** on the filter card; table export controls follow standard `table-tools.js` behaviour where enabled.
 
 ## Folder creation map (code references)
