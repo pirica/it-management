@@ -79,6 +79,22 @@
             "detected_at_pst": "2026-06-15T06:25:34-07:00",
             "reported_link": "",
             "location": "modules/users/delete.php"
+        },
+        {
+            "title": "Sensitive Information Disclosure (Passwords and Reset Tokens) in Audit Logs",
+            "status": "active",
+            "commit_hash": "82a762258308248127b15dd4e887f8003347dc0d",
+            "detected_at_pst": "2026-06-15T10:20:00-07:00",
+            "reported_link": "",
+            "location": "modules/audit_logs/index.php"
+        },
+        {
+            "title": "Unauthorized Access and Privilege Escalation in Registration Invitations",
+            "status": "active",
+            "commit_hash": "82a762258308248127b15dd4e887f8003347dc0d",
+            "detected_at_pst": "2026-06-15T10:20:00-07:00",
+            "reported_link": "",
+            "location": "modules/registration_invitations/index.php"
         }
     ]
 }
