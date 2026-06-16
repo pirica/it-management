@@ -20,6 +20,10 @@ class BypassLoginTest extends TestCase
     {
         global $conn;
 
+        if (!$conn || !($conn instanceof mysqli)) {
+            $this->markTestSkipped('Database connection unavailable.');
+        }
+
         // Ensure we are in a clean session state for testing if possible
         if (session_status() === PHP_SESSION_NONE) {
             session_start();

@@ -7,13 +7,8 @@
  * the redirect works from any location.
  */
 
-// Why: PHPUnit coverage (processUncoveredFiles) may require this file; redirect only on direct HTTP access.
-$scriptFilename = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
-$isDirectRequest = ($scriptFilename !== ''
-    && @realpath($scriptFilename) === @realpath(__FILE__)
-    && PHP_SAPI !== 'cli');
-
-if (!$isDirectRequest) {
+require_once __DIR__ . '/itm_script_entry_guard.php';
+if (itm_skip_http_entry_unless_direct(__FILE__)) {
     return;
 }
 
