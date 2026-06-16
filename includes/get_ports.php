@@ -9,6 +9,16 @@
 
 require '../config/config.php';
 
+// Why: PHPUnit coverage (processUncoveredFiles) may require this file; run endpoint only on direct HTTP access.
+$scriptFilename = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
+$isDirectRequest = ($scriptFilename !== ''
+    && @realpath($scriptFilename) === @realpath(__FILE__)
+    && PHP_SAPI !== 'cli');
+
+if (!$isDirectRequest) {
+    return;
+}
+
 header('Content-Type: application/json; charset=utf-8');
 // Disable direct error output to avoid corrupting JSON response
 ini_set('display_errors', '0');

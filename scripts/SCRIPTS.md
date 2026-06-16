@@ -223,24 +223,19 @@ Linux/macOS/CI: bare `php scripts/run_tests.php` when PHP 7.4 is on PATH.
 
 ##### HTML coverage — “headers already sent” (guardrails)
 
-If HTML coverage finishes tests but warns during report generation:
+If HTML coverage finishes tests but warns during report generation (often naming `includes/get_ports.php`, `includes/update_port.php`, or `includes/companies_view_redirect.php`):
 
-```
-Warning: Cannot modify header information - headers already sent by ...
-in includes/companies_view_redirect.php on line 24
-```
-
-**Root causes (fixed in PR #2228):**
+**Root causes (fixed in PR #2228; `get_ports.php` / `update_port.php` guarded in follow-up):**
 
 1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time**. PHPUnit loads every `*Test.php` under `phpunit/tests/Unit/`; load-time output breaks coverage finalization.
-2. **`includes/companies_view_redirect.php`** called **`header()` at top level**. With `processUncoveredFiles="true"`, PHPUnit can **`require` uncovered files** after the suite; a bare redirect script then sends headers after output was already sent.
+2. **Bare HTTP entry scripts in `includes/`** (`companies_view_redirect.php`, **`get_ports.php`**, **`update_port.php`**) called **`header()` / `echo` at top level**. With `processUncoveredFiles="true"`, PHPUnit can **`require` uncovered files** after the suite (while PHPUnit `Printer` output is already on stdout); those scripts then send headers and JSON/error bodies.
 
 **Fixes (keep these patterns):**
 
 | Area | Rule |
 |------|------|
 | **Test files** | Use proper **`PHPUnit\Framework\TestCase`** classes with `test*` methods and assertions — **no top-level execution**, **no `echo`** in files matched by `suffix="Test.php"`. |
-| **Redirect / entry scripts** | **`header()` / `exit` only on direct HTTP access** (e.g. `realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)` and `PHP_SAPI !== 'cli'`). When included by tooling, **`return`** early instead of sending headers. Example: `includes/companies_view_redirect.php`. |
+| **Redirect / AJAX entry scripts** | **`header()` / `echo` / `exit` only on direct HTTP access** (e.g. `realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)` and `PHP_SAPI !== 'cli'`). When included by tooling, **`return`** early instead of sending headers or JSON. Examples: `includes/companies_view_redirect.php`, `includes/get_ports.php`, `includes/update_port.php`. |
 
 **When adding tests or includes that send HTTP headers:** run HTML coverage once (`php scripts/run_tests.php --coverage` with Xdebug/PCOV) and confirm report generation completes without header warnings.
 
