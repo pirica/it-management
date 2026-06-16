@@ -28,6 +28,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - Quick Access sidebar opens scoped Private/Department folders, not blocked roots.
 - **Hidden system files:** `index.html` and `.htaccess` are always omitted from Explorer listings (`explorer_is_hidden_system_entry()` in `api.php` `list` / `listRecycle`).
 - **Preview routing:** `open` returns `preview: image|pdf|zip|text|unsupported`. Images and PDFs load via `file.php`. ZIP archives list member names/sizes with `ZipArchive` read-only (no `extractTo()`). `.htaccess` `deny_http` blocks direct `/files/` URLs only; `file.php` reads from disk with ACL checks.
+- **Internal clipboard:** Copy/Cut stores `{ type, path, items }` in `sessionStorage` (`itm_explorer_clipboard`). Paste reads that store — not the OS clipboard. Workflow: right-click item → Copy/Cut → open destination folder → right-click empty area → Paste. Multi-select (Ctrl+click) copies all selected items. Context menu uses `stopPropagation` so document click does not swallow menu actions.
 - `api.php` for async operations; `file.php` for authorised file delivery (required after `deny_http`).
 
 ## 6. Upload hardening and `.htaccess` (`deny_http`)
