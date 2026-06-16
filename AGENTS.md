@@ -417,6 +417,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * **Windows Laragon:** use the full PHP binary path from **Setup & Debugging** below; script catalog, smoke, MBQA, and CLI conventions: **`scripts/SCRIPTS.md`**.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php` (use full PHP path on Windows Laragon).
   * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
+  * **PHPUnit suite / HTML coverage:** `php scripts/run_tests.php` or browser `scripts/run_tests.php?run=1&mode=coverage` — report at `phpunit/coverage/html/coverage.html` (Xdebug or PCOV). Authoring rules and coverage guardrails: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
   * Optional broad QA, equipment/employees clear-table regression, and other script suites: **`scripts/SCRIPTS.md`**.
   * PR descriptions must list the exact commands that were run and their outcomes.
 * **Branching and PRs:** Follow **NEW PR always** under **Change Hygiene → PR review (mandatory)** (fresh branch + new `gh pr create` per deliverable; do not reuse merged PRs for new scope).

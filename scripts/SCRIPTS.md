@@ -15,6 +15,7 @@
       - Equipment-type façade modules (`modules/is_*`) and clear-table tests
       - Smoke tests (CI — `scripts/smoke_test.sh`)
       - PHPUnit test runner (`scripts/run_tests.php`)
+      - HTML coverage guardrails (PHPUnit)
       - Full-module browser QA (5 companies, Laragon)
       - 5. Pre-merge verification (scripts)
 
@@ -206,6 +207,15 @@ Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.
 | **Skip DB tests** | Checkbox **Skip database tests** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` |
 
 **Coverage report:** after a successful HTML coverage run, open **`phpunit/coverage/html/coverage.html`** (PHPUnit writes `index.html`; `run_tests.php` renames it to `coverage.html`). The browser menu and post-run output link to this path when the file exists.
+
+**Browser URLs:**
+
+| Action | URL |
+|--------|-----|
+| Choose run mode | `scripts/run_tests.php` |
+| Standard verbose run | `scripts/run_tests.php?run=1&mode=standard` |
+| HTML coverage | `scripts/run_tests.php?run=1&mode=coverage` |
+| Skip DB + coverage | `scripts/run_tests.php?run=1&mode=coverage&skip_db=1` |
 
 **Coverage driver:** `run_tests.php` checks `extension_loaded('xdebug') || extension_loaded('pcov')` before passing `--coverage-html`. Without a driver it runs with `--no-coverage` and shows a note (avoids PHPUnit’s “No code coverage driver available” warning). On Laragon: Menu → PHP → Extensions → enable Xdebug or PCOV, restart Apache.
 

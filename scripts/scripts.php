@@ -293,11 +293,13 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="run_tests.php">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Executes the PHPUnit test suite located in <code>phpunit/tests/Unit/</code> using <code>phpunit/phpunit.phar</code>. Browser: open <code>run_tests.php</code> for a menu (standard verbose run or HTML coverage). Verbose via <code>verbose="true"</code> / <code>--verbose</code>. CLI coverage: <code>--coverage</code> or <code>ITM_COVERAGE=1</code>. Report at <code>phpunit/coverage/html/coverage.html</code> (Xdebug or PCOV). Database-less via <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox.</td>
+                    <td>Runs the PHPUnit suite in <code>phpunit/tests/Unit/</code> via <code>phpunit/phpunit.phar</code> and <code>phpunit/phpunit.xml</code>. Browser menu: <strong>Standard</strong> (verbose) or <strong>HTML coverage</strong> (Xdebug/PCOV). Report: <code>phpunit/coverage/html/coverage.html</code>. Skips coverage driver when Xdebug/PCOV missing. <code>processUncoveredFiles="false"</code> in phpunit.xml for reliable report generation. Entry guards: <code>includes/itm_script_entry_guard.php</code>. See <code>scripts/SCRIPTS.md</code> (PHPUnit test runner).</td>
                     <td>
-                        Browser: <a href="run_tests.php">run_tests.php</a> (choose run mode)<br>
+                        Browser menu: <a href="run_tests.php">run_tests.php</a><br>
+                        HTML coverage: <code>run_tests.php?run=1&amp;mode=coverage</code><br>
                         CLI: <code>php scripts/run_tests.php</code><br>
-                        CLI with coverage: <code>php scripts/run_tests.php --coverage</code>
+                        CLI coverage: <code>php scripts/run_tests.php --coverage</code><br>
+                        Skip DB: <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox
                     </td>
                 </tr>
                 <tr>
