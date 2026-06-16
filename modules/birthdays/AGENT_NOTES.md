@@ -4,7 +4,8 @@
 Read-only monthly birthday list for the active company. Data is sourced from `employees.birthday`; no dedicated table.
 
 ## 2. Key Tables
-- **employees** — `birthday`, `hide_year`, `first_name`, `last_name`, `photo`, `username`, `user_id`, `department_id`.
+- **employees** — `birthday`, `hide_year`, `first_name`, `last_name`, `photo`, `username`, `user_id`, `department_id`, `employment_status_id`.
+- **employee_statuses** — `name` for employment filter (`Active`, `On Leave` only).
 - **departments** — `code` for the Department column; `name` included in search (joined on `department_id` + `company_id`).
 
 ## 3. Required Relationships
@@ -12,7 +13,8 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 - Profile thumbnails use `includes/employee_profile_photo.php` (`emp_profile_photo_url()`).
 
 ## 4. Business Rules (Critical for Agents)
-- Only employees with non-null `birthday` appear.
+- Only employees with non-null `birthday` and **Employment Status** `Active` or `On Leave` appear (`INNER JOIN employee_statuses` on `employment_status_id` + `company_id`).
+- Excludes Contractor, Inactive, Terminated, and other statuses.
 - Month filter uses `MONTH(e.birthday)`; default month is the current calendar month.
 - `hide_year` on the employee row controls display format (`j M` vs `j M Y`) via `emp_format_birthday_display()`.
 - Strictly scoped by `company_id`.
