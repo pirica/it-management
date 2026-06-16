@@ -7,6 +7,10 @@
  */
 
 require '../../config/config.php';
+if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+    header('Location: ' . BASE_URL . 'dashboard.php');
+    exit;
+}
 
 $companyId = (int)($_SESSION['company_id'] ?? 0);
 if ($companyId <= 0) {
