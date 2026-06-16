@@ -73,16 +73,16 @@ foreach ($test_cases as $tc) {
     $success = ($result !== null);
 
     if ($success === $expected) {
-        echo "[PASS] $label ($path): " . ($success ? "Allowed" : "Blocked") . "\n";
+        echo "<br><br>[PASS] $label ($path): " . ($success ? "Allowed" : "Blocked") . "\n";
     } else {
-        echo "[FAIL] $label ($path): Expected " . ($expected ? "Allowed" : "Blocked") . " but got " . ($success ? "Allowed" : "Blocked") . "\n";
+        echo "<br><br>[FAIL] $label ($path): Expected " . ($expected ? "Allowed" : "Blocked") . " but got " . ($success ? "Allowed" : "Blocked") . "\n";
         $failed++;
     }
 }
 
 if ($failed === 0) {
-    echo "\nAll Explorer logic tests passed!\n";
+    echo "\n<br>All Explorer logic tests passed!<br>\n";
 } else {
-    echo "\n$failed Explorer logic tests failed!\n";
+    echo "\n<br>$failed Explorer logic tests failed!<br>\n";
     exit(1);
 }
