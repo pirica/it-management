@@ -24,6 +24,8 @@
 - **Directory Structure:** Organized subdirectories in `phpunit/tests/Unit/` (Config, Security, CRUD, Database, MultiTenancy)
 - **Naming Convention:** `*unittest.php`
 - **Bootstrap:** `phpunit/tests/bootstrap.php` provided for environment setup
+- **Browser runner:** `scripts/run_tests.php` menu — **Standard** (verbose) or **HTML coverage**
+- **Verbose / coverage:** `verbose="true"` and `<coverage>` in `phpunit/phpunit.xml`; HTML at `phpunit/coverage/html/index.html`
 
 ---
 
