@@ -9,8 +9,6 @@ require_once '../../config/config.php';
 require_once '../../includes/employee_profile_photo.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$ui_config = itm_get_ui_configuration();
-$csrfToken = itm_get_csrf_token();
 
 $selectedMonth = (int)($_GET['month'] ?? date('n'));
 if ($selectedMonth < 1 || $selectedMonth > 12) {
