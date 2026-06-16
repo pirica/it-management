@@ -305,6 +305,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
+                        <?php include __DIR__ . '/includes/profile_birthday_fields.php'; ?>
                     </div>
 
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px;">

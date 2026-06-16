@@ -30,7 +30,7 @@ The central module for managing employee records, including contact info, hierar
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Profile fields (create/edit):** `includes/profile_fields.php` — drag-and-drop photo (`.itm-photo-upload-target`, `js/itm-upload-helper.js`, same pattern as private contacts), `birthday` date input, `hide_year` checkbox. Forms use `enctype="multipart/form-data"`. Photo upload disabled until `username` and `user_id` are set.
+- **Profile fields (create/edit):** `includes/profile_fields.php` — drag-and-drop photo (`.itm-photo-upload-target`, `js/itm-upload-helper.js`, same pattern as private contacts). `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload disabled until `username` and `user_id` are set.
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
@@ -39,7 +39,8 @@ The central module for managing employee records, including contact info, hierar
 
 ## 7. File Structure
 - Standard CRUD structure + `delete_clear_table.php`.
-- **includes/profile_fields.php** — shared photo, birthday, hide_year form block for create/edit.
+- **includes/profile_fields.php** — shared profile photo drag-and-drop for create/edit.
+- **includes/profile_birthday_fields.php** — birthday and hide_year fields (after Employment Status).
 - **includes/employee_profile_photo.php** (repo `includes/`) — path, upload, URL, and birthday display helpers.
 
 ## 8. Multi-Tenant Rules
