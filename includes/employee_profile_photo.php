@@ -131,6 +131,19 @@ function emp_profile_photo_store_upload($company_id, array $employee, array $upl
 }
 }
 
+if (!function_exists('emp_format_birthday_day_only')) {
+function emp_format_birthday_day_only($birthday) {
+    if (!$birthday || $birthday === '0000-00-00') {
+        return '—';
+    }
+    $ts = strtotime((string)$birthday);
+    if ($ts === false) {
+        return '—';
+    }
+    return date('j', $ts);
+}
+}
+
 if (!function_exists('emp_format_birthday_display')) {
 function emp_format_birthday_display($birthday, $hide_year) {
     if (!$birthday || $birthday === '0000-00-00') {

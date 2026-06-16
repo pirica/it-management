@@ -20,8 +20,9 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 ## 5. UI Behavior Requirements
 - **index.php only** — no create/edit/delete handlers.
 - Filter card: month `<select>` and name search; marked `data-itm-no-export-pdf="1"` and `data-itm-no-export-excel="1"` so PDF/Excel exports omit controls.
-- Table columns: Name (first + last, optional photo), Day of Birth, Department (`departments.code`), Actions (link to employee view).
-- Default sort: Day of Birth ASC (`DAY(e.birthday)`). Also sortable: Name, Department.
+- Table columns: Name (first + last, optional photo), Day (day of month without leading zeros via `emp_format_birthday_day_only()` — e.g. `1`, `9`, `10`), Department (`departments.code`). No Actions column.
+- Default sort: Day ASC (`DAY(e.birthday)`). Also sortable: Name, Department.
+- Sortable column headers use plain text styling (no blue link colour).
 - Sidebar: `🎉 Birthdays` in Employee section (`includes/ui_config.php`). Explorer sidebar links to this module and **Profile Storage** (`Private/{user}/profile`).
 
 ## 6. API Actions (If Applicable)

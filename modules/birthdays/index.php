@@ -89,6 +89,10 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .bdays-controls { display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; }
+        .bdays-table thead a {
+            text-decoration: none;
+            color: inherit;
+        }
         @media print {
             .bdays-controls, .table-tools, .table-search-inline { display:none !important; }
         }
@@ -133,18 +137,17 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
             </div>
 
             <div class="card" style="overflow:auto;">
-                <table class="table" data-itm-no-import-excel="1">
+                <table class="table bdays-table" data-itm-no-import-excel="1">
                     <thead>
                         <tr>
                             <th><a href="<?= sanitize(bdays_sort_url('name', $sort, $dir, $selectedMonth, $search)) ?>">Name<?= bdays_sort_indicator('name', $sort, $dir) ?></a></th>
-                            <th><a href="<?= sanitize(bdays_sort_url('birth_day', $sort, $dir, $selectedMonth, $search)) ?>">Day of Birth<?= bdays_sort_indicator('birth_day', $sort, $dir) ?></a></th>
+                            <th><a href="<?= sanitize(bdays_sort_url('birth_day', $sort, $dir, $selectedMonth, $search)) ?>">Day<?= bdays_sort_indicator('birth_day', $sort, $dir) ?></a></th>
                             <th><a href="<?= sanitize(bdays_sort_url('department_code', $sort, $dir, $selectedMonth, $search)) ?>">Department<?= bdays_sort_indicator('department_code', $sort, $dir) ?></a></th>
-                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (empty($rows)): ?>
-                        <tr><td colspan="4">No birthdays found for this month.</td></tr>
+                        <tr><td colspan="3">No birthdays found for this month.</td></tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
                             <?php
@@ -160,13 +163,8 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
                                         <?= sanitize($fullName) ?>
                                     </div>
                                 </td>
-                                <td><?= sanitize(emp_format_birthday_display($row['birthday'] ?? null, $row['hide_year'] ?? 0)) ?></td>
+                                <td><?= sanitize(emp_format_birthday_day_only($row['birthday'] ?? null)) ?></td>
                                 <td><?= sanitize((string)($row['department_code'] ?? '—')) ?></td>
-                                <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                    <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="../employees/view.php?id=<?= (int)$row['id'] ?>" title="View employee">🔎</a>
-                                    </div>
-                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
