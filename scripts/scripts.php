@@ -293,7 +293,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="run_tests.php">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Executes the PHPUnit test suite located in <code>phpunit/tests/Unit/</code> using <code>phpunit/phpunit.phar</code>. Browser: open <code>run_tests.php</code> for a menu (standard verbose run or HTML coverage). Verbose via <code>verbose="true"</code> / <code>--verbose</code>. CLI coverage: <code>--coverage</code> or <code>ITM_COVERAGE=1</code>. Report at <code>phpunit/coverage/html/index.html</code> (Xdebug or PCOV). Database-less via <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox.</td>
+                    <td>Executes the PHPUnit test suite located in <code>phpunit/tests/Unit/</code> using <code>phpunit/phpunit.phar</code>. Browser: open <code>run_tests.php</code> for a menu (standard verbose run or HTML coverage). Verbose via <code>verbose="true"</code> / <code>--verbose</code>. CLI coverage: <code>--coverage</code> or <code>ITM_COVERAGE=1</code>. Report at <code>phpunit/coverage/html/coverage.html</code> (Xdebug or PCOV). Database-less via <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox.</td>
                     <td>
                         Browser: <a href="run_tests.php">run_tests.php</a> (choose run mode)<br>
                         CLI: <code>php scripts/run_tests.php</code><br>

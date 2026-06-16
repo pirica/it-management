@@ -64,6 +64,69 @@ function itm_run_tests_h($value)
 }
 
 /**
+ * Why: PHPUnit needs Xdebug or PCOV; without them --coverage-html only prints a warning.
+ */
+function itm_run_tests_has_coverage_driver()
+{
+    return extension_loaded('xdebug') || extension_loaded('pcov');
+}
+
+/**
+ * Why: PHPUnit writes index.html; we expose coverage.html as the stable report entry point.
+ */
+function itm_run_tests_finalize_coverage_report($coverageHtmlDir)
+{
+    $indexFile = $coverageHtmlDir . '/index.html';
+    $coverageFile = $coverageHtmlDir . '/coverage.html';
+    if (is_file($indexFile)) {
+        @rename($indexFile, $coverageFile);
+    }
+
+    return is_file($coverageFile) ? $coverageFile : null;
+}
+
+/**
+ * Why: Shared coverage report link after browser/CLI test runs.
+ */
+function itm_run_tests_echo_coverage_link($isCli, $wantCoverage, $coverageReportFile, $coverageSkippedNoDriver)
+{
+    $reportExists = is_file($coverageReportFile);
+
+    if ($isCli) {
+        if ($reportExists) {
+            echo "\nHTML coverage report: phpunit/coverage/html/coverage.html\n";
+            echo 'Full path: ' . $coverageReportFile . "\n";
+        } elseif ($wantCoverage) {
+            if ($coverageSkippedNoDriver) {
+                echo "\nCoverage report not generated: enable Xdebug or PCOV in PHP, then re-run with --coverage.\n";
+            } else {
+                echo "\nCoverage report not generated.\n";
+            }
+        }
+        return;
+    }
+
+    if ($reportExists) {
+        echo '<p style="margin-top:16px;padding:12px 14px;background:#f6ffed;border:1px solid #94d194;border-radius:8px;">';
+        echo '<strong>HTML coverage report:</strong> ';
+        echo '<a href="../phpunit/coverage/html/coverage.html" target="_blank" rel="noopener">phpunit/coverage/html/coverage.html</a>';
+        echo '</p>';
+        return;
+    }
+
+    if ($wantCoverage) {
+        echo '<p style="margin-top:16px;padding:12px 14px;background:#fff8e6;border:1px solid #d4a72c;border-radius:8px;color:#57606a;">';
+        echo '<strong>Coverage report not generated.</strong> ';
+        if ($coverageSkippedNoDriver) {
+            echo 'Enable <strong>Xdebug</strong> or <strong>PCOV</strong> in Laragon (Menu → PHP → Extensions), restart Apache, then run <strong>HTML coverage</strong> again.';
+        } else {
+            echo 'Re-run with HTML coverage mode after fixing any test failures.';
+        }
+        echo '</p>';
+    }
+}
+
+/**
  * Why: Browser entry shows choices instead of auto-running a long PHPUnit process.
  */
 function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
@@ -72,6 +135,7 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     $skipDbChecked = (($_GET['skip_db'] ?? '') === '1') ? ' checked' : '';
     $modeStandard = (($_GET['mode'] ?? 'standard') !== 'coverage') ? ' checked' : '';
     $modeCoverage = (($_GET['mode'] ?? '') === 'coverage') ? ' checked' : '';
+    $coverageDriverOk = itm_run_tests_has_coverage_driver();
 
     itm_script_output_begin('PHPUnit Test Suite');
     itm_script_browser_nav_echo();
@@ -82,11 +146,15 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
         . ($dbAvailable
             ? '<strong style="color:#1a7f37;">connected</strong> — full suite including DB tests.'
             : '<strong style="color:#9a6700;">unavailable</strong> — DB-dependent tests will be skipped unless you fix MySQL and reload.')
+        . '<br>Coverage driver: '
+        . ($coverageDriverOk
+            ? '<strong style="color:#1a7f37;">Xdebug/PCOV available</strong>'
+            : '<strong style="color:#9a6700;">not available</strong> — HTML coverage needs Xdebug or PCOV.')
         . '</p>';
 
     if (is_file($coverageReportPath)) {
         echo '<p style="font-size:0.95rem;">Latest HTML coverage report: '
-            . '<a href="../phpunit/coverage/html/index.html">phpunit/coverage/html/index.html</a></p>';
+            . '<a href="../phpunit/coverage/html/coverage.html">phpunit/coverage/html/coverage.html</a></p>';
     }
 
     echo '<form method="get" action="' . itm_run_tests_h($scriptSelf) . '" style="display:grid;gap:14px;max-width:520px;margin-top:16px;">';
@@ -98,7 +166,7 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     echo '<strong>Standard</strong> — verbose test run (no code coverage)</label>';
     echo '<label style="display:block;cursor:pointer;">';
     echo '<input type="radio" name="mode" value="coverage"' . $modeCoverage . '> ';
-    echo '<strong>HTML coverage</strong> — verbose run + report at <code>phpunit/coverage/html/index.html</code>';
+    echo '<strong>HTML coverage</strong> — verbose run + report at <code>phpunit/coverage/html/coverage.html</code>';
     echo ' <span style="color:#57606a;">(requires Xdebug or PCOV)</span></label>';
     echo '</fieldset>';
     echo '<label style="cursor:pointer;"><input type="checkbox" name="skip_db" value="1"' . $skipDbChecked . '> ';
@@ -123,7 +191,7 @@ if (!$user_wants_skip) {
 }
 
 $coverage_html_dir = ROOT_PATH . 'phpunit/coverage/html';
-$coverage_report_file = $coverage_html_dir . '/index.html';
+$coverage_report_file = $coverage_html_dir . '/coverage.html';
 
 if (!$isCli && !$runRequested) {
     itm_run_tests_render_browser_menu($db_available, $coverage_report_file);
@@ -139,6 +207,9 @@ if ($db_available && !$user_wants_skip) {
 }
 
 $want_coverage = itm_run_tests_want_coverage($isCli);
+$coverage_driver_ok = itm_run_tests_has_coverage_driver();
+$coverage_skipped_no_driver = ($want_coverage && !$coverage_driver_ok);
+$run_coverage_html = ($want_coverage && $coverage_driver_ok);
 
 $phpunit_bin = ROOT_PATH . 'phpunit/phpunit.phar';
 $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
@@ -153,12 +224,13 @@ if (strpos($php_bin, 'php-cgi') !== false) {
 $command = escapeshellarg($php_bin) . ' ' . escapeshellarg($phpunit_bin)
     . ' -c ' . escapeshellarg($phpunit_xml)
     . ' --verbose';
-if ($want_coverage) {
+if ($run_coverage_html) {
     if (!is_dir($coverage_html_dir)) {
         mkdir($coverage_html_dir, 0777, true);
     }
     $command .= ' --coverage-html ' . escapeshellarg($coverage_html_dir);
 } else {
+    // Why: phpunit.xml defines <coverage>; skip it unless driver is available and requested.
     $command .= ' --no-coverage';
 }
 $command .= ' 2>&1';
@@ -171,24 +243,38 @@ if (!$isCli) {
     echo '<p>Running from <code>phpunit/tests/Unit/</code> — mode: <strong>'
         . itm_run_tests_h($want_coverage ? 'HTML coverage' : 'Standard')
         . '</strong></p>';
+    if ($coverage_skipped_no_driver) {
+        echo '<p style="padding:10px 12px;background:#fff8e6;border:1px solid #d4a72c;border-radius:6px;color:#57606a;">';
+        echo 'Coverage driver not available — running tests without HTML coverage. ';
+        echo 'Enable Xdebug or PCOV, then run HTML coverage again.</p>';
+    }
     echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;border-radius:5px;">';
 } else {
+    if ($coverage_skipped_no_driver) {
+        echo "Note: Coverage driver not available — running without HTML coverage.\n";
+        echo "Enable Xdebug or PCOV in PHP, then re-run with --coverage.\n\n";
+    }
     echo "Running command: $command\n\n";
 }
 
 passthru($command, $return_var);
 
+if ($run_coverage_html) {
+    $finalized = itm_run_tests_finalize_coverage_report($coverage_html_dir);
+    if ($finalized !== null) {
+        $coverage_report_file = $finalized;
+    }
+}
+
 if (!$isCli) {
     echo '</pre>';
-    if ($want_coverage && is_file($coverage_report_file)) {
-        echo '<p>HTML coverage report: <a href="../phpunit/coverage/html/index.html">'
-            . 'phpunit/coverage/html/index.html</a></p>';
-    }
+    itm_run_tests_echo_coverage_link($isCli, $want_coverage, $coverage_report_file, $coverage_skipped_no_driver);
     if ($return_var === 0) {
         echo '<p style="color:green;font-weight:bold;">✅ All tests passed!</p>';
     } else {
         echo '<p style="color:red;font-weight:bold;">❌ Some tests failed (Exit Code: ' . (int)$return_var . ').</p>';
     }
 } else {
+    itm_run_tests_echo_coverage_link($isCli, $want_coverage, $coverage_report_file, $coverage_skipped_no_driver);
     exit($return_var);
 }
