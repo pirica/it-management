@@ -9,7 +9,7 @@ Unit/regression tests for `modules/explorer/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity`); hidden listing entries (`testHiddenSystemEntries`).
+- `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity`); hidden listing entries (`testHiddenSystemEntries`); preview routing (`testPreviewModeRouting`).
 
 ## 10. Common Pitfalls
 - `ExplorerTest` requires DB via `config.php`; run with full PHPUnit config: `php phpunit/phpunit.phar -c phpunit/phpunit.xml --filter ExplorerTest`.

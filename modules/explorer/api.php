@@ -73,6 +73,25 @@ function explorer_is_hidden_system_entry($name) {
 }
 }
 
+/**
+ * Why: Explorer preview must route images/PDFs through file.php instead of reading binary bytes as text.
+ */
+if (!function_exists('explorer_resolve_preview_mode')) {
+function explorer_resolve_preview_mode($filename) {
+    $ext = strtolower(pathinfo((string)$filename, PATHINFO_EXTENSION));
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+        return 'image';
+    }
+    if ($ext === 'pdf') {
+        return 'pdf';
+    }
+    if (in_array($ext, ['txt', 'md', 'log', 'json', 'xml', 'csv', 'php', 'js', 'css', 'html', 'htm'], true)) {
+        return 'text';
+    }
+    return 'unsupported';
+}
+}
+
 /* ---------------- ZIP DOWNLOAD ---------------- */
 if (isset($_GET['downloadZip'])) {
     if (!isset($_SESSION['company_id'])) exit("Access denied.");
@@ -270,14 +289,48 @@ case "list":
 /* ---------------- OPEN ---------------- */
 case "open":
     $dir = get_full_path($storage_root, $path, $user_id, $dept_id, $username);
-    $item = $_POST['item'] ?? '';
-    $full = $dir . "/" . basename($item);
+    $item = basename((string)($_POST['item'] ?? ''));
+    $full = $dir . "/" . $item;
 
-    $content = "";
-    if (is_file($full) && filesize($full) < 1024*1024) {
-        $content = file_get_contents($full);
+    if (!$dir || !is_file($full)) {
+        echo json_encode([
+            'preview' => 'unsupported',
+            'message' => 'File not found.',
+        ]);
+        break;
     }
-    echo json_encode(["content" => $content]);
+
+    $relPath = ($path !== '' ? $path . '/' : '') . $item;
+    $relPath = str_replace('\\', '/', $relPath);
+    $previewMode = explorer_resolve_preview_mode($item);
+
+    if ($previewMode === 'image' || $previewMode === 'pdf') {
+        echo json_encode([
+            'preview' => $previewMode,
+            'url' => 'file.php?path=' . rawurlencode($relPath),
+        ]);
+        break;
+    }
+
+    if ($previewMode === 'text') {
+        $content = '';
+        if (filesize($full) < 1024 * 1024) {
+            $content = file_get_contents($full);
+            if ($content !== '' && strpos($content, "\0") !== false) {
+                $content = '';
+            }
+        }
+        echo json_encode([
+            'preview' => 'text',
+            'content' => $content,
+        ]);
+        break;
+    }
+
+    echo json_encode([
+        'preview' => 'unsupported',
+        'message' => 'Preview is not available for this file type.',
+    ]);
     break;
 
 /* ---------------- CREATE FOLDER ---------------- */

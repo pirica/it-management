@@ -29,6 +29,11 @@ class ExplorerTest extends TestCase
             'explorer_is_hidden_system_entry',
             '/function explorer_is_hidden_system_entry.*?\}/s'
         );
+        $this->requireExtractedFunction(
+            ROOT_PATH . 'modules/explorer/api.php',
+            'explorer_resolve_preview_mode',
+            '/function explorer_resolve_preview_mode.*?\}/s'
+        );
     }
 
     protected function tearDown(): void
@@ -89,5 +94,21 @@ class ExplorerTest extends TestCase
         $this->assertTrue(explorer_is_hidden_system_entry('Common/sub/.htaccess'));
         $this->assertFalse(explorer_is_hidden_system_entry('readme.txt'));
         $this->assertFalse(explorer_is_hidden_system_entry('index.html.bak'));
+    }
+
+    public function testPreviewModeRouting()
+    {
+        if (!function_exists('explorer_resolve_preview_mode')) {
+            $this->markTestSkipped('explorer_resolve_preview_mode function could not be loaded.');
+        }
+
+        $this->assertSame('image', explorer_resolve_preview_mode('image (3).jpg'));
+        $this->assertSame('image', explorer_resolve_preview_mode('photo.JPEG'));
+        $this->assertSame('image', explorer_resolve_preview_mode('logo.png'));
+        $this->assertSame('pdf', explorer_resolve_preview_mode('manual.pdf'));
+        $this->assertSame('text', explorer_resolve_preview_mode('notes.txt'));
+        $this->assertSame('unsupported', explorer_resolve_preview_mode('archive.zip'));
+        $this->assertSame('unsupported', explorer_resolve_preview_mode('.htaccess'));
+        $this->assertSame('unsupported', explorer_resolve_preview_mode('image.jpg.bak'));
     }
 }

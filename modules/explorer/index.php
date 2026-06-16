@@ -223,6 +223,26 @@ body {
     overflow-y: auto;
     border-radius: 6px;
 }
+.preview-media {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 10px;
+    font-family: inherit;
+    white-space: normal;
+    text-align: center;
+}
+.preview-media img {
+    max-width: 100%;
+    max-height: 480px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.preview-media embed {
+    width: 100%;
+    height: 480px;
+    border: 0;
+    border-radius: 4px;
+}
 
 /* UPLOAD */
 .upload-area {
@@ -555,6 +575,37 @@ function toggleFavourite(name) {
 }
 
 /* FILE OPS */
+function renderPreview(res) {
+    previewCont.style.display = "block";
+    preview.innerHTML = "";
+    preview.className = "preview";
+
+    if (res.preview === "image") {
+        preview.className = "preview preview-media";
+        const img = document.createElement("img");
+        img.src = res.url;
+        img.alt = "Image preview";
+        preview.appendChild(img);
+        return;
+    }
+
+    if (res.preview === "pdf") {
+        preview.className = "preview preview-media";
+        const embed = document.createElement("embed");
+        embed.src = res.url;
+        embed.type = "application/pdf";
+        preview.appendChild(embed);
+        return;
+    }
+
+    if (res.preview === "text") {
+        preview.textContent = res.content || "(File is empty or not readable as text)";
+        return;
+    }
+
+    preview.textContent = res.message || "Preview is not available for this file type.";
+}
+
 function openItem(name, type) {
     if (type === "folder") {
         let nextPath = currentPath ? currentPath + "/" + name : name;
@@ -567,9 +618,8 @@ function openItem(name, type) {
         loadFolder(currentPath);
     } else {
         api("open", { item: name }).then(res => {
-            if (res.content !== undefined) {
-                previewCont.style.display = "block";
-                preview.textContent = res.content || "(File is empty or not readable as text)";
+            if (res.preview !== undefined || res.content !== undefined) {
+                renderPreview(res);
             }
         });
     }
