@@ -85,65 +85,10 @@ function explorer_resolve_preview_mode($filename) {
     if ($ext === 'pdf') {
         return 'pdf';
     }
-    if ($ext === 'zip') {
-        return 'zip';
-    }
     if (in_array($ext, ['txt', 'md', 'log', 'json', 'xml', 'csv', 'php', 'js', 'css', 'html', 'htm'], true)) {
         return 'text';
     }
     return 'unsupported';
-}
-}
-
-/**
- * Why: ZIP preview lists archive members in read-only mode — never calls extractTo().
- */
-if (!function_exists('explorer_list_zip_archive_entries')) {
-function explorer_list_zip_archive_entries($zipPath, $maxEntries = 500, $maxBytes = 104857600) {
-    if (!class_exists('ZipArchive')) {
-        return ['ok' => false, 'error' => 'ZIP support is unavailable on this server.'];
-    }
-    if (!is_file($zipPath) || !is_readable($zipPath)) {
-        return ['ok' => false, 'error' => 'ZIP file is not readable.'];
-    }
-    $fileSize = filesize($zipPath);
-    if ($fileSize === false || $fileSize > $maxBytes) {
-        return ['ok' => false, 'error' => 'ZIP archive is too large to preview.'];
-    }
-
-    $zip = new ZipArchive();
-    $openResult = $zip->open($zipPath);
-    if ($openResult !== true) {
-        return ['ok' => false, 'error' => 'Could not open ZIP archive.'];
-    }
-
-    $entries = [];
-    $total = (int)$zip->numFiles;
-    $limit = min($total, max(1, (int)$maxEntries));
-    for ($i = 0; $i < $limit; $i++) {
-        $stat = $zip->statIndex($i);
-        if (!is_array($stat)) {
-            continue;
-        }
-        $name = str_replace('\\', '/', (string)($stat['name'] ?? ''));
-        if ($name === '' || strpos($name, '..') !== false) {
-            continue;
-        }
-        $entries[] = [
-            'name' => $name,
-            'size' => (int)($stat['size'] ?? 0),
-            'compressed_size' => (int)($stat['comp_size'] ?? 0),
-            'type' => (substr($name, -1) === '/') ? 'folder' : 'file',
-        ];
-    }
-    $zip->close();
-
-    return [
-        'ok' => true,
-        'entries' => $entries,
-        'total' => $total,
-        'truncated' => $total > $maxEntries,
-    ];
 }
 }
 
@@ -364,24 +309,6 @@ case "open":
             'preview' => $previewMode,
             'url' => 'file.php?path=' . rawurlencode($relPath),
         ]);
-        break;
-    }
-
-    if ($previewMode === 'zip') {
-        $listing = explorer_list_zip_archive_entries($full);
-        if (empty($listing['ok'])) {
-            echo json_encode([
-                'preview' => 'unsupported',
-                'message' => $listing['error'] ?? 'Could not read ZIP archive.',
-            ]);
-            break;
-        }
-        echo json_encode([
-            'preview' => 'zip',
-            'entries' => $listing['entries'],
-            'total' => (int)($listing['total'] ?? 0),
-            'truncated' => !empty($listing['truncated']),
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         break;
     }
 

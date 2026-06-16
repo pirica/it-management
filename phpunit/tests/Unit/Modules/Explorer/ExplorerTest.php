@@ -34,11 +34,6 @@ class ExplorerTest extends TestCase
             'explorer_resolve_preview_mode',
             '/function explorer_resolve_preview_mode.*?\}/s'
         );
-        $this->requireExtractedFunction(
-            ROOT_PATH . 'modules/explorer/api.php',
-            'explorer_list_zip_archive_entries',
-            '/function explorer_list_zip_archive_entries.*?\n\}/s'
-        );
     }
 
     protected function tearDown(): void
@@ -111,33 +106,9 @@ class ExplorerTest extends TestCase
         $this->assertSame('image', explorer_resolve_preview_mode('photo.JPEG'));
         $this->assertSame('image', explorer_resolve_preview_mode('logo.png'));
         $this->assertSame('pdf', explorer_resolve_preview_mode('manual.pdf'));
-        $this->assertSame('zip', explorer_resolve_preview_mode('archive.zip'));
         $this->assertSame('text', explorer_resolve_preview_mode('notes.txt'));
-        $this->assertSame('unsupported', explorer_resolve_preview_mode('sheet.xlsx'));
+        $this->assertSame('unsupported', explorer_resolve_preview_mode('archive.zip'));
         $this->assertSame('unsupported', explorer_resolve_preview_mode('.htaccess'));
         $this->assertSame('unsupported', explorer_resolve_preview_mode('image.jpg.bak'));
-    }
-
-    public function testZipArchiveEntryListing()
-    {
-        if (!function_exists('explorer_list_zip_archive_entries')) {
-            $this->markTestSkipped('explorer_list_zip_archive_entries function could not be loaded.');
-        }
-        if (!class_exists('ZipArchive')) {
-            $this->markTestSkipped('ZipArchive extension unavailable.');
-        }
-
-        $tmpZip = $this->storageRoot . '/preview-test.zip';
-        $zip = new \ZipArchive();
-        $this->assertTrue($zip->open($tmpZip, \ZipArchive::CREATE | \ZipArchive::OVERWRITE));
-        $zip->addFromString('readme.txt', 'hello');
-        $zip->addEmptyDir('docs/');
-        $zip->close();
-
-        $listing = explorer_list_zip_archive_entries($tmpZip);
-        $this->assertTrue($listing['ok'] ?? false);
-        $this->assertGreaterThanOrEqual(2, (int)($listing['total'] ?? 0));
-        $names = array_column($listing['entries'], 'name');
-        $this->assertContains('readme.txt', $names);
     }
 }
