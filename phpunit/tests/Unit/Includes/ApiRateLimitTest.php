@@ -17,11 +17,27 @@ class ApiRateLimitTest extends TestCase
 
     public function testTierHourlyLimits(): void
     {
-        $this->assertSame(60, itm_api_tier_hourly_limit('Free'));
+        $this->assertSame(0, itm_api_tier_hourly_limit('Free'));
+        $this->assertTrue(itm_api_tier_is_unlimited('Free'));
         $this->assertSame(300, itm_api_tier_hourly_limit('Basic'));
         $this->assertSame(1000, itm_api_tier_hourly_limit('Pro'));
         $this->assertSame(10000, itm_api_tier_hourly_limit('Enterprise'));
-        $this->assertSame(60, itm_api_tier_hourly_limit('Unknown'));
+        $this->assertSame(0, itm_api_tier_hourly_limit('Unknown'));
+    }
+
+    public function testFreeTierStatusIsUnlimited(): void
+    {
+        $row = [
+            'tier' => 'Free',
+            'rate_limit_enabled' => 1,
+            'rate_limit_window_start' => time() - 120,
+            'rate_limit_request_count' => 9999,
+        ];
+
+        $status = itm_api_rate_limit_status_from_row($row);
+        $this->assertTrue($status['unlimited']);
+        $this->assertSame(0, $status['limit']);
+        $this->assertNull($status['remaining']);
     }
 
     public function testNormalizeTier(): void

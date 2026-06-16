@@ -531,7 +531,7 @@ function itmDocTodoAjaxActions(): array
 function itmDocApiRateLimitTiers(): array
 {
     return [
-        ['tier' => 'Free', 'hourly_limit' => 60],
+        ['tier' => 'Free', 'hourly_limit' => 'No limit'],
         ['tier' => 'Basic', 'hourly_limit' => 300],
         ['tier' => 'Pro', 'hourly_limit' => 1000],
         ['tier' => 'Enterprise', 'hourly_limit' => 10000],
@@ -654,7 +654,7 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
             <?php foreach ($apiRateLimitTiers as $tierRow): ?>
                 <tr>
                     <td><?= itmDocEscape((string)($tierRow['tier'] ?? '')); ?></td>
-                    <td><?= (int)($tierRow['hourly_limit'] ?? 0); ?></td>
+                    <td><?= is_numeric($tierRow['hourly_limit'] ?? null) ? (int)$tierRow['hourly_limit'] : itmDocEscape((string)($tierRow['hourly_limit'] ?? '')); ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -664,8 +664,8 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
 curl -H "X-API-Key: &lt;api_key&gt;" \
   "http://localhost/it-management/scripts/api.php?rate_limit=1"
 
-# Example success payload
-{"ok":true,"tier":"Free","limit":60,"remaining":59,"reset_at":1710000000}</code></pre>
+# Example success payload (Free tier)
+{"ok":true,"tier":"Free","unlimited":true,"limit":0,"remaining":null,"reset_at":0}</code></pre>
         <p>Errors: <code>401</code> missing/invalid key, <code>403</code> inactive key, <code>429</code> quota exceeded (<code>limit</code>, <code>remaining</code>, <code>reset_at</code> included).</p>
     </div>
 
