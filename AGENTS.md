@@ -23,10 +23,10 @@ Before making any change, replying, running commands, editing files, or proposin
    | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
    | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
 
-   **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands — do **not** embed **specific** pull request numbers (`PR #1860`), `pull/N` URLs, or “post PR #…” history in:
+   **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands — do **not** embed **specific** pull request numbers, `pull/…` URLs that include a PR id, or “post PR …” / “merged in PR …” history in:
 
    - `AGENT_NOTES.md`, `docs/`, module notes, feature sections of **`AGENTS.md`**, **`scripts/SCRIPTS.md`**, or **`scripts/scripts.php`** catalog prose
-   - **Code comments** and file headers (`// Why:`, `/** … */`) — **keep the comment**; remove only the numbered PR cite (e.g. write “added manually across companies”, not “PR #1993 added…”)
+   - **Code comments** and file headers (`// Why:`, `/** … */`) — **keep the comment**; remove only the numbered PR cite (e.g. write “added manually across companies”, not “a prior PR added …”)
 
    **Allowed:** generic git-workflow placeholders in **`AGENTS.md`** only — e.g. `PR #N`, “fresh PR”, “do not push to an open PR” — with **no digits** and no `https://…/pull/` examples.
 
