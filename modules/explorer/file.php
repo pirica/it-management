@@ -39,7 +39,8 @@ $full_path = $storage_root . ($path ? "/" . trim($path, '/') : "");
 
 // Why: Access control logic (mirroring api.php) with segment-boundary checks.
 $relative_path = trim(str_replace('\\', '/', (string)$path), '/');
-if ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/')) {
+$isEmployeeProfilePhotoPath = (bool)preg_match('#^Private/[^/]+/profile/#', $relative_path);
+if (!$isEmployeeProfilePhotoPath && ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/'))) {
     // Forbidden to access the 'Private' root itself.
     if ($relative_path === 'Private') {
         http_response_code(403);

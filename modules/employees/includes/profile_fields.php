@@ -5,18 +5,18 @@
  * Expects: $form (array), optional $employee row for edit preview.
  */
 $empPhotoEmployee = [
+    'id' => (int)($employee['id'] ?? ($form['id'] ?? 0)),
     'username' => (string)($form['username'] ?? ($employee['username'] ?? '')),
     'user_id' => (int)($form['user_id'] ?? ($employee['user_id'] ?? 0)),
     'photo' => (string)($form['photo'] ?? ($employee['photo'] ?? '')),
 ];
 $empPhotoUrl = emp_profile_photo_url($empPhotoEmployee);
-$empCanUploadPhoto = emp_profile_photo_can_store($empPhotoEmployee);
 $empHasExistingPhoto = $empPhotoUrl !== '';
 ?>
 <div class="itm-employee-photo-field">
     <label class="itm-employee-photo-label">Profile Photo</label>
-    <div class="itm-employee-photo-target itm-photo-upload-target<?= $empCanUploadPhoto ? '' : ' is-disabled' ?>" role="button" tabindex="0" aria-label="Upload profile photo">
-        <input type="file" name="photo" id="employee-photo-input" class="itm-employee-photo-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg"<?= $empCanUploadPhoto ? '' : ' disabled' ?>>
+    <div class="itm-employee-photo-target itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload profile photo">
+        <input type="file" name="photo" id="employee-photo-input" class="itm-employee-photo-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg">
         <label for="employee-photo-input" class="itm-employee-photo-trigger">
             <?php if ($empPhotoUrl !== ''): ?>
                 <img src="<?= sanitize($empPhotoUrl) ?>" id="employee-photo-preview" class="itm-employee-photo-preview" alt="" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
@@ -26,13 +26,7 @@ $empHasExistingPhoto = $empPhotoUrl !== '';
             <?php endif; ?>
         </label>
     </div>
-    <p class="itm-employee-photo-hint">
-        <?php if ($empCanUploadPhoto): ?>
-            Drag and drop or click to upload PNG/JPG.
-        <?php else: ?>
-            Set username and link a user account to enable profile photo upload.
-        <?php endif; ?>
-    </p>
+    <p class="itm-employee-photo-hint">Drag and drop or click to upload PNG/JPG.</p>
 </div>
 <script src="../../js/itm-upload-helper.js"></script>
 <script>
@@ -92,11 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
     cursor: pointer;
     box-sizing: border-box;
     transition: border-color 0.15s ease, background 0.15s ease;
-}
-.itm-employee-photo-target.is-disabled {
-    opacity: 0.6;
-    pointer-events: none;
-    cursor: not-allowed;
 }
 .itm-employee-photo-target.is-dragover {
     border-color: var(--accent-color, #0969da) !important;

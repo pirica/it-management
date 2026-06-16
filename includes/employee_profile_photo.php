@@ -2,8 +2,8 @@
 /**
  * Employee profile photo storage helpers.
  *
- * Photos live under files/{company_id}/Private/{username}_{user_id}/profile/
- * as {username}_{user_id}.png or {username}_{user_id}.jpg only.
+ * Photos live under files/{company_id}/Private/{username}_{employee_id}/profile/
+ * as {username}_{employee_id}.png or {username}_{employee_id}.jpg only.
  */
 
 if (!function_exists('emp_profile_photo_safe_username')) {
@@ -12,24 +12,36 @@ function emp_profile_photo_safe_username($username) {
 }
 }
 
+if (!function_exists('emp_profile_photo_folder_suffix')) {
+function emp_profile_photo_folder_suffix(array $employee) {
+    return (int)($employee['id'] ?? 0);
+}
+}
+
 if (!function_exists('emp_profile_photo_can_store')) {
 function emp_profile_photo_can_store(array $employee) {
     $username = trim((string)($employee['username'] ?? ''));
-    $userId = (int)($employee['user_id'] ?? 0);
-    return $username !== '' && $userId > 0;
+    return $username !== '' && emp_profile_photo_folder_suffix($employee) > 0;
 }
 }
 
 if (!function_exists('emp_profile_photo_filename')) {
-function emp_profile_photo_filename($username, $user_id, $ext) {
+function emp_profile_photo_filename($username, $employee_id, $ext) {
     $safe = emp_profile_photo_safe_username($username);
     $normalizedExt = strtolower((string)$ext) === 'jpg' ? 'jpg' : 'png';
-    return $safe . '_' . (int)$user_id . '.' . $normalizedExt;
+    return $safe . '_' . (int)$employee_id . '.' . $normalizedExt;
 }
 }
 
 if (!function_exists('emp_profile_photo_relative_dir')) {
-function emp_profile_photo_relative_dir($username, $user_id) {
+function emp_profile_photo_relative_dir($username, $employee_id) {
+    $safe = emp_profile_photo_safe_username($username);
+    return 'Private/' . $safe . '_' . (int)$employee_id . '/profile';
+}
+}
+
+if (!function_exists('emp_profile_photo_legacy_relative_dir')) {
+function emp_profile_photo_legacy_relative_dir($username, $user_id) {
     $safe = emp_profile_photo_safe_username($username);
     return 'Private/' . $safe . '_' . (int)$user_id . '/profile';
 }
@@ -38,10 +50,25 @@ function emp_profile_photo_relative_dir($username, $user_id) {
 if (!function_exists('emp_profile_photo_serve_path')) {
 function emp_profile_photo_serve_path(array $employee) {
     $filename = trim((string)($employee['photo'] ?? ''));
-    if ($filename === '' || !emp_profile_photo_can_store($employee)) {
+    if ($filename === '') {
         return '';
     }
-    return emp_profile_photo_relative_dir($employee['username'], $employee['user_id']) . '/' . basename($filename);
+
+    $basename = basename($filename);
+    $employeeId = emp_profile_photo_folder_suffix($employee);
+    $username = trim((string)($employee['username'] ?? ''));
+
+    if ($username !== '' && $employeeId > 0) {
+        return emp_profile_photo_relative_dir($username, $employeeId) . '/' . $basename;
+    }
+
+    // Why: Legacy rows may still point at Private/{username}_{linked_user_id}/profile/.
+    $legacyUserId = (int)($employee['user_id'] ?? 0);
+    if ($username !== '' && $legacyUserId > 0) {
+        return emp_profile_photo_legacy_relative_dir($username, $legacyUserId) . '/' . $basename;
+    }
+
+    return '';
 }
 }
 
@@ -56,15 +83,15 @@ function emp_profile_photo_url(array $employee) {
 }
 
 if (!function_exists('emp_profile_photo_absolute_dir')) {
-function emp_profile_photo_absolute_dir($company_id, $username, $user_id) {
-    return ROOT_PATH . 'files/' . (int)$company_id . '/' . emp_profile_photo_relative_dir($username, $user_id);
+function emp_profile_photo_absolute_dir($company_id, $username, $employee_id) {
+    return ROOT_PATH . 'files/' . (int)$company_id . '/' . emp_profile_photo_relative_dir($username, $employee_id);
 }
 }
 
 if (!function_exists('emp_profile_photo_store_upload')) {
 function emp_profile_photo_store_upload($company_id, array $employee, array $uploadFile) {
     if (!emp_profile_photo_can_store($employee)) {
-        return ['ok' => false, 'error' => 'Link a username and user account before uploading a profile photo.'];
+        return ['ok' => false, 'error' => 'Set a username on the employee before uploading a profile photo.'];
     }
     if (!isset($uploadFile['error']) || (int)$uploadFile['error'] !== UPLOAD_ERR_OK) {
         return ['ok' => false, 'error' => 'Photo upload failed.'];
@@ -81,15 +108,16 @@ function emp_profile_photo_store_upload($company_id, array $employee, array $upl
         return ['ok' => false, 'error' => 'Only PNG and JPG profile photos are allowed.'];
     }
 
-    $filename = emp_profile_photo_filename($employee['username'], $employee['user_id'], $ext);
-    $dir = emp_profile_photo_absolute_dir($company_id, $employee['username'], $employee['user_id']);
+    $employeeId = emp_profile_photo_folder_suffix($employee);
+    $filename = emp_profile_photo_filename($employee['username'], $employeeId, $ext);
+    $dir = emp_profile_photo_absolute_dir($company_id, $employee['username'], $employeeId);
     if (!itm_ensure_files_storage_directory($dir)) {
         return ['ok' => false, 'error' => 'Could not prepare profile photo folder.'];
     }
 
     $target = $dir . '/' . $filename;
     foreach (['png', 'jpg'] as $oldExt) {
-        $oldFile = $dir . '/' . emp_profile_photo_filename($employee['username'], $employee['user_id'], $oldExt);
+        $oldFile = $dir . '/' . emp_profile_photo_filename($employee['username'], $employeeId, $oldExt);
         if (is_file($oldFile) && $oldFile !== $target) {
             @unlink($oldFile);
         }
