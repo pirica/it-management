@@ -12,9 +12,11 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
+- **Admin-only UI:** `index.php` and `view.php` require `itm_is_admin()`; non-admins are redirected to the dashboard.
 - **Immutable**: Audit logs should generally not be editable. The UI only supports viewing and deletion (for maintenance).
 - **JSON Metadata**: Old and new values are stored as JSON strings.
 - **Automatic Triggering**: Most audit logging is handled by MySQL triggers (`trg_{table}_audit_*`).
+- **Users trigger redaction:** `trg_users_audit_*` in `database.sql` must not log `password`, `reset_token`, or `reset_token_hash` (credential and reset secrets stay out of `audit_logs`).
 
 ## 5. UI Behavior Requirements
 - **Searchable**: Search by table name, record ID, user, or action.
@@ -29,7 +31,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 - **create.php** — (rarely used) manual log entry.
 
 ## 8. Multi-Tenant Rules
-- Strictly scoped by `company_id`. Users should only see logs for their company.
+- Strictly scoped by `company_id`. Admins only see logs for their active company.
 
 ## 9. Audit Logging Requirements
 - This module logs other modules. It does not log its own deletions typically to save space.
