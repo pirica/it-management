@@ -1,0 +1,100 @@
+{
+    "findings": [
+        {
+            "title": "Authenticated Remote Code Execution (RCE) via File Upload in Explorer Module",
+            "status": "active",
+            "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
+            "detected_at_pst": "2026-06-14T10:15:00-07:00",
+            "reported_link": "",
+            "location": "modules/explorer/api.php"
+        },
+        {
+            "title": "Privilege Escalation via User Profile Modification",
+            "status": "active",
+            "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
+            "detected_at_pst": "2026-06-14T10:15:00-07:00",
+            "reported_link": "",
+            "location": "modules/users/index.php"
+        },
+        {
+            "title": "Unauthorized Access to Role Module Permissions Management",
+            "status": "active",
+            "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
+            "detected_at_pst": "2026-06-14T10:15:00-07:00",
+            "reported_link": "",
+            "location": "modules/role_module_permissions/index.php"
+        },
+        {
+            "title": "Multi-tenant IDOR and Data Corruption via Shared JSON Import",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "config/config.php"
+        },
+        {
+            "title": "Unauthorized Full Company Deletion and Data Purge",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "modules/companies/delete.php"
+        },
+        {
+            "title": "Sensitive Information Disclosure (Password Reset Tokens) in User View",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "modules/users/index.php"
+        },
+        {
+            "title": "Cross-User and Cross-Department Data Leak via Explorer ZIP Download",
+            "status": "active",
+            "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
+            "detected_at_pst": "2026-06-14T12:45:00-07:00",
+            "reported_link": "",
+            "location": "modules/explorer/api.php"
+        },
+        {
+            "title": "Unauthorized Remote Reset of Git History and Database Wipe",
+            "status": "active",
+            "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
+            "detected_at_pst": "2026-06-15T06:25:34-07:00",
+            "reported_link": "",
+            "location": "reset_git_history.php"
+        },
+        {
+            "title": "Administrative Privilege Escalation via Select Options API",
+            "status": "active",
+            "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
+            "detected_at_pst": "2026-06-15T06:25:34-07:00",
+            "reported_link": "",
+            "location": "modules/select_options_api.php"
+        },
+        {
+            "title": "Cross-user IDOR and Unauthorized Account Deletion in Users Module",
+            "status": "active",
+            "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
+            "detected_at_pst": "2026-06-15T06:25:34-07:00",
+            "reported_link": "",
+            "location": "modules/users/delete.php"
+        },
+        {
+            "title": "Sensitive Information Disclosure (Passwords and Reset Tokens) in Audit Logs",
+            "status": "active",
+            "commit_hash": "82a762258308248127b15dd4e887f8003347dc0d",
+            "detected_at_pst": "2026-06-15T10:20:00-07:00",
+            "reported_link": "",
+            "location": "modules/audit_logs/index.php"
+        },
+        {
+            "title": "Unauthorized Access and Privilege Escalation in Registration Invitations",
+            "status": "active",
+            "commit_hash": "82a762258308248127b15dd4e887f8003347dc0d",
+            "detected_at_pst": "2026-06-15T10:20:00-07:00",
+            "reported_link": "",
+            "location": "modules/registration_invitations/index.php"
+        }
+    ]
+}
