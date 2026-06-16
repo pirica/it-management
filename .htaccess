@@ -1,4 +1,4 @@
-# Disable directory listing
+# Disable directory listing (prevents folder browsing)
 Options -Indexes
 
 # Prioritize PHP
@@ -7,13 +7,4 @@ DirectoryIndex index.php index.html
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /it-management/
-
-    # Allow ONLY the root folder to load normally
-    RewriteCond %{REQUEST_URI} ^/it-management/?$
-    RewriteRule ^ - [L]
-
-    # Block direct access to ANY other folder
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [F]
 </IfModule>
-
