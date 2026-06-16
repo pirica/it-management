@@ -6,7 +6,7 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 ## 7. File Structure
 - **phpunit.phar** — PHPUnit 9.6 PHAR executable (no Composer).
 - **phpunit.xml** — PHPUnit configuration (bootstrap, test suites, verbose output, HTML coverage report paths).
-- **coverage/html/** — generated HTML coverage report (gitignored; created when coverage mode is selected).
+- **coverage/html/** — generated HTML coverage report (gitignored; created by browser coverage mode or `run_tests.php --coverage`).
 - **tests/** — test suite root (`bootstrap.php`, `Unit/`, agent notes, preferences).
 
 ## 11. Examples of Safe Code Patterns
@@ -14,6 +14,17 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 ### Run the suite (from repository root)
 ```bash
 php scripts/run_tests.php
+php scripts/run_tests.php --coverage
+```
+
+### Browser
+Open `scripts/run_tests.php` — menu offers **Standard** (verbose) or **HTML coverage**, plus optional skip-DB checkbox.
+
+### Verbose output
+Configured in `phpunit.xml` (`verbose="true"`) and passed explicitly as `--verbose` from `scripts/run_tests.php`.
+
+### HTML coverage (requires Xdebug or PCOV)
+```bash
 php scripts/run_tests.php --coverage
 ```
 
