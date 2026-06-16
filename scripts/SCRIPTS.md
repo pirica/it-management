@@ -1,6 +1,7 @@
 # Table of Contents
 
 - Scripts Development Standards
+  - Pre-implementation discovery (scripts)
   - 1. Catalog Registration
   - 2. Cross-Environment Output (Newline Standard)
     - Coding Standard:
@@ -28,6 +29,16 @@
 > **Canonical source:** All rules for the `scripts/` directory live in this file. **`AGENTS.md` delegates here** — agents must read **`scripts/SCRIPTS.md` completely** at session start and again before any work under `scripts/`. Do not duplicate these standards in `AGENTS.md`; when scripts rules change, edit **only this file**. On conflict, **`SCRIPTS.md` wins** for scripts topics. Laragon PHP/MySQL paths remain in **`AGENTS.md` → Setup & Debugging**.
 
 This document defines the rules for creating and updating tools within the `scripts/` directory.
+
+## Pre-implementation discovery (scripts)
+
+**Mandatory before any scripts work** — aligns with **`AGENTS.md` → Agent compliance workflow → step 4**. Do **not** add, edit, run, or catalog scripts until you have produced, for the task scope:
+
+- **Architectural map** — target script(s), `scripts/lib/` helpers, consumers (modules, CI, MBQA), and whether the tool is browser, CLI, or both.
+- **Module summary** — what the script verifies or mutates, protection-zone modules it must not touch, and relevant facts from `scripts/AGENT_NOTES.md` plus any affected module `AGENT_NOTES.md`.
+- **Dependency analysis** — `scripts/scripts.php` catalog row, smoke/MBQA impact, shared libs (`script_browser_nav.php`, `script_cli_output.php`, MBQA libs), DB tables, auth/CSRF requirements, and downstream docs (`AGENTS.md`, `docs/`, module notes) that must ship in the same PR.
+
+State the map, summary, and analysis in the agent reply before the first implementation step. Exceptions match **`AGENTS.md` step 4** (read-only/exploratory sessions; documentation-only edits to `SCRIPTS.md` when that is the whole task; single known script with no cross-module impact).
 
 ## 1. Catalog Registration
 All scripts intended for administrative or developer use must be registered in `scripts/scripts.php`.
