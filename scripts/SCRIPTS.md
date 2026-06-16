@@ -103,6 +103,7 @@ function colorText($text, $type) {
 | Script | Purpose |
 |--------|---------|
 | `php scripts/test_explorer_paths.php` | Pure-logic regression for `get_full_path` ACL (roots, traversal, backslashes) |
+| `php scripts/test_explorer_preview.php` | Pure-logic regression for Explorer preview routing (`image`, `pdf`, `text`, `unsupported`) |
 | `php scripts/verify_explorer_zip_leak.php` | Confirms `downloadZip` cannot zip `Private` / company root |
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
 | `php scripts/verify_explorer_rce_marker.php` | PoC — `.htaccess` with ITM marker cannot persist RCE directives |

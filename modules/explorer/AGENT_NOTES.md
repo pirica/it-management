@@ -27,6 +27,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - Breadcrumb navigation; upload, download, delete, rename, favourite.
 - Quick Access sidebar opens scoped Private/Department folders, not blocked roots.
 - **Hidden system files:** `index.html` and `.htaccess` are always omitted from Explorer listings (`explorer_is_hidden_system_entry()` in `api.php` `list` / `listRecycle`).
+- **Preview routing:** `open` returns `preview: image|pdf|zip|text|unsupported`. Images and PDFs load via `file.php`. ZIP archives list member names/sizes with `ZipArchive` read-only (no `extractTo()`). `.htaccess` `deny_http` blocks direct `/files/` URLs only; `file.php` reads from disk with ACL checks.
 - `api.php` for async operations; `file.php` for authorised file delivery (required after `deny_http`).
 
 ## 6. Upload hardening and `.htaccess` (`deny_http`)

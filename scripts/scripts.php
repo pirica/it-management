@@ -974,6 +974,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/test_explorer_paths.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="test_explorer_preview.php">test_explorer_preview.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression tests for Explorer preview routing so JPG/PNG/PDF use <code>file.php</code>, ZIP archives list members read-only, and text types use the open API.</td>
+                    <td><code>php scripts/test_explorer_preview.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_audit_logs_disclosure.php">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens).</td>

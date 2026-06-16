@@ -223,6 +223,58 @@ body {
     overflow-y: auto;
     border-radius: 6px;
 }
+.preview-media {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 10px;
+    font-family: inherit;
+    white-space: normal;
+    text-align: center;
+}
+.preview-media img {
+    max-width: 100%;
+    max-height: 480px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.preview-media embed {
+    width: 100%;
+    height: 480px;
+    border: 0;
+    border-radius: 4px;
+}
+.preview-zip {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 12px;
+    font-family: inherit;
+    white-space: normal;
+    text-align: left;
+}
+.preview-zip-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.preview-zip-note {
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    margin-bottom: 8px;
+}
+.preview-zip-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.preview-zip-table th,
+.preview-zip-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.preview-zip-table th {
+    font-weight: 600;
+}
 
 /* UPLOAD */
 .upload-area {
@@ -555,6 +607,88 @@ function toggleFavourite(name) {
 }
 
 /* FILE OPS */
+function formatPreviewBytes(bytes) {
+    const size = Number(bytes) || 0;
+    if (size < 1024) return size + " B";
+    if (size < 1024 * 1024) return (size / 1024).toFixed(1) + " KB";
+    return (size / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function renderPreview(res) {
+    previewCont.style.display = "block";
+    preview.innerHTML = "";
+    preview.className = "preview";
+
+    if (res.preview === "image") {
+        preview.className = "preview preview-media";
+        const img = document.createElement("img");
+        img.src = res.url;
+        img.alt = "Image preview";
+        preview.appendChild(img);
+        return;
+    }
+
+    if (res.preview === "pdf") {
+        preview.className = "preview preview-media";
+        const embed = document.createElement("embed");
+        embed.src = res.url;
+        embed.type = "application/pdf";
+        preview.appendChild(embed);
+        return;
+    }
+
+    if (res.preview === "zip") {
+        preview.className = "preview preview-zip";
+        const title = document.createElement("div");
+        title.className = "preview-zip-title";
+        title.textContent = "Archive contents (read-only — not extracted)";
+        preview.appendChild(title);
+
+        if (res.truncated) {
+            const note = document.createElement("div");
+            note.className = "preview-zip-note";
+            note.textContent = "Showing first " + (res.entries || []).length + " of " + (res.total || 0) + " entries.";
+            preview.appendChild(note);
+        }
+
+        const entries = Array.isArray(res.entries) ? res.entries : [];
+        if (entries.length === 0) {
+            const empty = document.createElement("div");
+            empty.textContent = "This archive is empty.";
+            preview.appendChild(empty);
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "preview-zip-table";
+        table.innerHTML = "<thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>";
+        const tbody = document.createElement("tbody");
+        entries.forEach(entry => {
+            const row = document.createElement("tr");
+            const nameCell = document.createElement("td");
+            nameCell.textContent = entry.name || "";
+            const typeCell = document.createElement("td");
+            typeCell.textContent = entry.type === "folder" ? "Folder" : "File";
+            const sizeCell = document.createElement("td");
+            sizeCell.textContent = entry.type === "folder" ? "—" : formatPreviewBytes(entry.size);
+            row.appendChild(nameCell);
+            row.appendChild(typeCell);
+            row.appendChild(sizeCell);
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        preview.appendChild(table);
+        return;
+    }
+
+    if (res.preview === "text") {
+        preview.textContent = res.content || "(File is empty or not readable as text)";
+        return;
+    }
+
+    preview.textContent = res.message || "Preview is not available for this file type.";
+}
+
 function openItem(name, type) {
     if (type === "folder") {
         let nextPath = currentPath ? currentPath + "/" + name : name;
@@ -567,9 +701,8 @@ function openItem(name, type) {
         loadFolder(currentPath);
     } else {
         api("open", { item: name }).then(res => {
-            if (res.content !== undefined) {
-                previewCont.style.display = "block";
-                preview.textContent = res.content || "(File is empty or not readable as text)";
+            if (res.preview !== undefined || res.content !== undefined) {
+                renderPreview(res);
             }
         });
     }

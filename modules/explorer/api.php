@@ -73,6 +73,80 @@ function explorer_is_hidden_system_entry($name) {
 }
 }
 
+/**
+ * Why: Explorer preview must route images/PDFs through file.php instead of reading binary bytes as text.
+ */
+if (!function_exists('explorer_resolve_preview_mode')) {
+function explorer_resolve_preview_mode($filename) {
+    $ext = strtolower(pathinfo((string)$filename, PATHINFO_EXTENSION));
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+        return 'image';
+    }
+    if ($ext === 'pdf') {
+        return 'pdf';
+    }
+    if ($ext === 'zip') {
+        return 'zip';
+    }
+    if (in_array($ext, ['txt', 'md', 'log', 'json', 'xml', 'csv', 'php', 'js', 'css', 'html', 'htm'], true)) {
+        return 'text';
+    }
+    return 'unsupported';
+}
+}
+
+/**
+ * Why: ZIP preview lists archive members in read-only mode — never calls extractTo().
+ */
+if (!function_exists('explorer_list_zip_archive_entries')) {
+function explorer_list_zip_archive_entries($zipPath, $maxEntries = 500, $maxBytes = 104857600) {
+    if (!class_exists('ZipArchive')) {
+        return ['ok' => false, 'error' => 'ZIP support is unavailable on this server.'];
+    }
+    if (!is_file($zipPath) || !is_readable($zipPath)) {
+        return ['ok' => false, 'error' => 'ZIP file is not readable.'];
+    }
+    $fileSize = filesize($zipPath);
+    if ($fileSize === false || $fileSize > $maxBytes) {
+        return ['ok' => false, 'error' => 'ZIP archive is too large to preview.'];
+    }
+
+    $zip = new ZipArchive();
+    $openResult = $zip->open($zipPath);
+    if ($openResult !== true) {
+        return ['ok' => false, 'error' => 'Could not open ZIP archive.'];
+    }
+
+    $entries = [];
+    $total = (int)$zip->numFiles;
+    $limit = min($total, max(1, (int)$maxEntries));
+    for ($i = 0; $i < $limit; $i++) {
+        $stat = $zip->statIndex($i);
+        if (!is_array($stat)) {
+            continue;
+        }
+        $name = str_replace('\\', '/', (string)($stat['name'] ?? ''));
+        if ($name === '' || strpos($name, '..') !== false) {
+            continue;
+        }
+        $entries[] = [
+            'name' => $name,
+            'size' => (int)($stat['size'] ?? 0),
+            'compressed_size' => (int)($stat['comp_size'] ?? 0),
+            'type' => (substr($name, -1) === '/') ? 'folder' : 'file',
+        ];
+    }
+    $zip->close();
+
+    return [
+        'ok' => true,
+        'entries' => $entries,
+        'total' => $total,
+        'truncated' => $total > $maxEntries,
+    ];
+}
+}
+
 /* ---------------- ZIP DOWNLOAD ---------------- */
 if (isset($_GET['downloadZip'])) {
     if (!isset($_SESSION['company_id'])) exit("Access denied.");
@@ -270,14 +344,66 @@ case "list":
 /* ---------------- OPEN ---------------- */
 case "open":
     $dir = get_full_path($storage_root, $path, $user_id, $dept_id, $username);
-    $item = $_POST['item'] ?? '';
-    $full = $dir . "/" . basename($item);
+    $item = basename((string)($_POST['item'] ?? ''));
+    $full = $dir . "/" . $item;
 
-    $content = "";
-    if (is_file($full) && filesize($full) < 1024*1024) {
-        $content = file_get_contents($full);
+    if (!$dir || !is_file($full)) {
+        echo json_encode([
+            'preview' => 'unsupported',
+            'message' => 'File not found.',
+        ]);
+        break;
     }
-    echo json_encode(["content" => $content]);
+
+    $relPath = ($path !== '' ? $path . '/' : '') . $item;
+    $relPath = str_replace('\\', '/', $relPath);
+    $previewMode = explorer_resolve_preview_mode($item);
+
+    if ($previewMode === 'image' || $previewMode === 'pdf') {
+        echo json_encode([
+            'preview' => $previewMode,
+            'url' => 'file.php?path=' . rawurlencode($relPath),
+        ]);
+        break;
+    }
+
+    if ($previewMode === 'zip') {
+        $listing = explorer_list_zip_archive_entries($full);
+        if (empty($listing['ok'])) {
+            echo json_encode([
+                'preview' => 'unsupported',
+                'message' => $listing['error'] ?? 'Could not read ZIP archive.',
+            ]);
+            break;
+        }
+        echo json_encode([
+            'preview' => 'zip',
+            'entries' => $listing['entries'],
+            'total' => (int)($listing['total'] ?? 0),
+            'truncated' => !empty($listing['truncated']),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        break;
+    }
+
+    if ($previewMode === 'text') {
+        $content = '';
+        if (filesize($full) < 1024 * 1024) {
+            $content = file_get_contents($full);
+            if ($content !== '' && strpos($content, "\0") !== false) {
+                $content = '';
+            }
+        }
+        echo json_encode([
+            'preview' => 'text',
+            'content' => $content,
+        ]);
+        break;
+    }
+
+    echo json_encode([
+        'preview' => 'unsupported',
+        'message' => 'Preview is not available for this file type.',
+    ]);
     break;
 
 /* ---------------- CREATE FOLDER ---------------- */
