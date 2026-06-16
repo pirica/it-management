@@ -23,7 +23,14 @@ Before making any change, replying, running commands, editing files, or proposin
    | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
    | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
 
-   **No PR numbers in product documentation:** describe current behaviour, files, and commands — do **not** cite pull request numbers or `pull/N` URLs in `AGENT_NOTES.md`, `docs/`, module notes, feature sections of **`AGENTS.md`**, **`scripts/SCRIPTS.md`**, or **`scripts/scripts.php`** catalog prose. Git/PR *workflow* steps in **`AGENTS.md`** (fresh branch, do not push to an open PR) may refer to the PR process without numbering shipped features.
+   **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands — do **not** embed **specific** pull request numbers (`PR #1860`), `pull/N` URLs, or “post PR #…” history in:
+
+   - `AGENT_NOTES.md`, `docs/`, module notes, feature sections of **`AGENTS.md`**, **`scripts/SCRIPTS.md`**, or **`scripts/scripts.php`** catalog prose
+   - **Code comments** and file headers (`// Why:`, `/** … */`) — **keep the comment**; remove only the numbered PR cite (e.g. write “added manually across companies”, not “PR #1993 added…”)
+
+   **Allowed:** generic git-workflow placeholders in **`AGENTS.md`** only — e.g. `PR #N`, “fresh PR”, “do not push to an open PR” — with **no digits** and no `https://…/pull/` examples.
+
+   **When editing stale text:** strip the number/URL; do not delete the surrounding explanation.
 
    Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
 5. **Always create and update `AGENT_NOTES.md` (hard fail):** for every in-scope folder you read or change, **read** that folder's `AGENT_NOTES.md` first (and the parent folder's file when editing a subfolder). **Create** the file from `templates/AGENT_NOTES.md` when it is missing. **Update** it in the **same PR** whenever your work changes purpose, tables, FKs, business rules, UI behaviour, API actions, file layout, tenant rules, audit coverage, or known pitfalls. Do not mark a deliverable complete while notes are missing, empty, or stale for a folder you touched.
