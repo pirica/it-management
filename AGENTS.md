@@ -127,10 +127,10 @@ Every **project folder that contains source code or agent-relevant assets** must
 | Scope | Requirement |
 |--------|-------------|
 | **Repo root** | `AGENT_NOTES.md` — whole-system context; read with `AGENTS.md` at session start. |
-| **Top-level dirs** | `config/`, `includes/`, `modules/`, `scripts/`, `tests/`, `css/`, `js/`, `.github/`, etc. |
+| **Top-level dirs** | `config/`, `includes/`, `modules/`, `scripts/`, `phpunit/`, `css/`, `js/`, `.github/`, etc. |
 | **Each module** | `modules/<slug>/AGENT_NOTES.md` — purpose, tables, FKs, business rules, UI, pitfalls. |
 | **Code subfolders** | e.g. `scripts/lib/`, `modules/*/api/`, `modules/*/includes/` — document that subfolder's role. |
-| **Test mirrors** | `tests/Unit/.../AGENT_NOTES.md` — what is tested and which module it maps to. |
+| **Test mirrors** | `phpunit/tests/Unit/.../AGENT_NOTES.md` — what is tested and which module it maps to. |
 
 **Exemptions (no `AGENT_NOTES.md` required):** runtime tenant upload trees under `files/{company_id}/**`, and other directories created only at runtime (user uploads, QA temp files).
 

@@ -47,13 +47,13 @@ if (PHP_SAPI !== 'cli') {
     itm_script_output_begin('PHPUnit Test Suite Results');
     itm_script_browser_nav_echo();
     echo "<h1>PHPUnit Test Suite</h1>";
-    echo "<p>Running tests from <code>tests/Unit/</code>...</p>";
+    echo "<p>Running tests from <code>phpunit/tests/Unit/</code>...</p>";
     echo "<pre style='background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px;'>";
 }
 
-$phpunit_bin = ROOT_PATH . 'phpunit.phar';
-$bootstrap = ROOT_PATH . 'tests/bootstrap.php';
-$tests_dir = ROOT_PATH . 'tests/Unit';
+$phpunit_bin = ROOT_PATH . 'phpunit/phpunit.phar';
+$bootstrap = ROOT_PATH . 'phpunit/tests/bootstrap.php';
+$tests_dir = ROOT_PATH . 'phpunit/tests/Unit';
 
 // Use PHP_BINARY to ensure the same PHP version is used for the sub-process.
 // We fallback to 'php' if PHP_BINARY is not available.
@@ -65,7 +65,7 @@ if (strpos($php_bin, 'php-cgi') !== false) {
 }
 
 // Why: Explicitly reference the configuration file so PHPUnit can find the tests regardless of the current working directory.
-$phpunit_xml = ROOT_PATH . 'phpunit.xml';
+$phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
 
 // Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
 // We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.

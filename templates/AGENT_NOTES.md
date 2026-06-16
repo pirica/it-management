@@ -1,4 +1,4 @@
-Read AGENTS.md Read REDME.md Read scripts/scripts.php Read tests/* Read scripts/api.php Read database.sql read full project
+Read AGENTS.md Read REDME.md Read scripts/scripts.php Read phpunit/tests/* Read scripts/api.php Read database.sql read full project
 
 On base on your learnings create AGENT_NOTES.md for each modules/ on base of this (Module Template) don't use scripts to auto the process.
 

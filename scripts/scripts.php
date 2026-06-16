@@ -293,7 +293,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="run_tests.php">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Executes the PHPUnit test suite located in <code>tests/Unit/</code> using <code>phpunit.phar</code>. Cross-platform support for database-less execution via <code>ITM_SKIP_DB_TESTS=1</code>.</td>
+                    <td>Executes the PHPUnit test suite located in <code>phpunit/tests/Unit/</code> using <code>phpunit/phpunit.phar</code>. Cross-platform support for database-less execution via <code>ITM_SKIP_DB_TESTS=1</code>.</td>
                     <td>
                         Open in browser (requires <code>?token=...</code> if not local) to see styled output.<br>
                         CLI: <code>php scripts/run_tests.php</code>
@@ -308,7 +308,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td>generate_tests.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
-                    <td>Automatically generates PHPUnit integration tests for all standard CRUD modules identified in the metadata. Creates test files in <code>tests/Unit/Modules/</code>.</td>
+                    <td>Automatically generates PHPUnit integration tests for all standard CRUD modules identified in the metadata. Creates test files in <code>phpunit/tests/Unit/Modules/</code>.</td>
                     <td>CLI: <code>php scripts/generate_tests.php</code></td>
                 </tr>
                 <tr>
