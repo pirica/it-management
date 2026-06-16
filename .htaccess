@@ -2,7 +2,10 @@
     RewriteEngine On
     RewriteBase /it-management/
 
-    # Block direct access to any folder
+    # Allow root folder to load index.php
+    RewriteCond %{REQUEST_URI} !^/$
+
+    # Block direct access to any other folder
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [F]
 </IfModule>
