@@ -9,6 +9,7 @@
 
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
+require_once '../../includes/employee_profile_photo.php';
 
 // Keep system access metadata available even in partially initialized environments.
 esa_ensure_table($conn);
@@ -72,6 +73,8 @@ $profileFields = [
     'Dect' => (string)($employee['dect'] ?? ''),
     'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '✅' : '❌'),
     'On Orgchart' => ((int)($employee['on_orgchart'] ?? 0) === 1 ? '✅' : '❌'),
+    'Birthday' => emp_format_birthday_display($employee['birthday'] ?? null, $employee['hide_year'] ?? 0),
+    'Hide Year' => ((int)($employee['hide_year'] ?? 0) === 1 ? '✅' : '❌'),
     'External ID' => (string)($employee['external_id'] ?? ''),
     'Username' => (string)($employee['username'] ?? ''),
     'Department' => (string)($employee['department_name'] ?? ''),
@@ -106,7 +109,13 @@ $profileFields = [
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
-                <h1 style="margin:0;">Employee #<?php echo (int)$employeeId; ?></h1>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <?php $empPhotoUrl = emp_profile_photo_url($employee); ?>
+                    <?php if ($empPhotoUrl !== ''): ?>
+                        <img src="<?= sanitize($empPhotoUrl) ?>" alt="" class="rounded-circle border" width="72" height="72" style="object-fit:cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
+                    <?php endif; ?>
+                    <h1 style="margin:0;">Employee #<?php echo (int)$employeeId; ?></h1>
+                </div>
                 <div style="display:flex;gap:8px;">
                     <a href="index.php" class="btn">🔙</a>
                     <a href="edit.php?id=<?php echo (int)$employeeId; ?>" class="btn btn-primary">✏️</a>

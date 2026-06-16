@@ -12,6 +12,7 @@
 
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
+require_once '../../includes/employee_profile_photo.php';
 
 /**
  * Cleanup unique constraints for email if they exist, facilitating manual handling
@@ -60,6 +61,7 @@ $form = [
     'employment_status_id' => '1', 'employee_position_id' => '', 'reports_to' => '', 'workstation_mode_id' => '',
     'assignment_type_id' => '', 'comments' => '', 'office_key_card_department_id' => '',
     'mobile_phone' => '', 'external_number' => '', 'dect' => '', 'extension' => '', 'on_contacts' => '0', 'on_orgchart' => '0',
+    'birthday' => '', 'hide_year' => '0', 'photo' => '',
 ];
 
 $selectedSystemAccessIds = [];
@@ -108,24 +110,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
         $dect = $form['dect'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['dect']) . "'";
         $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
-        $onContacts = (int)$form['on_contacts'];
-        $onOrgchart = (int)$form['on_orgchart'];
+    $onContacts = (int)$form['on_contacts'];
+    $onOrgchart = (int)$form['on_orgchart'];
+    $birthday = $form['birthday'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['birthday']) . "'";
+    $hideYear = (int)$form['hide_year'];
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, work_email, personal_email, external_id, username,
             department_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
-            employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id
+            employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id,
+            birthday, hide_year
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$workEmail}, {$personalEmail}, {$externalId}, {$username},
             {$departmentId}, {$jobCode}, {$comments}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$onOrgchart}, {$rawStatusCode}, {$employmentStatusId},
-            {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId}
+            {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId},
+            {$birthday}, {$hideYear}
         )";
 
         if (mysqli_query($conn, $sql)) {
             $newEmployeeId = (int)mysqli_insert_id($conn);
+            if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $newEmployeeRes = mysqli_query($conn, 'SELECT * FROM employees WHERE id=' . $newEmployeeId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+                $newEmployee = ($newEmployeeRes && mysqli_num_rows($newEmployeeRes) === 1) ? mysqli_fetch_assoc($newEmployeeRes) : null;
+                if ($newEmployee) {
+                    $photoResult = emp_profile_photo_store_upload((int)$company_id, $newEmployee, $_FILES['photo']);
+                    if ($photoResult['ok'] ?? false) {
+                        $photoFilename = mysqli_real_escape_string($conn, (string)$photoResult['filename']);
+                        mysqli_query($conn, "UPDATE employees SET photo='{$photoFilename}' WHERE id={$newEmployeeId} AND company_id=" . (int)$company_id . ' LIMIT 1');
+                    } elseif (!empty($photoResult['error'])) {
+                        $errors[] = (string)$photoResult['error'];
+                    }
+                }
+            }
+            if (empty($errors)) {
             // Persist selected system access permissions in the employee_system_access matrix
             esa_save_employee_access_ids($conn, (int)$company_id, $newEmployeeId, $selectedSystemAccessIds);
             header('Location: index.php');
             exit;
+            }
         }
         $errors[] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
     }
@@ -160,9 +181,10 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
             <?php echo itm_render_alert_errors($errors); ?>
 
             <div class="card">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                        <?php include __DIR__ . '/includes/profile_fields.php'; ?>
                         <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="<?php echo sanitize($form['first_name']); ?>" required></div>
                         <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" value="<?php echo sanitize($form['last_name']); ?>" required></div>
                         <div class="form-group"><label>Display Name</label><input type="text" name="display_name" value="<?php echo sanitize($form['display_name']); ?>"></div>
