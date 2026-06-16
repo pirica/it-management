@@ -72,14 +72,21 @@ $post = [
 
 $output = run_isolated_post(realpath(__DIR__ . '/../modules/select_options_api.php'), $session, $post);
 
+$decoded = json_decode(trim((string)$output), true);
+$blockedByPolicy = is_array($decoded)
+    && empty($decoded['ok'])
+    && stripos((string)($decoded['error'] ?? ''), 'quick-add') !== false;
+
 $res = mysqli_query($conn, "SELECT id, role_id FROM users WHERE username = '$evilUsername'");
 $row = mysqli_fetch_assoc($res);
 
-if ($row && $row['role_id'] == 1) {
+if ($row && (int)$row['role_id'] === 1) {
     echo colorText("[FAIL] Select Options API: Regular user successfully created an Admin user!", 'fail') . $nl;
-    mysqli_query($conn, "DELETE FROM users WHERE id = " . $row['id']);
+    mysqli_query($conn, "DELETE FROM users WHERE id = " . (int)$row['id']);
+} elseif ($blockedByPolicy) {
+    echo colorText('[PASS] Select Options API: Admin creation blocked by table whitelist.', 'pass') . $nl;
 } else {
-    echo colorText("[PASS] Select Options API: Admin creation failed. Output: $output", 'pass') . $nl;
+    echo colorText("[FAIL] Select Options API: Expected whitelist block; output: $output", 'fail') . $nl;
 }
 
 mysqli_query($conn, "DELETE FROM users WHERE id = $userId");

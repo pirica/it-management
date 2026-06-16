@@ -910,7 +910,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_select_options_escalation.php">verify_select_options_escalation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for administrative privilege escalation via Select Options API.</td>
+                    <td>Regression check: Select Options API blocks admin user quick-add via <code>users</code> table (expects PASS).</td>
                     <td><code>php scripts/verify_select_options_escalation.php</code></td>
                 </tr>
                 <tr>
