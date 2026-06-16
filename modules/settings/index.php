@@ -502,6 +502,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Action: Persist or rotate the per-user API key (rate-limit metadata stays server-managed).
+    if ($action === 'save_api_key') {
+        if ((int)$company_id <= 0) {
+            $error = 'Unable to save API key: please select an active company first.';
+        } elseif ($settingsUserId <= 0) {
+            $error = 'Unable to save API key: your session user is missing. Please sign in again.';
+        } else {
+            $submittedApiKey = trim((string)($_POST['api_key'] ?? ''));
+            if ($submittedApiKey !== '' && strlen($submittedApiKey) > 191) {
+                $error = 'API key must be 191 characters or fewer.';
+            } elseif (!itm_api_save_user_api_key($conn, (int)$company_id, $settingsUserId, $submittedApiKey)) {
+                $error = 'Unable to save API key.';
+            } else {
+                $_SESSION['settings_flash_message'] = $submittedApiKey === ''
+                    ? 'API key cleared successfully.'
+                    : 'API key saved successfully.';
+                header('Location: index.php?api_saved=1');
+                exit;
+            }
+        }
+    }
+
+    if ($action === 'generate_api_key') {
+        if ((int)$company_id <= 0) {
+            $error = 'Unable to generate API key: please select an active company first.';
+        } elseif ($settingsUserId <= 0) {
+            $error = 'Unable to generate API key: your session user is missing. Please sign in again.';
+        } else {
+            $generatedApiKey = itm_api_generate_key();
+            if (!itm_api_save_user_api_key($conn, (int)$company_id, $settingsUserId, $generatedApiKey)) {
+                $error = 'Unable to generate API key.';
+            } else {
+                $_SESSION['settings_flash_message'] = 'New API key generated successfully.';
+                header('Location: index.php?api_saved=1');
+                exit;
+            }
+        }
+    }
+
     // Action: Ensure required settings tables exist (useful for fresh installs).
     if ($action === 'create_system_tables') {
         if (!$canManageMaintenanceTools) {
@@ -586,6 +625,36 @@ $currentFaviconUrl = itm_ui_config_favicon_url($currentUiConfig);
 $currentFaviconPath = trim((string)($currentUiConfig['favicon_path'] ?? ''));
 $currentFaviconDisplayPath = $currentFaviconPath !== '' ? '/' . ltrim($currentFaviconPath, '/') : '';
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
+$currentApiKey = trim((string)($currentUiConfig['api_key'] ?? ''));
+$currentApiKeyIsActive = ((int)($currentUiConfig['api_key_is_active'] ?? 1) === 1);
+$currentApiKeyLastUsedAt = trim((string)($currentUiConfig['api_key_last_used_at'] ?? ''));
+$currentRateLimitEnabled = ((int)($currentUiConfig['rate_limit_enabled'] ?? 1) === 1);
+$currentRateLimitWindowStart = (int)($currentUiConfig['rate_limit_window_start'] ?? 0);
+$currentRateLimitRequestCount = (int)($currentUiConfig['rate_limit_request_count'] ?? 0);
+$currentApiTier = function_exists('itm_api_normalize_tier')
+    ? itm_api_normalize_tier($currentUiConfig['tier'] ?? 'Free')
+    : 'Free';
+$apiTierOptions = function_exists('itm_api_allowed_tiers')
+    ? itm_api_allowed_tiers()
+    : ['Free', 'Basic', 'Pro', 'Enterprise'];
+$currentApiTierLimit = function_exists('itm_api_tier_hourly_limit')
+    ? itm_api_tier_hourly_limit($currentApiTier)
+    : 60;
+$currentApiRateStatus = function_exists('itm_api_rate_limit_status_from_row')
+    ? itm_api_rate_limit_status_from_row($currentUiConfig)
+    : [
+        'remaining' => $currentApiTierLimit,
+        'reset_at' => time() + 3600,
+    ];
+$currentRateLimitWindowLabel = $currentRateLimitWindowStart > 0
+    ? gmdate('Y-m-d H:i:s', $currentRateLimitWindowStart) . ' UTC'
+    : 'Not started';
+$currentApiKeyLastUsedLabel = $currentApiKeyLastUsedAt !== ''
+    ? $currentApiKeyLastUsedAt
+    : 'Never';
+$currentApiResetLabel = !empty($currentApiRateStatus['reset_at'])
+    ? gmdate('Y-m-d H:i:s', (int)$currentApiRateStatus['reset_at']) . ' UTC'
+    : '—';
 // If the database has a custom pagination value not in our default array, add it to the dropdown.
 if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
     $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
@@ -827,6 +896,71 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             <button class="btn btn-primary" type="submit">💾</button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header"><h2>API Access</h2></div>
+                <div class="card-body">
+                    <p class="form-hint" style="margin-top:0;">Manage your integration API key here. Tier and rate-limit counters are managed by the platform and shown read-only below.</p>
+                    <form method="post" style="margin-bottom:16px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="action" value="save_api_key">
+                        <div class="form-group" style="max-width:640px;">
+                            <label for="api_key">API Key</label>
+                            <input id="api_key" name="api_key" type="text" maxlength="191" value="<?php echo sanitize($currentApiKey); ?>" placeholder="Paste or generate an API key">
+                            <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests.</p>
+                        </div>
+                        <div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-primary" type="submit">💾 Save API Key</button>
+                        </div>
+                    </form>
+                    <form method="post" style="margin-bottom:20px;display:inline;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="action" value="generate_api_key">
+                        <button class="btn btn-sm" type="submit" onclick="return confirm('Generate a new API key? Existing integrations must be updated.');">Generate New API Key</button>
+                    </form>
+
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+                        <div class="form-group">
+                            <label for="api_key_is_active_display">API Key Active</label>
+                            <input id="api_key_is_active_display" type="text" value="<?php echo $currentApiKeyIsActive ? 'Active' : 'Inactive'; ?>" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="api_key_last_used_at_display">API Key Last Used</label>
+                            <input id="api_key_last_used_at_display" type="text" value="<?php echo sanitize($currentApiKeyLastUsedLabel); ?>" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="tier_display">Tier</label>
+                            <select id="tier_display" disabled>
+                                <?php foreach ($apiTierOptions as $tierOption): ?>
+                                    <option value="<?php echo sanitize($tierOption); ?>" <?php echo $currentApiTier === $tierOption ? 'selected' : ''; ?>>
+                                        <?php echo sanitize($tierOption); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="rate_limit_enabled_display">Rate Limit Enabled</label>
+                            <input id="rate_limit_enabled_display" type="text" value="<?php echo $currentRateLimitEnabled ? 'Enabled' : 'Disabled'; ?>" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="rate_limit_window_start_display">Rate Limit Window Start</label>
+                            <input id="rate_limit_window_start_display" type="text" value="<?php echo sanitize($currentRateLimitWindowLabel); ?>" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="rate_limit_request_count_display">Requests This Window</label>
+                            <input id="rate_limit_request_count_display" type="text" value="<?php echo sanitize((string)$currentRateLimitRequestCount); ?>" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="rate_limit_remaining_display">Remaining This Hour</label>
+                            <input id="rate_limit_remaining_display" type="text" value="<?php echo sanitize((string)($currentApiRateStatus['remaining'] ?? 0) . ' / ' . (string)$currentApiTierLimit); ?>" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="rate_limit_reset_display">Window Resets At (UTC)</label>
+                            <input id="rate_limit_reset_display" type="text" value="<?php echo sanitize($currentApiResetLabel); ?>" readonly disabled>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -217,6 +217,7 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`ui_check`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
 * **DB Import Endpoint (Index Tables):** Add `data-itm-db-import-endpoint="index.php"` to every module index table so `📥Import Excel` can use the save-to-database flow.
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
+* **API keys and rate limits:** Per-user integration keys live on `ui_configuration` (`api_key`, `tier`, `rate_limit_*`). Users edit only `api_key` in **Settings → API Access**; tier is a blocked select and counters are server-managed. Programmatic handlers call `itm_api_enforce_rate_limit_or_exit($conn)` from `includes/itm_api_rate_limit.php`; probe quota via `GET scripts/api.php?rate_limit=1` with `X-API-Key`.
 
 ### 5. Standard Feature Set
 Every module (excluding the Protection Zone) must implement:
