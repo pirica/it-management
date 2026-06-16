@@ -88,4 +88,5 @@ if (file_exists($htaccess_path)) {
     echo colorText("[PASS] .htaccess not found.", 'pass') . itm_script_output_nl();
 }
 
-@unlink($htaccess_path);
+// Restore system hardening after test
+itm_ensure_files_storage_directory($target_dir);

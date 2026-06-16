@@ -35,8 +35,10 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
 
     // Paths starting with 'Private' are restricted to the owner's username_id subfolder.
     if ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/')) {
-        if ($relative_path !== 'Private' &&
-            !str_starts_with($relative_path, "Private/$user_private_dir/") &&
+        // Forbidden to access the 'Private' root itself.
+        if ($relative_path === 'Private') return null;
+
+        if (!str_starts_with($relative_path, "Private/$user_private_dir/") &&
             $relative_path !== "Private/$user_private_dir") {
             return null;
         }
@@ -44,9 +46,11 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
 
     // Paths starting with 'Departments' are restricted to the user's department ID subfolder.
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
+        // Forbidden to access the 'Departments' root itself.
+        if ($relative_path === 'Departments') return null;
+
         if ($dept_id <= 0) return null; // User has no department
-        if ($relative_path !== 'Departments' &&
-            !str_starts_with($relative_path, "Departments/$dept_id/") &&
+        if (!str_starts_with($relative_path, "Departments/$dept_id/") &&
             $relative_path !== "Departments/$dept_id") {
             return null;
         }
@@ -70,7 +74,12 @@ if (isset($_GET['downloadZip'])) {
         $dept_id = (int)$dept_row['department_id'];
     }
 
-    $path = $_GET['path'] ?? "";
+    $path = trim((string)($_GET['path'] ?? ''), '/');
+    // Why: Prevent information leak by zipping the entire storage root or sensitive system folders.
+    if ($path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
+        exit("Invalid path or permission denied.");
+    }
+
     $storage_root = ROOT_PATH . 'files/' . $company_id;
     $full = get_full_path($storage_root, $path, $user_id, $dept_id, $username);
 
@@ -288,11 +297,11 @@ case "delete":
 
     if (!$dir || !file_exists($src)) { echo json_encode(["ok" => 0]); break; }
 
-    // Why: Restrict deletion of system folders and user's private folder.
-    $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private']));
-    $is_own_private = ($path === 'Private' && $item === $user_private_dir);
+    // Why: Restrict deletion of system folders and any item directly in sensitive roots.
+    $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
+    $is_sensitive_root = ($path === 'Private' || $path === 'Departments');
 
-    if ($is_restricted || $is_own_private) {
+    if ($is_restricted || $is_sensitive_root) {
         echo json_encode(["ok" => 0, "error" => "Deletion of this item is restricted."]);
         break;
     }
@@ -318,11 +327,11 @@ case "rename":
 
     if (!$dir || !$item || !$name) { echo json_encode(["ok" => 0]); break; }
 
-    // Why: Restrict renaming of system folders and user's private folder.
-    $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private']));
-    $is_own_private = ($path === 'Private' && $item === $user_private_dir);
+    // Why: Restrict renaming of system folders and any item directly in sensitive roots.
+    $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
+    $is_sensitive_root = ($path === 'Private' || $path === 'Departments');
 
-    if ($is_restricted || $is_own_private) {
+    if ($is_restricted || $is_sensitive_root) {
         echo json_encode(["ok" => 0, "error" => "Renaming of this item is restricted."]);
         break;
     }
@@ -357,9 +366,18 @@ case "copy":
         break;
     }
 
+    // Why: Restrict zipping/copying of system folders and any item directly in sensitive roots.
+    $is_sensitive_src = ($src_rel === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']))
+                        || $src_rel === 'Private' || $src_rel === 'Departments';
+
+    if ($is_sensitive_src) {
+        echo json_encode(["ok" => 0, "error" => "Copying of this item is restricted."]);
+        break;
+    }
+
     // Why: Copy must follow the same non-writable root policy as create/upload/move.
-    if ($dest_rel === '' || $dest_rel === 'Private' || $dest_rel === 'Departments') {
-        echo json_encode(["ok" => 0, "error" => "Items cannot be copied directly into Home, Private, or Departments root."]);
+    if ($dest_rel === '' || $dest_rel === 'Private' || $dest_rel === 'Departments' || $dest_rel === 'Trash') {
+        echo json_encode(["ok" => 0, "error" => "Items cannot be copied directly into Home, Private, Departments or Trash root."]);
         break;
     }
 
@@ -395,18 +413,18 @@ case "move":
         break;
     }
 
-    // Why: Restrict moving of system folders and user's private folder.
-    $is_restricted = ($src_rel === '' && in_array($item, ['Common', 'Departments', 'Private']));
-    $is_own_private = ($src_rel === 'Private' && $item === $user_private_dir);
+    // Why: Restrict moving of system folders and any item directly in sensitive roots.
+    $is_restricted = ($src_rel === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
+    $is_sensitive_root = ($src_rel === 'Private' || $src_rel === 'Departments');
 
-    if ($is_restricted || $is_own_private) {
+    if ($is_restricted || $is_sensitive_root) {
         echo json_encode(["ok" => 0, "error" => "Moving of this item is restricted."]);
         break;
     }
 
     // Why: Block moving items into top-level restricted folders.
-    if ($dest_rel === '' || $dest_rel === 'Private' || $dest_rel === 'Departments') {
-        echo json_encode(["ok" => 0, "error" => "Items cannot be moved directly into Home, Private, or Departments root."]);
+    if ($dest_rel === '' || $dest_rel === 'Private' || $dest_rel === 'Departments' || $dest_rel === 'Trash') {
+        echo json_encode(["ok" => 0, "error" => "Items cannot be moved directly into Home, Private, Departments or Trash root."]);
         break;
     }
 
@@ -431,6 +449,15 @@ case "zip":
     $zipFile = $dir . "/" . $item . ".zip";
 
     if (!$dir || !file_exists($src)) { echo json_encode(["ok" => 0]); break; }
+
+    // Why: Restrict zipping of system folders and any item directly in sensitive roots.
+    $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
+    $is_sensitive_root = ($path === 'Private' || $path === 'Departments');
+
+    if ($is_restricted || $is_sensitive_root) {
+        echo json_encode(["ok" => 0, "error" => "Zipping of this item is restricted."]);
+        break;
+    }
 
     $zip = new ZipArchive();
     if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
@@ -609,6 +636,11 @@ case "listRecycle":
         );
         foreach ($it as $file) {
             $rel = substr($file->getPathname(), strlen($trash_root) + 1);
+            // Why: Normalize for cross-platform comparison and apply same ACL logic as live storage.
+            $safe_rel = str_replace('\\', '/', $rel);
+            if (get_full_path($trash_root, $safe_rel, $user_id, $dept_id, $username) === null) {
+                continue;
+            }
             $items[] = [
                 "name" => $rel,
                 "type" => $file->isDir() ? "folder" : "file"
@@ -620,6 +652,13 @@ case "listRecycle":
 
 case "restore":
     $item = $_POST['item'] ?? '';
+
+    // Why: Ensure user has permission to the item being restored.
+    if (get_full_path($trash_root, $item, $user_id, $dept_id, $username) === null) {
+        echo json_encode(["ok" => 0, "error" => "Permission denied."]);
+        break;
+    }
+
     $src = $trash_root . "/" . $item;
     $dst = $storage_root . "/" . $item;
 

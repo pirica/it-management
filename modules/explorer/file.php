@@ -40,16 +40,26 @@ $full_path = $storage_root . ($path ? "/" . trim($path, '/') : "");
 // Why: Access control logic (mirroring api.php) with segment-boundary checks.
 $relative_path = trim($path, '/');
 if ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/')) {
-    if ($relative_path !== 'Private' &&
-        !str_starts_with($relative_path, "Private/$user_private_dir/") &&
+    // Forbidden to access the 'Private' root itself.
+    if ($relative_path === 'Private') {
+        http_response_code(403);
+        exit("Access denied to private folder.");
+    }
+
+    if (!str_starts_with($relative_path, "Private/$user_private_dir/") &&
         $relative_path !== "Private/$user_private_dir") {
         http_response_code(403);
         exit("Access denied to private folder.");
     }
 }
 if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
-    if ($dept_id <= 0 || ($relative_path !== 'Departments' &&
-        !str_starts_with($relative_path, "Departments/$dept_id/") &&
+    // Forbidden to access the 'Departments' root itself.
+    if ($relative_path === 'Departments') {
+        http_response_code(403);
+        exit("Access denied to department folder.");
+    }
+
+    if ($dept_id <= 0 || (!str_starts_with($relative_path, "Departments/$dept_id/") &&
         $relative_path !== "Departments/$dept_id")) {
         http_response_code(403);
         exit("Access denied to department folder.");

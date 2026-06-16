@@ -967,6 +967,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>PoC for .htaccess-based RCE in the Explorer module using a specific marker to bypass filters.</td>
                     <td><code>php scripts/verify_explorer_rce_marker.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="test_explorer_paths.php">test_explorer_paths.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression tests for Explorer path validation logic including sensitive root folder blocking.</td>
+                    <td><code>php scripts/test_explorer_paths.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
