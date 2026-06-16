@@ -5,6 +5,7 @@
   - 2. Cross-Environment Output (Newline Standard)
     - Coding Standard:
   - 3. Security & Authentication
+    - Select Options API verification
   - 4. Path Handling
   - 5. Verification & Testing
       - 1. Catalog entry in `scripts/scripts.php` (required for every new script)
@@ -86,6 +87,14 @@ function colorText($text, $type) {
 - Check for the 'Admin' role using session variables (e.g., `$_SESSION['role_name']`).
 - Use `itm_require_post_csrf()` for all state-changing `POST` requests.
 - For CLI scripts, use the `ITM_CLI_SCRIPT` constant to bypass web-specific authentication when appropriate.
+
+### Select Options API verification
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_select_options_escalation.php` | Regression — a non-admin session cannot create an Admin user via `modules/select_options_api.php` by POSTing `table=users` with `role_id` and `access_level_id` in `extra_fields`. Expects **PASS** (`[PASS] … blocked by table whitelist`) when `includes/itm_select_options_policy.php` rejects the target table before INSERT. |
+
+Run after changes to `modules/select_options_api.php` or `includes/itm_select_options_policy.php`. Requires MySQL (`itmanagement` schema). The script creates disposable test users and removes them on exit. Catalog: `scripts/scripts.php`.
 
 ## 4. Path Handling
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.
