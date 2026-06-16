@@ -184,12 +184,12 @@ Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tabl
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/apitest_tier_free.php` | Disposable `ui_configuration` row on **Free** tier: status is unlimited and repeated `itm_api_consume_rate_limit()` calls stay allowed. Optional HTTP probe via `scripts/api.php?rate_limit=1`. |
-| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. Optional HTTP probe. |
+| `php scripts/apitest_tier_free.php` | Disposable **Free** tier row (empty `api_key`): unlimited status, session resolve without key, repeated consumes allowed. HTTP probe may omit `api_key` when Apache session is signed in. |
+| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. HTTP probe requires `api_key`. |
 
-Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, `itm_api_generate_key()` seed, browser URL with `api_key` query param, optional HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, browser URL with optional `api_key`, HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
-Each run prints a **Browser probe URL** such as `http://localhost/it-management/scripts/api.php?rate_limit=1&api_key=…`. The probe returns JSON without a PHP session (`ITM_API_RATE_LIMIT_PROBE` in `scripts/api.php` / `config/config.php`). The disposable row remains until the next apitest run for that slot.
+**Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
 
 **Verify after rate-limit helper or tier cap changes:**
 

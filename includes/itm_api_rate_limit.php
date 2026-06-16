@@ -18,6 +18,13 @@ function itm_api_tier_is_unlimited($tier) {
 }
 
 /**
+ * Why: Only paid tiers require a programmatic API key; Free may use session identity.
+ */
+function itm_api_tier_requires_api_key($tier) {
+    return !itm_api_tier_is_unlimited($tier);
+}
+
+/**
  * Why: Hourly request caps are tier-driven so billing can scale without code changes per customer.
  * Returns 0 when the tier has no cap (Free).
  */
@@ -131,6 +138,122 @@ function itm_api_lookup_configuration_by_key($conn, $apiKey) {
 }
 
 /**
+ * Loads ui_configuration for the active company/user pair (session or explicit ids).
+ */
+function itm_api_lookup_configuration_by_user($conn, $companyId, $userId) {
+    if (!($conn instanceof mysqli)) {
+        return null;
+    }
+
+    $companyId = (int)$companyId;
+    $userId = (int)$userId;
+    if ($companyId <= 0 || $userId <= 0) {
+        return null;
+    }
+
+    if (!function_exists('itm_ensure_ui_configuration_table') || !itm_ensure_ui_configuration_table($conn)) {
+        return null;
+    }
+
+    $sql = 'SELECT id, company_id, user_id, api_key, api_key_is_active, api_key_last_used_at,
+                   rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
+            FROM ui_configuration
+            WHERE company_id = ? AND user_id = ?
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return is_array($row) ? $row : null;
+}
+
+/**
+ * Why: Free-tier users without a persisted row still default to unlimited access.
+ */
+function itm_api_default_free_configuration_row($companyId, $userId) {
+    return [
+        'id' => 0,
+        'company_id' => (int)$companyId,
+        'user_id' => (int)$userId,
+        'api_key' => '',
+        'api_key_is_active' => 1,
+        'api_key_last_used_at' => null,
+        'rate_limit_window_start' => 0,
+        'rate_limit_request_count' => 0,
+        'rate_limit_enabled' => 0,
+        'tier' => 'Free',
+    ];
+}
+
+function itm_api_active_session_company_id() {
+    return (int)($_SESSION['company_id'] ?? 0);
+}
+
+function itm_api_active_session_user_id() {
+    return (int)($_SESSION['user_id'] ?? 0);
+}
+
+/**
+ * Resolves rate-limit row from API key or, on Free tier, the authenticated session.
+ */
+function itm_api_resolve_rate_limit_row($conn) {
+    $apiKey = itm_api_extract_request_key();
+    if ($apiKey !== '') {
+        return itm_api_lookup_configuration_by_key($conn, $apiKey);
+    }
+
+    $companyId = itm_api_active_session_company_id();
+    $userId = itm_api_active_session_user_id();
+    if ($companyId <= 0 || $userId <= 0) {
+        return null;
+    }
+
+    $row = itm_api_lookup_configuration_by_user($conn, $companyId, $userId);
+    if ($row === null) {
+        return itm_api_default_free_configuration_row($companyId, $userId);
+    }
+
+    if (itm_api_tier_requires_api_key($row['tier'] ?? 'Free')) {
+        return null;
+    }
+
+    return $row;
+}
+
+/**
+ * Builds the JSON payload for scripts/api.php?rate_limit=1.
+ */
+function itm_api_build_rate_limit_probe_payload(array $row) {
+    $status = itm_api_rate_limit_status_from_row($row);
+    $tier = (string)($status['tier'] ?? 'Free');
+
+    return [
+        'ok' => true,
+        'company_id' => (int)($row['company_id'] ?? 0),
+        'user_id' => (int)($row['user_id'] ?? 0),
+        'api_key_required' => itm_api_tier_requires_api_key($tier),
+        'api_key_is_active' => (int)($row['api_key_is_active'] ?? 0),
+        'api_key_last_used_at' => $row['api_key_last_used_at'] ?? null,
+        'tier' => $tier,
+        'unlimited' => !empty($status['unlimited']),
+        'rate_limit_enabled' => $status['rate_limit_enabled'],
+        'limit' => $status['limit'],
+        'remaining' => $status['remaining'],
+        'window_seconds' => $status['window_seconds'],
+        'window_start' => $status['window_start'],
+        'reset_at' => $status['reset_at'],
+        'request_count' => $status['request_count'],
+    ];
+}
+
+/**
  * Persists api_key for the active company/user row (creates row when missing).
  */
 function itm_api_save_user_api_key($conn, $companyId, $userId, $apiKey) {
@@ -145,6 +268,12 @@ function itm_api_save_user_api_key($conn, $companyId, $userId, $apiKey) {
         return false;
     }
     if (!function_exists('itm_ensure_ui_configuration_table') || !itm_ensure_ui_configuration_table($conn)) {
+        return false;
+    }
+
+    $existingRow = itm_api_lookup_configuration_by_user($conn, $companyId, $userId);
+    $existingTier = itm_api_normalize_tier($existingRow['tier'] ?? 'Free');
+    if (!itm_api_tier_requires_api_key($existingTier) && $apiKey !== '') {
         return false;
     }
 
@@ -221,7 +350,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
     $configId = (int)($row['id'] ?? 0);
     $companyId = (int)($row['company_id'] ?? 0);
     $userId = (int)($row['user_id'] ?? 0);
-    if ($configId <= 0 || $companyId <= 0 || $userId <= 0) {
+    if ($companyId <= 0 || $userId <= 0) {
         return ['allowed' => false, 'error' => 'Invalid API configuration row.'];
     }
 
@@ -233,15 +362,17 @@ function itm_api_consume_rate_limit($conn, array $row) {
     $now = time();
 
     if ($unlimited || !$enabled) {
-        $touchSql = 'UPDATE ui_configuration
-                     SET api_key_last_used_at = CURRENT_TIMESTAMP
-                     WHERE id = ? AND company_id = ? AND user_id = ?
-                     LIMIT 1';
-        $touchStmt = mysqli_prepare($conn, $touchSql);
-        if ($touchStmt) {
-            mysqli_stmt_bind_param($touchStmt, 'iii', $configId, $companyId, $userId);
-            mysqli_stmt_execute($touchStmt);
-            mysqli_stmt_close($touchStmt);
+        if ($configId > 0) {
+            $touchSql = 'UPDATE ui_configuration
+                         SET api_key_last_used_at = CURRENT_TIMESTAMP
+                         WHERE id = ? AND company_id = ? AND user_id = ?
+                         LIMIT 1';
+            $touchStmt = mysqli_prepare($conn, $touchSql);
+            if ($touchStmt) {
+                mysqli_stmt_bind_param($touchStmt, 'iii', $configId, $companyId, $userId);
+                mysqli_stmt_execute($touchStmt);
+                mysqli_stmt_close($touchStmt);
+            }
         }
 
         return [
@@ -253,6 +384,10 @@ function itm_api_consume_rate_limit($conn, array $row) {
             'reset_at' => 0,
             'rate_limit_enabled' => 0,
         ];
+    }
+
+    if ($configId <= 0) {
+        return ['allowed' => false, 'error' => 'Invalid API configuration row.'];
     }
 
     mysqli_begin_transaction($conn);
@@ -341,16 +476,18 @@ function itm_api_consume_rate_limit($conn, array $row) {
  */
 function itm_api_enforce_rate_limit_or_exit($conn) {
     $apiKey = itm_api_extract_request_key();
-    if ($apiKey === '') {
-        itm_api_send_json_error(401, 'Missing API key. Send X-API-Key header or api_key parameter.');
-    }
-
-    $row = itm_api_lookup_configuration_by_key($conn, $apiKey);
+    $row = itm_api_resolve_rate_limit_row($conn);
     if ($row === null) {
-        itm_api_send_json_error(401, 'Invalid API key.');
+        if ($apiKey !== '') {
+            itm_api_send_json_error(401, 'Invalid API key.');
+        }
+        itm_api_send_json_error(
+            401,
+            'Missing API key. Paid tiers require X-API-Key or api_key; Free tier may use an authenticated session without a key.'
+        );
     }
 
-    if ((int)($row['api_key_is_active'] ?? 0) !== 1) {
+    if ($apiKey !== '' && (int)($row['api_key_is_active'] ?? 0) !== 1) {
         itm_api_send_json_error(403, 'API key is inactive.');
     }
 
@@ -372,34 +509,20 @@ function itm_api_enforce_rate_limit_or_exit($conn) {
  */
 function itm_api_handle_rate_limit_probe_request($conn) {
     $apiKey = itm_api_extract_request_key();
-    if ($apiKey === '') {
-        itm_api_send_json_error(401, 'Missing API key. Send X-API-Key header or api_key parameter.');
-    }
-
-    $row = itm_api_lookup_configuration_by_key($conn, $apiKey);
+    $row = itm_api_resolve_rate_limit_row($conn);
     if ($row === null) {
-        itm_api_send_json_error(401, 'Invalid API key.');
+        if ($apiKey !== '') {
+            itm_api_send_json_error(401, 'Invalid API key.');
+        }
+        itm_api_send_json_error(
+            401,
+            'Missing API key. Paid tiers require X-API-Key or api_key; Free tier may use an authenticated session without a key.'
+        );
     }
 
-    if ((int)($row['api_key_is_active'] ?? 0) !== 1) {
+    if ($apiKey !== '' && (int)($row['api_key_is_active'] ?? 0) !== 1) {
         itm_api_send_json_error(403, 'API key is inactive.');
     }
 
-    $status = itm_api_rate_limit_status_from_row($row);
-    itm_api_send_json_response([
-        'ok' => true,
-        'company_id' => (int)($row['company_id'] ?? 0),
-        'user_id' => (int)($row['user_id'] ?? 0),
-        'api_key_is_active' => (int)($row['api_key_is_active'] ?? 0),
-        'api_key_last_used_at' => $row['api_key_last_used_at'] ?? null,
-        'tier' => $status['tier'],
-        'unlimited' => !empty($status['unlimited']),
-        'rate_limit_enabled' => $status['rate_limit_enabled'],
-        'limit' => $status['limit'],
-        'remaining' => $status['remaining'],
-        'window_seconds' => $status['window_seconds'],
-        'window_start' => $status['window_start'],
-        'reset_at' => $status['reset_at'],
-        'request_count' => $status['request_count'],
-    ]);
+    itm_api_send_json_response(itm_api_build_rate_limit_probe_payload($row));
 }

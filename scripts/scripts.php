@@ -910,7 +910,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="apitest_tier_free.php">apitest_tier_free.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier stays unlimited. Auto-generates API key and prints browser URL <code>scripts/api.php?rate_limit=1&amp;api_key=…</code>.</td>
+                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier (no <code>api_key</code>) stays unlimited. Prints session probe URL <code>scripts/api.php?rate_limit=1</code>.</td>
                     <td><code>php scripts/apitest_tier_free.php</code></td>
                 </tr>
                 <tr>

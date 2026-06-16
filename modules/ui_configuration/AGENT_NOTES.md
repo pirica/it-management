@@ -13,7 +13,7 @@ Stores user-specific or company-wide UI layout preferences (button positions, ta
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Fallback:** user config → company default → system hardcoded defaults (`itm_get_ui_configuration()`).
 - Modules must read settings via `itm_get_ui_configuration()` — Actions columns need `itm-actions-cell` + `data-itm-actions-origin="1"`.
-- **API columns:** `api_key`, `api_key_is_active`, `api_key_last_used_at`, `rate_limit_window_start`, `rate_limit_request_count`, `rate_limit_enabled`, `tier` (`Free`/`Basic`/`Pro`/`Enterprise`). **Free** tier is unlimited; paid tiers enforce hourly caps via `includes/itm_api_rate_limit.php`.
+- **API columns:** `api_key`, `api_key_is_active`, `api_key_last_used_at`, `rate_limit_window_start`, `rate_limit_request_count`, `rate_limit_enabled`, `tier` (`Free`/`Basic`/`Pro`/`Enterprise`). **Free** tier is unlimited and does **not** require an API key (session resolve in `includes/itm_api_rate_limit.php`); paid tiers enforce hourly caps and require a key.
 
 ## 5. UI Behavior Requirements
 - Changes affect list toolbars, pagination size, and action column placement app-wide.
