@@ -5,7 +5,7 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 
 ## 2. Key Tables
 - **employees** — `birthday`, `hide_year`, `first_name`, `last_name`, `photo`, `username`, `user_id`, `department_id`.
-- **departments** — `code` for the Department column (joined on `department_id` + `company_id`).
+- **departments** — `code` for the Department column; `name` included in search (joined on `department_id` + `company_id`).
 
 ## 3. Required Relationships
 - **birthdays** → depends on **employees** and **departments**.
@@ -19,7 +19,7 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 
 ## 5. UI Behavior Requirements
 - **index.php only** — no create/edit/delete handlers.
-- Filter card: month `<select>` and **Search (all fields)** across visible columns (Name, Day, Department); marked `data-itm-no-export-pdf="1"` and `data-itm-no-export-excel="1"` so PDF/Excel exports omit controls.
+- Filter card: month `<select>` and **Search (all fields)** across Name, Day, Department (`departments.code`), and department name (`departments.name`); marked `data-itm-no-export-pdf="1"` and `data-itm-no-export-excel="1"` so PDF/Excel exports omit controls.
 - Table columns: Name (first + last, optional photo), Day (day of month without leading zeros via `emp_format_birthday_day_only()` — e.g. `1`, `9`, `10`), Department (`departments.code`). No Actions column.
 - Default sort: Day ASC (`DAY(e.birthday)`). Also sortable: Name, Department.
 - Sortable column headers use plain text styling (no blue link colour).
