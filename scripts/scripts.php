@@ -404,7 +404,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td>apply_module_sample_data_seed.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Automates PR #1993-style seed expansion per module/table: adds missing sample rows for every company listed in <code>companies</code>. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values are supported for other modules.</td>
+                    <td>Automates per-module/table seed expansion: adds missing sample rows for every company listed in <code>companies</code>. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values are supported for other modules.</td>
                     <td>
                         <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code><br>
                         <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --dry-run</code><br>
