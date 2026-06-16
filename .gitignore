@@ -5,6 +5,7 @@ up.ps1
 .cursor/
 .phpunit.result.cache
 phpunit/.phpunit.result.cache
+phpunit/coverage/html/
 php_server.log
 test-results
 qa-reports
