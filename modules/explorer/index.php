@@ -264,7 +264,8 @@ body {
     <div onclick="loadFolder('Departments'); closeSidebar();">🏢 Department Area</div>
     <div onclick="loadFolder('Private'); closeSidebar();">🔒 Private Area</div>
     <div onclick="openRecycle(); closeSidebar();">🗑️ Trash</div>
-    <h4>👤 Employee</h4>
+    <hr>
+    <h3>👤 Employee</h3>
     <div onclick="openEmployeeProfileFolder(); closeSidebar();">🌐 Profile Storage</div>
     <h4>⭐ Favourites</h4>
     <div id="favorites"></div>
