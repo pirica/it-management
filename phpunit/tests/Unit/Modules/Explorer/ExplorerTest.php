@@ -24,6 +24,11 @@ class ExplorerTest extends TestCase
             'get_full_path',
             '/function get_full_path.*?return \$full;\s*\}/s'
         );
+        $this->requireExtractedFunction(
+            ROOT_PATH . 'modules/explorer/api.php',
+            'explorer_is_hidden_system_entry',
+            '/function explorer_is_hidden_system_entry.*?\}/s'
+        );
     }
 
     protected function tearDown(): void
@@ -70,5 +75,19 @@ class ExplorerTest extends TestCase
 
         // Directory Traversal (blocked)
         $this->assertNull(get_full_path($this->storageRoot, '../secrets', $this->userId, $this->deptId, $this->username));
+    }
+
+    public function testHiddenSystemEntries()
+    {
+        if (!function_exists('explorer_is_hidden_system_entry')) {
+            $this->markTestSkipped('explorer_is_hidden_system_entry function could not be loaded.');
+        }
+
+        $this->assertTrue(explorer_is_hidden_system_entry('.htaccess'));
+        $this->assertTrue(explorer_is_hidden_system_entry('index.html'));
+        $this->assertTrue(explorer_is_hidden_system_entry('INDEX.HTML'));
+        $this->assertTrue(explorer_is_hidden_system_entry('Common/sub/.htaccess'));
+        $this->assertFalse(explorer_is_hidden_system_entry('readme.txt'));
+        $this->assertFalse(explorer_is_hidden_system_entry('index.html.bak'));
     }
 }

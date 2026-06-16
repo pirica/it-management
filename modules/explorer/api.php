@@ -60,6 +60,19 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
 }
 }
 
+/**
+ * Why: Managed deny_http placeholders (.htaccess, index.html) must stay on disk but never appear in Explorer listings.
+ */
+if (!function_exists('explorer_is_hidden_system_entry')) {
+function explorer_is_hidden_system_entry($name) {
+    $base = basename(str_replace('\\', '/', (string)$name));
+    if ($base === '.htaccess') {
+        return true;
+    }
+    return strcasecmp($base, 'index.html') === 0;
+}
+}
+
 /* ---------------- ZIP DOWNLOAD ---------------- */
 if (isset($_GET['downloadZip'])) {
     if (!isset($_SESSION['company_id'])) exit("Access denied.");
@@ -232,6 +245,7 @@ case "list":
     if (is_dir($dir)) {
         foreach (scandir($dir) as $f) {
             if ($f === "." || $f === ".." || $f === "Trash" || $f === "Recycle") continue;
+            if (explorer_is_hidden_system_entry($f)) continue;
 
             $full = $dir . "/" . $f;
             $type = is_dir($full) ? "folder" : "file";
@@ -635,6 +649,9 @@ case "listRecycle":
             // Why: Normalize for cross-platform comparison and apply same ACL logic as live storage.
             $safe_rel = str_replace('\\', '/', $rel);
             if (get_full_path($trash_root, $safe_rel, $user_id, $dept_id, $username) === null) {
+                continue;
+            }
+            if (explorer_is_hidden_system_entry($rel)) {
                 continue;
             }
             $items[] = [
