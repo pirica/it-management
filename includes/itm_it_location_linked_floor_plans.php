@@ -3,6 +3,12 @@
  * IT Locations detail: floor plans linked via floor_plans.it_location_id (nullable FK).
  */
 require_once ROOT_PATH . 'includes/floor_plans_link_helpers.php';
+
+// Why: View partial for it_locations screens; skip when required without module context (PHPUnit coverage).
+if (!isset($conn) || !($conn instanceof mysqli)) {
+    return;
+}
+
 $itmLocationIdForFloorPlans = (int)($data['id'] ?? 0);
 $itmLinkedFloorPlans = array();
 if ($itmLocationIdForFloorPlans > 0 && isset($conn) && $conn instanceof mysqli) {
