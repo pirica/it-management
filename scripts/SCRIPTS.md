@@ -16,6 +16,7 @@
       - Smoke tests (CI — `scripts/smoke_test.sh`)
       - PHPUnit test runner (`scripts/run_tests.php`)
       - HTML coverage guardrails (PHPUnit)
+      - Interpreting HTML coverage percentages
       - Full-module browser QA (5 companies, Laragon)
       - 5. Pre-merge verification (scripts)
 
@@ -261,6 +262,41 @@ Common symptoms:
 | **Shared endpoint helpers** | One file with **`function_exists`** wrappers (e.g. `includes/switch_port_api_helpers.php`). |
 
 **When adding includes under coverage paths:** run HTML coverage once (`php scripts/run_tests.php --coverage` or browser **HTML coverage** with Xdebug/PCOV) and confirm **`phpunit/coverage/html/coverage.html`** is created without warnings, notices, or fatals.
+
+##### Interpreting HTML coverage percentages
+
+A successful run (e.g. **OK (239 tests, 968 assertions)** on Laragon with MySQL) often shows **low overall totals** such as **~0.4% lines** and red **“danger”** badges on the dashboard. That is **expected** with the current suite and `phpunit/phpunit.xml` scope — it does **not** mean coverage collection failed.
+
+**Why totals look low**
+
+| Factor | Effect |
+|--------|--------|
+| **Wide `<coverage><include>`** | Counts executable lines in all of `config/`, `includes/`, `modules/`, `scripts/` (~180k+ lines). |
+| **Module tests use MySQLi directly** | Most `phpunit/tests/Unit/Modules/*Test.php` files INSERT/SELECT/DELETE via `$conn`; they do **not** HTTP-load `modules/*/index.php`, `create.php`, etc. So **`modules/` stays near 0%** even when DB behaviour is tested. |
+| **Bootstrap loads `config.php`** | **`config/`** tends to be the highest bucket (~15–20% lines) because every test bootstraps through it. |
+| **Functional / script tests** | **`includes/`** and **`scripts/`** rise slightly when tests `require` handlers (e.g. passwords AJAX, audit scripts). |
+| **Report colour thresholds** | `phpunit.xml` uses `lowUpperBound="50"` and `highLowerBound="80"` — almost all buckets show **Low (danger)** until coverage improves or scope is narrowed. |
+
+**Typical dashboard shape (full suite + DB, Xdebug/PCOV)**
+
+| Area | Approx. lines covered | Notes |
+|------|------------------------|--------|
+| **Total** | &lt; 1% | Normal baseline today |
+| **config** | ~15% | Bootstrap + shared config paths |
+| **includes** | ~1% | Helpers/endpoints hit by functional tests |
+| **modules** | &lt; 0.2% | CRUD tests touch DB, not module PHP entry files |
+| **scripts** | ~2–4% | Script tests + runner includes |
+
+**Goals vs baseline**
+
+- **`phpunit/tests/PREFERENCES.md`** lists **80% minimum** as a **long-term target**, not the current measured baseline.
+- Use the HTML report to see **which files/lines tests actually execute** (green/red line markers), not only the headline percentage.
+
+**Raising coverage (optional)**
+
+1. Add tests that **`require` or HTTP-exercise** module entry files (functional/browser QA), not only mysqli CRUD.
+2. Run **`scripts/module_browser_qa_runner.php`** for HTTP-level module coverage (separate from PHPUnit HTML report).
+3. Narrow `<coverage><include>` in `phpunit/phpunit.xml` (e.g. `includes/` + changed module only) when you want a **focused** percentage for one deliverable — do not expect high **Total** % while the whole tree remains included.
 
 #### Full-module browser QA (5 companies, Laragon)
 

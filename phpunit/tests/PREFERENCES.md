@@ -11,7 +11,8 @@
 - **Cleanup:** Tests use transaction rollback or temporary row approaches where implemented
 
 ## Coverage Goals
-- **Minimum Coverage:** 80% (target)
+- **Long-term target:** 80% line coverage (aspirational — not the current measured baseline).
+- **Current baseline:** With full-suite HTML coverage (239 tests, MySQL, Xdebug/PCOV), expect **~0.4% total lines** and **&lt; 0.2% for `modules/`** because module tests exercise the database via MySQLi, not `modules/*/*.php` entry files. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.
 - **FK Regression:** Includes foreign key and delete cascade regression tests (including Protection Zone modules where applicable)
 - **Security Focus:** SQLi payloads, CSRF token validation, and XSS sanitization
 

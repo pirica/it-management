@@ -20,6 +20,7 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 - **`echo` in `*Test.php`** breaks HTML coverage report generation (headers already sent).
 - **Including `scripts/*.php` with `exit()`** halts the runner — use subprocess or mock; skip when DB unavailable.
 - **Expecting full suite without MySQL** — many module tests skip; use `ITM_SKIP_DB_TESTS=1` only when intentional.
+- **Expecting high headline %** — with full tree in `phpunit.xml`, totals stay under ~1% until tests load module PHP or scope is narrowed. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.
 
 ## 11. Examples of Safe Code Patterns
 

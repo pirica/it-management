@@ -12,6 +12,7 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 ## 10. Common Pitfalls
 - Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu).
 - **Coverage paths in docs** must say `phpunit/coverage/html/coverage.html`, not `index.html`.
+- **Interpreting low totals (~0.4% lines)** — expected with wide `<coverage><include>` and DB-only module tests; see **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.
 
 ## 11. Examples of Safe Code Patterns
 
