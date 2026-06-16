@@ -5,37 +5,39 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 
 ## 7. File Structure
 - **phpunit.phar** — PHPUnit 9.6 PHAR executable (no Composer).
-- **phpunit.xml** — PHPUnit configuration (bootstrap, test suites, verbose output, HTML coverage report paths). **`processUncoveredFiles="false"`** so report generation does not bare-`require` every uncovered module/script file.
-- **coverage/html/** — generated HTML coverage report (gitignored; entry file `coverage.html` after coverage runs).
-- **tests/** — test suite root (`bootstrap.php`, `Unit/`, agent notes, preferences).
+- **phpunit.xml** — bootstrap `tests/bootstrap.php`, verbose output, `<coverage>` HTML paths. **`processUncoveredFiles="false"`** so HTML report generation does not bare-`require` every uncovered module/script entry file.
+- **coverage/html/** — generated HTML coverage (gitignored). Entry file **`coverage.html`** after `run_tests.php` renames PHPUnit’s `index.html`.
+- **tests/** — suite root (`bootstrap.php`, `Unit/`, `PREFERENCES.md`, `AGENT_NOTES.md`).
+
+## 10. Common Pitfalls
+- Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu).
+- **Coverage paths in docs** must say `phpunit/coverage/html/coverage.html`, not `index.html`.
 
 ## 11. Examples of Safe Code Patterns
 
-### Run the suite (from repository root)
+### Run via central runner (preferred)
 ```bash
 php scripts/run_tests.php
 php scripts/run_tests.php --coverage
 ```
 
 ### Browser
-Open `scripts/run_tests.php` — menu offers **Standard** (verbose) or **HTML coverage**, plus optional skip-DB checkbox.
+- Menu: `http://localhost/it-management/scripts/run_tests.php`
+- HTML coverage: `scripts/run_tests.php?run=1&mode=coverage`
 
-### Verbose output
-Configured in `phpunit.xml` (`verbose="true"`) and passed explicitly as `--verbose` from `scripts/run_tests.php`.
-
-### HTML coverage (requires Xdebug or PCOV)
-```bash
-php scripts/run_tests.php --coverage
-```
-
-### Browser
-Open `scripts/run_tests.php` — menu offers **Standard** (verbose) or **HTML coverage**, plus optional skip-DB checkbox.
-
-### Run PHPUnit directly
+### Run PHPUnit PHAR directly
 ```bash
 php phpunit/phpunit.phar -c phpunit/phpunit.xml --verbose
 php phpunit/phpunit.phar -c phpunit/phpunit.xml --verbose --coverage-html phpunit/coverage/html
 ```
 
+### Documentation map
+| Topic | Location |
+|--------|----------|
+| Runner modes, Laragon commands, guardrails | **`scripts/SCRIPTS.md` → PHPUnit test runner** |
+| Test authoring rules | **`phpunit/tests/AGENT_NOTES.md`** |
+| Preferences / URLs | **`phpunit/tests/PREFERENCES.md`** |
+| Entry guards for coverage-safe includes | **`includes/itm_script_entry_guard.php`**, **`includes/AGENT_NOTES.md`** |
+
 ## 12. Module Owner Notes (Optional)
-Entry point for agents is `phpunit/tests/AGENT_NOTES.md`. Generated module tests are written under `phpunit/tests/Unit/Modules/` by `scripts/generate_tests.php`.
+Generated module tests: `scripts/generate_tests.php` → `phpunit/tests/Unit/Modules/`. Test tree entry: `phpunit/tests/AGENT_NOTES.md`.

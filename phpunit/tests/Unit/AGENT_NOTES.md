@@ -5,8 +5,10 @@ PHPUnit and procedural unit tests organised by concern (Config, CRUD, Database, 
 
 ## 4. Business Rules (Critical for Agents)
 - Test classes end in `Test.php` or `*.unittest.php`.
-- Avoid `exit()` in tests — halts `scripts/run_tests.php`.
+- **`*Test.php` files:** extend `PHPUnit\Framework\TestCase`; use `test*` methods — no top-level execution or `echo` (PHPUnit loads all matching files).
+- Avoid `exit()` in included production scripts during tests — halts `scripts/run_tests.php`.
 - Each `Modules/<Name>/` folder maps to `modules/<snake_case>/` (see that module's `AGENT_NOTES.md`).
+- DB-dependent tests must **`markTestSkipped`** when `$conn` is unavailable.
 
 ## 7. File Structure
 - **Config/** — configuration/bootstrap tests.
@@ -14,8 +16,16 @@ PHPUnit and procedural unit tests organised by concern (Config, CRUD, Database, 
 - **Database/** — schema/seed tests.
 - **Modules/** — per-module tests (mirror of `modules/`).
 - **MultiTenancy/** — company_id isolation tests.
-- **Scripts/** — script/audit tool tests.
+- **Scripts/** — script/audit tool tests (`BypassLoginTest`, etc.).
 - **Security/** — CSRF/SQLi-related tests.
 
+## 11. Examples of Safe Code Patterns
+
+### Run
+```bash
+php scripts/run_tests.php
+php scripts/run_tests.php --coverage
+```
+
 ## 12. Module Owner Notes (Optional)
-Run: `php scripts/run_tests.php`. Parent: `phpunit/tests/AGENT_NOTES.md`.
+Run: `php scripts/run_tests.php`. Parent: `phpunit/tests/AGENT_NOTES.md`. Coverage guardrails: `scripts/SCRIPTS.md`.

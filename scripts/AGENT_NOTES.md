@@ -22,7 +22,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.
-- **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV before coverage runs; post-run link to `phpunit/coverage/html/coverage.html`. Full usage and HTML coverage guardrails: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
+- **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV; post-run link to `phpunit/coverage/html/coverage.html`. Browser coverage URL: `run_tests.php?run=1&mode=coverage`. Full docs: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI utility to authenticate as Admin without the UI.
@@ -50,7 +50,7 @@ bash scripts/smoke_test.sh
 php scripts/run_tests.php
 php scripts/run_tests.php --coverage
 ```
-Browser: open `scripts/run_tests.php` and choose **Standard** or **HTML coverage**.
+Browser menu: `scripts/run_tests.php` — **Standard** or **HTML coverage** (`?run=1&mode=coverage`). Report: `phpunit/coverage/html/coverage.html`. See **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 
 ### Bypassing Login for Debugging or Screenshots
 This script is essential for rapid development, debugging errors as an Admin, or automating UI tasks like taking screenshots.
