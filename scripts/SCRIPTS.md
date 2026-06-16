@@ -189,7 +189,7 @@ Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tabl
 
 Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, browser URL with optional `api_key`, HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
-**Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
+**Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). The Free apitest publishes the CLI session (`itm_apitest_publish_http_session()`) so the HTTP probe can pass without an API key when Apache is running. **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
 
 **Verify after rate-limit helper or tier cap changes:**
 

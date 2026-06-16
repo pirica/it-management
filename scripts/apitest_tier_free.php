@@ -79,11 +79,16 @@ $allPassed = itm_apitest_assert(
     is_array($probePayload) && empty($probePayload['api_key_required'])
 ) && $allPassed;
 
-$probe = itm_apitest_probe_rate_limit_http('');
+$httpSessionId = itm_apitest_publish_http_session($companyId, $userId);
+$probe = itm_apitest_probe_rate_limit_http('', '', $httpSessionId);
 if (is_array($probe)) {
     if (!empty($probe['ok'])) {
         $allPassed = itm_apitest_assert('HTTP probe returns ok=1', true) && $allPassed;
         $allPassed = itm_apitest_assert('HTTP probe reports unlimited tier', !empty($probe['unlimited'])) && $allPassed;
+        $allPassed = itm_apitest_assert(
+            'HTTP probe marks api_key_required false',
+            array_key_exists('api_key_required', $probe) && empty($probe['api_key_required'])
+        ) && $allPassed;
     } else {
         itm_apitest_output_line(
             '[INFO] HTTP probe returned error: ' . (string)($probe['error'] ?? 'unknown')

@@ -222,8 +222,9 @@ function itm_apitest_print_probe_links($apiKey, $tierLabel = '', $includeKeyless
     itm_apitest_output_line('[INFO] Key stays in ui_configuration until the next apitest run for this slot.', 'info');
 }
 
-function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
+function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '', $phpSessionId = '') {
     $apiKey = trim((string)$apiKey);
+    $phpSessionId = trim((string)$phpSessionId);
 
     $url = itm_apitest_rate_limit_probe_url($apiKey, $baseUrl);
     if ($url === '') {
@@ -236,6 +237,13 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
     if ($apiKey !== '') {
         $headers[] = 'X-API-Key: ' . $apiKey;
     }
+    if ($phpSessionId !== '') {
+        $sessionName = function_exists('session_name') ? session_name() : 'PHPSESSID';
+        if ($sessionName === '') {
+            $sessionName = 'PHPSESSID';
+        }
+        $headers[] = 'Cookie: ' . $sessionName . '=' . $phpSessionId;
+    }
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -247,10 +255,7 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
     }
 
     if (!is_string($body) || $body === '') {
-        $headerLines = ['Accept: application/json'];
-        if ($apiKey !== '') {
-            $headerLines[] = 'X-API-Key: ' . $apiKey;
-        }
+        $headerLines = $headers;
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
@@ -285,4 +290,44 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
     $decoded['_http_code'] = $httpCode;
     $decoded['_probe_url'] = $url;
     return $decoded;
+}
+
+/**
+ * Persists the active CLI session so Apache can read it for keyless Free-tier HTTP probes.
+ */
+function itm_apitest_publish_http_session($companyId, $userId) {
+    $companyId = (int)$companyId;
+    $userId = (int)$userId;
+    if ($companyId <= 0 || $userId <= 0) {
+        return '';
+    }
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return '';
+    }
+
+    $_SESSION['company_id'] = $companyId;
+    $_SESSION['user_id'] = $userId;
+    if (!isset($_SESSION['username']) || trim((string)$_SESSION['username']) === '') {
+        $_SESSION['username'] = 'apitest-user';
+    }
+
+    session_write_close();
+
+    $sessionId = session_id();
+    if ($sessionId === '') {
+        return '';
+    }
+
+    $savePath = (string)ini_get('session.save_path');
+    if ($savePath === '') {
+        return $sessionId;
+    }
+
+    $sessionFile = rtrim($savePath, '/\\') . '/sess_' . $sessionId;
+    if (is_file($sessionFile)) {
+        @chmod($sessionFile, 0644);
+    }
+
+    return $sessionId;
 }
