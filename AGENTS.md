@@ -13,7 +13,17 @@ Before making any change, replying, running commands, editing files, or proposin
 1. **Read `AGENTS.md` completely** at session start (and when resuming after a long gap or context switch).
 2. **Read `scripts/SCRIPTS.md` completely** at session start and **again before any reply** that adds, changes, runs, or documents anything under `scripts/` (catalog entries, QA runners, smoke checks, audit tools, or new CLI/browser scripts). For scripts topics, **`scripts/SCRIPTS.md` is authoritative** — do not rely on stale copies elsewhere.
 3. **Stop and ask clarification questions** if any part of `AGENTS.md` or `scripts/SCRIPTS.md` (when in scope) is unclear, ambiguous, missing, conflicting, or not fully understood — do not guess or proceed on assumptions.
-4. **Update docs when needed:** agent-workflow and repo-wide rules → **`AGENTS.md`**; scripts directory standards → **`scripts/SCRIPTS.md`**; folder-local context → **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**). Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
+4. **Always update all in-scope documentation (hard fail):** in the **same PR** as the code change, update **every** doc the deliverable touches — not only the nearest `AGENT_NOTES.md`. Stale cross-references are a **hard fail**.
+
+   | If the change affects… | Update (same PR) |
+   |------------------------|------------------|
+   | Repo-wide rules, Explorer/upload hardening, `.htaccess` policies, agent workflow | **`AGENTS.md`** |
+   | Scripts, backfill runners, regression/PoC tools | **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** (when adding/changing scripts) |
+   | Upload storage paths, managed `.htaccess` bodies, module → folder map | **`docs/file_upload_modules.md`** |
+   | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
+   | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
+
+   Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
 5. **Always create and update `AGENT_NOTES.md` (hard fail):** for every in-scope folder you read or change, **read** that folder's `AGENT_NOTES.md` first (and the parent folder's file when editing a subfolder). **Create** the file from `templates/AGENT_NOTES.md` when it is missing. **Update** it in the **same PR** whenever your work changes purpose, tables, FKs, business rules, UI behaviour, API actions, file layout, tenant rules, audit coverage, or known pitfalls. Do not mark a deliverable complete while notes are missing, empty, or stale for a folder you touched.
 6. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
 7. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, ship via **FRESH PR only**: **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. **Do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). There is **no** push to update PR #N. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
@@ -208,17 +218,20 @@ Do not keep price edits only inside `rack_planner.layout_json`; source tables mu
 
 The explorer module (`modules/explorer/`) provides a secure, multi-tenant file system.
 
-1. **Storage:** Anchored at `/files/{company_id}/` and subdivided into `Common/` (all company users), `Departments/{dept_id}/` (department members only), and `Private/{username}_{user_id}/` (owner only).
-2. **Access Control:**
-    - Segment-boundary checks must be used for path validation (e.g. check for `Private/{owner}/` or exact `Private/{owner}`).
-    - Users can only access `Common`, their assigned `Departments/{dept_id}`, and their own `Private/{username}_{user_id}`.
+1. **Storage:** Anchored at `files/{company_id}/` and subdivided into `Common/` (all company users), `Departments/{dept_id}/` (department members only), `Private/{username}_{user_id}/` (owner only), and `Trash/` (soft-delete paths mirroring live layout).
+2. **Access control (API):**
+    - Segment-boundary checks in `get_full_path()` — normalize backslashes to `/`, trim slashes, block `..`.
+    - Users may access `Common`, their `Departments/{dept_id}`, and their own `Private/{username}_{user_id}` only.
+    - **API blocks `Private` and `Departments` roots** (`get_full_path` returns null). Prevents ZIP/list leaks across users or departments. UI **must** use `resolveScopedFolderPath()` in `index.php` to open `Private/{username}_{user_id}` and `Departments/{dept_id}` (sidebar, double-click, favourites).
     - Creation or upload of items is blocked directly in `Home` (root), `Private` root, and `Departments` root.
-3. **Protected Folders:** Top-level system folders (`Common`, `Departments`, `Private`) and the user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
+    - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage.
+3. **Protected folders:** Top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. The user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
 4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
-5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{user_id}/`, leaf folders, etc.):
-    - **`.htaccess`** — canonical `RewriteEngine On` + `RewriteRule ^ - [F]` body (always overwritten).
+5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{user_id}/`, `Trash/`, leaf folders, etc.):
+    - **`.htaccess`** — canonical `deny_http` body from `itm_upload_directory_policy_body('deny_http')` (always overwritten). See **Upload directory hardening → Managed `.htaccess` policies** and **`docs/file_upload_modules.md`**.
     - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten; **required on every folder segment**, not only leaves).
-    Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer. See `docs/file_upload_modules.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
+    Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer — managed `.htaccess` is restored on every ensure. See `docs/file_upload_modules.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
+6. **Regression scripts:** `php scripts/test_explorer_paths.php` (path ACL logic); `php scripts/verify_explorer_zip_leak.php` (root ZIP blocked). PoC for malicious `.htaccess` upload: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php` (catalog in `scripts/scripts.php`).
 
 #### Org Chart and Hierarchy (mandatory)
 
@@ -464,8 +477,16 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 ### Upload directory hardening (mandatory)
 * **Never bare `mkdir()`** for application upload paths — use `itm_ensure_upload_directory()` or `itm_ensure_upload_directory_chain()` from `includes/bootstrap_helpers.php`.
 * **Force-create on every folder (mandatory):** each helper call **overwrites** managed `.htaccess` (policy body) and an empty `index.html` (`itm_upload_directory_empty_index_html()`). Existing files are never skipped. Return value is false unless directory + both files exist.
+* **Managed `.htaccess` policies (canonical):** bodies are defined in `includes/bootstrap_helpers.php` via `itm_upload_directory_policy_body($policy)` — **do not** hand-edit upload-tree `.htaccess` files; helpers overwrite them on every ensure. Human-readable reference with full Apache snippets: **`docs/file_upload_modules.md`**.
+
+| Policy | Marker (first comment line) | Directories | HTTP effect |
+|--------|----------------------------|-------------|-------------|
+| `upload` | `ITM upload hardening` | `images/`, `tickets_photos/`, `floor_plans/` | Static assets allowed; PHP/script execution blocked |
+| `deny_http` | `ITM files hardening` | `files/` and **every** segment under `files/{company_id}/…` | **All requests forbidden** (`RewriteRule ^ - [F]`); authorised access only via `modules/explorer/file.php` |
+| `deny_all` | `ITM backup hardening` | `backups/` | All HTTP access denied (`Require all denied`) |
+
 * **`upload` policy:** `images/`, `tickets_photos/`, `floor_plans/` — allow static files; disable PHP execution; force `.htaccess` + empty `index.html`.
-* **`deny_http` policy:** `files/` and every segment under `files/{company_id}/…` — `RewriteEngine On` + `RewriteRule ^ - [F]`; force `.htaccess` + empty `index.html` per segment; serve UI assets via `itm_files_serve_url()` → `modules/explorer/file.php`.
+* **`deny_http` policy:** `files/` and every segment under `files/{company_id}/…` — `RewriteEngine On` + `RewriteRule ^ - [F]` + `Options -Indexes -ExecCGI`; force `.htaccess` + empty `index.html` per segment; serve UI assets via `itm_files_serve_url()` → `modules/explorer/file.php`.
 * **`deny_all` policy:** `backups/` — block all HTTP access; force `.htaccess` + empty `index.html`.
 * **Backfill entire project:** `php scripts/empty_folders.php` — empty `index.html` on every folder under the repo root; upload paths also get managed `.htaccess`.
 * **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. Full module map: `docs/file_upload_modules.md`.

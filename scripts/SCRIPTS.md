@@ -93,9 +93,21 @@ function colorText($text, $type) {
 - **Upload / tenant file trees:** do not call bare `mkdir()` for `images/`, `tickets_photos/`, `floor_plans/`, `backups/`, or `files/`. Use `itm_ensure_upload_directory()` / `itm_ensure_upload_directory_chain()` / `itm_ensure_files_storage_directory()` from `includes/bootstrap_helpers.php`.
 - **Every project folder must have empty `index.html`:** applies to **every directory under the repository root** (`modules/`, `includes/`, `css/`, `js/`, upload trees, etc.). Folders that already have `index.php` still get `index.html`. Skips VCS/metadata dot dirs (`.git`, `.github`, …). Upload paths additionally receive managed `.htaccess`.
 - **Force-create contract:** every `itm_ensure_upload_directory()` call **overwrites** both managed `.htaccess` (policy body) and an empty `index.html` on that folder. Applies to all policies and every chain segment. Never add `.htaccess` or `index.html` manually after `mkdir()`.
-- **Policies:** `upload` (public assets — static files allowed), `deny_http` (`files/` chain — `RewriteRule ^ - [F]` per segment), `deny_all` (`backups/`).
+- **Managed `.htaccess` policies:** `upload` (public assets), `deny_http` (`files/` chain), `deny_all` (`backups/`). Canonical Apache bodies and markers: **`docs/file_upload_modules.md`** (human-readable) and `itm_upload_directory_policy_body()` in `includes/bootstrap_helpers.php` (code source of truth).
+- **Policies summary:** `upload` — static files allowed, script execution blocked; `deny_http` — `RewriteRule ^ - [F]` per `files/` segment; `deny_all` — `Require all denied`.
 - **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; lists only **new or changed** repo-relative `…/index.html` paths before the summary; upload roots also get `.htaccess`.
 - **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. See `docs/file_upload_modules.md` for the full module/storage map.
+
+### Explorer verification scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/test_explorer_paths.php` | Pure-logic regression for `get_full_path` ACL (roots, traversal, backslashes) |
+| `php scripts/verify_explorer_zip_leak.php` | Confirms `downloadZip` cannot zip `Private` / company root |
+| `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
+| `php scripts/verify_explorer_rce_marker.php` | PoC — `.htaccess` with ITM marker cannot persist RCE directives |
+
+Run path/ZIP checks after Explorer ACL changes. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`.
 
 ## 5. Verification & Testing
 - New scripts should ideally be accompanied by a unit test or a verification PoC.
