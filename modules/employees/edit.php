@@ -158,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photoValue = mysqli_real_escape_string($conn, (string)($employee['photo'] ?? ''));
         if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
             $photoEmployee = [
+                'id' => (int)$id,
                 'username' => $form['username'],
                 'user_id' => (int)($employee['user_id'] ?? 0),
                 'photo' => (string)($employee['photo'] ?? ''),

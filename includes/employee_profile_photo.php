@@ -90,8 +90,12 @@ function emp_profile_photo_absolute_dir($company_id, $username, $employee_id) {
 
 if (!function_exists('emp_profile_photo_store_upload')) {
 function emp_profile_photo_store_upload($company_id, array $employee, array $uploadFile) {
-    if (!emp_profile_photo_can_store($employee)) {
+    $username = trim((string)($employee['username'] ?? ''));
+    if ($username === '') {
         return ['ok' => false, 'error' => 'Set a username on the employee before uploading a profile photo.'];
+    }
+    if (emp_profile_photo_folder_suffix($employee) <= 0) {
+        return ['ok' => false, 'error' => 'Employee id is required before uploading a profile photo.'];
     }
     if (!isset($uploadFile['error']) || (int)$uploadFile['error'] !== UPLOAD_ERR_OK) {
         return ['ok' => false, 'error' => 'Photo upload failed.'];

@@ -30,7 +30,7 @@ The central module for managing employee records, including contact info, hierar
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` on the employee row (saved on create before the file is stored).
+- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` and employee `id` — `edit.php` must pass `id` into `emp_profile_photo_store_upload()` (create inserts the row first, then uploads).
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
@@ -51,7 +51,7 @@ The central module for managing employee records, including contact info, hierar
 
 ## 10. Common Pitfalls
 - **Circular Reporting**: Avoid setting an employee to report to themselves or creating a loop.
-- **Orphaned Users**: If an employee is deleted, consider what happens to the linked `user_id`.
+- **Profile photo upload on edit:** `emp_profile_photo_store_upload()` needs `username` and `id` on the employee array; omitting `id` in `edit.php` shows a misleading username error.
 
 ## 11. Examples of Safe Code Patterns
 
