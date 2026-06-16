@@ -25,12 +25,12 @@ The central module for managing employee records, including contact info, hierar
   - Auto-create **departments** and **employee_positions** when names/titles not found.
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
-- **Profile photo:** Stored under `files/{company_id}/Private/{username}_{user_id}/profile/` as `{username}_{user_id}.png` or `.jpg` only. Requires linked `username` and `user_id`. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`.
+- **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id` (no linked login account required). Legacy photos under `{username}_{user_id}` still resolve when `employees.user_id` is set. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
 - **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS; no Bootstrap utility classes). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload disabled until `username` and `user_id` are set.
+- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` on the employee row (saved on create before the file is stored).
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
