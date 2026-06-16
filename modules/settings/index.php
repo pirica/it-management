@@ -639,13 +639,20 @@ $apiTierOptions = function_exists('itm_api_allowed_tiers')
     : ['Free', 'Basic', 'Pro', 'Enterprise'];
 $currentApiTierLimit = function_exists('itm_api_tier_hourly_limit')
     ? itm_api_tier_hourly_limit($currentApiTier)
-    : 60;
+    : 0;
+$currentApiTierIsUnlimited = function_exists('itm_api_tier_is_unlimited')
+    ? itm_api_tier_is_unlimited($currentApiTier)
+    : ($currentApiTier === 'Free');
+$currentApiTierLimitLabel = $currentApiTierIsUnlimited ? 'No limit' : (string)$currentApiTierLimit;
 $currentApiRateStatus = function_exists('itm_api_rate_limit_status_from_row')
     ? itm_api_rate_limit_status_from_row($currentUiConfig)
     : [
-        'remaining' => $currentApiTierLimit,
-        'reset_at' => time() + 3600,
+        'remaining' => null,
+        'reset_at' => 0,
     ];
+$currentApiRemainingLabel = $currentApiTierIsUnlimited
+    ? 'No limit'
+    : ((string)($currentApiRateStatus['remaining'] ?? 0) . ' / ' . $currentApiTierLimitLabel);
 $currentRateLimitWindowLabel = $currentRateLimitWindowStart > 0
     ? gmdate('Y-m-d H:i:s', $currentRateLimitWindowStart) . ' UTC'
     : 'Not started';
@@ -954,7 +961,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                         </div>
                         <div class="form-group">
                             <label for="rate_limit_remaining_display">Remaining This Hour</label>
-                            <input id="rate_limit_remaining_display" type="text" value="<?php echo sanitize((string)($currentApiRateStatus['remaining'] ?? 0) . ' / ' . (string)$currentApiTierLimit); ?>" readonly disabled>
+                            <input id="rate_limit_remaining_display" type="text" value="<?php echo sanitize($currentApiRemainingLabel); ?>" readonly disabled>
                         </div>
                         <div class="form-group">
                             <label for="rate_limit_reset_display">Window Resets At (UTC)</label>

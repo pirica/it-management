@@ -11,18 +11,29 @@ function itm_api_allowed_tiers() {
 }
 
 /**
+ * Why: Free tier is intentionally uncapped; paid tiers use hourly quotas.
+ */
+function itm_api_tier_is_unlimited($tier) {
+    return itm_api_normalize_tier($tier) === 'Free';
+}
+
+/**
  * Why: Hourly request caps are tier-driven so billing can scale without code changes per customer.
+ * Returns 0 when the tier has no cap (Free).
  */
 function itm_api_tier_hourly_limit($tier) {
     $normalizedTier = itm_api_normalize_tier($tier);
+    if (itm_api_tier_is_unlimited($normalizedTier)) {
+        return 0;
+    }
+
     $limits = [
-        'Free' => 60,
         'Basic' => 300,
         'Pro' => 1000,
         'Enterprise' => 10000,
     ];
 
-    return (int)($limits[$normalizedTier] ?? $limits['Free']);
+    return (int)($limits[$normalizedTier] ?? 0);
 }
 
 function itm_api_rate_limit_window_seconds() {
@@ -157,12 +168,27 @@ function itm_api_save_user_api_key($conn, $companyId, $userId, $apiKey) {
  */
 function itm_api_rate_limit_status_from_row(array $row) {
     $tier = itm_api_normalize_tier($row['tier'] ?? 'Free');
+    $unlimited = itm_api_tier_is_unlimited($tier);
     $limit = itm_api_tier_hourly_limit($tier);
     $windowSeconds = itm_api_rate_limit_window_seconds();
-    $enabled = ((int)($row['rate_limit_enabled'] ?? 1) === 1);
+    $enabled = !$unlimited && ((int)($row['rate_limit_enabled'] ?? 1) === 1);
     $windowStart = (int)($row['rate_limit_window_start'] ?? 0);
     $requestCount = (int)($row['rate_limit_request_count'] ?? 0);
     $now = time();
+
+    if ($unlimited) {
+        return [
+            'tier' => $tier,
+            'unlimited' => true,
+            'rate_limit_enabled' => 0,
+            'limit' => 0,
+            'remaining' => null,
+            'window_seconds' => $windowSeconds,
+            'window_start' => 0,
+            'reset_at' => 0,
+            'request_count' => $requestCount,
+        ];
+    }
 
     if ($windowStart <= 0 || ($now - $windowStart) >= $windowSeconds) {
         $requestCount = 0;
@@ -173,6 +199,7 @@ function itm_api_rate_limit_status_from_row(array $row) {
 
     return [
         'tier' => $tier,
+        'unlimited' => false,
         'rate_limit_enabled' => $enabled ? 1 : 0,
         'limit' => $limit,
         'remaining' => $remaining,
@@ -199,12 +226,13 @@ function itm_api_consume_rate_limit($conn, array $row) {
     }
 
     $tier = itm_api_normalize_tier($row['tier'] ?? 'Free');
+    $unlimited = itm_api_tier_is_unlimited($tier);
     $limit = itm_api_tier_hourly_limit($tier);
     $windowSeconds = itm_api_rate_limit_window_seconds();
-    $enabled = ((int)($row['rate_limit_enabled'] ?? 1) === 1);
+    $enabled = !$unlimited && ((int)($row['rate_limit_enabled'] ?? 1) === 1);
     $now = time();
 
-    if (!$enabled) {
+    if ($unlimited || !$enabled) {
         $touchSql = 'UPDATE ui_configuration
                      SET api_key_last_used_at = CURRENT_TIMESTAMP
                      WHERE id = ? AND company_id = ? AND user_id = ?
@@ -219,9 +247,10 @@ function itm_api_consume_rate_limit($conn, array $row) {
         return [
             'allowed' => true,
             'tier' => $tier,
-            'limit' => $limit,
-            'remaining' => $limit,
-            'reset_at' => $now + $windowSeconds,
+            'unlimited' => $unlimited,
+            'limit' => 0,
+            'remaining' => null,
+            'reset_at' => 0,
             'rate_limit_enabled' => 0,
         ];
     }
@@ -299,6 +328,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
     return [
         'allowed' => true,
         'tier' => $tier,
+        'unlimited' => false,
         'limit' => $limit,
         'remaining' => max(0, $limit - $nextCount),
         'reset_at' => $windowStart + $windowSeconds,
@@ -363,6 +393,7 @@ function itm_api_handle_rate_limit_probe_request($conn) {
         'api_key_is_active' => (int)($row['api_key_is_active'] ?? 0),
         'api_key_last_used_at' => $row['api_key_last_used_at'] ?? null,
         'tier' => $status['tier'],
+        'unlimited' => !empty($status['unlimited']),
         'rate_limit_enabled' => $status['rate_limit_enabled'],
         'limit' => $status['limit'],
         'remaining' => $status['remaining'],
