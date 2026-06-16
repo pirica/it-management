@@ -1,0 +1,51 @@
+# AGENT_NOTES.md - IP Subnets
+
+## 1. Module Purpose
+Manages IP subnets (CIDR blocks), including gateways, DNS, and DHCP configuration.
+
+## 2. Key Tables
+- **ip_subnets** — main subnet data.
+
+## 3. Required Relationships
+- **ip_subnets** → depends on **companies**.
+- **ip_subnets** → depends on **vlans**.
+
+## 4. Business Rules (Critical for Agents)
+- **Unique CIDR per Company**: A subnet block must be unique within a company.
+- **CIDR Validation**: Must be a valid CIDR string (e.g., "192.168.1.0/24").
+- **Gateway/DNS**: Gateway and DNS IPs should belong to the subnet range.
+
+## 5. UI Behavior Requirements
+- **Standard CRUD**.
+- **Subnet Stats**: View page often shows usage statistics (Free vs Used IPs).
+- **Network Discovery**: May trigger scans to find live hosts in the subnet.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** — handles bulk JSON import.
+
+## 7. File Structure
+- **index.php**, **view.php**, etc.
+- **subnet_view_ips.php** — detailed view of all IPs in the subnet.
+- **subnet_view_stats.php** — usage analytics.
+
+## 8. Multi-Tenant Rules
+- Strictly scoped by `company_id`.
+
+## 9. Audit Logging Requirements
+- Managed via database triggers.
+
+## 10. Common Pitfalls
+- **Overlapping Subnets**: Defining subnets that overlap in range (e.g., /24 and /25).
+- **Invalid Prefix**: Incorrect prefix length for the network IP.
+
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT
+```php
+$stmt = $conn->prepare("SELECT * FROM ip_subnets WHERE company_id = ? AND cidr = ?");
+$stmt->bind_param("is", $companyId, $cidr);
+$stmt->execute();
+```
+
+## 12. Module Owner Notes (Optional)
+Foundational for network configuration.
