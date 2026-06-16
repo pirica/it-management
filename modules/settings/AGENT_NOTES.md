@@ -16,7 +16,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **UI Persistence**: Changes to button positions or pagination must call `collectAndSetHiddenFields()` in the UI.
-- **API Access card**: **Free** tier — no API key UI (informational copy only; session-based access). **Paid** tiers — only `api_key` is editable (save or generate). `tier` renders as a **blocked** `<select>` (disabled); `api_key_is_active`, `api_key_last_used_at`, and all `rate_limit_*` fields are read-only displays. **Free** tier shows **No limit** for hourly quota. POST `save_api_key` / `generate_api_key` are rejected on Free tier.
+- **API Access card**: **Free** tier — no API key UI; copy states **signed-in session** is required for programmatic access and for `scripts/api.php?rate_limit=1` without `api_key`. **Paid** tiers — only `api_key` is editable (save or generate). `tier` is a **blocked** `<select>`; rate-limit counters are read-only. POST `save_api_key` / `generate_api_key` rejected on Free tier.
 - **Database Maintenance**: Allows triggering schema verification and table repairs.
 - **Backup/Restore**: Handles SQL dump generation and manual SQL imports.
 
@@ -27,7 +27,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — (in `index.php`) handles bulk JSON import of settings (though rare).
-- Rate-limit probe documented at `scripts/api.php?rate_limit=1` (uses `includes/itm_api_rate_limit.php`).
+- Rate-limit probe: `GET scripts/api.php?rate_limit=1` — **Free** omits `api_key` when `PHPSESSID` is signed in; **paid** sends `api_key`. See `includes/itm_api_rate_limit.php` and `scripts/api.php`.
 
 ## 7. File Structure
 - **index.php** — main settings dashboard.

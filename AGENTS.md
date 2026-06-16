@@ -238,27 +238,29 @@ Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logi
 
 1. **Tier caps (rolling hour):**
 
-| Tier | Hourly limit | API key |
-|------|----------------|---------|
-| Free | No limit | **Not required** — use authenticated session (`itm_api_resolve_rate_limit_row()`) |
-| Basic | 300 | Required (`X-API-Key` or `api_key`) |
-| Pro | 1000 | Required |
-| Enterprise | 10000 | Required |
+| Tier | Hourly limit | API key | Session (`PHPSESSID`) |
+|------|----------------|---------|------------------------|
+| Free | No limit | **Not required** | **Required** — `$_SESSION['company_id']` + `$_SESSION['user_id']` via `itm_api_resolve_rate_limit_row()` |
+| Basic | 300 | Required (`X-API-Key` or `api_key`) | Optional when API key present |
+| Pro | 1000 | Required | Optional when API key present |
+| Enterprise | 10000 | Required | Optional when API key present |
 
-2. **Settings → API Access** (`modules/settings/`): **Free** tier hides save/generate API key controls (informational copy only). Paid tiers may save/generate `api_key`. `tier` is a **blocked** `<select>`; counters are read-only. Do not accept `tier` from POST.
+**Free is not anonymous:** a keyless request without a signed-in session returns `401` (same probe and enforce paths).
 
-3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves the row via API key **or** (Free only) `$_SESSION['company_id']` + `$_SESSION['user_id']`. Paid tiers without a key return `401`.
+2. **Settings → API Access** (`modules/settings/`): **Free** tier hides save/generate API key controls (copy explains session-based access). **Paid** tiers may save/generate `api_key`. `tier` is a **blocked** `<select>`; counters are read-only. Do not accept `tier` from POST.
 
-4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` — JSON without login redirect (`ITM_API_RATE_LIMIT_PROBE`). Free tier may omit `api_key` when the browser session is signed in; paid tiers must send a key. Response includes `api_key_required` (boolean).
+3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves via API key **or** (Free only) authenticated session. Paid tiers without a key return `401`. Helpers: `itm_api_tier_requires_api_key()`, `itm_api_lookup_configuration_by_user()`, `itm_api_build_rate_limit_probe_payload()`.
+
+4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `user_id`; paid tiers must send a key. Response includes `api_key_required` (boolean).
 
 5. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`):
 
 | Script | Expectation |
 |--------|-------------|
-| `php scripts/apitest_tier_free.php` | Free row with empty `api_key`; session resolve without key; unlimited consumes; probe `api_key_required=false` |
-| `php scripts/apitest_tier_basic.php` | Basic tier at cap − 1; allow then block; HTTP probe requires key |
+| `php scripts/apitest_tier_free.php` | Empty `api_key`; in-process session resolve; unlimited consumes; HTTP probe via `itm_apitest_publish_http_session()` + keyless URL; `api_key_required=false` |
+| `php scripts/apitest_tier_basic.php` | Basic at cap − 1; allow then block; HTTP probe requires `api_key` |
 
-6. **PHPUnit:** `phpunit/tests/Unit/Includes/ApiRateLimitTest.php`.
+6. **PHPUnit:** `phpunit/tests/Unit/Includes/ApiRateLimitTest.php` (`itm_api_tier_requires_api_key`, probe payload).
 
 #### Rack Planner price source sync (mandatory)
 
