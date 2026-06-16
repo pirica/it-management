@@ -17,8 +17,24 @@ class SecurityFixesTest extends TestCase
         }
     }
 
+    private function runPhpScriptFile($scriptFile)
+    {
+        $phpBin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
+        if (strpos($phpBin, 'php-cgi') !== false) {
+            $phpBin = str_replace('php-cgi', 'php', $phpBin);
+        }
+
+        // Why: 2>/dev/null breaks on Windows cmd ("The system cannot find the path specified.").
+        // 2>&1 is supported on Windows and Linux shells used by PHP exec().
+        $command = escapeshellarg($phpBin) . ' -d error_reporting=0 ' . escapeshellarg($scriptFile) . ' 2>&1';
+        $lines = [];
+        exec($command, $lines);
+        return implode("\n", $lines);
+    }
+
     private function runIsolated($script_path, $session_data = [], $post_data = [], $get_data = [], $extra_globals = [])
     {
+        $scriptPathLiteral = var_export($script_path, true);
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 session_start();
@@ -26,15 +42,14 @@ session_start();
 " . implode("\n", array_map(function($k, $v) { return "\$_POST['$k'] = " . var_export($v, true) . ";"; }, array_keys($post_data), $post_data)) . "
 " . implode("\n", array_map(function($k, $v) { return "\$_GET['$k'] = " . var_export($v, true) . ";"; }, array_keys($get_data), $get_data)) . "
 " . implode("\n", array_map(function($k, $v) { return "global \$$k; \$$k = " . var_export($v, true) . ";"; }, array_keys($extra_globals), $extra_globals)) . "
-chdir(dirname('$script_path'));
+chdir(dirname({$scriptPathLiteral}));
 ob_start();
-include basename('$script_path');
+include basename({$scriptPathLiteral});
 echo ob_get_clean();
 ?>";
         $tmp_file = tempnam(sys_get_temp_dir(), 'repro_test');
         file_put_contents($tmp_file, $code);
-        $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-        $output = shell_exec("$php_bin -d error_reporting=0 $tmp_file 2>/dev/null");
+        $output = $this->runPhpScriptFile($tmp_file);
         unlink($tmp_file);
         return $output;
     }
@@ -186,7 +201,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 ?>";
         $tmp_file = tempnam(sys_get_temp_dir(), 'import_test');
         file_put_contents($tmp_file, $code);
-        $output = shell_exec("php $tmp_file");
+        $output = $this->runPhpScriptFile($tmp_file);
         unlink($tmp_file);
 
         $result = json_decode($output, true);
