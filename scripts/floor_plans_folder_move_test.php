@@ -1,6 +1,6 @@
 <?php
 /**
- * Regression tests for Floor Plans folder reparenting (move folder).
+ * Regression tests for Floor Plans folder create and reparenting (move folder).
  *
  * Usage (Laragon PHP 7.4+):
  *   php scripts/floor_plans_folder_move_test.php
@@ -62,7 +62,7 @@ function fp_test_browser_init(): void
     itm_script_browser_nav_echo();
     echo '<p style="color:#57606a;margin:0 0 14px;">Regression for '
         . itm_script_format_module_link('floor_plans', '', 'Floor Plans module')
-        . ' · table <code>floor_plan_folders</code> (helper <code>fp_move_folder_to_parent</code>).</p>';
+        . ' · table <code>floor_plan_folders</code> (column <code>parent_folder_id</code>, helpers <code>fp_fetch_folders</code> / <code>fp_move_folder_to_parent</code>).</p>';
 }
 
 function fp_test_browser_close(): void
@@ -145,17 +145,45 @@ function fp_test_delete_folder(mysqli $conn, $folderId, $companyId)
     mysqli_stmt_close($stmt);
 }
 
+function fp_test_column_exists(mysqli $conn, string $column): bool
+{
+    if (!itm_is_safe_identifier($column)) {
+        return false;
+    }
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `floor_plan_folders` LIKE '" . mysqli_real_escape_string($conn, $column) . "'");
+    return ($res && mysqli_num_rows($res) > 0);
+}
+
 fp_test_browser_init();
 
 $companyId = (int)(getenv('ITM_TEST_COMPANY_ID') ?: 1);
 $failures = 0;
 
-fp_test_out('Floor Plans folder move regression');
+fp_test_out('Floor Plans folder create + move regression');
 fp_test_out('PHP ' . PHP_VERSION);
 fp_test_out('Company ID: ' . $companyId);
 
 try {
     fp_test_assert(fp_floor_plan_schema_ready($conn), 'Floor Plans schema is installed');
+    fp_test_assert(fp_test_column_exists($conn, 'parent_folder_id'), 'floor_plan_folders.parent_folder_id column exists');
+    fp_test_assert(!fp_test_column_exists($conn, 'parent_folder_name'), 'legacy parent_folder_name column is absent');
+
+    $suffix = 'itm_create_' . gmdate('YmdHis') . '_' . mt_rand(1000, 9999);
+    $rootCreateName = 'Create Root ' . $suffix;
+    $childCreateName = 'Create Child ' . $suffix;
+    $rootCreateId = fp_test_insert_folder($conn, $companyId, null, $rootCreateName);
+    fp_test_assert($rootCreateId > 0, 'create root-level folder via parent_folder_id NULL');
+    fp_test_assert(fp_test_db_parent_id($conn, $rootCreateId, $companyId) === null, 'root folder parent is NULL');
+
+    $childCreateId = fp_test_insert_folder($conn, $companyId, $rootCreateId, $childCreateName);
+    fp_test_assert($childCreateId > 0, 'create nested folder under parent');
+    fp_test_assert(fp_test_db_parent_id($conn, $childCreateId, $companyId) === $rootCreateId, 'nested folder parent matches root id');
+
+    $foldersAfterCreate = fp_fetch_folders($conn, $companyId);
+    $createdRootRow = fp_folder_row_by_id($foldersAfterCreate, $rootCreateId);
+    $createdChildRow = fp_folder_row_by_id($foldersAfterCreate, $childCreateId);
+    fp_test_assert($createdRootRow !== null && (string)($createdRootRow['name'] ?? '') === $rootCreateName, 'fp_fetch_folders returns created root row');
+    fp_test_assert($createdChildRow !== null && fp_folder_parent_id_from_row($createdChildRow) === $rootCreateId, 'fp_fetch_folders returns nested parent_folder_id');
 
     $folders = fp_fetch_folders($conn, $companyId);
     fp_test_assert(fp_can_move_folder_to_parent($folders, 99, null), 'can move to root (synthetic id)');
@@ -207,6 +235,8 @@ try {
     fp_test_delete_folder($conn, $grandId, $companyId);
     fp_test_delete_folder($conn, $childId, $companyId);
     fp_test_delete_folder($conn, $rootId, $companyId);
+    fp_test_delete_folder($conn, $childCreateId, $companyId);
+    fp_test_delete_folder($conn, $rootCreateId, $companyId);
     $dupNameEsc = mysqli_real_escape_string($conn, $dupName);
     $dupTopRes = mysqli_query($conn, 'SELECT id FROM floor_plan_folders WHERE company_id=' . (int)$companyId . " AND name='" . $dupNameEsc . "' LIMIT 1");
     if ($dupTopRes && ($dupTopRow = mysqli_fetch_assoc($dupTopRes))) {

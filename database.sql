@@ -333,28 +333,32 @@ DROP TABLE IF EXISTS `floor_plan_folders`;
 CREATE TABLE `floor_plan_folders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `parent_folder_name` int DEFAULT NULL,
+  `parent_folder_id` int DEFAULT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `company_id` (`company_id`),
-  KEY `parent_folder_name` (`parent_folder_name`),
-  UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, `parent_folder_name`, `name`),
+  KEY `parent_folder_id` (`parent_folder_id`),
+  UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, (IFNULL(`parent_folder_id`, 0)), `name`),
   CONSTRAINT `floor_plan_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_name`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
+  CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('4', '2', '3', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('5', '3', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('6', '3', '5', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('7', '4', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('8', '4', '7', 'Level 1', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('9', '5', NULL, 'General', '1', '2026-01-01 00:00:01');
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_name`, `name`, `active`, `created_at`) VALUES ('10', '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
+-- Manual migration (existing databases only):
+-- ALTER TABLE `floor_plan_folders` CHANGE `parent_folder_name` `parent_folder_id` int DEFAULT NULL;
+-- ALTER TABLE `floor_plan_folders` DROP INDEX `uq_floor_plan_folders_company_parent_name`;
+-- ALTER TABLE `floor_plan_folders` ADD UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, (IFNULL(`parent_folder_id`, 0)), `name`);
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('1', '1', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('2', '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('3', '2', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('4', '2', '3', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('5', '3', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('6', '3', '5', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('7', '4', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('8', '4', '7', 'Level 1', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('9', '5', NULL, 'General', '1', '2026-01-01 00:00:01');
+INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES ('10', '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
 -- Table structure for `floor_plan_tags`
 DROP TABLE IF EXISTS `floor_plan_tags`;
 CREATE TABLE `floor_plan_tags` (
@@ -402,7 +406,7 @@ CREATE TABLE `floor_plans` (
   KEY `folder_id` (`folder_id`),
   KEY `it_location_id` (`it_location_id`),
   KEY `created_by_user_id` (`created_by_user_id`),
-  KEY `idx_floor_plans_company_folder_display_name` (`company_id`,`folder_id`,`display_name`),
+  UNIQUE KEY `uq_floor_plans_company_folder_display_name` (`company_id`, (IFNULL(`folder_id`, 0)), `display_name`),
   CONSTRAINT `floor_plans_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `floor_plans_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_plans_ibfk_it_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
@@ -3668,11 +3672,11 @@ SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
 INSERT IGNORE INTO `access_levels` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `assignment_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `assignment_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `budget_categories` (`company_id`, `name`, `description`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`description`, t.`active`, '2026-01-01 00:00:01' FROM `budget_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-INSERT IGNORE INTO `floor_plan_folders` (`company_id`, `parent_folder_name`, `name`, `active`, `created_at`)
+INSERT IGNORE INTO `floor_plan_folders` (`company_id`, `parent_folder_id`, `name`, `active`, `created_at`)
 SELECT c.`id`, NULL, t.`name`, t.`active`, '2026-01-01 00:00:01'
 FROM `floor_plan_folders` t
 JOIN `companies` c ON c.`id` <> t.`company_id`
-WHERE t.`company_id` = @replicate_source_company_id AND t.`parent_folder_name` IS NULL;
+WHERE t.`company_id` = @replicate_source_company_id AND t.`parent_folder_id` IS NULL;
 INSERT IGNORE INTO `floor_plan_tags` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `floor_plan_tags` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `gl_accounts` (`company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`)
 SELECT
@@ -4538,15 +4542,15 @@ DROP TRIGGER IF EXISTS `trg_floor_plan_folders_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_floor_plan_folders_audit_insert` AFTER INSERT ON `floor_plan_folders` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plan_folders', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'parent_folder_name', NEW.`parent_folder_name`, 'name', NEW.`name`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plan_folders', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'parent_folder_id', NEW.`parent_folder_id`, 'name', NEW.`name`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_floor_plan_folders_audit_update` AFTER UPDATE ON `floor_plan_folders` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plan_folders', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'parent_folder_name', OLD.`parent_folder_name`, 'name', OLD.`name`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'parent_folder_name', NEW.`parent_folder_name`, 'name', NEW.`name`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plan_folders', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'parent_folder_id', OLD.`parent_folder_id`, 'name', OLD.`name`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'parent_folder_id', NEW.`parent_folder_id`, 'name', NEW.`name`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_floor_plan_folders_audit_delete` AFTER DELETE ON `floor_plan_folders` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plan_folders', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'parent_folder_name', OLD.`parent_folder_name`, 'name', OLD.`name`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'floor_plan_folders', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'parent_folder_id', OLD.`parent_folder_id`, 'name', OLD.`name`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_floor_plan_item_tags_audit_insert`;

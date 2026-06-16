@@ -8,7 +8,8 @@ Unit/regression tests for `modules/floor_plans/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `*Test.php` / `*.unittest.php` — test classes for this module.
+- `FloorPlansTest.php` — CRUD on `floor_plans` and folder create via `parent_folder_id`.
+- `*Test.php` / `*.unittest.php` — other test classes for this module.
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
