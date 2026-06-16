@@ -10,6 +10,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - Depends on the entire database schema as defined in `database.sql`.
 
 ## 4. Business Rules (Critical for Agents)
+- **Pre-implementation discovery:** before adding or changing scripts, produce the architectural map, module summary, and dependency analysis required by **`scripts/SCRIPTS.md` → Pre-implementation discovery (scripts)** and **`AGENTS.md` step 4**.
 - **CLI Mode**: Scripts intended for CLI use must define `ITM_CLI_SCRIPT` to bypass session redirects.
 - **DANGER**: Some scripts are destructive (e.g., `reset_git_history.php`, `repair_table_from_schema.php`). Use with extreme caution.
 - **Production Safety**: `debug.php` and other diagnostic tools should be removed or blocked in production.
