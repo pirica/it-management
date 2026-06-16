@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
 
 class ExplorerTest extends TestCase
 {
+    use \ItmExtractFunctionTestTrait;
+
     private $storageRoot;
     private $userId = 123;
     private $deptId = 456;
@@ -17,15 +19,11 @@ class ExplorerTest extends TestCase
         $this->storageRoot = sys_get_temp_dir() . '/itm_explorer_test_' . uniqid();
         mkdir($this->storageRoot, 0777, true);
 
-        if (!function_exists('get_full_path')) {
-            $apiPath = ROOT_PATH . 'modules/explorer/api.php';
-            $content = file_get_contents($apiPath);
-            
-            // Extract get_full_path function
-            if (preg_match('/function get_full_path.*?return \$full;\s*\}/s', $content, $matches)) {
-                eval($matches[0]);
-            }
-        }
+        $this->requireExtractedFunction(
+            ROOT_PATH . 'modules/explorer/api.php',
+            'get_full_path',
+            '/function get_full_path.*?return \$full;\s*\}/s'
+        );
     }
 
     protected function tearDown(): void

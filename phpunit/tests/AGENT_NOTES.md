@@ -12,7 +12,7 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 ## 7. File Structure
 - **Unit/** — test classes organised by concern (Config, CRUD, Database, **Includes**, Modules, MultiTenancy, Scripts, Security, Support).
 - **Unit/Includes/** — DB-free unit tests for `includes/` visibility, MBQA, and coverage guard helpers (`docs/PHPUNIT_PLAN.md` Phase 1).
-- **Unit/Support/** — shared test traits (e.g. `ItmScriptCliTestTrait` for CLI audit script subprocess tests).
+- **Unit/Support/** — shared test traits (e.g. `ItmScriptCliTestTrait` for CLI audit script subprocess tests), `ItmScriptCliTestCase` base class, and `ItmExtractFunctionTestTrait` (no `eval()` on module source).
 - **bootstrap.php** — test bootstrap (`ROOT_PATH` = two levels up to repository root; `ITM_CLI_SCRIPT`).
 - **PREFERENCES.md** — framework preferences, coverage URLs, naming conventions.
 - **../phpunit.xml** — PHPUnit config (verbose, `<coverage processUncoveredFiles="false">`, HTML report under `coverage/html/`).
@@ -21,6 +21,8 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 ## 10. Common Pitfalls
 - **`echo` in `*Test.php`** breaks HTML coverage report generation (headers already sent).
 - **Including `scripts/*.php` with `exit()`** halts the runner — use subprocess or mock; skip when DB unavailable.
+- **File-exists-only script stubs** — replaced by `ScriptCatalogSmokeTest.php` (catalog existence + read-only CLI smoke); keep behaviour tests in `*Test.php`, `ScriptLogic.unittest.php`, and dedicated `check_*` unittest files.
+- **Load support from bootstrap** — `ItmScriptCliTestCase` / traits are required in `bootstrap.php`; do not `require_once` them at file scope in test files.
 - **Expecting full suite without MySQL** — many module tests skip; use `ITM_SKIP_DB_TESTS=1` only when intentional.
 - **Expecting high headline %** — with full tree in `phpunit.xml`, totals stay under ~1% until tests load module PHP or scope is narrowed. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.
 

@@ -12,7 +12,10 @@ class MultiTenancyUnittest extends TestCase
     {
         global $conn;
         if (itm_tests_should_skip_db()) {
-            $this->markTestSkipped('Database tests are skipped.');
+            $this->markTestSkipped('Database connection unavailable.');
+        }
+        if (!$conn) {
+            $this->markTestSkipped('Database connection unavailable.');
         }
         $this->conn = $conn;
     }

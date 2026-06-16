@@ -2,10 +2,7 @@
 
 declare(strict_types=1);
 
-namespace ITM\Tests\Unit\Modules\Todo;
-
-require_once dirname(__DIR__, 5) . '/config/config.php';
-require_once ROOT_PATH . 'includes/todo_visibility.php';
+namespace Tests\Unit\Modules\Todo;
 
 use PHPUnit\Framework\TestCase;
 
@@ -18,6 +15,8 @@ class TodoTest extends TestCase
 
     protected function setUp(): void
     {
+        require_once ROOT_PATH . 'includes/todo_visibility.php';
+
         $this->conn = $GLOBALS['conn'];
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');

@@ -2,14 +2,8 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-
-require_once __DIR__ . '/../Support/ItmScriptCliTestTrait.php';
-
-class CheckAuditLogsCoverageUnittest extends TestCase
+class CheckAuditLogsCoverageUnittest extends ItmScriptCliTestCase
 {
-    use ItmScriptCliTestTrait;
-
     public function testCliAuditRunsAndPrintsSummary(): void
     {
         $result = $this->runRepoScript('scripts/check_audit_logs_coverage.php');

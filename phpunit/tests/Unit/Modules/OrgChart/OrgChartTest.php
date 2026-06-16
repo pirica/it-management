@@ -6,17 +6,15 @@ use PHPUnit\Framework\TestCase;
 
 class OrgChartTest extends TestCase
 {
+    use \ItmExtractFunctionTestTrait;
+
     protected function setUp(): void
     {
-        if (!function_exists('itm_is_circular_reporting')) {
-            $indexPath = ROOT_PATH . 'modules/org_chart/index.php';
-            $content = file_get_contents($indexPath);
-            
-            // Extract the function itm_is_circular_reporting
-            if (preg_match('/function itm_is_circular_reporting.*?return false;\s*\}/s', $content, $matches)) {
-                eval($matches[0]);
-            }
-        }
+        $this->requireExtractedFunction(
+            ROOT_PATH . 'modules/org_chart/index.php',
+            'itm_is_circular_reporting',
+            '/function itm_is_circular_reporting.*?return false;\s*\}/s'
+        );
     }
 
     public function testCircularReportingDetection()
