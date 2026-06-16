@@ -31,23 +31,17 @@ Empty `index.html` content (managed — do not edit by hand):
 
 ## Upload hardening policies
 
-| Policy | Directories | `.htaccess` (force-written) | `index.html` (force-written) | HTTP access |
-|--------|-------------|----------------------------|------------------------------|-------------|
-| `upload` | `images/`, `tickets_photos/`, `floor_plans/` | Disables PHP execution; blocks script extensions | Empty placeholder | Static files served directly by Apache |
-| `deny_http` | `files/` and every segment under `files/{company_id}/…` | `RewriteEngine On` + `RewriteRule ^ - [F]` on **each** folder in the chain | Empty placeholder | **Denied** — serve through `modules/explorer/file.php` |
-| `deny_all` | `backups/` | `Require all denied` | Empty placeholder | Fully blocked |
+Canonical **source of truth in code:** `includes/bootstrap_helpers.php` → `itm_upload_directory_policy_body($policy)`. Helpers **always overwrite** existing `.htaccess` on ensure — never skip when a file exists (prevents uploaded `.htaccess` RCE).
 
-### `/files/` chain example
+| Policy | Marker (first comment) | Directories | `.htaccess` role | `index.html` | HTTP access |
+|--------|------------------------|-------------|------------------|--------------|-------------|
+| `upload` | `ITM upload hardening` | `images/`, `tickets_photos/`, `floor_plans/` | Disable PHP/script execution; allow static assets | Empty placeholder | Static files served directly by Apache |
+| `deny_http` | `ITM files hardening` | `files/` and every segment under `files/{company_id}/…` | `RewriteRule ^ - [F]` on **each** folder in the chain | Empty placeholder | **Denied** — serve through `modules/explorer/file.php` |
+| `deny_all` | `ITM backup hardening` | `backups/` | `Require all denied` | Empty placeholder | Fully blocked |
 
-For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
+### Canonical `.htaccess` bodies (managed — do not edit by hand)
 
-- `files/`
-- `files/{company_id}/`
-- `files/{company_id}/Private/`
-- `files/{company_id}/Private/{username}_{user_id}/`
-- `files/{company_id}/Private/{username}_{user_id}/private_contacts/`
-
-Canonical managed content:
+**`deny_http`** (`files/` tree — Explorer, private contacts, notes attachments):
 
 ```apache
 # ITM files hardening — do not remove (managed by itm_ensure_upload_directory)
@@ -55,6 +49,67 @@ RewriteEngine On
 RewriteRule ^ - [F]
 Options -Indexes -ExecCGI
 ```
+
+**`upload`** (`images/`, `tickets_photos/`, `floor_plans/`):
+
+```apache
+# ITM upload hardening — do not remove (managed by itm_ensure_upload_directory)
+Options -Indexes -ExecCGI -MultiViews
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(php|phtml|php3|php4|php5|phar|cgi|pl|py|asp|aspx|jsp|sh|exe|bat|cmd)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(?i)\.(php|phtml|php3|php4|php5|phar|cgi|pl|py|asp|aspx|jsp|sh|exe|bat|cmd)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+RemoveHandler .php .phtml .phar .cgi .pl .py
+RemoveType .php .phtml .phar .cgi .pl .py
+```
+
+**`deny_all`** (`backups/`):
+
+```apache
+# ITM backup hardening — do not remove (managed by itm_ensure_upload_directory)
+Options -Indexes -ExecCGI
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
+```
+
+Empty `index.html` on every ensured folder (all policies):
+
+```html
+<!DOCTYPE html><html><head><title></title></head><body></body></html>
+```
+
+### `/files/` chain example
+
+For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
+
+- `files/`
+- `files/{company_id}/`
+- `files/{company_id}/Common/` (when created)
+- `files/{company_id}/Private/`
+- `files/{company_id}/Departments/` (when created)
+- `files/{company_id}/Trash/` (when created)
+- `files/{company_id}/Private/{username}_{user_id}/`
+- `files/{company_id}/Private/{username}_{user_id}/private_contacts/`
+
+**Runtime tenant trees** under `files/{company_id}/**` must **not** be committed to git — helpers create and harden them on deploy.
 
 ### Helpers (mandatory for new code)
 
@@ -127,10 +182,12 @@ Options -Indexes -ExecCGI
 - **Implementation:** Upgraded to include a drag-and-drop area (`.itm-photo-upload-target`) for file uploads (via `js/itm-upload-helper.js`).
 
 ### 9. Explorer
-- **Paths:** `modules/explorer/api.php`, `modules/explorer/setup.php`, `modules/explorer/file.php`
-- **Storage:** `files/{company_id}/` tree (`deny_http` on every segment)
-- **Description:** General file management.
-- **Implementation:** Upgraded to use standard `.itm-photo-upload-target` UI and supports background dropping of files onto the desktop area for automatic uploads. All folder creation uses `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`.
+- **Paths:** `modules/explorer/api.php`, `modules/explorer/setup.php`, `modules/explorer/file.php`, `modules/explorer/index.php`
+- **Storage:** `files/{company_id}/` tree (`deny_http` on every segment, including `Trash/`)
+- **Description:** General file management with multi-tenant ACL (`get_full_path`), soft-delete to `Trash/`, and PHP-proxied downloads.
+- **Security (post PR #2240 / #2241):** API blocks `Private` and `Departments` roots; UI uses `resolveScopedFolderPath()` for scoped navigation; trash operations are ACL-filtered. See `modules/explorer/AGENT_NOTES.md` and **`AGENTS.md` → Explorer module**.
+- **Implementation:** Standard `.itm-photo-upload-target` UI; desktop drag-and-drop upload. All folder creation uses `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Block dotfile uploads; managed `.htaccess` overwrites malicious uploads on ensure.
+- **Regression scripts:** `php scripts/test_explorer_paths.php`, `php scripts/verify_explorer_zip_leak.php`; `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`.
 
 ### 10. Private Contacts
 - **Paths:** `modules/private_contacts/create.php`, `modules/private_contacts/edit.php`
