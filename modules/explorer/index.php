@@ -339,6 +339,7 @@ let activeTab = 0;
 let currentPath = "";
 let selected = new Set();
 let clipboard = { type: null, path: null, items: [] };
+const CLIPBOARD_STORAGE_KEY = "itm_explorer_clipboard";
 let contextItem = null;
 let inRecycle = false;
 let userPrivateDir = <?= $user_private_dir_json ?>;
@@ -503,7 +504,84 @@ function updateSelection() {
 }
 
 /* CONTEXT MENU */
-document.addEventListener("click", () => {
+function loadClipboard() {
+    try {
+        const raw = sessionStorage.getItem(CLIPBOARD_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
+            clipboard = {
+                type: parsed.type || null,
+                path: typeof parsed.path === "string" ? parsed.path : "",
+                items: parsed.items.filter(Boolean),
+            };
+        }
+    } catch (err) {
+        clipboard = { type: null, path: null, items: [] };
+    }
+}
+
+function saveClipboard() {
+    sessionStorage.setItem(CLIPBOARD_STORAGE_KEY, JSON.stringify(clipboard));
+}
+
+function clearClipboard() {
+    clipboard = { type: null, path: null, items: [] };
+    sessionStorage.removeItem(CLIPBOARD_STORAGE_KEY);
+}
+
+function clipboardHasItems() {
+    loadClipboard();
+    return Array.isArray(clipboard.items) && clipboard.items.length > 0 && !!clipboard.type;
+}
+
+function getClipboardItemNames() {
+    if (selected.size > 0) {
+        return Array.from(selected);
+    }
+    if (contextItem && contextItem.name) {
+        return [contextItem.name];
+    }
+    return [];
+}
+
+function clearContextMenu() {
+    ctxMenu.innerHTML = "";
+}
+
+function appendContextSeparator() {
+    const hr = document.createElement("hr");
+    ctxMenu.appendChild(hr);
+}
+
+function appendContextAction(label, handler, enabled = true) {
+    const div = document.createElement("div");
+    div.textContent = label;
+    if (!enabled) {
+        div.style.opacity = "0.5";
+        div.style.pointerEvents = "none";
+        ctxMenu.appendChild(div);
+        return;
+    }
+    div.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        ctxMenu.style.display = "none";
+        handler();
+    });
+    ctxMenu.appendChild(div);
+}
+
+function positionContextMenu(e) {
+    ctxMenu.style.left = e.pageX + "px";
+    ctxMenu.style.top = e.pageY + "px";
+    ctxMenu.style.display = "block";
+}
+
+document.addEventListener("click", (e) => {
+    if (e.target.closest("#contextMenu")) {
+        return;
+    }
     ctxMenu.style.display = "none";
 });
 
@@ -517,61 +595,54 @@ desktop.addEventListener("contextmenu", e => {
 function showContextMenu(e, item) {
     e.preventDefault();
     contextItem = item;
+    loadClipboard();
 
     // Why: Restrict actions on top-level system folders.
     const isSystemFolder = (currentPath === "" && ["Common", "Departments", "Private"].includes(item.name));
 
-    let html = `<div onclick="openItem('${item.name}', '${item.type}')">Open</div>`;
+    clearContextMenu();
+    appendContextAction("Open", () => openItem(item.name, item.type));
 
     if (!isSystemFolder && !inRecycle) {
-        html += `
-            <div onclick="copyItem()">Copy</div>
-            <div onclick="cutItem()">Cut</div>
-            <div onclick="pasteItem()">Paste</div>
-            <div onclick="renameItem()">Rename</div>
-            <div onclick="deleteItem()">Delete</div>
-            <hr>
-            <div onclick="zipItem()">Compress 🗜️</div>
-            <div onclick="moveTo()">Move to…</div>
-            <div onclick="toggleFavourite('${item.name}')">⭐ Favourite</div>
-        `;
+        appendContextAction("Copy", () => copyItem());
+        appendContextAction("Cut", () => cutItem());
+        appendContextAction("Paste", () => pasteItem(), clipboardHasItems());
+        appendContextAction("Rename", () => renameItem());
+        appendContextAction("Delete", () => deleteItem());
+        appendContextSeparator();
+        appendContextAction("Compress 🗜️", () => zipItem());
+        appendContextAction("Move to…", () => moveTo());
+        appendContextAction("⭐ Favourite", () => toggleFavourite(item.name));
     } else if (inRecycle) {
-        html += `
-            <div onclick="restoreFromRecycle('${item.name}')">Restore</div>
-        `;
+        appendContextAction("Restore", () => restoreFromRecycle(item.name));
     }
 
-    ctxMenu.innerHTML = html;
-    ctxMenu.style.left = e.pageX + "px";
-    ctxMenu.style.top  = e.pageY + "px";
-    ctxMenu.style.display = "block";
+    positionContextMenu(e);
 }
 
 
 function showEmptyContextMenu(e) {
     e.preventDefault();
+    loadClipboard();
 
     // Why: Prevent creating files in restricted top-levels.
     if (currentPath === "" || currentPath === "Private" || currentPath === "Departments") {
         return;
     }
 
-    ctxMenu.innerHTML = `
-        <div onclick="createFolder()">Create New Folder 📁</div>
-        <div onclick="triggerUpload()">Upload Files ⬆️</div>
-        <div onclick="downloadZip()">Download as ZIP 🗜️</div>
-        <div onclick="pasteItem()">Paste 📋</div>
-        <div onclick="refreshFolder()">Refresh 🔄</div>
-        <hr>
-        <div onclick="createYearMonthDay()">Create Year/Month/Day Structure 🗓️</div>
-        <div onclick="createYear()">Create Year 🗓️</div>
-        <div onclick="createMonths()">Create Months 🗓️</div>
-        <div onclick="createDays()">Create Days 📅</div>
-    `;
+    clearContextMenu();
+    appendContextAction("Create New Folder 📁", () => createFolder());
+    appendContextAction("Upload Files ⬆️", () => triggerUpload());
+    appendContextAction("Download as ZIP 🗜️", () => downloadZip());
+    appendContextAction("Paste 📋", () => pasteItem(), clipboardHasItems());
+    appendContextAction("Refresh 🔄", () => refreshFolder());
+    appendContextSeparator();
+    appendContextAction("Create Year/Month/Day Structure 🗓️", () => createYearMonthDay());
+    appendContextAction("Create Year 🗓️", () => createYear());
+    appendContextAction("Create Months 🗓️", () => createMonths());
+    appendContextAction("Create Days 📅", () => createDays());
 
-    ctxMenu.style.left = e.pageX + "px";
-    ctxMenu.style.top  = e.pageY + "px";
-    ctxMenu.style.display = "block";
+    positionContextMenu(e);
 }
 
 
@@ -728,55 +799,64 @@ function renameItem() {
 }
 
 function copyItem() {
-    if (!contextItem) return;
+    const items = getClipboardItemNames();
+    if (!items.length) {
+        return;
+    }
     clipboard.type = "copy";
     clipboard.path = currentPath;
-    clipboard.items = [contextItem.name];
+    clipboard.items = items;
+    saveClipboard();
 }
 
 function cutItem() {
-    if (!contextItem) return;
+    const items = getClipboardItemNames();
+    if (!items.length) {
+        return;
+    }
     clipboard.type = "move";
     clipboard.path = currentPath;
-    clipboard.items = [contextItem.name];
+    clipboard.items = items;
+    saveClipboard();
 }
 
 function pasteItem() {
-    if (!clipboard.items.length) {
-        alert("Clipboard is empty.");
+    loadClipboard();
+    if (!clipboard.items.length || !clipboard.type) {
+        alert("Clipboard is empty. Right-click an item, choose Copy or Cut, open the destination folder, then choose Paste.");
         return;
     }
 
-    const item = clipboard.items[0];
+    const items = clipboard.items.slice();
+    const srcPath = clipboard.path;
+    const action = clipboard.type;
 
-    if (clipboard.type === "copy") {
-        api("copy", {
-            item,
-            src_path: clipboard.path,
-            dest: currentPath
-        }).then(res => {
-            if (res.ok) {
-                loadFolder(currentPath);
-            } else {
-                alert(res.error || "Copy failed.");
+    const runNext = (index) => {
+        if (index >= items.length) {
+            if (action === "move") {
+                clearClipboard();
             }
-        });
-    } else if (clipboard.type === "move") {
-        api("move", { 
+            loadFolder(currentPath);
+            return;
+        }
+
+        const item = items[index];
+        const payload = {
             item,
-            src_path: clipboard.path,
-            dest: currentPath
-        }).then(res => {
-            if (res.ok) {
-                clipboard.items = [];
-                clipboard.path = null;
-                clipboard.type = null;
-                loadFolder(currentPath);
-            } else {
-                alert(res.error || "Move failed.");
+            src_path: srcPath,
+            dest: currentPath,
+        };
+        const apiAction = action === "copy" ? "copy" : "move";
+        api(apiAction, payload).then(res => {
+            if (!res.ok) {
+                alert(res.error || (action === "copy" ? "Copy failed." : "Move failed."));
+                return;
             }
+            runNext(index + 1);
         });
-    }
+    };
+
+    runNext(0);
 }
 
 
@@ -785,7 +865,8 @@ function moveTo() {
     clipboard.type = "move";
     clipboard.path = currentPath;
     clipboard.items = [contextItem.name];
-    alert("Now navigate to the destination folder and use PASTE from the context menu.");
+    saveClipboard();
+    alert("Now navigate to the destination folder and use Paste from the context menu.");
 }
 
 function zipItem() {
@@ -949,6 +1030,27 @@ function loadFolder(path) {
 }
 
 /* INIT */
+document.addEventListener("keydown", (e) => {
+    if (e.target && e.target.closest("input, textarea")) {
+        return;
+    }
+    if (!e.ctrlKey) {
+        return;
+    }
+    const key = (e.key || "").toLowerCase();
+    if (key === "c") {
+        e.preventDefault();
+        copyItem();
+    } else if (key === "x") {
+        e.preventDefault();
+        cutItem();
+    } else if (key === "v") {
+        e.preventDefault();
+        pasteItem();
+    }
+});
+
+loadClipboard();
 currentPath = "";
 loadFolder("");
 </script>
