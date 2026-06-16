@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 // Why: Programmatic clients need a lightweight JSON probe without loading the HTML catalogue.
 if (isset($_GET['rate_limit']) && (string)$_GET['rate_limit'] === '1') {
+    if (!defined('ITM_API_RATE_LIMIT_PROBE')) {
+        define('ITM_API_RATE_LIMIT_PROBE', true);
+    }
     require_once dirname(__DIR__) . '/config/config.php';
     if (!isset($conn) || !($conn instanceof mysqli)) {
         header('Content-Type: application/json; charset=utf-8');
@@ -659,7 +662,7 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
             <?php endforeach; ?>
             </tbody>
         </table>
-        <p>Send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. Browser-friendly probe: <code>scripts/api.php?rate_limit=1&amp;api_key=&lt;key&gt;</code>. In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
+        <p>Send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. Browser-friendly probe: <code>scripts/api.php?rate_limit=1&amp;api_key=&lt;key&gt;</code> — returns JSON without a login session (<code>ITM_API_RATE_LIMIT_PROBE</code> skips web auth in <code>config/config.php</code>). In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
 <pre><code># Probe current quota (does not consume a request)
 curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&lt;api_key&gt;"
 

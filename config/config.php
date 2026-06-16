@@ -323,6 +323,11 @@ $current_file = basename($_SERVER['PHP_SELF']);
 // Why: CLI maintenance scripts define ITM_CLI_SCRIPT before config so they can use $conn without a web session.
 $itmSkipWebAuth = PHP_SAPI === 'cli' && defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT;
 
+// Why: scripts/api.php?rate_limit=1 validates X-API-Key / api_key itself and must not redirect to login HTML.
+if (defined('ITM_API_RATE_LIMIT_PROBE') && ITM_API_RATE_LIMIT_PROBE) {
+    $itmSkipWebAuth = true;
+}
+
 // Browser: never bypass auth for every ITM_CLI_SCRIPT file — only an explicit allowlist (HTTP QA runner).
 if (
     !$itmSkipWebAuth

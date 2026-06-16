@@ -11,6 +11,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **No PDO**: The system strictly uses `mysqli`.
 - **Zero Dependencies**: Do not introduce external packages (Composer/NPM).
 - **Administrator helpers**: `itm_is_admin()` checks role/username; `itm_require_admin()` enforces admin access (HTTP 403 on POST, redirect on GET).
+- **API rate-limit probe auth bypass**: `scripts/api.php?rate_limit=1` defines `ITM_API_RATE_LIMIT_PROBE` before loading `config.php`, which sets `$itmSkipWebAuth` so programmatic clients receive JSON instead of a login redirect. The probe still validates `X-API-Key` / `api_key` via `itm_api_handle_rate_limit_probe_request()`.
 
 ## 7. File Structure
 - **config.php** — the core configuration file required by every entry point.
