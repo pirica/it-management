@@ -117,7 +117,7 @@ Legacy installs may still have `Private/{username}_{linked_user_id}/profile/`; `
 
 `modules/explorer/file.php` allows any authenticated company user to read `Private/*/profile/` assets (employee profile thumbnails). Other `Private/` content remains owner-scoped.
 
-Explorer sidebar **Profile Storage** opens this folder for the logged-in user. The Birthdays module displays thumbnails via `emp_profile_photo_url()` → `itm_files_serve_url()`.
+Explorer sidebar **Profile Storage** opens this folder for the logged-in user. The **Birthdays** module (`modules/birthdays/index.php`) is read-only — no uploads — but displays profile thumbnails via `emp_profile_photo_url()` → `itm_files_serve_url()`. See **§13 Birthdays**.
 
 **Runtime tenant trees** under `files/{company_id}/**` must **not** be committed to git — helpers create and harden them on deploy.
 
@@ -158,11 +158,11 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 - **Implementation:** Upgraded to include a drag-and-drop area for `.ics` files (via `js/itm-upload-helper.js`). Works independently of theme initialization.
 
 ### 3. Employees
-- **Paths:** `modules/employees/index.php` (import); `modules/employees/create.php`, `modules/employees/edit.php` (profile photo); `modules/employees/includes/profile_fields.php` (shared form UI)
+- **Paths:** `modules/employees/index.php` (import); `modules/employees/create.php`, `modules/employees/edit.php` (profile photo); `modules/employees/includes/profile_fields.php` (photo UI); `modules/employees/includes/profile_birthday_fields.php` (`birthday`, `hide_year`)
 - **Storage (import):** Client-side only — Excel (.xlsx, .xls) or CSV parsed in the browser; no server upload path for import files.
 - **Storage (profile photo):** `files/{company_id}/Private/{username}_{employee_id}/profile/` (`deny_http` chain) — see **§11 Employee profile photos** below.
-- **Description:** Index supports bulk employee import via drag-and-drop. Create/edit support profile photo (PNG/JPG), `birthday`, and `hide_year`. Photo upload requires linked `username` and `user_id`; filenames are `{username}_{user_id}.png` or `.jpg` only.
-- **Implementation:** Import uses `.itm-photo-upload-target` via `js/itm-upload-helper.js`. Profile photo uses the same drag-and-drop pattern as private contacts; upload and serve logic live in `includes/employee_profile_photo.php`.
+- **Description:** Index supports bulk employee import via drag-and-drop. Create/edit support profile photo (PNG/JPG), `birthday`, and `hide_year`. Photo upload requires employee `username` and row `id`; filenames are `{username}_{employee_id}.png` or `.jpg`.
+- **Implementation:** Import uses `.itm-photo-upload-target` via `js/itm-upload-helper.js`. Profile photo uses `.itm-employee-photo-target` and `js/itm-upload-helper.js`; upload and serve logic live in `includes/employee_profile_photo.php`.
 
 ### 4. Equipment
 - **Path:** `modules/equipment/create.php` (and `edit.php` via inclusion)
@@ -218,6 +218,12 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 - **Storage:** `files/{company_id}/Private/{username}_{user_id}/notes/` (`deny_http` chain)
 - **Description:** Image attachments on notes.
 - **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; previews/downloads use `itm_files_serve_url()`.
+
+### 13. Birthdays
+- **Path:** `modules/birthdays/index.php`
+- **Storage:** None — read-only monthly list; no file uploads.
+- **Description:** Lists employees with a `birthday` in the selected month. Name column shows optional profile thumbnails (same storage as **§11 Employee profile photos**). Day column uses `emp_format_birthday_day_only()` (day of month without leading zeros). Search queries all visible columns: name, day, and department code.
+- **Implementation:** Thumbnails served via `emp_profile_photo_url()` → `itm_files_serve_url()` → `modules/explorer/file.php`. Month filter and **Search (all fields)** on the filter card; table export controls follow standard `table-tools.js` behaviour where enabled.
 
 ## Folder creation map (code references)
 
