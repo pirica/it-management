@@ -66,10 +66,34 @@ if (strpos($php_bin, 'php-cgi') !== false) {
 
 // Why: Explicitly reference the configuration file so PHPUnit can find the tests regardless of the current working directory.
 $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
+$coverage_html_dir = ROOT_PATH . 'phpunit/coverage/html';
+
+// Optional HTML coverage: CLI --coverage, browser ?coverage=1, or ITM_COVERAGE=1.
+$want_coverage = false;
+if (PHP_SAPI === 'cli') {
+    global $argv;
+    $want_coverage = in_array('--coverage', $argv ?? [], true)
+        || (getenv('ITM_COVERAGE') === '1');
+} else {
+    $want_coverage = (($_GET['coverage'] ?? '') === '1')
+        || (getenv('ITM_COVERAGE') === '1');
+}
 
 // Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
 // We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
-$command = escapeshellarg($php_bin) . " " . escapeshellarg($phpunit_bin) . " -c " . escapeshellarg($phpunit_xml) . " 2>&1";
+$command = escapeshellarg($php_bin) . ' ' . escapeshellarg($phpunit_bin)
+    . ' -c ' . escapeshellarg($phpunit_xml)
+    . ' --verbose';
+if ($want_coverage) {
+    if (!is_dir($coverage_html_dir)) {
+        mkdir($coverage_html_dir, 0777, true);
+    }
+    $command .= ' --coverage-html ' . escapeshellarg($coverage_html_dir);
+} else {
+    // Why: phpunit.xml defines <coverage>; skip it unless explicitly requested.
+    $command .= ' --no-coverage';
+}
+$command .= ' 2>&1';
 
 if (PHP_SAPI === 'cli') {
     echo "Running command: $command\n\n";
@@ -80,6 +104,10 @@ passthru($command, $return_var);
 
 if (PHP_SAPI !== 'cli') {
     echo "</pre>";
+    if ($want_coverage && is_file($coverage_html_dir . '/index.html')) {
+        $coverageWebPath = '../phpunit/coverage/html/index.html';
+        echo "<p>HTML coverage report: <a href=\"" . htmlspecialchars($coverageWebPath, ENT_QUOTES, 'UTF-8') . "\">phpunit/coverage/html/index.html</a></p>";
+    }
     if ($return_var === 0) {
         echo "<p style='color: green; font-weight: bold;'>✅ All tests passed!</p>";
     } else {

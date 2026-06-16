@@ -293,10 +293,11 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="run_tests.php">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Executes the PHPUnit test suite located in <code>phpunit/tests/Unit/</code> using <code>phpunit/phpunit.phar</code>. Cross-platform support for database-less execution via <code>ITM_SKIP_DB_TESTS=1</code>.</td>
+                    <td>Executes the PHPUnit test suite located in <code>phpunit/tests/Unit/</code> using <code>phpunit/phpunit.phar</code>. Verbose test names via <code>verbose="true"</code> / <code>--verbose</code>. Optional HTML coverage via <code>--coverage</code> (CLI), <code>?coverage=1</code> (browser), or <code>ITM_COVERAGE=1</code> — report at <code>phpunit/coverage/html/index.html</code> (requires Xdebug or PCOV). Cross-platform database-less execution via <code>ITM_SKIP_DB_TESTS=1</code>.</td>
                     <td>
                         Open in browser (requires <code>?token=...</code> if not local) to see styled output.<br>
-                        CLI: <code>php scripts/run_tests.php</code>
+                        CLI: <code>php scripts/run_tests.php</code><br>
+                        CLI with coverage: <code>php scripts/run_tests.php --coverage</code>
                     </td>
                 </tr>
                 <tr>
