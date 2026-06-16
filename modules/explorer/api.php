@@ -18,7 +18,7 @@ require_once dirname(dirname(__DIR__)) . '/config/config.php';
  */
 if (!function_exists('get_full_path')) {
 function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $username) {
-    $relative_path = trim((string)$relative_path, '/');
+    $relative_path = trim(str_replace('\\', '/', (string)$relative_path), '/');
 
     // Why: Block directory traversal attempts.
     if (strpos($relative_path, '..') !== false) return null;
@@ -232,10 +232,6 @@ case "list":
     if (is_dir($dir)) {
         foreach (scandir($dir) as $f) {
             if ($f === "." || $f === ".." || $f === "Trash" || $f === "Recycle") continue;
-
-            // Why: Access control for listing top-level folders.
-            if ($path === 'Private' && $f !== $user_private_dir) continue;
-            if ($path === 'Departments' && $f !== (string)$dept_id) continue;
 
             $full = $dir . "/" . $f;
             $type = is_dir($full) ? "folder" : "file";
@@ -651,7 +647,11 @@ case "listRecycle":
     break;
 
 case "restore":
-    $item = $_POST['item'] ?? '';
+    $item = trim(str_replace('\\', '/', (string)($_POST['item'] ?? '')), '/');
+    if ($item === '' || strpos($item, '..') !== false) {
+        echo json_encode(["ok" => 0, "error" => "Invalid item path."]);
+        break;
+    }
 
     // Why: Ensure user has permission to the item being restored.
     if (get_full_path($trash_root, $item, $user_id, $dept_id, $username) === null) {
@@ -676,7 +676,24 @@ case "restore":
     break;
 
 case "emptyRecycle":
-    rrmdir($trash_root);
+    if (is_dir($trash_root)) {
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($trash_root, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($it as $file) {
+            $rel = substr($file->getPathname(), strlen($trash_root) + 1);
+            $safe_rel = str_replace('\\', '/', $rel);
+            if (get_full_path($trash_root, $safe_rel, $user_id, $dept_id, $username) === null) {
+                continue;
+            }
+            if ($file->isDir()) {
+                @rmdir($file->getPathname());
+            } else {
+                @unlink($file->getPathname());
+            }
+        }
+    }
     explorer_ensure_dir($trash_root);
     echo json_encode(["ok" => 1]);
     break;
