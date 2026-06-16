@@ -159,7 +159,6 @@ if ($want_coverage) {
     }
     $command .= ' --coverage-html ' . escapeshellarg($coverage_html_dir);
 } else {
-    // Why: phpunit.xml defines <coverage>; skip it unless explicitly requested.
     $command .= ' --no-coverage';
 }
 $command .= ' 2>&1';

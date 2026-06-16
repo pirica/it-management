@@ -10,7 +10,7 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 ## 7. File Structure
 - **Unit/** — contains the actual test files.
 - **bootstrap.php** — initializes the test environment (`ROOT_PATH` resolves two levels up to the repository root).
-- **../phpunit.xml** — PHPUnit configuration (sibling under `phpunit/`): verbose output and `<coverage>` HTML report target.
+- **../phpunit.xml** — PHPUnit configuration (sibling under `phpunit/`): verbose output, `<coverage>` HTML report target.
 - **../phpunit.phar** — PHPUnit PHAR runner (sibling under `phpunit/`).
 
 ## 11. Examples of Safe Code Patterns
