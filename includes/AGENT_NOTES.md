@@ -24,7 +24,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **switch_port_api_helpers.php** — shared lookup/VLAN helpers for port AJAX endpoints (avoids redeclare fatals during coverage).
 - **itm_select_options_policy.php** — whitelist and blocked-table policy for `modules/select_options_api.php` quick-add inserts.
 - **itm_it_location_linked_floor_plans.php** — IT Locations view partial; skips HTML when `$conn` / PHPUnit context missing.
-- **employee_profile_photo.php** — employee profile photo paths under `files/{company_id}/Private/{username}_{user_id}/profile/`; upload (`emp_profile_photo_store_upload`), serve URL (`emp_profile_photo_url`), birthday display (`emp_format_birthday_display`). Used by `modules/employees/` and `modules/birthdays/`.
+- **employee_profile_photo.php** — employee profile photo paths under `files/{company_id}/Private/{username}_{employee_id}/profile/`; upload (`emp_profile_photo_store_upload`), serve URL (`emp_profile_photo_url`), birthday display (`emp_format_birthday_display`). Used by `modules/employees/` and `modules/birthdays/`.
 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
