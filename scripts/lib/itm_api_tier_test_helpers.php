@@ -95,7 +95,13 @@ function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array
     $tier = function_exists('itm_api_normalize_tier')
         ? itm_api_normalize_tier($tier)
         : trim((string)$tier);
-    $apiKey = (string)($overrides['api_key'] ?? ('apitest-' . strtolower($tier) . '-' . bin2hex(random_bytes(8))));
+    if (isset($overrides['api_key'])) {
+        $apiKey = trim((string)$overrides['api_key']);
+    } elseif (function_exists('itm_api_generate_key')) {
+        $apiKey = itm_api_generate_key();
+    } else {
+        $apiKey = 'apitest-' . strtolower($tier) . '-' . bin2hex(random_bytes(8));
+    }
     $rateLimitEnabled = isset($overrides['rate_limit_enabled']) ? (int)$overrides['rate_limit_enabled'] : 1;
     $windowStart = isset($overrides['rate_limit_window_start']) ? (int)$overrides['rate_limit_window_start'] : time();
     $requestCount = isset($overrides['rate_limit_request_count']) ? (int)$overrides['rate_limit_request_count'] : 0;
@@ -176,10 +182,13 @@ function itm_apitest_reload_configuration($conn, $configId, $companyId, $userId)
     return is_array($row) ? $row : null;
 }
 
-function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
+/**
+ * Builds the browser/curl URL for scripts/api.php rate-limit probe with embedded api_key.
+ */
+function itm_apitest_rate_limit_probe_url($apiKey, $baseUrl = '') {
     $apiKey = trim((string)$apiKey);
     if ($apiKey === '') {
-        return null;
+        return '';
     }
 
     $baseUrl = rtrim(trim((string)$baseUrl), '/');
@@ -187,18 +196,62 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
         $baseUrl = 'http://localhost/it-management';
     }
 
-    $url = $baseUrl . '/scripts/api.php?rate_limit=1';
-    if (!function_exists('curl_init')) {
+    return $baseUrl . '/scripts/api.php?rate_limit=1&api_key=' . rawurlencode($apiKey);
+}
+
+function itm_apitest_print_probe_links($apiKey, $tierLabel = '') {
+    $url = itm_apitest_rate_limit_probe_url($apiKey);
+    if ($url === '') {
+        return;
+    }
+
+    $prefix = $tierLabel !== '' ? $tierLabel . ' ' : '';
+    itm_apitest_output_line('[INFO] Auto-generated ' . $prefix . 'API key: ' . $apiKey, 'info');
+    itm_apitest_output_line('[INFO] Browser probe URL: ' . $url, 'info');
+    itm_apitest_output_line('[INFO] Key stays in ui_configuration until the next apitest run for this slot.', 'info');
+}
+
+function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
+    $apiKey = trim((string)$apiKey);
+    if ($apiKey === '') {
         return null;
     }
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: ' . $apiKey]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    $body = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    $url = itm_apitest_rate_limit_probe_url($apiKey, $baseUrl);
+    if ($url === '') {
+        return null;
+    }
+
+    $body = null;
+    $httpCode = 0;
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: ' . $apiKey, 'Accept: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $body = curl_exec($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    }
+
+    if (!is_string($body) || $body === '') {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => "X-API-Key: {$apiKey}\r\nAccept: application/json\r\n",
+                'timeout' => 10,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $fallbackBody = @file_get_contents($url, false, $context);
+        if (is_string($fallbackBody) && $fallbackBody !== '') {
+            $body = $fallbackBody;
+            if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', (string)$http_response_header[0], $matches)) {
+                $httpCode = (int)$matches[1];
+            }
+        }
+    }
 
     if (!is_string($body) || $body === '') {
         return null;
@@ -206,9 +259,15 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
 
     $decoded = json_decode($body, true);
     if (!is_array($decoded)) {
-        return null;
+        return [
+            '_http_code' => $httpCode,
+            '_raw_body' => substr(trim($body), 0, 240),
+            'ok' => false,
+            'error' => 'Non-JSON HTTP response (is Apache serving /it-management?)',
+        ];
     }
 
     $decoded['_http_code'] = $httpCode;
+    $decoded['_probe_url'] = $url;
     return $decoded;
 }

@@ -187,7 +187,9 @@ Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tabl
 | `php scripts/apitest_tier_free.php` | Disposable `ui_configuration` row on **Free** tier: status is unlimited and repeated `itm_api_consume_rate_limit()` calls stay allowed. Optional HTTP probe via `scripts/api.php?rate_limit=1`. |
 | `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. Optional HTTP probe. |
 
-Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, seed/cleanup, optional curl probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, `itm_api_generate_key()` seed, browser URL with `api_key` query param, optional HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+
+Each run prints a **Browser probe URL** such as `http://localhost/it-management/scripts/api.php?rate_limit=1&api_key=…`. The disposable row remains until the next apitest run for that slot.
 
 **Verify after rate-limit helper or tier cap changes:**
 
