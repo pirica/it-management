@@ -53,16 +53,16 @@ class ExplorerTest extends TestCase
         $this->assertNotNull(get_full_path($this->storageRoot, 'Common', $this->userId, $this->deptId, $this->username));
         $this->assertNotNull(get_full_path($this->storageRoot, 'Common/sub', $this->userId, $this->deptId, $this->username));
 
-        // Private - Own
-        $this->assertNotNull(get_full_path($this->storageRoot, 'Private', $this->userId, $this->deptId, $this->username));
+        // Private - Own (root is blocked, subfolder is allowed)
+        $this->assertNull(get_full_path($this->storageRoot, 'Private', $this->userId, $this->deptId, $this->username));
         $this->assertNotNull(get_full_path($this->storageRoot, "Private/$userPrivateDir", $this->userId, $this->deptId, $this->username));
         $this->assertNotNull(get_full_path($this->storageRoot, "Private/$userPrivateDir/file.txt", $this->userId, $this->deptId, $this->username));
 
         // Private - Other (blocked)
         $this->assertNull(get_full_path($this->storageRoot, 'Private/otheruser_999', $this->userId, $this->deptId, $this->username));
 
-        // Departments - Own
-        $this->assertNotNull(get_full_path($this->storageRoot, 'Departments', $this->userId, $this->deptId, $this->username));
+        // Departments - Own (root is blocked, subfolder is allowed)
+        $this->assertNull(get_full_path($this->storageRoot, 'Departments', $this->userId, $this->deptId, $this->username));
         $this->assertNotNull(get_full_path($this->storageRoot, "Departments/{$this->deptId}", $this->userId, $this->deptId, $this->username));
 
         // Departments - Other (blocked)
