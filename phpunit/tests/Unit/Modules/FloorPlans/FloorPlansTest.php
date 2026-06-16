@@ -26,8 +26,46 @@ class FloorPlansTest extends TestCase
         if ($row = mysqli_fetch_assoc($res)) {
             return $row['id'];
         }
-        mysqli_query($this->conn, "INSERT INTO `floor_plan_folders` (company_id, name) VALUES ({$this->companyId}, 'Test Folder')");
-        return mysqli_insert_id($this->conn);
+        $stmt = mysqli_prepare($this->conn, 'INSERT INTO `floor_plan_folders` (company_id, parent_folder_id, name, active) VALUES (?, NULL, ?, 1)');
+        $this->assertNotFalse($stmt, mysqli_error($this->conn));
+        $name = 'Test Folder ' . uniqid();
+        mysqli_stmt_bind_param($stmt, 'is', $this->companyId, $name);
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $id = (int)mysqli_insert_id($this->conn);
+        mysqli_stmt_close($stmt);
+        return $id;
+    }
+
+    public function testFolderCreateUsesParentFolderIdColumn()
+    {
+        require_once __DIR__ . '/../../../../../modules/floor_plans/gallery_helpers.php';
+
+        $suffix = uniqid('fp_folder_');
+        $rootName = 'PHPUnit Root ' . $suffix;
+        $childName = 'PHPUnit Child ' . $suffix;
+
+        $rootStmt = mysqli_prepare($this->conn, 'INSERT INTO `floor_plan_folders` (company_id, parent_folder_id, name, active) VALUES (?, NULL, ?, 1)');
+        $this->assertNotFalse($rootStmt, mysqli_error($this->conn));
+        mysqli_stmt_bind_param($rootStmt, 'is', $this->companyId, $rootName);
+        $this->assertTrue(mysqli_stmt_execute($rootStmt), mysqli_stmt_error($rootStmt));
+        $rootId = (int)mysqli_insert_id($this->conn);
+        mysqli_stmt_close($rootStmt);
+        $this->assertGreaterThan(0, $rootId);
+
+        $childStmt = mysqli_prepare($this->conn, 'INSERT INTO `floor_plan_folders` (company_id, parent_folder_id, name, active) VALUES (?, ?, ?, 1)');
+        $this->assertNotFalse($childStmt, mysqli_error($this->conn));
+        mysqli_stmt_bind_param($childStmt, 'iis', $this->companyId, $rootId, $childName);
+        $this->assertTrue(mysqli_stmt_execute($childStmt), mysqli_stmt_error($childStmt));
+        $childId = (int)mysqli_insert_id($this->conn);
+        mysqli_stmt_close($childStmt);
+        $this->assertGreaterThan(0, $childId);
+
+        $folders = fp_fetch_folders($this->conn, $this->companyId);
+        $childRow = fp_folder_row_by_id($folders, $childId);
+        $this->assertNotNull($childRow);
+        $this->assertSame($rootId, fp_folder_parent_id_from_row($childRow));
+
+        mysqli_query($this->conn, 'DELETE FROM `floor_plan_folders` WHERE id IN (' . (int)$childId . ', ' . (int)$rootId . ') AND company_id = ' . (int)$this->companyId);
     }
 
     public function testCRUD()
