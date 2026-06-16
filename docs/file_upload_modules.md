@@ -113,7 +113,7 @@ For **employee profile photos** (`files/{company_id}/Private/{username}_{user_id
 
 - `files/{company_id}/Private/{username}_{user_id}/profile/`
 
-Explorer sidebar **Profile Storage** opens this folder for the logged-in user. The Birthdays module displays thumbnails via `emp_profile_photo_url()` → `itm_files_serve_url()`.
+Open Explorer from the main sidebar (`🌐 Explorer` in Employee section) and navigate to `Private/{username}_{user_id}/profile`. The Birthdays module displays thumbnails via `emp_profile_photo_url()` → `itm_files_serve_url()`.
 
 **Runtime tenant trees** under `files/{company_id}/**` must **not** be committed to git — helpers create and harden them on deploy.
 
