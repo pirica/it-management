@@ -11,7 +11,7 @@ if (!function_exists('str_starts_with')) {
 
 // Logic copied from api.php get_full_path
 function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_id, $username) {
-    $relative_path = trim((string)$relative_path, '/');
+    $relative_path = trim(str_replace('\\', '/', (string)$relative_path), '/');
 
     if (strpos($relative_path, '..') !== false) return null;
 
@@ -57,6 +57,7 @@ $test_cases = [
     ['Private/' . $user_private_dir, 10, true, 'Own private folder'],
     ['Private/' . $user_private_dir . '/sub', 10, true, 'Subfolder in own private'],
     ['Private/other_456', 10, false, 'Other user private folder'],
+    ['Private\\other_456\\secret', 10, false, 'Backslash other private path'],
     ['Departments', 10, false, 'Departments root'],
     ['Departments/' . $dept_id, 10, true, 'Own department folder'],
     ['Departments/20', 10, false, 'Other department folder'],

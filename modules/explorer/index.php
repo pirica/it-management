@@ -41,6 +41,20 @@ $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
+// Why: Department scope for sidebar and folder navigation (Private/Departments roots are API-blocked).
+$dept_id = 0;
+$dept_stmt = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE user_id = ? AND company_id = ? LIMIT 1");
+if ($dept_stmt) {
+    mysqli_stmt_bind_param($dept_stmt, "ii", $user_id, $company_id);
+    mysqli_stmt_execute($dept_stmt);
+    $dept_res = mysqli_stmt_get_result($dept_stmt);
+    if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
+        $dept_id = (int)$dept_row['department_id'];
+    }
+    mysqli_stmt_close($dept_stmt);
+}
+$user_dept_id_json = json_encode($dept_id, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
 // Why: Ensure the root /files/{company_id} directory exists with deny_http on every segment.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 itm_ensure_files_storage_directory($storage_root);
@@ -276,7 +290,24 @@ let clipboard = { type: null, path: null, items: [] };
 let contextItem = null;
 let inRecycle = false;
 let userPrivateDir = <?= $user_private_dir_json ?>;
+let userDeptId = <?= $user_dept_id_json ?>;
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
+
+/* Why: API blocks Private/Departments roots; UI must open the user's scoped subfolder instead. */
+function resolveScopedFolderPath(path) {
+    const normalized = String(path || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    if (normalized === "Private") {
+        return "Private/" + userPrivateDir;
+    }
+    if (normalized === "Departments") {
+        if (userDeptId <= 0) {
+            alert("You are not assigned to a department. Department files are unavailable.");
+            return null;
+        }
+        return "Departments/" + userDeptId;
+    }
+    return normalized;
+}
 
 const sidebar   = document.getElementById("sidebar");
 const btnToggle = document.getElementById("sidebarToggle");
@@ -526,7 +557,10 @@ function toggleFavourite(name) {
 /* FILE OPS */
 function openItem(name, type) {
     if (type === "folder") {
-        currentPath = currentPath ? currentPath + "/" + name : name;
+        let nextPath = currentPath ? currentPath + "/" + name : name;
+        nextPath = resolveScopedFolderPath(nextPath);
+        if (nextPath === null) return;
+        currentPath = nextPath;
         tabs[activeTab].path = currentPath;
         tabs[activeTab].title = name;
         inRecycle = false;
@@ -767,8 +801,11 @@ function restoreFromRecycle(name) {
 /* LOAD FOLDER */
 function loadFolder(path) {
     inRecycle = false;
-    currentPath = path;
-    api("list", { path }).then(res => {
+    const scopedPath = resolveScopedFolderPath(path);
+    if (scopedPath === null) return;
+    currentPath = scopedPath;
+    tabs[activeTab].path = currentPath;
+    api("list", { path: currentPath }).then(res => {
         renderIcons(res.items || []);
         renderTabs();
         renderBreadcrumbs();
