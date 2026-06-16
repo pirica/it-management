@@ -513,6 +513,62 @@ function itmDocTodoAjaxActions(): array
     ];
 }
 
+/**
+ * Why: api-examples/*.php is the canonical integration sample set; scan every file so docs never omit a script.
+ */
+function itmDocCollectApiExamples(string $rootPath): array
+{
+    $categoryByFile = [
+        'authenticate.php' => 'Authentication',
+        'sessionCookie.php' => 'Authentication',
+        'csrfToken.php' => 'Authentication',
+        'equipment.php' => 'JSON import',
+        'employees.php' => 'JSON import',
+        'tickets.php' => 'JSON import',
+        'catalogs.php' => 'JSON import',
+        'events.php' => 'JSON import',
+        'catalog_delete.php' => 'CRUD',
+        'equipment_edit.php' => 'CRUD',
+        'ticket_archive.php' => 'Action (form POST)',
+        'employees_singleview.php' => 'List / read (HTML)',
+        'tickets_listall_open.php' => 'List / read (HTML)',
+        'catalogs_listall_active.php' => 'List / read (HTML)',
+    ];
+
+    $examples = [];
+    $pattern = rtrim($rootPath, '/\\') . '/api-examples/*.php';
+    foreach (glob($pattern) ?: [] as $filePath) {
+        $basename = basename($filePath);
+        $content = @file_get_contents($filePath);
+        $title = $basename;
+        $purpose = 'Standalone CLI/browser integration example.';
+
+        if (is_string($content)) {
+            if (preg_match('/API Example:\s*([^\n\*]+)/', $content, $titleMatch)) {
+                $title = trim($titleMatch[1]);
+            }
+            if (preg_match('/API Example:[^\n\*]+\n(?: \*[^\n]*\n)*? \*\s*\n \*\s*([^\n\*]+)/', $content, $purposeMatch)) {
+                $purpose = trim($purposeMatch[1]);
+            } elseif (preg_match('/API Example:[^\n\*]+\n \*\s*\n \*\s*([^\n\*]+)/', $content, $purposeMatch)) {
+                $purpose = trim($purposeMatch[1]);
+            }
+        }
+
+        $examples[] = [
+            'file' => 'api-examples/' . $basename,
+            'title' => $title,
+            'category' => $categoryByFile[$basename] ?? 'Integration',
+            'purpose' => $purpose,
+        ];
+    }
+
+    usort($examples, static function (array $a, array $b): int {
+        return strcmp((string)$a['file'], (string)$b['file']);
+    });
+
+    return $examples;
+}
+
 $moduleImportEndpoints = itmDocCollectModuleImportEndpoints($itmRootPath);
 $modulesWithoutImportEndpoint = itmDocCollectModulesWithoutImportEndpoint($itmRootPath, $moduleImportEndpoints);
 $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
@@ -522,6 +578,7 @@ $projectJsonEndpoints = itmDocProjectJsonEndpoints();
 $passwordsApiActions = itmDocPasswordsApiActions();
 $notesAjaxActions = itmDocNotesAjaxActions();
 $todoAjaxActions = itmDocTodoAjaxActions();
+$apiExamples = itmDocCollectApiExamples($itmRootPath);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -765,12 +822,21 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>API Examples (<code>api-examples/</code>)</h2>
-        <ul>
-            <li><code>api-examples/authenticate.php</code> — login and CSRF acquisition.</li>
-            <li><code>api-examples/equipment.php</code>, <code>employees.php</code>, <code>tickets.php</code>, <code>catalogs.php</code>, <code>events.php</code> — <code>import_excel_rows</code> samples.</li>
-            <li><code>api-examples/ticket_archive.php</code> — ticket archive form POST (HTML redirect, not JSON).</li>
-            <li><code>api-examples/catalog_delete.php</code>, <code>equipment_edit.php</code> — CRUD examples.</li>
-        </ul>
+        <p>Standalone PHP scripts demonstrating session authentication, CSRF, JSON imports, CRUD, and HTML list parsing. Detected <strong><?= (int)count($apiExamples); ?></strong> example file(s).</p>
+        <table>
+            <thead><tr><th>File</th><th>Title</th><th>Category</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($apiExamples as $example): ?>
+                <tr>
+                    <td><code><?= itmDocEscape((string)$example['file']); ?></code></td>
+                    <td><?= itmDocEscape((string)$example['title']); ?></td>
+                    <td><?= itmDocEscape((string)$example['category']); ?></td>
+                    <td><?= itmDocEscape((string)$example['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="muted">Run from CLI: <code>php api-examples/authenticate.php</code> (after setting base URL and credentials in the script). Directory placeholder: <code>api-examples/index.html</code>.</p>
     </div>
 
     <div class="card">

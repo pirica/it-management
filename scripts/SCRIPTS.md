@@ -167,6 +167,7 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 | `itmDocCollectIdfApiEndpoints()` | List IDF API files with purpose blurbs |
 | `itmDocProjectJsonEndpoints()` | Curated non-import AJAX endpoints |
 | `itmDocPasswordsApiActions()` / `itmDocNotesAjaxActions()` / `itmDocTodoAjaxActions()` | Module-specific action matrices |
+| `itmDocCollectApiExamples()` | Scan every `api-examples/*.php` file (title/category/purpose table in `api.php`) |
 
 **Verify after API doc changes:**
 
