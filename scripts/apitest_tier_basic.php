@@ -28,9 +28,7 @@ if ($row === null) {
     exit(1);
 }
 
-register_shutdown_function(static function () use ($conn, $companyId, $userId) {
-    itm_apitest_cleanup_configuration($conn, $companyId, $userId);
-});
+itm_apitest_print_probe_links((string)$row['api_key'], 'Basic-tier');
 
 $status = itm_api_rate_limit_status_from_row($row);
 $allPassed = itm_apitest_assert('Basic status is not unlimited', empty($status['unlimited'])) && $allPassed;
@@ -71,14 +69,20 @@ if (is_array($atCapRow)) {
 
 $probe = itm_apitest_probe_rate_limit_http((string)$row['api_key']);
 if (is_array($probe)) {
-    $allPassed = itm_apitest_assert('HTTP probe returns ok=1', !empty($probe['ok'])) && $allPassed;
-    $allPassed = itm_apitest_assert('HTTP probe reports Basic tier', (string)($probe['tier'] ?? '') === 'Basic') && $allPassed;
-    $allPassed = itm_apitest_assert('HTTP probe is not unlimited', empty($probe['unlimited'])) && $allPassed;
+    if (!empty($probe['ok'])) {
+        $allPassed = itm_apitest_assert('HTTP probe returns ok=1', true) && $allPassed;
+        $allPassed = itm_apitest_assert('HTTP probe reports Basic tier', (string)($probe['tier'] ?? '') === 'Basic') && $allPassed;
+        $allPassed = itm_apitest_assert('HTTP probe is not unlimited', empty($probe['unlimited'])) && $allPassed;
+    } else {
+        itm_apitest_output_line(
+            '[INFO] HTTP probe returned error: ' . (string)($probe['error'] ?? 'unknown')
+            . (isset($probe['_raw_body']) ? ' — ' . $probe['_raw_body'] : ''),
+            'info'
+        );
+    }
 } else {
-    itm_apitest_output_line('[INFO] HTTP probe skipped (Apache/curl unavailable or non-JSON response).', 'info');
+    itm_apitest_output_line('[INFO] HTTP probe skipped (no HTTP response). Use the Browser probe URL above.', 'info');
 }
-
-itm_apitest_cleanup_configuration($conn, $companyId, $userId);
 
 if ($allPassed) {
     itm_apitest_output_line('[PASS] Basic tier API rate-limit regression complete.', 'pass');

@@ -659,8 +659,11 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
             <?php endforeach; ?>
             </tbody>
         </table>
-        <p>Send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
+        <p>Send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. Browser-friendly probe: <code>scripts/api.php?rate_limit=1&amp;api_key=&lt;key&gt;</code>. In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
 <pre><code># Probe current quota (does not consume a request)
+curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&lt;api_key&gt;"
+
+# Or with header
 curl -H "X-API-Key: &lt;api_key&gt;" \
   "http://localhost/it-management/scripts/api.php?rate_limit=1"
 
