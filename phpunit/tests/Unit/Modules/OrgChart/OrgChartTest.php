@@ -10,11 +10,7 @@ class OrgChartTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->requireExtractedFunction(
-            ROOT_PATH . 'modules/org_chart/index.php',
-            'itm_is_circular_reporting',
-            '/function itm_is_circular_reporting.*?return false;\s*\}/s'
-        );
+        $this->requireExtractedFunction(ROOT_PATH . 'modules/org_chart/index.php', 'itm_is_circular_reporting');
     }
 
     public function testCircularReportingDetection()

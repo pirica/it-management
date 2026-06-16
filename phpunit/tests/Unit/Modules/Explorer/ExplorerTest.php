@@ -19,21 +19,9 @@ class ExplorerTest extends TestCase
         $this->storageRoot = sys_get_temp_dir() . '/itm_explorer_test_' . uniqid();
         mkdir($this->storageRoot, 0777, true);
 
-        $this->requireExtractedFunction(
-            ROOT_PATH . 'modules/explorer/api.php',
-            'get_full_path',
-            '/function get_full_path.*?return \$full;\s*\}/s'
-        );
-        $this->requireExtractedFunction(
-            ROOT_PATH . 'modules/explorer/api.php',
-            'explorer_is_hidden_system_entry',
-            '/function explorer_is_hidden_system_entry.*?\}/s'
-        );
-        $this->requireExtractedFunction(
-            ROOT_PATH . 'modules/explorer/api.php',
-            'explorer_resolve_preview_mode',
-            '/function explorer_resolve_preview_mode.*?\}/s'
-        );
+        $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'get_full_path');
+        $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_is_hidden_system_entry');
+        $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_resolve_preview_mode');
     }
 
     protected function tearDown(): void
