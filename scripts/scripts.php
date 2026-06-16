@@ -109,8 +109,8 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="api.php">api.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>HTML reference for JSON API endpoints (auth, CSRF, module import routes, request/response examples).</td>
-                    <td>Open in the browser after deploy. Use as the source of truth when calling <code>/modules/*/index.php</code> JSON handlers or shared APIs documented in the file.</td>
+                    <td>HTML reference for JSON/AJAX endpoints: Explorer file manager (list, upload, rename, delete, restore, copy/move paste, zip/unzip, year/month/day folders, Trash), downloads, IDF APIs, module imports (auto-detected), passwords, notes, todo, and shared includes.</td>
+                    <td>Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers.</td>
                 </tr>
                 <tr>
                     <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>

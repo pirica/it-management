@@ -19,7 +19,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **Browser vs CLI**: Many scripts provide both a plain-text/HTML browser view and a CLI output mode.
 
 ## 6. API Actions (If Applicable)
-- **api.php** — provides centralized documentation for the system's JSON and import APIs.
+- **api.php** — browser HTML catalogue of JSON/AJAX endpoints (session + CSRF). Documents Explorer file actions (list, upload, rename, delete, restore, copy, move, zip, unzip, date folders, Trash), `file.php` / `downloadZip` downloads, IDF `api/*`, module `import_excel_rows` imports (auto-scanned), passwords vault, notes/todo AJAX, and curated shared endpoints. Collector helpers are covered by `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`. Maintenance rules: **`scripts/SCRIPTS.md` → API documentation (`scripts/api.php`)**.
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.
