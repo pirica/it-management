@@ -5,10 +5,7 @@ $crud_action = 'list_all';
 ?>
 <?php
 require '../../config/config.php';
-if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
-    header('Location: ' . BASE_URL . 'dashboard.php');
-    exit;
-}
+itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
