@@ -4,13 +4,13 @@
 Read-only monthly birthday list for the active company. Data is sourced from `employees.birthday`; no dedicated table.
 
 ## 2. Key Tables
-- **employees** — `birthday`, `hide_year`, `first_name`, `last_name`, `photo`, `username`, `user_id`, `department_id`, `employment_status_id`.
+- **employees** — `birthday`, `first_name`, `last_name`, `department_id`, `employment_status_id`.
 - **employee_statuses** — `name` for the Employment Status multi-select filter (`INNER JOIN` on `employment_status_id` + `company_id`).
 - **departments** — `code` for the Department column; `name` included in search (joined on `department_id` + `company_id`).
 
 ## 3. Required Relationships
 - **birthdays** → depends on **employees** and **departments**.
-- Profile thumbnails use `includes/employee_profile_photo.php` (`emp_profile_photo_url()`).
+- Day formatting uses `emp_format_birthday_day_only()` from `includes/employee_profile_photo.php`.
 
 ## 4. Business Rules (Critical for Agents)
 - Only employees with non-null `birthday` and a selected **Employment Status** appear (`INNER JOIN employee_statuses`; filter `es.id IN (...)`).
@@ -22,7 +22,7 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 ## 5. UI Behavior Requirements
 - **index.php only** — no create/edit/delete handlers.
 - Filter card: month `<select>`, **Employment Status** multi-select (`employment_status_id[]`, between Month and Search), and **Search (all fields)** across Name, Day, Department (`departments.code`), and department name (`departments.name`); marked `data-itm-no-export-pdf="1"` and `data-itm-no-export-excel="1"` so PDF/Excel exports omit controls.
-- Table columns: Name (first + last, optional photo), Day (day of month without leading zeros via `emp_format_birthday_day_only()` — e.g. `1`, `9`, `10`), Department (`departments.code`). No Actions column.
+- Table columns: Name (first + last, text only), Day (day of month without leading zeros via `emp_format_birthday_day_only()` — e.g. `1`, `9`, `10`), Department (`departments.code`). No Actions column.
 - Default sort: Day ASC (`DAY(e.birthday)`). Also sortable: Name, Department.
 - Sortable column headers use plain text styling (no blue link colour).
 - Sidebar: `🎉 Birthdays` in Employee section (`includes/ui_config.php`). Explorer sidebar links to this module and **Profile Storage** (`Private/{user}/profile`).

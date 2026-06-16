@@ -80,7 +80,7 @@ $selectedStatusNames = array_values(array_filter($selectedStatusNames, static fu
 $rows = [];
 if ($selectedStatusIds !== []) {
     $statusPlaceholders = implode(',', array_fill(0, count($selectedStatusIds), '?'));
-    $sql = 'SELECT e.id, e.first_name, e.last_name, e.birthday, e.hide_year, e.username, e.user_id, e.photo, d.code AS department_code '
+    $sql = 'SELECT e.first_name, e.last_name, e.birthday, d.code AS department_code '
         . 'FROM employees e '
         . 'INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id '
         . 'LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id '
@@ -236,19 +236,9 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
                         <tr><td colspan="3">No birthdays found for this month.</td></tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
-                            <?php
-                            $fullName = trim((string)$row['first_name'] . ' ' . (string)$row['last_name']);
-                            $photoUrl = emp_profile_photo_url($row);
-                            ?>
+                            <?php $fullName = trim((string)$row['first_name'] . ' ' . (string)$row['last_name']); ?>
                             <tr>
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <?php if ($photoUrl !== ''): ?>
-                                            <img src="<?= sanitize($photoUrl) ?>" alt="" width="28" height="28" class="rounded-circle" style="object-fit:cover;" onerror="this.style.display='none';">
-                                        <?php endif; ?>
-                                        <?= sanitize($fullName) ?>
-                                    </div>
-                                </td>
+                                <td><?= sanitize($fullName) ?></td>
                                 <td><?= sanitize(emp_format_birthday_day_only($row['birthday'] ?? null)) ?></td>
                                 <td><?= sanitize((string)($row['department_code'] ?? '—')) ?></td>
                             </tr>

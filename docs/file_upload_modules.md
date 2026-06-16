@@ -117,7 +117,7 @@ Legacy installs may still have `Private/{username}_{linked_user_id}/profile/`; `
 
 `modules/explorer/file.php` allows any authenticated company user to read `Private/*/profile/` assets (employee profile thumbnails). Other `Private/` content remains owner-scoped.
 
-Explorer sidebar **Profile Storage** opens this folder for the logged-in user. The **Birthdays** module (`modules/birthdays/index.php`) is read-only — no uploads — but displays profile thumbnails via `emp_profile_photo_url()` → `itm_files_serve_url()`. See **§13 Birthdays**.
+Explorer sidebar **Profile Storage** opens this folder for the logged-in user. The **Birthdays** module (`modules/birthdays/index.php`) is read-only — no uploads and no list thumbnails. See **§13 Birthdays**.
 
 **Runtime tenant trees** under `files/{company_id}/**` must **not** be committed to git — helpers create and harden them on deploy.
 
@@ -222,8 +222,8 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 ### 13. Birthdays
 - **Path:** `modules/birthdays/index.php`
 - **Storage:** None — read-only monthly list; no file uploads.
-- **Description:** Lists employees with a `birthday` in the selected month, filtered by **Employment Status** (multi-select; default **Active** and **On Leave**). Name column shows optional profile thumbnails (same storage as **§11 Employee profile photos**). Day column uses `emp_format_birthday_day_only()` (day of month without leading zeros). Search queries name, day, `departments.code`, and `departments.name`.
-- **Implementation:** Thumbnails served via `emp_profile_photo_url()` → `itm_files_serve_url()` → `modules/explorer/file.php`. Month filter and **Search (all fields)** on the filter card; table export controls follow standard `table-tools.js` behaviour where enabled.
+- **Description:** Lists employees with a `birthday` in the selected month, filtered by **Employment Status** (multi-select; default **Active** and **On Leave**). Name column is text only (no profile thumbnails). Day column uses `emp_format_birthday_day_only()` (day of month without leading zeros). Search queries name, day, `departments.code`, and `departments.name`.
+- **Implementation:** Month filter, **Employment Status** multi-select, and **Search (all fields)** on the filter card; table export controls follow standard `table-tools.js` behaviour where enabled.
 
 ## Folder creation map (code references)
 
