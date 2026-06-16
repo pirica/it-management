@@ -973,6 +973,24 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Regression tests for Explorer path validation logic including sensitive root folder blocking.</td>
                     <td><code>php scripts/test_explorer_paths.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="verify_audit_logs_disclosure.php">verify_audit_logs_disclosure.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens).</td>
+                    <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_invitations_escalation.php">verify_invitations_escalation.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for authorization bypass and privilege escalation in registration invitations.</td>
+                    <td><code>php scripts/verify_invitations_escalation.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_zip_slip.php">repro_zip_slip.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for Zip Slip (path traversal during extraction) vulnerability.</td>
+                    <td><code>php scripts/repro_zip_slip.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
