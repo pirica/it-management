@@ -266,7 +266,6 @@ body {
     <div onclick="openRecycle(); closeSidebar();">🗑️ Trash</div>
 
     <h4>👤 Employee</h4>
-    <div onclick="closeSidebar();"><a href="../../modules/employees/">🌐 Employees</a></div>
     <div onclick="closeSidebar();"><a href="../../modules/birthdays/">🎉 Birthdays</a></div>
     <div onclick="openEmployeeProfileFolder(); closeSidebar();">🌐 Profile Storage</div>
 
