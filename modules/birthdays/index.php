@@ -31,8 +31,10 @@ $orderSql = $sortMap[$sort] . ' ' . $dir;
 $rows = [];
 $sql = 'SELECT e.id, e.first_name, e.last_name, e.birthday, e.hide_year, e.username, e.user_id, e.photo, d.code AS department_code '
     . 'FROM employees e '
+    . 'INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id '
     . 'LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id '
-    . 'WHERE e.company_id = ? AND e.birthday IS NOT NULL AND MONTH(e.birthday) = ?';
+    . 'WHERE e.company_id = ? AND e.birthday IS NOT NULL AND MONTH(e.birthday) = ? '
+    . "AND es.name IN ('Active', 'On Leave')";
 $types = 'ii';
 $params = [$company_id, $selectedMonth];
 
@@ -143,7 +145,7 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
             </div>
 
             <div class="card" style="margin-bottom:8px;">
-                <p style="margin:0;" class="muted">Showing birthdays in <strong><?= sanitize($monthLabel) ?></strong><?= $search !== '' ? ' matching <strong>' . sanitize($search) . '</strong>' : '' ?>.</p>
+                <p style="margin:0;" class="muted">Showing birthdays in <strong><?= sanitize($monthLabel) ?></strong> for <strong>Active</strong> and <strong>On Leave</strong> employees<?= $search !== '' ? ' matching <strong>' . sanitize($search) . '</strong>' : '' ?>.</p>
             </div>
 
             <div class="card" style="overflow:auto;">
