@@ -7,6 +7,11 @@
  * JavaScript configuration and dependencies.
  */
 
+require_once __DIR__ . '/itm_script_entry_guard.php';
+if (itm_skip_view_partial_unless_context(false, __FILE__)) {
+    return;
+}
+
 if (!isset($company_id)) $company_id = $_SESSION['company_id'] ?? 0;
 $csrfToken = itm_get_csrf_token();
 ?>

@@ -7,6 +7,11 @@
  * controlled by the UI configuration settings stored in the database.
  */
 
+require_once __DIR__ . '/itm_script_entry_guard.php';
+if (itm_skip_view_partial_unless_context(false, __FILE__)) {
+    return;
+}
+
 $current_page = basename($_SERVER['PHP_SELF']);
 $current_dir = basename(dirname($_SERVER['PHP_SELF']));
 $sidebarConfig = $ui_config ?? itm_ui_config_defaults();

@@ -6,17 +6,13 @@
  * color, VLAN, and comments. Supports both JSON and form-encoded input.
  */
 
-require '../config/config.php';
-
-// Why: PHPUnit coverage (processUncoveredFiles) may require this file; run endpoint only on direct HTTP access.
-$scriptFilename = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
-$isDirectRequest = ($scriptFilename !== ''
-    && @realpath($scriptFilename) === @realpath(__FILE__)
-    && PHP_SAPI !== 'cli');
-
-if (!$isDirectRequest) {
+require_once __DIR__ . '/itm_script_entry_guard.php';
+if (itm_skip_http_entry_unless_direct(__FILE__)) {
     return;
 }
+
+require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/switch_port_api_helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
@@ -46,90 +42,6 @@ if (!itm_validate_csrf_token($csrfToken)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
     exit;
-}
-
-/**
- * Fetches lookup data from the database
- */
-function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
-{
-    $rows = [];
-    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($labelColumn)) {
-        return $rows;
-    }
-
-    $hasCompanyId = itm_table_has_column($conn, $table, 'company_id');
-    $companyId = isset($GLOBALS['company_id']) ? (int)$GLOBALS['company_id'] : 0;
-
-    $res = false;
-    if ($hasCompanyId && $companyId > 0) {
-        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` WHERE company_id = ? ORDER BY id ASC";
-        $stmt = mysqli_prepare($conn, $sql);
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'i', $companyId);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            mysqli_stmt_close($stmt);
-        }
-    }
-
-    if (!$res || mysqli_num_rows($res) === 0) {
-        $sql = "SELECT id, `{$labelColumn}` AS label FROM `{$table}` ORDER BY id ASC";
-        $res = mysqli_query($conn, $sql);
-    }
-
-    while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
-    }
-    return $rows;
-}
-
-/**
- * Fetches VLAN list for the company
- */
-function fetch_company_vlans(mysqli $conn, int $companyId): array
-{
-    $rows = [];
-    $sql = 'SELECT id, vlan_name FROM vlans WHERE company_id = ? ORDER BY vlan_number ASC, id ASC';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-        return $rows;
-    }
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    if (mysqli_stmt_execute($stmt)) {
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['vlan_name']];
-        }
-    }
-    mysqli_stmt_close($stmt);
-    return $rows;
-}
-
-/**
- * Maps a name or ID string back to a valid database ID
- */
-function find_lookup_id(array $rows, $value): int
-{
-    if ($value === null || $value === '') {
-        return 0;
-    }
-    if (is_numeric($value)) {
-        $id = (int)$value;
-        foreach ($rows as $row) {
-            if ((int)$row['id'] === $id) {
-                return $id;
-            }
-        }
-        return 0;
-    }
-    $wanted = strtolower(trim((string)$value));
-    foreach ($rows as $row) {
-        if (strtolower(trim((string)$row['name'])) === $wanted) {
-            return (int)$row['id'];
-        }
-    }
-    return 0;
 }
 
 // Schema detection

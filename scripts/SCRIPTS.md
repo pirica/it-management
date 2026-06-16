@@ -219,34 +219,38 @@ cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Linux/macOS/CI: bare `php scripts/run_tests.php` when PHP 7.4 is on PATH.
 
-**PHPUnit config:** `phpunit/phpunit.xml` — `verbose="true"`, `<coverage processUncoveredFiles="true">` with HTML output under `coverage/html`. See also `phpunit/AGENT_NOTES.md` and `phpunit/tests/PREFERENCES.md`.
+**PHPUnit config:** `phpunit/phpunit.xml` — `verbose="true"`, `<coverage processUncoveredFiles="false">` (avoids bare-`require` of hundreds of uncovered module/script entry files during HTML report generation), HTML output under `coverage/html`. Shared guards: `includes/itm_script_entry_guard.php`. See also `phpunit/AGENT_NOTES.md` and `phpunit/tests/PREFERENCES.md`.
 
 ##### HTML coverage — report generation guardrails
 
-If HTML coverage finishes tests (`OK (… tests, … assertions)`) but fails or warns during **Generating code coverage report in HTML format …**, PHPUnit’s `processUncoveredFiles="true"` is **`require`ing uncovered PHP files** after the suite while PHPUnit `Printer` output may already be on stdout.
+If HTML coverage finishes tests (`OK (… tests, … assertions)`) but fails or warns during **Generating code coverage report in HTML format …**, uncovered files were being executed with side effects (historically with `processUncoveredFiles="true"`).
 
 Common symptoms:
 
 | Symptom | Typical file |
 |---------|----------------|
 | `Cannot modify header information - headers already sent` | `includes/get_ports.php`, `includes/update_port.php`, `includes/companies_view_redirect.php` |
+| `Cannot redeclare fetch_lookup_map()` | `get_ports.php` + `update_port.php` (shared helpers now in `includes/switch_port_api_helpers.php`) |
 | HTML fragment + `Undefined variable: conn` / type error on `mysqli` | View partials such as `includes/itm_it_location_linked_floor_plans.php` |
 
 **Root causes:**
 
 1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time** (fixed PR #2228).
-2. **Bare HTTP entry scripts** called **`header()` / `echo` / `exit` at top level** (fixed PR #2228, #2230).
-3. **View partials** (`require` from module screens) output HTML and assume **`$conn`**, **`$data`**, **`$company_id`** from the parent — bare `require` during coverage emits markup and fatals on missing context.
+2. **Bare HTTP entry scripts** called **`header()` / `echo` / `exit` at top level** (fixed PR #2228, #2230) — use **`includes/itm_script_entry_guard.php`** (`itm_skip_http_entry_unless_direct()`).
+3. **View partials** output HTML without context — use **`itm_skip_view_partial_unless_context()`** or explicit `$conn` guard.
+4. **Duplicate top-level `function` declarations** across two endpoints — PHP registers functions at compile time; consolidate in a shared helper file.
+5. **`processUncoveredFiles="true"`** — PHPUnit bare-`require`s every uncovered file under `config/`, `includes/`, `modules/`, `scripts/`; disabled in `phpunit.xml` so the HTML report completes reliably. Files executed during tests still appear in the report.
 
 **Fixes (keep these patterns):**
 
 | Area | Rule |
 |------|------|
 | **Test files** | Use proper **`PHPUnit\Framework\TestCase`** classes with `test*` methods and assertions — **no top-level execution**, **no `echo`** in files matched by `suffix="Test.php"`. |
-| **Redirect / AJAX entry scripts** | **`header()` / `echo` / `exit` only on direct HTTP access** (e.g. `realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)` and `PHP_SAPI !== 'cli'`). When included by tooling, **`return`** early. Examples: `includes/companies_view_redirect.php`, `includes/get_ports.php`, `includes/update_port.php`. |
-| **View partials** | **`return` before any HTML** when required context is missing (e.g. `!isset($conn) \|\| !($conn instanceof mysqli)`). Parent modules (`it_locations` etc.) always set `$conn` before `require`. Example: `includes/itm_it_location_linked_floor_plans.php`. |
+| **Redirect / AJAX entry scripts** | Guard **before** `require config` using **`itm_skip_http_entry_unless_direct(__FILE__)`** then **`return`**. Use **`dirname(__DIR__) . '/config/config.php'`** (not relative `../config/`). |
+| **View partials** | **`itm_skip_view_partial_unless_context()`** or **`return`** when `$conn` missing — before any HTML. |
+| **Shared endpoint helpers** | One file with **`function_exists`** wrappers (e.g. `includes/switch_port_api_helpers.php`). |
 
-**When adding includes under coverage paths:** run HTML coverage once (`php scripts/run_tests.php --coverage` with Xdebug/PCOV) and confirm **`phpunit/coverage/html/coverage.html`** is created without warnings or PHP notices.
+**When adding includes under coverage paths:** run HTML coverage once (`php scripts/run_tests.php --coverage` or browser **HTML coverage** with Xdebug/PCOV) and confirm **`phpunit/coverage/html/coverage.html`** is created without warnings, notices, or fatals.
 
 #### Full-module browser QA (5 companies, Laragon)
 

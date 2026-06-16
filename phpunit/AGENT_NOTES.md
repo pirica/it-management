@@ -5,7 +5,7 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 
 ## 7. File Structure
 - **phpunit.phar** — PHPUnit 9.6 PHAR executable (no Composer).
-- **phpunit.xml** — PHPUnit configuration (bootstrap, test suites, verbose output, HTML coverage report paths).
+- **phpunit.xml** — PHPUnit configuration (bootstrap, test suites, verbose output, HTML coverage report paths). **`processUncoveredFiles="false"`** so report generation does not bare-`require` every uncovered module/script file.
 - **coverage/html/** — generated HTML coverage report (gitignored; entry file `coverage.html` after coverage runs).
 - **tests/** — test suite root (`bootstrap.php`, `Unit/`, agent notes, preferences).
 
