@@ -19,6 +19,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **todo_visibility.php** — global/assigned/creator filter for Todo module.
 - **delete_functions.php** — shared logic for complex deletions (e.g., equipment).
 - **companies_view_redirect.php** — legacy company view redirect; runs `header()` only on direct HTTP access (guarded so PHPUnit coverage can require the file safely).
+- **get_ports.php** / **update_port.php** — switch port AJAX endpoints; JSON `header()` / response body only on direct HTTP access (same guard for HTML coverage).
 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
