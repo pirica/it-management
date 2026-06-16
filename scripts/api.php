@@ -534,10 +534,10 @@ function itmDocTodoAjaxActions(): array
 function itmDocApiRateLimitTiers(): array
 {
     return [
-        ['tier' => 'Free', 'hourly_limit' => 'No limit', 'api_key' => 'Not required (session)'],
-        ['tier' => 'Basic', 'hourly_limit' => 300, 'api_key' => 'Required'],
-        ['tier' => 'Pro', 'hourly_limit' => 1000, 'api_key' => 'Required'],
-        ['tier' => 'Enterprise', 'hourly_limit' => 10000, 'api_key' => 'Required'],
+        ['tier' => 'Free', 'hourly_limit' => 'No limit', 'api_key' => 'Not required', 'session' => 'Required (PHPSESSID)'],
+        ['tier' => 'Basic', 'hourly_limit' => 300, 'api_key' => 'Required', 'session' => 'Optional when key sent'],
+        ['tier' => 'Pro', 'hourly_limit' => 1000, 'api_key' => 'Required', 'session' => 'Optional when key sent'],
+        ['tier' => 'Enterprise', 'hourly_limit' => 10000, 'api_key' => 'Required', 'session' => 'Optional when key sent'],
     ];
 }
 
@@ -650,41 +650,48 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
 
     <div class="card">
         <h2>API key authentication and rate limits</h2>
-        <p>Each signed-in user can store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>). Keys are scoped to <code>company_id</code> + <code>user_id</code>. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
+        <p>Paid-tier users store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>, scoped to <code>company_id</code> + <code>user_id</code>). <strong>Free</strong> tier has no API key UI — identity comes from the signed-in session. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
         <table>
-            <thead><tr><th>Tier</th><th>Hourly limit</th><th>API key</th></tr></thead>
+            <thead><tr><th>Tier</th><th>Hourly limit</th><th>API key</th><th>Session</th></tr></thead>
             <tbody>
             <?php foreach ($apiRateLimitTiers as $tierRow): ?>
                 <tr>
                     <td><?= itmDocEscape((string)($tierRow['tier'] ?? '')); ?></td>
                     <td><?= is_numeric($tierRow['hourly_limit'] ?? null) ? (int)$tierRow['hourly_limit'] : itmDocEscape((string)($tierRow['hourly_limit'] ?? '')); ?></td>
                     <td><?= itmDocEscape((string)($tierRow['api_key'] ?? '')); ?></td>
+                    <td><?= itmDocEscape((string)($tierRow['session'] ?? '')); ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
         </table>
-        <p><strong>Free</strong> tier does not require an API key — use an authenticated browser session or call <code>itm_api_resolve_rate_limit_row()</code> from signed-in PHP handlers. <strong>Paid</strong> tiers must send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. Browser-friendly probe: <code>scripts/api.php?rate_limit=1</code> (Free + session) or <code>…&amp;api_key=&lt;key&gt;</code> (paid) — returns JSON without a login redirect (<code>ITM_API_RATE_LIMIT_PROBE</code> skips web auth in <code>config/config.php</code>). In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
-<pre><code># Probe current quota (does not consume a request) — paid tier
-curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&lt;api_key&gt;"
+        <p><strong>Free</strong> tier does not require an API key but <strong>does require an authenticated session</strong> (<code>PHPSESSID</code> with <code>company_id</code> + <code>user_id</code>). Keyless requests without a session return <code>401</code> — Free is not anonymous. <strong>Paid</strong> tiers must send <code>X-API-Key</code> or <code>api_key</code>.</p>
+        <p>Quota probe: <code>GET scripts/api.php?rate_limit=1</code> — Free while signed in (no <code>api_key</code>) or paid with <code>…&amp;api_key=&lt;key&gt;</code>. <code>ITM_API_RATE_LIMIT_PROBE</code> skips the <code>login.php</code> redirect only; it does not remove the Free-tier session requirement. Handler: <code>itm_api_handle_rate_limit_probe_request()</code>; enforcement in other endpoints: <code>itm_api_enforce_rate_limit_or_exit($conn)</code>.</p>
+<pre><code># Login first (required for Free-tier keyless probe)
+curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "email=Admin&amp;password=Admin&amp;csrf_token=&lt;token_from_login_form&gt;"
 
-# Free tier while signed in (session cookie) — no api_key parameter
+# Free tier — session cookie, no api_key
 curl -b cookies.txt "http://localhost/it-management/scripts/api.php?rate_limit=1"
 
-# Example success payload (Free tier)
+# Paid tier — api_key required
+curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&lt;api_key&gt;"
+
+# Example success payload (Free tier, signed in)
 {"ok":true,"tier":"Free","api_key_required":false,"unlimited":true,"limit":0,"remaining":null,"reset_at":0}</code></pre>
-        <p>Errors: <code>401</code> missing/invalid key (paid tiers), <code>403</code> inactive key, <code>429</code> quota exceeded (<code>limit</code>, <code>remaining</code>, <code>reset_at</code> included).</p>
+        <p>Errors: <code>401</code> missing/invalid key (paid) or missing session (Free keyless); <code>403</code> inactive key; <code>429</code> quota exceeded.</p>
         <h3>Tier regression scripts</h3>
         <table>
             <thead><tr><th>Script</th><th>Purpose</th><th>CLI</th></tr></thead>
             <tbody>
                 <tr>
                     <td><code>scripts/apitest_tier_free.php</code></td>
-                    <td>Seeds disposable Free-tier <code>ui_configuration</code>; expects unlimited status, session resolve without <code>api_key</code>, and non-blocking consumes.</td>
+                    <td>Disposable Free-tier row (empty <code>api_key</code>); session resolve; unlimited consumes; HTTP probe publishes CLI <code>PHPSESSID</code> via <code>itm_apitest_publish_http_session()</code>.</td>
                     <td><code>php scripts/apitest_tier_free.php</code></td>
                 </tr>
                 <tr>
                     <td><code>scripts/apitest_tier_basic.php</code></td>
-                    <td>Seeds Basic-tier row at hourly cap − 1; expects allow then block on consecutive consumes.</td>
+                    <td>Disposable Basic-tier row at cap − 1; allow then block; HTTP probe requires <code>api_key</code>.</td>
                     <td><code>php scripts/apitest_tier_basic.php</code></td>
                 </tr>
             </tbody>
@@ -696,7 +703,7 @@ curl -b cookies.txt "http://localhost/it-management/scripts/api.php?rate_limit=1
         <h2>Authentication</h2>
         <p>Protected endpoints require:</p>
         <ol>
-            <li>Authenticated PHP session cookie (login via <code>login.php</code>).</li>
+            <li>Authenticated PHP session cookie (login via <code>login.php</code>) — also required for <strong>Free-tier</strong> rate-limit probe/enforce when no API key is sent.</li>
             <li>Valid CSRF token in <code>csrf_token</code> (POST body) or <code>X-CSRF-Token</code> where supported.</li>
             <li>Active <code>company_id</code> in session for tenant-scoped modules.</li>
         </ol>
@@ -921,7 +928,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
             <tr><td>Import</td><td><code>{"ok":true,"inserted":N}</code></td><td>Table-tools save-to-database.</td></tr>
             <tr><td>CSRF</td><td>HTTP 403 / JSON error</td><td>Missing or invalid <code>csrf_token</code>.</td></tr>
             <tr><td>Session</td><td><code>{"error":"No company selected."}</code></td><td>Missing company context (Explorer).</td></tr>
-            <tr><td>API key</td><td><code>{"ok":false,"error":"…"}</code></td><td>HTTP 401/403/429 from <code>itm_api_enforce_rate_limit_or_exit()</code>.</td></tr>
+            <tr><td>API key / rate limit</td><td><code>{"ok":false,"error":"…"}</code></td><td>HTTP 401/403/429 from <code>itm_api_enforce_rate_limit_or_exit()</code> or probe. Free keyless without session → 401.</td></tr>
             <tr><td>Unknown action</td><td><code>{"error":"Unknown action"}</code></td><td>Invalid Explorer <code>action</code>.</td></tr>
             </tbody>
         </table>
@@ -936,7 +943,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
             <li><code>import_excel_rows</code> requires header row + at least one data row.</li>
             <li>Passwords writes require per-user vault key in session.</li>
             <li>IDF endpoints require JSON body and tenant-scoped <code>company_id</code>.</li>
-            <li>API key requests must pass <code>itm_api_enforce_rate_limit_or_exit()</code> when bypassing session auth.</li>
+            <li><code>itm_api_enforce_rate_limit_or_exit($conn)</code> on programmatic endpoints: paid tiers require <code>api_key</code>; Free tier accepts authenticated session (<code>company_id</code> + <code>user_id</code> in <code>PHPSESSID</code>) when no key is sent.</li>
         </ul>
     </div>
 
