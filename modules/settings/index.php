@@ -504,7 +504,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Persist or rotate the per-user API key (rate-limit metadata stays server-managed).
     if ($action === 'save_api_key') {
-        if ((int)$company_id <= 0) {
+        $settingsApiTier = function_exists('itm_api_normalize_tier')
+            ? itm_api_normalize_tier($currentUiConfig['tier'] ?? 'Free')
+            : 'Free';
+        if (function_exists('itm_api_tier_requires_api_key') && !itm_api_tier_requires_api_key($settingsApiTier)) {
+            $error = 'API keys are not used on the Free tier. Sign in for programmatic access or contact support to upgrade your tier.';
+        } elseif ((int)$company_id <= 0) {
             $error = 'Unable to save API key: please select an active company first.';
         } elseif ($settingsUserId <= 0) {
             $error = 'Unable to save API key: your session user is missing. Please sign in again.';
@@ -525,7 +530,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'generate_api_key') {
-        if ((int)$company_id <= 0) {
+        $settingsApiTier = function_exists('itm_api_normalize_tier')
+            ? itm_api_normalize_tier($currentUiConfig['tier'] ?? 'Free')
+            : 'Free';
+        if (function_exists('itm_api_tier_requires_api_key') && !itm_api_tier_requires_api_key($settingsApiTier)) {
+            $error = 'API keys are not used on the Free tier. Sign in for programmatic access or contact support to upgrade your tier.';
+        } elseif ((int)$company_id <= 0) {
             $error = 'Unable to generate API key: please select an active company first.';
         } elseif ($settingsUserId <= 0) {
             $error = 'Unable to generate API key: your session user is missing. Please sign in again.';
@@ -909,24 +919,28 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
             <div class="card" style="margin-bottom:20px;">
                 <div class="card-header"><h2>API Access</h2></div>
                 <div class="card-body">
-                    <p class="form-hint" style="margin-top:0;">Manage your integration API key here. Tier and rate-limit counters are managed by the platform and shown read-only below.</p>
-                    <form method="post" style="margin-bottom:16px;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="save_api_key">
-                        <div class="form-group" style="max-width:640px;">
-                            <label for="api_key">API Key</label>
-                            <input id="api_key" name="api_key" type="text" maxlength="191" value="<?php echo sanitize($currentApiKey); ?>" placeholder="Paste or generate an API key">
-                            <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests.</p>
-                        </div>
-                        <div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-primary" type="submit">💾 Save API Key</button>
-                        </div>
-                    </form>
-                    <form method="post" style="margin-bottom:20px;display:inline;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="action" value="generate_api_key">
-                        <button class="btn btn-sm" type="submit" onclick="return confirm('Generate a new API key? Existing integrations must be updated.');">Generate New API Key</button>
-                    </form>
+                    <?php if ($currentApiTierIsUnlimited): ?>
+                        <p class="form-hint" style="margin-top:0;">Your account is on the <strong>Free</strong> tier. An API key is <strong>not required</strong> — use your signed-in session for programmatic access, or probe quota with <code>scripts/api.php?rate_limit=1</code> while authenticated. Tier and rate-limit counters are managed by the platform and shown read-only below.</p>
+                    <?php else: ?>
+                        <p class="form-hint" style="margin-top:0;">Manage your integration API key here. Tier and rate-limit counters are managed by the platform and shown read-only below.</p>
+                        <form method="post" style="margin-bottom:16px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="action" value="save_api_key">
+                            <div class="form-group" style="max-width:640px;">
+                                <label for="api_key">API Key</label>
+                                <input id="api_key" name="api_key" type="text" maxlength="191" value="<?php echo sanitize($currentApiKey); ?>" placeholder="Paste or generate an API key">
+                                <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests.</p>
+                            </div>
+                            <div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button class="btn btn-primary" type="submit">💾 Save API Key</button>
+                            </div>
+                        </form>
+                        <form method="post" style="margin-bottom:20px;display:inline;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="action" value="generate_api_key">
+                            <button class="btn btn-sm" type="submit" onclick="return confirm('Generate a new API key? Existing integrations must be updated.');">Generate New API Key</button>
+                        </form>
+                    <?php endif; ?>
 
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
                         <div class="form-group">

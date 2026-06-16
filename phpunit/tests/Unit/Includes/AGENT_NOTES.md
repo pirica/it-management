@@ -17,6 +17,7 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | `ItmMbqaTestUserTest.php` | `includes/itm_mbqa_test_user.php` |
 | `ItmScriptEntryGuardTest.php` | `includes/itm_script_entry_guard.php` |
 | `SwitchPortApiHelpersTest.php` | `includes/switch_port_api_helpers.php` |
+| `ApiRateLimitTest.php` | `includes/itm_api_rate_limit.php` (tier caps, Free no API key, probe payload) |
 
 ## 10. Common Pitfalls
 - Do not `require` `header.php` / `sidebar.php` here — use guard tests only; partials need layout context.

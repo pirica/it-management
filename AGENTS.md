@@ -217,7 +217,7 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`ui_check`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
 * **DB Import Endpoint (Index Tables):** Add `data-itm-db-import-endpoint="index.php"` to every module index table so `📥Import Excel` can use the save-to-database flow.
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
-* **API keys and rate limits:** Per-user integration keys live on `ui_configuration` (`api_key`, `tier`, `rate_limit_*`). Users edit only `api_key` in **Settings → API Access**; tier is a blocked select and counters are server-managed. **Free** tier has no hourly cap; paid tiers enforce limits via `itm_api_enforce_rate_limit_or_exit($conn)` from `includes/itm_api_rate_limit.php`; probe quota via `GET scripts/api.php?rate_limit=1` with `X-API-Key`.
+* **API keys and rate limits:** See **API keys and rate limits (mandatory)** below.
 
 ### 5. Standard Feature Set
 Every module (excluding the Protection Zone) must implement:
@@ -231,6 +231,34 @@ Every module (excluding the Protection Zone) must implement:
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
 * **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center.
+
+#### API keys and rate limits (mandatory)
+
+Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logic: **`includes/itm_api_rate_limit.php`** (loaded from `config/config.php`).
+
+1. **Tier caps (rolling hour):**
+
+| Tier | Hourly limit | API key |
+|------|----------------|---------|
+| Free | No limit | **Not required** — use authenticated session (`itm_api_resolve_rate_limit_row()`) |
+| Basic | 300 | Required (`X-API-Key` or `api_key`) |
+| Pro | 1000 | Required |
+| Enterprise | 10000 | Required |
+
+2. **Settings → API Access** (`modules/settings/`): **Free** tier hides save/generate API key controls (informational copy only). Paid tiers may save/generate `api_key`. `tier` is a **blocked** `<select>`; counters are read-only. Do not accept `tier` from POST.
+
+3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves the row via API key **or** (Free only) `$_SESSION['company_id']` + `$_SESSION['user_id']`. Paid tiers without a key return `401`.
+
+4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` — JSON without login redirect (`ITM_API_RATE_LIMIT_PROBE`). Free tier may omit `api_key` when the browser session is signed in; paid tiers must send a key. Response includes `api_key_required` (boolean).
+
+5. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`):
+
+| Script | Expectation |
+|--------|-------------|
+| `php scripts/apitest_tier_free.php` | Free row with empty `api_key`; session resolve without key; unlimited consumes; probe `api_key_required=false` |
+| `php scripts/apitest_tier_basic.php` | Basic tier at cap − 1; allow then block; HTTP probe requires key |
+
+6. **PHPUnit:** `phpunit/tests/Unit/Includes/ApiRateLimitTest.php`.
 
 #### Rack Planner price source sync (mandatory)
 

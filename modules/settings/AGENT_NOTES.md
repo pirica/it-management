@@ -16,7 +16,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **UI Persistence**: Changes to button positions or pagination must call `collectAndSetHiddenFields()` in the UI.
-- **API Access card**: only `api_key` is editable (save or generate). `tier` renders as a **blocked** `<select>` (disabled); `api_key_is_active`, `api_key_last_used_at`, and all `rate_limit_*` fields are read-only displays. **Free** tier shows **No limit** for hourly quota.
+- **API Access card**: **Free** tier — no API key UI (informational copy only; session-based access). **Paid** tiers — only `api_key` is editable (save or generate). `tier` renders as a **blocked** `<select>` (disabled); `api_key_is_active`, `api_key_last_used_at`, and all `rate_limit_*` fields are read-only displays. **Free** tier shows **No limit** for hourly quota. POST `save_api_key` / `generate_api_key` are rejected on Free tier.
 - **Database Maintenance**: Allows triggering schema verification and table repairs.
 - **Backup/Restore**: Handles SQL dump generation and manual SQL imports.
 

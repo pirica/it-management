@@ -534,10 +534,10 @@ function itmDocTodoAjaxActions(): array
 function itmDocApiRateLimitTiers(): array
 {
     return [
-        ['tier' => 'Free', 'hourly_limit' => 'No limit'],
-        ['tier' => 'Basic', 'hourly_limit' => 300],
-        ['tier' => 'Pro', 'hourly_limit' => 1000],
-        ['tier' => 'Enterprise', 'hourly_limit' => 10000],
+        ['tier' => 'Free', 'hourly_limit' => 'No limit', 'api_key' => 'Not required (session)'],
+        ['tier' => 'Basic', 'hourly_limit' => 300, 'api_key' => 'Required'],
+        ['tier' => 'Pro', 'hourly_limit' => 1000, 'api_key' => 'Required'],
+        ['tier' => 'Enterprise', 'hourly_limit' => 10000, 'api_key' => 'Required'],
     ];
 }
 
@@ -652,34 +652,34 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
         <h2>API key authentication and rate limits</h2>
         <p>Each signed-in user can store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>). Keys are scoped to <code>company_id</code> + <code>user_id</code>. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
         <table>
-            <thead><tr><th>Tier</th><th>Hourly limit</th></tr></thead>
+            <thead><tr><th>Tier</th><th>Hourly limit</th><th>API key</th></tr></thead>
             <tbody>
             <?php foreach ($apiRateLimitTiers as $tierRow): ?>
                 <tr>
                     <td><?= itmDocEscape((string)($tierRow['tier'] ?? '')); ?></td>
                     <td><?= is_numeric($tierRow['hourly_limit'] ?? null) ? (int)$tierRow['hourly_limit'] : itmDocEscape((string)($tierRow['hourly_limit'] ?? '')); ?></td>
+                    <td><?= itmDocEscape((string)($tierRow['api_key'] ?? '')); ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
         </table>
-        <p>Send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. Browser-friendly probe: <code>scripts/api.php?rate_limit=1&amp;api_key=&lt;key&gt;</code> — returns JSON without a login session (<code>ITM_API_RATE_LIMIT_PROBE</code> skips web auth in <code>config/config.php</code>). In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
-<pre><code># Probe current quota (does not consume a request)
+        <p><strong>Free</strong> tier does not require an API key — use an authenticated browser session or call <code>itm_api_resolve_rate_limit_row()</code> from signed-in PHP handlers. <strong>Paid</strong> tiers must send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. Browser-friendly probe: <code>scripts/api.php?rate_limit=1</code> (Free + session) or <code>…&amp;api_key=&lt;key&gt;</code> (paid) — returns JSON without a login redirect (<code>ITM_API_RATE_LIMIT_PROBE</code> skips web auth in <code>config/config.php</code>). In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
+<pre><code># Probe current quota (does not consume a request) — paid tier
 curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&lt;api_key&gt;"
 
-# Or with header
-curl -H "X-API-Key: &lt;api_key&gt;" \
-  "http://localhost/it-management/scripts/api.php?rate_limit=1"
+# Free tier while signed in (session cookie) — no api_key parameter
+curl -b cookies.txt "http://localhost/it-management/scripts/api.php?rate_limit=1"
 
 # Example success payload (Free tier)
-{"ok":true,"tier":"Free","unlimited":true,"limit":0,"remaining":null,"reset_at":0}</code></pre>
-        <p>Errors: <code>401</code> missing/invalid key, <code>403</code> inactive key, <code>429</code> quota exceeded (<code>limit</code>, <code>remaining</code>, <code>reset_at</code> included).</p>
+{"ok":true,"tier":"Free","api_key_required":false,"unlimited":true,"limit":0,"remaining":null,"reset_at":0}</code></pre>
+        <p>Errors: <code>401</code> missing/invalid key (paid tiers), <code>403</code> inactive key, <code>429</code> quota exceeded (<code>limit</code>, <code>remaining</code>, <code>reset_at</code> included).</p>
         <h3>Tier regression scripts</h3>
         <table>
             <thead><tr><th>Script</th><th>Purpose</th><th>CLI</th></tr></thead>
             <tbody>
                 <tr>
                     <td><code>scripts/apitest_tier_free.php</code></td>
-                    <td>Seeds disposable Free-tier <code>ui_configuration</code>; expects unlimited status and non-blocking consumes.</td>
+                    <td>Seeds disposable Free-tier <code>ui_configuration</code>; expects unlimited status, session resolve without <code>api_key</code>, and non-blocking consumes.</td>
                     <td><code>php scripts/apitest_tier_free.php</code></td>
                 </tr>
                 <tr>

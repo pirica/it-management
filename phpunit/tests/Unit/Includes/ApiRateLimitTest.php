@@ -68,4 +68,32 @@ class ApiRateLimitTest extends TestCase
         $this->assertNotSame('', $key);
         $this->assertLessThanOrEqual(191, strlen($key));
     }
+
+    public function testFreeTierDoesNotRequireApiKey(): void
+    {
+        $this->assertFalse(itm_api_tier_requires_api_key('Free'));
+        $this->assertTrue(itm_api_tier_requires_api_key('Basic'));
+        $this->assertTrue(itm_api_tier_requires_api_key('Pro'));
+        $this->assertTrue(itm_api_tier_requires_api_key('Enterprise'));
+    }
+
+    public function testFreeProbePayloadMarksKeyOptional(): void
+    {
+        $row = [
+            'id' => 1,
+            'company_id' => 1,
+            'user_id' => 2,
+            'api_key' => '',
+            'api_key_is_active' => 1,
+            'tier' => 'Free',
+            'rate_limit_enabled' => 0,
+            'rate_limit_window_start' => 0,
+            'rate_limit_request_count' => 0,
+        ];
+
+        $payload = itm_api_build_rate_limit_probe_payload($row);
+        $this->assertTrue($payload['ok']);
+        $this->assertFalse($payload['api_key_required']);
+        $this->assertTrue($payload['unlimited']);
+    }
 }

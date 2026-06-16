@@ -187,35 +187,43 @@ function itm_apitest_reload_configuration($conn, $configId, $companyId, $userId)
  */
 function itm_apitest_rate_limit_probe_url($apiKey, $baseUrl = '') {
     $apiKey = trim((string)$apiKey);
-    if ($apiKey === '') {
-        return '';
-    }
 
     $baseUrl = rtrim(trim((string)$baseUrl), '/');
     if ($baseUrl === '') {
         $baseUrl = 'http://localhost/it-management';
     }
 
+    if ($apiKey === '') {
+        return $baseUrl . '/scripts/api.php?rate_limit=1';
+    }
+
     return $baseUrl . '/scripts/api.php?rate_limit=1&api_key=' . rawurlencode($apiKey);
 }
 
-function itm_apitest_print_probe_links($apiKey, $tierLabel = '') {
-    $url = itm_apitest_rate_limit_probe_url($apiKey);
-    if ($url === '') {
-        return;
+function itm_apitest_print_probe_links($apiKey, $tierLabel = '', $includeKeyless = false) {
+    $apiKey = trim((string)$apiKey);
+    $prefix = $tierLabel !== '' ? $tierLabel . ' ' : '';
+
+    if ($includeKeyless || $apiKey === '') {
+        $keylessUrl = itm_apitest_rate_limit_probe_url('');
+        if ($keylessUrl !== '') {
+            itm_apitest_output_line('[INFO] Browser probe URL (session, no API key): ' . $keylessUrl, 'info');
+        }
     }
 
-    $prefix = $tierLabel !== '' ? $tierLabel . ' ' : '';
-    itm_apitest_output_line('[INFO] Auto-generated ' . $prefix . 'API key: ' . $apiKey, 'info');
-    itm_apitest_output_line('[INFO] Browser probe URL: ' . $url, 'info');
+    if ($apiKey !== '') {
+        $url = itm_apitest_rate_limit_probe_url($apiKey);
+        if ($url !== '') {
+            itm_apitest_output_line('[INFO] Auto-generated ' . $prefix . 'API key: ' . $apiKey, 'info');
+            itm_apitest_output_line('[INFO] Browser probe URL: ' . $url, 'info');
+        }
+    }
+
     itm_apitest_output_line('[INFO] Key stays in ui_configuration until the next apitest run for this slot.', 'info');
 }
 
 function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
     $apiKey = trim((string)$apiKey);
-    if ($apiKey === '') {
-        return null;
-    }
 
     $url = itm_apitest_rate_limit_probe_url($apiKey, $baseUrl);
     if ($url === '') {
@@ -224,11 +232,14 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
 
     $body = null;
     $httpCode = 0;
-
+    $headers = ['Accept: application/json'];
+    if ($apiKey !== '') {
+        $headers[] = 'X-API-Key: ' . $apiKey;
+    }
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: ' . $apiKey, 'Accept: application/json']);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         $body = curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -236,10 +247,14 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '') {
     }
 
     if (!is_string($body) || $body === '') {
+        $headerLines = ['Accept: application/json'];
+        if ($apiKey !== '') {
+            $headerLines[] = 'X-API-Key: ' . $apiKey;
+        }
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'header' => "X-API-Key: {$apiKey}\r\nAccept: application/json\r\n",
+                'header' => implode("\r\n", $headerLines) . "\r\n",
                 'timeout' => 10,
                 'ignore_errors' => true,
             ],
