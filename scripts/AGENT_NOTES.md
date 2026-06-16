@@ -24,6 +24,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **smoke_test.sh** — main shell script for linting and security coverage.
 - **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV; post-run link to `phpunit/coverage/html/coverage.html`. Browser coverage URL: `run_tests.php?run=1&mode=coverage`. Full docs: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
+- **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI utility to authenticate as Admin without the UI.
 - **take_screenshots.py** — Python script using Playwright to automate screenshot capture.
