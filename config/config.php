@@ -2048,6 +2048,30 @@ if (!function_exists('itm_is_admin')) {
 }
 
 /**
+ * Why: Sensitive modules must block non-admins on POST with 403, not rely on redirect alone.
+ *
+ * @param mysqli $conn
+ * @param int $userId
+ * @return void
+ */
+if (!function_exists('itm_require_admin')) {
+    function itm_require_admin($conn, $userId) {
+        if (itm_is_admin($conn, (int)$userId)) {
+            return;
+        }
+
+        if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
+            http_response_code(403);
+            echo 'Forbidden: administrator access required.';
+            exit;
+        }
+
+        header('Location: ' . BASE_URL . 'dashboard.php');
+        exit;
+    }
+}
+
+/**
  * Retrieves a company name by its ID
  */
 if (!function_exists('get_company_name')) {

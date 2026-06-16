@@ -13,6 +13,7 @@ Manages system users: credentials, role assignments, and password-vault keys.
 
 ## 4. Business Rules (Critical for Agents)
 - **Security:** passwords hashed; vault master keys handled via session (`vault_key`).
+- **Administrator gate:** all user-management entry points call `itm_require_admin()`; `delete.php` routes to `index.php` (same contract as `view.php`). Non-admins receive HTTP 403 on POST mutations (delete, create, edit, import).
 - **Role assignment:** users may assign only roles permitted by **role_assignment_rights**.
 - **Skip clear:** `users` is never auto-cleared in module browser QA (shared auth).
 

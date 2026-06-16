@@ -5,10 +5,7 @@ $crud_action = 'index';
 ?>
 <?php
 require '../../config/config.php';
-if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
-    header('Location: ' . BASE_URL . 'dashboard.php');
-    exit;
-}
+itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -327,6 +324,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             exit;
         }
 
+        // Why: User imports can create or overwrite accounts; administrators only.
+        if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Unauthorized: Only administrators can import users.']);
+            exit;
+        }
+
         $importRows = $jsonBody['import_excel_rows'];
         if (!is_array($importRows) || count($importRows) < 2) {
             http_response_code(400);
@@ -444,6 +448,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 }
 
 if ($crud_action === 'delete') {
+    // Why: Deletion must stay admin-only even if entry routing changes.
+    itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
         header('Allow: POST');
@@ -586,6 +593,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+    // Why: Only administrators may create or modify user accounts.
+    itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
     cr_require_valid_csrf_token();
     $sqlValues = [];
 

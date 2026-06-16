@@ -10,6 +10,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **Environment Variables**: Prefer loading secrets from environment variables (e.g., `ITM_DB_HOST`).
 - **No PDO**: The system strictly uses `mysqli`.
 - **Zero Dependencies**: Do not introduce external packages (Composer/NPM).
+- **Administrator helpers**: `itm_is_admin()` checks role/username; `itm_require_admin()` enforces admin access (HTTP 403 on POST, redirect on GET).
 
 ## 7. File Structure
 - **config.php** — the core configuration file required by every entry point.
