@@ -5,6 +5,18 @@
 
 declare(strict_types=1);
 
+// Why: Programmatic clients need a lightweight JSON probe without loading the HTML catalogue.
+if (isset($_GET['rate_limit']) && (string)$_GET['rate_limit'] === '1') {
+    require_once dirname(__DIR__) . '/config/config.php';
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Database connection failed.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    itm_api_handle_rate_limit_probe_request($conn);
+}
+
 header('Content-Type: text/html; charset=UTF-8');
 
 $itmDocGeneratedAt = gmdate('Y-m-d H:i:s') . ' UTC';
@@ -516,6 +528,16 @@ function itmDocTodoAjaxActions(): array
 /**
  * Why: api-examples/*.php is the canonical integration sample set; scan every file so docs never omit a script.
  */
+function itmDocApiRateLimitTiers(): array
+{
+    return [
+        ['tier' => 'Free', 'hourly_limit' => 60],
+        ['tier' => 'Basic', 'hourly_limit' => 300],
+        ['tier' => 'Pro', 'hourly_limit' => 1000],
+        ['tier' => 'Enterprise', 'hourly_limit' => 10000],
+    ];
+}
+
 function itmDocCollectApiExamples(string $rootPath): array
 {
     $categoryByFile = [
@@ -579,6 +601,7 @@ $passwordsApiActions = itmDocPasswordsApiActions();
 $notesAjaxActions = itmDocNotesAjaxActions();
 $todoAjaxActions = itmDocTodoAjaxActions();
 $apiExamples = itmDocCollectApiExamples($itmRootPath);
+$apiRateLimitTiers = itmDocApiRateLimitTiers();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -618,7 +641,32 @@ $apiExamples = itmDocCollectApiExamples($itmRootPath);
             <li>Explorer storage is under <code>files/{company_id}/</code> with <code>deny_http</code>; authorised downloads use <code>modules/explorer/file.php</code>.</li>
             <li>Passwords vault endpoints require <code>$_SESSION['vault_key']</code> after unlock.</li>
             <li>Module Excel imports use <code>import_excel_rows</code> at <code>modules/&lt;module&gt;/index.php</code> (auto-detected below).</li>
+            <li>Optional API key auth uses per-user rows in <code>ui_configuration</code> with tier-based hourly rate limits (see below).</li>
         </ul>
+    </div>
+
+    <div class="card">
+        <h2>API key authentication and rate limits</h2>
+        <p>Each signed-in user can store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>). Keys are scoped to <code>company_id</code> + <code>user_id</code>. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
+        <table>
+            <thead><tr><th>Tier</th><th>Hourly limit</th></tr></thead>
+            <tbody>
+            <?php foreach ($apiRateLimitTiers as $tierRow): ?>
+                <tr>
+                    <td><?= itmDocEscape((string)($tierRow['tier'] ?? '')); ?></td>
+                    <td><?= (int)($tierRow['hourly_limit'] ?? 0); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p>Send the key as header <code>X-API-Key: &lt;key&gt;</code> or query/body <code>api_key</code>. In PHP handlers, call <code>itm_api_enforce_rate_limit_or_exit($conn)</code> from <code>includes/itm_api_rate_limit.php</code> before business logic.</p>
+<pre><code># Probe current quota (does not consume a request)
+curl -H "X-API-Key: &lt;api_key&gt;" \
+  "http://localhost/it-management/scripts/api.php?rate_limit=1"
+
+# Example success payload
+{"ok":true,"tier":"Free","limit":60,"remaining":59,"reset_at":1710000000}</code></pre>
+        <p>Errors: <code>401</code> missing/invalid key, <code>403</code> inactive key, <code>429</code> quota exceeded (<code>limit</code>, <code>remaining</code>, <code>reset_at</code> included).</p>
     </div>
 
     <div class="card">
@@ -850,6 +898,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
             <tr><td>Import</td><td><code>{"ok":true,"inserted":N}</code></td><td>Table-tools save-to-database.</td></tr>
             <tr><td>CSRF</td><td>HTTP 403 / JSON error</td><td>Missing or invalid <code>csrf_token</code>.</td></tr>
             <tr><td>Session</td><td><code>{"error":"No company selected."}</code></td><td>Missing company context (Explorer).</td></tr>
+            <tr><td>API key</td><td><code>{"ok":false,"error":"…"}</code></td><td>HTTP 401/403/429 from <code>itm_api_enforce_rate_limit_or_exit()</code>.</td></tr>
             <tr><td>Unknown action</td><td><code>{"error":"Unknown action"}</code></td><td>Invalid Explorer <code>action</code>.</td></tr>
             </tbody>
         </table>
@@ -864,6 +913,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
             <li><code>import_excel_rows</code> requires header row + at least one data row.</li>
             <li>Passwords writes require per-user vault key in session.</li>
             <li>IDF endpoints require JSON body and tenant-scoped <code>company_id</code>.</li>
+            <li>API key requests must pass <code>itm_api_enforce_rate_limit_or_exit()</code> when bypassing session auth.</li>
         </ul>
     </div>
 
@@ -878,7 +928,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>Rate limiting and versioning</h2>
-        <p>No centralized API rate limiting middleware is defined. Login flows include attempt controls. Endpoints are file-path based (no <code>/api/v1</code> prefix).</p>
+        <p>Per-user API keys on <code>ui_configuration</code> enforce tier-based hourly quotas via <code>includes/itm_api_rate_limit.php</code>. Probe quota with <code>GET scripts/api.php?rate_limit=1</code> and <code>X-API-Key</code>. Session-based AJAX endpoints remain unchanged. Endpoints are file-path based (no <code>/api/v1</code> prefix).</p>
     </div>
 </div>
 </body>

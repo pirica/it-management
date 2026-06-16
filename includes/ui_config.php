@@ -706,6 +706,13 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
         `favicon_path` VARCHAR(255) NOT NULL DEFAULT '',
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
+        `api_key` VARCHAR(191) NOT NULL DEFAULT '',
+        `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL,
+        `rate_limit_window_start` INT NOT NULL DEFAULT 0,
+        `rate_limit_request_count` INT NOT NULL DEFAULT 0,
+        `rate_limit_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+        `tier` ENUM('Free','Basic','Pro','Enterprise') NOT NULL DEFAULT 'Free',
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY `uq_ui_configuration_company_user` (`company_id`, `user_id`),
@@ -736,6 +743,13 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
+        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `equipment_type_sidebar_visibility`",
+        'api_key_is_active' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `api_key`",
+        'api_key_last_used_at' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL AFTER `api_key_is_active`",
+        'rate_limit_window_start' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_window_start` INT NOT NULL DEFAULT 0 AFTER `api_key_last_used_at`",
+        'rate_limit_request_count' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_request_count` INT NOT NULL DEFAULT 0 AFTER `rate_limit_window_start`",
+        'rate_limit_enabled' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_enabled` TINYINT(1) NOT NULL DEFAULT 1 AFTER `rate_limit_request_count`",
+        'tier' => "ALTER TABLE `ui_configuration` ADD COLUMN `tier` ENUM('Free','Basic','Pro','Enterprise') NOT NULL DEFAULT 'Free' AFTER `rate_limit_enabled`",
     ];
 
     foreach ($columns as $column => $alterSql) {
@@ -871,7 +885,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -950,6 +964,18 @@ function itm_normalize_ui_configuration($values) {
     } else {
         $values['records_per_page'] = $defaults['records_per_page'];
     }
+
+    $values['api_key'] = trim((string)($values['api_key'] ?? ''));
+    if (strlen($values['api_key']) > 191) {
+        $values['api_key'] = substr($values['api_key'], 0, 191);
+    }
+    $values['api_key_is_active'] = itm_normalize_flag($values['api_key_is_active'] ?? 1);
+    $values['rate_limit_window_start'] = max(0, (int)($values['rate_limit_window_start'] ?? 0));
+    $values['rate_limit_request_count'] = max(0, (int)($values['rate_limit_request_count'] ?? 0));
+    $values['rate_limit_enabled'] = itm_normalize_flag($values['rate_limit_enabled'] ?? 1);
+    $values['tier'] = function_exists('itm_api_normalize_tier')
+        ? itm_api_normalize_tier($values['tier'] ?? 'Free')
+        : 'Free';
 
     return $values;
 }

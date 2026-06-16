@@ -248,6 +248,7 @@ itm_ensure_upload_directory(itm_files_storage_root(), 'deny_http');
 
 // Load secondary configuration and library files
 require_once ROOT_PATH . 'includes/ui_config.php';
+require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 

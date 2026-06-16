@@ -157,6 +157,7 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 - `modules/select_options_api.php`, passwords vault AJAX, notes/todo `ajax_action` handlers
 - IDF `modules/idfs/api/*` handlers
 - Module `import_excel_rows` JSON import endpoints
+- API key auth and tier rate limits (`includes/itm_api_rate_limit.php`, `GET scripts/api.php?rate_limit=1`)
 
 **Collector helpers** (unit-tested in `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`):
 
@@ -168,6 +169,7 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 | `itmDocProjectJsonEndpoints()` | Curated non-import AJAX endpoints |
 | `itmDocPasswordsApiActions()` / `itmDocNotesAjaxActions()` / `itmDocTodoAjaxActions()` | Module-specific action matrices |
 | `itmDocCollectApiExamples()` | Scan every `api-examples/*.php` file (title/category/purpose table in `api.php`) |
+| `itmDocApiRateLimitTiers()` | Tier → hourly limit table for API key documentation |
 
 **Verify after API doc changes:**
 
