@@ -15,6 +15,9 @@ if (!function_exists('explorer_resolve_preview_mode_logic')) {
         if ($ext === 'pdf') {
             return 'pdf';
         }
+        if ($ext === 'zip') {
+            return 'zip';
+        }
         if (in_array($ext, ['txt', 'md', 'log', 'json', 'xml', 'csv', 'php', 'js', 'css', 'html', 'htm'], true)) {
             return 'text';
         }
@@ -34,7 +37,7 @@ $test_cases = [
     ['app.log', 'text', 'Log file'],
     ['data.json', 'text', 'JSON config'],
     ['page.html', 'text', 'HTML source preview'],
-    ['archive.zip', 'unsupported', 'ZIP archive'],
+    ['archive.zip', 'zip', 'ZIP archive'],
     ['sheet.xlsx', 'unsupported', 'Spreadsheet'],
     ['.htaccess', 'unsupported', 'Managed deny_http placeholder'],
     ['index.html', 'text', 'HTML placeholder file'],
@@ -53,10 +56,53 @@ foreach ($test_cases as $tc) {
     }
 }
 
-if ($failed === 0) {
+if ($failed > 0) {
+    echo "\n$failed Explorer preview mode test(s) failed!\n";
+    exit(1);
+}
+
+if (!class_exists('ZipArchive')) {
     echo "\nAll Explorer preview mode tests passed!\n";
+    echo "Skipped ZIP listing test: ZipArchive extension unavailable.\n";
     exit(0);
 }
 
-echo "\n$failed Explorer preview mode test(s) failed!\n";
-exit(1);
+$tmpZip = sys_get_temp_dir() . '/itm_explorer_preview_' . uniqid('', true) . '.zip';
+$zip = new ZipArchive();
+if ($zip->open($tmpZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+    echo "[FAIL] Could not create temporary ZIP for listing test\n";
+    exit(1);
+}
+$zip->addFromString('readme.txt', 'hello');
+$zip->addEmptyDir('docs/');
+$zip->addFromString('docs/guide.md', '# Guide');
+$zip->close();
+
+$readZip = new ZipArchive();
+if ($readZip->open($tmpZip) !== true) {
+    echo "[FAIL] Could not reopen temporary ZIP for listing test\n";
+    @unlink($tmpZip);
+    exit(1);
+}
+$entryNames = [];
+for ($i = 0; $i < $readZip->numFiles; $i++) {
+    $stat = $readZip->statIndex($i);
+    if (is_array($stat) && !empty($stat['name'])) {
+        $entryNames[] = str_replace('\\', '/', (string)$stat['name']);
+    }
+}
+$readZip->close();
+@unlink($tmpZip);
+
+if (count($entryNames) < 2) {
+    echo "[FAIL] ZIP listing smoke test: expected at least 2 archive members\n";
+    exit(1);
+}
+if (!in_array('readme.txt', $entryNames, true)) {
+    echo "[FAIL] ZIP listing smoke test: missing readme.txt entry\n";
+    exit(1);
+}
+echo "[PASS] ZIP listing smoke test reads archive members without extraction\n";
+
+echo "\nAll Explorer preview tests passed!\n";
+exit(0);

@@ -976,7 +976,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="test_explorer_preview.php">test_explorer_preview.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression tests for Explorer preview routing so JPG/PNG/PDF use <code>file.php</code> and text types use the open API.</td>
+                    <td>Regression tests for Explorer preview routing so JPG/PNG/PDF use <code>file.php</code>, ZIP archives list members read-only, and text types use the open API.</td>
                     <td><code>php scripts/test_explorer_preview.php</code></td>
                 </tr>
                 <tr>
