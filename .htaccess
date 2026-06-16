@@ -2,3 +2,5 @@
     RewriteEngine On
     RewriteBase /it-management/
 </IfModule>
+
+DirectoryIndex index.php index.html
