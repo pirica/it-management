@@ -667,6 +667,23 @@ curl -H "X-API-Key: &lt;api_key&gt;" \
 # Example success payload (Free tier)
 {"ok":true,"tier":"Free","unlimited":true,"limit":0,"remaining":null,"reset_at":0}</code></pre>
         <p>Errors: <code>401</code> missing/invalid key, <code>403</code> inactive key, <code>429</code> quota exceeded (<code>limit</code>, <code>remaining</code>, <code>reset_at</code> included).</p>
+        <h3>Tier regression scripts</h3>
+        <table>
+            <thead><tr><th>Script</th><th>Purpose</th><th>CLI</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>scripts/apitest_tier_free.php</code></td>
+                    <td>Seeds disposable Free-tier <code>ui_configuration</code>; expects unlimited status and non-blocking consumes.</td>
+                    <td><code>php scripts/apitest_tier_free.php</code></td>
+                </tr>
+                <tr>
+                    <td><code>scripts/apitest_tier_basic.php</code></td>
+                    <td>Seeds Basic-tier row at hourly cap − 1; expects allow then block on consecutive consumes.</td>
+                    <td><code>php scripts/apitest_tier_basic.php</code></td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="muted">Helpers: <code>scripts/lib/itm_api_tier_test_helpers.php</code>. Catalog: <code>scripts/scripts.php</code>.</p>
     </div>
 
     <div class="card">
