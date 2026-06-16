@@ -37,12 +37,20 @@ $types = 'ii';
 $params = [$company_id, $selectedMonth];
 
 if ($search !== '') {
-    $sql .= ' AND (e.first_name LIKE ? OR e.last_name LIKE ? OR CONCAT(e.first_name, \' \', e.last_name) LIKE ?)';
-    $like = '%' . $search . '%';
-    $types .= 'sss';
-    $params[] = $like;
-    $params[] = $like;
-    $params[] = $like;
+    $searchPattern = (strpos($search, '%') !== false || strpos($search, '_') !== false) ? $search : '%' . $search . '%';
+    $sql .= ' AND (
+        e.first_name LIKE ?
+        OR e.last_name LIKE ?
+        OR CONCAT(e.first_name, \' \', e.last_name) LIKE ?
+        OR CAST(DAY(e.birthday) AS CHAR) LIKE ?
+        OR COALESCE(d.code, \'\') LIKE ?
+    )';
+    $types .= 'sssss';
+    $params[] = $searchPattern;
+    $params[] = $searchPattern;
+    $params[] = $searchPattern;
+    $params[] = $searchPattern;
+    $params[] = $searchPattern;
 }
 
 $sql .= ' ORDER BY ' . $orderSql;
@@ -120,8 +128,8 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
                         </select>
                     </div>
                     <div class="form-group" style="margin:0;">
-                        <label for="search">Search</label>
-                        <input type="search" name="search" id="search" class="form-control" value="<?= sanitize($search) ?>" placeholder="Name">
+                        <label for="search">Search (all fields)</label>
+                        <input type="search" name="search" id="search" class="form-control" value="<?= sanitize($search) ?>" placeholder="Type to search...">
                     </div>
                     <input type="hidden" name="sort" value="<?= sanitize($sort) ?>">
                     <input type="hidden" name="dir" value="<?= sanitize($dir) ?>">
