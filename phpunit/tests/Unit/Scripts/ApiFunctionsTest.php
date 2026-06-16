@@ -110,4 +110,40 @@ class ApiFunctionsTest extends TestCase
         $this->assertContains("save_entry", $names);
         $this->assertContains("list_entries", $names);
     }
+
+    public function testCollectApiExamplesListsEveryPhpFile()
+    {
+        $rootPath = realpath(__DIR__ . "/../../../../");
+        $examples = itmDocCollectApiExamples($rootPath);
+        $this->assertIsArray($examples);
+        $this->assertCount(14, $examples, "Expected every api-examples/*.php file to be documented");
+
+        $files = array_column($examples, "file");
+        $expected = [
+            "api-examples/authenticate.php",
+            "api-examples/catalog_delete.php",
+            "api-examples/catalogs.php",
+            "api-examples/catalogs_listall_active.php",
+            "api-examples/csrfToken.php",
+            "api-examples/employees.php",
+            "api-examples/employees_singleview.php",
+            "api-examples/equipment.php",
+            "api-examples/equipment_edit.php",
+            "api-examples/events.php",
+            "api-examples/sessionCookie.php",
+            "api-examples/ticket_archive.php",
+            "api-examples/tickets.php",
+            "api-examples/tickets_listall_open.php",
+        ];
+        foreach ($expected as $path) {
+            $this->assertContains($path, $files, "Missing api-examples doc row: " . $path);
+        }
+
+        foreach ($examples as $row) {
+            $this->assertArrayHasKey("title", $row);
+            $this->assertArrayHasKey("category", $row);
+            $this->assertArrayHasKey("purpose", $row);
+            $this->assertNotSame("", trim((string)$row["title"]));
+        }
+    }
 }
