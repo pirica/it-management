@@ -109,6 +109,12 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 - `files/{company_id}/Private/{username}_{user_id}/`
 - `files/{company_id}/Private/{username}_{user_id}/private_contacts/`
 
+For **employee profile photos** (`files/{company_id}/Private/{username}_{user_id}/profile/`), the same chain applies through `Private/{username}_{user_id}/`, then:
+
+- `files/{company_id}/Private/{username}_{user_id}/profile/`
+
+Explorer sidebar **Profile Storage** opens this folder for the logged-in user. The Birthdays module displays thumbnails via `emp_profile_photo_url()` → `itm_files_serve_url()`.
+
 **Runtime tenant trees** under `files/{company_id}/**` must **not** be committed to git — helpers create and harden them on deploy.
 
 ### Helpers (mandatory for new code)
@@ -148,9 +154,11 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 - **Implementation:** Upgraded to include a drag-and-drop area for `.ics` files (via `js/itm-upload-helper.js`). Works independently of theme initialization.
 
 ### 3. Employees
-- **Path:** `modules/employees/index.php`
-- **Description:** Supports importing employee data from Excel (.xlsx, .xls) or CSV files via a client-side parser.
-- **Implementation:** Upgraded to include a drag-and-drop area for import files (via `js/itm-upload-helper.js`).
+- **Paths:** `modules/employees/index.php` (import); `modules/employees/create.php`, `modules/employees/edit.php` (profile photo); `modules/employees/includes/profile_fields.php` (shared form UI)
+- **Storage (import):** Client-side only — Excel (.xlsx, .xls) or CSV parsed in the browser; no server upload path for import files.
+- **Storage (profile photo):** `files/{company_id}/Private/{username}_{user_id}/profile/` (`deny_http` chain) — see **§11 Employee profile photos** below.
+- **Description:** Index supports bulk employee import via drag-and-drop. Create/edit support profile photo (PNG/JPG), `birthday`, and `hide_year`. Photo upload requires linked `username` and `user_id`; filenames are `{username}_{user_id}.png` or `.jpg` only.
+- **Implementation:** Import uses `.itm-photo-upload-target` via `js/itm-upload-helper.js`. Profile photo uses the same drag-and-drop pattern as private contacts; upload and serve logic live in `includes/employee_profile_photo.php`.
 
 ### 4. Equipment
 - **Path:** `modules/equipment/create.php` (and `edit.php` via inclusion)
@@ -195,7 +203,13 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 - **Description:** PNG contact photos.
 - **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; UI serves images through `itm_files_serve_url()` → `modules/explorer/file.php`.
 
-### 11. Notes
+### 11. Employee profile photos
+- **Paths:** `modules/employees/create.php`, `modules/employees/edit.php`, `modules/employees/includes/profile_fields.php`, `includes/employee_profile_photo.php`
+- **Storage:** `files/{company_id}/Private/{username}_{user_id}/profile/` (`deny_http` chain)
+- **Description:** PNG/JPG profile photos; canonical filenames `{username}_{user_id}.png` or `{username}_{user_id}.jpg` only. `employees.photo` stores the basename; `birthday` and `hide_year` are separate columns (not files).
+- **Implementation:** `emp_profile_photo_store_upload()` validates MIME (PNG/JPEG), ensures the folder chain with `itm_ensure_files_storage_directory()`, removes the other extension when replacing, and returns the filename for `employees.photo`. UI serves via `emp_profile_photo_url()` → `itm_files_serve_url()` → `modules/explorer/file.php`. Drag-and-drop UI matches private contacts (`.itm-photo-upload-target`, `js/itm-upload-helper.js`). Forms require `enctype="multipart/form-data"`.
+
+### 12. Notes
 - **Path:** `modules/notes/index.php`
 - **Storage:** `files/{company_id}/Private/{username}_{user_id}/notes/` (`deny_http` chain)
 - **Description:** Image attachments on notes.
@@ -209,6 +223,7 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 | `modules/explorer/api.php` | `itm_ensure_files_storage_directory()` for all folder operations | `.htaccess` + empty `index.html` on each chain segment |
 | `modules/explorer/setup.php` | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
 | `modules/private_contacts/create.php`, `edit.php` | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
+| `modules/employees/create.php`, `edit.php` (`includes/employee_profile_photo.php`) | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
 | `modules/notes/index.php` | `itm_ensure_files_storage_directory()` | `.htaccess` + empty `index.html` on each chain segment |
 | `modules/floor_plans/gallery_helpers.php` | `itm_ensure_upload_directory($base, 'upload')` | `.htaccess` + empty `index.html` |
 | `modules/settings/index.php` | `itm_ensure_upload_directory($faviconsDirFs, 'upload')` | `.htaccess` + empty `index.html` |

@@ -265,6 +265,10 @@ body {
     <div onclick="loadFolder('Private'); closeSidebar();">🔒 Private Area</div>
     <div onclick="openRecycle(); closeSidebar();">🗑️ Trash</div>
 
+    <h4>👤 Employee</h4>
+    <div onclick="closeSidebar();"><a href="../../modules/birthdays/">🎉 Birthdays</a></div>
+    <div onclick="openEmployeeProfileFolder(); closeSidebar();">🌐 Profile Storage</div>
+
     <h4>⭐ Favourites</h4>
     <div id="favorites"></div>
 </div>
@@ -328,6 +332,14 @@ function resolveScopedFolderPath(path) {
         return "Departments/" + userDeptId;
     }
     return normalized;
+}
+
+function openEmployeeProfileFolder() {
+    const profilePath = resolveScopedFolderPath("Private");
+    if (!profilePath) {
+        return;
+    }
+    loadFolder(profilePath + "/profile");
 }
 
 const sidebar   = document.getElementById("sidebar");

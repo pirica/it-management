@@ -4,7 +4,7 @@
 The central module for managing employee records, including contact info, hierarchy, and employment details.
 
 ## 2. Key Tables
-- **employees** — main employee data.
+- **employees** — main employee data (`photo`, `birthday`, `hide_year` among profile fields).
 
 ## 3. Required Relationships
 - **employees** → depends on **companies**.
@@ -25,10 +25,13 @@ The central module for managing employee records, including contact info, hierar
   - Auto-create **departments** and **employee_positions** when names/titles not found.
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
+- **Profile photo:** Stored under `files/{company_id}/Private/{username}_{user_id}/profile/` as `{username}_{user_id}.png` or `.jpg` only. Requires linked `username` and `user_id`. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`.
+- **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Photo Upload**: Supports profile photos (check `images/` directory usage).
+- **Profile fields (create/edit):** `includes/profile_fields.php` — drag-and-drop photo (`.itm-photo-upload-target`, `js/itm-upload-helper.js`, same pattern as private contacts), `birthday` date input, `hide_year` checkbox. Forms use `enctype="multipart/form-data"`. Photo upload disabled until `username` and `user_id` are set.
+- **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
 ## 6. API Actions (If Applicable)
@@ -36,6 +39,8 @@ The central module for managing employee records, including contact info, hierar
 
 ## 7. File Structure
 - Standard CRUD structure + `delete_clear_table.php`.
+- **includes/profile_fields.php** — shared photo, birthday, hide_year form block for create/edit.
+- **includes/employee_profile_photo.php** (repo `includes/`) — path, upload, URL, and birthday display helpers.
 
 ## 8. Multi-Tenant Rules
 - Strictly scoped by `company_id`.

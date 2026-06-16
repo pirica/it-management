@@ -8,6 +8,7 @@
 
 require '../../config/config.php';
 require '../../includes/employee_system_access.php';
+require_once '../../includes/employee_profile_photo.php';
 
 /**
  * Ensures unique constraints don't block manual updates when duplicates are allowed in the UI
@@ -101,6 +102,10 @@ $form = [
     'extension' => (string)($employee['extension'] ?? ''),
     'on_contacts' => (string)($employee['on_contacts'] ?? '0'),
     'on_orgchart' => (string)($employee['on_orgchart'] ?? '0'),
+    'birthday' => (string)($employee['birthday'] ?? ''),
+    'hide_year' => (string)($employee['hide_year'] ?? '0'),
+    'photo' => (string)($employee['photo'] ?? ''),
+    'user_id' => (string)($employee['user_id'] ?? ''),
 ];
 
 // Load current permission IDs
@@ -148,9 +153,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
         $onContacts = (int)$form['on_contacts'];
         $onOrgchart = (int)$form['on_orgchart'];
+        $birthday = $form['birthday'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['birthday']) . "'";
+        $hideYear = (int)$form['hide_year'];
+        $photoValue = mysqli_real_escape_string($conn, (string)($employee['photo'] ?? ''));
+        if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $photoEmployee = [
+                'username' => $form['username'],
+                'user_id' => (int)($employee['user_id'] ?? 0),
+                'photo' => (string)($employee['photo'] ?? ''),
+            ];
+            $photoResult = emp_profile_photo_store_upload((int)$company_id, $photoEmployee, $_FILES['photo']);
+            if ($photoResult['ok'] ?? false) {
+                $photoValue = mysqli_real_escape_string($conn, (string)$photoResult['filename']);
+            } elseif (!empty($photoResult['error'])) {
+                $errors[] = (string)$photoResult['error'];
+            }
+        }
         $workstationModesSql = $hasWorkstationModesColumn ? ", workstation_mode_id={$workstationModeId}" : '';
         $assignmentTypesSql = $hasAssignmentTypesColumn ? ", assignment_type_id={$assignmentTypeId}" : '';
 
+        if (!$errors) {
         $sql = "UPDATE employees SET
             first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
             work_email={$workEmail}, personal_email={$personalEmail}, external_id={$externalId}, username={$username},
@@ -158,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
             employee_position_id={$employeePositionId}, reports_to={$reportsTo},
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
-            comments={$comments}
+            comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}'
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
@@ -168,6 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $errors[] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+        }
     }
 }
 
@@ -200,10 +223,11 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
             <?php echo itm_render_alert_errors($errors); ?>
 
             <div class="card">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="id" value="<?php echo (int)$id; ?>">
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                        <?php $employee = $employee ?? []; include __DIR__ . '/includes/profile_fields.php'; ?>
                         <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="<?php echo sanitize($form['first_name']); ?>" required></div>
                         <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" value="<?php echo sanitize($form['last_name']); ?>" required></div>
                         <div class="form-group"><label>Display Name</label><input type="text" name="display_name" value="<?php echo sanitize($form['display_name']); ?>"></div>
