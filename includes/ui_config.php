@@ -58,6 +58,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'bookmarks', 'label' => '🔗 Bookmarks', 'href' => 'modules/bookmarks/', 'match_dir' => 'bookmarks'],
                 ['id' => 'departments', 'label' => '🏢 Departments', 'href' => 'modules/departments/', 'match_dir' => 'departments'],
                 ['id' => 'employee_assignment_history', 'label' => '📝 Assignment History', 'href' => 'modules/employee_assignment_history/', 'match_dir' => 'employee_assignment_history'],
+                ['id' => 'explorer', 'label' => '🌐 Explorer', 'href' => 'modules/explorer/', 'match_dir' => 'explorer'],
             ],
         ],
         [
