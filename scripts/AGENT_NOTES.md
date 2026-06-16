@@ -22,7 +22,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.
-- **run_tests.php** — central test runner.
+- **run_tests.php** — central test runner (`phpunit/phpunit.phar`, `phpunit/phpunit.xml`, `phpunit/tests/`).
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI utility to authenticate as Admin without the UI.

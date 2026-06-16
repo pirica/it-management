@@ -13,5 +13,9 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - Introducing external libraries.
 - Forgetting to update `database.sql` when changing the schema.
 
+## 7. File Structure (high level)
+- **config/**, **includes/**, **modules/**, **scripts/** — application code.
+- **phpunit/** — PHPUnit PHAR, `phpunit.xml`, and `tests/` tree (see `phpunit/AGENT_NOTES.md`).
+
 ## 12. Module Owner Notes (Optional)
 This is the entry point for the entire system. Refer to `AGENTS.md` for the authoritative process and technical standards.
