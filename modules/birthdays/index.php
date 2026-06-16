@@ -44,8 +44,10 @@ if ($search !== '') {
         OR CONCAT(e.first_name, \' \', e.last_name) LIKE ?
         OR CAST(DAY(e.birthday) AS CHAR) LIKE ?
         OR COALESCE(d.code, \'\') LIKE ?
+        OR COALESCE(d.name, \'\') LIKE ?
     )';
-    $types .= 'sssss';
+    $types .= 'ssssss';
+    $params[] = $searchPattern;
     $params[] = $searchPattern;
     $params[] = $searchPattern;
     $params[] = $searchPattern;
