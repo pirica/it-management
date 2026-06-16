@@ -154,6 +154,14 @@ function fp_test_column_exists(mysqli $conn, string $column): bool
     return ($res && mysqli_num_rows($res) > 0);
 }
 
+function fp_test_assert_company_upload_hardening(int $companyId): void
+{
+    $uploadDir = fp_company_upload_dir($companyId);
+    fp_test_assert(is_dir($uploadDir), 'company floor_plans upload directory exists');
+    fp_test_assert(is_file($uploadDir . '.htaccess'), 'company floor_plans .htaccess exists');
+    fp_test_assert(is_file($uploadDir . 'index.html'), 'company floor_plans index.html exists');
+}
+
 fp_test_browser_init();
 
 $companyId = (int)(getenv('ITM_TEST_COMPANY_ID') ?: 1);
@@ -165,6 +173,7 @@ fp_test_out('Company ID: ' . $companyId);
 
 try {
     fp_test_assert(fp_floor_plan_schema_ready($conn), 'Floor Plans schema is installed');
+    fp_test_assert_company_upload_hardening($companyId);
     fp_test_assert(fp_test_column_exists($conn, 'parent_folder_id'), 'floor_plan_folders.parent_folder_id column exists');
     fp_test_assert(!fp_test_column_exists($conn, 'parent_folder_name'), 'legacy parent_folder_name column is absent');
 
