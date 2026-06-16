@@ -14,6 +14,7 @@
       - 4. Shared libraries (do not duplicate ad hoc)
       - Equipment-type façade modules (`modules/is_*`) and clear-table tests
       - Smoke tests (CI — `scripts/smoke_test.sh`)
+      - PHPUnit test runner (`scripts/run_tests.php`)
       - Full-module browser QA (5 companies, Laragon)
       - 5. Pre-merge verification (scripts)
 
@@ -193,6 +194,55 @@ Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_cover
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
 Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate PR #1993-style per-company lookup seed additions (updates inserts only).
+
+#### PHPUnit test runner (`scripts/run_tests.php`)
+
+Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.phar` and `phpunit/phpunit.xml`. Catalog row: **`scripts/scripts.php`**.
+
+| Mode | Browser | CLI |
+|------|---------|-----|
+| **Standard** (verbose, no coverage) | Open `scripts/run_tests.php` → **Standard** | `php scripts/run_tests.php` |
+| **HTML coverage** | **HTML coverage** (needs Xdebug or PCOV) | `php scripts/run_tests.php --coverage` or `ITM_COVERAGE=1` |
+| **Skip DB tests** | Checkbox **Skip database tests** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` |
+
+**Coverage report:** after a successful HTML coverage run, open **`phpunit/coverage/html/coverage.html`** (PHPUnit writes `index.html`; `run_tests.php` renames it to `coverage.html`). The browser menu and post-run output link to this path when the file exists.
+
+**Coverage driver:** `run_tests.php` checks `extension_loaded('xdebug') || extension_loaded('pcov')` before passing `--coverage-html`. Without a driver it runs with `--no-coverage` and shows a note (avoids PHPUnit’s “No code coverage driver available” warning). On Laragon: Menu → PHP → Extensions → enable Xdebug or PCOV, restart Apache.
+
+**Windows Laragon (PowerShell):**
+
+```powershell
+cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\run_tests.php
+& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\run_tests.php --coverage
+```
+
+Linux/macOS/CI: bare `php scripts/run_tests.php` when PHP 7.4 is on PATH.
+
+**PHPUnit config:** `phpunit/phpunit.xml` — `verbose="true"`, `<coverage processUncoveredFiles="true">` with HTML output under `coverage/html`. See also `phpunit/AGENT_NOTES.md` and `phpunit/tests/PREFERENCES.md`.
+
+##### HTML coverage — “headers already sent” (guardrails)
+
+If HTML coverage finishes tests but warns during report generation:
+
+```
+Warning: Cannot modify header information - headers already sent by ...
+in includes/companies_view_redirect.php on line 24
+```
+
+**Root causes (fixed in PR #2228):**
+
+1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time**. PHPUnit loads every `*Test.php` under `phpunit/tests/Unit/`; load-time output breaks coverage finalization.
+2. **`includes/companies_view_redirect.php`** called **`header()` at top level**. With `processUncoveredFiles="true"`, PHPUnit can **`require` uncovered files** after the suite; a bare redirect script then sends headers after output was already sent.
+
+**Fixes (keep these patterns):**
+
+| Area | Rule |
+|------|------|
+| **Test files** | Use proper **`PHPUnit\Framework\TestCase`** classes with `test*` methods and assertions — **no top-level execution**, **no `echo`** in files matched by `suffix="Test.php"`. |
+| **Redirect / entry scripts** | **`header()` / `exit` only on direct HTTP access** (e.g. `realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)` and `PHP_SAPI !== 'cli'`). When included by tooling, **`return`** early instead of sending headers. Example: `includes/companies_view_redirect.php`. |
+
+**When adding tests or includes that send HTTP headers:** run HTML coverage once (`php scripts/run_tests.php --coverage` with Xdebug/PCOV) and confirm report generation completes without header warnings.
 
 #### Full-module browser QA (5 companies, Laragon)
 

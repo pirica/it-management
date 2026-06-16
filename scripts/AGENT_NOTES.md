@@ -22,7 +22,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.
-- **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV before coverage runs; post-run link to `phpunit/coverage/html/coverage.html`.
+- **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV before coverage runs; post-run link to `phpunit/coverage/html/coverage.html`. Full usage and HTML coverage guardrails: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI utility to authenticate as Admin without the UI.
