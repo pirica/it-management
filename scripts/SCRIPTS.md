@@ -1,6 +1,7 @@
 # Table of Contents
 
 - Scripts Development Standards
+  - API documentation (`scripts/api.php`)
   - Pre-implementation discovery (scripts)
   - 1. Catalog Registration
   - 2. Cross-Environment Output (Newline Standard)
@@ -146,6 +147,35 @@ Add a table row with:
 | **How to use** | Exact browser URL/path, query flags, env vars, and CLI command: `php scripts/<name>.php [options]` |
 
 Do not add a script under `scripts/` without updating `scripts/scripts.php`.
+
+#### API documentation (`scripts/api.php`)
+
+Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`scripts/api.php`** in the same deliverable when adding or changing:
+
+- Explorer file actions (`modules/explorer/api.php`, `file.php`, `downloadZip`)
+- Shared includes (`get_ports.php`, `update_port.php`)
+- `modules/select_options_api.php`, passwords vault AJAX, notes/todo `ajax_action` handlers
+- IDF `modules/idfs/api/*` handlers
+- Module `import_excel_rows` JSON import endpoints
+
+**Collector helpers** (unit-tested in `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`):
+
+| Function | Purpose |
+|----------|---------|
+| `itmDocCollectModuleImportEndpoints()` | Scan `modules/*/index.php` and `list_all.php` for import handlers |
+| `itmDocCollectExplorerApiActions()` | Parse Explorer `switch` actions from live `modules/explorer/api.php` |
+| `itmDocCollectIdfApiEndpoints()` | List IDF API files with purpose blurbs |
+| `itmDocProjectJsonEndpoints()` | Curated non-import AJAX endpoints |
+| `itmDocPasswordsApiActions()` / `itmDocNotesAjaxActions()` / `itmDocTodoAjaxActions()` | Module-specific action matrices |
+
+**Verify after API doc changes:**
+
+```bash
+php -l scripts/api.php
+php scripts/run_tests.php --filter ApiFunctionsTest
+```
+
+Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tables render.
 
 #### 2. Browser scripts (`scripts/*.php` opened in the browser)
 

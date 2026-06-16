@@ -56,6 +56,58 @@ class ApiFunctionsTest extends TestCase
 
         foreach ($endpoints as $e) {
             $this->assertStringContainsString("modules/idfs/api/", $e["path"]);
+            $this->assertArrayHasKey("purpose", $e);
         }
+    }
+
+    public function testCollectExplorerApiActions()
+    {
+        $rootPath = realpath(__DIR__ . "/../../../../");
+        $actions = itmDocCollectExplorerApiActions($rootPath);
+        $this->assertIsArray($actions);
+        $this->assertNotEmpty($actions);
+
+        $actionNames = array_column($actions, "action");
+        $required = [
+            "list", "upload", "rename", "delete", "restore",
+            "copy", "move", "zip", "unzip",
+            "createYear", "createMonths", "createDays", "createYearMonthDay",
+            "listRecycle", "emptyRecycle",
+        ];
+        foreach ($required as $name) {
+            $this->assertContains($name, $actionNames, "Explorer action missing from docs: " . $name);
+        }
+    }
+
+    public function testExplorerDownloadEndpoints()
+    {
+        $endpoints = itmDocExplorerDownloadEndpoints();
+        $this->assertCount(2, $endpoints);
+        $paths = array_column($endpoints, "path");
+        $this->assertTrue(
+            (bool) preg_grep('/downloadZip/', $paths),
+            "downloadZip endpoint not documented"
+        );
+        $this->assertTrue(
+            (bool) preg_grep('/file\.php/', $paths),
+            "file.php download endpoint not documented"
+        );
+    }
+
+    public function testProjectJsonEndpointsIncludesSelectOptions()
+    {
+        $endpoints = itmDocProjectJsonEndpoints();
+        $this->assertIsArray($endpoints);
+        $paths = array_column($endpoints, "path");
+        $this->assertContains("modules/select_options_api.php", $paths);
+    }
+
+    public function testPasswordsApiActionsCatalog()
+    {
+        $actions = itmDocPasswordsApiActions();
+        $this->assertNotEmpty($actions);
+        $names = array_column($actions, "action");
+        $this->assertContains("save_entry", $names);
+        $this->assertContains("list_entries", $names);
     }
 }
