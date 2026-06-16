@@ -23,6 +23,8 @@ Before making any change, replying, running commands, editing files, or proposin
    | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
    | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
 
+   **No PR numbers in product documentation:** describe current behaviour, files, and commands — do **not** cite pull request numbers or `pull/N` URLs in `AGENT_NOTES.md`, `docs/`, module notes, feature sections of **`AGENTS.md`**, **`scripts/SCRIPTS.md`**, or **`scripts/scripts.php`** catalog prose. Git/PR *workflow* steps in **`AGENTS.md`** (fresh branch, do not push to an open PR) may refer to the PR process without numbering shipped features.
+
    Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
 5. **Always create and update `AGENT_NOTES.md` (hard fail):** for every in-scope folder you read or change, **read** that folder's `AGENT_NOTES.md` first (and the parent folder's file when editing a subfolder). **Create** the file from `templates/AGENT_NOTES.md` when it is missing. **Update** it in the **same PR** whenever your work changes purpose, tables, FKs, business rules, UI behaviour, API actions, file layout, tenant rules, audit coverage, or known pitfalls. Do not mark a deliverable complete while notes are missing, empty, or stale for a folder you touched.
 6. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
@@ -384,7 +386,7 @@ $displayFieldColumns = $uiColumns;
 | `php scripts/check_display_field_columns_search.php` | After changing flattened `index.php` search or list column variables; exit `1` if any index uses `$displayFieldColumns` without assignment |
 | `php scripts/apply_display_field_columns_search_alias.php` | CLI-only maintenance to add the alias on modules missing it (idempotent; re-run when scaffolding new flattened modules) |
 
-Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk fix: [PR #1796](https://github.com/pirica/it-management/pull/1796).
+Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias repair: `php scripts/apply_display_field_columns_search_alias.php`.
 
 ### 6. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.
@@ -689,11 +691,11 @@ Use this when asked to “check last N comments and reply” (Codex/Bugbot/human
    ```
    * **`in_reply_to` must be numeric:** use `-F in_reply_to={id}` (typed field), not `-f` (string), or GitHub returns HTTP 422.
    * **PowerShell:** same flags; use two `-f` lines or `-m` for the body if quoting is awkward.
-5. **After merge:** add a short follow-up reply on the same thread, e.g. **`Fixed`** — merged to `master` as PR #NNNN, when the fix landed in a follow-up PR.
+5. **After merge:** add a short follow-up reply on the same thread, e.g. **`Fixed`** — merged to `master`, when the fix landed in a follow-up PR.
 
 **Reply templates (searchable labels):**
-* **`Fixed`** — merged PR #1708; `scripts/check_ui_configuration_coverage.php` now rejects inverted `perPage >= totalRows` gates.
-* **`Fixed`** — PR #1713 on `master`; `modules/system_access/index.php` tbody `ids[]` cells gated with `$showBulkActions`.
+* **`Fixed`** — merged to `master`; `scripts/check_ui_configuration_coverage.php` now rejects inverted `perPage >= totalRows` gates.
+* **`Fixed`** — on `master`; `modules/system_access/index.php` tbody `ids[]` cells gated with `$showBulkActions`.
 * **`Not Fixed`** — intentional per `scripts/SCRIPTS.md` (phpMyAdmin linked only from `scripts/scripts.php`, not derived per-request host).
 
 ## 📚 API Examples

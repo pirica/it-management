@@ -207,7 +207,7 @@ Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_cover
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
-Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate PR #1993-style per-company lookup seed additions (updates inserts only).
+Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate per-company lookup seed additions (updates inserts only).
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 
@@ -258,8 +258,8 @@ Common symptoms:
 
 **Root causes:**
 
-1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time** (fixed PR #2228).
-2. **Bare HTTP entry scripts** called **`header()` / `echo` / `exit` at top level** (fixed PR #2228, #2230) — use **`includes/itm_script_entry_guard.php`** (`itm_skip_http_entry_unless_direct()`).
+1. **`PasswordsFunctionalTest.php`** ran procedural code with **`echo` at file load time** (fixed — guard entry scripts).
+2. **Bare HTTP entry scripts** called **`header()` / `echo` / `exit` at top level** (fixed — use **`includes/itm_script_entry_guard.php`** (`itm_skip_http_entry_unless_direct()`)).
 3. **View partials** output HTML without context — use **`itm_skip_view_partial_unless_context()`** or explicit `$conn` guard.
 4. **Duplicate top-level `function` declarations** across two endpoints — PHP registers functions at compile time; consolidate in a shared helper file.
 5. **`processUncoveredFiles="true"`** — PHPUnit bare-`require`s every uncovered file under `config/`, `includes/`, `modules/`, `scripts/`; disabled in `phpunit.xml` so the HTML report completes reliably. Files executed during tests still appear in the report.
@@ -312,7 +312,7 @@ A successful run (e.g. **OK (239 tests, 968 assertions)** on Laragon with MySQL)
 
 #### Full-module browser QA (5 companies, Laragon)
 
-Introduced in [PR #1718](https://github.com/pirica/it-management/pull/1718). Runner FK/delete improvements: [PR #1722](https://github.com/pirica/it-management/pull/1722). Add-step / bulk-order / error-log scope: [PR #1742](https://github.com/pirica/it-management/pull/1742). Bulk skip notes: [PR #1740](https://github.com/pirica/it-management/pull/1740). Sample-data FK parents + seed-only id remap: [PR #1744](https://github.com/pirica/it-management/pull/1744). Use when asked to verify **all modules** across the five seeded companies (TechCorp Global … Enterprise IT).
+Full-module browser QA runs HTTP session checks across the five seeded companies (TechCorp Global … Enterprise IT). The runner includes FK-aware clear/delete, add-step and bulk-order coverage, scoped `error_log` attribution, bulk-step skip notes, and sample-data FK parent seeding with seed-only id remap. Use when asked to verify **all modules** across those companies.
 
 | Script | Role |
 |--------|------|
@@ -429,7 +429,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | **`bulk_cancel`** | Verifies index HTML: `bulk-delete-form`, `bulk-delete-selection.js`, `bulk_action`, **Select to Delete**; static or JS-injected **`data-itm-bulk-cancel="1"`** `type="button"` | First **Select to Delete** → checkboxes + **Delete Selected** + visible **Cancel**; **Cancel** exits without POST |
 | **`bulk_delete`** | POST `modules/<slug>/delete.php` with `bulk_action=bulk_delete` and up to 3 `ids[]` (skips two-step UI) | Second click **Delete Selected** submits selected `ids[]` |
 
-**FK-aware clear / delete (PR #1722):**
+**FK-aware clear / delete:**
 
 * **Tenant clear** walks inbound FKs (`information_schema`), deletes child rows for the active `company_id`, then clears the module table. MySQL **1451** retries parse the **child table** from the error text (`` `schema`.`child_table` ``), not the schema name.
 * **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries — **including Protection Zone tables** when required to unblock the delete.
@@ -439,7 +439,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 **Sample / export / import:**
 
 * Sample seed prerequisites are seeded first when configured (e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; `employee_positions` → `departments`).
-* **`error_log` (PR #1742):** If `error_log.txt` cannot be renamed (e.g. Windows file lock), the runner records the current file size and only attributes **new** lines to the active module — avoids false failures from earlier modules. When rotation succeeds, archives are `error_log-1.txt`, `error_log-2.txt`, … under `ROOT_PATH`.
+* **`error_log`:** If `error_log.txt` cannot be renamed (e.g. Windows file lock), the runner records the current file size and only attributes **new** lines to the active module — avoids false failures from earlier modules. When rotation succeeds, archives are `error_log-1.txt`, `error_log-2.txt`, … under `ROOT_PATH`.
 * **Export Excel** is simulated by parsing the list `<table>` HTML (same columns as `table-tools.js`).
 * **Import Excel** POSTs **one** derived row to `data-itm-db-import-endpoint` (round-trip smoke, not re-import of every exported line). Uses export headers with insertable values from `database.sql` when UI labels are not IDs. Export row payloads are captured from HTML **before** **`clear_table`** / the second **`clear`**. The runner runs **`clear_table`** (when the bulk gate passes) then **second `clear`** after **`export_xlsx`** so import runs on an empty table. **`expenses`:** import picks a **free** `cost_center_id` for the tenant (`uq_expenses_company_scope`); do not expect `inserted` to match export row count.
 

@@ -185,7 +185,7 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 - **Paths:** `modules/explorer/api.php`, `modules/explorer/setup.php`, `modules/explorer/file.php`, `modules/explorer/index.php`
 - **Storage:** `files/{company_id}/` tree (`deny_http` on every segment, including `Trash/`)
 - **Description:** General file management with multi-tenant ACL (`get_full_path`), soft-delete to `Trash/`, and PHP-proxied downloads.
-- **Security (post PR #2240 / #2241):** API blocks `Private` and `Departments` roots; UI uses `resolveScopedFolderPath()` for scoped navigation; trash operations are ACL-filtered. See `modules/explorer/AGENT_NOTES.md` and **`AGENTS.md` → Explorer module**.
+- **Security:** API blocks `Private` and `Departments` roots; UI uses `resolveScopedFolderPath()` for scoped navigation; trash operations are ACL-filtered. See `modules/explorer/AGENT_NOTES.md` and **`AGENTS.md` → Explorer module**.
 - **Implementation:** Standard `.itm-photo-upload-target` UI; desktop drag-and-drop upload. All folder creation uses `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Block dotfile uploads; managed `.htaccess` overwrites malicious uploads on ensure.
 - **Regression scripts:** `php scripts/test_explorer_paths.php`, `php scripts/verify_explorer_zip_leak.php`; `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`.
 
