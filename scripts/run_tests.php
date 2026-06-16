@@ -148,6 +148,8 @@ if (strpos($php_bin, 'php-cgi') !== false) {
     $php_bin = str_replace('php-cgi', 'php', $php_bin);
 }
 
+// Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
+// We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
 $command = escapeshellarg($php_bin) . ' ' . escapeshellarg($phpunit_bin)
     . ' -c ' . escapeshellarg($phpunit_xml)
     . ' --verbose';
@@ -157,6 +159,7 @@ if ($want_coverage) {
     }
     $command .= ' --coverage-html ' . escapeshellarg($coverage_html_dir);
 } else {
+    // Why: phpunit.xml defines <coverage>; skip it unless explicitly requested.
     $command .= ' --no-coverage';
 }
 $command .= ' 2>&1';
@@ -179,7 +182,8 @@ passthru($command, $return_var);
 if (!$isCli) {
     echo '</pre>';
     if ($want_coverage && is_file($coverage_report_file)) {
-        echo '<p>HTML coverage report: <a href="../phpunit/coverage/html/index.html">phpunit/coverage/html/index.html</a></p>';
+        echo '<p>HTML coverage report: <a href="../phpunit/coverage/html/index.html">'
+            . 'phpunit/coverage/html/index.html</a></p>';
     }
     if ($return_var === 0) {
         echo '<p style="color:green;font-weight:bold;">✅ All tests passed!</p>';

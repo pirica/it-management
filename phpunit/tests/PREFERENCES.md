@@ -25,7 +25,8 @@
 - **Naming Convention:** `*unittest.php`
 - **Bootstrap:** `phpunit/tests/bootstrap.php` provided for environment setup
 - **Browser runner:** `scripts/run_tests.php` menu — **Standard** (verbose) or **HTML coverage**
-- **Verbose / coverage:** `verbose="true"` and `<coverage>` in `phpunit/phpunit.xml`; HTML at `phpunit/coverage/html/index.html`
+- **Verbose output:** `verbose="true"` in `phpunit/phpunit.xml` plus `--verbose` from `scripts/run_tests.php`
+- **HTML coverage:** `<coverage>` in `phpunit/phpunit.xml`; browser menu, `php scripts/run_tests.php --coverage`, or `ITM_COVERAGE=1` → `phpunit/coverage/html/index.html` (Xdebug or PCOV required)
 
 ---
 
