@@ -2,7 +2,7 @@
 /**
  * Apply module/table sample seed rows to database.sql across all seeded companies.
  *
- * Why: PR #1993 added idf_device_type sample rows manually. This script automates
+ * Why: idf_device_type sample rows were added manually across companies. This script automates
  * that same process per module/table so new sample values can be propagated safely.
  *
  * Usage (repository root):
