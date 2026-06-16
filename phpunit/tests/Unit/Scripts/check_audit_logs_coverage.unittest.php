@@ -1,8 +1,22 @@
 <?php
+
 declare(strict_types=1);
+
 use PHPUnit\Framework\TestCase;
-class CheckAuditLogsCoverageUnittest extends TestCase {
-    public function testFileExists(): void {
-        $this->assertFileExists(__DIR__ . '/../../../../scripts/check_audit_logs_coverage.php');
+
+require_once __DIR__ . '/../Support/ItmScriptCliTestTrait.php';
+
+class CheckAuditLogsCoverageUnittest extends TestCase
+{
+    use ItmScriptCliTestTrait;
+
+    public function testCliAuditRunsAndPrintsSummary(): void
+    {
+        $result = $this->runRepoScript('scripts/check_audit_logs_coverage.php');
+        // Why: full-tree scan may exit 2 when master has known FAIL rows; still exercises the audit script for coverage.
+        $this->assertContains($result['exit'], [0, 2], $result['output']);
+        $this->assertStringContainsString('Audit Logs Coverage Check', $result['output']);
+        $this->assertStringContainsString('==== Summary ====', $result['output']);
+        $this->assertStringContainsString('PASS:', $result['output']);
     }
 }

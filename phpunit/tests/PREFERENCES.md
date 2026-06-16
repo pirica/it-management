@@ -13,6 +13,8 @@
 ## Coverage Goals
 - **Long-term target:** 80% line coverage (aspirational — not the current measured baseline).
 - **Current baseline:** With full-suite HTML coverage (239 tests, MySQL, Xdebug/PCOV), expect **~0.4% total lines** and **&lt; 0.2% for `modules/`** because module tests exercise the database via MySQLi, not `modules/*/*.php` entry files. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.
+- **Phase 1 (includes + scripts):** Add `phpunit/tests/Unit/Includes/` and upgrade audit `*.unittest.php` stubs to CLI subprocess tests — raises `includes/` and `scripts/` buckets without requiring module HTTP loads. Full plan: **`docs/PHPUNIT_PLAN.md`**.
+- **Phase 2 (optional):** Module functional tests (`PasswordsFunctionalTest`, `SecurityFixesTest::runIsolated`) for pilot modules — moves `modules/` off 0% slowly.
 - **FK Regression:** Includes foreign key and delete cascade regression tests (including Protection Zone modules where applicable)
 - **Security Focus:** SQLi payloads, CSRF token validation, and XSS sanitization
 
@@ -22,7 +24,7 @@
 - **MySQL Independence:** `ITM_SKIP_DB_TESTS=1` or browser **Skip database tests** checkbox
 
 ## Deliverable Format
-- **Directory Structure:** `phpunit/tests/Unit/` (Config, Security, CRUD, Database, MultiTenancy, Modules, Scripts)
+- **Directory Structure:** `phpunit/tests/Unit/` (Config, Security, CRUD, Database, Includes, MultiTenancy, Modules, Scripts, Support)
 - **Naming Convention:** `*Test.php` and `*.unittest.php`
 - **Bootstrap:** `phpunit/tests/bootstrap.php`
 
