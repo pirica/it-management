@@ -1,6 +1,14 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /it-management/
+
+    # Block direct access to any folder
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [F]
 </IfModule>
 
+# Disable directory listing
+Options -Indexes
+
+# Prioritize PHP
 DirectoryIndex index.php index.html
