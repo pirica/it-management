@@ -46,10 +46,15 @@ var itmUploadHelper = (function() {
         });
 
         uploadTarget.addEventListener("click", function(e) {
-            // Guard: don't trigger click on fileInput if the event came FROM fileInput
-            if (e.target !== fileInput) {
-                fileInput.click();
+            if (e.target === fileInput) {
+                return;
             }
+            // Why: <label for="input"> already opens the picker; bubbling would double-open.
+            var label = e.target.closest("label");
+            if (label && label.htmlFor === fileInput.id) {
+                return;
+            }
+            fileInput.click();
         });
 
         uploadTarget.addEventListener("keydown", function(e) {

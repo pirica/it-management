@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/config.php';
+require_once __DIR__ . '/includes/private_contact_photo.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
@@ -25,26 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
     $photo = $contact['photo'];
-    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($_FILES['photo']['tmp_name']);
-        if ($mime === 'image/png') {
-            $photoFilename = $id . '_photo.png';
-            $dir = ROOT_PATH . "files/$companyId/Private/{$username}_{$userId}/private_contacts";
-
-            $can_write = true;
-            if (file_exists($dir . '/' . $photoFilename) && ($_POST['confirm_replace'] ?? '0') !== '1') {
-                $can_write = false;
-            }
-
-            if ($can_write) {
-                itm_ensure_files_storage_directory($dir);
-
-                if (move_uploaded_file($_FILES['photo']['tmp_name'], $dir . '/' . $photoFilename)) {
-                    $photo = $photoFilename;
-                }
-            }
-        }
+    if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $photo = pc_contact_photo_store_upload(
+            $_FILES['photo'],
+            $id,
+            $companyId,
+            $username,
+            $userId,
+            (string)($contact['photo'] ?? ''),
+            (($_POST['confirm_replace'] ?? '0') === '1')
+        );
     }
 
     $sql = "UPDATE private_contacts SET

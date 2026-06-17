@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/config.php';
+require_once __DIR__ . '/includes/private_contact_photo.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
@@ -42,20 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if ($stmt->execute()) {
-        $insertId = $stmt->insert_id;
-        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = $finfo->file($_FILES['photo']['tmp_name']);
-            if ($mime === 'image/png') {
-                $photoFilename = $insertId . '_photo.png';
-                $dir = ROOT_PATH . "files/$companyId/Private/{$username}_{$userId}/private_contacts";
-                itm_ensure_files_storage_directory($dir);
-
-                if (move_uploaded_file($_FILES['photo']['tmp_name'], $dir . '/' . $photoFilename)) {
-                    $updateStmt = $conn->prepare("UPDATE private_contacts SET photo = ? WHERE id = ?");
-                    $updateStmt->bind_param("si", $photoFilename, $insertId);
-                    $updateStmt->execute();
-                }
+        $insertId = (int)$stmt->insert_id;
+        if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $photoFilename = pc_contact_photo_store_upload(
+                $_FILES['photo'],
+                $insertId,
+                $companyId,
+                $username,
+                $userId
+            );
+            if ($photoFilename !== '') {
+                $updateStmt = $conn->prepare('UPDATE private_contacts SET photo = ? WHERE id = ? AND user_id = ?');
+                $updateStmt->bind_param('sii', $photoFilename, $insertId, $userId);
+                $updateStmt->execute();
             }
         }
         header("Location: index.php?msg=created");
