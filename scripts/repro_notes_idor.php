@@ -2,7 +2,7 @@
 /**
  * Reproduction script for Cross-user IDOR in Notes Module.
  *
- * Why: Confirms that an authenticated user can view or soft-delete
+ * Why: Confirms that an authenticated user cannot view or soft-delete
  * private notes belonging to other users in the same company.
  *
  * Browser: open scripts/repro_notes_idor.php (login required).
@@ -13,6 +13,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once ROOT_PATH . 'includes/notes_visibility.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_user.php';
 
@@ -40,21 +41,19 @@ echo "User 2 (Attacker) ID: $user2_id" . $nl;
 
 // 2. User 1 creates a private note
 $secret_content = "SECRET_TOKEN_" . uniqid();
-mysqli_query($conn, "INSERT INTO notes (company_id, user_id, title, content, active) VALUES ($company_id, $user1_id, 'Private Note', '$secret_content', 1)");
-$note_id = mysqli_insert_id($conn);
+$stmtInsert = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, active) VALUES (?, ?, 'Private Note', ?, 1)");
+$stmtInsert->bind_param('iis', $company_id, $user1_id, $secret_content);
+$stmtInsert->execute();
+$note_id = (int)$stmtInsert->insert_id;
+$stmtInsert->close();
 
 echo "Created private note ID: $note_id for User 1." . $nl;
 
-// 3. User 2 (Attacker) attempts to view it
+// 3. User 2 (Attacker) attempts to view it via visibility contract
 $_SESSION['user_id'] = $user2_id;
 $_SESSION['company_id'] = $company_id;
 
-$stmt = $conn->prepare("SELECT * FROM notes WHERE id = ? AND company_id = ? AND active = 1");
-$stmt->bind_param("ii", $note_id, $company_id);
-$stmt->execute();
-$data = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
+$data = itm_notes_fetch_visible_by_id($conn, $note_id, $company_id, $user2_id, true);
 $view_vulnerable = ($data && $data['content'] === $secret_content);
 
 if ($view_vulnerable) {
@@ -63,9 +62,18 @@ if ($view_vulnerable) {
     echo colorText("[PASS] SAFE: Access to private note was restricted.", 'pass') . $nl;
 }
 
-// 4. Test IDOR in soft-delete
-$stmt_del = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ?");
-$stmt_del->bind_param("ii", $note_id, $company_id);
+// 4. Owner can still load the note
+$ownerData = itm_notes_fetch_visible_by_id($conn, $note_id, $company_id, $user1_id, true);
+if (!$ownerData || $ownerData['content'] !== $secret_content) {
+    echo colorText('[FAIL] Owner could not load their own note via visibility helper.', 'fail') . $nl;
+} else {
+    echo colorText('[PASS] Owner can load their own note.', 'pass') . $nl;
+}
+
+// 5. Test IDOR in soft-delete (production visibility-scoped UPDATE)
+$visSql = itm_notes_visibility_sql();
+$stmt_del = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
+$stmt_del->bind_param('iiii', $note_id, $company_id, $user2_id, $user2_id);
 $stmt_del->execute();
 $delete_vulnerable = ($stmt_del->affected_rows > 0);
 $stmt_del->close();
@@ -77,6 +85,11 @@ if ($delete_vulnerable) {
 }
 
 // Cleanup
-mysqli_query($conn, "DELETE FROM notes WHERE id = $note_id");
+$stmtCleanup = $conn->prepare('DELETE FROM notes WHERE id = ?');
+$stmtCleanup->bind_param('i', $note_id);
+$stmtCleanup->execute();
+$stmtCleanup->close();
 
+$failed = $view_vulnerable || $delete_vulnerable || !$ownerData;
 itm_script_output_end();
+exit($failed ? 1 : 0);

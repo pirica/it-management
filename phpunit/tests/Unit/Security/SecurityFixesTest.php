@@ -298,4 +298,52 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $this->conn->query("DELETE FROM notes WHERE id = $noteId");
     }
+
+    public function testNotesIdorViewBlocked()
+    {
+        require_once ROOT_PATH . 'includes/notes_visibility.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+
+        $companyId = 1;
+        $victim = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-victim-fix']);
+        $attacker = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-attacker-fix']);
+        if (!is_array($victim) || !is_array($attacker)) {
+            $this->fail('Unable to create disposable test users.');
+        }
+
+        $victimId = (int)$victim['id'];
+        $attackerId = (int)$attacker['id'];
+        itm_script_test_user_register_teardown($this->conn, $victimId);
+        itm_script_test_user_register_teardown($this->conn, $attackerId);
+
+        $title = 'VULN_TEST_IDOR_VIEW_FIX';
+        $secret = 'SECRET_CONTENT_' . bin2hex(random_bytes(8));
+        $stmt = $this->conn->prepare('INSERT INTO notes (company_id, user_id, title, content, active) VALUES (?, ?, ?, ?, 1)');
+        $stmt->bind_param('iiss', $companyId, $victimId, $title, $secret);
+        $stmt->execute();
+        $noteId = (int)$stmt->insert_id;
+        $stmt->close();
+
+        $this->assertNull(
+            itm_notes_fetch_visible_by_id($this->conn, $noteId, $companyId, $attackerId, true),
+            'Cross-user private notes must not load via the visibility helper.'
+        );
+
+        $session = [
+            'company_id' => $companyId,
+            'user_id' => $attackerId,
+            'username' => (string)$attacker['username'],
+        ];
+        $get = ['id' => $noteId];
+        $extra_globals = ['crud_action' => 'view'];
+
+        $output = $this->runIsolated(ROOT_PATH . 'modules/notes/index.php', $session, [], $get, $extra_globals);
+        $this->assertStringNotContainsString($secret, $output, 'Attacker must not view victim private note content via view load.');
+
+        $ownerRow = itm_notes_fetch_visible_by_id($this->conn, $noteId, $companyId, $victimId, true);
+        $this->assertIsArray($ownerRow);
+        $this->assertSame($secret, $ownerRow['content']);
+
+        $this->conn->query("DELETE FROM notes WHERE id = $noteId");
+    }
 }

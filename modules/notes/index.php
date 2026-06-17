@@ -521,11 +521,15 @@ if ($crud_action === "index" || $crud_action === "list_all") {
         }
     }
 } elseif ($crud_action === "edit" || $crud_action === "view") {
-    $stmt = $conn->prepare("SELECT * FROM notes WHERE id = ? AND company_id = ? AND active = 1");
-    $stmt->bind_param("ii", $editId, $company_id);
-    $stmt->execute();
-    $data = $stmt->get_result()->fetch_assoc();
-    if (!$data) { header("Location: index.php"); die(); }
+    if ($editId <= 0) {
+        header("Location: index.php");
+        die();
+    }
+    $data = itm_notes_fetch_visible_by_id($conn, $editId, $company_id, $logged_user_id, true);
+    if (!$data) {
+        header("Location: index.php");
+        die();
+    }
 }
 
 $uiColumns = [['Field'=>'id'],['Field'=>'title'],['Field'=>'content'],['Field'=>'reminder_at'],['Field'=>'tags'],['Field'=>'shared_with'],['Field'=>'is_pinned'],['Field'=>'is_important'],['Field'=>'is_archived']];

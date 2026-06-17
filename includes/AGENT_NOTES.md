@@ -16,7 +16,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 
 ## 7. File Structure
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
-- **notes_visibility.php** — owner + `shared_with_json` filter for Notes module; `itm_notes_private_images_dir()`, `itm_notes_normalize_image_filename()`, and `itm_notes_resolve_image_path()` confine note attachment ZIP downloads to `files/{company_id}/Private/{username}_{user_id}/notes/`.
+- **notes_visibility.php** — owner + `shared_with_json` filter for Notes module; `itm_notes_fetch_visible_by_id()` for single-record view/edit load; `itm_notes_private_images_dir()`, `itm_notes_normalize_image_filename()`, and `itm_notes_resolve_image_path()` confine note attachment ZIP downloads to `files/{company_id}/Private/{username}_{user_id}/notes/`.
 - **todo_visibility.php** — global/assigned/creator filter for Todo module.
 - **delete_functions.php** — shared logic for complex deletions (e.g., equipment).
 - **companies_view_redirect.php** — legacy company view redirect; guarded via `itm_script_entry_guard.php`.

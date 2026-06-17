@@ -35,6 +35,35 @@ function itm_notes_append_visibility_filter(&$conditions, &$types, &$params, $lo
 }
 
 /**
+ * Loads one note row when the active user is owner or listed in shared_with_json.
+ */
+function itm_notes_fetch_visible_by_id($conn, $noteId, $companyId, $loggedUserId, $requireActive = true)
+{
+    $noteId = (int)$noteId;
+    $companyId = (int)$companyId;
+    $loggedUserId = (int)$loggedUserId;
+
+    if ($noteId <= 0 || $companyId <= 0 || $loggedUserId <= 0 || !($conn instanceof mysqli)) {
+        return null;
+    }
+
+    $visSql = itm_notes_visibility_sql();
+    $activeSql = $requireActive ? ' AND active = 1' : '';
+    $sql = 'SELECT * FROM notes WHERE id = ? AND company_id = ?' . $activeSql . ' AND (' . $visSql . ') LIMIT 1';
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param('iiii', $noteId, $companyId, $loggedUserId, $loggedUserId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return $row ?: null;
+}
+
+/**
  * Absolute filesystem path for a user's note image uploads (trailing slash).
  */
 function itm_notes_private_images_dir($companyId, $username, $userId)
