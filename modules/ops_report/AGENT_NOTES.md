@@ -21,7 +21,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - **Auto-create:** opening a date calls `opr_ensure_report()` — inserts `ops_report` plus default F&B outlets and walk-round areas when missing.
 - **Edit lock (D-2):** non-admins may edit **today and yesterday** only (`report_date > date('Y-m-d', strtotime('-2 days'))`). Older dates are read-only unless `itm_is_admin()`.
 - **All cells editable** when the date is unlocked — no per-field role restrictions (unlike backup tape log).
-- **UI copy in DB:** section headings, metric labels, table column headers, add-row buttons, and toolbar labels persist in `ops_report.report_ui_json` (blur-save via `scope=report_ui` + `json_path`). Defaults seed on first open via `opr_default_ui_json()`.
+- **UI copy in DB:** section headings, metric labels, table column headers, add-row buttons, toolbar labels, and `titles.*` (browser tab, export sheet/file prefix) persist in `ops_report.report_ui_json` (blur-save via `scope=report_ui` + `json_path`). Defaults seed on first open via `opr_default_ui_json()`.
 - **Fixed display (not in `report_ui_json`):** report date suffix (`opr_format_date()`, `d.m.y`) from day/month/year selectors; company line is always `Company:` + `companies.company` for the active tenant.
 - **Extra rows:** any user may add/delete rows in courtesy calls, guest experience, butler, night shift, F&B outlets, and walk-round when the date is editable.
 - **Exports:** 📗 Excel (SheetJS) and 📄 PDF (browser print) with company header.
