@@ -1736,6 +1736,10 @@ mbqa_validate_reports_writable_for_browser($root);
 define('ITM_CLI_SCRIPT', true);
 require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
 require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_mbqa_test_user.php';
+require_once $root . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'itm_maintenance_script_admin_gate.php';
+if (!mbqa_is_cli_sapi()) {
+    itm_enforce_maintenance_script_admin_browser($conn);
+}
 
 if (!mbqa_is_cli_sapi()) {
     @set_time_limit(0);

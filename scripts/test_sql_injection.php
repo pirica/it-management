@@ -10,6 +10,8 @@
  */
 
 require __DIR__ . '/../config/config.php';
+require_once ROOT_PATH . 'includes/itm_maintenance_script_admin_gate.php';
+itm_enforce_maintenance_script_admin_browser($conn);
 
 if (isset($_GET['browser'])) {
     require_once __DIR__ . '/lib/script_browser_nav.php';

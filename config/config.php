@@ -1921,6 +1921,38 @@ if (!function_exists('itm_handle_json_table_import')) {
                     continue;
                 }
 
+                if (preg_match('/\bdatetime\b|\btimestamp\b|\bdate\b/i', $columnType)) {
+                    $dateText = trim((string)$rawValue);
+                    if ($dateText === '') {
+                        continue;
+                    }
+                    $normalizedDate = itm_normalize_sql_date_literal($rawValue, $columnType);
+                    if ($normalizedDate === null) {
+                        if ($rowValidationError === '') {
+                            $rowValidationError = 'Invalid date value for ' . $fieldName;
+                        }
+                    } else {
+                        $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $normalizedDate) . "'";
+                    }
+                    continue;
+                }
+
+                if (preg_match('/\benum\b/i', $columnType) && preg_match('/^enum\((.+)\)$/i', $columnType, $enumWrapper)) {
+                    $enumText = trim((string)$rawValue);
+                    if ($enumText !== '') {
+                        preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'/", $enumWrapper[1], $enumParts);
+                        $allowedEnum = $enumParts[1] ?? [];
+                        if (!in_array($enumText, $allowedEnum, true)) {
+                            if ($rowValidationError === '') {
+                                $rowValidationError = 'Invalid enum value for ' . $fieldName;
+                            }
+                        } else {
+                            $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $enumText) . "'";
+                        }
+                    }
+                    continue;
+                }
+
                 $normalizedDate = itm_normalize_sql_date_literal($rawValue, $columnType);
                 if ($normalizedDate !== null) {
                     $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $normalizedDate) . "'";

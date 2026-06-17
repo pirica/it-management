@@ -12,6 +12,7 @@
  */
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_api_json_response.php';
 
 $crud_title = '📈 Org Chart';
 $csrfToken = itm_get_csrf_token();
@@ -25,14 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $reportsTo = (int)$_POST['reports_to'];
 
     if ($employeeId <= 0) {
-        echo json_encode(['ok' => false, 'error' => 'Invalid Employee ID']);
-        exit;
+        itm_api_json_response(['ok' => false, 'error' => 'Invalid Employee ID'], 400);
     }
 
     // Prevent self-reporting
     if ($employeeId === $reportsTo) {
-        echo json_encode(['ok' => false, 'error' => 'An employee cannot report to themselves.']);
-        exit;
+        itm_api_json_response(['ok' => false, 'error' => 'An employee cannot report to themselves.'], 400);
     }
 
     // P1: Validate manager belongs to the same company and is on org chart to prevent cross-tenant hierarchy corruption
@@ -44,9 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         if (mysqli_num_rows($res) === 0) {
-            echo json_encode(['ok' => false, 'error' => 'Invalid manager selection (Manager must be on Org Chart and Active).']);
             mysqli_stmt_close($stmt);
-            exit;
+            itm_api_json_response(['ok' => false, 'error' => 'Invalid manager selection (Manager must be on Org Chart and Active).'], 400);
         }
         mysqli_stmt_close($stmt);
     }
@@ -64,13 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Verify employee belongs to current tenant
     if (!isset($employeeMap[$employeeId])) {
-        echo json_encode(['ok' => false, 'error' => 'Employee not found in this company.']);
-        exit;
+        itm_api_json_response(['ok' => false, 'error' => 'Employee not found in this company.'], 404);
     }
 
     if ($reportsTo > 0 && itm_is_circular_reporting($employeeMap, $reportsTo, $employeeId)) {
-        echo json_encode(['ok' => false, 'error' => 'Circular reporting detected. Hierarchy update blocked.']);
-        exit;
+        itm_api_json_response(['ok' => false, 'error' => 'Circular reporting detected. Hierarchy update blocked.'], 400);
     }
 
     // High risk: Use prepared statement for update
@@ -78,14 +74,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = mysqli_prepare($conn, "UPDATE employees SET reports_to = ? WHERE id = ? AND company_id = ?");
     mysqli_stmt_bind_param($stmt, "iii", $reportsToVal, $employeeId, $company_id);
 
-    if (mysqli_stmt_execute($stmt)) {
-        echo json_encode(['ok' => true]);
-    } else {
-        // Medium risk: Generic error message
-        echo json_encode(['ok' => false, 'error' => 'Database update failed.']);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        itm_api_json_response(['ok' => false, 'error' => 'Database update failed.'], 500);
     }
+
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
     mysqli_stmt_close($stmt);
-    exit;
+    itm_api_mutation_requires_rows($affectedRows, ['ok' => true]);
 }
 
 /**

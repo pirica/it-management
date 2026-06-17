@@ -20,7 +20,7 @@ Interactive org chart from `employees.reports_to` reporting lines with drag-and-
 - Visual tree diagram; optional image export.
 
 ## 6. API Actions (If Applicable)
-- Hierarchy update AJAX — validates cycles before UPDATE.
+- Hierarchy update AJAX — validates cycles before UPDATE; uses `itm_api_json_response()` / `itm_api_mutation_requires_rows()` (HTTP 404 when zero rows affected).
 
 ## 7. File Structure
 - `index.php` — chart UI + AJAX save handler.

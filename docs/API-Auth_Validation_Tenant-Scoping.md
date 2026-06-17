@@ -22,14 +22,14 @@ Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms 
 
 *   **Description:** Handles file and folder operations.
 *   **Key Find:** **VERIFIED PATH TRAVERSAL PROTECTION.** Tests for `../../` in paths were correctly blocked by `get_full_path()`.
-*   **Authenticated RCE:** (Known Vulnerability) The `upload` action allows uploading files to the `files/` directory. While it blocks some extensions, the protection is inconsistent with other upload directories.
-*   **Multi-tenant Data Leak:** (Known Vulnerability) ZIP generation has potential for leaks if scoping is bypassed.
-*   **Recommendation:** Move all uploaded files outside the web root or strictly enforce non-executable permissions via server configuration. Hardened path validation is required for ZIP generation.
+*   **Authenticated RCE:** **REMEDIATED** — executable extensions blocked on upload; `deny_http` hardening on every `files/` segment via `itm_ensure_files_storage_directory()`. Regression: `php scripts/verify_explorer_rce_htaccess.php`.
+*   **Multi-tenant Data Leak:** **REMEDIATED** — `downloadZip` blocks `Private`/`Departments` roots; scoped paths via `get_full_path()`. Regression: `php scripts/verify_explorer_zip_leak.php`.
+*   **Recommendation:** Keep upload hardening helpers authoritative; serve tenant files only through `modules/explorer/file.php`.
 
 ### 2.3 JSON Import Endpoints (Shared & Module-Specific)
 
 *   **Description:** Endpoints (often in `modules/*/index.php`) that accept `import_excel_rows` in a JSON body.
-*   **Key Find:** **CONFIRMED WEAK DATA VALIDATION (remediated for numeric columns).** Payloads with invalid data types (e.g., string for a decimal price field) increment `failed`, set `ok:false`, and return HTTP 400 when no rows are inserted. Regression: `php scripts/verify_json_import_validation.php`.
+*   **Key Find:** **CONFIRMED WEAK DATA VALIDATION (remediated for numeric, date/datetime, and enum columns).** Invalid types increment `failed`, set `ok:false`, and return HTTP 400 when no rows are inserted. Regression: `php scripts/verify_json_import_validation.php`.
 *   **Trusting User-Supplied IDs:** Some import handlers allow updating existing records by ID; updates require matching tenant `company_id`.
 *   **Status codes:** Validation failures use HTTP 400 with `ok:false` when the import produces no inserts/updates; CSRF and malformed JSON already return 400; sensitive-table imports return 403.
 *   **Recommendation:** Centralize and harden the import logic. Ensure every `UPDATE` or `DELETE` operation includes a `company_id = ?` clause derived strictly from the session.
@@ -37,7 +37,7 @@ Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms 
 ### 2.4 Specialized AJAX Handlers (Switch Ports, Rack Planner, Org Chart)
 
 *   **Description:** High-interaction modules use specialized handlers like `includes/update_port.php`.
-*   **Key Find:** **REMEDIATED (affected_rows contract).** Notes AJAX handlers call `itm_notes_json_mutation_response()` — blocked mutations return HTTP 404 with `ok:false` when zero rows match visibility filters. CSRF failures return HTTP 403; validation errors return HTTP 400/409. Regression: `php scripts/verify_notes_ajax_contract.php`.
+*   **Key Find:** **REMEDIATED (affected_rows contract).** Notes, Org Chart hierarchy updates, Rack Planner auto-save, and switch-port updates return HTTP 404 when tenant-scoped mutations match zero rows. CSRF failures return HTTP 403; validation errors return HTTP 400/409. Helpers: `itm_notes_json_mutation_response()`, `itm_api_json_response()` / `itm_api_mutation_requires_rows()`. Regressions: `php scripts/verify_notes_ajax_contract.php`, `php scripts/verify_json_import_validation.php`.
 *   **Implicit Scoping:** These scripts often rely on the global `$company_id` from `config.php`.
 *   **Recommendation:** Encapsulate complex multi-table synchronizations into transaction-aware functions. Ensure return values accurately reflect the outcome (e.g., return 404 if no record was updated).
 
@@ -45,9 +45,9 @@ Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms 
 
 *   **Description:** Maintenance and security tools are documented as APIs for shared use.
 *   **Issues:**
-    *   **Exposure of Sensitive Logic:** `test_sql_injection.php` explicitly demonstrates internal SQL injection signatures. Its exposure should be strictly limited.
-    *   **RBAC Gaps:** Documented tools like `module_browser_qa_runner.php` and `compare_database_sql_modules.php` perform sensitive operations. If not properly guarded by Admin role checks, they could be abused by regular users.
-*   **Recommendation:** Explicitly verify Admin role membership for all scripts in the `scripts/` directory and any documented maintenance APIs. Disable security test scripts in production.
+    *   **Exposure of Sensitive Logic:** `test_sql_injection.php` explicitly demonstrates internal SQL injection signatures. Browser access requires Admin (`itm_enforce_maintenance_script_admin_browser()`); disable in production.
+    *   **RBAC (remediated for catalogued tools):** `module_browser_qa_runner.php`, `compare_database_sql_modules.php`, and `test_sql_injection.php` call `itm_enforce_maintenance_script_admin_browser()` for browser sessions. CLI runners remain available for smoke/MBQA. Regression: `php scripts/verify_maintenance_scripts_rbac.php`.
+*   **Recommendation:** Keep Admin browser gates on maintenance tools; disable security test scripts in production.
 
 ## 3. Security Test Results
 
@@ -129,8 +129,8 @@ POST /modules/notes/index.php?ajax_action=single_delete
     | Duplicate conflict (e.g. tag exists) | 409 | `ok:false` |
     | Import validation failed (no rows saved) | 400 | `ok:false`, `failed` ≥ 1 |
 
-    Helpers: `itm_notes_json_mutation_response()` (Notes AJAX); `itm_handle_json_table_import()` (module imports). Regressions: `php scripts/verify_notes_ajax_contract.php`, `php scripts/verify_json_import_validation.php`. Remaining specialised AJAX handlers (Rack Planner, Org Chart, switch ports) should adopt the same mapping in future sweeps.
+    Helpers: `itm_notes_json_mutation_response()` (Notes AJAX); `itm_api_json_response()` / `itm_api_mutation_requires_rows()` (Org Chart, Rack Planner, switch ports); `itm_handle_json_table_import()` (module imports). Regressions: `php scripts/verify_notes_ajax_contract.php`, `php scripts/verify_json_import_validation.php`.
 4.  **Enforce Mandatory Tenant Scoping:** Ensure all database queries involving multi-tenant tables include a `company_id` filter derived *only* from the session.
-5.  **Implement Rate Limiting:** Add application-level throttling for sensitive or resource-intensive API actions.
+5.  **Rate Limiting (implemented):** Per-user API tiers and hourly quotas live on `ui_configuration`; enforcement in `includes/itm_api_rate_limit.php` (`itm_api_enforce_rate_limit_or_exit()`). Probe: `GET scripts/api.php?rate_limit=1`. Regressions: `php scripts/apitest_tier_free.php`, `php scripts/apitest_tier_basic.php`.
 6.  **Introduce Structured Read APIs:** Develop JSON-based endpoints for retrieving record details to replace current HTML scraping patterns.
-7.  **RBAC for Maintenance Tools:** Ensure all documented maintenance and security tools require the Admin role and are disabled in production environments.
+7.  **RBAC for Maintenance Tools (partial — catalogued scripts):** Browser access to `module_browser_qa_runner.php`, `compare_database_sql_modules.php`, and `test_sql_injection.php` requires Admin via `includes/itm_maintenance_script_admin_gate.php`. Regression: `php scripts/verify_maintenance_scripts_rbac.php`. Audit remaining documented scripts in future sweeps; disable security test scripts in production.

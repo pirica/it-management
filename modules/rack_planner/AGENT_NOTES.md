@@ -22,6 +22,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 ## 5. UI Behavior Requirements
 - Vertical rack-unit grid; drag/drop placement.
 - Custom handlers in `includes/handlers.php` — disable redundant default exports when custom layout applies.
+- Auto-save AJAX (`ajax_update_layout`) returns HTTP 404 when `rack_planner` row is not tenant-scoped.
 
 ## 7. File Structure
 - `index.php` — main planner UI.

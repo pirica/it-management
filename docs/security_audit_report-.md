@@ -73,5 +73,5 @@ This report summarizes critical and high-severity security vulnerabilities ident
 
 The full test suite was executed after verifying these vulnerabilities.
 - **Command:** `php scripts/run_tests.php`
-- **Result:** `OK (231 tests, 951 assertions)`
+- **Result:** `OK (387 tests, 1415 assertions)` — re-run after each security deliverable for current counts.
 - **Stability:** Confirmed. No regressions were introduced during the security audit.

@@ -42,10 +42,42 @@ mysqli_stmt_close($check);
 
 if ($ok && !$rowInserted) {
     echo colorText('[PASS] Invalid price rejected; no catalog row inserted.', 'pass') . $nl;
+} else {
+    echo colorText('[FAIL] Expected ok:false with zero inserts; result: ' . json_encode($result), 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+echo 'Verifying JSON import rejects invalid datetime values...' . $nl;
+
+$uniqueTitle = 'ImportValidationDate-' . bin2hex(random_bytes(4));
+$datePayload = [
+    'csrf_token' => 'test_token',
+    'import_excel_rows' => [
+        ['Title', 'Start Datetime'],
+        [$uniqueTitle, 'not-a-date'],
+    ],
+];
+
+$dateResult = itm_handle_json_table_import($conn, 'events', $companyId, $datePayload, true);
+$dateOk = is_array($dateResult)
+    && ($dateResult['ok'] ?? true) === false
+    && (int)($dateResult['inserted'] ?? -1) === 0
+    && (int)($dateResult['failed'] ?? 0) >= 1;
+
+$dateCheck = mysqli_prepare($conn, 'SELECT id FROM events WHERE company_id = ? AND title = ? LIMIT 1');
+mysqli_stmt_bind_param($dateCheck, 'is', $companyId, $uniqueTitle);
+mysqli_stmt_execute($dateCheck);
+$dateRes = mysqli_stmt_get_result($dateCheck);
+$dateRowInserted = $dateRes && mysqli_num_rows($dateRes) > 0;
+mysqli_stmt_close($dateCheck);
+
+if ($dateOk && !$dateRowInserted) {
+    echo colorText('[PASS] Invalid datetime rejected; no event row inserted.', 'pass') . $nl;
     itm_script_output_end();
     exit(0);
 }
 
-echo colorText('[FAIL] Expected ok:false with zero inserts; result: ' . json_encode($result), 'fail') . $nl;
+echo colorText('[FAIL] Expected ok:false for invalid datetime; result: ' . json_encode($dateResult), 'fail') . $nl;
 itm_script_output_end();
 exit(1);
