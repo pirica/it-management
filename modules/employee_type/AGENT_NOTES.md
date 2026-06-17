@@ -37,5 +37,21 @@ Tenant-scoped lookup for employee classification labels (`Team member`, `Interns
 - Do not rename `name_type` to `name` — FK helpers and employee selects rely on `name_type`.
 - Clearing `employee_type_id` on employees is allowed; resignations report still includes rows when type filter allows NULL.
 
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT
+```php
+$stmt = $conn->prepare('SELECT id, name_type FROM employee_type WHERE company_id = ? AND active = 1 ORDER BY name_type');
+$stmt->bind_param('i', $companyId);
+$stmt->execute();
+```
+
+### Safe INSERT
+```php
+$stmt = $conn->prepare('INSERT INTO employee_type (company_id, name_type) VALUES (?, ?)');
+$stmt->bind_param('is', $companyId, $nameType);
+$stmt->execute();
+```
+
 ## 12. Module Owner Notes (Optional)
 Regression: `php scripts/verify_employee_type_resignations.php`.

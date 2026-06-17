@@ -22,6 +22,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage (users only see/restore/empty their permitted items).
 - **Path validation:** normalize backslashes to `/`, trim slashes, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_id}`.
 - **Localisation:** UK English (en-GB) UI labels (Favourites, Trash, etc.).
+- **Upload hardening (`deny_http`):** never bare `mkdir()` under `files/` — use `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Every segment gets force-written `deny_http` `.htaccess` + `index.html`. Serve UI via `itm_files_serve_url()` → `file.php`. See **`docs/file_upload_modules.md`**.
 
 ## 5. UI Behavior Requirements
 - Breadcrumb navigation; upload, download, delete, rename, favourite.
@@ -32,21 +33,40 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Employee sidebar (index.php):** `🌐 Employees` links to `modules/employees/`; `🎉 Birthdays` links to `modules/birthdays/`; **Profile Storage** opens `Private/{username}_{user_id}/profile` via `openEmployeeProfileFolder()` (employee profile photos from the employees module).
 - `api.php` for async operations; `file.php` for authorised file delivery (required after `deny_http`).
 
-## 6. Upload hardening and `.htaccess` (`deny_http`)
-- **Never bare `mkdir()`** for paths under `files/`. Use `itm_ensure_files_storage_directory()` (wrapper in `api.php` as `explorer_ensure_dir()`).
-- **Every folder segment** under `files/{company_id}/…` (including `Trash/`, `Private/`, department and leaf folders) receives force-written:
-  - **`.htaccess`** — `deny_http` policy (`ITM files hardening` marker). Canonical body: `itm_upload_directory_policy_body('deny_http')` in `includes/bootstrap_helpers.php`.
-  - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()`.
-- **Direct HTTP URLs** to `files/…` return 403 after hardening. UI must use `itm_files_serve_url()` → `modules/explorer/file.php?path=…`.
-- **Dotfile uploads** (e.g. `.htaccess`) are blocked in `api.php`; malicious uploads are overwritten on the next ensure.
-- **Do not commit** runtime tenant trees under `files/{company_id}/**` to git. Backfill: `php scripts/ensure_files_htaccess_chain.php` or `php scripts/empty_folders.php`.
-- Full policy reference (all three ITM policies): **`docs/file_upload_modules.md`**.
+## 6. API Actions (If Applicable)
+All actions are POST to `api.php` with `action` parameter (JSON responses unless noted):
+
+| Action | Purpose |
+|--------|---------|
+| `list` | Directory listing; syncs discovered items to **explorer** table |
+| `open` | Preview routing: `image` / `pdf` / `text` / `unsupported`; binary via `file.php` URL |
+| `createFolder` | Create subfolder (blocked at Home, `Private`, `Departments` roots) |
+| `delete` | Soft-delete to `Trash/` mirror path |
+| `rename` | Rename file/folder (protected roots blocked) |
+| `copy` | Copy item within ACL-permitted path |
+| `move` | Move item (protected items blocked) |
+| `zip` | Create ZIP (root ZIP blocked — regression script) |
+| `unzip` | Extract archive in place |
+| `upload` | Multipart upload (dotfiles blocked) |
+| `createYear` / `createMonths` / `createDays` / `createYearMonthDay` | Date-folder scaffolding helpers |
+| `listRecycle` | Trash listing with same ACL as live storage |
+| `restore` | Restore from Trash (normalise `item` path before ACL) |
+| `emptyRecycle` | Permanently empty permitted Trash items |
+
+`file.php?path=` — authorised download/preview after `get_full_path()` ACL check.
 
 ## 7. File Structure
-- `index.php`, `api.php`, `file.php`, `setup.php`.
+- `index.php` — browser UI, sidebar, `resolveScopedFolderPath()`.
+- `api.php` — JSON file operations (`list`, `upload`, Trash, etc.).
+- `file.php` — authorised serve/preview after ACL.
+- `setup.php` — initial tenant folder scaffolding.
 
 ## 8. Multi-Tenant Rules
 - `storage_root = ROOT_PATH . 'files/' . $company_id`; never cross company boundaries.
+
+## 9. Audit Logging Requirements
+- Filesystem operations are not written to `audit_logs` by default; optional **explorer** table sync on `list`/`sync_db()` for metadata only.
+- Trash restore/delete should preserve ACL — unauthorised paths must not leak filenames in JSON.
 
 ## 10. Common Pitfalls
 - Path traversal if `folder_path` / `file_name` not validated against storage root.
@@ -55,6 +75,22 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - `restore` POST `item` must be normalized before ACL and filesystem paths (backslashes bypass segment checks).
 - Linking `../../files/…` in HTML after `deny_http` — images/downloads break; use `itm_files_serve_url()`.
 - Hand-editing `.htaccess` under `files/` — removed on next `itm_ensure_files_storage_directory()` call.
+
+## 11. Examples of Safe Code Patterns
+
+### Path ACL check before filesystem access
+```php
+$dir = get_full_path($storage_root, $path, $user_id, $dept_id, $username);
+if (!$dir) {
+    echo json_encode(['items' => []]);
+    exit;
+}
+```
+
+### Ensure directory with managed hardening
+```php
+explorer_ensure_dir($dir . '/' . $name); // wraps itm_ensure_files_storage_directory()
+```
 
 ## 12. Module Owner Notes (Optional)
 Regression: `php scripts/test_explorer_paths.php`; ZIP root leak: `php scripts/verify_explorer_zip_leak.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`.

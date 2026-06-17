@@ -20,7 +20,12 @@ Read-only dashboard for upcoming and past expirations. Aggregates dates from **e
 ## 5. UI Behavior Requirements
 - Summary counts per field (expired, unknown, &lt;30d, &gt;60d).
 - Tabbed or sectioned lists for certificate vs warranty rows.
+- Badge rendering via `expiring_days_left_badge()` (expired red, ≤30d red, ≤90d warning, else success).
 - No bulk delete / import / sample-data CRUD on a dedicated table.
+- `data-itm-no-export-*` may be set on filter cards where exports should omit controls.
+
+## 6. API Actions (If Applicable)
+- None — read-only dashboard; no JSON import or AJAX mutation endpoints.
 
 ## 7. File Structure
 - `index.php` — dashboard, queries equipment + alerts, helper functions for badges/dates.
@@ -28,9 +33,23 @@ Read-only dashboard for upcoming and past expirations. Aggregates dates from **e
 ## 8. Multi-Tenant Rules
 - All queries filter by active `company_id` from session.
 
+## 9. Audit Logging Requirements
+- Read-only aggregator — no writes; source modules (equipment, alerts) log their own changes via triggers.
+
 ## 10. Common Pitfalls
 - Do not document or query a fictional **`expiring`** table.
 - Warranty join may fall back without `warranty_types` when join fails — preserve fallback query path.
+- Alert visibility must mirror Alerts module rules (global vs private) when counting alert expirations.
+
+## 11. Examples of Safe Code Patterns
+
+### Date parsing helper (multi-format)
+```php
+$parsed = expiring_parse_date($rawDate); // supports Y-m-d, d/m/Y, m/d/Y
+if ($parsed instanceof DateTimeImmutable) {
+    $daysLeft = (int)$today->diff($parsed)->format('%r%a');
+}
+```
 
 ## 12. Module Owner Notes (Optional)
 Module browser QA: Tier D navigation smoke only (`list`, `search`, `sort`).

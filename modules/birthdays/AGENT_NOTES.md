@@ -42,6 +42,20 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 ## 10. Common Pitfalls
 - Do not add CRUD scaffolding unless requested — this module is intentionally index-only.
 - PDF export must not include the month/search filter card; keep `data-itm-no-export-pdf` on the controls card.
+- Do not use `LEFT JOIN` on `employee_statuses` — the `INNER JOIN` is intentional so employees without a status never appear.
+- Month filter must use `MONTH(e.birthday)`, not `DAY()` or string formatting on the full date.
+
+## 11. Examples of Safe Code Patterns
+
+### Safe tenant-scoped list query
+```php
+$sql = "SELECT e.id, e.first_name, e.last_name, e.birthday, e.hide_year, d.code AS department_code
+        FROM employees e
+        INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id
+        LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
+        WHERE e.company_id = ? AND e.birthday IS NOT NULL AND es.id IN ($statusPlaceholders)";
+$stmt = $conn->prepare($sql);
+```
 
 ## 12. Module Owner Notes (Optional)
 List layout based on `modules/backup_tape_log/index.php` patterns (card layout, sidebar/header includes).

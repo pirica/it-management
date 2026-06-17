@@ -18,6 +18,9 @@ Lookup table for todo list categories (personal/company-scoped names used by the
 - Standard flattened CRUD (`index.php` inline procedural CRUD).
 - Search, sort, pagination, bulk delete, export/import per AGENTS.md standards.
 
+## 6. API Actions (If Applicable)
+- **import_excel_rows** (JSON POST on `index.php`) — bulk import; Todo index resolves category names against this table.
+
 ## 7. File Structure
 - `index.php` — full CRUD implementation.
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — wrappers.
@@ -25,8 +28,18 @@ Lookup table for todo list categories (personal/company-scoped names used by the
 ## 8. Multi-Tenant Rules
 - Scoped by `company_id`; `cat_from_user_id` ties categories to creating user when set.
 
+## 9. Audit Logging Requirements
+- `trg_todo_categories_audit_insert|update|delete` in `database.sql`.
+
 ## 10. Common Pitfalls
 - Deleting categories still referenced by todo rows may block deletes or orphan tasks — check FK usage in `todo` before clear/delete changes.
+
+## 11. Examples of Safe Code Patterns
+
+### Todo index category load (legacy NULL company fallback)
+```php
+$sql = 'SELECT id, name FROM todo_categories WHERE company_id = ? OR company_id IS NULL';
+```
 
 ## 12. Module Owner Notes (Optional)
 Todo index may load categories with `company_id = ? OR company_id IS NULL` for legacy rows — preserve that fallback when editing queries.

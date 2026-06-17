@@ -19,6 +19,10 @@ Lookup table for switch port operational status (e.g. Up, Down, Unknown) with op
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD; colour swatch on list/detail when `color_id` set.
+- Edit forms use `itm-checkbox-control` pattern for `active`.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** (JSON POST on `index.php`) — bulk import when enabled.
 
 ## 7. File Structure
 - `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
@@ -26,9 +30,21 @@ Lookup table for switch port operational status (e.g. Up, Down, Unknown) with op
 ## 8. Multi-Tenant Rules
 - Scoped by `company_id`; hide `company_id` from UI.
 
+## 9. Audit Logging Requirements
+- `trg_switch_status_audit_insert|update|delete` in `database.sql`.
+
 ## 10. Common Pitfalls
 - Showing raw `color_id` instead of colour name/hex when label row exists.
 - Dropping persisted FK on edit when company-scoped options incomplete.
+
+## 11. Examples of Safe Code Patterns
+
+### Tenant-scoped colour lookup with legacy fallback
+```php
+$stmt = $conn->prepare('SELECT hex_color FROM cable_colors WHERE id = ? AND company_id = ? LIMIT 1');
+$stmt->bind_param('ii', $colorId, $companyId);
+// if no row: fallback SELECT hex_color FROM cable_colors WHERE id = ? LIMIT 1
+```
 
 ## 12. Module Owner Notes (Optional)
 Switch port manager icons use status name (case-insensitive Unknown check) — see AGENTS.md equipment port tiles.

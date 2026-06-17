@@ -20,10 +20,12 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - **Foreign Key Mapping:** AJAX handlers map empty/0 IDs to NULL.
 
 ## 5. UI Behavior Requirements
-- **Grid Layout**: Often rendered in a grid mimicking the physical switch layout.
+- **Grid Layout**: Often rendered in a grid mimicking the physical switch layout (via equipment module tiles).
+- Wrapper entry files set `$crud_action` before `require index.php` — index must not overwrite wrapper value.
+- Standard flattened list in `list_all.php` when not embedded in equipment view.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** — handles bulk JSON import.
+- **import_excel_rows** — handles bulk JSON import on `index.php`.
 
 ## 7. File Structure
 - `index.php` — list/grid and CRUD routing (may absorb wrapper actions).
@@ -31,6 +33,10 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 
 ## 8. Multi-Tenant Rules
 - Scoped by `company_id`; ports must match parent switch/equipment tenant.
+
+## 9. Audit Logging Requirements
+- `trg_switch_ports_audit_insert|update|delete` in `database.sql`.
+- IDF-linked port changes may also appear in **idf_ports** audit triggers — keep both tables in sync.
 
 ## 10. Common Pitfalls
 - **Mismatched IDs**: Ensure the port belongs to the correct switch and company.

@@ -15,11 +15,17 @@ Breaks down the annual budget into monthly allocations for finer financial contr
 - **Cascade**: Deleting an annual budget removes these monthly records.
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
+- **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
+- **CSRF**: POST handlers use `itm_require_post_csrf()`; forms include hidden `csrf_token`.
+- **Hide `company_id`** from list, view, and create/edit forms.
+- **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
+- **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
+- **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+
 - **Currency Formatting**: Handle decimal amounts.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** — handles bulk JSON import.
+- **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
 
 ## 7. File Structure
 - Standard CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
@@ -27,6 +33,14 @@ Breaks down the annual budget into monthly allocations for finer financial contr
 ## 8. Multi-Tenant Rules
 - Scoped by `company_id`; hide `company_id` from UI.
 
+## 9. Audit Logging Requirements
+- Database triggers `trg_monthly_budgets_audit_insert`, `trg_monthly_budgets_audit_update`, `trg_monthly_budgets_audit_delete` on `monthly_budgets` in `database.sql` write to `audit_logs` when `enable_audit_logs` is enabled.
+
+## 10. Common Pitfalls
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
+- Child of **annual_budgets** — unique per `company_id` + `annual_budget_id` + `month`.
+- Respect tenant unique constraints; duplicates fail at the database layer.
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
 
 ## 11. Examples of Safe Code Patterns
 
@@ -34,6 +48,13 @@ Breaks down the annual budget into monthly allocations for finer financial contr
 ```php
 $stmt = $conn->prepare("SELECT * FROM monthly_budgets WHERE annual_budget_id = ? AND month = ?");
 $stmt->bind_param("ii", $annualBudgetId, $month);
+$stmt->execute();
+```
+
+### Safe INSERT
+```php
+$stmt = $conn->prepare("INSERT INTO monthly_budgets (company_id, annual_budget_id, month, amount, active) VALUES (?, ?, ?, ?, ?)");
+$stmt->bind_param("iiidi", $companyId, $annualBudgetId, $month, $amount, $active);
 $stmt->execute();
 ```
 

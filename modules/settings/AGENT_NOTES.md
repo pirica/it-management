@@ -14,7 +14,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - API keys are stored per `company_id` + `user_id` on `ui_configuration`.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
+- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` §3).
 - **UI Persistence**: Changes to button positions or pagination must call `collectAndSetHiddenFields()` in the UI.
 - **API Access card**: **Free** tier — no API key UI; copy states **signed-in session** is required for programmatic access and for `scripts/api.php?rate_limit=1` without `api_key`. **Paid** tiers — only `api_key` is editable (save or generate). `tier` is a **blocked** `<select>`; rate-limit counters are read-only. POST `save_api_key` / `generate_api_key` rejected on Free tier.
 - **Database Maintenance**: Allows triggering schema verification and table repairs.
@@ -43,6 +43,21 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - **Broken Sidebar**: Incorrectly updating sidebar JSON can hide entire modules from users.
 - **Destructive SQL**: Manual SQL imports in the settings module can overwrite entire database tables.
 - **Tier edits**: Do not accept `tier` from POST in Settings; tier is platform-managed on `ui_configuration`.
+
+## 11. Examples of Safe Code Patterns
+
+### Read UI config (never hardcode pagination)
+```php
+$uiConfig = itm_get_ui_configuration($conn, $companyId, $userId);
+$perPage = itm_resolve_records_per_page($uiConfig);
+```
+
+### Free-tier API key POST rejection
+```php
+if ($tier === 'Free' && in_array($postAction, ['save_api_key', 'generate_api_key'], true)) {
+    // reject — Free tier uses session identity only
+}
+```
 
 ## 12. Module Owner Notes (Optional)
 The primary administrative interface for system behaviour and per-user API integration keys.
