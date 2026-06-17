@@ -30,6 +30,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **verify_company_module_access.php** — registry/CMA regression plus sidebar discovery probes (registry-only, new MySQL table, folder-only, both, neither); PHPUnit wrapper: `phpunit/tests/Unit/Scripts/CompanyModuleAccessVerifyTest.php`.
 - **verify_ops_report.php** — D-2 edit lock, `ops_report` CRUD, cascade delete, registry row; browser or CLI via `lib/script_cli_output.php`; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest`.
 - **verify_employee_type_resignations.php** — `employee_type` seed, `employees.start_date` / `employee_type_id`, registry slugs, weekly resignations SQL filter; browser or CLI via `lib/script_cli_output.php` (do not use `fwrite(STDERR)` on web SAPI).
+- **debug_resignations_termination_date.php** — read-only diagnostic for `modules/resignations/index.php` weekly filter. Default probe date `18/06/2026` (ISO week 25). Accepts browser query params or CLI flags: `date`, `company_id`, `employee_id`, `week`, `month`, `year`. Prints `[PASS]` / `[FAIL]` / `[WARN]` for PHP vs MySQL week metadata, `itm_iso_week_bounds()` range, legacy `YEAR/MONTH/WEEK(...,3)`, current range + `MONTH`, live employee row (status/type/company), simulated module SQL, and today's `verify_employee_type_resignations.php` probe bounds. Catalog: `scripts/scripts.php`. Run when a known `termination_date` is missing from the report or the weekly regression step fails.
 - **employee_fields_missing.php** — compares `employees` columns in `database.sql` and live MySQL with create/edit/view/index coverage in `modules/employees/`; fails on schema or critical UI gaps (including `termination_date`). View checks map FK columns to human labels in `view.php` (e.g. `department_id` → `Department` / `department_name`).
 - **count_db_tables.php** — counts live `information_schema` tables for `itmanagement`, echoes the total, and overwrites `scripts/number_db_tables.txt`. Browser and CLI; no login (`ITM_SCRIPT_NO_AUTH` allowlist in `config/config.php`).
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
@@ -46,6 +47,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 ## 10. Common Pitfalls
 - Running destructive scripts on the wrong environment.
 - Forgetting to define `ITM_CLI_SCRIPT` when running PHP scripts from the command line.
+- **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=4` and `employee_id=432` — change params when debugging another tenant. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)` or the row is excluded. Calendar year vs ISO year (`date('o')`) diverges at year boundaries; the script warns when bounds differ.
 
 ## 11. Examples of Safe Code Patterns
 
@@ -70,6 +72,12 @@ php scripts/bypass_login.php
 # Get session for a specific user or company
 php scripts/bypass_login.php --user=johndoe --company=2
 ```
+
+### Resignations termination date debug
+```bash
+php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026
+```
+Browser (login required): `scripts/debug_resignations_termination_date.php?date=18/06/2026&company_id=4&employee_id=432&week=25&month=6&year=2026`. Listed in **`scripts/scripts.php`**.
 
 ## 12. Bypass Login (CLI Information)
 The `scripts/bypass_login.php` script allows you to:
