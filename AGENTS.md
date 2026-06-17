@@ -342,7 +342,8 @@ The ops report module (`modules/ops_report/`) provides a daily hotel operations 
 4. **All cells editable** when the date is unlocked — no per-field role restrictions; any user may add extra rows (courtesy calls, guest experience, butler, night shift, F&B outlets, walk-round, custom hotel figure fields) and edit all cells on unlocked dates.
 5. **UI copy in DB:** section titles, field labels, table headers, add-row button text, and `titles.*` (browser tab, export sheet/file prefix) persist in `ops_report.report_ui_json` (inline blur-save). **Exceptions:** the date suffix (`d.m.y` from selectors); `Company:` + `companies.company`; and the `.opr-controls` toolbar (Day, Month, Year, Go, Export Excel, Export PDF) remain hardcoded.
 6. **Exports:** XLSX and PDF must include company header and the full report sections (duty managers, figures & revenue, F&B, walk-round, guest experience, courtesy calls, butler, night shift rows).
-7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ops_report.php` — D-2 lock, CRUD, cascade delete, registry row, `report_ui_json` seed.
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ops_report.php` — D-2 lock, CRUD, cascade delete, registry row, `report_ui_json` seed, audit triggers on all `ops_report*` tables.
+8. **Audit logging:** `database.sql` defines `trg_{table}_audit_insert|update|delete` on every `ops_report*` table (parent + all child tables). Child triggers include `ops_report_id` in JSON payloads.
 
 #### Calendar, Alerts and Events integration (mandatory)
 

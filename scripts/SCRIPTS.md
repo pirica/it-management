@@ -568,7 +568,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
+| `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, audit triggers on all `ops_report*` tables, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
 
