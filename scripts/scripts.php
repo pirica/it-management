@@ -410,14 +410,14 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="debug_resignations_termination_date.php">debug_resignations_termination_date.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Diagnose why a <code>termination_date</code> (default <code>18/06/2026</code>, week 25) does or does not match the resignations weekly filter — PHP vs MySQL week metadata, ISO bounds, legacy <code>YEAR/MONTH/WEEK</code>, module SQL, and today's verify-probe bounds.</td>
+                    <td>Diagnose why a <code>termination_date</code> (default <code>18/06/2026</code>, ISO week 25) does or does not match <code>modules/resignations/index.php</code> — PHP vs MySQL week metadata, ISO bounds, legacy <code>YEAR/MONTH/WEEK</code>, simulated module SQL (<code>itm_sql_valid_date_predicate()</code>; not <code>&lt;&gt; '0000-00-00'</code>), employee row, verify-probe bounds. Use when the report is empty or prepare fails with <code>Incorrect DATE value: '0000-00-00'</code>.</td>
                     <td><code>php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_employee_type_resignations.php">verify_employee_type_resignations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs <code>employee_type</code> and <code>resignations</code>, and the weekly resignations SQL filter used by <code>modules/resignations/index.php</code>.</td>
-                    <td><code>php scripts/verify_employee_type_resignations.php</code>. Run when changing <code>modules/employee_type/</code>, <code>modules/resignations/</code>, employee start/type fields, or related tables in <code>database.sql</code>.</td>
+                    <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs, and the weekly resignations SQL filter (<code>itm_iso_week_bounds()</code>, <code>MONTH(termination_date)</code>, <code>itm_sql_valid_date_predicate()</code>) aligned with <code>modules/resignations/index.php</code>.</td>
+                    <td><code>php scripts/verify_employee_type_resignations.php</code> — after changes to <code>modules/employee_type/</code>, <code>modules/resignations/</code>, <code>modules/employees/</code> termination/type fields, or related <code>database.sql</code> tables.</td>
                 </tr>
                 <tr>
                     <td>normalize_database_sql_created_at.php</td>
