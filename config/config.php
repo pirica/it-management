@@ -250,6 +250,7 @@ itm_ensure_upload_directory(itm_files_storage_root(), 'deny_http');
 require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
+require_once ROOT_PATH . 'includes/itm_company_module_access.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 
 // Establish Database Connection
@@ -386,6 +387,16 @@ if (
 }
 
 $company_id = $_SESSION['company_id'] ?? 0;
+
+if (
+    !$itmSkipWebAuth
+    && $company_id > 0
+    && isset($conn)
+    && $conn instanceof mysqli
+    && function_exists('itm_enforce_module_access_or_exit')
+) {
+    itm_enforce_module_access_or_exit($conn);
+}
 
 if ($company_id > 0 && isset($conn) && $conn instanceof mysqli) {
     $itmIpamHelpersPath = ROOT_PATH . 'includes/ipam_helpers.php';

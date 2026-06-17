@@ -147,6 +147,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (mysqli_stmt_execute($stmt)) {
                         $newId = (int)mysqli_insert_id($conn);
                         itm_log_audit($conn, 'companies', $newId, 'INSERT', null, $data);
+                        if (function_exists('itm_sync_modules_registry_from_filesystem')) {
+                            itm_sync_modules_registry_from_filesystem($conn);
+                        }
+                        if (function_exists('itm_seed_company_module_access_for_company')) {
+                            itm_seed_company_module_access_for_company($conn, $newId);
+                        }
                         mysqli_stmt_close($stmt);
                         header('Location: index.php');
                         exit;

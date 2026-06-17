@@ -365,6 +365,20 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
 
+#### Company module access (mandatory)
+
+The `company_module_access` module lets administrators (`itm_is_admin()`) enable or disable modules per company.
+
+1. **Tables:** `modules_registry` (global slug catalog) and `company_module_access` (`company_id`, `module_id`, `enabled`).
+2. **Opt-in policy:** Access requires a `company_module_access` row with `enabled = 1` and an active `modules_registry` row. `database.sql` seeds all active-company × module rows as `enabled = 1`; use `php scripts/seed_company_module_access.php` after upgrades or `itm_seed_company_module_access_for_company()` / `itm_seed_company_module_access_for_module()` when adding companies or registry slugs.
+3. **Helpers:** `includes/itm_company_module_access.php` — `has_module_access()`, `get_company_modules()`, `itm_list_all_modules_registry()`, `itm_enforce_module_access_or_exit()`.
+4. **Central enforcement:** `config/config.php` calls `itm_enforce_module_access_or_exit()` after `company_id` is set — individual module entry files do not need duplicated guards.
+5. **Navigation:** `includes/sidebar.php` and `dashboard.php` hide disabled modules; `modules/calendar/index.php` skips integrated sources when the parent module is disabled.
+6. **Admin matrix:** `modules/company_module_access/index.php` lists **all** registry rows (including hidden, inactive, sidebar-excluded, and system modules) with AJAX toggles and bulk Select All / Cancel Select / Unselect All controls.
+7. **System modules:** `settings` is always available; other system slugs remain available to admins even when disabled for a company.
+8. **Relationship to `role_module_permissions`:** Company access is the first gate; role CRUD permissions remain a separate layer.
+9. **Regression scripts:** `php scripts/sync_modules_registry.php`, `php scripts/verify_company_module_access.php`.
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.
