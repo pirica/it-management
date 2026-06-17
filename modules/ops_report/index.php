@@ -172,6 +172,7 @@ if (!function_exists('opr_default_ui_json')) {
                 'add_courtesy_call' => '➕ Add courtesy call row',
                 'add_butler' => '➕ Add butler row',
                 'add_night_shift' => '➕ Add night shift row',
+                'add_hotel_figure' => '➕ Add hotel figure field',
             ],
             'controls' => [
                 'actions' => 'Actions',
@@ -179,6 +180,7 @@ if (!function_exists('opr_default_ui_json')) {
             'defaults' => [
                 'new_fb_outlet' => 'New Outlet',
                 'new_walk_area' => 'New Area',
+                'new_hotel_figure' => 'New Field',
             ],
         ];
     }
@@ -372,6 +374,10 @@ if (!function_exists('opr_child_table_map')) {
                 'table' => 'ops_report_night_shift',
                 'fields' => ['guest_name', 'notes'],
             ],
+            'hotel_figure' => [
+                'table' => 'ops_report_hotel_figure',
+                'fields' => ['field_label', 'field_value'],
+            ],
         ];
     }
 }
@@ -532,6 +538,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_row'])) {
         $sql = 'INSERT INTO ops_report_night_shift (company_id, ops_report_id, sort_order, active) VALUES (?, ?, ?, 1)';
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'iii', $company_id, $report_id, $sort);
+    } elseif ($scope === 'hotel_figure') {
+        $label = opr_ui_get($uiResolved, 'defaults.new_hotel_figure') ?: 'New Field';
+        $sql = 'INSERT INTO ops_report_hotel_figure (company_id, ops_report_id, field_label, sort_order, active) VALUES (?, ?, ?, ?, 1)';
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'iisi', $company_id, $report_id, $label, $sort);
     } else {
         opr_json_response(['success' => false, 'message' => 'Invalid scope.']);
     }
@@ -659,6 +670,16 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 mysqli_stmt_close($stmt);
 
+$hotel_figure_rows = [];
+$stmt = mysqli_prepare($conn, 'SELECT * FROM ops_report_hotel_figure WHERE ops_report_id = ? AND company_id = ? AND active = 1 ORDER BY sort_order ASC, id ASC');
+mysqli_stmt_bind_param($stmt, 'ii', $report_id, $company_id);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+while ($row = mysqli_fetch_assoc($res)) {
+    $hotel_figure_rows[] = $row;
+}
+mysqli_stmt_close($stmt);
+
 $stmt = mysqli_prepare($conn, 'SELECT company, unit_no FROM companies WHERE id = ?');
 mysqli_stmt_bind_param($stmt, 'i', $company_id);
 mysqli_stmt_execute($stmt);
@@ -697,6 +718,9 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
         .inline-editable .edit-input { width:100%; min-width:48px; }
         .opr-table .edit-input { padding:4px 6px; font-size:12px; }
         .opr-metric .edit-input { margin-top:4px; }
+        .opr-metric-custom-head { display:flex; justify-content:space-between; align-items:flex-start; gap:4px; margin-bottom:4px; }
+        .opr-custom-label-wrap .edit-input { font-size:11px; color:var(--text-secondary); border:none; background:transparent; padding:0; width:100%; margin-top:0; }
+        .opr-metric-delete { padding:2px 6px; line-height:1; flex-shrink:0; }
         .opr-ui-heading { margin:0 0 10px; font-size:1.1rem; }
         .opr-ui-heading .edit-input-ui { font-size:1.1rem; font-weight:600; border:none; background:transparent; padding:0; }
         .opr-ui-label-input { font-size:11px; border:none; background:transparent; padding:0; color:var(--text-secondary); }
@@ -792,14 +816,32 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
                 </div>
 
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.hotel_figures'), $can_edit_report, 'sections.hotel_figures', 'h2') ?>
-                <div class="opr-metric-grid">
+                <div class="opr-metric-grid" id="opr-hotel-figures-grid">
                     <?php foreach ($metric_fields as $field): ?>
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="<?= $field ?>">
                         <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.' . $field), $can_edit_report, 'fields.' . $field, 'label') ?>
                         <?= opr_render_editable_field($report[$field] ?? '', $can_edit_report) ?>
                     </div>
                     <?php endforeach; ?>
+                    <?php foreach ($hotel_figure_rows as $row): ?>
+                    <div class="opr-metric opr-metric-custom" data-row-id="<?= (int)$row['id'] ?>" data-scope="hotel_figure">
+                        <div class="opr-metric-custom-head">
+                            <div class="<?= $editClass ?> opr-custom-label-wrap" data-field="field_label">
+                                <?= opr_render_editable_field($row['field_label'] ?? '', $can_edit_report) ?>
+                            </div>
+                            <?php if ($can_edit_report): ?>
+                            <button type="button" class="btn btn-sm btn-danger opr-delete-row opr-metric-delete opr-no-print" data-scope="hotel_figure" data-row-id="<?= (int)$row['id'] ?>">🗑️</button>
+                            <?php endif; ?>
+                        </div>
+                        <div class="<?= $editClass ?>" data-field="field_value">
+                            <?= opr_render_editable_field($row['field_value'] ?? '', $can_edit_report) ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
+                <?php if ($can_edit_report): ?>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="hotel_figure"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_hotel_figure'), $can_edit_report, 'buttons.add_hotel_figure', 'span', 'opr-btn-label') ?></button>
+                <?php endif; ?>
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="stay_experience_comment" style="margin-top:10px;">
                     <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.stay_experience_comment'), $can_edit_report, 'fields.stay_experience_comment', 'label') ?>
                     <?= opr_render_editable_field($report['stay_experience_comment'] ?? '', $can_edit_report, true) ?>
@@ -1074,13 +1116,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function saveEdit(cell) {
-        const scope = cell.dataset.scope || (cell.closest('tr') ? cell.closest('tr').dataset.scope : 'report');
+        const rowContainer = cell.closest('tr') || cell.closest('[data-row-id]');
+        const scope = cell.dataset.scope || (rowContainer ? rowContainer.dataset.scope : 'report');
         const field = cell.dataset.field;
         if (!field) {
             return;
         }
-        const tr = cell.closest('tr');
-        const rowId = tr ? (tr.dataset.rowId || '0') : '0';
+        const rowId = rowContainer ? (rowContainer.dataset.rowId || '0') : '0';
         const value = fieldValue(cell);
 
         const formData = new FormData();
@@ -1257,10 +1299,24 @@ function doOprXlsxExport() {
         [hotelFiguresEl ? oprUiFieldValue(hotelFiguresEl) : 'Hotel Figures & Revenue']
     ];
 
-    document.querySelectorAll('#opr-report-root .opr-metric-grid .opr-metric').forEach(metric => {
-        const labelEl = metric.querySelector('[data-json-path^="fields."]');
-        const label = labelEl ? oprUiFieldValue(labelEl) : (metric.querySelector('label') ? metric.querySelector('label').textContent.trim() : '');
-        let val = oprFieldValue(metric);
+    document.querySelectorAll('#opr-hotel-figures-grid .opr-metric').forEach(metric => {
+        let label = '';
+        const uiLabelEl = metric.querySelector('[data-json-path^="fields."]');
+        const customLabelCell = metric.querySelector('[data-field="field_label"]');
+        if (uiLabelEl) {
+            label = oprUiFieldValue(uiLabelEl);
+        } else if (customLabelCell) {
+            label = oprFieldValue(customLabelCell);
+        } else if (metric.querySelector('label')) {
+            label = metric.querySelector('label').textContent.trim();
+        }
+        let val = '';
+        const valueCell = metric.querySelector('[data-field="field_value"]');
+        if (valueCell) {
+            val = oprFieldValue(valueCell);
+        } else {
+            val = oprFieldValue(metric);
+        }
         data.push([label, val === '—' ? '' : val]);
     });
 

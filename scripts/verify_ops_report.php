@@ -131,6 +131,30 @@ if (!mysqli_stmt_execute($stmt)) {
 }
 mysqli_stmt_close($stmt);
 
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report_hotel_figure (company_id, ops_report_id, field_label, field_value, sort_order, active) VALUES (?, ?, ?, ?, 0, 1)');
+$figureLabel = 'MBQA Custom Metric';
+$figureValue = '42';
+mysqli_stmt_bind_param($stmt, 'iiss', $companyId, $reportId, $figureLabel, $figureValue);
+if (!mysqli_stmt_execute($stmt)) {
+    opr_verify_fail('Insert hotel figure row failed');
+} else {
+    $figureId = (int)mysqli_insert_id($conn);
+    opr_verify_pass('Hotel figure child row inserted id=' . $figureId);
+}
+mysqli_stmt_close($stmt);
+
+$stmt = mysqli_prepare($conn, 'SELECT field_label, field_value FROM ops_report_hotel_figure WHERE id = ? AND ops_report_id = ?');
+mysqli_stmt_bind_param($stmt, 'ii', $figureId, $reportId);
+mysqli_stmt_execute($stmt);
+$figureRow = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+mysqli_stmt_close($stmt);
+
+if (!$figureRow || $figureRow['field_label'] !== $figureLabel || $figureRow['field_value'] !== $figureValue) {
+    opr_verify_fail('ops_report_hotel_figure read-back mismatch');
+} else {
+    opr_verify_pass('ops_report_hotel_figure read-back OK');
+}
+
 $stmt = mysqli_prepare($conn, 'DELETE FROM ops_report WHERE id = ? AND company_id = ?');
 mysqli_stmt_bind_param($stmt, 'ii', $reportId, $companyId);
 mysqli_stmt_execute($stmt);
@@ -143,9 +167,21 @@ $cnt = (int)mysqli_fetch_assoc(mysqli_stmt_get_result($stmt))['c'];
 mysqli_stmt_close($stmt);
 
 if ($cnt !== 0) {
-    opr_verify_fail('Cascade delete did not remove child rows');
+    opr_verify_fail('Cascade delete did not remove guest experience child rows');
 } else {
-    opr_verify_pass('Cascade delete removed child rows');
+    opr_verify_pass('Cascade delete removed guest experience child rows');
+}
+
+$stmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS c FROM ops_report_hotel_figure WHERE ops_report_id = ?');
+mysqli_stmt_bind_param($stmt, 'i', $reportId);
+mysqli_stmt_execute($stmt);
+$figureCnt = (int)mysqli_fetch_assoc(mysqli_stmt_get_result($stmt))['c'];
+mysqli_stmt_close($stmt);
+
+if ($figureCnt !== 0) {
+    opr_verify_fail('Cascade delete did not remove hotel figure child rows');
+} else {
+    opr_verify_pass('Cascade delete removed hotel figure child rows');
 }
 
 // Table existence
@@ -157,6 +193,7 @@ $requiredTables = [
     'ops_report_guest_experience',
     'ops_report_butler',
     'ops_report_night_shift',
+    'ops_report_hotel_figure',
 ];
 foreach ($requiredTables as $table) {
     $safe = mysqli_real_escape_string($conn, $table);

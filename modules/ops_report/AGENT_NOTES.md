@@ -11,6 +11,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - **ops_report_guest_experience** — dynamic guest-experience rows.
 - **ops_report_butler** — dynamic suites butler rows.
 - **ops_report_night_shift** — dynamic night-shift guest rows (23h00 – 07h30).
+- **ops_report_hotel_figure** — dynamic extra Hotel Figures & Revenue fields (`field_label`, `field_value`).
 
 ## 3. Required Relationships
 - All child tables → **ops_report** (`ops_report_id`, cascade delete).
@@ -23,7 +24,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - **All cells editable** when the date is unlocked — no per-field role restrictions (unlike backup tape log).
 - **UI copy in DB:** section headings, metric labels, table column headers, add-row buttons, and `titles.*` (browser tab, export sheet/file prefix) persist in `ops_report.report_ui_json` (blur-save via `scope=report_ui` + `json_path`). Defaults seed on first open via `opr_default_ui_json()`. Table **Actions** header uses `controls.actions` only.
 - **Fixed display (not in `report_ui_json`):** report date suffix (`opr_format_date()`, `d.m.y`) from day/month/year selectors; company line is always `Company:` + `companies.company` for the active tenant; date/export toolbar (Day, Month, Year, Go, Export Excel, Export PDF) in `.opr-controls`.
-- **Extra rows:** any user may add/delete rows in courtesy calls, guest experience, butler, night shift, F&B outlets, and walk-round when the date is editable.
+- **Extra rows:** any user may add/delete rows in courtesy calls, guest experience, butler, night shift, F&B outlets, walk-round, and custom hotel figure fields when the date is editable.
 - **Exports:** 📗 Excel (SheetJS) and 📄 PDF (browser print) with company header.
 
 ## 5. UI Behavior Requirements
