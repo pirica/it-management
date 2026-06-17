@@ -4,16 +4,17 @@ This report summarizes critical and high-severity security vulnerabilities ident
 
 ## Summary of Findings
 
-| ID | Title | Severity | Location |
-|---|---|---|---|
-| 1 | Authenticated Remote Code Execution (RCE) via File Upload | Critical | `modules/explorer/api.php` |
-| 2 | Privilege Escalation via User Profile Modification | High | `modules/users/index.php` |
-| 3 | Unauthorized Access to Role Module Permissions | High | `modules/role_module_permissions/index.php` |
+| ID | Title | Severity | Location | Status |
+|---|---|---|---|---|
+| 1 | Authenticated Remote Code Execution (RCE) via File Upload | Critical | `modules/explorer/api.php` | Remediated |
+| 2 | Privilege Escalation via User Profile Modification | High | `modules/users/index.php` | Remediated |
+| 3 | Unauthorized Access to Role Module Permissions | High | `modules/role_module_permissions/index.php` | Remediated |
 
 ---
 
 ## Finding 1: Authenticated Remote Code Execution (RCE) via File Upload
 
+- **Status:** Remediated — blocked executable extensions on upload; `deny_http` hardening on `files/` tree via `itm_ensure_files_storage_directory()`. Regression: `php scripts/verify_explorer_rce_htaccess.php`.
 - **Severity:** Critical
 - **Location:** `modules/explorer/api.php`
 - **Attacker:** Any authenticated user.
@@ -32,6 +33,7 @@ This report summarizes critical and high-severity security vulnerabilities ident
 
 ## Finding 2: Privilege Escalation via User Profile Modification
 
+- **Status:** Remediated — `itm_require_admin()` on all Users entry points; non-admins cannot set `role_id` or `access_level_id`.
 - **Severity:** High
 - **Location:** `modules/users/index.php`
 - **Attacker:** Any authenticated user.
@@ -50,6 +52,7 @@ This report summarizes critical and high-severity security vulnerabilities ident
 
 ## Finding 3: Unauthorized Access to Role Module Permissions
 
+- **Status:** Remediated — `itm_is_admin()` guard on `modules/role_module_permissions/index.php`.
 - **Severity:** High
 - **Location:** `modules/role_module_permissions/index.php`
 - **Attacker:** Any authenticated user.

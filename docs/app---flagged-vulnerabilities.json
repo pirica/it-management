@@ -2,7 +2,7 @@
     "findings": [
         {
             "title": "Authenticated Remote Code Execution (RCE) via File Upload in Explorer Module",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
             "detected_at_pst": "2026-06-14T10:15:00-07:00",
             "reported_link": "",
@@ -10,7 +10,7 @@
         },
         {
             "title": "Privilege Escalation via User Profile Modification",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
             "detected_at_pst": "2026-06-14T10:15:00-07:00",
             "reported_link": "",
@@ -18,7 +18,7 @@
         },
         {
             "title": "Unauthorized Access to Role Module Permissions Management",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "c61b6035c615b9f4bbc2505c9f191d5d9c4820ec",
             "detected_at_pst": "2026-06-14T10:15:00-07:00",
             "reported_link": "",
@@ -26,7 +26,7 @@
         },
         {
             "title": "Multi-tenant IDOR and Data Corruption via Shared JSON Import",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
             "detected_at_pst": "2026-06-14T12:45:00-07:00",
             "reported_link": "",
@@ -34,7 +34,7 @@
         },
         {
             "title": "Unauthorized Full Company Deletion and Data Purge",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
             "detected_at_pst": "2026-06-14T12:45:00-07:00",
             "reported_link": "",
@@ -50,7 +50,7 @@
         },
         {
             "title": "Cross-User and Cross-Department Data Leak via Explorer ZIP Download",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "5f8ee5fef4fbd18beb93e2c57087828fdd1db200",
             "detected_at_pst": "2026-06-14T12:45:00-07:00",
             "reported_link": "",
@@ -58,15 +58,15 @@
         },
         {
             "title": "Unauthorized Remote Reset of Git History and Database Wipe",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
             "detected_at_pst": "2026-06-15T06:25:34-07:00",
             "reported_link": "",
-            "location": "reset_git_history.php"
+            "location": "reset_git_history.php (removed from repository)"
         },
         {
             "title": "Administrative Privilege Escalation via Select Options API",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
             "detected_at_pst": "2026-06-15T06:25:34-07:00",
             "reported_link": "",
@@ -74,7 +74,7 @@
         },
         {
             "title": "Cross-user IDOR and Unauthorized Account Deletion in Users Module",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
             "detected_at_pst": "2026-06-15T06:25:34-07:00",
             "reported_link": "",
@@ -82,7 +82,7 @@
         },
         {
             "title": "Sensitive Information Disclosure (Passwords and Reset Tokens) in Audit Logs",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "82a762258308248127b15dd4e887f8003347dc0d",
             "detected_at_pst": "2026-06-15T10:20:00-07:00",
             "reported_link": "",
@@ -90,7 +90,7 @@
         },
         {
             "title": "Unauthorized Access and Privilege Escalation in Registration Invitations",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "82a762258308248127b15dd4e887f8003347dc0d",
             "detected_at_pst": "2026-06-15T10:20:00-07:00",
             "reported_link": "",
@@ -114,7 +114,7 @@
         },
         {
             "title": "Sensitive Information Disclosure (Plaintext Reset Tokens) in Audit Logs",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "38aeb3765c93ebda59693d93625c51038d394935",
             "detected_at_pst": "2026-06-17T14:17:00-07:00",
             "reported_link": "",
