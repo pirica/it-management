@@ -8,56 +8,6 @@ $isCli = (php_sapi_name() === 'cli');
 $nl = itm_script_output_nl();
 $failures = 0;
 
-/**
- * @return void
- */
-function itm_verify_sidebar_probe_cleanup($conn, $slug)
-{
-    $slug = trim((string)$slug);
-    if ($slug === '' || !$conn instanceof mysqli) {
-        return;
-    }
-
-    $moduleId = 0;
-    $stmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $slug);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
-        $moduleId = (int)($row['id'] ?? 0);
-        mysqli_stmt_close($stmt);
-    }
-    if ($moduleId > 0) {
-        $stmtDeleteAccess = mysqli_prepare($conn, 'DELETE FROM company_module_access WHERE module_id = ?');
-        if ($stmtDeleteAccess) {
-            mysqli_stmt_bind_param($stmtDeleteAccess, 'i', $moduleId);
-            mysqli_stmt_execute($stmtDeleteAccess);
-            mysqli_stmt_close($stmtDeleteAccess);
-        }
-        $stmtDeleteRegistry = mysqli_prepare($conn, 'DELETE FROM modules_registry WHERE id = ? LIMIT 1');
-        if ($stmtDeleteRegistry) {
-            mysqli_stmt_bind_param($stmtDeleteRegistry, 'i', $moduleId);
-            mysqli_stmt_execute($stmtDeleteRegistry);
-            mysqli_stmt_close($stmtDeleteRegistry);
-        }
-    }
-
-    if (itm_is_safe_identifier($slug)) {
-        mysqli_query($conn, 'DROP TABLE IF EXISTS `' . $slug . '`');
-    }
-
-    $moduleDir = ROOT_PATH . 'modules/' . $slug;
-    if (is_dir($moduleDir)) {
-        foreach (glob($moduleDir . '/*.php') ?: [] as $phpFile) {
-            if (is_file($phpFile)) {
-                unlink($phpFile);
-            }
-        }
-        @rmdir($moduleDir);
-    }
-}
-
 if (!$isCli) {
     itm_script_browser_nav_echo();
     echo '<h1>Verify Company Module Access</h1>';
@@ -185,7 +135,7 @@ if ($ticketsModuleId > 0 && itm_set_company_module_icon($conn, 1, $ticketsModule
 }
 
 $probeSlug = 'mbqa_sidebar_discovery_probe';
-itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 
 // Registry-only: active modules_registry row without modules/{slug}/index.php.
 $probeModuleId = 0;
@@ -221,7 +171,7 @@ if ($probeModuleId > 0) {
     echo '[FAIL] Could not insert registry-only sidebar probe row.' . $nl;
     $failures++;
 }
-itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 
 // MySQL table only: SHOW TABLES discovery auto-scaffolds module folder and registry row.
 $probeTableSql = 'CREATE TABLE `' . $probeSlug . '` (
@@ -251,7 +201,7 @@ if (!mysqli_query($conn, $probeTableSql)) {
         echo '[PASS] New MySQL table probe auto-scaffolds module folder and sidebar access.' . $nl;
     }
 }
-itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 
 // Folder only: modules/{slug}/index.php without a pre-existing registry row.
 $probeModuleDir = ROOT_PATH . 'modules/' . $probeSlug;
@@ -280,7 +230,7 @@ if (!is_dir($probeModuleDir) && !mkdir($probeModuleDir, 0775, true) && !is_dir($
         }
     }
 }
-itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 
 // Both registry row and modules/{slug}/index.php: single sidebar entry with access.
 $probeModuleId = 0;
@@ -328,10 +278,10 @@ if ($probeModuleId <= 0) {
         }
     }
 }
-itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 
 // Neither registry nor folder/table: absent from sidebar and denied.
-itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 if (itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
     echo '[FAIL] Neither-path probe should be absent from sidebar structure.' . $nl;
     $failures++;

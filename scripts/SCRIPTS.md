@@ -533,8 +533,8 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs |
-| `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither) |
+| `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs; bulk backfill when sidebar auto-register is not enough |
+| `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither); PHPUnit: `CompanyModuleAccessVerifyTest` |
 | `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
 
 Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks.

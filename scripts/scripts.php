@@ -817,20 +817,20 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="sync_modules_registry.php">sync_modules_registry.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs.</td>
-                    <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code></td>
+                    <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs; seeds <code>company_module_access</code> for new registry rows. Sidebar discovery also auto-registers new tables/folders on page load — use this script for bulk backfill after deploy or when icons/labels need catalog sync.</td>
+                    <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code>. Run after adding module folders; optional when only a new MySQL table was created (sidebar auto-scaffold + register).</td>
                 </tr>
                 <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression checks for registry coverage, opt-out deny behaviour, sidebar-excluded slugs in the admin matrix list, and sidebar discovery probes (registry-only, new MySQL table, folder-only).</td>
-                    <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code></td>
+                    <td>Regression for registry coverage, opt-out deny, sidebar-excluded slugs in the admin matrix, company icon overrides, and disposable sidebar discovery probes: registry-only (no <code>modules/{slug}/</code>), new MySQL table (auto-scaffold), folder-only (<code>index.php</code>), registry + folder (single entry), neither (absent + denied). Uses <code>itm_sidebar_discovery_probe_cleanup()</code> for probe teardown.</td>
+                    <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter CompanyModuleAccessVerifyTest</code> (subprocess wrapper). Run when changing <code>includes/itm_company_module_access.php</code>, <code>includes/ui_config.php</code> sidebar discovery, or CMA enforcement.</td>
                 </tr>
                 <tr>
                     <td><a href="seed_company_module_access.php">seed_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (optional explicit rows).</td>
-                    <td>CLI: <code>php scripts/seed_company_module_access.php</code> or <code>php scripts/seed_company_module_access.php 3</code> for one company.</td>
+                    <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (all modules or one <code>company_id</code>). Calls <code>sync_modules_registry.php</code> first when seeding a single company.</td>
+                    <td>CLI: <code>php scripts/seed_company_module_access.php</code> (all companies) or <code>php scripts/seed_company_module_access.php 3</code> (one company). Browser: <a href="seed_company_module_access.php">seed_company_module_access.php</a>.</td>
                 </tr>
                 <tr>
                     <td><code>bypass_login.php</code></td>

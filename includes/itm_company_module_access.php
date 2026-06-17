@@ -629,6 +629,55 @@ if (!function_exists('itm_ensure_registry_rows_for_module_slugs')) {
     }
 }
 
+if (!function_exists('itm_sidebar_discovery_probe_cleanup')) {
+    function itm_sidebar_discovery_probe_cleanup($conn, $slug)
+    {
+        $slug = trim((string)$slug);
+        if ($slug === '' || !$conn instanceof mysqli) {
+            return;
+        }
+
+        $moduleId = 0;
+        $stmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 's', $slug);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            $moduleId = (int)($row['id'] ?? 0);
+            mysqli_stmt_close($stmt);
+        }
+        if ($moduleId > 0) {
+            $stmtDeleteAccess = mysqli_prepare($conn, 'DELETE FROM company_module_access WHERE module_id = ?');
+            if ($stmtDeleteAccess) {
+                mysqli_stmt_bind_param($stmtDeleteAccess, 'i', $moduleId);
+                mysqli_stmt_execute($stmtDeleteAccess);
+                mysqli_stmt_close($stmtDeleteAccess);
+            }
+            $stmtDeleteRegistry = mysqli_prepare($conn, 'DELETE FROM modules_registry WHERE id = ? LIMIT 1');
+            if ($stmtDeleteRegistry) {
+                mysqli_stmt_bind_param($stmtDeleteRegistry, 'i', $moduleId);
+                mysqli_stmt_execute($stmtDeleteRegistry);
+                mysqli_stmt_close($stmtDeleteRegistry);
+            }
+        }
+
+        if (function_exists('itm_is_safe_identifier') && itm_is_safe_identifier($slug)) {
+            mysqli_query($conn, 'DROP TABLE IF EXISTS `' . $slug . '`');
+        }
+
+        $moduleDir = defined('ROOT_PATH') ? ROOT_PATH . 'modules/' . $slug : dirname(__DIR__) . '/modules/' . $slug;
+        if (is_dir($moduleDir)) {
+            foreach (glob($moduleDir . '/*.php') ?: [] as $phpFile) {
+                if (is_file($phpFile)) {
+                    unlink($phpFile);
+                }
+            }
+            @rmdir($moduleDir);
+        }
+    }
+}
+
 if (!function_exists('itm_merge_registry_modules_into_sidebar_discovery')) {
     function itm_merge_registry_modules_into_sidebar_discovery($conn, &$moduleNames, $existingItemIds)
     {
