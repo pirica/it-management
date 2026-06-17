@@ -1,0 +1,47 @@
+# AGENT_NOTES.md - Manufacturers
+
+## 1. Module Purpose
+Lookup table for equipment and inventory manufacturers (e.g., "Dell", "Cisco", "HP"). Also serves as the **canonical flattened CRUD template** for simple reference tables (dynamic schema from `information_schema`).
+
+## 2. Key Tables
+- **manufacturers** — stores manufacturer names and status.
+
+## 3. Required Relationships
+- **manufacturers** → depends on **companies**.
+- **manufacturers** → referenced by **equipment**, **catalogs**, **inventory_items**.
+
+## 4. Business Rules (Critical for Agents)
+- **Unique Name**: Manufacturer name must be unique per company.
+- **Template contract:** Only `modules/manufacturers/` is allowed to be the live manufacturers CRUD. Other modules must **not** use `require __DIR__ . '/../manufacturers/…'` delegates.
+- **New DB tables without a bespoke module:** `itm_auto_create_module_scaffold()` in `includes/ui_config.php` copies this module's PHP files into `modules/{table}/` with `$crud_table` / `$crud_title` substitutions (`itm_materialize_manufacturers_crud_module_files()`). Sidebar discovery labels those entries with **⚠️** (`itm_sidebar_auto_scaffolded_module_emoji()`).
+- **Refreshing a materialized module** after template fixes: `itm_materialize_manufacturers_crud_module_files($slug, true)` (overwrite). Never materialize over `manufacturers` itself.
+
+## 5. UI Behavior Requirements
+- Standard flattened CRUD (list, create, edit, view, delete, list_all, bulk actions, import/export).
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** — handles bulk JSON import.
+
+## 7. File Structure
+- `index.php` — main flattened CRUD (list + POST handlers).
+- `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — entry wrappers or full screens per action.
+- Materialized siblings (for example `modules/note_labels/`, `modules/modules_registry/`) mirror this layout locally.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`; hide `company_id` from UI.
+
+## 10. Common Pitfalls
+- Do not add cross-module `require '../manufacturers/'` stubs — QA cleanup removes legacy delegate folders via `itm_remove_manufacturers_template_scaffold_module_dirs()`. Run `php scripts/check_manufacturers_delegate_requires.php` to catch new violations.
+- When changing shared CRUD behaviour here, re-materialize dependent modules or patch them explicitly.
+
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT
+```php
+$stmt = $conn->prepare("SELECT * FROM manufacturers WHERE company_id = ?");
+$stmt->bind_param("i", $companyId);
+$stmt->execute();
+```
+
+## 12. Module Owner Notes (Optional)
+Central lookup for asset branding; canonical source for the manufacturers CRUD materialization helpers in `includes/ui_config.php`.

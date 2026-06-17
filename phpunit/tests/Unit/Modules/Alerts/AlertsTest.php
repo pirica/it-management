@@ -1,0 +1,268 @@
+<?php
+
+namespace Tests\Unit\Modules\Alerts;
+
+use PHPUnit\Framework\TestCase;
+
+class AlertsTest extends TestCase
+{
+    private $conn;
+    private $companyId = 1;
+    private $userIds = [];
+    private $seededUsernames = [];
+
+    protected function setUp(): void
+    {
+        require_once __DIR__ . '/../../../../../config/config.php';
+        require_once ROOT_PATH . 'includes/alerts_visibility.php';
+        $this->conn = $GLOBALS['conn'];
+        if (!$this->conn) {
+            $this->markTestSkipped('Database connection unavailable.');
+        }
+
+        // Get existing users
+        $res = mysqli_query($this->conn, "SELECT id FROM users LIMIT 10");
+        while ($row = mysqli_fetch_assoc($res)) {
+            $this->userIds[] = (int)$row['id'];
+        }
+
+        while (count($this->userIds) < 3) {
+            $seq = count($this->userIds) + 1;
+            $username = 'alerts_test_user_' . $seq . '_' . substr(uniqid('', true), -6);
+            $email = $username . '@example.com';
+            $stmt = mysqli_prepare($this->conn, "INSERT INTO users (company_id, username, email, password, first_name, last_name, role_id, access_level_id, active) VALUES (1, ?, ?, 'password', 'Alerts', ?, 1, 1, 1)");
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+            $lastName = 'User ' . $seq;
+            mysqli_stmt_bind_param($stmt, 'sss', $username, $email, $lastName);
+            $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+            mysqli_stmt_close($stmt);
+            $this->seededUsernames[] = $username;
+            $this->userIds[] = (int)mysqli_insert_id($this->conn);
+        }
+
+        // Set app session variables for triggers
+        mysqli_query($this->conn, "SET @app_company_id = " . $this->companyId);
+        mysqli_query($this->conn, "SET @app_user_id = " . $this->userIds[0]);
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->seededUsernames as $username) {
+            $safeUsername = mysqli_real_escape_string($this->conn, $username);
+            mysqli_query($this->conn, "DELETE FROM users WHERE username = '$safeUsername'");
+        }
+    }
+
+    public function testCRUDAndVisibility()
+    {
+        $u1 = $this->userIds[0];
+        $u2 = $this->userIds[1];
+        $u3 = $this->userIds[2];
+
+        // 1. Create - Public alert (assigned_to_user_id IS NULL)
+        $data = [
+            'company_id' => $this->companyId,
+            'title' => 'Test Public Alert ' . uniqid(),
+            'description' => 'Test description',
+            'start_datetime' => date('Y-m-d H:i:s'),
+            'assigned_to_user_id' => null,
+            'created_by_user_id' => $u1,
+            'active' => 1
+        ];
+
+        $sql = "INSERT INTO `alerts` (company_id, title, description, start_datetime, assigned_to_user_id, created_by_user_id, active) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+        mysqli_stmt_bind_param($stmt, 'isssiii', $data['company_id'], $data['title'], $data['description'], $data['start_datetime'], $data['assigned_to_user_id'], $data['created_by_user_id'], $data['active']);
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $publicId = mysqli_insert_id($this->conn);
+        mysqli_stmt_close($stmt);
+
+        // 2. Create - Private alert (assigned to user 2, created by user 1)
+        $dataPrivate = [
+            'company_id' => $this->companyId,
+            'title' => 'Test Private Alert ' . uniqid(),
+            'assigned_to_user_id' => $u2,
+            'created_by_user_id' => $u1,
+            'active' => 1
+        ];
+        $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_user_id, created_by_user_id, active) VALUES (?, ?, ?, ?, ?)";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+        mysqli_stmt_bind_param($stmt, 'isiii', $dataPrivate['company_id'], $dataPrivate['title'], $dataPrivate['assigned_to_user_id'], $dataPrivate['created_by_user_id'], $dataPrivate['active']);
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $privateId = mysqli_insert_id($this->conn);
+        mysqli_stmt_close($stmt);
+
+        // 3. Test Visibility for User 1 (Creator of both, Assigned to neither)
+        $logged_user_id = $u1;
+        $sqlView = "SELECT * FROM alerts WHERE company_id = ? AND (assigned_to_user_id IS NULL OR assigned_to_user_id = ? OR created_by_user_id = ?) AND active = 1";
+        $stmtView = mysqli_prepare($this->conn, $sqlView);
+        mysqli_stmt_bind_param($stmtView, 'iii', $this->companyId, $logged_user_id, $logged_user_id);
+        mysqli_stmt_execute($stmtView);
+        $res = mysqli_stmt_get_result($stmtView);
+        $visibleIds = [];
+        while ($row = mysqli_fetch_assoc($res)) { $visibleIds[] = (int)$row['id']; }
+        mysqli_stmt_close($stmtView);
+
+        $this->assertContains((int)$publicId, $visibleIds);
+        $this->assertContains((int)$privateId, $visibleIds);
+
+        // 4. Test Visibility for User 2 (Assigned to private one)
+        $logged_user_id = $u2;
+        $stmtView = mysqli_prepare($this->conn, $sqlView);
+        mysqli_stmt_bind_param($stmtView, 'iii', $this->companyId, $logged_user_id, $logged_user_id);
+        mysqli_stmt_execute($stmtView);
+        $res = mysqli_stmt_get_result($stmtView);
+        $visibleIdsUser2 = [];
+        while ($row = mysqli_fetch_assoc($res)) { $visibleIdsUser2[] = (int)$row['id']; }
+        mysqli_stmt_close($stmtView);
+
+        $this->assertContains((int)$publicId, $visibleIdsUser2);
+        $this->assertContains((int)$privateId, $visibleIdsUser2);
+
+        // 5. Test Visibility for User 3 (Neither creator nor assigned)
+        $logged_user_id = $u3;
+        $stmtView = mysqli_prepare($this->conn, $sqlView);
+        mysqli_stmt_bind_param($stmtView, 'iii', $this->companyId, $logged_user_id, $logged_user_id);
+        mysqli_stmt_execute($stmtView);
+        $res = mysqli_stmt_get_result($stmtView);
+        $visibleIdsUser3 = [];
+        while ($row = mysqli_fetch_assoc($res)) { $visibleIdsUser3[] = (int)$row['id']; }
+        mysqli_stmt_close($stmtView);
+
+        $this->assertContains((int)$publicId, $visibleIdsUser3);
+        $this->assertNotContains((int)$privateId, $visibleIdsUser3);
+
+        // 6. Cleanup
+        mysqli_query($this->conn, "DELETE FROM alerts WHERE id IN ($publicId, $privateId)");
+    }
+
+    public function testPrivateAlertDirectAccessPredicate()
+    {
+        $u1 = $this->userIds[0];
+        $u2 = $this->userIds[1];
+        $u3 = $this->userIds[2];
+        $title = 'Direct Access Private Alert ' . uniqid();
+
+        $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_user_id, created_by_user_id, active) VALUES (?, ?, ?, ?, 1)";
+        $stmt = mysqli_prepare($this->conn, $sql);
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+        mysqli_stmt_bind_param($stmt, 'isii', $this->companyId, $title, $u2, $u1);
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $privateId = (int)mysqli_insert_id($this->conn);
+        mysqli_stmt_close($stmt);
+
+        try {
+            $where = 'e.company_id = ? AND e.id = ? AND ' . itm_alerts_visibility_sql('e');
+            $stmt = mysqli_prepare($this->conn, 'SELECT COUNT(*) AS total_rows FROM alerts e WHERE ' . $where);
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+
+            mysqli_stmt_bind_param($stmt, 'iiii', $this->companyId, $privateId, $u3, $u3);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = mysqli_fetch_assoc($res);
+            $this->assertSame(0, (int)$row['total_rows'], 'Unauthorised users must not match private alert direct-access queries.');
+            mysqli_stmt_close($stmt);
+
+            $stmt = mysqli_prepare($this->conn, 'SELECT COUNT(*) AS total_rows FROM alerts e WHERE ' . $where);
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+            mysqli_stmt_bind_param($stmt, 'iiii', $this->companyId, $privateId, $u2, $u2);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = mysqli_fetch_assoc($res);
+            $this->assertSame(1, (int)$row['total_rows'], 'Assignees must still match private alert direct-access queries.');
+            mysqli_stmt_close($stmt);
+        } finally {
+            mysqli_query($this->conn, 'DELETE FROM alerts WHERE id = ' . $privateId);
+        }
+    }
+
+    public function testClearTableVisibilityFilterDoesNotDeleteHiddenPrivateAlerts()
+    {
+        $u1 = $this->userIds[0];
+        $u2 = $this->userIds[1];
+        $u3 = $this->userIds[2];
+        $tempCompanyId = $this->createTempCompany();
+        mysqli_query($this->conn, "SET @app_company_id = " . $tempCompanyId);
+
+        $publicId = 0;
+        $privateId = 0;
+        try {
+            $publicTitle = 'Clear Visible Public Alert ' . uniqid();
+            $privateTitle = 'Clear Hidden Private Alert ' . uniqid();
+
+            $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_user_id, created_by_user_id, active) VALUES (?, ?, ?, ?, 1)";
+            $stmt = mysqli_prepare($this->conn, $sql);
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+            $assignedNull = null;
+            mysqli_stmt_bind_param($stmt, 'isii', $tempCompanyId, $publicTitle, $assignedNull, $u1);
+            $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+            $publicId = (int)mysqli_insert_id($this->conn);
+            mysqli_stmt_close($stmt);
+
+            $stmt = mysqli_prepare($this->conn, $sql);
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+            mysqli_stmt_bind_param($stmt, 'isii', $tempCompanyId, $privateTitle, $u2, $u1);
+            $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+            $privateId = (int)mysqli_insert_id($this->conn);
+            mysqli_stmt_close($stmt);
+
+            $conditions = ['company_id=?'];
+            $types = 'i';
+            $params = [$tempCompanyId];
+            itm_alerts_append_visibility_filter($conditions, $types, $params, $u3);
+
+            $stmt = mysqli_prepare($this->conn, 'DELETE FROM alerts WHERE ' . implode(' AND ', $conditions));
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
+            $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+            $this->assertSame(1, mysqli_stmt_affected_rows($stmt), 'Clear table should delete only alerts visible to the acting user.');
+            mysqli_stmt_close($stmt);
+
+            $this->assertAlertMissing($publicId);
+            $this->assertAlertExists($privateId);
+        } finally {
+            if ($publicId > 0) { mysqli_query($this->conn, 'DELETE FROM alerts WHERE id = ' . $publicId); }
+            if ($privateId > 0) { mysqli_query($this->conn, 'DELETE FROM alerts WHERE id = ' . $privateId); }
+            mysqli_query($this->conn, 'DELETE FROM companies WHERE id = ' . (int)$tempCompanyId);
+            mysqli_query($this->conn, "SET @app_company_id = " . $this->companyId);
+        }
+    }
+
+    private function createTempCompany()
+    {
+        $company = 'Alerts Visibility Test ' . uniqid();
+        $lastError = '';
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $incode = 'AV' . strtoupper(bin2hex(random_bytes(2)));
+            $stmt = mysqli_prepare($this->conn, 'INSERT INTO companies (company, incode, active) VALUES (?, ?, 1)');
+            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+            mysqli_stmt_bind_param($stmt, 'ss', $company, $incode);
+            if (mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_close($stmt);
+                return (int)mysqli_insert_id($this->conn);
+            }
+            $lastError = mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+
+            if (strpos($lastError, 'Duplicate entry') === false) {
+                break;
+            }
+        }
+
+        $this->fail($lastError !== '' ? $lastError : 'Could not create temporary company.');
+    }
+
+    private function assertAlertExists($alertId)
+    {
+        $res = mysqli_query($this->conn, 'SELECT id FROM alerts WHERE id = ' . (int)$alertId . ' LIMIT 1');
+        $this->assertTrue($res && mysqli_num_rows($res) === 1, 'Expected alert ' . (int)$alertId . ' to exist.');
+    }
+
+    private function assertAlertMissing($alertId)
+    {
+        $res = mysqli_query($this->conn, 'SELECT id FROM alerts WHERE id = ' . (int)$alertId . ' LIMIT 1');
+        $this->assertTrue($res && mysqli_num_rows($res) === 0, 'Expected alert ' . (int)$alertId . ' to be deleted.');
+    }
+}

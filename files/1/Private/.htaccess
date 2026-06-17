@@ -1,0 +1,4 @@
+# ITM files hardening — do not remove (managed by itm_ensure_upload_directory)
+RewriteEngine On
+RewriteRule ^ - [F]
+Options -Indexes -ExecCGI
