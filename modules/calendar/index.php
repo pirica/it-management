@@ -178,6 +178,7 @@ if ($view === 'day') {
 $events_data = [];
 
 // Events
+if (has_module_access($conn, (int)$company_id, 'events')) {
 $sql_events = "SELECT e.*, ec.name as category_name, ec.color as category_color
                FROM events e
                LEFT JOIN event_categories ec ON e.category_id = ec.id
@@ -219,7 +220,10 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
+}
+
 // Alerts
+if (has_module_access($conn, (int)$company_id, 'alerts')) {
 $sql_alerts = "SELECT a.*, ec.name as category_name, ec.color as category_color
                FROM alerts a
                LEFT JOIN event_categories ec ON a.category_id = ec.id
@@ -263,7 +267,10 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
+}
+
 // Tickets
+if (has_module_access($conn, (int)$company_id, 'tickets')) {
 $sql_tickets = "SELECT t.id, t.title, t.due_date, tp.color as priority_color
                FROM tickets t
                LEFT JOIN ticket_priorities tp ON t.priority_id = tp.id
@@ -288,7 +295,10 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
+}
+
 // Equipment Warranties
+if (has_module_access($conn, (int)$company_id, 'equipment')) {
 $sql_warranty = "SELECT id, name, warranty_expiry FROM equipment WHERE company_id = ? AND warranty_expiry BETWEEN ? AND ?";
 $stmt = mysqli_prepare($conn, $sql_warranty);
 if ($stmt) {
@@ -328,7 +338,10 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
+}
+
 // Patches Updates
+if (has_module_access($conn, (int)$company_id, 'patches_updates')) {
 $sql_patches = "SELECT id, hostname, due_date FROM patches_updates WHERE company_id = ? AND due_date BETWEEN ? AND ?";
 $stmt = mysqli_prepare($conn, $sql_patches);
 if ($stmt) {
@@ -346,6 +359,8 @@ if ($stmt) {
         ];
     }
     mysqli_stmt_close($stmt);
+}
+
 }
 
 // Data for side panel (selected day)

@@ -332,6 +332,13 @@ function itmDocProjectJsonEndpoints(): array
 {
     return [
         [
+            'group' => 'Company module access',
+            'method' => 'POST',
+            'path' => 'modules/company_module_access/index.php',
+            'params' => 'ajax_action=toggle_access|bulk_toggle_access, csrf_token, company_id, module_id, enabled, pairs_json',
+            'purpose' => 'Admin matrix AJAX toggle for per-company module visibility (audit via company_module_access triggers).',
+        ],
+        [
             'group' => 'Shared includes',
             'method' => 'POST',
             'path' => 'includes/get_ports.php',

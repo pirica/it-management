@@ -79,12 +79,18 @@ foreach ($sectionsById as $section) {
             }
         }
 
-        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility, $equipmentTypeSidebarVisibility, $sidebarConfig) {
+        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility, $equipmentTypeSidebarVisibility, $sidebarConfig, $conn, $company_id) {
             if (($visibility[$sidebarItem['id']] ?? 1) !== 1) {
                 return false;
             }
 
             $itemId = (string)($sidebarItem['id'] ?? '');
+            if ($itemId !== 'dashboard_link' && $itemId !== 'settings' && function_exists('has_module_access')) {
+                if (!has_module_access($conn, (int)($company_id ?? 0), $itemId)) {
+                    return false;
+                }
+            }
+
             if ($itemId === 'audit_logs' && ((int)($sidebarConfig['enable_audit_logs'] ?? 1) !== 1)) {
                 return false;
             }

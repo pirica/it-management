@@ -170,6 +170,15 @@ if (!itm_select_options_is_table_allowed($table)) {
     exit;
 }
 
+// Why: Block quick-add when the owning module is disabled for the active company.
+if (function_exists('has_module_access') && is_dir(ROOT_PATH . 'modules/' . $table)) {
+    if (!has_module_access($conn, (int)($company_id ?? 0), $table)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Module access denied.']);
+        exit;
+    }
+}
+
 $extraFields = itm_select_options_filter_extra_fields($extraFields);
 
 

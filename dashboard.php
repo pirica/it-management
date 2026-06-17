@@ -237,18 +237,24 @@ if ($userDisplayName !== '' && $userEmail !== '') {
 
                 <div class="stats-grid">
                     <!-- Dashboard Statistics Cards -->
+                    <?php if (has_module_access($conn, $companyId, 'equipment')): ?>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
                         <div class="stat-label">Equipment</div>
                         <div class="stat-number"><?php echo $equipment_count; ?></div>
                     </a>
+                    <?php endif; ?>
+                    <?php if (has_module_access($conn, $companyId, 'tickets')): ?>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/tickets/">
                         <div class="stat-label">Tickets</div>
                         <div class="stat-number"><?php echo $tickets_count; ?></div>
                     </a>
+                    <?php endif; ?>
+                    <?php if (has_module_access($conn, $companyId, 'employees')): ?>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/employees/">
                         <div class="stat-label">Employees</div>
                         <div class="stat-number"><?php echo $employees_count; ?></div>
                     </a>
+                    <?php endif; ?>
                 </div>
 
                 <!-- System Settings Quick Link -->

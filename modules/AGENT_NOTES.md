@@ -25,4 +25,5 @@ Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` Protection 
 ### `select_options_api.php` (module root)
 - Shared JSON endpoint for dropdown quick-add (`js/select-add-option.js`).
 - **Table policy:** inserts are allowed only for tables listed in `includes/itm_select_options_policy.php`; `users`, `user_roles`, `role_module_permissions`, and other identity/RBAC tables are blocked.
+- **Company module access:** `config/config.php` enforces `has_module_access()` for all `modules/*` requests; sidebar/dashboard/calendar honour the same helper. Admin matrix: `modules/company_module_access/`.
 - Regression: `php scripts/verify_select_options_escalation.php` (expects PASS — admin user creation via `users` table rejected).
