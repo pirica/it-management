@@ -423,6 +423,13 @@ function itmDocProjectJsonEndpoints(): array
             'purpose' => 'Inline grid edit (today only) or insert/return timestamps.',
         ],
         [
+            'group' => 'Ops Report',
+            'method' => 'POST',
+            'path' => 'modules/ops_report/index.php',
+            'params' => 'ajax_inline_edit=1 | ajax_add_row=1 | ajax_delete_row=1, csrf_token, report_date, scope, field, value, row_id',
+            'purpose' => 'Inline edit on daily ops report (D-2 lock for non-admins); add/delete dynamic rows.',
+        ],
+        [
             'group' => 'Alerts',
             'method' => 'POST',
             'path' => 'modules/alerts/index.php',

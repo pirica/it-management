@@ -83,17 +83,17 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>database.sql</code> provisions <strong>107 tables</strong> and approximately <strong>3,075 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>database.sql</code> provisions <strong>113 tables</strong> and approximately <strong>3,075 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 107 |
+| **Tables** | 113 |
 | **Sample rows** | ~3,075 (from <code>database.sql</code>) |
-| **Module folders** | 122 under <code>modules/</code> |
-| **Registry entries** | 127 in <code>modules_registry</code> |
-| **Company × module matrix** | 635 rows (5 seed companies × 127 modules) |
+| **Module folders** | 123 under <code>modules/</code> |
+| **Registry entries** | 128 in <code>modules_registry</code> |
+| **Company × module matrix** | 640 rows (5 seed companies × 128 modules) |
 | **Sidebar preferences** | 540 rows (5 companies × 108 default sidebar items) |
 | **Functional domains** | 12 (see breakdown below) |
 
@@ -187,11 +187,11 @@
 
 #### Operations and file storage
 
-`explorer`, `visitors_access_log`, `backup_tape_log`
+`explorer`, `visitors_access_log`, `backup_tape_log`, `ops_report`
 
-**Purpose:** Multi-tenant file explorer (`files/{company_id}/`), visitor access logging, and monthly backup-tape grids.
+**Purpose:** Multi-tenant file explorer (`files/{company_id}/`), visitor access logging, monthly backup-tape grids, and daily hotel ops reports.
 
-**Modules:** `explorer`, `visitors_access_log`, `backup_tape_log`
+**Modules:** `explorer`, `visitors_access_log`, `backup_tape_log`, `ops_report`
 
 <h3 align="center">Table count overview</h3>
 
@@ -207,9 +207,9 @@
 | Password vault | 2 | 0 |
 | Notes, bookmarks, productivity | 6 | ~5 |
 | Planning and events | 2 | ~10 |
-| Operations | 3 | ~15 |
+| Operations | 9 | ~15 |
 | Workstation reference | 7 | ~280 |
-| **Total** | **107** | **~3,075** |
+| **Total** | **113** | **~3,075** |
 
 <h3 align="center">What this means</h3>
 
@@ -344,6 +344,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Alerts | `modules/alerts/` | Global and private alerts with ICS import |
 | Visitors Access Log | `modules/visitors_access_log/` | Manual visitor entry logs with immutability rules |
 | Backup Tape Log | `modules/backup_tape_log/` | Monthly server backup tape grid |
+| Ops Report | `modules/ops_report/` | Daily hotel operations report (figures, F&B, walk-round, guest experience) |
 
 <h3 align="center">Productivity, files, and planning</h3>
 

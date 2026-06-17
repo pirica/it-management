@@ -827,6 +827,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code>. Run after adding module folders; optional when only a new MySQL table was created (sidebar auto-scaffold + register).</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_ops_report.php">verify_ops_report.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
+                    <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for registry coverage, opt-out deny, sidebar-excluded slugs in the admin matrix, company icon overrides, and disposable sidebar discovery probes: registry-only (no <code>modules/{slug}/</code>), new MySQL table (auto-scaffold), folder-only (<code>index.php</code>), registry + folder (single entry), neither (absent + denied). Uses <code>itm_sidebar_discovery_probe_cleanup()</code> for probe teardown.</td>

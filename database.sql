@@ -210,6 +210,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("note_labels", "Note Labels", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("notes", "Notes", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("org_chart", "Org Chart", 0, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("ops_report", "Ops Report", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("password_entries", "Password Entries", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("password_folders", "Password Folders", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("passwords", "Passwords", 0, 1);
@@ -5983,6 +5984,172 @@ CREATE TRIGGER `trg_backup_tape_log_audit_delete` AFTER DELETE ON `backup_tape_l
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'backup_tape_log', OLD.`id`, 'DELETE',
   JSON_OBJECT('server_id', OLD.`server_id`, 'log_date', OLD.`log_date`, 'tape_to_be_used', OLD.`tape_to_be_used`, 'time_tape_inserted', OLD.`time_tape_inserted`, 'time_returned_to_safe', OLD.`time_returned_to_safe`, 'print_name', OLD.`print_name`, 'backup_status', OLD.`backup_status`, 'problem_details', OLD.`problem_details`, 'tape_used_for_restore', OLD.`tape_used_for_restore`, 'ism_review', OLD.`ism_review`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+DELIMITER ;
+
+-- Table structure for `ops_report`
+DROP TABLE IF EXISTS `ops_report_butler`;
+DROP TABLE IF EXISTS `ops_report_guest_experience`;
+DROP TABLE IF EXISTS `ops_report_courtesy_call`;
+DROP TABLE IF EXISTS `ops_report_walk_round`;
+DROP TABLE IF EXISTS `ops_report_fb_outlet`;
+DROP TABLE IF EXISTS `ops_report`;
+CREATE TABLE `ops_report` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `report_date` date NOT NULL,
+  `today_shift` text,
+  `tomorrow_shift` text,
+  `occupancy_pct` varchar(20) DEFAULT NULL,
+  `occupied_rooms` varchar(20) DEFAULT NULL,
+  `total_pax` varchar(20) DEFAULT NULL,
+  `average_daily_rate` decimal(12,2) DEFAULT NULL,
+  `revpar` decimal(12,2) DEFAULT NULL,
+  `room_revenue` decimal(14,2) DEFAULT NULL,
+  `fb_revenue` decimal(14,2) DEFAULT NULL,
+  `spa_revenue` decimal(14,2) DEFAULT NULL,
+  `kids_club_revenue` decimal(14,2) DEFAULT NULL,
+  `fo_upgrade_rooms` decimal(14,2) DEFAULT NULL,
+  `total_revenue` decimal(14,2) DEFAULT NULL,
+  `stay_score_target` varchar(20) DEFAULT NULL,
+  `stay_score_ytd` varchar(50) DEFAULT NULL,
+  `stay_experience_comment` text,
+  `hsk_revenue` decimal(14,2) DEFAULT NULL,
+  `welcomes_notes` text,
+  `night_shift_notes` text,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ops_report_scope` (`company_id`,`report_date`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `ops_report_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ops_report_fb_outlet` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ops_report_id` int NOT NULL,
+  `outlet_name` varchar(255) NOT NULL,
+  `covers_breakfast` varchar(20) DEFAULT NULL,
+  `covers_lunch` varchar(20) DEFAULT NULL,
+  `covers_dinner` varchar(20) DEFAULT NULL,
+  `covers_dado` varchar(20) DEFAULT NULL,
+  `covers_pool` varchar(20) DEFAULT NULL,
+  `covers_brunch` varchar(20) DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `ops_report_id` (`ops_report_id`),
+  CONSTRAINT `ops_report_fb_outlet_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ops_report_fb_outlet_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ops_report_walk_round` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ops_report_id` int NOT NULL,
+  `area_name` varchar(255) NOT NULL,
+  `early_shift` varchar(255) DEFAULT NULL,
+  `late_shift` varchar(255) DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `ops_report_id` (`ops_report_id`),
+  CONSTRAINT `ops_report_walk_round_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ops_report_walk_round_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ops_report_courtesy_call` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ops_report_id` int NOT NULL,
+  `guest_name` varchar(255) DEFAULT NULL,
+  `room_number` varchar(50) DEFAULT NULL,
+  `time_reported` varchar(50) DEFAULT NULL,
+  `checkout_date` varchar(50) DEFAULT NULL,
+  `notes` text,
+  `action_taken` text,
+  `case_closed` varchar(10) DEFAULT NULL,
+  `monitor` varchar(50) DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `ops_report_id` (`ops_report_id`),
+  CONSTRAINT `ops_report_courtesy_call_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ops_report_courtesy_call_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ops_report_guest_experience` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ops_report_id` int NOT NULL,
+  `ref_id` varchar(50) DEFAULT NULL,
+  `guest_name` varchar(255) DEFAULT NULL,
+  `room_number` varchar(50) DEFAULT NULL,
+  `time_reported` varchar(50) DEFAULT NULL,
+  `checkout_date` varchar(50) DEFAULT NULL,
+  `feedback` text,
+  `action_taken` text,
+  `case_closed` varchar(10) DEFAULT NULL,
+  `monitor` varchar(50) DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `ops_report_id` (`ops_report_id`),
+  CONSTRAINT `ops_report_guest_experience_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ops_report_guest_experience_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ops_report_butler` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ops_report_id` int NOT NULL,
+  `room_number` varchar(50) DEFAULT NULL,
+  `notes` text,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `ops_report_id` (`ops_report_id`),
+  CONSTRAINT `ops_report_butler_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ops_report_butler_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Audit Triggers for `ops_report`
+DELIMITER //
+CREATE TRIGGER `trg_ops_report_audit_insert` AFTER INSERT ON `ops_report` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('report_date', NEW.`report_date`, 'today_shift', NEW.`today_shift`, 'tomorrow_shift', NEW.`tomorrow_shift`, 'occupancy_pct', NEW.`occupancy_pct`, 'total_revenue', NEW.`total_revenue`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_audit_update` AFTER UPDATE ON `ops_report` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('report_date', OLD.`report_date`, 'today_shift', OLD.`today_shift`, 'tomorrow_shift', OLD.`tomorrow_shift`, 'occupancy_pct', OLD.`occupancy_pct`, 'total_revenue', OLD.`total_revenue`, 'active', OLD.`active`),
+  JSON_OBJECT('report_date', NEW.`report_date`, 'today_shift', NEW.`today_shift`, 'tomorrow_shift', NEW.`tomorrow_shift`, 'occupancy_pct', NEW.`occupancy_pct`, 'total_revenue', NEW.`total_revenue`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_audit_delete` AFTER DELETE ON `ops_report` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report', OLD.`id`, 'DELETE',
+  JSON_OBJECT('report_date', OLD.`report_date`, 'today_shift', OLD.`today_shift`, 'tomorrow_shift', OLD.`tomorrow_shift`, 'occupancy_pct', OLD.`occupancy_pct`, 'total_revenue', OLD.`total_revenue`, 'active', OLD.`active`),
   NULL, @app_ip_address, @app_user_agent);
 END//
 DELIMITER ;

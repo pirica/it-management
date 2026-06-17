@@ -331,6 +331,17 @@ The backup tape log module (`modules/backup_tape_log/`) provides a monthly grid 
 4. **Restricted Fields:** The `tape_used_for_restore` and `ism_review` fields are only editable by Admin users or staff assigned to the IT department.
 5. **Exports:** XLSX and PDF exports must include the custom header (Year, Month, Company, Server, Unit No) and follow the requested grid layout.
 
+#### Ops Report (mandatory)
+
+The ops report module (`modules/ops_report/`) provides a daily hotel operations report stored per `company_id` and `report_date`.
+
+1. **Day / month / year selectors:** `index.php` uses `day`, `month`, and `year` query params to load one report date.
+2. **Auto-create:** `opr_ensure_report()` inserts the daily header plus default F&B outlet and walk-round rows when the date is first opened.
+3. **Edit lock (D-2):** non-admins may edit **today and yesterday** only (`report_date > date('Y-m-d', strtotime('-2 days'))`); older dates are read-only unless `itm_is_admin()`.
+4. **All cells editable** when the date is unlocked — no per-field role restrictions; any user may add extra rows (courtesy calls, guest experience, butler, F&B outlets, walk-round) and edit all cells on unlocked dates.
+5. **Exports:** XLSX and PDF must include company header and the full report sections (duty managers, figures & revenue, F&B, walk-round, guest experience, courtesy calls, butler, night shift).
+6. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ops_report.php` — D-2 lock, CRUD, cascade delete, registry row.
+
 #### Calendar, Alerts and Events integration (mandatory)
 
 The calendar module (`modules/calendar/`) provides a centralized view of time-sensitive data.
