@@ -3,8 +3,6 @@
  * Private contact photo storage under files/{company_id}/Private/{username}_{user_id}/private_contacts/.
  */
 
-require_once ROOT_PATH . 'includes/itm_profile_photo_upload.php';
-
 if (!function_exists('pc_contact_photo_serve_url')) {
     function pc_contact_photo_serve_url(array $contact)
     {
@@ -16,6 +14,38 @@ if (!function_exists('pc_contact_photo_serve_url')) {
         }
 
         return itm_files_serve_url('Private/' . $username . '_' . $userId . '/private_contacts/' . basename($filename));
+    }
+}
+
+if (!function_exists('pc_contact_photo_resolve_png_extension')) {
+    /**
+     * @return string|null png or null when not a PNG profile photo
+     */
+    function pc_contact_photo_resolve_png_extension($tmpPath, $originalName, $clientMime = '')
+    {
+        if (is_string($tmpPath) && $tmpPath !== '' && is_file($tmpPath)) {
+            $imageInfo = @getimagesize($tmpPath);
+            if (is_array($imageInfo) && isset($imageInfo[2])) {
+                return $imageInfo[2] === IMAGETYPE_PNG ? 'png' : null;
+            }
+
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = strtolower((string)$finfo->file($tmpPath));
+            if ($mime === 'image/png') {
+                return 'png';
+            }
+        }
+
+        if (strtolower((string)$clientMime) === 'image/png') {
+            return 'png';
+        }
+
+        $lowerName = strtolower((string)$originalName);
+        if (preg_match('/\.png$/', $lowerName)) {
+            return 'png';
+        }
+
+        return null;
     }
 }
 
@@ -34,13 +64,13 @@ if (!function_exists('pc_contact_photo_store_upload')) {
             return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Photo upload failed.'];
         }
 
-        $ext = itm_profile_photo_allowed_extension(
+        $ext = pc_contact_photo_resolve_png_extension(
             (string)($file['tmp_name'] ?? ''),
             (string)($file['name'] ?? ''),
             (string)($file['type'] ?? '')
         );
         if ($ext === null) {
-            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Only PNG and JPG profile photos are allowed.'];
+            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Only PNG profile photos are allowed.'];
         }
 
         $contactId = (int)$contactId;
@@ -51,7 +81,7 @@ if (!function_exists('pc_contact_photo_store_upload')) {
             return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Could not prepare private contact photo folder.'];
         }
 
-        $photoFilename = $contactId . '_photo.' . $ext;
+        $photoFilename = $contactId . '_photo.png';
         $dir = ROOT_PATH . 'files/' . $companyId . '/Private/' . $username . '_' . $userId . '/private_contacts';
         $targetPath = $dir . '/' . $photoFilename;
 
