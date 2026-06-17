@@ -174,7 +174,10 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
                 <h1 style="margin:0;">🎉 Birthdays</h1>
-                <a href="../employees/index.php" class="btn">👤 Employees</a>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <a href="../resignations/index.php" class="btn">📋 Resignations</a>
+                    <a href="../employees/index.php" class="btn">👤 Employees</a>
+                </div>
             </div>
 
             <div class="card bdays-controls" data-itm-no-export-pdf="1" data-itm-no-export-excel="1">

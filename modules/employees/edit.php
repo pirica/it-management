@@ -102,6 +102,8 @@ $form = [
     'extension' => (string)($employee['extension'] ?? ''),
     'on_contacts' => (string)($employee['on_contacts'] ?? '0'),
     'on_orgchart' => (string)($employee['on_orgchart'] ?? '0'),
+    'start_date' => (string)($employee['start_date'] ?? ''),
+    'employee_type_id' => (string)($employee['employee_type_id'] ?? ''),
     'birthday' => (string)($employee['birthday'] ?? ''),
     'hide_year' => (string)($employee['hide_year'] ?? '0'),
     'photo' => (string)($employee['photo'] ?? ''),
@@ -146,6 +148,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reportsTo = $form['reports_to'] === '' ? 'NULL' : (string)(int)$form['reports_to'];
         $workstationModeId = $form['workstation_mode_id'] === '' ? 'NULL' : (string)(int)$form['workstation_mode_id'];
         $assignmentTypeId = $form['assignment_type_id'] === '' ? 'NULL' : (string)(int)$form['assignment_type_id'];
+        $startDate = $form['start_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['start_date']) . "'";
+        $employeeTypeId = $form['employee_type_id'] === '' ? 'NULL' : (string)(int)$form['employee_type_id'];
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
         $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
@@ -181,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
             employee_position_id={$employeePositionId}, reports_to={$reportsTo},
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
+            start_date={$startDate}, employee_type_id={$employeeTypeId},
             comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}'
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
@@ -306,6 +311,8 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
+                        <?php include __DIR__ . '/includes/profile_start_date_field.php'; ?>
+                        <?php include __DIR__ . '/includes/profile_employee_type_fields.php'; ?>
                         <?php include __DIR__ . '/includes/profile_birthday_fields.php'; ?>
                     </div>
 

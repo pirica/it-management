@@ -31,7 +31,7 @@ if (!function_exists('itm_fk_table_column_names')) {
 if (!function_exists('itm_fk_label_column_for_table')) {
     function itm_fk_label_column_for_table(array $columns): string
     {
-        foreach (['name', 'title', 'username', 'account_name', 'account_code', 'code', 'description', 'email', 'mode_name', 'display_name', 'stage', 'status', 'approver_type_description'] as $candidate) {
+        foreach (['name_type', 'name', 'title', 'username', 'account_name', 'account_code', 'code', 'description', 'email', 'mode_name', 'display_name', 'stage', 'status', 'approver_type_description'] as $candidate) {
             if (in_array($candidate, $columns, true)) {
                 return $candidate;
             }

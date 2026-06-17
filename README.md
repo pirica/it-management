@@ -16,6 +16,7 @@
 - ✅ Private Contacts (User-scoped, UK localization, multi-field CRUD)
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
+- ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 
@@ -83,17 +84,17 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>database.sql</code> provisions <strong>113 tables</strong> and approximately <strong>3,075 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>database.sql</code> provisions <strong>114 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 113 |
-| **Sample rows** | ~3,075 (from <code>database.sql</code>) |
-| **Module folders** | 123 under <code>modules/</code> |
-| **Registry entries** | 128 in <code>modules_registry</code> |
-| **Company × module matrix** | 640 rows (5 seed companies × 128 modules) |
+| **Tables** | 114 |
+| **Sample rows** | ~3,085 (from <code>database.sql</code>) |
+| **Module folders** | 125 under <code>modules/</code> |
+| **Registry entries** | 130 in <code>modules_registry</code> |
+| **Company × module matrix** | 650 rows (5 seed companies × 130 modules) |
 | **Sidebar preferences** | 540 rows (5 companies × 108 default sidebar items) |
 | **Functional domains** | 12 (see breakdown below) |
 

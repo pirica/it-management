@@ -77,6 +77,7 @@ if (!function_exists('itm_detect_fk_business_key_columns')) {
             'approvals_stage' => ['stage'],
             'forecast_revisions_status' => ['status'],
             'employee_positions' => ['name'],
+            'employee_type' => ['name_type'],
             'approver_type' => ['approver_type_description'],
             'equipment' => ['name', 'serial_number'],
         ];

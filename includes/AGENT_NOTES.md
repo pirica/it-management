@@ -29,6 +29,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **ui_config.php** — sidebar discovery; manufacturers CRUD materialization (`itm_materialize_manufacturers_crud_module_files()`, `itm_auto_create_module_scaffold()`); ⚠️ prefix for newly scaffolded tables (`itm_sidebar_auto_scaffolded_module_emoji()`); legacy delegate detection (`itm_module_php_file_delegates_to_manufacturers_module()`); QA cleanup (`itm_remove_manufacturers_template_scaffold_module_dirs()`).
 - **itm_it_location_linked_floor_plans.php** — IT Locations view partial; skips HTML when `$conn` / PHPUnit context missing.
 - **employee_profile_photo.php** — employee profile photo paths under `files/{company_id}/Private/{username}_{employee_id}/profile/` (legacy `{username}_{user_id}` still served when `user_id` is set); upload (`emp_profile_photo_store_upload`), serve URL (`emp_profile_photo_url`), birthday display (`emp_format_birthday_display`, `emp_format_birthday_day_only`). Used by `modules/employees/` and `modules/birthdays/`.
+- **fk_dropdown_helpers.php** — tenant FK label resolution (`itm_fk_label_column_for_table()` prefers `name_type` for `employee_type`); business-key remap via `itm_fk_resolve_company_equivalent_id()`.
 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
