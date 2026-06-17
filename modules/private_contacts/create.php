@@ -44,21 +44,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
         $insertId = (int)$stmt->insert_id;
-        if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-            $photoFilename = pc_contact_photo_store_upload(
+        $redirect = 'index.php?msg=created';
+        if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $photoResult = pc_contact_photo_store_upload(
                 $_FILES['photo'],
                 $insertId,
                 $companyId,
                 $username,
                 $userId
             );
-            if ($photoFilename !== '') {
+            if (($photoResult['ok'] ?? false) && ($photoResult['filename'] ?? '') !== '') {
+                $photoFilename = (string)$photoResult['filename'];
                 $updateStmt = $conn->prepare('UPDATE private_contacts SET photo = ? WHERE id = ? AND user_id = ?');
                 $updateStmt->bind_param('sii', $photoFilename, $insertId, $userId);
                 $updateStmt->execute();
+                $redirect = 'view.php?id=' . $insertId . '&msg=created';
+            } elseif (!($photoResult['ok'] ?? false) && ($photoResult['error'] ?? '') !== '') {
+                $redirect = 'view.php?id=' . $insertId . '&msg=created&photo_error=' . rawurlencode((string)$photoResult['error']);
             }
         }
-        header("Location: index.php?msg=created");
+        header('Location: ' . $redirect);
     } else {
         echo "Error: " . $stmt->error;
     }

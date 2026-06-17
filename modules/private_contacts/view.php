@@ -48,6 +48,10 @@ $pageTitle = "View Contact - " . $contact['first_name'] . ' ' . $contact['last_n
                 </div>
             </div>
 
+            <?php if (!empty($_GET['photo_error'])): ?>
+                <div class="alert alert-danger" role="alert"><?= sanitize((string)$_GET['photo_error']) ?></div>
+            <?php endif; ?>
+
             <div class="card mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
