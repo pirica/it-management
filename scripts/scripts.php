@@ -402,6 +402,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>database.sql</code> import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
                 <tr>
+                    <td><a href="employee_fields_missing.php">employee_fields_missing.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Compares <code>employees</code> columns in <code>database.sql</code> and the live schema with create/edit/view/index coverage in <code>modules/employees/</code>. Fails when critical columns (including <code>termination_date</code>) are missing from the DB or module UI; lists optional gaps as <code>[INFO]</code>.</td>
+                    <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>database.sql</code>, <code>modules/employees/</code> profile fields, or employee list/import columns.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_employee_type_resignations.php">verify_employee_type_resignations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs <code>employee_type</code> and <code>resignations</code>, and the weekly resignations SQL filter used by <code>modules/resignations/index.php</code>.</td>

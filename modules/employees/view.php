@@ -85,6 +85,7 @@ $profileFields = [
     'Employment Status' => (string)($employee['employment_status_name'] ?? ''),
     'Start Date' => (string)($employee['start_date'] ?? ''),
     'Employee Type' => (string)($employee['employee_type_name'] ?? ''),
+    'Termination Date' => (string)($employee['termination_date'] ?? ''),
     'Birthday' => emp_format_birthday_display($employee['birthday'] ?? null, $employee['hide_year'] ?? 0),
     'Hide Year' => ((int)($employee['hide_year'] ?? 0) === 1 ? '✅' : '❌'),
     'Workstation Mode' => (string)($employee['workstation_mode_name'] ?? ''),
@@ -92,7 +93,6 @@ $profileFields = [
     'Requested By' => (string)($employee['requested_by'] ?? ''),
     'Termination Requested By' => (string)($employee['termination_requested_by'] ?? ''),
     'Request Date' => (string)($employee['request_date'] ?? ''),
-    'Termination Date' => (string)($employee['termination_date'] ?? ''),
     'Comments' => (string)($employee['comments'] ?? ''),
     'Duplicate Flag' => emp_view_bool_icon($employee['duplicate'] ?? 0),
 ];
