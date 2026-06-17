@@ -107,6 +107,33 @@ if (!$hasExcluded) {
     echo '[PASS] Registry includes sidebar-excluded slugs for admin matrix visibility.' . $nl;
 }
 
+$ticketsSlug = 'tickets';
+$customCompanyIcon = '🎫';
+$resolvedBefore = itm_resolve_module_sidebar_icon($conn, 1, 1, $ticketsSlug);
+$stmtTickets = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
+$ticketsModuleId = 0;
+if ($stmtTickets) {
+    mysqli_stmt_bind_param($stmtTickets, 's', $ticketsSlug);
+    mysqli_stmt_execute($stmtTickets);
+    $ticketsRes = mysqli_stmt_get_result($stmtTickets);
+    $ticketsRow = $ticketsRes ? mysqli_fetch_assoc($ticketsRes) : null;
+    $ticketsModuleId = (int)($ticketsRow['id'] ?? 0);
+    mysqli_stmt_close($stmtTickets);
+}
+if ($ticketsModuleId > 0 && itm_set_company_module_icon($conn, 1, $ticketsModuleId, $customCompanyIcon)) {
+    $resolvedCompany = itm_resolve_module_sidebar_icon($conn, 1, 0, $ticketsSlug);
+    if ($resolvedCompany !== $customCompanyIcon) {
+        echo '[FAIL] Company module icon override was not resolved for tickets.' . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] Company module icon override resolves for tickets.' . $nl;
+    }
+    itm_set_company_module_icon($conn, 1, $ticketsModuleId, '');
+} else {
+    echo '[FAIL] Could not set company module icon for tickets verification.' . $nl;
+    $failures++;
+}
+
 if ($failures > 0) {
     echo '[FAIL] Verification finished with ' . $failures . ' failure(s).' . $nl;
     exit(1);

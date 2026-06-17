@@ -369,7 +369,7 @@ The Bookmarks module provides a hierarchical management system for links, featur
 
 The `company_module_access` module lets administrators (`itm_is_admin()`) enable or disable modules per company.
 
-1. **Tables:** `modules_registry` (global slug catalog) and `company_module_access` (`company_id`, `module_id`, `enabled`).
+1. **Tables:** `modules_registry` (global slug catalog; optional `icon` seed) and `company_module_access` (`company_id`, `module_id`, `enabled`, optional company-default `icon`).
 2. **Opt-out policy:** No row or `enabled = 1` allows access; only an explicit `enabled = 0` row denies access for that company.
 3. **Helpers:** `includes/itm_company_module_access.php` — `has_module_access()`, `get_company_modules()`, `itm_list_all_modules_registry()`, `itm_enforce_module_access_or_exit()`.
 4. **Central enforcement:** `config/config.php` calls `itm_enforce_module_access_or_exit()` after `company_id` is set — individual module entry files do not need duplicated guards.
@@ -378,6 +378,7 @@ The `company_module_access` module lets administrators (`itm_is_admin()`) enable
 7. **System modules:** `settings` is always available; other system slugs remain available to admins even when disabled for a company.
 8. **Relationship to `role_module_permissions`:** Company access is the first gate; role CRUD permissions remain a separate layer.
 9. **Regression scripts:** `php scripts/sync_modules_registry.php`, `php scripts/verify_company_module_access.php`.
+10. **Sidebar emoji precedence:** Settings per-user `module_icon_overrides` on `ui_configuration` → `company_module_access.icon` (matrix) → `modules_registry.icon` → `itm_sidebar_item_catalog()` fallback. `includes/sidebar.php` renders labels via `itm_resolve_module_sidebar_label()`; icons stay separate from `module_name` for stable matrix sort (`module_slug ASC`).
 
 #### Bulk delete toolbar and Cancel button (mandatory)
 

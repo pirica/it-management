@@ -57,6 +57,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         exit;
     }
 
+    if ($ajaxAction === 'set_icon') {
+        $targetCompanyId = (int)($_POST['company_id'] ?? 0);
+        $targetModuleId = (int)($_POST['module_id'] ?? 0);
+        $icon = trim((string)($_POST['icon'] ?? ''));
+        if ($targetCompanyId <= 0 || $targetModuleId <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid company or module.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $ok = itm_set_company_module_icon($conn, $targetCompanyId, $targetModuleId, $icon);
+        echo json_encode(['ok' => (bool)$ok, 'icon' => itm_module_access_normalize_icon($icon) ?? ''], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     if ($ajaxAction === 'bulk_toggle_access') {
         $enabled = (int)((string)($_POST['enabled'] ?? '0') === '1');
         $pairsRaw = trim((string)($_POST['pairs_json'] ?? ''));
@@ -117,6 +131,7 @@ $formError = '';
 $formValues = [
     'module_slug' => '',
     'module_name' => '',
+    'icon' => '',
     'is_system_module' => 0,
     'active' => 1,
 ];
@@ -127,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     itm_require_post_csrf();
     $formValues['module_slug'] = trim((string)($_POST['module_slug'] ?? ''));
     $formValues['module_name'] = trim((string)($_POST['module_name'] ?? ''));
+    $formValues['icon'] = trim((string)($_POST['icon'] ?? ''));
     $formValues['is_system_module'] = !empty($_POST['is_system_module']) ? 1 : 0;
     $formValues['active'] = !empty($_POST['active']) ? 1 : 0;
     $editId = (int)($_POST['id'] ?? 0);
@@ -137,16 +153,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $formError = 'Module name is required.';
     } else {
         if ($crud_action === 'create') {
+            $iconValue = itm_module_access_normalize_icon($formValues['icon']);
             $stmtInsert = mysqli_prepare(
                 $conn,
-                'INSERT INTO modules_registry (module_slug, module_name, is_system_module, active) VALUES (?, ?, ?, ?)'
+                'INSERT INTO modules_registry (module_slug, module_name, icon, is_system_module, active) VALUES (?, ?, ?, ?, ?)'
             );
             if ($stmtInsert) {
                 mysqli_stmt_bind_param(
                     $stmtInsert,
-                    'ssii',
+                    'sssii',
                     $formValues['module_slug'],
                     $formValues['module_name'],
+                    $iconValue,
                     $formValues['is_system_module'],
                     $formValues['active']
                 );
@@ -163,16 +181,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         } elseif ($crud_action === 'edit' && $editId > 0) {
             $oldValues = itm_fetch_audit_record($conn, 'modules_registry', $editId, (int)$company_id);
+            $iconValue = itm_module_access_normalize_icon($formValues['icon']);
             $stmtUpdate = mysqli_prepare(
                 $conn,
-                'UPDATE modules_registry SET module_slug = ?, module_name = ?, is_system_module = ?, active = ? WHERE id = ? LIMIT 1'
+                'UPDATE modules_registry SET module_slug = ?, module_name = ?, icon = ?, is_system_module = ?, active = ? WHERE id = ? LIMIT 1'
             );
             if ($stmtUpdate) {
                 mysqli_stmt_bind_param(
                     $stmtUpdate,
-                    'ssiii',
+                    'sssiii',
                     $formValues['module_slug'],
                     $formValues['module_name'],
+                    $iconValue,
                     $formValues['is_system_module'],
                     $formValues['active'],
                     $editId
@@ -202,6 +222,7 @@ if ($crud_action === 'edit' && $editId > 0 && $_SERVER['REQUEST_METHOD'] !== 'PO
             $formValues = [
                 'module_slug' => (string)($editRow['module_slug'] ?? ''),
                 'module_name' => (string)($editRow['module_name'] ?? ''),
+                'icon' => (string)($editRow['icon'] ?? ''),
                 'is_system_module' => (int)($editRow['is_system_module'] ?? 0),
                 'active' => (int)($editRow['active'] ?? 0),
             ];
@@ -229,6 +250,7 @@ while ($companiesRes && ($companyRow = mysqli_fetch_assoc($companiesRes))) {
 
 $registryRows = itm_list_all_modules_registry($conn);
 $accessMap = itm_company_module_access_map($conn);
+$iconMap = itm_company_module_icon_map($conn);
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '' && $crud_action === 'list_all') {
@@ -266,7 +288,7 @@ $modulePathEsc = sanitize($modulePath);
             <?php if ($crud_action === 'index'): ?>
                 <div class="card" style="margin-bottom:16px;">
                     <div class="card-body">
-                        <p style="margin-top:0;">Enable or disable modules per company. All registry modules are listed below, including hidden, inactive, and system modules.</p>
+                        <p style="margin-top:0;">Enable or disable modules per company. Set a company-default sidebar emoji per cell (empty uses registry/catalog fallback). All registry modules are listed below, including hidden, inactive, and system modules.</p>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                             <button type="button" class="btn btn-sm" id="cma-select-all">Select All</button>
                             <button type="button" class="btn btn-sm" id="cma-cancel-select" style="display:none;">Cancel Select</button>
@@ -311,6 +333,10 @@ $modulePathEsc = sanitize($modulePath);
                                         $companyRowId = (int)($companyRow['id'] ?? 0);
                                         $effectiveEnabled = itm_module_access_effective_enabled($conn, $companyRowId, $moduleId, $accessMap);
                                         $toggleDisabled = !$isActive;
+                                        $companyIcon = (string)($iconMap[$companyRowId][$moduleId] ?? '');
+                                        $registryIcon = trim((string)($registryRow['icon'] ?? ''));
+                                        $catalogIcon = itm_module_access_catalog_icon_for_slug($moduleSlug);
+                                        $iconPlaceholder = $companyIcon !== '' ? $companyIcon : ($registryIcon !== '' ? $registryIcon : $catalogIcon);
                                         ?>
                                         <td style="text-align:center;">
                                             <label class="itm-checkbox-control" title="<?= $toggleDisabled ? 'Inactive registry rows cannot be toggled.' : ($isSystem ? 'System module (admins always retain access).' : 'Toggle company access') ?>">
@@ -325,6 +351,17 @@ $modulePathEsc = sanitize($modulePath);
                                                 >
                                                 <span class="itm-check-indicator" aria-hidden="true"><?= $effectiveEnabled ? '✅' : '❌' ?></span>
                                             </label>
+                                            <input
+                                                type="text"
+                                                class="form-control cma-icon-input"
+                                                style="max-width:72px;margin:6px auto 0;"
+                                                maxlength="16"
+                                                placeholder="<?= sanitize($iconPlaceholder) ?>"
+                                                value="<?= sanitize($companyIcon) ?>"
+                                                data-company-id="<?= $companyRowId ?>"
+                                                data-module-id="<?= $moduleId ?>"
+                                                title="Company sidebar emoji (empty = registry/catalog default)"
+                                            >
                                         </td>
                                     <?php endforeach; ?>
                                 </tr>
@@ -397,6 +434,11 @@ $modulePathEsc = sanitize($modulePath);
                                 <input type="text" name="module_name" id="module_name" value="<?= sanitize($formValues['module_name']) ?>" required>
                             </div>
                             <div class="form-group">
+                                <label for="icon">Global Sidebar Icon</label>
+                                <input type="text" name="icon" id="icon" value="<?= sanitize($formValues['icon']) ?>" maxlength="16" placeholder="e.g. 🧩">
+                                <p class="form-hint">Optional emoji seed for all companies (company matrix and user Settings can override).</p>
+                            </div>
+                            <div class="form-group">
                                 <label><?= sanitize('System Module') ?></label>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="is_system_module" value="1" <?= ((int)$formValues['is_system_module'] === 1) ? 'checked' : '' ?>>
@@ -423,6 +465,7 @@ $modulePathEsc = sanitize($modulePath);
                         <?php else: ?>
                             <p><strong>Module Name:</strong> <?= sanitize((string)$viewRow['module_name']) ?></p>
                             <p><strong>Slug:</strong> <?= sanitize((string)$viewRow['module_slug']) ?></p>
+                            <p><strong>Global Icon:</strong> <?= sanitize((string)($viewRow['icon'] ?? '')) !== '' ? sanitize((string)$viewRow['icon']) : '—' ?></p>
                             <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
                             <p><strong>Active:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['active'] === 1) ? '✅' : '❌' ?></span></p>
                             <a class="btn btn-sm" href="edit.php?id=<?= (int)$viewRow['id'] ?>">Edit</a>

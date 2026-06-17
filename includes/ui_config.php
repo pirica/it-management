@@ -613,6 +613,7 @@ function itm_ui_config_defaults() {
         'app_name' => '⚙️ IT Controls',
         'favicon_path' => '',
         'equipment_type_sidebar_visibility' => [],
+        'module_icon_overrides' => [],
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
@@ -707,6 +708,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
         `favicon_path` VARCHAR(255) NOT NULL DEFAULT '',
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
+        `module_icon_overrides` LONGTEXT NULL,
         `api_key` VARCHAR(191) NOT NULL DEFAULT '',
         `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1,
         `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL,
@@ -744,7 +746,8 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
-        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `equipment_type_sidebar_visibility`",
+        'module_icon_overrides' => "ALTER TABLE `ui_configuration` ADD COLUMN `module_icon_overrides` LONGTEXT NULL AFTER `equipment_type_sidebar_visibility`",
+        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `module_icon_overrides`",
         'api_key_is_active' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `api_key`",
         'api_key_last_used_at' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL AFTER `api_key_is_active`",
         'rate_limit_window_start' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_window_start` INT NOT NULL DEFAULT 0 AFTER `api_key_last_used_at`",
@@ -886,7 +889,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND user_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -941,6 +944,7 @@ function itm_normalize_ui_configuration($values) {
     $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
     $values['enable_audit_logs'] = itm_normalize_flag($values['enable_audit_logs'] ?? $defaults['enable_audit_logs']);
     $values['equipment_type_sidebar_visibility'] = itm_normalize_equipment_type_sidebar_visibility($values['equipment_type_sidebar_visibility'] ?? []);
+    $values['module_icon_overrides'] = itm_normalize_module_icon_overrides($values['module_icon_overrides'] ?? []);
 
     // Validate records per page
     $recordsPerPage = strtolower((string)($values['records_per_page'] ?? $defaults['records_per_page']));
@@ -1046,6 +1050,39 @@ function itm_normalize_equipment_type_sidebar_visibility($raw) {
             continue;
         }
         $normalized[$safeId] = ((string)$visible === '0' || $visible === 0 || $visible === false) ? 0 : 1;
+    }
+
+    return $normalized;
+}
+
+/**
+ * Normalizes per-user sidebar module icon overrides (slug => emoji).
+ */
+function itm_normalize_module_icon_overrides($raw) {
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($raw as $moduleSlug => $icon) {
+        $safeSlug = trim((string)$moduleSlug);
+        if ($safeSlug === '') {
+            continue;
+        }
+        $iconValue = trim((string)$icon);
+        if ($iconValue === '') {
+            continue;
+        }
+        if (function_exists('mb_substr')) {
+            $iconValue = mb_substr($iconValue, 0, 16);
+        } else {
+            $iconValue = substr($iconValue, 0, 16);
+        }
+        $normalized[$safeSlug] = $iconValue;
     }
 
     return $normalized;
@@ -1175,8 +1212,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, user_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, user_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -1187,7 +1224,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
                 records_per_page = VALUES(records_per_page),
                 app_name = VALUES(app_name),
                 favicon_path = VALUES(favicon_path),
-                equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility)';
+                equipment_type_sidebar_visibility = VALUES(equipment_type_sidebar_visibility),
+                module_icon_overrides = VALUES(module_icon_overrides)';
 
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -1195,10 +1233,11 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
     }
 
     $equipmentTypeSidebarVisibility = json_encode($config['equipment_type_sidebar_visibility']);
+    $moduleIconOverrides = json_encode($config['module_icon_overrides'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iissssiissss',
+        'iissssiisssss',
         $company_id,
         $user_id,
         $config['table_actions_position'],
@@ -1210,7 +1249,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
         $config['records_per_page'],
         $config['app_name'],
         $config['favicon_path'],
-        $equipmentTypeSidebarVisibility
+        $equipmentTypeSidebarVisibility,
+        $moduleIconOverrides
     );
 
     $ok = mysqli_stmt_execute($stmt);
