@@ -340,7 +340,7 @@ The ops report module (`modules/ops_report/`) provides a daily hotel operations 
 2. **Auto-create:** `opr_ensure_report()` inserts the daily header plus default F&B outlet and walk-round rows when the date is first opened.
 3. **Edit lock (D-2):** non-admins may edit **today and yesterday** only (`report_date > date('Y-m-d', strtotime('-2 days'))`); older dates are read-only unless `itm_is_admin()`.
 4. **All cells editable** when the date is unlocked — no per-field role restrictions; any user may add extra rows (courtesy calls, guest experience, butler, night shift, F&B outlets, walk-round) and edit all cells on unlocked dates.
-5. **UI copy in DB:** section titles, field labels, table headers, and toolbar button text persist in `ops_report.report_ui_json` (inline blur-save). **Exceptions:** the date suffix (`d.m.y` from selectors) and `Company:` + `companies.company` are not stored in `report_ui_json`.
+5. **UI copy in DB:** section titles, field labels, table headers, toolbar button text, and `titles.*` (browser tab, export sheet/file prefix) persist in `ops_report.report_ui_json` (inline blur-save). **Exceptions:** the date suffix (`d.m.y` from selectors) and `Company:` + `companies.company` are not stored in `report_ui_json`.
 6. **Exports:** XLSX and PDF must include company header and the full report sections (duty managers, figures & revenue, F&B, walk-round, guest experience, courtesy calls, butler, night shift rows).
 7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ops_report.php` — D-2 lock, CRUD, cascade delete, registry row, `report_ui_json` seed.
 

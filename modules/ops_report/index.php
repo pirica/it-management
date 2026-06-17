@@ -84,6 +84,12 @@ if (!function_exists('opr_default_ui_json')) {
             'page_title' => 'Daily Operations Report',
             'subtitle' => 'Duty Manager & Guest Relations | Daily Reports',
             'locked_notice' => '(read-only — D-2 or older; admin may edit)',
+            'titles' => [
+                'browser_module' => 'Ops Report',
+                'browser_suffix' => 'IT Management',
+                'export_sheet' => 'Ops Report',
+                'export_filename_prefix' => 'Ops_Report',
+            ],
             'sections' => [
                 'duty_managers' => 'Duty Managers Team',
                 'hotel_figures' => 'Hotel Figures & Revenue',
@@ -231,7 +237,7 @@ if (!function_exists('opr_ui_set')) {
 if (!function_exists('opr_is_allowed_ui_path')) {
     function opr_is_allowed_ui_path($path) {
         $root = explode('.', (string)$path)[0];
-        $allowed = ['page_title', 'subtitle', 'locked_notice', 'sections', 'fields', 'tables', 'buttons', 'controls', 'defaults'];
+        $allowed = ['page_title', 'subtitle', 'locked_notice', 'titles', 'sections', 'fields', 'tables', 'buttons', 'controls', 'defaults'];
         return in_array($root, $allowed, true);
     }
 }
@@ -258,6 +264,10 @@ if (!function_exists('opr_render_editable_ui_text')) {
             if ($tag === 'label') {
                 $inputClass .= ' opr-ui-label-input';
             }
+            if ($tag === 'h1') {
+                return '<h1 class="opr-ui-heading ' . sanitize($classList) . '" data-scope="report_ui" data-json-path="' . $pathAttr . '">'
+                    . '<input type="text" class="' . $inputClass . '" value="' . $safe . '"></h1>';
+            }
             if ($tag === 'h2') {
                 return '<h2 class="opr-ui-heading ' . sanitize($classList) . '" data-scope="report_ui" data-json-path="' . $pathAttr . '">'
                     . '<input type="text" class="' . $inputClass . '" value="' . $safe . '"></h2>';
@@ -275,6 +285,9 @@ if (!function_exists('opr_render_editable_ui_text')) {
         }
         if ($tag === 'th') {
             return '<th class="' . sanitize($extraClass) . '">' . $safe . '</th>';
+        }
+        if ($tag === 'h1') {
+            return '<h1 class="opr-ui-heading ' . sanitize($extraClass) . '">' . $safe . '</h1>';
         }
         if ($tag === 'h2') {
             return '<h2 class="opr-ui-heading ' . sanitize($extraClass) . '">' . $safe . '</h2>';
@@ -670,7 +683,7 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?= sanitize($crud_title) ?> - IT Management</title>
+    <title><?= sanitize(opr_ui_get($ui_json, 'titles.browser_module')) ?> - <?= sanitize(opr_ui_get($ui_json, 'titles.browser_suffix')) ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .opr-controls { display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; }
@@ -692,6 +705,7 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
         .opr-ui-label-input { font-size:11px; border:none; background:transparent; padding:0; color:var(--text-secondary); }
         .opr-table th .edit-input-ui { font-size:12px; border:none; background:transparent; padding:0; width:100%; min-width:40px; }
         .opr-page-title .edit-input-ui { font-size:1.5rem; font-weight:600; border:none; background:transparent; padding:0; width:auto; min-width:200px; }
+        .opr-title-meta .edit-input-ui { font-size:12px; border:none; background:transparent; padding:0; min-width:72px; color:var(--text-secondary); }
         .opr-subtitle .edit-input-ui { border:none; background:transparent; padding:0; width:100%; color:var(--text-secondary); }
         .opr-company-block .edit-input-ui { border:none; background:transparent; padding:0; min-width:120px; }
         .opr-control-label .edit-input-ui { font-size:inherit; border:none; background:transparent; padding:0; }
@@ -718,6 +732,15 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
                     <p style="margin:8px 0 0; color:var(--text-secondary);" class="opr-subtitle">
                         <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'subtitle'), $can_edit_report, 'subtitle', 'span', 'opr-subtitle') ?><?= sanitize($lockedNotice) ?>
                     </p>
+                    <div class="opr-title-meta opr-no-print" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--text-secondary);">
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'titles.browser_module'), $can_edit_report, 'titles.browser_module', 'span', 'opr-title-meta') ?>
+                        <span aria-hidden="true">-</span>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'titles.browser_suffix'), $can_edit_report, 'titles.browser_suffix', 'span', 'opr-title-meta') ?>
+                        <span aria-hidden="true">|</span>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'titles.export_sheet'), $can_edit_report, 'titles.export_sheet', 'span', 'opr-title-meta') ?>
+                        <span aria-hidden="true">|</span>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'titles.export_filename_prefix'), $can_edit_report, 'titles.export_filename_prefix', 'span', 'opr-title-meta') ?>
+                    </div>
                 </div>
                 <div style="text-align:right;" class="opr-company-block">
                     <strong>Company:</strong> <?= sanitize($company_info['company'] ?? '') ?>
@@ -1043,6 +1066,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!data.success) {
                     alert(data.message || 'Update failed');
                     location.reload();
+                    return;
+                }
+                if (jsonPath.indexOf('titles.browser_') === 0) {
+                    syncBrowserTitle();
                 }
             })
             .catch(() => {
@@ -1114,6 +1141,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+
+        syncBrowserTitle();
     }
 
     if (!canEdit) {
@@ -1163,6 +1192,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function syncBrowserTitle() {
+    const mod = document.querySelector('[data-json-path="titles.browser_module"]');
+    const suf = document.querySelector('[data-json-path="titles.browser_suffix"]');
+    if (mod && suf) {
+        document.title = oprUiFieldValue(mod) + ' - ' + oprUiFieldValue(suf);
+    }
+}
 
 function oprFieldValue(el) {
     const input = el.querySelector('.edit-input');
@@ -1262,8 +1299,12 @@ function doOprXlsxExport() {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Ops Report');
-    XLSX.writeFile(wb, 'Ops_Report_<?= (int)$selected_year ?>_<?= (int)$selected_month ?>_<?= (int)$selected_day ?>.xlsx');
+    const sheetEl = document.querySelector('[data-json-path="titles.export_sheet"]');
+    const prefixEl = document.querySelector('[data-json-path="titles.export_filename_prefix"]');
+    const sheetName = sheetEl ? oprUiFieldValue(sheetEl) : 'Ops Report';
+    const filePrefix = prefixEl ? oprUiFieldValue(prefixEl) : 'Ops_Report';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, filePrefix + '_<?= (int)$selected_year ?>_<?= (int)$selected_month ?>_<?= (int)$selected_day ?>.xlsx');
 }
 </script>
 </body>
