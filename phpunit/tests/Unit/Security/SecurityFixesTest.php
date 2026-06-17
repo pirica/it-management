@@ -238,4 +238,64 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $this->assertStringNotContainsString('Starting Git history reset', $output, "Non-admin users should be redirected from reset_git_history.php.");
     }
+
+    public function testNotesZipTraversalBlocked()
+    {
+        require_once ROOT_PATH . 'includes/notes_visibility.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+
+        $companyId = 1;
+        $owner = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-zip-fix']);
+        if (!is_array($owner)) {
+            $this->fail('Unable to create disposable test user.');
+        }
+
+        $userId = (int)$owner['id'];
+        $username = (string)$owner['username'];
+        itm_script_test_user_register_teardown($this->conn, $userId);
+
+        $traversalPath = '../../../../../config/config.php';
+        $this->assertNull(
+            itm_notes_resolve_image_path($companyId, $username, $userId, $traversalPath),
+            'Path traversal filenames must not resolve to files outside the notes upload directory.'
+        );
+
+        $uploadDir = itm_notes_private_images_dir($companyId, $username, $userId);
+        if (function_exists('itm_ensure_files_storage_directory')) {
+            itm_ensure_files_storage_directory(rtrim($uploadDir, '/'));
+        } elseif (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $title = 'VULN_TEST_TRAVERSAL_FIX';
+        $imagesJson = json_encode([$traversalPath]);
+        $stmt = $this->conn->prepare("INSERT INTO notes (company_id, user_id, title, content, images_json, active) VALUES (?, ?, ?, 'test', ?, 1)");
+        $stmt->bind_param('iiss', $companyId, $userId, $title, $imagesJson);
+        $stmt->execute();
+        $noteId = (int)$stmt->insert_id;
+        $stmt->close();
+
+        $imgs = json_decode($imagesJson, true);
+        $zipName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $title) . '_download.zip';
+        $zipPath = sys_get_temp_dir() . '/' . $zipName;
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
+
+        $addedFiles = 0;
+        foreach ($imgs as $img) {
+            $filePath = itm_notes_resolve_image_path($companyId, $username, $userId, $img);
+            if ($filePath !== null) {
+                $zip->addFile($filePath, basename($filePath));
+                $addedFiles++;
+            }
+        }
+        $zip->close();
+
+        $this->assertSame(0, $addedFiles, 'Malicious images_json entries must not add files to the ZIP.');
+        if (file_exists($zipPath)) {
+            unlink($zipPath);
+        }
+
+        $this->conn->query("DELETE FROM notes WHERE id = $noteId");
+    }
 }
