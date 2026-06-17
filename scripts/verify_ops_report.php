@@ -141,6 +141,7 @@ $requiredTables = [
     'ops_report_courtesy_call',
     'ops_report_guest_experience',
     'ops_report_butler',
+    'ops_report_night_shift',
 ];
 foreach ($requiredTables as $table) {
     $safe = mysqli_real_escape_string($conn, $table);

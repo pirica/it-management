@@ -147,6 +147,10 @@ if (!function_exists('opr_child_table_map')) {
                 'table' => 'ops_report_butler',
                 'fields' => ['room_number', 'notes'],
             ],
+            'night_shift' => [
+                'table' => 'ops_report_night_shift',
+                'fields' => ['guest_name', 'notes'],
+            ],
         ];
     }
 }
@@ -157,7 +161,7 @@ if (!function_exists('opr_report_fields')) {
             'today_shift', 'tomorrow_shift', 'occupancy_pct', 'occupied_rooms', 'total_pax',
             'average_daily_rate', 'revpar', 'room_revenue', 'fb_revenue', 'spa_revenue',
             'kids_club_revenue', 'fo_upgrade_rooms', 'total_revenue', 'stay_score_target',
-            'stay_score_ytd', 'stay_experience_comment', 'hsk_revenue', 'welcomes_notes', 'night_shift_notes',
+            'stay_score_ytd', 'stay_experience_comment', 'hsk_revenue', 'welcomes_notes',
         ];
     }
 }
@@ -273,10 +277,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_row'])) {
         $sql = 'INSERT INTO ops_report_guest_experience (company_id, ops_report_id, sort_order, active) VALUES (?, ?, ?, 1)';
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'iii', $company_id, $report_id, $sort);
-    } else {
+    } elseif ($scope === 'butler') {
         $sql = 'INSERT INTO ops_report_butler (company_id, ops_report_id, sort_order, active) VALUES (?, ?, ?, 1)';
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'iii', $company_id, $report_id, $sort);
+    } elseif ($scope === 'night_shift') {
+        $sql = 'INSERT INTO ops_report_night_shift (company_id, ops_report_id, sort_order, active) VALUES (?, ?, ?, 1)';
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'iii', $company_id, $report_id, $sort);
+    } else {
+        opr_json_response(['success' => false, 'message' => 'Invalid scope.']);
     }
 
     $ok = mysqli_stmt_execute($stmt);
@@ -383,6 +393,16 @@ mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
 while ($row = mysqli_fetch_assoc($res)) {
     $butler_rows[] = $row;
+}
+mysqli_stmt_close($stmt);
+
+$night_shift_rows = [];
+$stmt = mysqli_prepare($conn, 'SELECT * FROM ops_report_night_shift WHERE ops_report_id = ? AND company_id = ? AND active = 1 ORDER BY sort_order ASC, id ASC');
+mysqli_stmt_bind_param($stmt, 'ii', $report_id, $company_id);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+while ($row = mysqli_fetch_assoc($res)) {
+    $night_shift_rows[] = $row;
 }
 mysqli_stmt_close($stmt);
 
@@ -729,11 +749,40 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                 <button type="button" class="btn btn-sm opr-no-print" data-add-scope="butler">➕ Add butler row</button>
                 <?php endif; ?>
 
-                <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="night_shift_notes" style="margin-top:16px;">
-                    <label>Night Shift (23h00 – 07h30)</label>
-                    <span class="display-val"><?= sanitize($report['night_shift_notes'] ?? '—') ?></span>
-                    <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="3"><?= sanitize($report['night_shift_notes'] ?? '') ?></textarea><?php endif; ?>
+                <h2 style="margin-top:20px;">Night Shift (23h00 – 07h30)</h2>
+                <div style="overflow:auto;">
+                    <table class="table opr-table" id="opr-night-shift-table">
+                        <thead>
+                            <tr>
+                                <th>Guest Name</th>
+                                <th>Notes</th>
+                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($night_shift_rows as $row): ?>
+                            <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="night_shift">
+                                <td class="<?= $editClass ?>" data-field="guest_name">
+                                    <span class="display-val"><?= sanitize($row['guest_name'] ?? '—') ?></span>
+                                    <?php if ($can_edit_report): ?><input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row['guest_name'] ?? '') ?>"><?php endif; ?>
+                                </td>
+                                <td class="<?= $editClass ?>" data-field="notes">
+                                    <span class="display-val"><?= sanitize($row['notes'] ?? '—') ?></span>
+                                    <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($row['notes'] ?? '') ?></textarea><?php endif; ?>
+                                </td>
+                                <?php if ($can_edit_report): ?>
+                                <td class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">
+                                    <button type="button" class="btn btn-sm btn-danger opr-delete-row" data-scope="night_shift" data-row-id="<?= (int)$row['id'] ?>">🗑️</button>
+                                </td>
+                                <?php endif; ?>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
+                <?php if ($can_edit_report): ?>
+                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="night_shift">➕ Add night shift row</button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -911,6 +960,7 @@ function doOprXlsxExport() {
     pushTable('Guest Experience Report', 'opr-guest-table');
     pushTable('Courtesy Calls', 'opr-courtesy-table');
     pushTable('Suites Butler Service', 'opr-butler-table');
+    pushTable('Night Shift (23h00 – 07h30)', 'opr-night-shift-table');
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
