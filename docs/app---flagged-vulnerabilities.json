@@ -95,6 +95,30 @@
             "detected_at_pst": "2026-06-15T10:20:00-07:00",
             "reported_link": "",
             "location": "modules/registration_invitations/index.php"
+        },
+        {
+            "title": "Path Traversal and Arbitrary File Read via Notes ZIP Download",
+            "status": "active",
+            "commit_hash": "38aeb3765c93ebda59693d93625c51038d394935",
+            "detected_at_pst": "2026-06-17T14:17:00-07:00",
+            "reported_link": "",
+            "location": "modules/notes/index.php"
+        },
+        {
+            "title": "Cross-user IDOR (Unauthorized View and Delete) in Notes Module",
+            "status": "active",
+            "commit_hash": "38aeb3765c93ebda59693d93625c51038d394935",
+            "detected_at_pst": "2026-06-17T14:17:00-07:00",
+            "reported_link": "",
+            "location": "modules/notes/index.php"
+        },
+        {
+            "title": "Sensitive Information Disclosure (Plaintext Reset Tokens) in Audit Logs",
+            "status": "active",
+            "commit_hash": "38aeb3765c93ebda59693d93625c51038d394935",
+            "detected_at_pst": "2026-06-17T14:17:00-07:00",
+            "reported_link": "",
+            "location": "database.sql"
         }
     ]
 }
