@@ -1,6 +1,6 @@
 <?php
-$crud_table = $crud_table ?? 'note_labels';
-$crud_title = $crud_title ?? 'Note Labels';
+$crud_table = $crud_table ?? 'modules_registry';
+$crud_title = $crud_title ?? 'Modules Registry';
 $crud_action = $crud_action ?? 'view';
 ?>
 <?php
