@@ -58,11 +58,11 @@
         },
         {
             "title": "Unauthorized Remote Reset of Git History and Database Wipe",
-            "status": "remediated",
+            "status": "deferred",
             "commit_hash": "8e6ef80442361e5ff3274fd55b2b6049520df1f1",
             "detected_at_pst": "2026-06-15T06:25:34-07:00",
             "reported_link": "",
-            "location": "reset_git_history.php (removed from repository)"
+            "location": "reset_git_history.php (BETA deployment utility; not in repository)"
         },
         {
             "title": "Administrative Privilege Escalation via Select Options API",

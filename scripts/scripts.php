@@ -1135,8 +1135,8 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Completely reset Git history and force push a clean master branch.</td>
-                    <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong></td>
+                    <td>Completely reset Git history and force push a clean master branch. <strong>BETA only</strong> — destructive; rewrites Git history and force-pushes. Used in development to purge history or reset a branch to a clean state.</td>
+                    <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong> <strong>BETA / pre-production only</strong> — no implementation changes while the project remains in BETA and not yet in production.</td>
                 </tr>
             </tbody>
         </table></div>
