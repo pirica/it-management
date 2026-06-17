@@ -408,6 +408,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>database.sql</code>, <code>modules/employees/</code> profile fields, or employee list/import columns.</td>
                 </tr>
                 <tr>
+                    <td><a href="debug_resignations_termination_date.php">debug_resignations_termination_date.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Diagnose why a <code>termination_date</code> (default <code>18/06/2026</code>, week 25) does or does not match the resignations weekly filter — PHP vs MySQL week metadata, ISO bounds, legacy <code>YEAR/MONTH/WEEK</code>, module SQL, and today's verify-probe bounds.</td>
+                    <td><code>php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_employee_type_resignations.php">verify_employee_type_resignations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs <code>employee_type</code> and <code>resignations</code>, and the weekly resignations SQL filter used by <code>modules/resignations/index.php</code>.</td>
