@@ -10,8 +10,10 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '\it-management\config\config.php';
-require_once __DIR__ . '\scripts\lib\script_browser_nav.php';
+require_once __DIR__ . '/config/config.php';
+itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
+
+require_once __DIR__ . '/scripts/lib/script_browser_nav.php';
 
 if (PHP_SAPI === 'cli') {
     echo "This script is designed for browser use with visual feedback. Run with caution.\n";
@@ -39,11 +41,24 @@ header('Content-Type: text/html; charset=utf-8');
 </div>
 
 <?php
-if (($_GET['confirm'] ?? '') !== '1') {
-    echo '<p><a href="?confirm=1" class="btn btn-danger" onclick="return confirm(\'ARE YOU ABSOLUTELY SURE? THIS CANNOT BE UNDONE.\');" style="display:inline-block;padding:8px 16px;background:#cf222e;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Confirm History Reset & Force Push</a></p>';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['confirm'] ?? '') !== '1') {
+    $csrfToken = itm_get_csrf_token();
+    ?>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+        <input type="hidden" name="confirm" value="1">
+        <p>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('ARE YOU ABSOLUTELY SURE? THIS CANNOT BE UNDONE.');" style="display:inline-block;padding:8px 16px;background:#cf222e;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;border:none;cursor:pointer;">
+                Confirm History Reset & Force Push
+            </button>
+        </p>
+    </form>
+    <?php
     echo '</body></html>';
     exit;
 }
+
+itm_require_post_csrf();
 
 // Define the absolute path to your git executable
 $git = '"C:\Program Files\Git\cmd\git.exe"';

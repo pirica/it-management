@@ -14,6 +14,7 @@ $crud_action = 'view';
 ?>
 <?php
 require_once '../../config/config.php';
+itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
 
 // Validate table configuration to prevent unauthorized access to other tables
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {

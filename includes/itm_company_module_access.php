@@ -18,6 +18,7 @@ if (!function_exists('itm_module_access_system_slugs')) {
             'ui_configuration',
             'role_hierarchy',
             'role_assignment_rights',
+            'registration_invitations',
         ];
     }
 }
@@ -45,6 +46,7 @@ if (!function_exists('itm_module_access_admin_only_slugs')) {
             'ui_configuration',
             'role_hierarchy',
             'role_assignment_rights',
+            'registration_invitations',
         ];
     }
 }

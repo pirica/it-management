@@ -55,7 +55,7 @@ if (strpos($output, 'Starting Git history reset') !== false) {
     echo colorText("[FAIL] reset_git_history.php: Regular user reached destructive logic!", 'fail') . $nl;
 } else {
     $content = file_get_contents(__DIR__ . '/../reset_git_history.php');
-    if (strpos($content, "role_name") === false && strpos($content, "isAdmin") === false) {
+    if (strpos($content, "itm_require_admin") === false) {
         echo colorText("[FAIL] reset_git_history.php: Script lacks admin/role checks in code.", 'fail') . $nl;
     } else {
         echo colorText("[PASS] reset_git_history.php: Role checks found.", 'pass') . $nl;

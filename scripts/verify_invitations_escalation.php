@@ -24,8 +24,8 @@ if (!file_exists(__DIR__ . '/../' . $targetScript)) {
 
 $content = file_get_contents(__DIR__ . '/../' . $targetScript);
 
-if (strpos($content, 'itm_is_admin') === false) {
-    echo colorText("[FAIL] VULNERABLE: $targetScript lacks itm_is_admin() check. Regular users can manage invitations.", 'fail') . $nl;
+if (strpos($content, 'itm_is_admin') === false && strpos($content, 'itm_require_admin') === false) {
+    echo colorText("[FAIL] VULNERABLE: $targetScript lacks itm_is_admin() or itm_require_admin() check. Regular users can manage invitations.", 'fail') . $nl;
 } else {
     echo colorText("[PASS] SAFE: $targetScript contains itm_is_admin() check.", 'pass') . $nl;
 }
@@ -33,8 +33,8 @@ if (strpos($content, 'itm_is_admin') === false) {
 $createScript = 'modules/registration_invitations/create.php';
 if (file_exists(__DIR__ . '/../' . $createScript)) {
     $createContent = file_get_contents(__DIR__ . '/../' . $createScript);
-    if (strpos($createContent, 'itm_is_admin') === false) {
-        echo colorText("[FAIL] VULNERABLE: $createScript lacks itm_is_admin() check. Regular users can create privileged invitations.", 'fail') . $nl;
+    if (strpos($createContent, 'itm_is_admin') === false && strpos($createContent, 'itm_require_admin') === false) {
+        echo colorText("[FAIL] VULNERABLE: $createScript lacks itm_is_admin() or itm_require_admin() check. Regular users can create privileged invitations.", 'fail') . $nl;
     } else {
         echo colorText("[PASS] SAFE: $createScript contains itm_is_admin() check.", 'pass') . $nl;
     }
