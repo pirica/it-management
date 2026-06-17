@@ -99,6 +99,15 @@ function colorText($text, $type) {
 - Check for the 'Admin' role using session variables (e.g., `$_SESSION['role_name']`).
 - Use `itm_require_post_csrf()` for all state-changing `POST` requests.
 - For CLI scripts, use the `ITM_CLI_SCRIPT` constant to bypass web-specific authentication when appropriate.
+- **No-auth browser scripts:** define `ITM_SCRIPT_NO_AUTH` before `config.php` only for read-only aggregate diagnostics allowlisted in `config/config.php` (`$itmNoAuthScripts`). Currently: `count_db_tables.php`.
+
+### Database table count (`count_db_tables.php`)
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Browser and CLI; **no login**. |
+
+Catalog: `scripts/scripts.php`.
 
 ### Select Options API verification
 

@@ -329,6 +329,23 @@ if (defined('ITM_API_RATE_LIMIT_PROBE') && ITM_API_RATE_LIMIT_PROBE) {
     $itmSkipWebAuth = true;
 }
 
+// Why: Read-only aggregate diagnostics may run without a session when explicitly allowlisted.
+if (
+    !$itmSkipWebAuth
+    && PHP_SAPI !== 'cli'
+    && defined('ITM_SCRIPT_NO_AUTH')
+    && ITM_SCRIPT_NO_AUTH
+) {
+    $itmNoAuthScripts = [
+        'count_db_tables.php',
+    ];
+    $itmNoAuthScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+
+    if (in_array($itmNoAuthScript, $itmNoAuthScripts, true)) {
+        $itmSkipWebAuth = true;
+    }
+}
+
 // Browser: never bypass auth for every ITM_CLI_SCRIPT file — only an explicit allowlist (HTTP QA runner).
 if (
     !$itmSkipWebAuth
