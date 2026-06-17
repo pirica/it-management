@@ -83,9 +83,10 @@ mysqli_stmt_bind_param($stmt, 'is', $companyId, $today);
 mysqli_stmt_execute($stmt);
 mysqli_stmt_close($stmt);
 
-$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, today_shift, active) VALUES (?, ?, ?, 1)');
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, today_shift, report_ui_json, active) VALUES (?, ?, ?, ?, 1)');
 $shift = 'MBQA verify shift';
-mysqli_stmt_bind_param($stmt, 'iss', $companyId, $today, $shift);
+$uiSeed = json_encode(['page_title' => 'Daily Operations Report', 'subtitle' => 'Test subtitle'], JSON_UNESCAPED_UNICODE);
+mysqli_stmt_bind_param($stmt, 'isss', $companyId, $today, $shift, $uiSeed);
 if (!mysqli_stmt_execute($stmt)) {
     opr_verify_fail('Insert ops_report failed: ' . mysqli_error($conn));
 } else {
@@ -94,7 +95,7 @@ if (!mysqli_stmt_execute($stmt)) {
 }
 mysqli_stmt_close($stmt);
 
-$stmt = mysqli_prepare($conn, 'SELECT id, today_shift FROM ops_report WHERE company_id = ? AND report_date = ? LIMIT 1');
+$stmt = mysqli_prepare($conn, 'SELECT id, today_shift, report_ui_json FROM ops_report WHERE company_id = ? AND report_date = ? LIMIT 1');
 mysqli_stmt_bind_param($stmt, 'is', $companyId, $today);
 mysqli_stmt_execute($stmt);
 $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
@@ -104,6 +105,20 @@ if (!$row || $row['today_shift'] !== $shift) {
     opr_verify_fail('ops_report read-back mismatch');
 } else {
     opr_verify_pass('ops_report read-back OK');
+}
+
+$decodedUi = json_decode((string)($row['report_ui_json'] ?? ''), true);
+if (!is_array($decodedUi) || ($decodedUi['subtitle'] ?? '') !== 'Test subtitle') {
+    opr_verify_fail('report_ui_json read-back mismatch');
+} else {
+    opr_verify_pass('report_ui_json read-back OK');
+}
+
+$res = mysqli_query($conn, "SHOW COLUMNS FROM ops_report LIKE 'report_ui_json'");
+if (!$res || mysqli_num_rows($res) === 0) {
+    opr_verify_fail('ops_report.report_ui_json column missing');
+} else {
+    opr_verify_pass('ops_report.report_ui_json column exists');
 }
 
 $stmt = mysqli_prepare($conn, 'INSERT INTO ops_report_guest_experience (company_id, ops_report_id, guest_name, sort_order, active) VALUES (?, ?, ?, 0, 1)');

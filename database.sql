@@ -6065,6 +6065,7 @@ CREATE TABLE `ops_report` (
   `stay_experience_comment` text,
   `hsk_revenue` decimal(14,2) DEFAULT NULL,
   `welcomes_notes` text,
+  `report_ui_json` longtext,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
