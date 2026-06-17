@@ -166,6 +166,20 @@ if (!function_exists('opr_report_fields')) {
     }
 }
 
+if (!function_exists('opr_render_editable_field')) {
+    // Why: Editable dates show inputs directly; locked dates show read-only text only.
+    function opr_render_editable_field($value, $canEdit, $multiline = false) {
+        if ($canEdit) {
+            if ($multiline) {
+                return '<textarea class="edit-input form-control" rows="2">' . sanitize((string)($value ?? '')) . '</textarea>';
+            }
+            return '<input type="text" class="edit-input form-control" value="' . sanitize((string)($value ?? '')) . '">';
+        }
+        $text = ($value !== '' && $value !== null) ? sanitize($value) : '—';
+        return '<span class="display-val">' . $text . '</span>';
+    }
+}
+
 if (!function_exists('opr_json_response')) {
     function opr_json_response($payload) {
         header('Content-Type: application/json; charset=UTF-8');
@@ -433,8 +447,9 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
         .opr-metric-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; }
         .opr-metric { border:1px solid var(--border-color); border-radius:6px; padding:8px; }
         .opr-metric label { display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px; }
-        .inline-editable { cursor:pointer; }
-        .inline-editable .edit-input { width:100%; }
+        .inline-editable .edit-input { width:100%; min-width:48px; }
+        .opr-table .edit-input { padding:4px 6px; font-size:12px; }
+        .opr-metric .edit-input { margin-top:4px; }
         @media print {
             @page { size: landscape; margin: 1cm; }
             .opr-controls, .opr-no-print, .btn { display:none !important; }
@@ -454,8 +469,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     <p style="margin:8px 0 0; color:var(--text-secondary);">Duty Manager &amp; Guest Relations | Daily Reports<?= sanitize($lockedNotice) ?></p>
                 </div>
                 <div style="text-align:right;">
-                    <strong>Company:</strong> <?= sanitize($company_info['company'] ?? '') ?><br>
-                    <strong>Unit No:</strong> <?= sanitize($company_info['unit_no'] ?? '—') ?>
+                    <strong>Company:</strong> <?= sanitize($company_info['company'] ?? '') ?>
                 </div>
             </div>
 
@@ -499,13 +513,11 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                 <div class="opr-header-grid">
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="today_shift">
                         <label>Today&rsquo;s Shift</label>
-                        <span class="display-val"><?= sanitize($report['today_shift'] ?? '—') ?></span>
-                        <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($report['today_shift'] ?? '') ?></textarea><?php endif; ?>
+                        <?= opr_render_editable_field($report['today_shift'] ?? '', $can_edit_report, true) ?>
                     </div>
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="tomorrow_shift">
                         <label>Tomorrow&rsquo;s Shift</label>
-                        <span class="display-val"><?= sanitize($report['tomorrow_shift'] ?? '—') ?></span>
-                        <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($report['tomorrow_shift'] ?? '') ?></textarea><?php endif; ?>
+                        <?= opr_render_editable_field($report['tomorrow_shift'] ?? '', $can_edit_report, true) ?>
                     </div>
                 </div>
 
@@ -529,20 +541,16 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                         'hsk_revenue' => 'HSK Revenue (€)',
                     ];
                     foreach ($metrics as $field => $label):
-                        $val = $report[$field] ?? '';
-                        $display = $val !== '' && $val !== null ? sanitize($val) : '—';
                     ?>
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="<?= $field ?>">
                         <label><?= sanitize($label) ?></label>
-                        <span class="display-val"><?= $display ?></span>
-                        <?php if ($can_edit_report): ?><input type="text" class="edit-input" style="display:none;" value="<?= sanitize((string)$val) ?>"><?php endif; ?>
+                        <?= opr_render_editable_field($report[$field] ?? '', $can_edit_report) ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="stay_experience_comment" style="margin-top:10px;">
                     <label>Stay Experience — Comment of the day</label>
-                    <span class="display-val"><?= sanitize($report['stay_experience_comment'] ?? '—') ?></span>
-                    <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="3"><?= sanitize($report['stay_experience_comment'] ?? '') ?></textarea><?php endif; ?>
+                    <?= opr_render_editable_field($report['stay_experience_comment'] ?? '', $can_edit_report, true) ?>
                 </div>
 
                 <h2 style="margin-top:20px;">Food &amp; Beverage Overview</h2>
@@ -565,8 +573,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                             <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="fb_outlet">
                                 <?php foreach (['outlet_name', 'covers_breakfast', 'covers_lunch', 'covers_dinner', 'covers_dado', 'covers_pool', 'covers_brunch'] as $field): ?>
                                 <td class="<?= $editClass ?>" data-field="<?= $field ?>">
-                                    <span class="display-val"><?= sanitize($row[$field] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?><input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row[$field] ?? '') ?>"><?php endif; ?>
+                                    <?= opr_render_editable_field($row[$field] ?? '', $can_edit_report) ?>
                                 </td>
                                 <?php endforeach; ?>
                                 <?php if ($can_edit_report): ?>
@@ -599,8 +606,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                             <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="walk_round">
                                 <?php foreach (['area_name', 'early_shift', 'late_shift'] as $field): ?>
                                 <td class="<?= $editClass ?>" data-field="<?= $field ?>">
-                                    <span class="display-val"><?= sanitize($row[$field] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?><input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row[$field] ?? '') ?>"><?php endif; ?>
+                                    <?= opr_render_editable_field($row[$field] ?? '', $can_edit_report) ?>
                                 </td>
                                 <?php endforeach; ?>
                                 <?php if ($can_edit_report): ?>
@@ -619,8 +625,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="welcomes_notes" style="margin-top:16px;">
                     <label>Welcomes</label>
-                    <span class="display-val"><?= sanitize($report['welcomes_notes'] ?? '—') ?></span>
-                    <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($report['welcomes_notes'] ?? '') ?></textarea><?php endif; ?>
+                    <?= opr_render_editable_field($report['welcomes_notes'] ?? '', $can_edit_report, true) ?>
                 </div>
 
                 <h2 style="margin-top:20px;">Guest Experience Report</h2>
@@ -645,14 +650,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                             <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="guest_experience">
                                 <?php foreach (['ref_id', 'guest_name', 'room_number', 'time_reported', 'checkout_date', 'feedback', 'action_taken', 'case_closed', 'monitor'] as $field): ?>
                                 <td class="<?= $editClass ?>" data-field="<?= $field ?>">
-                                    <span class="display-val"><?= sanitize($row[$field] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?>
-                                        <?php if (in_array($field, ['feedback', 'action_taken'], true)): ?>
-                                            <textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($row[$field] ?? '') ?></textarea>
-                                        <?php else: ?>
-                                            <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row[$field] ?? '') ?>">
-                                        <?php endif; ?>
-                                    <?php endif; ?>
+                                    <?= opr_render_editable_field($row[$field] ?? '', $can_edit_report, in_array($field, ['feedback', 'action_taken'], true)) ?>
                                 </td>
                                 <?php endforeach; ?>
                                 <?php if ($can_edit_report): ?>
@@ -690,14 +688,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                             <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="courtesy_call">
                                 <?php foreach (['guest_name', 'room_number', 'time_reported', 'checkout_date', 'notes', 'action_taken', 'case_closed', 'monitor'] as $field): ?>
                                 <td class="<?= $editClass ?>" data-field="<?= $field ?>">
-                                    <span class="display-val"><?= sanitize($row[$field] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?>
-                                        <?php if (in_array($field, ['notes', 'action_taken'], true)): ?>
-                                            <textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($row[$field] ?? '') ?></textarea>
-                                        <?php else: ?>
-                                            <input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row[$field] ?? '') ?>">
-                                        <?php endif; ?>
-                                    <?php endif; ?>
+                                    <?= opr_render_editable_field($row[$field] ?? '', $can_edit_report, in_array($field, ['notes', 'action_taken'], true)) ?>
                                 </td>
                                 <?php endforeach; ?>
                                 <?php if ($can_edit_report): ?>
@@ -728,12 +719,10 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                             <?php foreach ($butler_rows as $row): ?>
                             <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="butler">
                                 <td class="<?= $editClass ?>" data-field="room_number">
-                                    <span class="display-val"><?= sanitize($row['room_number'] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?><input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row['room_number'] ?? '') ?>"><?php endif; ?>
+                                    <?= opr_render_editable_field($row['room_number'] ?? '', $can_edit_report) ?>
                                 </td>
                                 <td class="<?= $editClass ?>" data-field="notes">
-                                    <span class="display-val"><?= sanitize($row['notes'] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($row['notes'] ?? '') ?></textarea><?php endif; ?>
+                                    <?= opr_render_editable_field($row['notes'] ?? '', $can_edit_report, true) ?>
                                 </td>
                                 <?php if ($can_edit_report): ?>
                                 <td class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">
@@ -763,12 +752,10 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                             <?php foreach ($night_shift_rows as $row): ?>
                             <tr data-row-id="<?= (int)$row['id'] ?>" data-scope="night_shift">
                                 <td class="<?= $editClass ?>" data-field="guest_name">
-                                    <span class="display-val"><?= sanitize($row['guest_name'] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?><input type="text" class="edit-input" style="display:none;" value="<?= sanitize($row['guest_name'] ?? '') ?>"><?php endif; ?>
+                                    <?= opr_render_editable_field($row['guest_name'] ?? '', $can_edit_report) ?>
                                 </td>
                                 <td class="<?= $editClass ?>" data-field="notes">
-                                    <span class="display-val"><?= sanitize($row['notes'] ?? '—') ?></span>
-                                    <?php if ($can_edit_report): ?><textarea class="edit-input" style="display:none;" rows="2"><?= sanitize($row['notes'] ?? '') ?></textarea><?php endif; ?>
+                                    <?= opr_render_editable_field($row['notes'] ?? '', $can_edit_report, true) ?>
                                 </td>
                                 <?php if ($can_edit_report): ?>
                                 <td class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">
@@ -792,42 +779,32 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const root = document.getElementById('opr-report-root');
-    if (!root || root.dataset.canEdit !== '1') {
+    if (!root) {
         return;
     }
 
     const reportDate = root.dataset.reportDate;
     const csrfToken = <?= json_encode($csrfToken, JSON_UNESCAPED_UNICODE) ?>;
+    const canEdit = root.dataset.canEdit === '1';
 
-    function bindEditable(cell) {
-        const display = cell.querySelector('.display-val');
-        const input = cell.querySelector('.edit-input');
-        if (!display || !input) {
-            return;
+    function fieldValue(el) {
+        const input = el.querySelector('.edit-input');
+        if (input) {
+            return input.value.trim();
         }
-        display.addEventListener('click', () => {
-            display.style.display = 'none';
-            input.style.display = 'block';
-            input.focus();
-        });
-        const save = () => saveEdit(cell);
-        if (input.tagName === 'TEXTAREA') {
-            input.addEventListener('blur', save);
-        } else {
-            input.addEventListener('blur', save);
-            input.addEventListener('keypress', (e) => { if (e.key === 'Enter') input.blur(); });
-        }
+        const display = el.querySelector('.display-val');
+        return display ? display.textContent.trim() : '';
     }
-
-    document.querySelectorAll('.inline-editable').forEach(bindEditable);
 
     function saveEdit(cell) {
         const scope = cell.dataset.scope || (cell.closest('tr') ? cell.closest('tr').dataset.scope : 'report');
         const field = cell.dataset.field;
+        if (!field) {
+            return;
+        }
         const tr = cell.closest('tr');
         const rowId = tr ? (tr.dataset.rowId || '0') : '0';
-        const input = cell.querySelector('.edit-input');
-        const value = input ? input.value.trim() : '';
+        const value = fieldValue(cell);
 
         const formData = new FormData();
         formData.append('ajax_inline_edit', '1');
@@ -844,17 +821,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!data.success) {
                     alert(data.message || 'Update failed');
                     location.reload();
-                    return;
                 }
-                const display = cell.querySelector('.display-val');
-                if (display) {
-                    display.textContent = value || '—';
-                    display.style.display = 'block';
-                }
-                if (input) {
-                    input.style.display = 'none';
-                }
+            })
+            .catch(() => {
+                alert('Update failed');
             });
+    }
+
+    if (canEdit) {
+        root.querySelectorAll('.inline-editable .edit-input').forEach(input => {
+            const cell = input.closest('.inline-editable');
+            if (!cell) {
+                return;
+            }
+            input.addEventListener('blur', () => saveEdit(cell));
+            if (input.tagName === 'INPUT') {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        input.blur();
+                    }
+                });
+            }
+        });
+    }
+
+    if (!canEdit) {
+        return;
     }
 
     document.querySelectorAll('[data-add-scope]').forEach(btn => {
@@ -901,6 +894,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function oprFieldValue(el) {
+    const input = el.querySelector('.edit-input');
+    if (input) {
+        return input.value.trim();
+    }
+    const display = el.querySelector('.display-val');
+    return display ? display.textContent.trim() : '';
+}
+
 function exportOPR(format) {
     if (format === 'pdf') {
         const originalTitle = document.title;
@@ -920,19 +922,21 @@ function exportOPR(format) {
 }
 
 function doOprXlsxExport() {
+    const todayEl = document.querySelector('[data-field="today_shift"]');
+    const tomorrowEl = document.querySelector('[data-field="tomorrow_shift"]');
     const data = [
         ['Daily Operations Report <?= opr_format_date($selected_date) ?>'],
-        ['Company:', '<?= sanitize($company_info['company'] ?? '') ?>', '', 'Unit No:', '<?= sanitize($company_info['unit_no'] ?? '—') ?>'],
+        ['Company:', '<?= sanitize($company_info['company'] ?? '') ?>'],
         [],
-        ['Today Shift', <?= json_encode($report['today_shift'] ?? '', JSON_UNESCAPED_UNICODE) ?>],
-        ['Tomorrow Shift', <?= json_encode($report['tomorrow_shift'] ?? '', JSON_UNESCAPED_UNICODE) ?>],
+        ['Today Shift', todayEl ? oprFieldValue(todayEl) : ''],
+        ['Tomorrow Shift', tomorrowEl ? oprFieldValue(tomorrowEl) : ''],
         [],
         ['Hotel Figures & Revenue']
     ];
 
     document.querySelectorAll('#opr-report-root .opr-metric-grid .opr-metric').forEach(metric => {
         const label = metric.querySelector('label') ? metric.querySelector('label').textContent : '';
-        const val = metric.querySelector('.display-val') ? metric.querySelector('.display-val').textContent.trim() : '';
+        let val = oprFieldValue(metric);
         data.push([label, val === '—' ? '' : val]);
     });
 
@@ -947,8 +951,7 @@ function doOprXlsxExport() {
             const row = [];
             tr.querySelectorAll('td').forEach((td, idx) => {
                 if (headers.length && idx >= headers.length) return;
-                const display = td.querySelector('.display-val');
-                let text = (display ? display.textContent : td.textContent).trim();
+                let text = oprFieldValue(td);
                 row.push(text === '—' ? '' : text);
             });
             if (row.length) data.push(row);
