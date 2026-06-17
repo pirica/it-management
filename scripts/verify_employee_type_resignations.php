@@ -100,6 +100,10 @@ $startDate = date('Y-m-d', strtotime('-120 days'));
 $year = (int)date('Y');
 $month = (int)date('n');
 $week = (int)date('W');
+$isoWeekBounds = itm_iso_week_bounds($year, $week);
+if ($isoWeekBounds === null) {
+    etr_verify_fail('Could not resolve ISO week bounds for probe filters');
+}
 
 $insertSql = "INSERT INTO employees (
     company_id, first_name, last_name, display_name, employment_status_id, employee_type_id,
@@ -114,15 +118,17 @@ if (!mysqli_query($conn, $insertSql)) {
     $probeEmployeeId = (int)mysqli_insert_id($conn);
     etr_verify_pass('Inserted resignation probe employee');
 
+    $weekStart = mysqli_real_escape_string($conn, $isoWeekBounds['start']);
+    $weekEnd = mysqli_real_escape_string($conn, $isoWeekBounds['end']);
     $filterSql = "SELECT e.id FROM employees e
         INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id
         WHERE e.company_id = {$companyId}
           AND e.id = {$probeEmployeeId}
           AND e.termination_date IS NOT NULL
           AND e.termination_date <> '0000-00-00'
-          AND YEAR(e.termination_date) = {$year}
+          AND e.termination_date >= '{$weekStart}'
+          AND e.termination_date <= '{$weekEnd}'
           AND MONTH(e.termination_date) = {$month}
-          AND WEEK(e.termination_date, 3) = {$week}
           AND es.id = {$terminatedStatusId}
           AND e.employee_type_id = {$teamMemberId}
         LIMIT 1";
