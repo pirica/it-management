@@ -1,6 +1,6 @@
 <?php
 /**
- * Start date field for employee create/edit forms (after request_date when present).
+ * Start date field for employee create/edit forms (after request fields).
  *
  * Expects: $form (array with start_date).
  */
