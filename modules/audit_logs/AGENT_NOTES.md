@@ -13,7 +13,8 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Admin-only UI:** `index.php` and `view.php` require `itm_is_admin()`; non-admins are redirected to the dashboard.
-- **Immutable**: Audit logs should generally not be editable. The UI only supports viewing and deletion (for maintenance).
+- **Immutable**: Audit logs should generally not be editable. The UI supports viewing; admins may back up, download, or clear all tenant logs for maintenance.
+- **Admin maintenance actions (`index.php`):** when an administrator is signed in, the list view exposes **Download ALL Logs** (streams a tenant-scoped `.sql` export), **Backup ALL Logs** (writes the same SQL dump under `backups/` via `BACKUP_PATH`, with best-effort duplicate copy when `DUPLICATE_BACKUP_PATH` is set), and **Clear ALL Logs** (deletes all `audit_logs` rows for the active `company_id` after confirm). All three use CSRF POST handlers and re-check `itm_is_admin()`.
 - **JSON Metadata**: Old and new values are stored as JSON strings.
 - **Automatic Triggering**: Most audit logging is handled by MySQL triggers (`trg_{table}_audit_*`).
 - **Users trigger redaction:** `trg_users_audit_*` in `database.sql` must not log `password`, `reset_token`, or `reset_token_hash` (credential and reset secrets stay out of `audit_logs`).
@@ -21,6 +22,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 ## 5. UI Behavior Requirements
 - **Searchable**: Search by table name, record ID, user, or action.
 - **Detailed View**: View the JSON diff between old and new states.
+- **Admin toolbar**: Download ALL Logs, Backup ALL Logs, and Clear ALL Logs buttons (admin role only).
 
 ## 6. API Actions (If Applicable)
 - None.
