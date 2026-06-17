@@ -246,7 +246,7 @@ $yearShort = substr((string)$selectedYear, -2);
 $reportTitle = 'Weekly Resignations Report - Week ' . $selectedWeek . '/' . $yearShort;
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -372,8 +372,8 @@ $reportTitle = 'Weekly Resignations Report - Week ' . $selectedWeek . '/' . $yea
                                 <td><?= sanitize($fullName) ?></td>
                                 <td><?= sanitize((string)($row['employee_type_name'] ?? '—')) ?></td>
                                 <td><?= sanitize((string)($row['department_name'] ?? '—')) ?></td>
-                                <td><?= sanitize((string)($row['start_date'] ?? '—')) ?></td>
-                                <td><?= sanitize((string)($row['termination_date'] ?? '—')) ?></td>
+                                <td><?= sanitize(itm_format_date_display($row['start_date'] ?? '')) ?: '—' ?></td>
+                                <td><?= sanitize(itm_format_date_display($row['termination_date'] ?? '')) ?: '—' ?></td>
                                 <td><?= sanitize(resign_format_week_label($row['termination_date'] ?? null)) ?></td>
                             </tr>
                         <?php endforeach; ?>

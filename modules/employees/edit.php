@@ -154,12 +154,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reportsTo = $form['reports_to'] === '' ? 'NULL' : (string)(int)$form['reports_to'];
         $workstationModeId = $form['workstation_mode_id'] === '' ? 'NULL' : (string)(int)$form['workstation_mode_id'];
         $assignmentTypeId = $form['assignment_type_id'] === '' ? 'NULL' : (string)(int)$form['assignment_type_id'];
-        $startDate = $form['start_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['start_date']) . "'";
+        $startDate = itm_sql_date_fragment($conn, $form['start_date']);
         $employeeTypeId = $form['employee_type_id'] === '' ? 'NULL' : (string)(int)$form['employee_type_id'];
-        $terminationDate = $form['termination_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_date']) . "'";
+        $terminationDate = itm_sql_date_fragment($conn, $form['termination_date']);
         $employeeCode = $form['employee_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['employee_code']) . "'";
         $locationId = $form['location_id'] === '' ? 'NULL' : (string)(int)$form['location_id'];
-        $requestDate = $form['request_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['request_date']) . "'";
+        $requestDate = itm_sql_date_fragment($conn, $form['request_date']);
         $requestedBy = $form['requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['requested_by']) . "'";
         $terminationRequestedBy = $form['termination_requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_requested_by']) . "'";
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
         $onContacts = (int)$form['on_contacts'];
         $onOrgchart = (int)$form['on_orgchart'];
-        $birthday = $form['birthday'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['birthday']) . "'";
+        $birthday = itm_sql_date_fragment($conn, $form['birthday']);
         $hideYear = (int)$form['hide_year'];
         $photoValue = mysqli_real_escape_string($conn, (string)($employee['photo'] ?? ''));
         if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {

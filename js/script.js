@@ -18,7 +18,15 @@ function confirmDelete(name) {
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString();
+    const parsed = new Date(dateStr);
+    if (Number.isNaN(parsed.getTime())) {
+        return dateStr;
+    }
+    return parsed.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 }
 
 function formatCurrency(amount) {

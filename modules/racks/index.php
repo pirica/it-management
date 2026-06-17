@@ -223,6 +223,10 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
+    if (function_exists('itm_format_cell_scalar_display')) {
+        $text = itm_format_cell_scalar_display($field, $text);
+    }
+
     return sanitize($text);
 }
 
