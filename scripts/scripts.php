@@ -402,6 +402,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>database.sql</code> import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_employee_type_resignations.php">verify_employee_type_resignations.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs <code>employee_type</code> and <code>resignations</code>, and the weekly resignations SQL filter used by <code>modules/resignations/index.php</code>.</td>
+                    <td><code>php scripts/verify_employee_type_resignations.php</code>. Run when changing <code>modules/employee_type/</code>, <code>modules/resignations/</code>, employee start/type fields, or related tables in <code>database.sql</code>.</td>
+                </tr>
+                <tr>
                     <td>normalize_database_sql_created_at.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Writes</strong> <code>database.sql</code>.</td>

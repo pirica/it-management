@@ -52,6 +52,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'contacts', 'label' => '📓 Contacts', 'href' => 'modules/contacts/', 'match_dir' => 'contacts'],
                 ['id' => 'employees', 'label' => '👤 Employees', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
                 ['id' => 'birthdays', 'label' => '🎉 Birthdays', 'href' => 'modules/birthdays/', 'match_dir' => 'birthdays'],
+                ['id' => 'resignations', 'label' => '📋 Resignations', 'href' => 'modules/resignations/', 'match_dir' => 'resignations'],
                 ['id' => 'employee_system_access', 'label' => '🔐 Employee System Access', 'href' => 'modules/employee_system_access/', 'match_dir' => 'employee_system_access'],
                 ['id' => 'system_access', 'label' => '🛡️ System Access', 'href' => 'modules/system_access/', 'match_dir' => 'system_access'],
                 ['id' => 'private_contacts', 'label' => '👤 Private Contacts', 'href' => 'modules/private_contacts/', 'match_dir' => 'private_contacts'],

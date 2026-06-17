@@ -5,6 +5,7 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 
 ## 2. Key Tables
 - **employees** — `birthday`, `first_name`, `last_name`, `department_id`, `employment_status_id`.
+- **employee_type** — not used directly; employees may link via `employee_type_id` in other modules.
 - **employee_statuses** — `name` for the Employment Status multi-select filter (`INNER JOIN` on `employment_status_id` + `company_id`).
 - **departments** — `code` for the Department column; `name` included in search (joined on `department_id` + `company_id`).
 
@@ -25,6 +26,7 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 - Table columns: Name (first + last, text only), Day (day of month without leading zeros via `emp_format_birthday_day_only()` — e.g. `1`, `9`, `10`), Department (`departments.code`). No Actions column.
 - Default sort: Day ASC (`DAY(e.birthday)`). Also sortable: Name, Department.
 - Sortable column headers use plain text styling (no blue link colour).
+- Header link: **Resignations** (`modules/resignations/`) and **Employees**.
 - Sidebar: `🎉 Birthdays` in Employee section (`includes/ui_config.php`). Explorer sidebar links to this module and **Profile Storage** (`Private/{user}/profile`).
 
 ## 6. API Actions (If Applicable)

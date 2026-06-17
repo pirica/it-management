@@ -4,13 +4,15 @@
 The central module for managing employee records, including contact info, hierarchy, and employment details.
 
 ## 2. Key Tables
-- **employees** — main employee data (`photo`, `birthday`, `hide_year` among profile fields).
+- **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id` among profile fields).
+- **employee_type** — lookup for `employees.employee_type_id` (`name_type` labels such as Team member / Internship).
 
 ## 3. Required Relationships
 - **employees** → depends on **companies**.
 - **employees** → depends on **departments**.
 - **employees** → depends on **employee_positions**.
 - **employees** → depends on **employee_statuses**.
+- **employees** → optionally depends on **employee_type** via `employee_type_id`.
 - **employees** → self-references via `reports_to`.
 - **employees** → optionally links to **users** via `user_id`.
 
@@ -25,12 +27,15 @@ The central module for managing employee records, including contact info, hierar
   - Auto-create **departments** and **employee_positions** when names/titles not found.
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
+  - **Employee type:** defaults to tenant **Team member** when import omits `employee_type_id`; accepts `employee type` header mapped to `employee_type_id` (`name_type` lookup).
+  - **Start date:** `start_date` date field after `request_date`; import aliases `start date`, `admission date`.
 - **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id` (no linked login account required). Legacy photos under `{username}_{user_id}` still resolve when `employees.user_id` is set. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
 - **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed immediately after Employment Status. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` and employee `id` — `edit.php` must pass `id` into `emp_profile_photo_store_upload()` (create inserts the row first, then uploads).
+- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_start_date_field.php` — `start_date` date input. `includes/profile_employee_type_fields.php` — `employee_type_id` select with `__add_new__` quick-add (`data-add-label-col="name_type"`), default **Team member**. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed after Employee Type. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` and employee `id` — `edit.php` must pass `id` into `emp_profile_photo_store_upload()` (create inserts the row first, then uploads).
+- **View / list:** `start_date` and `employee_type_id` render human-readable values (`employee_type.name_type`); never show raw type IDs when a label exists.
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
@@ -40,7 +45,9 @@ The central module for managing employee records, including contact info, hierar
 ## 7. File Structure
 - Standard CRUD structure + `delete_clear_table.php`.
 - **includes/profile_fields.php** — shared profile photo drag-and-drop for create/edit.
-- **includes/profile_birthday_fields.php** — birthday and hide_year fields (after Employment Status).
+- **includes/profile_start_date_field.php** — admission/start date field.
+- **includes/profile_employee_type_fields.php** — employee type select before birthday fields.
+- **includes/profile_birthday_fields.php** — birthday and hide_year fields.
 - **includes/employee_profile_photo.php** (repo `includes/`) — path, upload, URL, and birthday display helpers.
 
 ## 8. Multi-Tenant Rules

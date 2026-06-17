@@ -569,8 +569,11 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
+| `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations SQL filter |
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
+
+Run `verify_employee_type_resignations.php` when changing `modules/employee_type/`, `modules/resignations/`, `modules/employees/` start/type fields, or `employee_type` / `employees` schema in `database.sql`.
 
 #### 5. Pre-merge verification (scripts)
 

@@ -140,6 +140,18 @@ Track consumables and stock levels.
 
 User access, organizational structure, employee records, and multi-company data partitioning (`company_id` scoping).
 
+### Employee Type (`modules/employee_type/`)
+
+Tenant lookup for `employees.employee_type_id` (`name_type` labels such as **Team member** and **Internship**). Standard CRUD.
+
+### Birthdays (`modules/birthdays/`)
+
+Read-only monthly birthday list from `employees.birthday` with month and employment-status filters.
+
+### Resignations (`modules/resignations/`)
+
+Read-only **Weekly Resignations Report** from `employees.termination_date` with week/month/year selectors, employment-status and employee-type multi-select filters, search, and Excel/PDF export.
+
 ## Budgeting
 
 CRUD modules for source data: annual/monthly budgets, forecasts, expenses, GL accounts, cost centers, and categories. For the read-only comparison screen, use [Budget report](#budget-report) (`modules/budget_report/index.php`).
