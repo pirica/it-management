@@ -4,7 +4,7 @@
 The central module for managing employee records, including contact info, hierarchy, and employment details.
 
 ## 2. Key Tables
-- **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id` among profile fields).
+- **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id`, `termination_date` among profile fields).
 - **employee_type** — lookup for `employees.employee_type_id` (`name_type` labels such as Team member / Internship).
 
 ## 3. Required Relationships
@@ -13,6 +13,7 @@ The central module for managing employee records, including contact info, hierar
 - **employees** → depends on **employee_positions**.
 - **employees** → depends on **employee_statuses**.
 - **employees** → optionally depends on **employee_type** via `employee_type_id`.
+- **employees** → feeds **resignations** read-only weekly report via `termination_date`, `start_date`, `employment_status_id`, and `employee_type_id` (same company scope).
 - **employees** → optionally depends on **it_locations** via `location_id`.
 - **employees** → self-references via `reports_to`.
 - **employees** → optionally links to **users** via `user_id`.
@@ -29,6 +30,7 @@ The central module for managing employee records, including contact info, hierar
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
   - **Employee type:** defaults to tenant **Team member** when import omits `employee_type_id`; accepts `employee type` header mapped to `employee_type_id` (`name_type` lookup).
+  - **Termination date:** `termination_date` nullable `date` on create/edit/view/list (`includes/profile_termination_date_field.php`, after Employee Type). Display and import use **dd/mm/yyyy** via `itm_format_date_display()` / `itm_parse_date_input()`. Drives **Resignations** weekly report (`modules/resignations/`) when set to a valid calendar date; downstream SQL must use `itm_sql_valid_date_predicate('e.termination_date')`, not `<> '0000-00-00'` (MySQL 8 `NO_ZERO_DATE`).
   - **Start date:** `start_date` date field after request fields; import aliases `start date`, `admission date`.
   - **Employee code / IT location / request fields:** optional nullable columns (`employee_code`, `location_id` → `it_locations`, `request_date`, `requested_by`, `termination_requested_by`) on create/edit/view/list; import accepts `employee code`, `it location`, `location`, `request date`, `requested by`, `termination requested by`.
 - **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id` (no linked login account required). Legacy photos under `{username}_{user_id}` still resolve when `employees.user_id` is set. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
@@ -65,6 +67,7 @@ The central module for managing employee records, including contact info, hierar
 ## 10. Common Pitfalls
 - **Circular Reporting**: Avoid setting an employee to report to themselves or creating a loop.
 - **Profile photo upload on edit:** `emp_profile_photo_store_upload()` needs `username` and `id` on the employee array; omitting `id` in `edit.php` shows a misleading username error.
+- **Resignations report:** after setting `termination_date`, confirm the active company matches `employees.company_id`. If the row is missing from the weekly report, run `php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026`.
 
 ## 11. Examples of Safe Code Patterns
 
@@ -83,4 +86,4 @@ $stmt->execute();
 ```
 
 ## 12. Module Owner Notes (Optional)
-The core of the HR/Identity management in the system. Regression: `php scripts/employee_fields_missing.php` — schema and critical UI coverage for `employees` columns (including `termination_date`).
+The core of the HR/Identity management in the system. Regression: `php scripts/employee_fields_missing.php` — schema and critical UI coverage for `employees` columns (including `termination_date`). Resignations weekly filter debug: `php scripts/debug_resignations_termination_date.php` (catalogued in `scripts/scripts.php`).

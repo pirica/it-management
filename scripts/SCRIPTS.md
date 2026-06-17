@@ -569,17 +569,24 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
-| `php scripts/debug_resignations_termination_date.php` | Diagnose resignations weekly filter for a termination date (default `18/06/2026`, week 25): ISO bounds, legacy `YEAR/MONTH/WEEK`, module SQL, employee row, today probe bounds. Browser or CLI. |
-| `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)`). Browser or CLI via `scripts/verify_employee_type_resignations.php` (uses `lib/script_cli_output.php`; no `STDERR` on web SAPI). |
-| `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`) |
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
 
-Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report or when `verify_employee_type_resignations.php` fails the weekly filter step.
+### Resignations and employee profile scripts
 
-Run `verify_employee_type_resignations.php` when changing `modules/employee_type/`, `modules/resignations/`, `modules/employees/` start/type fields, or `employee_type` / `employees` schema in `database.sql`.
+| Script | Purpose |
+|--------|---------|
+| `php scripts/debug_resignations_termination_date.php` | Diagnose why a `termination_date` (default `18/06/2026`, ISO week 25) does or does not match `modules/resignations/index.php`: PHP vs MySQL week metadata, `itm_iso_week_bounds()` range, legacy `YEAR/MONTH/WEEK`, simulated module SQL (uses `itm_sql_valid_date_predicate()` — not `<> '0000-00-00'`), live employee row, today's verify-probe bounds. Browser or CLI. Surfaces MySQL 8 `NO_ZERO_DATE` prepare errors. |
+| `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)` + `itm_sql_valid_date_predicate()`). Browser or CLI via `lib/script_cli_output.php` (no `STDERR` on web SAPI). |
+| `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`) |
+
+Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
+
+Run `verify_employee_type_resignations.php` when changing `modules/employee_type/`, `modules/resignations/`, `modules/employees/` start/type/termination fields, or `employee_type` / `employees` schema in `database.sql`.
 
 Run `employee_fields_missing.php` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
+
+**MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
 
 #### 5. Pre-merge verification (scripts)
 
