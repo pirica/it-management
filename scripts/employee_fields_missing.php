@@ -116,6 +116,33 @@ function efm_file_bundle_has_field(string $field, array $paths): bool
     return false;
 }
 
+function efm_view_label_map(): array
+{
+    // Why: view.php renders FK columns with human labels and joined *_name aliases, not raw *_id keys.
+    return [
+        'employee_position_id' => ['Position Title', 'position_name'],
+        'department_id' => ['Department', 'department_name'],
+        'office_key_card_department_id' => ['Office Key Card Department', 'office_key_card_department_name'],
+        'employment_status_id' => ['Employment Status', 'employment_status_name'],
+        'employee_type_id' => ['Employee Type', 'employee_type_name'],
+        'workstation_mode_id' => ['Workstation Mode', 'workstation_mode_name'],
+        'assignment_type_id' => ['Assignment Type', 'assignment_type_name'],
+        'reports_to' => ['Reports To', 'manager_name'],
+    ];
+}
+
+/**
+ * @return list<string>
+ */
+function efm_view_label_candidates(string $field): array
+{
+    $candidates = [$field, ucwords(str_replace('_', ' ', $field))];
+    if (isset(efm_view_label_map()[$field])) {
+        $candidates = array_merge($candidates, efm_view_label_map()[$field]);
+    }
+    return array_values(array_unique($candidates));
+}
+
 function efm_view_has_field(string $field, string $viewPath): bool
 {
     if (!is_readable($viewPath)) {
@@ -128,11 +155,15 @@ function efm_view_has_field(string $field, string $viewPath): bool
     if ($field === 'photo' && strpos($content, 'emp_profile_photo_url') !== false) {
         return true;
     }
-    if (strpos($content, "'{$field}'") !== false || strpos($content, "['{$field}']") !== false) {
-        return true;
+    foreach (efm_view_label_candidates($field) as $candidate) {
+        if (strpos($content, "'{$candidate}'") !== false) {
+            return true;
+        }
+        if (preg_match('/\$employee\[[\'"]' . preg_quote($candidate, '/') . '[\'"]\]/', $content)) {
+            return true;
+        }
     }
-    $label = ucwords(str_replace('_', ' ', $field));
-    return strpos($content, "'{$label}'") !== false;
+    return false;
 }
 
 function efm_index_has_field(string $field, string $indexPath): bool
