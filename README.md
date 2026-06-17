@@ -81,6 +81,16 @@
 
 <p align="center"><img src="docs/readme/database-diagram.png" alt="Database schema overview" /></p>
 
+<h2 align="center">Company Module Access Management</h2>
+
+<p align="center">Per-company module visibility: administrators enable or disable modules per tenant. Central enforcement runs from <code>config/config.php</code> via <code>has_module_access()</code>; the admin matrix lists every registry row (including hidden and system modules).</p>
+
+<h3 align="center">Architectural map</h3>
+
+<p align="center"><img src="docs/readme/company-module-access-architecture.svg" alt="Company Module Access architectural map: UI surfaces, request bootstrap, and database tables" /></p>
+
+<p align="center">UI entry points (<code>sidebar.php</code>, <code>dashboard.php</code>, <code>modules/company_module_access/</code>) call shared helpers in <code>includes/itm_company_module_access.php</code>. Enforcement gates every <code>modules/*</code> request after login. Data lives in <code>modules_registry</code> (global catalog) and <code>company_module_access</code> (per-company <code>enabled</code> flags). Fresh installs seed all company × module rows from <code>database.sql</code>; upgrades can run <code>php scripts/seed_company_module_access.php</code>.</p>
+
 <h2 align="center">API & Examples</h2>
 
 The system includes a variety of JSON and HTML-based endpoints for integration. To help developers get started, a collection of standalone PHP scripts is available in the `api-examples/` directory:
@@ -125,6 +135,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 - Employees — Employee tracking with hierarchy and reporting lines
 - Org Chart — Visual, interactive organizational structure diagram
 - Companies — Multi-company support
+- Company Module Access — Admin matrix to enable/disable modules per company ([architectural map](#company-module-access-management))
 - Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
 - Planning — Shared Calendar and Events management
 - Visitors Access Log — Track manual entry logs of visitors with inline editing and auto-timestamps
