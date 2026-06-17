@@ -93,6 +93,7 @@ if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Handle Save (Create/Edit)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true) && isset($_POST['ajax_update_layout'])) {
+    require_once ROOT_PATH . 'includes/itm_api_json_response.php';
     itm_require_post_csrf();
     header('Content-Type: application/json; charset=UTF-8');
 
@@ -104,24 +105,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $totalAmount = rack_planner_layout_total($normalizedLayout);
 
     if ($id <= 0) {
-        echo json_encode([
+        itm_api_json_response([
             'success' => false,
             'message' => 'Create mode requires Save before auto-save.',
             'layout_json' => $layoutJson,
             'total_amount' => number_format($totalAmount, 2, '.', ''),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        ], 400);
     }
 
     $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET layout_json = ? WHERE id = ? AND company_id = ?");
     if (!$stmt) {
-        echo json_encode([
+        itm_api_json_response([
             'success' => false,
             'message' => 'Unable to prepare auto-save.',
             'layout_json' => $layoutJson,
             'total_amount' => number_format($totalAmount, 2, '.', ''),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        ], 500);
     }
 
     mysqli_stmt_bind_param($stmt, 'sii', $layoutJson, $id, $company_id);
@@ -130,27 +129,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     mysqli_stmt_close($stmt);
 
     if (!$ok) {
-        echo json_encode([
+        itm_api_json_response([
             'success' => false,
             'message' => 'Auto-save failed.',
             'layout_json' => $layoutJson,
             'total_amount' => number_format($totalAmount, 2, '.', ''),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        ], 500);
+    }
+
+    if ($updatedRows <= 0) {
+        itm_api_json_response([
+            'success' => false,
+            'message' => 'Rack plan not found or not permitted.',
+            'layout_json' => $layoutJson,
+            'total_amount' => number_format($totalAmount, 2, '.', ''),
+        ], 404);
     }
 
     $sourcePriceSyncOk = true;
     if ($updatedRows > 0) {
         $sourcePriceSyncOk = rack_planner_sync_source_prices_from_layout($conn, $company_id, $normalizedLayout);
     }
-    echo json_encode([
+    itm_api_json_response([
         'success' => true,
         'message' => $sourcePriceSyncOk ? 'Auto-saved.' : 'Auto-saved with source price sync warning.',
         'layout_json' => $layoutJson,
         'total_amount' => number_format($totalAmount, 2, '.', ''),
         'source_price_sync' => $sourcePriceSyncOk,
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ], 200);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'])) {

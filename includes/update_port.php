@@ -13,6 +13,7 @@ if (itm_skip_http_entry_unless_direct(__FILE__)) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/switch_port_api_helpers.php';
+require_once __DIR__ . '/itm_api_json_response.php';
 
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
@@ -581,5 +582,9 @@ if ($hasManagementId) {
 }
 
 
+
+if ($updated <= 0) {
+    itm_api_json_response(['success' => false, 'error' => 'Port not found or not permitted', 'updated' => 0], 404);
+}
 
 echo json_encode(['success' => true, 'updated' => $updated]);

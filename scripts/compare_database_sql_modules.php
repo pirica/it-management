@@ -385,6 +385,9 @@ if (!isset($company_id) || (int)$company_id <= 0) {
     exit('Login required. Sign in to the app, then open this script again.');
 }
 
+require_once ROOT_PATH . 'includes/itm_maintenance_script_admin_gate.php';
+itm_enforce_maintenance_script_admin_browser($conn);
+
 if ($asJson) {
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

@@ -1102,8 +1102,14 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_json_import_validation.php">verify_json_import_validation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for JSON import: invalid numeric column values are rejected (failed ≥ 1, ok:false) instead of silent NULL inserts.</td>
+                    <td>Regression for JSON import: invalid numeric, date/datetime, and enum column values are rejected instead of silent NULL inserts.</td>
                     <td><code>php scripts/verify_json_import_validation.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_maintenance_scripts_rbac.php">verify_maintenance_scripts_rbac.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for Admin browser gate on maintenance scripts (MBQA runner, compare_database_sql_modules, test_sql_injection).</td>
+                    <td><code>php scripts/verify_maintenance_scripts_rbac.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_audit_disclosure.php">repro_audit_disclosure.php</a></td>
