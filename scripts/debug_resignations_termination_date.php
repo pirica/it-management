@@ -278,7 +278,7 @@ $moduleSql = 'SELECT e.id, e.external_id, e.first_name, e.last_name, e.terminati
     LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id
     WHERE e.company_id = ?
       AND e.termination_date IS NOT NULL
-      AND e.termination_date <> \'0000-00-00\'
+      AND ' . itm_sql_valid_date_predicate('e.termination_date') . '
       AND e.termination_date >= ?
       AND e.termination_date <= ?
       AND MONTH(e.termination_date) = ?

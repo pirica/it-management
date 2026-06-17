@@ -153,7 +153,7 @@ if ($selectedStatusIds !== [] && $selectedTypeIds !== [] && $isoWeekBounds !== n
         . 'LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id '
         . 'WHERE e.company_id = ? '
         . 'AND e.termination_date IS NOT NULL '
-        . 'AND e.termination_date <> \'0000-00-00\' '
+        . 'AND ' . itm_sql_valid_date_predicate('e.termination_date') . ' '
         . 'AND e.termination_date >= ? '
         . 'AND e.termination_date <= ? '
         . 'AND MONTH(e.termination_date) = ? '

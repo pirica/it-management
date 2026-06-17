@@ -56,4 +56,11 @@ final class ItmDateFormatTest extends TestCase
         $this->assertSame('2025-12-29', $bounds['start']);
         $this->assertSame('2026-01-04', $bounds['end']);
     }
+
+    public function testSqlValidDatePredicateAvoidsZeroDateLiteral(): void
+    {
+        $predicate = itm_sql_valid_date_predicate('e.termination_date');
+        $this->assertSame("e.termination_date >= '1970-01-01'", $predicate);
+        $this->assertStringNotContainsString('0000-00-00', $predicate);
+    }
 }
