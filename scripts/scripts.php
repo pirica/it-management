@@ -817,19 +817,19 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="sync_modules_registry.php">sync_modules_registry.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs; then seeds missing <code>company_module_access</code> rows (<code>enabled=1</code>).</td>
+                    <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs.</td>
                     <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression checks for registry coverage, strict opt-in deny behaviour, seeded company × module rows, and sidebar-excluded slugs in the admin matrix list.</td>
+                    <td>Regression checks for registry coverage, opt-out deny behaviour, and sidebar-excluded slugs in the admin matrix list.</td>
                     <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="seed_company_module_access.php">seed_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for all active companies (or one company id argument).</td>
+                    <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (optional explicit rows).</td>
                     <td>CLI: <code>php scripts/seed_company_module_access.php</code> or <code>php scripts/seed_company_module_access.php 3</code> for one company.</td>
                 </tr>
                 <tr>
