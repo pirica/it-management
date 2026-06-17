@@ -6,7 +6,7 @@ This report reviews the IT Management System's API handlers and controller endpo
 
 The system follows a procedural PHP architecture where API endpoints are implemented as standalone scripts, internal AJAX handlers, or embedded within module `index.php` files. Session-based authentication and CSRF protection are widely applied.
 
-The June 2026 review confirmed several critical and high-severity issues (privilege escalation via generic APIs, Explorer upload/RCE and ZIP leak, JSON import tenant scoping, misleading AJAX success responses, and maintenance-tool exposure). **All active findings in the June 2026 catalog are remediated or deferred** — see [`VULNERABILITY_SUMMARY.md`](VULNERABILITY_SUMMARY.md) and [`app---flagged-vulnerabilities.json`](app---flagged-vulnerabilities.json). One item (`reset_git_history.php`) remains **deferred** as accepted BETA risk until production.
+The June 2026 review confirmed several critical and high-severity issues (privilege escalation via generic APIs, Explorer upload/RCE and ZIP leak, JSON import tenant scoping, misleading AJAX success responses, and maintenance-tool exposure). **Those findings are remediated in code**; per-finding markdown reports were removed from `docs/` after fixes landed. One item (`reset_git_history.php`) remains **deferred** as accepted BETA risk until production — see [`vulnerability_report_git_reset.md`](vulnerability_report_git_reset.md).
 
 Remaining work is **follow-up hardening and architecture** (structured read APIs, per-table schema validation for Select Options `extra_fields`, optional RBAC sweep on additional maintenance scripts) — not open vulnerability findings.
 

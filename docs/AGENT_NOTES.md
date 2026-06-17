@@ -6,13 +6,9 @@ Contains system documentation, including architecture diagrams, README images, i
 ## 7. File Structure
 - **readme/** — images used in the main project README.
 - **`file_upload_modules.md`** — canonical map of upload modules, storage paths, and **managed `.htaccess` policy bodies** (`upload`, `deny_http`, `deny_all`). Update when adding upload modules or changing hardening rules.
-- **`app---flagged-vulnerabilities.json`** — machine-readable catalog of June 2026 security findings; `status` is `active`, `remediated`, or `deferred` (git-reset finding deferred as accepted BETA risk).
-- **`VULNERABILITY_SUMMARY.md`** — executive summary of all June 2026 findings (14 remediated, 1 deferred git-reset).
-- **`vulnerability_report_*.md`** — per-finding write-ups; update when code fixes land. **`vulnerability_report_git_reset.md`** tracks deferred BETA status for `reset_git_history.php` (not active remediation).
-- **`vulnerability_report_select_api.md`** — Select Options API privilege-escalation finding; remediation in `includes/itm_select_options_policy.php`.
-- **`API-Auth_Validation_Tenant-Scoping.md`** — API audit; June 2026 findings remediated or deferred; §5.1 lists implemented controls, §5.2 remaining follow-ups only.
-- **`security_audit_report-.md`** — abbreviated deep-dive on first three findings; full catalog in `VULNERABILITY_SUMMARY.md`.
+- **`vulnerability_report_git_reset.md`** — only remaining June 2026 security write-up; deferred BETA status for `reset_git_history.php`. Remediated finding reports were removed after fixes landed; regressions live under `scripts/verify_*.php` and `scripts/repro_*.php`.
+- **`API-Auth_Validation_Tenant-Scoping.md`** — API audit; §5.1 lists implemented controls, §5.2 remaining follow-ups (architecture/hardening only).
 - **PHPUNIT_PLAN.md** — phased plan for expanding PHPUnit HTML coverage (`includes/`, `scripts/`, then module functional pilots). Canonical implementation checklist; see also `phpunit/tests/PREFERENCES.md` and `scripts/SCRIPTS.md`.
 
 ## 12. Module Owner Notes (Optional)
-Refer to this directory for high-level visual understanding of the database schema and request flow. Run listed `php scripts/verify_*.php` and `php scripts/repro_*.php` regressions before changing finding status in JSON or summary docs.
+Refer to this directory for high-level visual understanding of the database schema and request flow. Run listed `php scripts/verify_*.php` and `php scripts/repro_*.php` regressions before changing deferred security docs.
