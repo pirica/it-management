@@ -834,6 +834,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                         <?php else: ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php endif; ?>
+                                    <?php elseif (itm_is_date_field_name($col)): ?><?php echo sanitize(itm_format_date_display($row[$col] ?? '')); ?>
                                     <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?><span data-itm-export-value="<?php echo sanitize((string)($row[$col] ?? '')); ?>"><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a></span>
                                     <?php else: ?><?php echo sanitize((string)$row[$col]); ?>
                                     <?php endif; ?>

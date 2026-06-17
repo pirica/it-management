@@ -235,6 +235,7 @@ define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/user_dropdown_helpers.php';
@@ -1910,6 +1911,12 @@ if (!function_exists('itm_handle_json_table_import')) {
                     if (is_numeric($rawValue)) {
                         $rowValues[$fieldName] = (string)$rawValue;
                     }
+                    continue;
+                }
+
+                $normalizedDate = itm_normalize_sql_date_literal($rawValue, $columnType);
+                if ($normalizedDate !== null) {
+                    $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $normalizedDate) . "'";
                     continue;
                 }
 
