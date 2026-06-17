@@ -104,6 +104,7 @@ $form = [
     'on_orgchart' => (string)($employee['on_orgchart'] ?? '0'),
     'start_date' => (string)($employee['start_date'] ?? ''),
     'employee_type_id' => (string)($employee['employee_type_id'] ?? ''),
+    'termination_date' => (string)($employee['termination_date'] ?? ''),
     'birthday' => (string)($employee['birthday'] ?? ''),
     'hide_year' => (string)($employee['hide_year'] ?? '0'),
     'photo' => (string)($employee['photo'] ?? ''),
@@ -150,6 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assignmentTypeId = $form['assignment_type_id'] === '' ? 'NULL' : (string)(int)$form['assignment_type_id'];
         $startDate = $form['start_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['start_date']) . "'";
         $employeeTypeId = $form['employee_type_id'] === '' ? 'NULL' : (string)(int)$form['employee_type_id'];
+        $terminationDate = $form['termination_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_date']) . "'";
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
         $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
@@ -185,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
             employee_position_id={$employeePositionId}, reports_to={$reportsTo},
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
-            start_date={$startDate}, employee_type_id={$employeeTypeId},
+            start_date={$startDate}, employee_type_id={$employeeTypeId}, termination_date={$terminationDate},
             comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}'
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
 
@@ -313,6 +315,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         </div>
                         <?php include __DIR__ . '/includes/profile_start_date_field.php'; ?>
                         <?php include __DIR__ . '/includes/profile_employee_type_fields.php'; ?>
+                        <?php include __DIR__ . '/includes/profile_termination_date_field.php'; ?>
                         <?php include __DIR__ . '/includes/profile_birthday_fields.php'; ?>
                     </div>
 

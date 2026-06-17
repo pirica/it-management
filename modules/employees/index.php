@@ -592,7 +592,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','request_date','start_date','requested_by','termination_requested_by','termination_date','employment_status_id','employee_type_id','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
+$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
 $hiddenColumns = ['company_id','employee_code','location','location_id','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
@@ -672,6 +672,7 @@ function emp_label($field) {
     if ($field === 'reports_to') return 'Reports To';
     if ($field === 'employment_status_id') return 'Employment Status';
     if ($field === 'employee_type_id') return 'Employee Type';
+    if ($field === 'termination_date') return 'Termination Date';
     if ($field === 'start_date') return 'Start Date';
     if ($field === 'hide_year') return 'Hide Year';
     if ($field === 'workstation_mode_id') return 'Workstation Mode';
