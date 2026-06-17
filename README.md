@@ -81,6 +81,142 @@
 
 <p align="center"><img src="docs/readme/database-diagram.png" alt="Database schema overview" /></p>
 
+<h2 align="center">Database Structure Overview</h2>
+
+<p align="center">Fresh import of <code>database.sql</code> provisions <strong>107 tables</strong> and approximately <strong>3,075 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+
+<h3 align="center">High-level summary</h3>
+
+| Metric | Value |
+| --- | --- |
+| **Tables** | 107 |
+| **Sample rows** | ~3,075 (from <code>database.sql</code>) |
+| **Module folders** | 122 under <code>modules/</code> |
+| **Registry entries** | 127 in <code>modules_registry</code> |
+| **Company × module matrix** | 635 rows (5 seed companies × 127 modules) |
+| **Sidebar preferences** | 540 rows (5 companies × 108 default sidebar items) |
+| **Functional domains** | 12 (see breakdown below) |
+
+<h3 align="center">Domain breakdown</h3>
+
+<p>Tables are grouped by business domain. Each row lists primary tables; companion reference tables and junction tables are included where they belong to the same workflow.</p>
+
+#### Core system and access control
+
+`companies`, `users`, `user_companies`, `user_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `user_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `ui_configuration`, `settings`, `access_levels`
+
+**Purpose:** Identity, RBAC, multi-tenant isolation, per-company module toggles, sidebar layout, audit trail, and system-wide UI configuration.
+
+**Modules:** `companies`, `users`, `user_companies`, `user_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `user_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `settings`, `ui_configuration`, `access_levels`
+
+#### Tickets and support workflow
+
+`tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `attempts`, `alerts`
+
+**Purpose:** Helpdesk lifecycle with categorisation, priority, status, login-attempt tracking, and global/private alerts (ICS import supported).
+
+**Modules:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `attempts`, `alerts`
+
+#### HR and employee management
+
+`employees`, `employee_positions`, `employee_statuses`, `employee_assignment_history`, `employee_onboarding_requests`, `employee_system_access`, `departments`, `assignment_types`
+
+**Purpose:** Employee lifecycle, onboarding, departmental structure, assignment history, and system-access records.
+
+**Modules:** `employees`, `employee_positions`, `employee_statuses`, `employee_assignment_history`, `employee_onboarding_requests`, `employee_system_access`, `departments`, `assignment_types`, `contacts`, `org_chart` (visual hierarchy from `employees.reports_to`), `birthdays` (read-only monthly view from `employees.birthday`)
+
+#### Finance, budgeting, and approvals
+
+`annual_budgets`, `monthly_budgets`, `budget_categories`, `cost_centers`, `gl_accounts`, `forecast_revisions`, `forecast_revisions_status`, `expenses`, `approvals`, `approvals_stage`, `approvers`, `approver_type`
+
+**Purpose:** Budget planning, forecasting, expense tracking, and multi-stage approval workflows for forecast revisions.
+
+**Modules:** `annual_budgets`, `monthly_budgets`, `budget_categories`, `cost_centers`, `gl_accounts`, `forecast_revisions`, `forecast_revisions_status`, `expenses`, `approvals`, `approvals_stage`, `approvers`, `approver_type`, `budget_report` (read-only reporting view)
+
+#### Inventory, assets, and procurement
+
+`equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `patches_updates`, `patches_updates_level`, `patches_updates_status`
+
+**Purpose:** Asset management, procurement catalogues, warranty and patch tracking, and consumable inventory.
+
+**Modules:** `equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `patches_updates`, `patches_updates_level`, `patches_updates_status`, `expiring` (read-only dashboard for warranty/certificate/alert end dates)
+
+**Equipment-type facades** (filter views delegating to `equipment`): `is_printer`, `is_workstation`, `is_server`, `is_switch`, `is_router`, `is_firewall`, `is_access_point`, `is_cctv`, `is_phone`, `is_pos`, `is_port_patch_panel`, `is_other`
+
+**Workstation reference data:** `workstation_device_types`, `workstation_modes`, `workstation_office`, `workstation_os_types`, `workstation_os_versions`, `workstation_ram`, `printer_device_types`
+
+#### Networking, cabling, and IPAM
+
+`racks`, `rack_statuses`, `rack_planner`, `idfs`, `idf_device_type`, `idf_links`, `idf_ports`, `idf_positions`, `switch_ports`, `switch_port_types`, `switch_status`, `switch_port_numbering_layout`, `vlans`, `ip_subnets`, `ip_addresses`, `cable_colors`, `equipment_fiber`, `equipment_fiber_count`, `equipment_fiber_patch`, `equipment_fiber_rack`, `equipment_poe`, `equipment_rj45`, `rj45_speed`
+
+**Purpose:** Datacentre and network topology — racks, IDF layouts, switch ports, fibre/RJ45/POE attributes, VLANs, and IP address management (includes **Network Discovery** TCP scan under IP Subnets).
+
+**Modules:** `racks`, `rack_statuses`, `rack_planner`, `idfs`, `idf_device_type`, `idf_links`, `idf_ports`, `idf_positions`, `switch_ports`, `switch_port_types`, `switch_status`, `switch_port_numbering_layout`, `vlans`, `ip_subnets`, `ip_addresses`, `cable_colors`, `equipment_fiber`, `equipment_fiber_count`, `equipment_fiber_patch`, `equipment_fiber_rack`, `equipment_poe`, `equipment_rj45`, `rj45_speed`
+
+#### Floor plans and location mapping
+
+`floor_plans`, `floor_plan_folders`, `floor_plan_tags`, `floor_plan_item_tags`, `floor_designer`, `floor_designer_points`, `it_locations`, `location_types`
+
+**Purpose:** Visual mapping of physical spaces, nested drawing galleries, interactive floor designer points, and IT location hierarchy.
+
+**Modules:** `floor_plans` (gallery UI for folders/tags/files), `floor_designer`, `floor_designer_points`, `it_locations`, `location_types` — see [Floor Plans gallery](#floor-plans-gallery)
+
+#### Password vault
+
+`password_entries`, `password_folders`
+
+**Purpose:** User-private encrypted password vault with folder hierarchy (no seed rows in a fresh install).
+
+**Modules:** `passwords` (UI for both tables; entries encrypted per user vault key)
+
+#### Notes, bookmarks, and personal productivity
+
+`notes`, `note_labels`, `bookmarks`, `bookmark_folders`, `todo`, `todo_categories`, `private_contacts`
+
+**Purpose:** Personal and shared productivity — labelled notes, hierarchical bookmarks, to-do lists, and user-scoped contacts.
+
+**Modules:** `notes`, `note_labels`, `bookmarks`, `bookmark_folders`, `todo`, `todo_categories`, `private_contacts`
+
+#### Planning, calendar, and events
+
+`events`, `event_categories`
+
+**Purpose:** Company events and categories; the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates.
+
+**Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view)
+
+#### Operations and file storage
+
+`explorer`, `visitors_access_log`, `backup_tape_log`
+
+**Purpose:** Multi-tenant file explorer (`files/{company_id}/`), visitor access logging, and monthly backup-tape grids.
+
+**Modules:** `explorer`, `visitors_access_log`, `backup_tape_log`
+
+<h3 align="center">Table count overview</h3>
+
+| Category | Tables | Sample rows (approx.) |
+| --- | ---: | ---: |
+| Core system and access | 16 | ~1,300+ |
+| Tickets and workflows | 6 | ~100 |
+| HR and employees | 8 | ~70 |
+| Finance and approvals | 12 | ~120 |
+| Inventory and assets | 14 | ~300 |
+| Networking and IPAM | 23 | ~400 |
+| Floor plans and locations | 8 | ~60 |
+| Password vault | 2 | 0 |
+| Notes, bookmarks, productivity | 6 | ~5 |
+| Planning and events | 2 | ~10 |
+| Operations | 3 | ~15 |
+| Workstation reference | 7 | ~280 |
+| **Total** | **107** | **~3,075** |
+
+<h3 align="center">What this means</h3>
+
+<p align="center">The database is deliberately modular rather than monolithic. It reflects a full enterprise operations platform — multi-company SaaS, infrastructure and asset management, helpdesk and workflows, budgeting with approvals, user personalisation, and secure password vaulting — not a simple single-table CRUD application.</p>
+
+<p align="center">Every feature module under <code>modules/</code> maps to one or more tables (or read-only aggregates of existing tables). The global catalogue lives in <code>modules_registry</code>; per-tenant visibility is enforced through <code>company_module_access</code> and <code>has_module_access()</code> — see <a href="#company-module-access-management">Company Module Access Management</a>.</p>
+
 <h2 align="center">Company Module Access Management</h2>
 
 <p align="center">Per-company module visibility: administrators enable or disable modules per tenant. Central enforcement runs from <code>config/config.php</code> via <code>has_module_access()</code>; the admin matrix lists every registry row (including hidden and system modules).</p>
@@ -117,38 +253,109 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 
 <h2 align="center">Modules</h2>
 
+<p align="center">122 module folders under <code>modules/</code> (127 registry entries — some tables share a UI module or are reference-only). Paths follow <code>modules/&lt;slug&gt;/</code>. Standard CRUD modules include <code>index.php</code>, <code>create.php</code>, <code>edit.php</code>, <code>delete.php</code>, <code>view.php</code>, and <code>list_all.php</code>.</p>
 
-- Equipment — Manage IT equipment with Switch Port Manager
-- IDFs — Rack layout, positions, ports, and cable links
-- IPAM — VLANs, IP subnets (CIDR), and IP addresses linked to equipment (includes **Network Discovery** TCP scan under IP Subnets)
-- Rack planner — Visual rack elevation and component placement
-- Floor Plans — Image/PDF/CAD gallery with nested folders, tags, optional IT Location link, and drag-and-drop moves ([details](#floor-plans-gallery))
-- Explorer — Advanced web-based file explorer with Common, Department, and Private storage areas
-- Printers — Track printers and supplies
-- Workstations — Manage workstations
-- Tickets — Support ticket system
-- Inventory — Track supplies
-- Users — User management
-- Departments — Department management
-- Contacts — Resume of all contacts with inline editing
-- Private Contacts — Private, user-scoped contact management with photo uploads and detailed fields
-- Employees — Employee tracking with hierarchy and reporting lines
-- Org Chart — Visual, interactive organizational structure diagram
-- Companies — Multi-company support
-- Company Module Access — Admin matrix to enable/disable modules per company ([architectural map](#company-module-access-management))
-- Budgeting — Annual/Monthly Budgets, Forecasts, Expenses and Reports
-- Planning — Shared Calendar and Events management
-- Visitors Access Log — Track manual entry logs of visitors with inline editing and auto-timestamps
-- Backup Tape Log — Monthly grid view to track server backup tapes with auto-populated day/tape names and restricted ISM review.
-- Audit Logs — Essential for compliance and debugging
-- Passwords — Secure private password manager with vault encryption, folder hierarchy, and Password generator with csv and others import/export
-- Bookmarks — Shared Bookmarks and private, with csv and others import/export    
-- To-Do — Manage global and private tasks with importance and completion tracking
-- Alerts — Manage global and private alerts with ICS import support
+<h3 align="center">Core and administration</h3>
 
+| Module | Path | Summary |
+| --- | --- | --- |
+| Companies | `modules/companies/` | Multi-company tenant management |
+| Users | `modules/users/` | User accounts and authentication |
+| User Companies | `modules/user_companies/` | User-to-company membership |
+| User Roles | `modules/user_roles/` | Role definitions per company |
+| Role Hierarchy | `modules/role_hierarchy/` | Role ordering and inheritance |
+| Role Module Permissions | `modules/role_module_permissions/` | Per-role module CRUD rights |
+| Role Assignment Rights | `modules/role_assignment_rights/` | Who may assign which roles |
+| System Access | `modules/system_access/` | System-level access records |
+| Company Module Access | `modules/company_module_access/` | Per-company module enable/disable matrix ([architectural map](#company-module-access-management)) |
+| Settings | `modules/settings/` | UI configuration, API tier, and global toggles |
+| UI Configuration | `modules/ui_configuration/` | Per-user layout and integration settings |
+| Access Levels | `modules/access_levels/` | Access-level reference data |
+| Modules Registry | `modules/modules_registry/` | Global module catalogue |
+| Audit Logs | `modules/audit_logs/` | Compliance and change-history centre |
+| Registration Invitations | `modules/registration_invitations/` | Self-service registration invites |
+| User Sidebar Preferences | `modules/user_sidebar_preferences/` | Per-user sidebar layout overrides |
 
+<h3 align="center">Assets, equipment, and inventory</h3>
 
+| Module | Path | Summary |
+| --- | --- | --- |
+| Equipment | `modules/equipment/` | Core asset records with Switch Port Manager |
+| Equipment Types / Statuses / Environment | `modules/equipment_types/`, `equipment_statuses/`, `equipment_environment/` | Reference data for assets |
+| Catalogs | `modules/catalogs/` | Product catalogue (models, prices, images) for procurement and rack planner |
+| Manufacturers / Suppliers | `modules/manufacturers/`, `suppliers/`, `supplier_statuses/` | Vendor reference data |
+| Inventory | `modules/inventory_categories/`, `inventory_items/` | Consumable and supply tracking |
+| Warranty Types | `modules/warranty_types/` | Warranty classification |
+| Patches & Updates | `modules/patches_updates/`, `patches_updates_level/`, `patches_updates_status/` | Patch/update tracking on equipment |
+| Expiring | `modules/expiring/` | Read-only dashboard for upcoming warranty, certificate, and alert expirations |
+| **Type facades** | `modules/is_printer/`, `is_workstation/`, `is_server/`, `is_switch/`, `is_router/`, `is_firewall/`, `is_access_point/`, `is_cctv/`, `is_phone/`, `is_pos/`, `is_port_patch_panel/`, `is_other/` | Filtered equipment views by device class |
+| **Workstation refs** | `modules/workstation_device_types/`, `workstation_modes/`, `workstation_office/`, `workstation_os_types/`, `workstation_os_versions/`, `workstation_ram/`, `printer_device_types/` | Workstation and printer attribute lookups |
 
+<h3 align="center">Networking, racks, and IPAM</h3>
+
+| Module | Path | Summary |
+| --- | --- | --- |
+| IDFs | `modules/idfs/` | Rack layout, positions, ports, and cable links |
+| IDF sub-modules | `idf_device_type/`, `idf_links/`, `idf_ports/`, `idf_positions/` | IDF reference and port/link data |
+| Racks / Rack Statuses | `modules/racks/`, `rack_statuses/` | Physical rack records |
+| Rack Planner | `modules/rack_planner/` | Drag-and-drop rack elevation (syncs prices to catalogs/equipment/IDF positions) |
+| Switch Ports | `modules/switch_ports/`, `switch_port_types/`, `switch_status/`, `switch_port_numbering_layout/` | Switch port inventory and status |
+| Cabling attributes | `modules/cable_colors/`, `equipment_fiber/`, `equipment_fiber_count/`, `equipment_fiber_patch/`, `equipment_fiber_rack/`, `equipment_poe/`, `equipment_rj45/`, `rj45_speed/` | Fibre, RJ45, POE, and colour reference |
+| IPAM | `modules/vlans/`, `ip_subnets/`, `ip_addresses/` | VLANs, CIDR subnets, and IP inventory (**Network Discovery** under IP Subnets) |
+
+<h3 align="center">Floor plans and locations</h3>
+
+| Module | Path | Summary |
+| --- | --- | --- |
+| Floor Plans | `modules/floor_plans/` | Image/PDF/CAD gallery with nested folders, tags, and drag-and-drop ([details](#floor-plans-gallery)) |
+| Floor Designer | `modules/floor_designer/`, `floor_designer_points/` | Interactive floor layout points |
+| IT Locations / Location Types | `modules/it_locations/`, `location_types/` | Site and location hierarchy |
+
+<h3 align="center">HR, contacts, and org structure</h3>
+
+| Module | Path | Summary |
+| --- | --- | --- |
+| Departments | `modules/departments/` | Department management |
+| Employees | `modules/employees/` | Employee records, import, and reporting lines |
+| Employee refs | `employee_positions/`, `employee_statuses/`, `employee_assignment_history/`, `employee_onboarding_requests/`, `employee_system_access/`, `assignment_types/` | Positions, status, history, onboarding, and access |
+| Contacts | `modules/contacts/` | Company-wide contact directory with inline editing |
+| Private Contacts | `modules/private_contacts/` | User-scoped contacts with photo uploads |
+| Org Chart | `modules/org_chart/` | Visual hierarchy with drag-and-drop reporting lines |
+| Birthdays | `modules/birthdays/` | Read-only monthly birthday list from employee records |
+
+<h3 align="center">Finance and budgeting</h3>
+
+| Module | Path | Summary |
+| --- | --- | --- |
+| Annual / Monthly Budgets | `modules/annual_budgets/`, `monthly_budgets/` | Budget planning by period |
+| Budget Categories / Cost Centers / GL Accounts | `budget_categories/`, `cost_centers/`, `gl_accounts/` | Financial reference data |
+| Forecast Revisions | `forecast_revisions/`, `forecast_revisions_status/` | Forecast versioning |
+| Expenses | `modules/expenses/` | Expense tracking |
+| Approvals workflow | `approvals/`, `approvals_stage/`, `approvers/`, `approver_type/` | Multi-stage approval for forecast revisions |
+| Budget Report | `modules/budget_report/` | Read-only budget reporting view |
+
+<h3 align="center">Tickets, alerts, and operations</h3>
+
+| Module | Path | Summary |
+| --- | --- | --- |
+| Tickets | `modules/tickets/` | Support ticket system |
+| Ticket refs | `ticket_categories/`, `ticket_priorities/`, `ticket_statuses/` | Category, priority, and status lookups |
+| Attempts | `modules/attempts/` | Login attempt tracking |
+| Alerts | `modules/alerts/` | Global and private alerts with ICS import |
+| Visitors Access Log | `modules/visitors_access_log/` | Manual visitor entry logs with immutability rules |
+| Backup Tape Log | `modules/backup_tape_log/` | Monthly server backup tape grid |
+
+<h3 align="center">Productivity, files, and planning</h3>
+
+| Module | Path | Summary |
+| --- | --- | --- |
+| Explorer | `modules/explorer/` | Multi-tenant file explorer (Common, Departments, Private, Trash) |
+| Passwords | `modules/passwords/` | Encrypted private vault with folders and import/export |
+| Bookmarks | `modules/bookmarks/`, `bookmark_folders/` | Private/shared links with folder tree and drag-and-drop |
+| Notes | `modules/notes/`, `note_labels/` | Labelled personal notes |
+| To-Do | `modules/todo/`, `todo_categories/` | Global and private tasks |
+| Calendar | `modules/calendar/` | Aggregated view of alerts, events, tickets, and equipment expiries |
+| Events | `modules/events/`, `event_categories/` | Company events and categories |
 
 <h2 align="center">Floor Plans gallery</h2>
 
