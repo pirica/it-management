@@ -227,12 +227,24 @@ if (!function_exists('itm_list_all_modules_registry')) {
         $rows = [];
         $sql = 'SELECT id, module_slug, module_name, is_system_module, active, created_at, updated_at
                 FROM modules_registry
-                ORDER BY module_name ASC, module_slug ASC';
+                ORDER BY module_slug ASC';
         $res = mysqli_query($conn, $sql);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
             $rows[] = $row;
         }
         return $rows;
+    }
+}
+
+if (!function_exists('itm_module_access_strip_catalog_label_prefix')) {
+    function itm_module_access_strip_catalog_label_prefix($label)
+    {
+        $label = trim((string)$label);
+        if ($label === '') {
+            return '';
+        }
+        // Why: Sidebar labels include emoji (e.g. hourglass ⏳) that sort after letters in MySQL ASC order.
+        return preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2300}-\x{23FF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', $label);
     }
 }
 
@@ -296,7 +308,7 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
         foreach (itm_discover_module_slugs_for_registry() as $slug) {
             $label = $catalogLabels[$slug] ?? '';
             if ($label !== '') {
-                $label = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', $label);
+                $label = itm_module_access_strip_catalog_label_prefix($label);
             }
             if ($label === '') {
                 $label = itm_module_access_default_label($slug);
