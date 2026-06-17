@@ -49,6 +49,11 @@
         "crud_table": "backup_tape_log",
         "is_standard": true
     },
+    "ops_report": {
+        "path": "modules/ops_report",
+        "crud_table": "ops_report",
+        "is_standard": false
+    },
     "budget_categories": {
         "path": "modules/budget_categories",
         "crud_table": "budget_categories",

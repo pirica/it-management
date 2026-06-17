@@ -555,6 +555,14 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks.
 
+### Ops Report scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
+
+Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
+
 #### 5. Pre-merge verification (scripts)
 
 When adding or changing anything under `scripts/`:
