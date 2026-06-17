@@ -3,6 +3,8 @@
  * Private contact photo storage under files/{company_id}/Private/{username}_{user_id}/private_contacts/.
  */
 
+require_once ROOT_PATH . 'includes/itm_profile_photo_upload.php';
+
 if (!function_exists('pc_contact_photo_serve_url')) {
     function pc_contact_photo_serve_url(array $contact)
     {
@@ -17,56 +19,28 @@ if (!function_exists('pc_contact_photo_serve_url')) {
     }
 }
 
-if (!function_exists('pc_contact_photo_resolve_extension')) {
-    /**
-     * Resolve png/jpg from finfo MIME and original filename (Windows may report image/pjpeg).
-     *
-     * @return string|null png|jpg or null when not an allowed profile photo
-     */
-    function pc_contact_photo_resolve_extension($tmpPath, $originalName)
-    {
-        $mime = '';
-        if (is_string($tmpPath) && $tmpPath !== '' && is_file($tmpPath)) {
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = strtolower((string)$finfo->file($tmpPath));
-        }
-
-        if ($mime === 'image/png') {
-            return 'png';
-        }
-        if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/pjpeg'], true)) {
-            return 'jpg';
-        }
-
-        // Why: Some hosts return application/octet-stream for valid JPEG uploads.
-        $lowerName = strtolower((string)$originalName);
-        if (preg_match('/\.png$/', $lowerName)) {
-            return 'png';
-        }
-        if (preg_match('/\.jpe?g$/', $lowerName)) {
-            return 'jpg';
-        }
-
-        return null;
-    }
-}
-
 if (!function_exists('pc_contact_photo_store_upload')) {
     /**
-     * @return string Stored filename or previous filename when upload skipped/failed
+     * @return array{ok:bool,filename:string,error:string}
      */
     function pc_contact_photo_store_upload(array $file, $contactId, $companyId, $username, $userId, $existingFilename = '', $confirmReplace = false)
     {
-        if (!isset($file['error']) || (int)$file['error'] !== UPLOAD_ERR_OK) {
-            return (string)$existingFilename;
+        $existingFilename = (string)$existingFilename;
+        $uploadError = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($uploadError === UPLOAD_ERR_NO_FILE) {
+            return ['ok' => true, 'filename' => $existingFilename, 'error' => ''];
+        }
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Photo upload failed.'];
         }
 
-        $ext = pc_contact_photo_resolve_extension(
+        $ext = itm_profile_photo_allowed_extension(
             (string)($file['tmp_name'] ?? ''),
-            (string)($file['name'] ?? '')
+            (string)($file['name'] ?? ''),
+            (string)($file['type'] ?? '')
         );
         if ($ext === null) {
-            return (string)$existingFilename;
+            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Only PNG and JPG profile photos are allowed.'];
         }
 
         $contactId = (int)$contactId;
@@ -74,7 +48,7 @@ if (!function_exists('pc_contact_photo_store_upload')) {
         $userId = (int)$userId;
         $username = (string)$username;
         if ($contactId <= 0 || $companyId <= 0 || $userId <= 0 || $username === '') {
-            return (string)$existingFilename;
+            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Could not prepare private contact photo folder.'];
         }
 
         $photoFilename = $contactId . '_photo.' . $ext;
@@ -82,11 +56,11 @@ if (!function_exists('pc_contact_photo_store_upload')) {
         $targetPath = $dir . '/' . $photoFilename;
 
         if ($existingFilename !== '' && is_file($targetPath) && !$confirmReplace) {
-            return (string)$existingFilename;
+            return ['ok' => true, 'filename' => $existingFilename, 'error' => ''];
         }
 
         if (!itm_ensure_files_storage_directory($dir)) {
-            return (string)$existingFilename;
+            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Could not prepare private contact photo folder.'];
         }
 
         foreach (['png', 'jpg'] as $oldExt) {
@@ -96,10 +70,10 @@ if (!function_exists('pc_contact_photo_store_upload')) {
             }
         }
 
-        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            return $photoFilename;
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Could not save profile photo.'];
         }
 
-        return (string)$existingFilename;
+        return ['ok' => true, 'filename' => $photoFilename, 'error' => ''];
     }
 }

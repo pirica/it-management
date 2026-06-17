@@ -39,7 +39,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Do not reuse company contacts visibility rules — this module is user-private only.
 - Photo paths must stay inside the user's Private explorer segment.
 - Do not drop `user_id` from DELETE/WHERE clauses.
-- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; accept PNG and JPG only. MIME resolution uses `pc_contact_photo_resolve_extension()` (supports `image/jpeg`, `image/jpg`, `image/pjpeg`, plus `.png`/`.jpg`/`.jpeg` filename fallback when finfo is generic).
+- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; accept PNG and JPG only (same contract as employees). Type resolution uses shared `itm_profile_photo_allowed_extension()` from `includes/itm_profile_photo_upload.php` (`getimagesize`, finfo MIME, browser `type`, `.png`/`.jpg`/`.jpeg` filename fallback). Upload failures surface `photo_error` on create/edit redirects instead of failing silently.
 
 ## 11. Examples of Safe Code Patterns
 

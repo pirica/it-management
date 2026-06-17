@@ -25,17 +25,23 @@ if (!$contact) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $photo = $contact['photo'];
-    if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $photo = pc_contact_photo_store_upload(
+    $photo = (string)($contact['photo'] ?? '');
+    $photoError = '';
+    if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $photoResult = pc_contact_photo_store_upload(
             $_FILES['photo'],
             $id,
             $companyId,
             $username,
             $userId,
-            (string)($contact['photo'] ?? ''),
+            $photo,
             (($_POST['confirm_replace'] ?? '0') === '1')
         );
+        if ($photoResult['ok'] ?? false) {
+            $photo = (string)($photoResult['filename'] ?? $photo);
+        } elseif (($photoResult['error'] ?? '') !== '') {
+            $photoError = (string)$photoResult['error'];
+        }
     }
 
     $sql = "UPDATE private_contacts SET
@@ -68,7 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if ($stmt->execute()) {
-        header("Location: view.php?id=$id&msg=updated");
+        $redirect = 'view.php?id=' . $id . '&msg=updated';
+        if ($photoError !== '') {
+            $redirect .= '&photo_error=' . rawurlencode($photoError);
+        }
+        header('Location: ' . $redirect);
     } else {
         echo "Error: " . $stmt->error;
     }
