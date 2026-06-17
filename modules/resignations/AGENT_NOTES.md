@@ -24,7 +24,7 @@ Read-only weekly resignation report for the active company. Data is sourced from
 - **index.php only** — no create/edit/delete handlers.
 - Filter card: Week, Month, Year, Employment Status multi-select, Employee Type multi-select, Search (all fields). Control card uses `data-itm-no-export-pdf` and `data-itm-no-export-excel`.
 - Table columns: ID TM (`external_id`), Name, Team member / Internship (`employee_type.name_type`), Department, Admission date (`start_date`), Last work day (`termination_date`), Official Resignation Week.
-- Header actions: **Birthdays**, **Employees**.
+- Header action: **Employees** (Birthdays remains in the sidebar only).
 - Sidebar: `📋 Resignations` in Employee section (`includes/ui_config.php`).
 
 ## 6. API Actions (If Applicable)
