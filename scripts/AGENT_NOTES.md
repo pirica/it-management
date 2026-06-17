@@ -29,6 +29,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **apitest_tier_free.php** / **apitest_tier_basic.php** — disposable `ui_configuration` tier rate-limit regressions; Free HTTP probe publishes CLI `PHPSESSID` via **`scripts/lib/itm_api_tier_test_helpers.php`** (`itm_apitest_publish_http_session()`).
 - **verify_company_module_access.php** — registry/CMA regression plus sidebar discovery probes (registry-only, new MySQL table, folder-only, both, neither); PHPUnit wrapper: `phpunit/tests/Unit/Scripts/CompanyModuleAccessVerifyTest.php`.
 - **verify_ops_report.php** — D-2 edit lock, `ops_report` CRUD, cascade delete, registry row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest`.
+- **count_db_tables.php** — counts live `information_schema` tables for `itmanagement`, echoes the total, and overwrites `scripts/number_db_tables.txt`. Browser and CLI; no login (`ITM_SCRIPT_NO_AUTH` allowlist in `config/config.php`).
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI utility to authenticate as Admin without the UI.
