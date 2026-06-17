@@ -8,6 +8,56 @@ $isCli = (php_sapi_name() === 'cli');
 $nl = itm_script_output_nl();
 $failures = 0;
 
+/**
+ * @return void
+ */
+function itm_verify_sidebar_probe_cleanup($conn, $slug)
+{
+    $slug = trim((string)$slug);
+    if ($slug === '' || !$conn instanceof mysqli) {
+        return;
+    }
+
+    $moduleId = 0;
+    $stmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $slug);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        $moduleId = (int)($row['id'] ?? 0);
+        mysqli_stmt_close($stmt);
+    }
+    if ($moduleId > 0) {
+        $stmtDeleteAccess = mysqli_prepare($conn, 'DELETE FROM company_module_access WHERE module_id = ?');
+        if ($stmtDeleteAccess) {
+            mysqli_stmt_bind_param($stmtDeleteAccess, 'i', $moduleId);
+            mysqli_stmt_execute($stmtDeleteAccess);
+            mysqli_stmt_close($stmtDeleteAccess);
+        }
+        $stmtDeleteRegistry = mysqli_prepare($conn, 'DELETE FROM modules_registry WHERE id = ? LIMIT 1');
+        if ($stmtDeleteRegistry) {
+            mysqli_stmt_bind_param($stmtDeleteRegistry, 'i', $moduleId);
+            mysqli_stmt_execute($stmtDeleteRegistry);
+            mysqli_stmt_close($stmtDeleteRegistry);
+        }
+    }
+
+    if (itm_is_safe_identifier($slug)) {
+        mysqli_query($conn, 'DROP TABLE IF EXISTS `' . $slug . '`');
+    }
+
+    $moduleDir = ROOT_PATH . 'modules/' . $slug;
+    if (is_dir($moduleDir)) {
+        foreach (glob($moduleDir . '/*.php') ?: [] as $phpFile) {
+            if (is_file($phpFile)) {
+                unlink($phpFile);
+            }
+        }
+        @rmdir($moduleDir);
+    }
+}
+
 if (!$isCli) {
     itm_script_browser_nav_echo();
     echo '<h1>Verify Company Module Access</h1>';
@@ -132,6 +182,164 @@ if ($ticketsModuleId > 0 && itm_set_company_module_icon($conn, 1, $ticketsModule
 } else {
     echo '[FAIL] Could not set company module icon for tickets verification.' . $nl;
     $failures++;
+}
+
+$probeSlug = 'mbqa_sidebar_discovery_probe';
+itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+
+// Registry-only: active modules_registry row without modules/{slug}/index.php.
+$probeModuleId = 0;
+$probeName = 'MBQA Sidebar Probe';
+$stmtProbeInsert = mysqli_prepare(
+    $conn,
+    'INSERT INTO modules_registry (module_slug, module_name, icon, is_system_module, active) VALUES (?, ?, ?, 0, 1)'
+);
+if ($stmtProbeInsert) {
+    $probeIcon = '';
+    mysqli_stmt_bind_param($stmtProbeInsert, 'sss', $probeSlug, $probeName, $probeIcon);
+    if (mysqli_stmt_execute($stmtProbeInsert)) {
+        $probeModuleId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtProbeInsert);
+}
+if ($probeModuleId > 0) {
+    itm_seed_company_module_access_for_module($conn, $probeModuleId);
+    $probeIndex = ROOT_PATH . 'modules/' . $probeSlug . '/index.php';
+    if (is_file($probeIndex)) {
+        echo '[FAIL] Registry-only probe should not require modules/' . $probeSlug . '/index.php.' . $nl;
+        $failures++;
+    } elseif (!itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
+        echo '[FAIL] Registry-only probe missing from sidebar structure.' . $nl;
+        $failures++;
+    } elseif (!has_module_access($conn, 1, $probeSlug)) {
+        echo '[FAIL] Registry-only probe denied by has_module_access after CMA seed.' . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] Registry-only probe appears in sidebar structure without module folder.' . $nl;
+    }
+} else {
+    echo '[FAIL] Could not insert registry-only sidebar probe row.' . $nl;
+    $failures++;
+}
+itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+
+// MySQL table only: SHOW TABLES discovery auto-scaffolds module folder and registry row.
+$probeTableSql = 'CREATE TABLE `' . $probeSlug . '` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `company_id` INT NOT NULL,
+    `active` TINYINT DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+if (!mysqli_query($conn, $probeTableSql)) {
+    echo '[FAIL] Could not create sidebar probe table.' . $nl;
+    $failures++;
+} else {
+    itm_sidebar_structure($conn, true);
+    $probeIndex = ROOT_PATH . 'modules/' . $probeSlug . '/index.php';
+    if (!is_file($probeIndex)) {
+        echo '[FAIL] Table-only probe did not auto-scaffold modules/' . $probeSlug . '/index.php.' . $nl;
+        $failures++;
+    } elseif (!itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
+        echo '[FAIL] Table-only probe missing from sidebar structure.' . $nl;
+        $failures++;
+    } elseif (!has_module_access($conn, 1, $probeSlug)) {
+        echo '[FAIL] Table-only probe denied by has_module_access after auto registry ensure.' . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] New MySQL table probe auto-scaffolds module folder and sidebar access.' . $nl;
+    }
+}
+itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+
+// Folder only: modules/{slug}/index.php without a pre-existing registry row.
+$probeModuleDir = ROOT_PATH . 'modules/' . $probeSlug;
+if (!is_dir($probeModuleDir) && !mkdir($probeModuleDir, 0775, true) && !is_dir($probeModuleDir)) {
+    echo '[FAIL] Could not create folder-only sidebar probe module directory.' . $nl;
+    $failures++;
+} else {
+    $probeStub = "<?php\n"
+        . '$crud_table = ' . var_export($probeSlug, true) . ";\n"
+        . '$crud_title = ' . var_export('MBQA Sidebar Probe', true) . ";\n"
+        . '$crud_action = ' . var_export('index', true) . ";\n"
+        . "require __DIR__ . '/../manufacturers/index.php';\n";
+    if (file_put_contents($probeModuleDir . '/index.php', $probeStub) === false) {
+        echo '[FAIL] Could not write folder-only sidebar probe index.php.' . $nl;
+        $failures++;
+    } else {
+        itm_sidebar_structure($conn, true);
+        if (!itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
+            echo '[FAIL] Folder-only probe missing from sidebar structure.' . $nl;
+            $failures++;
+        } elseif (!has_module_access($conn, 1, $probeSlug)) {
+            echo '[FAIL] Folder-only probe denied by has_module_access after auto registry ensure.' . $nl;
+            $failures++;
+        } else {
+            echo '[PASS] Folder-only probe appears in sidebar after auto registry ensure.' . $nl;
+        }
+    }
+}
+itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+
+// Both registry row and modules/{slug}/index.php: single sidebar entry with access.
+$probeModuleId = 0;
+$probeName = 'MBQA Sidebar Probe';
+$stmtBothRegistry = mysqli_prepare(
+    $conn,
+    'INSERT INTO modules_registry (module_slug, module_name, icon, is_system_module, active) VALUES (?, ?, ?, 0, 1)'
+);
+if ($stmtBothRegistry) {
+    $probeIcon = '';
+    mysqli_stmt_bind_param($stmtBothRegistry, 'sss', $probeSlug, $probeName, $probeIcon);
+    if (mysqli_stmt_execute($stmtBothRegistry)) {
+        $probeModuleId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtBothRegistry);
+}
+$probeModuleDir = ROOT_PATH . 'modules/' . $probeSlug;
+if ($probeModuleId <= 0) {
+    echo '[FAIL] Could not insert registry row for both-path sidebar probe.' . $nl;
+    $failures++;
+} elseif (!is_dir($probeModuleDir) && !mkdir($probeModuleDir, 0775, true) && !is_dir($probeModuleDir)) {
+    echo '[FAIL] Could not create module folder for both-path sidebar probe.' . $nl;
+    $failures++;
+} else {
+    $probeStub = "<?php\n"
+        . '$crud_table = ' . var_export($probeSlug, true) . ";\n"
+        . '$crud_title = ' . var_export('MBQA Sidebar Probe', true) . ";\n"
+        . '$crud_action = ' . var_export('index', true) . ";\n"
+        . "require __DIR__ . '/../manufacturers/index.php';\n";
+    if (file_put_contents($probeModuleDir . '/index.php', $probeStub) === false) {
+        echo '[FAIL] Could not write index.php for both-path sidebar probe.' . $nl;
+        $failures++;
+    } else {
+        itm_seed_company_module_access_for_module($conn, $probeModuleId);
+        itm_sidebar_structure($conn, true);
+        $probeCount = itm_sidebar_structure_slug_count($conn, $probeSlug, true);
+        if ($probeCount !== 1) {
+            echo '[FAIL] Both-path probe should appear exactly once in sidebar (found ' . $probeCount . ').' . $nl;
+            $failures++;
+        } elseif (!has_module_access($conn, 1, $probeSlug)) {
+            echo '[FAIL] Both-path probe denied by has_module_access.' . $nl;
+            $failures++;
+        } else {
+            echo '[PASS] Registry + folder probe appears once in sidebar with access.' . $nl;
+        }
+    }
+}
+itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+
+// Neither registry nor folder/table: absent from sidebar and denied.
+itm_verify_sidebar_probe_cleanup($conn, $probeSlug);
+if (itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
+    echo '[FAIL] Neither-path probe should be absent from sidebar structure.' . $nl;
+    $failures++;
+} elseif (has_module_access($conn, 1, $probeSlug)) {
+    echo '[FAIL] Neither-path probe should be denied by has_module_access.' . $nl;
+    $failures++;
+} else {
+    echo '[PASS] Neither-path probe absent from sidebar and denied.' . $nl;
 }
 
 if ($failures > 0) {

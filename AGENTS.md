@@ -380,6 +380,7 @@ The `company_module_access` module lets administrators (`itm_is_admin()`) enable
 9. **Regression scripts:** `php scripts/sync_modules_registry.php`, `php scripts/verify_company_module_access.php`.
 10. **Sidebar emoji precedence:** Settings per-user `module_icon_overrides` on `ui_configuration` → `company_module_access.icon` (matrix) → `modules_registry.icon` → `itm_sidebar_item_catalog()` fallback. `includes/sidebar.php` renders labels via `itm_resolve_module_sidebar_label()`; icons stay separate from `module_name` for stable matrix sort (`module_slug ASC`).
 11. **Sidebar discovery from registry:** active `modules_registry` rows are merged into `itm_sidebar_structure()` for SideMenu and the live sidebar without requiring `modules/{slug}/index.php`. Enable the module per company in the matrix (`company_module_access.enabled = 1`) for non-admin users. Opening the link still needs a real module folder for CRUD.
+12. **Sidebar discovery paths (all auto-register):** `itm_sidebar_structure()` discovers modules from (a) `modules/{slug}/index.php`, (b) new MySQL tables via `SHOW TABLES` + `itm_auto_create_module_scaffold()`, and (c) active `modules_registry` rows. `itm_ensure_registry_rows_for_module_slugs()` upserts missing `modules_registry` + `company_module_access` rows during discovery so new tables and folders appear in the live sidebar without visiting Company Module Access or running sync first.
 
 #### Bulk delete toolbar and Cancel button (mandatory)
 

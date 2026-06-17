@@ -823,7 +823,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression checks for registry coverage, opt-out deny behaviour, and sidebar-excluded slugs in the admin matrix list.</td>
+                    <td>Regression checks for registry coverage, opt-out deny behaviour, sidebar-excluded slugs in the admin matrix list, and sidebar discovery probes (registry-only, new MySQL table, folder-only).</td>
                     <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code></td>
                 </tr>
                 <tr>

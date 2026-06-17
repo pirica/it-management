@@ -561,6 +561,74 @@ if (!function_exists('itm_discover_module_slugs_for_registry')) {
     }
 }
 
+if (!function_exists('itm_ensure_registry_rows_for_module_slugs')) {
+    function itm_ensure_registry_rows_for_module_slugs($conn, array $slugs)
+    {
+        if (!$conn instanceof mysqli || !itm_module_access_table_exists($conn, 'modules_registry')) {
+            return 0;
+        }
+
+        itm_ensure_module_access_icon_columns($conn);
+
+        $inserted = 0;
+        $systemSlugs = itm_module_access_system_slugs();
+
+        foreach ($slugs as $slug) {
+            $slug = trim((string)$slug);
+            if ($slug === '') {
+                continue;
+            }
+            if (function_exists('itm_sidebar_module_is_hidden') && itm_sidebar_module_is_hidden($slug)) {
+                continue;
+            }
+            if (itm_module_access_registry_row($conn, $slug) !== null) {
+                continue;
+            }
+
+            // Why: Do not call itm_sidebar_item_catalog() here — it re-enters itm_sidebar_structure() mid-build.
+            $label = '';
+            if (function_exists('itm_sidebar_module_default_label')) {
+                $defaultLabel = itm_sidebar_module_default_label($slug);
+                if ($defaultLabel !== null && $defaultLabel !== '') {
+                    $label = function_exists('itm_module_access_strip_catalog_label_prefix')
+                        ? itm_module_access_strip_catalog_label_prefix($defaultLabel)
+                        : $defaultLabel;
+                }
+            }
+            if ($label === '') {
+                $label = itm_module_access_default_label($slug);
+            }
+
+            $catalogIcon = itm_module_access_normalize_icon('');
+
+            $isSystem = in_array($slug, $systemSlugs, true) ? 1 : 0;
+            if ($slug === 'company_module_access') {
+                $isSystem = 1;
+            }
+
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO modules_registry (module_slug, module_name, icon, is_system_module, active)
+                 VALUES (?, ?, ?, ?, 1)'
+            );
+            if (!$stmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($stmt, 'sssi', $slug, $label, $catalogIcon, $isSystem);
+            if (mysqli_stmt_execute($stmt)) {
+                $newId = (int)mysqli_insert_id($conn);
+                $inserted++;
+                if ($newId > 0 && function_exists('itm_seed_company_module_access_for_module')) {
+                    itm_seed_company_module_access_for_module($conn, $newId);
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        return $inserted;
+    }
+}
+
 if (!function_exists('itm_merge_registry_modules_into_sidebar_discovery')) {
     function itm_merge_registry_modules_into_sidebar_discovery($conn, &$moduleNames, $existingItemIds)
     {
