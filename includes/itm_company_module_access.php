@@ -561,6 +561,41 @@ if (!function_exists('itm_discover_module_slugs_for_registry')) {
     }
 }
 
+if (!function_exists('itm_merge_registry_modules_into_sidebar_discovery')) {
+    function itm_merge_registry_modules_into_sidebar_discovery($conn, &$moduleNames, $existingItemIds)
+    {
+        if (!$conn instanceof mysqli || !itm_module_access_table_exists($conn, 'modules_registry')) {
+            return;
+        }
+
+        foreach (itm_list_all_modules_registry($conn) as $registryRow) {
+            if ((int)($registryRow['active'] ?? 0) !== 1) {
+                continue;
+            }
+            $slug = trim((string)($registryRow['module_slug'] ?? ''));
+            if ($slug === '' || isset($existingItemIds[$slug]) || isset($moduleNames[$slug])) {
+                continue;
+            }
+            if (function_exists('itm_sidebar_module_is_hidden') && itm_sidebar_module_is_hidden($slug)) {
+                continue;
+            }
+
+            $registryName = trim((string)($registryRow['module_name'] ?? ''));
+            if ($registryName === '') {
+                $registryName = function_exists('itm_module_access_default_label')
+                    ? itm_module_access_default_label($slug)
+                    : ucwords(str_replace('_', ' ', $slug));
+            }
+
+            $moduleNames[$slug] = [
+                'emoji' => trim((string)($registryRow['icon'] ?? '')),
+                'registry_name' => $registryName,
+                'from_registry' => true,
+            ];
+        }
+    }
+}
+
 if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
     function itm_sync_modules_registry_from_filesystem($conn)
     {

@@ -464,6 +464,10 @@ function itm_sidebar_structure($conn = null) {
         }
     }
 
+    if ($conn instanceof mysqli && function_exists('itm_merge_registry_modules_into_sidebar_discovery')) {
+        itm_merge_registry_modules_into_sidebar_discovery($conn, $moduleNames, $existingItemIds);
+    }
+
     $discoveredEquipmentTypeItems = [];
     $discoveredItems = [];
     foreach ($moduleNames as $moduleName => $moduleMeta) {
@@ -477,6 +481,14 @@ function itm_sidebar_structure($conn = null) {
             'href' => 'modules/' . $moduleName . '/',
             'match_dir' => $moduleName,
         ];
+        if (!empty($moduleMeta['from_registry'])) {
+            $registryName = trim((string)($moduleMeta['registry_name'] ?? ''));
+            if ($registryName === '') {
+                $registryName = itm_sidebar_humanize_table_name($moduleName);
+            }
+            $registryIcon = trim((string)($moduleMeta['emoji'] ?? ''));
+            $item['label'] = $registryIcon !== '' ? trim($registryIcon . ' ' . $registryName) : ('🧩 ' . $registryName);
+        }
         if (strpos($moduleName, 'is_') === 0) {
             $typeLabel = trim(preg_replace('/^is[_\s-]*/i', '', (string)$moduleName));
             $moduleEmoji = trim((string)($moduleMeta['emoji'] ?? ''));
@@ -905,9 +917,9 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
         // Fallback to layout configuration if main config missing
         $layoutConfig = itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id);
         if ($layoutConfig !== null) {
-            $defaults['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
-            $defaults['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
-            $defaults['sidebar_submenu_order'] = $layoutConfig['sidebar_submenu_order'];
+            $defaults['sidebar_visibility'] = itm_normalize_sidebar_visibility($layoutConfig['sidebar_visibility']);
+            $defaults['sidebar_main_order'] = itm_normalize_sidebar_main_order($layoutConfig['sidebar_main_order']);
+            $defaults['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($layoutConfig['sidebar_submenu_order']);
         }
         return $defaults;
     }
@@ -916,9 +928,9 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null) {
     // Overlay detailed layout configuration
     $layoutConfig = itm_get_user_sidebar_preferences_config($conn, $company_id, $user_id);
     if ($layoutConfig !== null) {
-        $config['sidebar_visibility'] = $layoutConfig['sidebar_visibility'];
-        $config['sidebar_main_order'] = $layoutConfig['sidebar_main_order'];
-        $config['sidebar_submenu_order'] = $layoutConfig['sidebar_submenu_order'];
+        $config['sidebar_visibility'] = itm_normalize_sidebar_visibility($layoutConfig['sidebar_visibility']);
+        $config['sidebar_main_order'] = itm_normalize_sidebar_main_order($layoutConfig['sidebar_main_order']);
+        $config['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($layoutConfig['sidebar_submenu_order']);
     }
 
     return $config;
