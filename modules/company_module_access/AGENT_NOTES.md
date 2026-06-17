@@ -16,7 +16,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 4. Business Rules (Critical for Agents)
 
 - Only `itm_is_admin()` users may access this module.
-- Opt-out policy: missing `company_module_access` row means allowed; only `enabled = 0` denies access.
+- Opt-in policy: `has_module_access()` requires `company_module_access.enabled = 1` plus active registry row; missing row denies access. Fresh installs seed all company × module rows in `database.sql`.
 - The admin matrix must show **all** registry modules — never filter rows like the sidebar does.
 - System modules appear in the matrix; `settings` stays always available to all users.
 - Inactive registry rows (`active = 0`) are listed but toggles are disabled.
@@ -24,7 +24,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 
 ## 5. UI Behavior Requirements
 
-- `index.php` — company × module matrix with AJAX checkboxes, Select All / Cancel Select / Unselect All, client-side filter.
+- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), Select All / Cancel Select / Unselect All, client-side filter.
 - `list_all.php` — flat registry list with search.
 - `create.php` / `edit.php` — registry row CRUD with checkbox pattern for `active` and `is_system_module`.
 - Standard layout shell with sidebar/header.

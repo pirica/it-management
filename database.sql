@@ -203,6 +203,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("it_locations", "It Locations", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("location_types", "Location Types", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("manufacturers", "Manufacturers", 0, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("modules_registry", "Modules Registry", 1, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("monthly_budgets", "Monthly Budgets", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("note_labels", "Note Labels", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("notes", "Notes", 0, 1);
@@ -251,6 +252,12 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_os_types", "Workstation Os Types", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_os_versions", "Workstation Os Versions", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_ram", "Workstation Ram", 0, 1);
+-- Data for `company_module_access`
+INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
+SELECT c.`id`, mr.`id`, 1
+FROM `companies` c
+CROSS JOIN `modules_registry` mr
+WHERE c.`active` = 1;
 -- Table structure for `departments`
 DROP TABLE IF EXISTS `departments`;
 CREATE TABLE `departments` (
@@ -5525,15 +5532,15 @@ DROP TRIGGER IF EXISTS `trg_modules_registry_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_modules_registry_audit_insert` AFTER INSERT ON `modules_registry` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_modules_registry_audit_update` AFTER UPDATE ON `modules_registry` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_modules_registry_audit_delete` AFTER DELETE ON `modules_registry` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, 0), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_company_module_access_audit_insert`;
