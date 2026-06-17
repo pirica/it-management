@@ -3,7 +3,7 @@
  * Audit Logs Module - Index
  *
  * Read-only audit centre: lists system-generated change history for the active company.
- * Records are created by database triggers; there is no create, edit, delete, or import UI.
+ * Records are created by database triggers. Admins may back up, download, or clear all logs.
  */
 
 require '../../config/config.php';
@@ -104,6 +104,85 @@ function itm_audit_logs_normalize_records_per_page_choice($raw)
     return (string)$numeric;
 }
 
+/**
+ * Build a timestamped filename for tenant-scoped audit log SQL exports.
+ */
+function itm_audit_logs_backup_filename($companyId)
+{
+    return 'audit_logs_company_' . (int)$companyId . '_' . date('d_M_Y') . '_' . date('His') . '.sql';
+}
+
+/**
+ * Why: Backup and download share one SQL builder so on-disk archives match streamed exports.
+ */
+function itm_audit_logs_build_sql_backup($conn, $companyId)
+{
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return false;
+    }
+
+    $dump = "-- IT Management Audit Logs Backup\n";
+    $dump .= '-- Generated at: ' . date('Y-m-d H:i:s') . " UTC\n";
+    $dump .= '-- Data scope: audit_logs.company_id = ' . $companyId . "\n";
+    $dump .= "SET NAMES utf8mb4;\n";
+    $dump .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
+
+    $createRes = mysqli_query($conn, 'SHOW CREATE TABLE `audit_logs`');
+    $createRow = $createRes ? mysqli_fetch_assoc($createRes) : null;
+    if (!$createRow || !isset($createRow['Create Table'])) {
+        return false;
+    }
+
+    $dump .= "-- Table structure for `audit_logs`\n";
+    $dump .= 'DROP TABLE IF EXISTS `audit_logs`;' . "\n";
+    $dump .= $createRow['Create Table'] . ";\n\n";
+
+    $dataStmt = mysqli_prepare($conn, 'SELECT * FROM audit_logs WHERE company_id = ? ORDER BY id ASC');
+    if (!$dataStmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($dataStmt, 'i', $companyId);
+    mysqli_stmt_execute($dataStmt);
+    $dataRes = mysqli_stmt_get_result($dataStmt);
+    if (!$dataRes) {
+        mysqli_stmt_close($dataStmt);
+        return false;
+    }
+
+    $rowCount = 0;
+    if (mysqli_num_rows($dataRes) > 0) {
+        $dump .= "-- Data for `audit_logs`\n";
+    }
+
+    while ($dataRow = mysqli_fetch_assoc($dataRes)) {
+        $columns = array_map(static function ($col) {
+            return '`' . $col . '`';
+        }, array_keys($dataRow));
+
+        $values = [];
+        foreach ($dataRow as $value) {
+            if ($value === null) {
+                $values[] = 'NULL';
+            } else {
+                $values[] = "'" . mysqli_real_escape_string($conn, (string)$value) . "'";
+            }
+        }
+
+        $dump .= 'INSERT INTO `audit_logs` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ");\n";
+        $rowCount++;
+    }
+    mysqli_stmt_close($dataStmt);
+
+    if ($rowCount > 0) {
+        $dump .= "\n";
+    }
+
+    $dump .= "SET FOREIGN_KEY_CHECKS=1;\n";
+
+    return $dump;
+}
+
 // Extract filter parameters from the URL for persistent search/filtering
 $search = trim((string)($_GET['search'] ?? ''));
 $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
@@ -187,6 +266,105 @@ if (
     && itm_audit_logs_normalize_records_per_page_choice($currentRecordsPerPage) !== ''
 ) {
     $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
+}
+
+$isAuditLogsAdmin = itm_is_admin($conn, (int)($_SESSION['user_id'] ?? 0));
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_action'] ?? '') !== '') {
+    itm_require_post_csrf();
+
+    $postedAuditAction = (string)($_POST['audit_logs_action'] ?? '');
+    $postedSearch = trim((string)($_POST['search'] ?? ''));
+    $postedActionFilter = strtoupper(trim((string)($_POST['action_filter'] ?? '')));
+    $postedDateFrom = trim((string)($_POST['date_from'] ?? ''));
+    $postedDateTo = trim((string)($_POST['date_to'] ?? ''));
+    $postedSort = (string)($_POST['sort'] ?? 'changed_at');
+    $postedDir = strtoupper((string)($_POST['dir'] ?? 'DESC'));
+    if (!isset($sortableColumns[$postedSort])) {
+        $postedSort = 'changed_at';
+    }
+    if (!in_array($postedDir, ['ASC', 'DESC'], true)) {
+        $postedDir = 'DESC';
+    }
+    if (!in_array($postedActionFilter, $allowedActions, true)) {
+        $postedActionFilter = '';
+    }
+
+    $redirectQuery = itm_audit_logs_build_query([
+        'search' => $postedSearch,
+        'action_filter' => $postedActionFilter,
+        'date_from' => $postedDateFrom,
+        'date_to' => $postedDateTo,
+        'sort' => $postedSort,
+        'dir' => $postedDir,
+        'page' => 1,
+    ]);
+    $redirectUrl = 'index.php' . ($redirectQuery !== '' ? '?' . $redirectQuery : '');
+
+    if (!$isAuditLogsAdmin) {
+        $_SESSION['audit_logs_flash_error'] = ['Only administrators can manage audit log archives.'];
+        header('Location: ' . $redirectUrl);
+        exit;
+    }
+
+    if ($postedAuditAction === 'clear_all') {
+        $clearStmt = mysqli_prepare($conn, 'DELETE FROM audit_logs WHERE company_id = ?');
+        if (!$clearStmt) {
+            $_SESSION['audit_logs_flash_error'] = ['Unable to clear audit logs.'];
+            header('Location: ' . $redirectUrl);
+            exit;
+        }
+        mysqli_stmt_bind_param($clearStmt, 'i', $companyId);
+        $clearedOk = mysqli_stmt_execute($clearStmt);
+        $clearedCount = $clearedOk ? mysqli_stmt_affected_rows($clearStmt) : -1;
+        mysqli_stmt_close($clearStmt);
+
+        if (!$clearedOk) {
+            $_SESSION['audit_logs_flash_error'] = ['Unable to clear audit logs.'];
+        } else {
+            $_SESSION['audit_logs_flash_success'] = ['Cleared ' . max(0, $clearedCount) . ' audit log record(s) for this company.'];
+        }
+        header('Location: ' . $redirectUrl);
+        exit;
+    }
+
+    if ($postedAuditAction === 'backup_all' || $postedAuditAction === 'download_all') {
+        $dump = itm_audit_logs_build_sql_backup($conn, $companyId);
+        if ($dump === false) {
+            $_SESSION['audit_logs_flash_error'] = ['Unable to generate audit log backup.'];
+            header('Location: ' . $redirectUrl);
+            exit;
+        }
+
+        $filename = itm_audit_logs_backup_filename($companyId);
+
+        if ($postedAuditAction === 'download_all') {
+            header('Content-Type: application/sql; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . strlen($dump));
+            echo $dump;
+            exit;
+        }
+
+        $fullPath = BACKUP_PATH . $filename;
+        if (file_put_contents($fullPath, $dump) === false) {
+            $_SESSION['audit_logs_flash_error'] = ['Unable to write audit log backup file.'];
+            header('Location: ' . $redirectUrl);
+            exit;
+        }
+
+        if (defined('DUPLICATE_BACKUP_PATH') && DUPLICATE_BACKUP_PATH !== '') {
+            @file_put_contents(DUPLICATE_BACKUP_PATH . $filename, $dump);
+        }
+
+        $_SESSION['audit_logs_flash_success'] = ['Audit log backup created: ' . $filename];
+        header('Location: ' . $redirectUrl);
+        exit;
+    }
+
+    $_SESSION['audit_logs_flash_error'] = ['Unknown audit log action.'];
+    header('Location: ' . $redirectUrl);
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_save_records_per_page'] ?? '') === '1') {
@@ -360,6 +538,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .audit-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+        .audit-admin-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
         .audit-toolbar h1 { margin:0; font-size:1.5rem; font-weight:700; }
         .audit-filters form { display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto auto; gap:10px; align-items:end; }
         .audit-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
@@ -403,6 +582,24 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 <div class="alert alert-success" style="margin-bottom:10px;"><?php echo sanitize($message); ?></div>
             <?php endforeach; ?>
             <?php echo itm_render_alert_errors($errors); ?>
+
+            <?php if ($isAuditLogsAdmin): ?>
+            <div class="card" style="margin-bottom:16px;">
+                <form method="POST" action="index.php" class="audit-admin-actions" data-itm-audit-logs-admin-actions="1">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="search" value="<?php echo sanitize($search); ?>">
+                    <input type="hidden" name="action_filter" value="<?php echo sanitize($action); ?>">
+                    <input type="hidden" name="date_from" value="<?php echo sanitize($dateFrom); ?>">
+                    <input type="hidden" name="date_to" value="<?php echo sanitize($dateTo); ?>">
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                    <button type="submit" name="audit_logs_action" value="download_all" class="btn btn-sm btn-primary">Download ALL Logs</button>
+                    <button type="submit" name="audit_logs_action" value="backup_all" class="btn btn-sm btn-primary">Backup ALL Logs</button>
+                    <button type="submit" name="audit_logs_action" value="clear_all" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Clear all audit logs for this company? This cannot be undone.');">Clear ALL Logs</button>
+                </form>
+            </div>
+            <?php endif; ?>
 
             <!-- SEARCH AND FILTER FORM -->
             <div class="card audit-filters" style="margin-bottom:16px;">
