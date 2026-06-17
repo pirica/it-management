@@ -388,16 +388,6 @@ if (
 
 $company_id = $_SESSION['company_id'] ?? 0;
 
-if (
-    !$itmSkipWebAuth
-    && $company_id > 0
-    && isset($conn)
-    && $conn instanceof mysqli
-    && function_exists('itm_enforce_module_access_or_exit')
-) {
-    itm_enforce_module_access_or_exit($conn);
-}
-
 if ($company_id > 0 && isset($conn) && $conn instanceof mysqli) {
     $itmIpamHelpersPath = ROOT_PATH . 'includes/ipam_helpers.php';
     if (is_file($itmIpamHelpersPath)) {
@@ -2062,6 +2052,17 @@ if (!function_exists('itm_is_admin')) {
 
         return $isAdmin;
     }
+}
+
+// Why: Enforcement needs itm_is_admin() for system-module admin bypass; run after the helper exists.
+if (
+    !$itmSkipWebAuth
+    && ($company_id ?? 0) > 0
+    && isset($conn)
+    && $conn instanceof mysqli
+    && function_exists('itm_enforce_module_access_or_exit')
+) {
+    itm_enforce_module_access_or_exit($conn);
 }
 
 /**
