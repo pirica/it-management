@@ -259,3 +259,37 @@ if (!function_exists('itm_sql_date_fragment')) {
         return "'" . mysqli_real_escape_string($conn, $parsed) . "'";
     }
 }
+
+if (!function_exists('itm_iso_week_bounds')) {
+    /**
+     * Monday–Sunday date bounds for an ISO-8601 week (matches PHP date('W') / report week selectors).
+     *
+     * @return array{start:string,end:string}|null Canonical Y-m-d bounds or null when invalid
+     */
+    function itm_iso_week_bounds($isoYear, $isoWeek)
+    {
+        $isoYear = (int)$isoYear;
+        $isoWeek = (int)$isoWeek;
+        if ($isoYear < 1970 || $isoYear > 2100 || $isoWeek < 1 || $isoWeek > 53) {
+            return null;
+        }
+
+        $weekStart = DateTimeImmutable::createFromFormat('!Y-m-d', sprintf('%04d-01-04', $isoYear));
+        if (!$weekStart instanceof DateTimeImmutable) {
+            return null;
+        }
+
+        try {
+            $weekStart = $weekStart->setISODate($isoYear, $isoWeek, 1);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        $weekEnd = $weekStart->modify('+6 days');
+
+        return [
+            'start' => $weekStart->format('Y-m-d'),
+            'end' => $weekEnd->format('Y-m-d'),
+        ];
+    }
+}

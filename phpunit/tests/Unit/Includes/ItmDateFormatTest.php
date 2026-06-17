@@ -37,4 +37,23 @@ final class ItmDateFormatTest extends TestCase
     {
         $this->assertSame('18/06/2026', itm_format_cell_scalar_display('termination_date', '2026-06-18'));
     }
+
+    public function testIsoWeekBoundsMatchPhpWeekForMidYearDate(): void
+    {
+        $bounds = itm_iso_week_bounds(2026, 25);
+        $this->assertNotNull($bounds);
+        $this->assertSame('2026-06-15', $bounds['start']);
+        $this->assertSame('2026-06-21', $bounds['end']);
+        $this->assertSame('25', date('W', strtotime('2026-06-18')));
+        $this->assertGreaterThanOrEqual(strtotime($bounds['start']), strtotime('2026-06-18'));
+        $this->assertLessThanOrEqual(strtotime($bounds['end']), strtotime('2026-06-18'));
+    }
+
+    public function testIsoWeekBoundsSpanYearBoundaryForWeekOne(): void
+    {
+        $bounds = itm_iso_week_bounds(2026, 1);
+        $this->assertNotNull($bounds);
+        $this->assertSame('2025-12-29', $bounds['start']);
+        $this->assertSame('2026-01-04', $bounds['end']);
+    }
 }

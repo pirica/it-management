@@ -141,7 +141,8 @@ $selectedTypeNames = array_values(array_filter($selectedTypeNames, static functi
 }));
 
 $rows = [];
-if ($selectedStatusIds !== [] && $selectedTypeIds !== []) {
+$isoWeekBounds = itm_iso_week_bounds($selectedYear, $selectedWeek);
+if ($selectedStatusIds !== [] && $selectedTypeIds !== [] && $isoWeekBounds !== null) {
     $statusPlaceholders = implode(',', array_fill(0, count($selectedStatusIds), '?'));
     $typePlaceholders = implode(',', array_fill(0, count($selectedTypeIds), '?'));
     $sql = 'SELECT e.id, e.external_id, e.first_name, e.last_name, e.start_date, e.termination_date, '
@@ -153,13 +154,17 @@ if ($selectedStatusIds !== [] && $selectedTypeIds !== []) {
         . 'WHERE e.company_id = ? '
         . 'AND e.termination_date IS NOT NULL '
         . 'AND e.termination_date <> \'0000-00-00\' '
-        . 'AND YEAR(e.termination_date) = ? '
+        . 'AND e.termination_date >= ? '
+        . 'AND e.termination_date <= ? '
         . 'AND MONTH(e.termination_date) = ? '
-        . 'AND WEEK(e.termination_date, 3) = ? '
         . 'AND es.id IN (' . $statusPlaceholders . ') '
         . 'AND (e.employee_type_id IS NULL OR e.employee_type_id IN (' . $typePlaceholders . '))';
-    $types = 'iiii' . str_repeat('i', count($selectedStatusIds)) . str_repeat('i', count($selectedTypeIds));
-    $params = array_merge([$company_id, $selectedYear, $selectedMonth, $selectedWeek], $selectedStatusIds, $selectedTypeIds);
+    $types = 'issi' . str_repeat('i', count($selectedStatusIds)) . str_repeat('i', count($selectedTypeIds));
+    $params = array_merge(
+        [$company_id, $isoWeekBounds['start'], $isoWeekBounds['end'], $selectedMonth],
+        $selectedStatusIds,
+        $selectedTypeIds
+    );
 
     if ($search !== '') {
         $searchPattern = (strpos($search, '%') !== false || strpos($search, '_') !== false) ? $search : '%' . $search . '%';

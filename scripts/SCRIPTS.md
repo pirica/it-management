@@ -569,7 +569,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
-| `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations SQL filter. Browser or CLI via `scripts/verify_employee_type_resignations.php` (uses `lib/script_cli_output.php`; no `STDERR` on web SAPI). |
+| `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)`). Browser or CLI via `scripts/verify_employee_type_resignations.php` (uses `lib/script_cli_output.php`; no `STDERR` on web SAPI). |
 | `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`) |
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
