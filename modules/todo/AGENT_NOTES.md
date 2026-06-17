@@ -22,6 +22,10 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
 
+## 6. API Actions (If Applicable)
+- **import_excel_rows** (JSON POST on `index.php`) — bulk task import with category/department/username resolution.
+- **toggle_complete** / inline AJAX handlers on index — must apply `itm_todo_visibility_sql()` before UPDATE.
+
 ## 7. File Structure
 - `index.php` — main UI, import, visibility-filtered queries.
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD entry points.

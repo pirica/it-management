@@ -18,6 +18,12 @@ Manual visitor entry log for physical IT/office access with quick-add on the ind
 ## 5. UI Behavior Requirements
 - Action-wrapper layout with sidebar/header.
 - Standard search where implemented; inline quick-add row always visible on index.
+- Historical rows (not today) show read-only cells — no edit/delete actions.
+- `tape_used_for_restore` / `ism_review` style restricted fields: only Admin or IT department staff may edit (when implemented on row).
+
+## 6. API Actions (If Applicable)
+- **quick_save** / inline edit POST handlers on `index.php` — CSRF required; guarded by `val_is_today()`.
+- **import_excel_rows** — if enabled on index, must respect immutability rules for historical dates.
 
 ## 7. File Structure
 - `index.php` — list + quick-add + immutability guards.
@@ -32,6 +38,20 @@ Manual visitor entry log for physical IT/office access with quick-add on the ind
 ## 10. Common Pitfalls
 - Allowing edit/delete on historical (non-today) rows.
 - Using only `date_time_in` for "today" check when `created_at` is the reliable fallback.
+
+## 11. Examples of Safe Code Patterns
+
+### Today check with created_at fallback
+```php
+function val_is_today($dateTimeStr) {
+    $raw = trim((string)$dateTimeStr);
+    if ($raw === '') {
+        return false;
+    }
+    return date('Y-m-d', strtotime($raw)) === date('Y-m-d');
+}
+// Usage: val_is_today($row['date_time_in'] ?? $row['created_at'])
+```
 
 ## 12. Module Owner Notes (Optional)
 Physical security compliance tool.

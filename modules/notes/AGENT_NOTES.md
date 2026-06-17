@@ -24,6 +24,11 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - Supports `import_excel_rows` JSON on index/list_all.
 - Hide `company_id` from views.
 
+## 6. API Actions (If Applicable)
+- **AJAX on index** — pin, archive, share, label, image upload mutations; use `itm_notes_json_mutation_response()` (404 when `affected_rows === 0`).
+- **import_excel_rows** (JSON POST on `index.php` / `list_all.php`) — resolves tags via **note_labels** and share targets via usernames.
+- **download_all_images** — ZIP of note attachments via `itm_notes_resolve_image_path()` (never raw JSON paths).
+
 ## 7. File Structure
 - `index.php` — main UI, filters, import API, CRUD routing.
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — standard entry wrappers.

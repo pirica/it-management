@@ -17,11 +17,17 @@ Tracks software patches, security updates, and system upgrades across equipment.
 - **Severity Levels**: Categorizes patches by importance (e.g., "Critical", "Optional").
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
+- **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
+- **CSRF**: POST handlers use `itm_require_post_csrf()`; forms include hidden `csrf_token`.
+- **Hide `company_id`** from list, view, and create/edit forms.
+- **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
+- **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
+- **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+
 - **Photo Upload**: Supports screenshots of patch confirmation or errors.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** — handles bulk JSON import.
+- **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
 
 ## 7. File Structure
 - Standard CRUD structure.
@@ -30,7 +36,13 @@ Tracks software patches, security updates, and system upgrades across equipment.
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Managed via database triggers.
+- Database triggers `trg_patches_updates_audit_insert`, `trg_patches_updates_audit_update`, `trg_patches_updates_audit_delete` on `patches_updates` in `database.sql` write to `audit_logs` when `enable_audit_logs` is enabled.
+
+## 10. Common Pitfalls
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
+- Links to **equipment** and patch status/level lookups.
+- Respect tenant unique constraints; duplicates fail at the database layer.
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
 
 ## 11. Examples of Safe Code Patterns
 
@@ -38,6 +50,13 @@ Tracks software patches, security updates, and system upgrades across equipment.
 ```php
 $stmt = $conn->prepare("SELECT * FROM patches_updates WHERE company_id = ? AND equipment_id = ?");
 $stmt->bind_param("ii", $companyId, $equipmentId);
+$stmt->execute();
+```
+
+### Safe INSERT
+```php
+$stmt = $conn->prepare("INSERT INTO patches_updates (company_id, hostname, active) VALUES (?, ?, ?)");
+$stmt->bind_param("isi", $companyId, $hostname, $active);
 $stmt->execute();
 ```
 

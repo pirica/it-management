@@ -5,6 +5,7 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 
 ## 2. Key Tables
 - One primary table per module in most cases (see each `modules/<slug>/AGENT_NOTES.md`).
+- **Ops Report child tables** (`ops_report_fb_outlet`, `ops_report_walk_round`, `ops_report_courtesy_call`, `ops_report_guest_experience`, `ops_report_butler`, `ops_report_night_shift`, `ops_report_hotel_figure`) have their own `modules/ops_report_*/AGENT_NOTES.md` plus the parent **modules/ops_report/AGENT_NOTES.md** for the daily report UI.
 
 ## 4. Business Rules (Critical for Agents)
 - Every module folder **must** have its own `AGENT_NOTES.md` (template: `templates/AGENT_NOTES.md`).

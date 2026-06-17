@@ -18,6 +18,10 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD via manufacturers-style dynamic schema.
 - List/search/sort/pagination/export/import per module standards.
+- Labels are private — list queries must filter `user_id = logged-in user`.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** (JSON POST on `index.php`) — bulk import via `itm_handle_json_table_import($conn, 'note_labels', $company_id)`.
 
 ## 7. File Structure
 - `index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — full local CRUD files (materialized from `modules/manufacturers/`).
@@ -25,9 +29,20 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 ## 8. Multi-Tenant Rules
 - Filter by `company_id` and `user_id` on all reads/writes.
 
+## 9. Audit Logging Requirements
+- `trg_note_labels_audit_insert|update|delete` in `database.sql`.
+
 ## 10. Common Pitfalls
 - Do not expose another user's labels.
 - Cross-module manufacturers requires are forbidden; only `modules/manufacturers/` may own that path.
+
+## 11. Examples of Safe Code Patterns
+
+### Safe per-user label query
+```php
+$stmt = $conn->prepare('SELECT id, label FROM note_labels WHERE company_id = ? AND user_id = ? ORDER BY label ASC');
+$stmt->bind_param('ii', $companyId, $userId);
+```
 
 ## 12. Module Owner Notes (Optional)
 Behaviour matches the manufacturers CRUD template but runs against `note_labels` with local PHP copies.

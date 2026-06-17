@@ -18,6 +18,10 @@ CRUD UI for the global **modules_registry** catalog (module slugs, display names
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD for registry rows.
 - Sidebar listing for registry-only modules may appear before a folder exists; opening CRUD URLs still needs `modules/{slug}/` when linked from admin tools.
+- `module_slug` is the canonical key merged by `itm_sidebar_structure()` and **company_module_access**.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** (JSON POST on `index.php`) — bulk import when enabled on flattened index.
 
 ## 7. File Structure
 - `index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — full local CRUD files (materialized from `modules/manufacturers/`).
@@ -25,9 +29,20 @@ CRUD UI for the global **modules_registry** catalog (module slugs, display names
 ## 8. Multi-Tenant Rules
 - Registry table is global; pair with **company_module_access** for tenant enablement.
 
+## 9. Audit Logging Requirements
+- `trg_modules_registry_audit_insert|update|delete` in `database.sql`.
+
 ## 10. Common Pitfalls
 - Do not confuse this module folder with **company_module_access** (matrix UI for per-company toggles).
 - Cross-module manufacturers requires are forbidden outside `modules/manufacturers/`.
+
+## 11. Examples of Safe Code Patterns
+
+### Safe registry lookup by slug
+```php
+$stmt = $conn->prepare('SELECT id, module_name, icon, active FROM modules_registry WHERE module_slug = ? LIMIT 1');
+$stmt->bind_param('s', $slug);
+```
 
 ## 12. Module Owner Notes (Optional)
 Pairs with `modules/company_module_access/` for enforcement; see that module's `AGENT_NOTES.md` for matrix and AJAX rules.

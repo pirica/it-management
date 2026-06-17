@@ -21,6 +21,10 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Actions column uses `itm-actions-cell` markers.
 - Create/edit profile photo uses the employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, **PNG only**). Hint: `Drag and drop or click to upload PNG.` Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
 
+## 6. API Actions (If Applicable)
+- **toggle_favourite** (POST on `index_logic.php`) — CSRF + `user_id` scope; AJAX star toggle on list.
+- **import_excel_rows** (JSON POST on `index.php`) — bulk import with `data-itm-db-import-endpoint="index.php"`.
+
 ## 7. File Structure
 - `index.php` — HTML list view.
 - `index_logic.php` — auth, POST handlers, contact query.

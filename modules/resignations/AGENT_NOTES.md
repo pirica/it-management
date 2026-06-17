@@ -46,5 +46,19 @@ Read-only weekly resignation report for the active company. Data is sourced from
 - Do not use `YEAR()` + `WEEK(..., 3)` together — PHP `date('W')` and MySQL `WEEK()` can disagree on some dates; date-range filtering matches the week selector and regression probe.
 - Do not filter dates with `<> '0000-00-00'` in SQL — use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` (MySQL 8 strict mode raises `Incorrect DATE value: '0000-00-00'`).
 
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT (tenant + valid termination date)
+```php
+$sql = 'SELECT e.id, e.external_id, e.first_name, e.last_name, e.termination_date
+        FROM employees e
+        WHERE e.company_id = ?
+          AND ' . itm_sql_valid_date_predicate('e.termination_date') . '
+          AND e.termination_date BETWEEN ? AND ?';
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('iss', $companyId, $weekStart, $weekEnd);
+$stmt->execute();
+```
+
 ## 12. Module Owner Notes (Optional)
 Pattern based on `modules/birthdays/index.php`. Regression: `php scripts/verify_employee_type_resignations.php`. Debug a missing row: `php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026` (catalogued in `scripts/scripts.php`).
