@@ -26,7 +26,6 @@ Read-only weekly resignation report for the active company. Data is sourced from
 - Table columns: ID TM (`external_id`), Name, Team member / Internship (`employee_type.name_type`), Department, Admission date (`start_date`), Last work day (`termination_date`), Official Resignation Week.
 - Header actions: **Birthdays**, **Employees**.
 - Sidebar: `📋 Resignations` in Employee section (`includes/ui_config.php`).
-- Birthdays module links back to **Resignations**.
 
 ## 6. API Actions (If Applicable)
 - None.
