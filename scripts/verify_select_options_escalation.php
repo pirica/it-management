@@ -2,6 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('Select Options Escalation Verification');
 
@@ -42,14 +43,18 @@ require basename('$script_path');
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying Select Options API Escalation..." . $nl;
 
-$username = 'testuser_' . uniqid();
-$email = $username . '@example.com';
-mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, '$username', '$email', 'pass', 2, 2, 1)");
-$userId = mysqli_insert_id($conn);
+$testUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'verify-select-options']);
+if (!is_array($testUser)) {
+    echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+$userId = (int)$testUser['id'];
+itm_script_test_user_register_teardown($conn, $userId);
 
 $session = [
     'user_id' => $userId,
-    'username' => $username,
+    'username' => (string)$testUser['username'],
     'company_id' => 1,
     'csrf_token' => 'test_token'
 ];
@@ -89,4 +94,4 @@ if ($row && (int)$row['role_id'] === 1) {
     echo colorText("[FAIL] Select Options API: Expected whitelist block; output: $output", 'fail') . $nl;
 }
 
-mysqli_query($conn, "DELETE FROM users WHERE id = $userId");
+itm_script_output_end();

@@ -14,6 +14,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('Notes IDOR Verification');
 
@@ -22,13 +23,17 @@ echo "Testing IDOR in Notes View/Edit..." . $nl;
 
 // 1. Setup - two users in the same company
 $company_id = 1;
-$u1_name = "owner_" . uniqid();
-mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES ($company_id, '$u1_name', '$u1_name@example.com', 'pass', 2, 2, 1)");
-$user1_id = mysqli_insert_id($conn);
-
-$u2_name = "attacker_" . uniqid();
-mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES ($company_id, '$u2_name', '$u2_name@example.com', 'pass', 2, 2, 1)");
-$user2_id = mysqli_insert_id($conn);
+$user1 = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-notes-idor-owner']);
+$user2 = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-notes-idor-attacker']);
+if (!is_array($user1) || !is_array($user2)) {
+    echo colorText('[FAIL] Unable to create disposable test users.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+$user1_id = (int)$user1['id'];
+$user2_id = (int)$user2['id'];
+itm_script_test_user_register_teardown($conn, $user1_id);
+itm_script_test_user_register_teardown($conn, $user2_id);
 
 echo "User 1 (Owner) ID: $user1_id" . $nl;
 echo "User 2 (Attacker) ID: $user2_id" . $nl;
@@ -73,6 +78,5 @@ if ($delete_vulnerable) {
 
 // Cleanup
 mysqli_query($conn, "DELETE FROM notes WHERE id = $note_id");
-mysqli_query($conn, "DELETE FROM users WHERE id IN ($user1_id, $user2_id)");
 
 itm_script_output_end();

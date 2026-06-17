@@ -2,6 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('Explorer RCE .htaccess PoC');
 
@@ -45,13 +46,22 @@ echo ob_get_clean();
 
 echo "Verifying Explorer .htaccess RCE Bypass...\n";
 
+$company_id = 1;
+$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-explorer-rce-htaccess']);
+if (!is_array($testUser)) {
+    echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . itm_script_output_nl();
+    itm_script_output_end();
+    exit(1);
+}
+itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+
 $session = [
-    'company_id' => 1,
-    'user_id' => 1,
-    'username' => 'admin'
+    'company_id' => $company_id,
+    'user_id' => (int)$testUser['id'],
+    'username' => (string)$testUser['username'],
 ];
 
-$target_dir = ROOT_PATH . "files/1/Common";
+$target_dir = ROOT_PATH . "files/$company_id/Common";
 @mkdir($target_dir, 0777, true);
 
 // 1. Attempt to upload malicious .htaccess

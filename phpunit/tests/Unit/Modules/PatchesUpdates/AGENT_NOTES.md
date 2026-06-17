@@ -12,3 +12,6 @@ Unit/regression tests for `modules/patches_updates/`.
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
+
+## 4. Business Rules (Critical for Agents)
+- **Disposable script test users:** when tests INSERT/UPDATE `users` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_user.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.

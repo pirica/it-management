@@ -184,6 +184,10 @@ Every **project folder that contains source code or agent-relevant assets** must
 
 **Canonical source:** All rules for creating, cataloging, running, and verifying tools under `scripts/` live in **`scripts/SCRIPTS.md`**. Do not duplicate scripts standards in this file. When updating scripts-related rules, change **only** `scripts/SCRIPTS.md` and keep this section as a short pointer.
 
+#### Disposable script test users (mandatory)
+
+Repro/verify CLI scripts and PHPUnit tests that INSERT or UPDATE `users`, touch `reset_token` / password / vault fields, or simulate tenant-scoped sessions for file paths must use **`scripts/lib/itm_script_test_user.php`** — never hardcode seed user id `1`. Snapshot sensitive columns before mutation; register teardown restore + delete. Static audit: `php scripts/check_script_disposable_users.php`. Full API and migration list: **`scripts/SCRIPTS.md` → Disposable script test users**.
+
 ---
 
 ## 🏗 Coding Standards
