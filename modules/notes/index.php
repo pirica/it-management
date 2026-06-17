@@ -399,11 +399,23 @@ if (isset($_GET["ajax_action"])) {
         $zipName = "{$safeTitle}_download.zip";
         $zipPath = sys_get_temp_dir() . '/' . $zipName;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            $addedFiles = 0;
             foreach ($imgs as $img) {
-                $filePath = ROOT_PATH . "files/{$company_id}/Private/{$_SESSION['username']}_{$logged_user_id}/notes/{$img}";
-                if (file_exists($filePath)) $zip->addFile($filePath, $img);
+                $filePath = itm_notes_resolve_image_path($company_id, $_SESSION['username'] ?? '', $logged_user_id, $img);
+                if ($filePath === null) {
+                    continue;
+                }
+                $zip->addFile($filePath, basename($filePath));
+                $addedFiles++;
             }
             $zip->close();
+            if ($addedFiles === 0) {
+                if (file_exists($zipPath)) {
+                    unlink($zipPath);
+                }
+                echo json_encode(["ok" => false, "error" => "No images to download"]);
+                die();
+            }
             echo json_encode(["ok" => true, "zip_url" => "index.php?download_zip=" . urlencode($zipName)]);
         } else {
             echo json_encode(["ok" => false, "error" => "Could not create ZIP file"]);

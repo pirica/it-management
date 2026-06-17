@@ -13,6 +13,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once ROOT_PATH . 'includes/notes_visibility.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Notes Path Traversal Verification');
@@ -67,9 +68,9 @@ $zipPath = sys_get_temp_dir() . '/' . $zipName;
 $vulnerable = false;
 if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
     foreach ($imgs as $img) {
-        $filePath = ROOT_PATH . "files/{$company_id}/Private/{$username}_{$user_id}/notes/{$img}";
-        if (file_exists($filePath)) {
-            $zip->addFile($filePath, $img);
+        $filePath = itm_notes_resolve_image_path($company_id, $username, $user_id, $img);
+        if ($filePath !== null) {
+            $zip->addFile($filePath, basename($filePath));
         }
     }
     $zip->close();

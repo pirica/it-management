@@ -98,7 +98,7 @@
         },
         {
             "title": "Path Traversal and Arbitrary File Read via Notes ZIP Download",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "38aeb3765c93ebda59693d93625c51038d394935",
             "detected_at_pst": "2026-06-17T14:17:00-07:00",
             "reported_link": "",
