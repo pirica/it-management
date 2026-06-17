@@ -130,3 +130,30 @@ function itm_notes_resolve_image_path($companyId, $username, $userId, $storedNam
 
     return $realFile;
 }
+
+/**
+ * Why: AJAX mutations must not return ok:true when visibility-scoped SQL matched zero rows.
+ */
+function itm_notes_json_mutation_response($stmt, $alreadyExecuted = false)
+{
+    if (!($stmt instanceof mysqli_stmt)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Invalid statement'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    if (!$alreadyExecuted && !$stmt->execute()) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => (string)$stmt->error], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    if (mysqli_stmt_affected_rows($stmt) <= 0) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Record not found or not permitted'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
