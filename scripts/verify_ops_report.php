@@ -2,37 +2,39 @@
 /**
  * Ops Report regression checks — D-2 edit lock and daily report creation.
  *
+ * Browser: scripts/verify_ops_report.php
  * CLI: php scripts/verify_ops_report.php
  */
 
-if (php_sapi_name() !== 'cli') {
-    fwrite(STDERR, "CLI only.\n");
-    exit(1);
-}
-
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
-$conn = $GLOBALS['conn'] ?? null;
-if (!$conn) {
-    fwrite(STDERR, "[FAIL] No database connection.\n");
-    exit(1);
-}
+itm_script_output_begin('Ops Report Verification');
 
-$companyId = 1;
+$nl = itm_script_output_nl();
 $failures = 0;
 
 function opr_verify_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo colorText('[FAIL] ' . $message, 'fail') . $nl;
 }
 
 function opr_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
+
+$conn = $GLOBALS['conn'] ?? null;
+if (!$conn) {
+    opr_verify_fail('No database connection.');
+    exit(1);
+}
+
+$companyId = 1;
 
 // Why: Mirror module helper without loading full index.php (session/HTML).
 function opr_verify_is_editable_date($dateStr, $isAdmin)
@@ -158,9 +160,9 @@ if (!$res || !mysqli_fetch_assoc($res)) {
 }
 
 if ($failures > 0) {
-    fwrite(STDERR, "\n{$failures} failure(s).\n");
+    echo colorText("{$failures} failure(s).", 'fail') . $nl;
     exit(1);
 }
 
-fwrite(STDOUT, "\nAll ops_report checks passed.\n");
+echo colorText('All ops_report checks passed.', 'pass') . $nl;
 exit(0);
