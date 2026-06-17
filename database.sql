@@ -6214,25 +6214,158 @@ CREATE TABLE `ops_report_hotel_figure` (
   CONSTRAINT `ops_report_hotel_figure_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Audit Triggers for `ops_report`
+-- Audit Triggers for `ops_report` and child tables
 DELIMITER //
 CREATE TRIGGER `trg_ops_report_audit_insert` AFTER INSERT ON `ops_report` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('report_date', NEW.`report_date`, 'today_shift', NEW.`today_shift`, 'tomorrow_shift', NEW.`tomorrow_shift`, 'occupancy_pct', NEW.`occupancy_pct`, 'total_revenue', NEW.`total_revenue`, 'active', NEW.`active`),
+  JSON_OBJECT('report_date', NEW.`report_date`, 'today_shift', NEW.`today_shift`, 'tomorrow_shift', NEW.`tomorrow_shift`, 'occupancy_pct', NEW.`occupancy_pct`, 'occupied_rooms', NEW.`occupied_rooms`, 'total_pax', NEW.`total_pax`, 'average_daily_rate', NEW.`average_daily_rate`, 'revpar', NEW.`revpar`, 'room_revenue', NEW.`room_revenue`, 'fb_revenue', NEW.`fb_revenue`, 'spa_revenue', NEW.`spa_revenue`, 'kids_club_revenue', NEW.`kids_club_revenue`, 'fo_upgrade_rooms', NEW.`fo_upgrade_rooms`, 'total_revenue', NEW.`total_revenue`, 'stay_score_target', NEW.`stay_score_target`, 'stay_score_ytd', NEW.`stay_score_ytd`, 'stay_experience_comment', NEW.`stay_experience_comment`, 'hsk_revenue', NEW.`hsk_revenue`, 'welcomes_notes', NEW.`welcomes_notes`, 'report_ui_json', NEW.`report_ui_json`, 'active', NEW.`active`),
   @app_ip_address, @app_user_agent);
 END//
 CREATE TRIGGER `trg_ops_report_audit_update` AFTER UPDATE ON `ops_report` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('report_date', OLD.`report_date`, 'today_shift', OLD.`today_shift`, 'tomorrow_shift', OLD.`tomorrow_shift`, 'occupancy_pct', OLD.`occupancy_pct`, 'total_revenue', OLD.`total_revenue`, 'active', OLD.`active`),
-  JSON_OBJECT('report_date', NEW.`report_date`, 'today_shift', NEW.`today_shift`, 'tomorrow_shift', NEW.`tomorrow_shift`, 'occupancy_pct', NEW.`occupancy_pct`, 'total_revenue', NEW.`total_revenue`, 'active', NEW.`active`),
+  JSON_OBJECT('report_date', OLD.`report_date`, 'today_shift', OLD.`today_shift`, 'tomorrow_shift', OLD.`tomorrow_shift`, 'occupancy_pct', OLD.`occupancy_pct`, 'occupied_rooms', OLD.`occupied_rooms`, 'total_pax', OLD.`total_pax`, 'average_daily_rate', OLD.`average_daily_rate`, 'revpar', OLD.`revpar`, 'room_revenue', OLD.`room_revenue`, 'fb_revenue', OLD.`fb_revenue`, 'spa_revenue', OLD.`spa_revenue`, 'kids_club_revenue', OLD.`kids_club_revenue`, 'fo_upgrade_rooms', OLD.`fo_upgrade_rooms`, 'total_revenue', OLD.`total_revenue`, 'stay_score_target', OLD.`stay_score_target`, 'stay_score_ytd', OLD.`stay_score_ytd`, 'stay_experience_comment', OLD.`stay_experience_comment`, 'hsk_revenue', OLD.`hsk_revenue`, 'welcomes_notes', OLD.`welcomes_notes`, 'report_ui_json', OLD.`report_ui_json`, 'active', OLD.`active`),
+  JSON_OBJECT('report_date', NEW.`report_date`, 'today_shift', NEW.`today_shift`, 'tomorrow_shift', NEW.`tomorrow_shift`, 'occupancy_pct', NEW.`occupancy_pct`, 'occupied_rooms', NEW.`occupied_rooms`, 'total_pax', NEW.`total_pax`, 'average_daily_rate', NEW.`average_daily_rate`, 'revpar', NEW.`revpar`, 'room_revenue', NEW.`room_revenue`, 'fb_revenue', NEW.`fb_revenue`, 'spa_revenue', NEW.`spa_revenue`, 'kids_club_revenue', NEW.`kids_club_revenue`, 'fo_upgrade_rooms', NEW.`fo_upgrade_rooms`, 'total_revenue', NEW.`total_revenue`, 'stay_score_target', NEW.`stay_score_target`, 'stay_score_ytd', NEW.`stay_score_ytd`, 'stay_experience_comment', NEW.`stay_experience_comment`, 'hsk_revenue', NEW.`hsk_revenue`, 'welcomes_notes', NEW.`welcomes_notes`, 'report_ui_json', NEW.`report_ui_json`, 'active', NEW.`active`),
   @app_ip_address, @app_user_agent);
 END//
 CREATE TRIGGER `trg_ops_report_audit_delete` AFTER DELETE ON `ops_report` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report', OLD.`id`, 'DELETE',
-  JSON_OBJECT('report_date', OLD.`report_date`, 'today_shift', OLD.`today_shift`, 'tomorrow_shift', OLD.`tomorrow_shift`, 'occupancy_pct', OLD.`occupancy_pct`, 'total_revenue', OLD.`total_revenue`, 'active', OLD.`active`),
+  JSON_OBJECT('report_date', OLD.`report_date`, 'today_shift', OLD.`today_shift`, 'tomorrow_shift', OLD.`tomorrow_shift`, 'occupancy_pct', OLD.`occupancy_pct`, 'occupied_rooms', OLD.`occupied_rooms`, 'total_pax', OLD.`total_pax`, 'average_daily_rate', OLD.`average_daily_rate`, 'revpar', OLD.`revpar`, 'room_revenue', OLD.`room_revenue`, 'fb_revenue', OLD.`fb_revenue`, 'spa_revenue', OLD.`spa_revenue`, 'kids_club_revenue', OLD.`kids_club_revenue`, 'fo_upgrade_rooms', OLD.`fo_upgrade_rooms`, 'total_revenue', OLD.`total_revenue`, 'stay_score_target', OLD.`stay_score_target`, 'stay_score_ytd', OLD.`stay_score_ytd`, 'stay_experience_comment', OLD.`stay_experience_comment`, 'hsk_revenue', OLD.`hsk_revenue`, 'welcomes_notes', OLD.`welcomes_notes`, 'report_ui_json', OLD.`report_ui_json`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_fb_outlet_audit_insert` AFTER INSERT ON `ops_report_fb_outlet` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_fb_outlet', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'outlet_name', NEW.`outlet_name`, 'covers_breakfast', NEW.`covers_breakfast`, 'covers_lunch', NEW.`covers_lunch`, 'covers_dinner', NEW.`covers_dinner`, 'covers_dado', NEW.`covers_dado`, 'covers_pool', NEW.`covers_pool`, 'covers_brunch', NEW.`covers_brunch`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_fb_outlet_audit_update` AFTER UPDATE ON `ops_report_fb_outlet` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_fb_outlet', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'outlet_name', OLD.`outlet_name`, 'covers_breakfast', OLD.`covers_breakfast`, 'covers_lunch', OLD.`covers_lunch`, 'covers_dinner', OLD.`covers_dinner`, 'covers_dado', OLD.`covers_dado`, 'covers_pool', OLD.`covers_pool`, 'covers_brunch', OLD.`covers_brunch`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'outlet_name', NEW.`outlet_name`, 'covers_breakfast', NEW.`covers_breakfast`, 'covers_lunch', NEW.`covers_lunch`, 'covers_dinner', NEW.`covers_dinner`, 'covers_dado', NEW.`covers_dado`, 'covers_pool', NEW.`covers_pool`, 'covers_brunch', NEW.`covers_brunch`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_fb_outlet_audit_delete` AFTER DELETE ON `ops_report_fb_outlet` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_fb_outlet', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'outlet_name', OLD.`outlet_name`, 'covers_breakfast', OLD.`covers_breakfast`, 'covers_lunch', OLD.`covers_lunch`, 'covers_dinner', OLD.`covers_dinner`, 'covers_dado', OLD.`covers_dado`, 'covers_pool', OLD.`covers_pool`, 'covers_brunch', OLD.`covers_brunch`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_walk_round_audit_insert` AFTER INSERT ON `ops_report_walk_round` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_walk_round', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'area_name', NEW.`area_name`, 'early_shift', NEW.`early_shift`, 'late_shift', NEW.`late_shift`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_walk_round_audit_update` AFTER UPDATE ON `ops_report_walk_round` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_walk_round', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'area_name', OLD.`area_name`, 'early_shift', OLD.`early_shift`, 'late_shift', OLD.`late_shift`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'area_name', NEW.`area_name`, 'early_shift', NEW.`early_shift`, 'late_shift', NEW.`late_shift`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_walk_round_audit_delete` AFTER DELETE ON `ops_report_walk_round` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_walk_round', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'area_name', OLD.`area_name`, 'early_shift', OLD.`early_shift`, 'late_shift', OLD.`late_shift`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_courtesy_call_audit_insert` AFTER INSERT ON `ops_report_courtesy_call` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_courtesy_call', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'guest_name', NEW.`guest_name`, 'room_number', NEW.`room_number`, 'time_reported', NEW.`time_reported`, 'checkout_date', NEW.`checkout_date`, 'notes', NEW.`notes`, 'action_taken', NEW.`action_taken`, 'case_closed', NEW.`case_closed`, 'monitor', NEW.`monitor`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_courtesy_call_audit_update` AFTER UPDATE ON `ops_report_courtesy_call` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_courtesy_call', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'guest_name', OLD.`guest_name`, 'room_number', OLD.`room_number`, 'time_reported', OLD.`time_reported`, 'checkout_date', OLD.`checkout_date`, 'notes', OLD.`notes`, 'action_taken', OLD.`action_taken`, 'case_closed', OLD.`case_closed`, 'monitor', OLD.`monitor`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'guest_name', NEW.`guest_name`, 'room_number', NEW.`room_number`, 'time_reported', NEW.`time_reported`, 'checkout_date', NEW.`checkout_date`, 'notes', NEW.`notes`, 'action_taken', NEW.`action_taken`, 'case_closed', NEW.`case_closed`, 'monitor', NEW.`monitor`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_courtesy_call_audit_delete` AFTER DELETE ON `ops_report_courtesy_call` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_courtesy_call', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'guest_name', OLD.`guest_name`, 'room_number', OLD.`room_number`, 'time_reported', OLD.`time_reported`, 'checkout_date', OLD.`checkout_date`, 'notes', OLD.`notes`, 'action_taken', OLD.`action_taken`, 'case_closed', OLD.`case_closed`, 'monitor', OLD.`monitor`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_guest_experience_audit_insert` AFTER INSERT ON `ops_report_guest_experience` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_guest_experience', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'ref_id', NEW.`ref_id`, 'guest_name', NEW.`guest_name`, 'room_number', NEW.`room_number`, 'time_reported', NEW.`time_reported`, 'checkout_date', NEW.`checkout_date`, 'feedback', NEW.`feedback`, 'action_taken', NEW.`action_taken`, 'case_closed', NEW.`case_closed`, 'monitor', NEW.`monitor`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_guest_experience_audit_update` AFTER UPDATE ON `ops_report_guest_experience` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_guest_experience', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'ref_id', OLD.`ref_id`, 'guest_name', OLD.`guest_name`, 'room_number', OLD.`room_number`, 'time_reported', OLD.`time_reported`, 'checkout_date', OLD.`checkout_date`, 'feedback', OLD.`feedback`, 'action_taken', OLD.`action_taken`, 'case_closed', OLD.`case_closed`, 'monitor', OLD.`monitor`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'ref_id', NEW.`ref_id`, 'guest_name', NEW.`guest_name`, 'room_number', NEW.`room_number`, 'time_reported', NEW.`time_reported`, 'checkout_date', NEW.`checkout_date`, 'feedback', NEW.`feedback`, 'action_taken', NEW.`action_taken`, 'case_closed', NEW.`case_closed`, 'monitor', NEW.`monitor`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_guest_experience_audit_delete` AFTER DELETE ON `ops_report_guest_experience` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_guest_experience', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'ref_id', OLD.`ref_id`, 'guest_name', OLD.`guest_name`, 'room_number', OLD.`room_number`, 'time_reported', OLD.`time_reported`, 'checkout_date', OLD.`checkout_date`, 'feedback', OLD.`feedback`, 'action_taken', OLD.`action_taken`, 'case_closed', OLD.`case_closed`, 'monitor', OLD.`monitor`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_butler_audit_insert` AFTER INSERT ON `ops_report_butler` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_butler', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'room_number', NEW.`room_number`, 'notes', NEW.`notes`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_butler_audit_update` AFTER UPDATE ON `ops_report_butler` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_butler', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'room_number', OLD.`room_number`, 'notes', OLD.`notes`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'room_number', NEW.`room_number`, 'notes', NEW.`notes`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_butler_audit_delete` AFTER DELETE ON `ops_report_butler` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_butler', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'room_number', OLD.`room_number`, 'notes', OLD.`notes`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_night_shift_audit_insert` AFTER INSERT ON `ops_report_night_shift` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_night_shift', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'guest_name', NEW.`guest_name`, 'notes', NEW.`notes`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_night_shift_audit_update` AFTER UPDATE ON `ops_report_night_shift` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_night_shift', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'guest_name', OLD.`guest_name`, 'notes', OLD.`notes`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'guest_name', NEW.`guest_name`, 'notes', NEW.`notes`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_night_shift_audit_delete` AFTER DELETE ON `ops_report_night_shift` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_night_shift', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'guest_name', OLD.`guest_name`, 'notes', OLD.`notes`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_hotel_figure_audit_insert` AFTER INSERT ON `ops_report_hotel_figure` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_hotel_figure', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'field_label', NEW.`field_label`, 'field_value', NEW.`field_value`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_hotel_figure_audit_update` AFTER UPDATE ON `ops_report_hotel_figure` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_hotel_figure', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'field_label', OLD.`field_label`, 'field_value', OLD.`field_value`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
+  JSON_OBJECT('ops_report_id', NEW.`ops_report_id`, 'field_label', NEW.`field_label`, 'field_value', NEW.`field_value`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END//
+CREATE TRIGGER `trg_ops_report_hotel_figure_audit_delete` AFTER DELETE ON `ops_report_hotel_figure` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'ops_report_hotel_figure', OLD.`id`, 'DELETE',
+  JSON_OBJECT('ops_report_id', OLD.`ops_report_id`, 'field_label', OLD.`field_label`, 'field_value', OLD.`field_value`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`),
   NULL, @app_ip_address, @app_user_agent);
 END//
 DELIMITER ;

@@ -212,6 +212,30 @@ if (!$res || !mysqli_fetch_assoc($res)) {
     opr_verify_pass('modules_registry has ops_report');
 }
 
+$auditTables = [
+    'ops_report',
+    'ops_report_fb_outlet',
+    'ops_report_walk_round',
+    'ops_report_courtesy_call',
+    'ops_report_guest_experience',
+    'ops_report_butler',
+    'ops_report_night_shift',
+    'ops_report_hotel_figure',
+];
+foreach ($auditTables as $table) {
+    $safeTable = mysqli_real_escape_string($conn, $table);
+    $res = mysqli_query(
+        $conn,
+        "SELECT COUNT(*) AS c FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = '{$safeTable}' AND TRIGGER_NAME LIKE 'trg\\_%\\_audit\\_%'"
+    );
+    $count = $res ? (int)mysqli_fetch_assoc($res)['c'] : 0;
+    if ($count < 3) {
+        opr_verify_fail("Missing audit triggers for {$table} (expected 3, found {$count})");
+    } else {
+        opr_verify_pass("Audit triggers present for {$table}");
+    }
+}
+
 if ($failures > 0) {
     echo colorText("{$failures} failure(s).", 'fail') . $nl;
     exit(1);
