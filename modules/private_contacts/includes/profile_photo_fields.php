@@ -12,7 +12,7 @@ $pcHasExistingPhoto = $pcPhotoUrl !== '';
 <div class="itm-employee-photo-field">
     <label class="itm-employee-photo-label">Profile Photo</label>
     <div class="itm-employee-photo-target itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload profile photo">
-        <input type="file" name="photo" id="private-contact-photo-input" class="itm-employee-photo-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg,image/jpg,image/pjpeg">
+        <input type="file" name="photo" id="private-contact-photo-input" class="itm-employee-photo-input" accept=".png,image/png">
         <input type="hidden" name="confirm_replace" id="confirm_replace" value="0">
         <label for="private-contact-photo-input" class="itm-employee-photo-trigger">
             <?php if ($pcPhotoUrl !== ''): ?>
@@ -23,7 +23,7 @@ $pcHasExistingPhoto = $pcPhotoUrl !== '';
             <?php endif; ?>
         </label>
     </div>
-    <p class="itm-employee-photo-hint">Drag and drop or click to upload PNG/JPG.</p>
+    <p class="itm-employee-photo-hint">Drag and drop or click to upload PNG.</p>
 </div>
 <script src="../../js/itm-upload-helper.js"></script>
 <script>
@@ -42,8 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         var lowerName = (file.name || '').toLowerCase();
-        if (!lowerName.endsWith('.png') && !lowerName.endsWith('.jpg') && !lowerName.endsWith('.jpeg')) {
-            alert('Only PNG and JPG profile photos are allowed.');
+        if (!lowerName.endsWith('.png')) {
+            alert('Only PNG profile photos are allowed.');
             evt.target.value = '';
             return;
         }

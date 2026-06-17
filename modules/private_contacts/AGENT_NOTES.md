@@ -19,7 +19,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Custom list with search, favourite star (AJAX), photo thumbnails.
 - `data-itm-db-import-endpoint` on index table for Excel import.
 - Actions column uses `itm-actions-cell` markers.
-- Create/edit profile photo uses the same employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, PNG/JPG). Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
+- Create/edit profile photo uses the employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, **PNG only**). Hint: `Drag and drop or click to upload PNG.` Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
 
 ## 7. File Structure
 - `index.php` — HTML list view.
@@ -39,7 +39,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Do not reuse company contacts visibility rules — this module is user-private only.
 - Photo paths must stay inside the user's Private explorer segment.
 - Do not drop `user_id` from DELETE/WHERE clauses.
-- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; accept PNG and JPG only (same contract as employees). Type resolution uses shared `itm_profile_photo_allowed_extension()` from `includes/itm_profile_photo_upload.php` (`getimagesize`, finfo MIME, browser `type`, `.png`/`.jpg`/`.jpeg` filename fallback). Upload failures surface `photo_error` on create/edit redirects instead of failing silently.
+- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; **PNG only** (unlike employees, which accepts PNG and JPG). Type resolution uses `pc_contact_photo_resolve_png_extension()`. Upload failures surface `photo_error` on create/edit redirects.
 
 ## 11. Examples of Safe Code Patterns
 
