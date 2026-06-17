@@ -1033,6 +1033,24 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Reproduction script for Zip Slip (path traversal during extraction) vulnerability.</td>
                     <td><code>php scripts/repro_zip_slip.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="repro_notes_traversal.php">repro_notes_traversal.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Path Traversal and arbitrary file read via Notes ZIP download.</td>
+                    <td><code>php scripts/repro_notes_traversal.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_notes_idor.php">repro_notes_idor.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Cross-user IDOR (unauthorized view/delete) in the Notes module.</td>
+                    <td><code>php scripts/repro_notes_idor.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_audit_disclosure.php">repro_audit_disclosure.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Sensitive Information Disclosure (reset tokens) in Audit Logs.</td>
+                    <td><code>php scripts/repro_audit_disclosure.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
