@@ -47,6 +47,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 
 - Registry is global; access rows are per `company_id`.
 - Matrix columns use all active companies; enforcement uses session `company_id`.
+- **Sidebar/Settings discovery:** active `modules_registry` rows appear in SideMenu and the live sidebar from DB alone (`itm_merge_registry_modules_into_sidebar_discovery()`); a `modules/{slug}/` folder is not required for listing. Saved sidebar preferences are re-normalised on load so new registry rows are merged into order/visibility automatically. CRUD URLs still require a real module folder when users open the link.
 
 ## 9. Audit Logging Requirements
 
