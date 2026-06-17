@@ -87,7 +87,7 @@
             if (checkbox) {
                 var indicator = checkbox.parentNode ? checkbox.parentNode.querySelector('span[aria-hidden="true"]') : null;
                 if (indicator) {
-                    indicator.textContent = payload.enabled ? '✓' : '✗';
+                    indicator.textContent = payload.enabled ? '✅' : '❌';
                 }
             }
             return payload;
@@ -142,7 +142,7 @@
                 toggle.checked = !!enabled;
                 var indicator = toggle.parentNode ? toggle.parentNode.querySelector('span[aria-hidden="true"]') : null;
                 if (indicator) {
-                    indicator.textContent = enabled ? '✓' : '✗';
+                    indicator.textContent = enabled ? '✅' : '❌';
                 }
             });
             exitSelectionMode();
@@ -172,7 +172,7 @@
                 toggle.checked = !desired;
                 var indicator = toggle.parentNode ? toggle.parentNode.querySelector('span[aria-hidden="true"]') : null;
                 if (indicator) {
-                    indicator.textContent = toggle.checked ? '✓' : '✗';
+                    indicator.textContent = toggle.checked ? '✅' : '❌';
                 }
                 alert('Could not update module access.');
             }).finally(function () {
