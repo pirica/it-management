@@ -18,6 +18,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 - Only `itm_is_admin()` users may access this module.
 - Opt-in policy: `has_module_access()` requires `company_module_access.enabled = 1` plus active registry row; missing row denies access. Fresh installs seed all company × module rows in `database.sql`.
 - The admin matrix must show **all** registry modules — never filter rows like the sidebar does.
+- Matrix and registry list order: `module_slug ASC` (stable ascending; avoids emoji-prefixed `module_name` sorting after letters).
 - System modules appear in the matrix; `settings` stays always available to all users.
 - Inactive registry rows (`active = 0`) are listed but toggles are disabled.
 - AJAX toggles must use CSRF and write through `itm_set_company_module_access()`.
