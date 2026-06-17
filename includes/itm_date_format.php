@@ -293,3 +293,20 @@ if (!function_exists('itm_iso_week_bounds')) {
         ];
     }
 }
+
+if (!function_exists('itm_sql_valid_date_predicate')) {
+    /**
+     * SQL fragment excluding NULL and legacy zero dates without referencing '0000-00-00'
+     * (MySQL 8 NO_ZERO_DATE rejects that literal in prepared statements).
+     */
+    function itm_sql_valid_date_predicate($columnExpression, $minimumDate = '1970-01-01')
+    {
+        $column = trim((string)$columnExpression);
+        $minimum = trim((string)$minimumDate);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $minimum)) {
+            $minimum = '1970-01-01';
+        }
+
+        return $column . " >= '" . $minimum . "'";
+    }
+}

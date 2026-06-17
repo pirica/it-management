@@ -125,7 +125,7 @@ if (!mysqli_query($conn, $insertSql)) {
         WHERE e.company_id = {$companyId}
           AND e.id = {$probeEmployeeId}
           AND e.termination_date IS NOT NULL
-          AND e.termination_date <> '0000-00-00'
+          AND " . itm_sql_valid_date_predicate('e.termination_date') . "
           AND e.termination_date >= '{$weekStart}'
           AND e.termination_date <= '{$weekEnd}'
           AND MONTH(e.termination_date) = {$month}
