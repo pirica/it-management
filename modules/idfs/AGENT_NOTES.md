@@ -63,7 +63,7 @@ Manages Intermediate Distribution Frames (IDFs): physical network distribution p
 - FK option queries must scope by `company_id` first; append persisted FK values when company-scoped lists omit legacy rows.
 
 ## 9. Audit Logging Requirements
-Database triggers write to `audit_logs` when `enable_audit_logs` is on (session variables `@app_user_id`, `@app_company_id` set in `config/config.php`). Do not overwrite those session variables in module code.
+Database triggers always write to `audit_logs` on DML (not gated by `enable_audit_logs`; session variables `@app_user_id`, `@app_company_id` set in `config/config.php`). Do not overwrite those session variables in module code.
 
 | Trigger | Table | Actions |
 |---------|-------|---------|

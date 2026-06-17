@@ -17,7 +17,7 @@ Tracks actual financial expenditures against budgets.
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
-- **CSRF**: POST handlers use `itm_require_post_csrf()`; forms include hidden `csrf_token`.
+- **CSRF**: POST handlers validate via `cr_require_valid_csrf_token()`; forms include hidden `csrf_token` from `itm_get_csrf_token()`.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
@@ -35,7 +35,7 @@ Tracks actual financial expenditures against budgets.
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_expenses_audit_insert`, `trg_expenses_audit_update`, `trg_expenses_audit_delete` on `expenses` in `database.sql` write to `audit_logs` when `enable_audit_logs` is enabled.
+- Database triggers `trg_expenses_audit_insert`, `trg_expenses_audit_update`, `trg_expenses_audit_delete` on `expenses` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.

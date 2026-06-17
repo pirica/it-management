@@ -15,15 +15,16 @@ A filtered view of the Equipment module specifically for port patch panel device
 ## 4. Business Rules (Critical for Agents)
 - **Filter:** List and view enforce `LOWER(TRIM(et.name)) = 'port patch panel'` via `$equipmentTypeNameFilter = 'Port Patch Panel'` in `index.php` / `view.php`.
 - **Inheritance:** All CRUD behaviour lives in `modules/equipment/`; this folder only sets wrapper variables.
+- **Edit gap:** `edit.php` does not set `$equipmentTypeNameFilter`; only list/view wrappers scope by type.
 - **List restrictions:** `index.php` sets `$equipmentAllowCreate`, `$equipmentAllowDelete`, and `$equipmentAllowImport` to `false`.
 
 ## 5. UI Behavior Requirements
 - **Standard Equipment list** (search, sort, pagination, export) scoped to patch panels.
-- **View/edit** routes through wrapper files with the same type filter guard on detail screens.
+- **List and view** enforce the type filter via wrapper variables; **edit** routes to `equipment/edit.php` without setting `$equipmentTypeNameFilter` — a direct edit URL can open any equipment id (known gap; document, do not claim edit is type-guarded).
 - **company_id** hidden from UI (inherited from equipment).
 
 ## 6. API Actions (If Applicable)
-- None in this folder. Inherits equipment JSON handlers from `modules/equipment/index.php` when invoked on the parent module.
+- **import_excel_rows** and other JSON handlers in `modules/equipment/index.php` also run when requests hit this façade's `index.php` (wrapper `require`s equipment index).
 
 ## 7. File Structure
 - **index.php** — sets `$equipmentTypeNameFilter = 'Port Patch Panel'` and wrapper flags; `require '../equipment/index.php'`.

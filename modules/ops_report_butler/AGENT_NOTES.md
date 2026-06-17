@@ -13,13 +13,14 @@ Dynamic suites-butler service rows on a daily Ops Report. Each row records a roo
 
 ## 4. Business Rules (Critical for Agents)
 - User-added rows only (no seed on report create).
-- **Edit lock (D-2)** on parent report dates for non-admins.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - Any user may add/delete butler rows when parent date is editable.
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD (secondary access path).
 - Search across `room_number` and `notes`.
 - Standard bulk toolbar, pagination, export/import.
+- CSRF on all POST handlers via `cr_require_valid_csrf_token()`; forms include `csrf_token` from `itm_get_csrf_token()`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — `index.php`.
@@ -29,7 +30,8 @@ Dynamic suites-butler service rows on a daily Ops Report. Each row records a roo
 - **index.php**, **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php**.
 
 ## 8. Multi-Tenant Rules
-- All queries scoped by `company_id`; FK parent in same company.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Triggers: `trg_ops_report_butler_audit_insert|update|delete`.

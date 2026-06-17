@@ -40,7 +40,7 @@ Maintains the company-scoped lookup of device types used on IDF rack positions (
 - Seed data in `database.sql` duplicates types per company; never copy rows across tenants without setting `company_id`.
 
 ## 9. Audit Logging Requirements
-MySQL triggers on `idf_device_type` insert audit rows when audit logging is enabled (`enable_audit_logs` in settings). Session actor columns come from `config.php` (`@app_user_id`, `@app_username`, etc.).
+MySQL triggers on `idf_device_type` insert audit rows on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`). Session actor columns come from `config.php` (`@app_user_id`, `@app_username`, etc.).
 
 | Trigger | Actions | Payload highlights |
 |---------|---------|-------------------|

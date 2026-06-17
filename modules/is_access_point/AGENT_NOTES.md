@@ -15,6 +15,7 @@ A filtered view of the Equipment module specifically for wireless access points 
 ## 4. Business Rules (Critical for Agents)
 - **Filter:** List and view enforce `LOWER(TRIM(et.name)) = 'access point'` via `$equipmentTypeNameFilter = 'Access Point'` in `index.php` / `view.php`.
 - **Inheritance:** All CRUD behaviour lives in `modules/equipment/`; this folder only sets wrapper variables.
+- **Edit gap:** `edit.php` does not set `$equipmentTypeNameFilter`; only list/view wrappers scope by type.
 - **List restrictions:** `index.php` sets `$equipmentAllowCreate`, `$equipmentAllowDelete`, and `$equipmentAllowImport` to `false` — create/edit/delete use dedicated wrapper routes to equipment handlers.
 
 ## 5. UI Behavior Requirements
@@ -41,7 +42,7 @@ A filtered view of the Equipment module specifically for wireless access points 
 ## 9. Audit Logging Requirements
 - INSERT, UPDATE, and DELETE on `equipment` are logged by MySQL triggers `trg_equipment_audit_insert`, `trg_equipment_audit_update`, and `trg_equipment_audit_delete` (see `database.sql`).
 - Entries are written to **audit_logs** with `table_name = 'equipment'` and JSON `old_values` / `new_values`; session context comes from `@app_user_id` / `@app_company_id` set in `config/config.php`.
-- This façade has no local audit handlers — changes made via equipment wrappers are covered by those triggers when `enable_audit_logs` is on.
+- This façade has no local audit handlers.
 
 ## 10. Common Pitfalls
 - **Protection Zone:** `modules/equipment/` is in the Protection Zone — do not change its logic or structure unless explicitly requested (`AGENTS.md`).

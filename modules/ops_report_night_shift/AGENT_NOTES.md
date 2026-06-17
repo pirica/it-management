@@ -13,7 +13,7 @@ Dynamic night-shift guest list rows (23h00 – 07h30) on a daily Ops Report. Sto
 
 ## 4. Business Rules (Critical for Agents)
 - User-added rows per report date.
-- **Edit lock (D-2)** enforced on parent for non-admins.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - Section title and column labels come from `ops_report.report_ui_json` (parent module), not this CRUD folder.
 
 ## 5. UI Behavior Requirements
@@ -29,7 +29,8 @@ Dynamic night-shift guest list rows (23h00 – 07h30) on a daily Ops Report. Sto
 - **index.php**, **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php**.
 
 ## 8. Multi-Tenant Rules
-- `company_id` session scope on all queries and inserts.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Triggers: `trg_ops_report_night_shift_audit_insert|update|delete`.

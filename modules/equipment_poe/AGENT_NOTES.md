@@ -15,7 +15,7 @@ Tracks Power over Ethernet (PoE) capabilities and usage for equipment (primarily
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
-- **CSRF**: POST handlers use `itm_require_post_csrf()`; forms include hidden `csrf_token`.
+- **CSRF**: POST handlers validate via `cr_require_valid_csrf_token()`; forms include hidden `csrf_token` from `itm_get_csrf_token()`.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
@@ -31,11 +31,11 @@ Tracks Power over Ethernet (PoE) capabilities and usage for equipment (primarily
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_equipment_poe_audit_insert`, `trg_equipment_poe_audit_update`, `trg_equipment_poe_audit_delete` on `equipment_poe` in `database.sql` write to `audit_logs` when `enable_audit_logs` is enabled.
+- Database triggers `trg_equipment_poe_audit_insert`, `trg_equipment_poe_audit_update`, `trg_equipment_poe_audit_delete` on `equipment_poe` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
-- Referenced by **equipment**, **idf_ports**, **switch_ports**.
+- Referenced by **equipment** (`switch_poe_id`) and **idf_ports** (`poe_id`).
 - Respect tenant unique constraints; duplicates fail at the database layer.
 - Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
 

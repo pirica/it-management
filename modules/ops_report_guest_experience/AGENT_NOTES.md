@@ -13,7 +13,7 @@ Dynamic guest-experience feedback rows on a daily Ops Report. Stores reference i
 
 ## 4. Business Rules (Critical for Agents)
 - User-added rows per report date (no default seed).
-- **Edit lock (D-2)** enforced on parent report for non-admins.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - `ref_id` is optional guest-experience reference (varchar).
 - Whitelist AJAX field names through parent `opr_child_table_map()`.
 
@@ -30,7 +30,8 @@ Dynamic guest-experience feedback rows on a daily Ops Report. Stores reference i
 - **index.php**, **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php**.
 
 ## 8. Multi-Tenant Rules
-- Strict `company_id`; parent `ops_report_id` must match tenant.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Triggers: `trg_ops_report_guest_experience_audit_insert|update|delete`.

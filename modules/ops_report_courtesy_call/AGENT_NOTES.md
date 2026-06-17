@@ -13,7 +13,7 @@ Dynamic courtesy-call guest rows on a daily Ops Report. Tracks guest name, room,
 
 ## 4. Business Rules (Critical for Agents)
 - Rows are user-added per report date; no fixed seed set (unlike F&B outlets / walk-round).
-- **Edit lock (D-2):** parent report blocks edits on dates older than yesterday for non-admins.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - Any authenticated user may add/delete courtesy-call rows when the parent report date is editable.
 - Field names in parent AJAX must stay whitelisted via `opr_child_table_map()`.
 
@@ -30,7 +30,8 @@ Dynamic courtesy-call guest rows on a daily Ops Report. Tracks guest name, room,
 - **index.php**, **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php**.
 
 ## 8. Multi-Tenant Rules
-- `company_id` + valid `ops_report_id` in same tenant required on every insert/update.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Triggers: `trg_ops_report_courtesy_call_audit_insert|update|delete`.
