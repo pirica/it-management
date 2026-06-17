@@ -494,7 +494,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                 </div>
             </div>
 
-            <div class="card opr-section" id="opr-report-root" data-report-id="<?= $report_id ?>" data-report-date="<?= sanitize($selected_date) ?>" data-can-edit="<?= $can_edit_report ? '1' : '0' ?>">
+            <div class="card opr-section" id="opr-report-root" data-report-id="<?= $report_id ?>" data-report-date="<?= sanitize($selected_date) ?>" data-can-edit="<?= $can_edit_report ? '1' : '0' ?>" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                 <h2>Duty Managers Team</h2>
                 <div class="opr-header-grid">
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="today_shift">
@@ -547,7 +547,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <h2 style="margin-top:20px;">Food &amp; Beverage Overview</h2>
                 <div style="overflow:auto;">
-                    <table class="table opr-table" id="opr-fb-table">
+                    <table class="table opr-table" id="opr-fb-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>Outlet</th>
@@ -585,7 +585,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <h2 style="margin-top:20px;">Hotel Walk-Round Check</h2>
                 <div style="overflow:auto;">
-                    <table class="table opr-table" id="opr-walk-table">
+                    <table class="table opr-table" id="opr-walk-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>Area</th>
@@ -625,7 +625,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <h2 style="margin-top:20px;">Guest Experience Report</h2>
                 <div style="overflow:auto;">
-                    <table class="table opr-table" id="opr-guest-table">
+                    <table class="table opr-table" id="opr-guest-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -671,7 +671,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <h2 style="margin-top:20px;">Courtesy Calls</h2>
                 <div style="overflow:auto;">
-                    <table class="table opr-table" id="opr-courtesy-table">
+                    <table class="table opr-table" id="opr-courtesy-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>Guest Name</th>
@@ -716,7 +716,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <h2 style="margin-top:20px;">Suites Butler Service</h2>
                 <div style="overflow:auto;">
-                    <table class="table opr-table" id="opr-butler-table">
+                    <table class="table opr-table" id="opr-butler-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>Room</th>
@@ -751,7 +751,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
 
                 <h2 style="margin-top:20px;">Night Shift (23h00 – 07h30)</h2>
                 <div style="overflow:auto;">
-                    <table class="table opr-table" id="opr-night-shift-table">
+                    <table class="table opr-table" id="opr-night-shift-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>Guest Name</th>
