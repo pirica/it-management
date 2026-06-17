@@ -226,6 +226,21 @@
         });
     }
 
+    function resolveCmaIconSaveValue(input, rawValue) {
+        var inherited = (input.getAttribute('data-inherited-icon') || '').trim();
+        var value = (rawValue || '').trim();
+        if (value === inherited) {
+            return '';
+        }
+        return value;
+    }
+
+    function resolveCmaIconDisplayValue(input, savedIcon) {
+        var inherited = (input.getAttribute('data-inherited-icon') || '').trim();
+        var saved = (savedIcon || '').trim();
+        return saved !== '' ? saved : inherited;
+    }
+
     function postIcon(companyId, moduleId, icon, input) {
         var body = new URLSearchParams();
         body.set('ajax_action', 'set_icon');
@@ -246,7 +261,8 @@
                 throw new Error((payload && payload.error) || 'Icon update failed');
             }
             if (input) {
-                input.value = payload.icon || '';
+                input.value = resolveCmaIconDisplayValue(input, payload.icon || '');
+                input.setAttribute('data-last-saved', (payload.icon || '').trim());
             }
             return payload;
         });
@@ -257,12 +273,15 @@
             var companyId = input.getAttribute('data-company-id');
             var moduleId = input.getAttribute('data-module-id');
             var iconValue = input.value.trim();
-            var previous = input.getAttribute('data-last-saved') || input.defaultValue || '';
+            var previousDisplay = input.value;
+            var previousSaved = input.getAttribute('data-last-saved') || '';
+            var iconToSave = resolveCmaIconSaveValue(input, iconValue);
             input.disabled = true;
-            postIcon(companyId, moduleId, iconValue, input).then(function () {
-                input.setAttribute('data-last-saved', iconValue);
+            postIcon(companyId, moduleId, iconToSave, input).then(function () {
+                input.setAttribute('data-last-saved', iconToSave);
             }).catch(function () {
-                input.value = previous;
+                input.value = previousDisplay;
+                input.setAttribute('data-last-saved', previousSaved);
                 alert('Could not update module icon.');
             }).finally(function () {
                 input.disabled = false;

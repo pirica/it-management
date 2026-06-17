@@ -22,7 +22,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 
 ## 5. UI Behavior Requirements
 - **Sidebar Toggles**: Uses checkboxes with a specific `change` event listener to ensure configuration persistence.
-- **Sidebar emoji overrides**: SideMenu rows with a `match_dir` slug expose an optional emoji field saved to `ui_configuration.module_icon_overrides` (empty = company default from Company Module Access).
+- **Sidebar emoji overrides**: SideMenu rows with a `match_dir` slug expose a compact emoji field (`.itm-module-icon-input`) pre-filled with the effective icon; matching the company default on save clears `module_icon_overrides`.
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.
 - **API key POST actions**: `save_api_key`, `generate_api_key` (CSRF required).
 

@@ -26,7 +26,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 
 ## 5. UI Behavior Requirements
 
-- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), per-cell company-default emoji inputs, Select All / Cancel Select / Unselect All, client-side filter.
+- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), compact editable emoji inputs (pre-filled with effective icon), Select All / Cancel Select / Unselect All, client-side filter.
 - `list_all.php` — flat registry list with search.
 - `create.php` / `edit.php` — registry row CRUD with checkbox pattern for `active` and `is_system_module`.
 - Standard layout shell with sidebar/header.
