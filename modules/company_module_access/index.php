@@ -323,7 +323,7 @@ $modulePathEsc = sanitize($modulePath);
                                                     <?= $effectiveEnabled ? 'checked' : '' ?>
                                                     <?= $toggleDisabled ? 'disabled' : '' ?>
                                                 >
-                                                <span aria-hidden="true"><?= $effectiveEnabled ? '✓' : '✗' ?></span>
+                                                <span class="itm-check-indicator" aria-hidden="true"><?= $effectiveEnabled ? '✅' : '❌' ?></span>
                                             </label>
                                         </td>
                                     <?php endforeach; ?>
@@ -423,8 +423,8 @@ $modulePathEsc = sanitize($modulePath);
                         <?php else: ?>
                             <p><strong>Module Name:</strong> <?= sanitize((string)$viewRow['module_name']) ?></p>
                             <p><strong>Slug:</strong> <?= sanitize((string)$viewRow['module_slug']) ?></p>
-                            <p><strong>System Module:</strong> <?= ((int)$viewRow['is_system_module'] === 1) ? 'Yes' : 'No' ?></p>
-                            <p><strong>Active:</strong> <?= ((int)$viewRow['active'] === 1) ? 'Yes' : 'No' ?></p>
+                            <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
+                            <p><strong>Active:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['active'] === 1) ? '✅' : '❌' ?></span></p>
                             <a class="btn btn-sm" href="edit.php?id=<?= (int)$viewRow['id'] ?>">Edit</a>
                             <a class="btn btn-sm" href="list_all.php">Back</a>
                         <?php endif; ?>
