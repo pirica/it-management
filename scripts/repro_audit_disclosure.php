@@ -68,4 +68,11 @@ if ($log) {
     echo "No audit log entry captured." . $nl;
 }
 
+// Why: Shutdown teardown can run after mysqli is closed; delete while the connection is still open.
+// Why: DELETE trigger audit rows use @app_user_id; reset actor to Admin so FK allows disposable user delete.
+itm_script_test_user_set_audit_context($conn, 1, 'Admin', $company_id);
+mysqli_query($conn, "SET @app_email = NULL");
+itm_script_test_user_restore($conn, $user_id, $snapshot);
+itm_script_test_user_delete($conn, $user_id);
+
 itm_script_output_end();

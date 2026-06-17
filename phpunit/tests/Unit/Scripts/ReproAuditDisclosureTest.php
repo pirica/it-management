@@ -34,7 +34,8 @@ class ReproAuditDisclosureTest extends ItmScriptCliTestCase
 
         $result = $this->runRepoScript('scripts/repro_audit_disclosure.php');
         $this->assertSame(0, $result['exit'], $result['output']);
-        $this->assertStringNotContainsString('user ID 1', $result['output']);
+        // Why: Substring "user ID 1" falsely matches disposable IDs such as 108; require whole ID 1.
+        $this->assertDoesNotMatchRegularExpression('/\buser ID 1\b/', $result['output']);
         $this->assertStringContainsString('disposable user ID', $result['output']);
 
         $adminAfter = itm_script_test_user_snapshot($this->conn, 1, [
