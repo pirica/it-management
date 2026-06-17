@@ -17,6 +17,40 @@ if (!function_exists('pc_contact_photo_serve_url')) {
     }
 }
 
+if (!function_exists('pc_contact_photo_resolve_extension')) {
+    /**
+     * Resolve png/jpg from finfo MIME and original filename (Windows may report image/pjpeg).
+     *
+     * @return string|null png|jpg or null when not an allowed profile photo
+     */
+    function pc_contact_photo_resolve_extension($tmpPath, $originalName)
+    {
+        $mime = '';
+        if (is_string($tmpPath) && $tmpPath !== '' && is_file($tmpPath)) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = strtolower((string)$finfo->file($tmpPath));
+        }
+
+        if ($mime === 'image/png') {
+            return 'png';
+        }
+        if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/pjpeg'], true)) {
+            return 'jpg';
+        }
+
+        // Why: Some hosts return application/octet-stream for valid JPEG uploads.
+        $lowerName = strtolower((string)$originalName);
+        if (preg_match('/\.png$/', $lowerName)) {
+            return 'png';
+        }
+        if (preg_match('/\.jpe?g$/', $lowerName)) {
+            return 'jpg';
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('pc_contact_photo_store_upload')) {
     /**
      * @return string Stored filename or previous filename when upload skipped/failed
@@ -27,14 +61,10 @@ if (!function_exists('pc_contact_photo_store_upload')) {
             return (string)$existingFilename;
         }
 
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($file['tmp_name']);
-        $ext = null;
-        if ($mime === 'image/png') {
-            $ext = 'png';
-        } elseif ($mime === 'image/jpeg') {
-            $ext = 'jpg';
-        }
+        $ext = pc_contact_photo_resolve_extension(
+            (string)($file['tmp_name'] ?? ''),
+            (string)($file['name'] ?? '')
+        );
         if ($ext === null) {
             return (string)$existingFilename;
         }
@@ -57,6 +87,13 @@ if (!function_exists('pc_contact_photo_store_upload')) {
 
         if (!itm_ensure_files_storage_directory($dir)) {
             return (string)$existingFilename;
+        }
+
+        foreach (['png', 'jpg'] as $oldExt) {
+            $oldPath = $dir . '/' . $contactId . '_photo.' . $oldExt;
+            if (is_file($oldPath) && $oldPath !== $targetPath) {
+                @unlink($oldPath);
+            }
         }
 
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
