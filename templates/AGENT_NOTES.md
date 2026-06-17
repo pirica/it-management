@@ -1,3 +1,16 @@
+Read AGENTS.md 
+Read README.md 
+Read scripts/scripts.php 
+Read phpunit/* 
+Read scripts/api.php 
+Read scripts/SCRIPTS.md
+Read database.sql 
+Read full project
+
+On base on your learnings edit/update or create AGENT_NOTES.md is none exists for each modules/ on base of this (Module Template) don't use scripts to auto the process.
+`templates/AGENT_NOTES.md` (Module Template)
+
+
 # AGENT_NOTES.md — module template
 
 Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `database.sql` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
