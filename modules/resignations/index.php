@@ -270,7 +270,6 @@ $reportTitle = 'Weekly Resignations Report - Week ' . $selectedWeek . '/' . $yea
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
                 <h1 style="margin:0;">📋 <?= sanitize($reportTitle) ?></h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="../birthdays/index.php" class="btn">🎉 Birthdays</a>
                     <a href="../employees/index.php" class="btn">👤 Employees</a>
                 </div>
             </div>
