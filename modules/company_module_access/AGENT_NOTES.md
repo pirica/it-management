@@ -24,7 +24,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 
 ## 5. UI Behavior Requirements
 
-- `index.php` — company × module matrix with AJAX checkboxes, Select All / Cancel Select / Unselect All, client-side filter.
+- `index.php` — company × module matrix with AJAX checkboxes (✅/❌ indicators), Select All / Cancel Select / Unselect All, client-side filter.
 - `list_all.php` — flat registry list with search.
 - `create.php` / `edit.php` — registry row CRUD with checkbox pattern for `active` and `is_system_module`.
 - Standard layout shell with sidebar/header.
