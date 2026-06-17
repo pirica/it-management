@@ -385,9 +385,12 @@ function itm_sidebar_module_is_hidden($moduleName) {
 /**
  * Returns the complete sidebar structure, including auto-discovered modules
  */
-function itm_sidebar_structure($conn = null) {
+function itm_sidebar_structure($conn = null, $forceRefresh = false) {
     // Static cache to avoid redundant filesystem and DB scans in a single request
     static $itm_sidebar_cache = null;
+    if ($forceRefresh) {
+        $itm_sidebar_cache = null;
+    }
     if ($itm_sidebar_cache !== null) {
         return $itm_sidebar_cache;
     }
@@ -468,6 +471,11 @@ function itm_sidebar_structure($conn = null) {
         itm_merge_registry_modules_into_sidebar_discovery($conn, $moduleNames, $existingItemIds);
     }
 
+    // Why: New MySQL tables, module folders, and registry rows must register for live sidebar access without a manual sync visit.
+    if ($conn instanceof mysqli && function_exists('itm_ensure_registry_rows_for_module_slugs') && $moduleNames) {
+        itm_ensure_registry_rows_for_module_slugs($conn, array_keys($moduleNames));
+    }
+
     $discoveredEquipmentTypeItems = [];
     $discoveredItems = [];
     foreach ($moduleNames as $moduleName => $moduleMeta) {
@@ -528,6 +536,48 @@ function itm_sidebar_structure($conn = null) {
 
     $itm_sidebar_cache = $structure;
     return $structure;
+}
+
+/**
+ * @return int
+ */
+function itm_sidebar_structure_slug_count($conn, $slug, $forceRefresh = false)
+{
+    $slug = trim((string)$slug);
+    if ($slug === '') {
+        return 0;
+    }
+
+    $count = 0;
+    foreach (itm_sidebar_structure($conn, $forceRefresh) as $section) {
+        foreach (($section['items'] ?? []) as $item) {
+            if ((string)($item['id'] ?? '') === $slug) {
+                $count++;
+            }
+        }
+    }
+
+    return $count;
+}
+
+/**
+ * Returns whether a module slug appears anywhere in the sidebar structure.
+ */
+function itm_sidebar_structure_contains_slug($conn, $slug, $forceRefresh = false) {
+    $slug = trim((string)$slug);
+    if ($slug === '') {
+        return false;
+    }
+
+    foreach (itm_sidebar_structure($conn, $forceRefresh) as $section) {
+        foreach (($section['items'] ?? []) as $item) {
+            if ((string)($item['id'] ?? '') === $slug) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**

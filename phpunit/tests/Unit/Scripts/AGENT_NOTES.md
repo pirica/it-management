@@ -10,6 +10,7 @@ Tests for maintenance/audit scripts under `scripts/`.
 
 ## 7. File Structure
 - **BypassLoginTest.php** — includes `scripts/bypass_login.php` in-process; verifies session keys and Admin role.
+- **CompanyModuleAccessVerifyTest.php** — subprocess CLI run of `scripts/verify_company_module_access.php` (sidebar discovery probes).
 
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.
