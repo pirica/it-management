@@ -1742,6 +1742,7 @@ if (!function_exists('itm_handle_json_table_import')) {
             foreach ($targetFields as $fieldName) {
                 $rowValues[$fieldName] = 'NULL';
             }
+            $rowValidationError = '';
 
             // Employee module: Pre-resolve department if present
             if ($tableName === 'employees') {
@@ -1800,6 +1801,10 @@ if (!function_exists('itm_handle_json_table_import')) {
                         $rowValues[$fieldName] = '1';
                     } elseif (in_array($normalizedBool, ['0', 'inactive', 'no', 'false', 'off', '❌'], true)) {
                         $rowValues[$fieldName] = '0';
+                    } elseif (is_numeric($rawValue)) {
+                        $rowValues[$fieldName] = (string)(int)$rawValue;
+                    } elseif ($rowValidationError === '') {
+                        $rowValidationError = 'Invalid boolean value for ' . $fieldName;
                     }
                     continue;
                 }
@@ -1910,6 +1915,8 @@ if (!function_exists('itm_handle_json_table_import')) {
                 if (preg_match('/\b(int|decimal|float|double)\b/i', $columnType)) {
                     if (is_numeric($rawValue)) {
                         $rowValues[$fieldName] = (string)$rawValue;
+                    } elseif ($rowValidationError === '') {
+                        $rowValidationError = 'Invalid numeric value for ' . $fieldName;
                     }
                     continue;
                 }
@@ -1928,6 +1935,14 @@ if (!function_exists('itm_handle_json_table_import')) {
                 }
 
                 $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
+            }
+
+            if ($rowValidationError !== '') {
+                $failedRows++;
+                if (count($importErrors) < 5) {
+                    $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . $rowValidationError;
+                }
+                continue;
             }
 
             if ($hasCompanyColumn) {
@@ -2023,7 +2038,7 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
 
         $response = [
-            'ok' => true,
+            'ok' => ($failedRows === 0 || $insertedRows > 0 || $updatedRows > 0),
             'inserted' => $insertedRows,
             'updated' => $updatedRows,
             'failed' => $failedRows,
@@ -2039,7 +2054,11 @@ if (!function_exists('itm_handle_json_table_import')) {
             return $response;
         }
 
-        echo json_encode($response);
+        if (!$response['ok']) {
+            http_response_code(400);
+        }
+
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 }

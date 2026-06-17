@@ -29,15 +29,15 @@ Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms 
 ### 2.3 JSON Import Endpoints (Shared & Module-Specific)
 
 *   **Description:** Endpoints (often in `modules/*/index.php`) that accept `import_excel_rows` in a JSON body.
-*   **Key Find:** **CONFIRMED WEAK DATA VALIDATION.** Payloads with invalid data types (e.g., string for a decimal price field) are accepted and result in `NULL` or default values in the database without returning an error to the client.
-*   **Trusting User-Supplied IDs:** Some import handlers allow updating existing records by ID.
-*   **Inconsistent Status Codes:** Error responses often return 200 OK with an `ok: false` field, which is misleading for automated tools.
+*   **Key Find:** **CONFIRMED WEAK DATA VALIDATION (remediated for numeric columns).** Payloads with invalid data types (e.g., string for a decimal price field) increment `failed`, set `ok:false`, and return HTTP 400 when no rows are inserted. Regression: `php scripts/verify_json_import_validation.php`.
+*   **Trusting User-Supplied IDs:** Some import handlers allow updating existing records by ID; updates require matching tenant `company_id`.
+*   **Status codes:** Validation failures use HTTP 400 with `ok:false` when the import produces no inserts/updates; CSRF and malformed JSON already return 400; sensitive-table imports return 403.
 *   **Recommendation:** Centralize and harden the import logic. Ensure every `UPDATE` or `DELETE` operation includes a `company_id = ?` clause derived strictly from the session.
 
 ### 2.4 Specialized AJAX Handlers (Switch Ports, Rack Planner, Org Chart)
 
 *   **Description:** High-interaction modules use specialized handlers like `includes/update_port.php`.
-*   **Key Find:** **MISLEADING SUCCESS RESPONSES.** Some handlers (e.g., `notes/index.php?ajax_action=single_delete`) correctly apply session-based scoping but return `{"ok":true}` even when no record is found or when the action is blocked by tenant isolation.
+*   **Key Find:** **REMEDIATED (affected_rows contract).** Notes AJAX handlers call `itm_notes_json_mutation_response()` — blocked mutations return HTTP 404 with `ok:false` when zero rows match visibility filters. CSRF failures return HTTP 403; validation errors return HTTP 400/409. Regression: `php scripts/verify_notes_ajax_contract.php`.
 *   **Implicit Scoping:** These scripts often rely on the global `$company_id` from `config.php`.
 *   **Recommendation:** Encapsulate complex multi-table synchronizations into transaction-aware functions. Ensure return values accurately reflect the outcome (e.g., return 404 if no record was updated).
 
@@ -59,8 +59,8 @@ Targeted tests were executed using sample data and established session contexts 
 | :--- | :--- | :--- | :--- | :--- |
 | `select_options_api.php` | Regular user creating Admin | Blocked | Blocked (HTTP 403, no row inserted) | 🟢 PASS |
 | `equipment/view.php` | Accessing other company asset | Redirect/404 | 302 Redirect to Login | 🟢 PASS |
-| `notes/index.php` (AJAX) | Deleting other company note | Blocked | Returned `{"ok":true}` (No deletion) | 🟡 WARN |
-| `catalogs/index.php` (Import) | Importing invalid price type | 400 Bad Request | **Success (Inserted as NULL)** | 🔴 FAIL |
+| `notes/index.php` (AJAX) | Deleting other company note | Blocked | HTTP 404, `{"ok":false}` (no deletion) | 🟢 PASS |
+| `catalogs/index.php` (Import) | Importing invalid price type | 400 Bad Request | **Rejected (`ok:false`, `failed` ≥ 1, no row)** | 🟢 PASS |
 | `catalogs/index.php` (Import) | Supplying `company_id` in row | Blocked/Ignored | **Ignored (Session ID used)** | 🟢 PASS |
 | `explorer/api.php` | Path traversal (`../../`) | Blocked | `{"items":[]}` / `{"content":""}` | 🟢 PASS |
 | `test_sql_injection.php` | Tautology payload (`' OR '1'='1`) | Detected & Blocked | **Blocked (422 Unprocessable Entity)** | 🟢 PASS |
@@ -85,8 +85,8 @@ POST /modules/select_options_api.php
 # Result: Request rejected; no Admin user is created.
 ```
 
-#### Weak Data Validation in JSON Import
-The Catalog import handler accepted a non-numeric string for the `price` field (DECIMAL) and successfully inserted the row with a `NULL` price instead of rejecting the invalid input:
+#### Weak Data Validation in JSON Import (remediated)
+Invalid decimal strings in catalog import are rejected; no row is inserted and the handler returns `ok:false` with HTTP 400 when nothing was imported:
 ```bash
 # Payload sent
 POST /modules/catalogs/index.php
@@ -94,18 +94,18 @@ POST /modules/catalogs/index.php
   "csrf_token": "valid_token",
   "import_excel_rows": [["Model", "Price"], ["Test Catalog Item", "invalid-price"]]
 }
-# Response: {"ok":true,"inserted":1}
-# Database: id=94, model='Test Catalog Item', price=NULL
+# Response: HTTP 400, {"ok":false,"inserted":0,"failed":1,...}
+# Database: no new row for the invalid import line
 ```
 
-#### Misleading Success in Multi-tenant Deletion
-Deleting a note belonging to another user/company returned a success status even though no database modification occurred:
+#### Misleading Success in Multi-tenant Deletion (remediated)
+Deleting a note belonging to another user/company returns HTTP 404 with `ok:false` while the note remains unchanged:
 ```bash
-# Payload sent as RegularUser targeting Admin note (ID: 1)
+# Payload sent as RegularUser targeting another user's note
 POST /modules/notes/index.php?ajax_action=single_delete
 { "csrf_token": "valid_token", "id": 1 }
-# Response: {"ok":true}
-# Database: Note ID 1 remains unchanged (correct scoping, but misleading response).
+# Response: HTTP 404, {"ok":false,"error":"Record not found or not permitted"}
+# Database: Note remains unchanged (correct scoping)
 ```
 
 ## 4. Architectural Observations (from api-examples & scripts/api.php)
