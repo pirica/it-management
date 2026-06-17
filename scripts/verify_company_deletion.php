@@ -2,6 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('Company Deletion Verification');
 
@@ -42,27 +43,54 @@ require basename('$script_path');
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying Unauthorized Company Deletion..." . $nl;
 
-mysqli_query($conn, "INSERT INTO companies (company, incode, active) VALUES ('Temp Delete Me', 'TMPDEL', 1)");
-$targetId = mysqli_insert_id($conn);
+$company_id = 1;
+// Why: companies INSERT audit trigger requires a valid @app_company_id FK before the new row exists.
+mysqli_query($conn, 'SET @app_company_id = ' . (int)$company_id);
+mysqli_query($conn, 'SET @app_user_id = 1');
+
+$incode = 'T' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 5));
+$incodeEsc = mysqli_real_escape_string($conn, $incode);
+if (!mysqli_query($conn, "INSERT INTO companies (company, incode, active) VALUES ('Temp Delete Me', '$incodeEsc', 1)")) {
+    echo colorText('[FAIL] Unable to seed temporary company: ' . mysqli_error($conn), 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+$targetId = (int)mysqli_insert_id($conn);
+if ($targetId <= 0) {
+    echo colorText('[FAIL] Temporary company insert did not return an id.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-company-deletion']);
+if (!is_array($testUser)) {
+    echo colorText('[FAIL] Unable to create disposable non-admin user.', 'fail') . $nl;
+    mysqli_query($conn, "DELETE FROM companies WHERE id = $targetId");
+    itm_script_output_end();
+    exit(1);
+}
+itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
 
 $session = [
-    'user_id' => 999,
-    'username' => 'regular_user',
+    'user_id' => (int)$testUser['id'],
+    'username' => (string)$testUser['username'],
     'role_name' => 'User',
-    'company_id' => 1
+    'company_id' => $company_id,
 ];
 
 $post = [
     'csrf_token' => 'test_token',
-    'id' => $targetId
+    'id' => $targetId,
 ];
 
 $output = run_isolated_post(realpath(__DIR__ . '/../modules/companies/delete.php'), $session, $post);
 
 $res = mysqli_query($conn, "SELECT id FROM companies WHERE id = $targetId");
-if (mysqli_num_rows($res) === 0) {
+if ($res && mysqli_num_rows($res) === 0) {
     echo colorText("[FAIL] Companies Module: Regular user successfully deleted a company!", 'fail') . $nl;
 } else {
-    echo colorText("[PASS] Companies Module: Deletion failed or blocked. Output: $output", 'pass') . $nl;
+    echo colorText("[PASS] Companies Module: Deletion failed or blocked.", 'pass') . $nl;
     mysqli_query($conn, "DELETE FROM companies WHERE id = $targetId");
 }
+
+itm_script_output_end();
