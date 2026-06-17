@@ -6036,6 +6036,7 @@ END//
 DELIMITER ;
 
 -- Table structure for `ops_report`
+DROP TABLE IF EXISTS `ops_report_night_shift`;
 DROP TABLE IF EXISTS `ops_report_butler`;
 DROP TABLE IF EXISTS `ops_report_guest_experience`;
 DROP TABLE IF EXISTS `ops_report_courtesy_call`;
@@ -6064,7 +6065,6 @@ CREATE TABLE `ops_report` (
   `stay_experience_comment` text,
   `hsk_revenue` decimal(14,2) DEFAULT NULL,
   `welcomes_notes` text,
-  `night_shift_notes` text,
   `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -6176,6 +6176,23 @@ CREATE TABLE `ops_report_butler` (
   KEY `ops_report_id` (`ops_report_id`),
   CONSTRAINT `ops_report_butler_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ops_report_butler_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ops_report_night_shift` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ops_report_id` int NOT NULL,
+  `guest_name` varchar(255) DEFAULT NULL,
+  `notes` text,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `ops_report_id` (`ops_report_id`),
+  CONSTRAINT `ops_report_night_shift_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ops_report_night_shift_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Audit Triggers for `ops_report`

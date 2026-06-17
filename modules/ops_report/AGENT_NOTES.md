@@ -10,6 +10,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - **ops_report_courtesy_call** — dynamic courtesy-call rows.
 - **ops_report_guest_experience** — dynamic guest-experience rows.
 - **ops_report_butler** — dynamic suites butler rows.
+- **ops_report_night_shift** — dynamic night-shift guest rows (23h00 – 07h30).
 
 ## 3. Required Relationships
 - All child tables → **ops_report** (`ops_report_id`, cascade delete).
@@ -20,7 +21,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - **Auto-create:** opening a date calls `opr_ensure_report()` — inserts `ops_report` plus default F&B outlets and walk-round areas when missing.
 - **Edit lock (D-2):** non-admins may edit **today and yesterday** only (`report_date > date('Y-m-d', strtotime('-2 days'))`). Older dates are read-only unless `itm_is_admin()`.
 - **All cells editable** when the date is unlocked — no per-field role restrictions (unlike backup tape log).
-- **Extra rows:** any user may add/delete rows in courtesy calls, guest experience, butler, F&B outlets, and walk-round when the date is editable.
+- **Extra rows:** any user may add/delete rows in courtesy calls, guest experience, butler, night shift, F&B outlets, and walk-round when the date is editable.
 - **Exports:** 📗 Excel (SheetJS) and 📄 PDF (browser print) with company header.
 
 ## 5. UI Behavior Requirements
@@ -63,4 +64,4 @@ $report = opr_ensure_report($conn, $company_id, $selected_date);
 ```
 
 ## 12. Module Owner Notes (Optional)
-Layout mirrors the hotel Daily Operations Report PDF (duty managers, revenue block, F&B grid, walk-round, guest experience, courtesy calls, butler, night shift).
+Layout mirrors the hotel Daily Operations Report PDF (duty managers, revenue block, F&B grid, walk-round, guest experience, courtesy calls, butler, night shift guest list).

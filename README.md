@@ -84,13 +84,13 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>database.sql</code> provisions <strong>114 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>database.sql</code> provisions <strong>115 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 114 |
+| **Tables** | 115 |
 | **Sample rows** | ~3,085 (from <code>database.sql</code>) |
 | **Module folders** | 125 under <code>modules/</code> |
 | **Registry entries** | 130 in <code>modules_registry</code> |
@@ -208,9 +208,9 @@
 | Password vault | 2 | 0 |
 | Notes, bookmarks, productivity | 6 | ~5 |
 | Planning and events | 2 | ~10 |
-| Operations | 9 | ~15 |
+| Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
-| **Total** | **113** | **~3,075** |
+| **Total** | **115** | **~3,075** |
 
 <h3 align="center">What this means</h3>
 
