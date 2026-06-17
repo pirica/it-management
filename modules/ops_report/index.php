@@ -77,6 +77,215 @@ if (!function_exists('opr_default_walk_areas')) {
     }
 }
 
+if (!function_exists('opr_default_ui_json')) {
+    // Why: All visible labels and headings are stored per report, not hardcoded in PHP.
+    function opr_default_ui_json() {
+        return [
+            'page_title' => 'Daily Operations Report',
+            'subtitle' => 'Duty Manager & Guest Relations | Daily Reports',
+            'locked_notice' => '(read-only — D-2 or older; admin may edit)',
+            'sections' => [
+                'duty_managers' => 'Duty Managers Team',
+                'hotel_figures' => 'Hotel Figures & Revenue',
+                'fb_overview' => 'Food & Beverage Overview',
+                'walk_round' => 'Hotel Walk-Round Check',
+                'guest_experience' => 'Guest Experience Report',
+                'courtesy_calls' => 'Courtesy Calls',
+                'butler' => 'Suites Butler Service',
+                'night_shift' => 'Night Shift (23h00 – 07h30)',
+            ],
+            'fields' => [
+                'today_shift' => "Today's Shift",
+                'tomorrow_shift' => "Tomorrow's Shift",
+                'occupancy_pct' => 'Occupancy (%)',
+                'occupied_rooms' => 'Occupied Rooms',
+                'total_pax' => 'Total Pax',
+                'average_daily_rate' => 'Average Daily Rate (€)',
+                'revpar' => 'RevPAR (€)',
+                'room_revenue' => 'Room Revenue (€)',
+                'fb_revenue' => 'F&B Revenue (€)',
+                'spa_revenue' => 'Spa Revenue (€)',
+                'kids_club_revenue' => 'Kids Club (€)',
+                'fo_upgrade_rooms' => 'FO | Upgrade Rooms (€)',
+                'total_revenue' => 'TOTAL REVENUE (€)',
+                'stay_score_target' => 'Stay Score Target',
+                'stay_score_ytd' => 'Stay Score YTD',
+                'hsk_revenue' => 'HSK Revenue (€)',
+                'stay_experience_comment' => 'Stay Experience — Comment of the day',
+                'welcomes_notes' => 'Welcomes',
+            ],
+            'tables' => [
+                'fb_outlet' => [
+                    'outlet_name' => 'Outlet',
+                    'covers_breakfast' => 'Breakfast',
+                    'covers_lunch' => 'Lunch',
+                    'covers_dinner' => 'Dinner',
+                    'covers_dado' => 'DADO',
+                    'covers_pool' => 'POOL',
+                    'covers_brunch' => 'BRUNCH',
+                ],
+                'walk_round' => [
+                    'area_name' => 'Area',
+                    'early_shift' => 'Early Shift',
+                    'late_shift' => 'Late Shift',
+                ],
+                'guest_experience' => [
+                    'ref_id' => 'ID',
+                    'guest_name' => 'Guest Name',
+                    'room_number' => 'Room',
+                    'time_reported' => 'Time',
+                    'checkout_date' => 'Check Out',
+                    'feedback' => 'Feedback',
+                    'action_taken' => 'Actions Taken',
+                    'case_closed' => 'Closed',
+                    'monitor' => 'Monitor',
+                ],
+                'courtesy_call' => [
+                    'guest_name' => 'Guest Name',
+                    'room_number' => 'Room',
+                    'time_reported' => 'Time',
+                    'checkout_date' => 'Check Out',
+                    'notes' => 'Notes',
+                    'action_taken' => 'Actions Taken',
+                    'case_closed' => 'Closed',
+                    'monitor' => 'Monitor',
+                ],
+                'butler' => [
+                    'room_number' => 'Room',
+                    'notes' => 'Notes',
+                ],
+                'night_shift' => [
+                    'guest_name' => 'Guest Name',
+                    'notes' => 'Notes',
+                ],
+            ],
+            'buttons' => [
+                'add_fb_outlet' => '➕ Add F&B outlet row',
+                'add_walk_round' => '➕ Add walk-round row',
+                'add_guest_experience' => '➕ Add guest experience row',
+                'add_courtesy_call' => '➕ Add courtesy call row',
+                'add_butler' => '➕ Add butler row',
+                'add_night_shift' => '➕ Add night shift row',
+            ],
+            'controls' => [
+                'day' => 'Day',
+                'month' => 'Month',
+                'year' => 'Year',
+                'go' => 'Go',
+                'export_excel' => '📗 Export Excel',
+                'export_pdf' => '📄 Export PDF',
+                'actions' => 'Actions',
+            ],
+            'defaults' => [
+                'new_fb_outlet' => 'New Outlet',
+                'new_walk_area' => 'New Area',
+            ],
+        ];
+    }
+}
+
+if (!function_exists('opr_resolve_ui_json')) {
+    function opr_resolve_ui_json($report) {
+        $defaults = opr_default_ui_json();
+        if (empty($report['report_ui_json'])) {
+            return $defaults;
+        }
+        $decoded = json_decode((string)$report['report_ui_json'], true);
+        if (!is_array($decoded)) {
+            return $defaults;
+        }
+        return array_replace_recursive($defaults, $decoded);
+    }
+}
+
+if (!function_exists('opr_ui_get')) {
+    function opr_ui_get($ui, $path) {
+        $parts = explode('.', (string)$path);
+        $cur = $ui;
+        foreach ($parts as $part) {
+            if (!is_array($cur) || !array_key_exists($part, $cur)) {
+                return '';
+            }
+            $cur = $cur[$part];
+        }
+        return is_scalar($cur) ? (string)$cur : '';
+    }
+}
+
+if (!function_exists('opr_ui_set')) {
+    function opr_ui_set(&$ui, $path, $value) {
+        $parts = explode('.', (string)$path);
+        $last = array_pop($parts);
+        $cur = &$ui;
+        foreach ($parts as $part) {
+            if (!isset($cur[$part]) || !is_array($cur[$part])) {
+                $cur[$part] = [];
+            }
+            $cur = &$cur[$part];
+        }
+        $cur[$last] = $value;
+        return $ui;
+    }
+}
+
+if (!function_exists('opr_is_allowed_ui_path')) {
+    function opr_is_allowed_ui_path($path) {
+        $root = explode('.', (string)$path)[0];
+        $allowed = ['page_title', 'subtitle', 'locked_notice', 'sections', 'fields', 'tables', 'buttons', 'controls', 'defaults'];
+        return in_array($root, $allowed, true);
+    }
+}
+
+if (!function_exists('opr_persist_ui_json')) {
+    function opr_persist_ui_json($conn, $reportId, $companyId, $ui) {
+        $encoded = json_encode($ui, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $stmt = mysqli_prepare($conn, 'UPDATE ops_report SET report_ui_json = ? WHERE id = ? AND company_id = ?');
+        mysqli_stmt_bind_param($stmt, 'sii', $encoded, $reportId, $companyId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('opr_render_editable_ui_text')) {
+    // Why: Section titles, labels, and table headers blur-save into report_ui_json.
+    function opr_render_editable_ui_text($text, $canEdit, $jsonPath, $tag = 'span', $extraClass = '') {
+        $safe = sanitize((string)$text);
+        $pathAttr = sanitize($jsonPath);
+        $classList = trim('inline-editable-ui ' . $extraClass);
+        if ($canEdit) {
+            $inputClass = 'edit-input-ui form-control';
+            if ($tag === 'label') {
+                $inputClass .= ' opr-ui-label-input';
+            }
+            if ($tag === 'h2') {
+                return '<h2 class="opr-ui-heading ' . sanitize($classList) . '" data-scope="report_ui" data-json-path="' . $pathAttr . '">'
+                    . '<input type="text" class="' . $inputClass . '" value="' . $safe . '"></h2>';
+            }
+            if ($tag === 'th') {
+                return '<th class="' . sanitize($classList) . '" data-scope="report_ui" data-json-path="' . $pathAttr . '">'
+                    . '<input type="text" class="' . $inputClass . '" value="' . $safe . '"></th>';
+            }
+            if ($tag === 'strong') {
+                return '<strong class="' . sanitize($classList) . '" data-scope="report_ui" data-json-path="' . $pathAttr . '">'
+                    . '<input type="text" class="' . $inputClass . '" value="' . $safe . '"></strong>';
+            }
+            return '<' . $tag . ' class="' . sanitize($classList) . '" data-scope="report_ui" data-json-path="' . $pathAttr . '">'
+                . '<input type="text" class="' . $inputClass . '" value="' . $safe . '"></' . $tag . '>';
+        }
+        if ($tag === 'th') {
+            return '<th class="' . sanitize($extraClass) . '">' . $safe . '</th>';
+        }
+        if ($tag === 'h2') {
+            return '<h2 class="opr-ui-heading ' . sanitize($extraClass) . '">' . $safe . '</h2>';
+        }
+        if ($tag === 'strong') {
+            return '<strong class="' . sanitize($extraClass) . '">' . $safe . '</strong>';
+        }
+        return '<' . $tag . ' class="' . sanitize($extraClass) . '">' . $safe . '</' . $tag . '>';
+    }
+}
+
 if (!function_exists('opr_ensure_report')) {
     function opr_ensure_report($conn, $company_id, $report_date) {
         $stmt = mysqli_prepare($conn, 'SELECT * FROM ops_report WHERE company_id = ? AND report_date = ? AND active = 1 LIMIT 1');
@@ -89,9 +298,11 @@ if (!function_exists('opr_ensure_report')) {
             return $report;
         }
 
-        $stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, stay_score_target, active) VALUES (?, ?, ?, 1)');
+        $uiJson = json_encode(opr_default_ui_json(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, stay_score_target, report_ui_json, active) VALUES (?, ?, ?, ?, 1)');
         $defaultTarget = '95.0%';
-        mysqli_stmt_bind_param($stmt, 'iss', $company_id, $report_date, $defaultTarget);
+        mysqli_stmt_bind_param($stmt, 'isss', $company_id, $report_date, $defaultTarget, $uiJson);
         mysqli_stmt_execute($stmt);
         $reportId = (int)mysqli_insert_id($conn);
         mysqli_stmt_close($stmt);
@@ -216,6 +427,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     $value = trim((string)($_POST['value'] ?? ''));
     $row_id = (int)($_POST['row_id'] ?? 0);
 
+    if ($scope === 'report_ui') {
+        $jsonPath = trim((string)($_POST['json_path'] ?? ''));
+        if ($jsonPath === '' || !opr_is_allowed_ui_path($jsonPath)) {
+            opr_json_response(['success' => false, 'message' => 'Invalid UI path.']);
+        }
+        $ui = opr_resolve_ui_json($report);
+        opr_ui_set($ui, $jsonPath, $value);
+        $ok = opr_persist_ui_json($conn, $report_id, $company_id, $ui);
+        opr_json_response(['success' => $ok, 'id' => $report_id, 'message' => $ok ? 'Saved.' : 'Save failed.']);
+    }
+
     if ($scope === 'report') {
         if (!in_array($field, opr_report_fields(), true)) {
             opr_json_response(['success' => false, 'message' => 'Invalid field.']);
@@ -265,6 +487,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_row'])) {
     $report = opr_ensure_report($conn, $company_id, $report_date);
     $report_id = (int)$report['id'];
     $table = $map[$scope]['table'];
+    $uiResolved = opr_resolve_ui_json($report);
 
     $stmt = mysqli_prepare($conn, 'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort FROM `' . $table . '` WHERE ops_report_id = ? AND company_id = ?');
     mysqli_stmt_bind_param($stmt, 'ii', $report_id, $company_id);
@@ -274,12 +497,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_row'])) {
     $sort = (int)($sortRow['next_sort'] ?? 0);
 
     if ($scope === 'fb_outlet') {
-        $label = 'New Outlet';
+        $label = opr_ui_get($uiResolved, 'defaults.new_fb_outlet') ?: 'New Outlet';
         $sql = 'INSERT INTO ops_report_fb_outlet (company_id, ops_report_id, outlet_name, sort_order, active) VALUES (?, ?, ?, ?, 1)';
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'iisi', $company_id, $report_id, $label, $sort);
     } elseif ($scope === 'walk_round') {
-        $label = 'New Area';
+        $label = opr_ui_get($uiResolved, 'defaults.new_walk_area') ?: 'New Area';
         $sql = 'INSERT INTO ops_report_walk_round (company_id, ops_report_id, area_name, sort_order, active) VALUES (?, ?, ?, ?, 1)';
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'iisi', $company_id, $report_id, $label, $sort);
@@ -360,6 +583,12 @@ if ($crud_action === 'delete') {
 $report = opr_ensure_report($conn, $company_id, $selected_date);
 $report_id = (int)$report['id'];
 
+$ui_json = opr_resolve_ui_json($report);
+if (empty($report['report_ui_json'])) {
+    opr_persist_ui_json($conn, $report_id, $company_id, $ui_json);
+    $report['report_ui_json'] = json_encode($ui_json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
 $fb_outlets = [];
 $stmt = mysqli_prepare($conn, 'SELECT * FROM ops_report_fb_outlet WHERE ops_report_id = ? AND company_id = ? AND active = 1 ORDER BY sort_order ASC, id ASC');
 mysqli_stmt_bind_param($stmt, 'ii', $report_id, $company_id);
@@ -426,8 +655,15 @@ mysqli_stmt_execute($stmt);
 $company_info = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 mysqli_stmt_close($stmt);
 
+$metric_fields = [
+    'occupancy_pct', 'occupied_rooms', 'total_pax', 'average_daily_rate', 'revpar',
+    'room_revenue', 'fb_revenue', 'spa_revenue', 'kids_club_revenue', 'fo_upgrade_rooms',
+    'total_revenue', 'stay_score_target', 'stay_score_ytd', 'hsk_revenue',
+];
+
 $editClass = $can_edit_report ? 'inline-editable' : 'opr-readonly';
-$lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may edit)';
+$uiEditClass = $can_edit_report ? 'inline-editable-ui' : '';
+$lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notice');
 
 ?>
 <!DOCTYPE html>
@@ -440,6 +676,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
         .opr-controls { display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; }
         .opr-section { margin-bottom:24px; }
         .opr-section h2 { margin:0 0 10px; font-size:1.1rem; }
+        .opr-section-spaced { margin-top:20px; }
         .opr-table th { white-space:nowrap; font-size:12px; }
         .opr-readonly { background-color: var(--bg-secondary); }
         .opr-today { background-color: rgba(var(--primary-rgb), 0.08); }
@@ -450,6 +687,15 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
         .inline-editable .edit-input { width:100%; min-width:48px; }
         .opr-table .edit-input { padding:4px 6px; font-size:12px; }
         .opr-metric .edit-input { margin-top:4px; }
+        .opr-ui-heading { margin:0 0 10px; font-size:1.1rem; }
+        .opr-ui-heading .edit-input-ui { font-size:1.1rem; font-weight:600; border:none; background:transparent; padding:0; }
+        .opr-ui-label-input { font-size:11px; border:none; background:transparent; padding:0; color:var(--text-secondary); }
+        .opr-table th .edit-input-ui { font-size:12px; border:none; background:transparent; padding:0; width:100%; min-width:40px; }
+        .opr-page-title .edit-input-ui { font-size:1.5rem; font-weight:600; border:none; background:transparent; padding:0; width:auto; min-width:200px; }
+        .opr-subtitle .edit-input-ui { border:none; background:transparent; padding:0; width:100%; color:var(--text-secondary); }
+        .opr-company-block .edit-input-ui { border:none; background:transparent; padding:0; min-width:120px; }
+        .opr-control-label .edit-input-ui { font-size:inherit; border:none; background:transparent; padding:0; }
+        .opr-btn-label .edit-input-ui { border:none; background:transparent; padding:0; min-width:80px; }
         @media print {
             @page { size: landscape; margin: 1cm; }
             .opr-controls, .opr-no-print, .btn { display:none !important; }
@@ -465,10 +711,15 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
         <div class="content">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
                 <div>
-                    <h1 style="margin:0;">Daily Operations Report <?= opr_format_date($selected_date) ?></h1>
-                    <p style="margin:8px 0 0; color:var(--text-secondary);">Duty Manager &amp; Guest Relations | Daily Reports<?= sanitize($lockedNotice) ?></p>
+                    <h1 style="margin:0;" class="opr-page-title">
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'page_title'), $can_edit_report, 'page_title', 'span', 'opr-page-title') ?>
+                        <?= sanitize(opr_format_date($selected_date)) ?>
+                    </h1>
+                    <p style="margin:8px 0 0; color:var(--text-secondary);" class="opr-subtitle">
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'subtitle'), $can_edit_report, 'subtitle', 'span', 'opr-subtitle') ?><?= sanitize($lockedNotice) ?>
+                    </p>
                 </div>
-                <div style="text-align:right;">
+                <div style="text-align:right;" class="opr-company-block">
                     <strong>Company:</strong> <?= sanitize($company_info['company'] ?? '') ?>
                 </div>
             </div>
@@ -476,7 +727,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
             <div class="card opr-controls opr-no-print">
                 <form method="GET" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                     <div class="form-group" style="margin:0;">
-                        <label>Day</label>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.day'), $can_edit_report, 'controls.day', 'label', 'opr-control-label') ?>
                         <select name="day" class="form-control" onchange="this.form.submit()">
                             <?php for ($d = 1; $d <= $days_in_month; $d++): ?>
                                 <option value="<?= $d ?>" <?= $d === $selected_day ? 'selected' : '' ?>><?= $d ?></option>
@@ -484,7 +735,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                         </select>
                     </div>
                     <div class="form-group" style="margin:0;">
-                        <label>Month</label>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.month'), $can_edit_report, 'controls.month', 'label', 'opr-control-label') ?>
                         <select name="month" class="form-control" onchange="this.form.submit()">
                             <?php for ($m = 1; $m <= 12; $m++): ?>
                                 <option value="<?= $m ?>" <?= $m === $selected_month ? 'selected' : '' ?>><?= date('F', mktime(0, 0, 0, $m, 1)) ?></option>
@@ -492,80 +743,58 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                         </select>
                     </div>
                     <div class="form-group" style="margin:0;">
-                        <label>Year</label>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.year'), $can_edit_report, 'controls.year', 'label', 'opr-control-label') ?>
                         <select name="year" class="form-control" onchange="this.form.submit()">
                             <?php for ($y = date('Y') - 5; $y <= date('Y') + 5; $y++): ?>
                                 <option value="<?= $y ?>" <?= $y === $selected_year ? 'selected' : '' ?>><?= $y ?></option>
                             <?php endfor; ?>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Go</button>
+                    <button type="submit" class="btn btn-primary opr-btn-label"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.go'), $can_edit_report, 'controls.go', 'span', 'opr-btn-label') ?></button>
                 </form>
                 <div style="flex-grow:1;"></div>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-success" onclick="exportOPR('xlsx')">📗 Export Excel</button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="exportOPR('pdf')">📄 Export PDF</button>
+                    <button type="button" class="btn btn-sm btn-success opr-btn-label" onclick="exportOPR('xlsx')"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.export_excel'), $can_edit_report, 'controls.export_excel', 'span', 'opr-btn-label') ?></button>
+                    <button type="button" class="btn btn-sm btn-danger opr-btn-label" onclick="exportOPR('pdf')"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.export_pdf'), $can_edit_report, 'controls.export_pdf', 'span', 'opr-btn-label') ?></button>
                 </div>
             </div>
 
             <div class="card opr-section" id="opr-report-root" data-report-id="<?= $report_id ?>" data-report-date="<?= sanitize($selected_date) ?>" data-can-edit="<?= $can_edit_report ? '1' : '0' ?>" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
-                <h2>Duty Managers Team</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.duty_managers'), $can_edit_report, 'sections.duty_managers', 'h2') ?>
                 <div class="opr-header-grid">
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="today_shift">
-                        <label>Today&rsquo;s Shift</label>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.today_shift'), $can_edit_report, 'fields.today_shift', 'label') ?>
                         <?= opr_render_editable_field($report['today_shift'] ?? '', $can_edit_report, true) ?>
                     </div>
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="tomorrow_shift">
-                        <label>Tomorrow&rsquo;s Shift</label>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.tomorrow_shift'), $can_edit_report, 'fields.tomorrow_shift', 'label') ?>
                         <?= opr_render_editable_field($report['tomorrow_shift'] ?? '', $can_edit_report, true) ?>
                     </div>
                 </div>
 
-                <h2>Hotel Figures &amp; Revenue</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.hotel_figures'), $can_edit_report, 'sections.hotel_figures', 'h2') ?>
                 <div class="opr-metric-grid">
-                    <?php
-                    $metrics = [
-                        'occupancy_pct' => 'Occupancy (%)',
-                        'occupied_rooms' => 'Occupied Rooms',
-                        'total_pax' => 'Total Pax',
-                        'average_daily_rate' => 'Average Daily Rate (€)',
-                        'revpar' => 'RevPAR (€)',
-                        'room_revenue' => 'Room Revenue (€)',
-                        'fb_revenue' => 'F&B Revenue (€)',
-                        'spa_revenue' => 'Spa Revenue (€)',
-                        'kids_club_revenue' => 'Kids Club (€)',
-                        'fo_upgrade_rooms' => 'FO | Upgrade Rooms (€)',
-                        'total_revenue' => 'TOTAL REVENUE (€)',
-                        'stay_score_target' => 'Stay Score Target',
-                        'stay_score_ytd' => 'Stay Score YTD',
-                        'hsk_revenue' => 'HSK Revenue (€)',
-                    ];
-                    foreach ($metrics as $field => $label):
-                    ?>
+                    <?php foreach ($metric_fields as $field): ?>
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="<?= $field ?>">
-                        <label><?= sanitize($label) ?></label>
+                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.' . $field), $can_edit_report, 'fields.' . $field, 'label') ?>
                         <?= opr_render_editable_field($report[$field] ?? '', $can_edit_report) ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="stay_experience_comment" style="margin-top:10px;">
-                    <label>Stay Experience — Comment of the day</label>
+                    <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.stay_experience_comment'), $can_edit_report, 'fields.stay_experience_comment', 'label') ?>
                     <?= opr_render_editable_field($report['stay_experience_comment'] ?? '', $can_edit_report, true) ?>
                 </div>
 
-                <h2 style="margin-top:20px;">Food &amp; Beverage Overview</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.fb_overview'), $can_edit_report, 'sections.fb_overview', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-fb-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
-                                <th>Outlet</th>
-                                <th>Breakfast</th>
-                                <th>Lunch</th>
-                                <th>Dinner</th>
-                                <th>DADO</th>
-                                <th>POOL</th>
-                                <th>BRUNCH</th>
-                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                                <?php foreach (['outlet_name', 'covers_breakfast', 'covers_lunch', 'covers_dinner', 'covers_dado', 'covers_pool', 'covers_brunch'] as $col): ?>
+                                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'tables.fb_outlet.' . $col), $can_edit_report, 'tables.fb_outlet.' . $col, 'th') ?>
+                                <?php endforeach; ?>
+                                <?php if ($can_edit_report): ?><?= str_replace('<th class="', '<th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1 ', opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.actions'), true, 'controls.actions', 'th', 'opr-no-print itm-actions-cell')) ?><?php else: ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1"><?= sanitize(opr_ui_get($ui_json, 'controls.actions')) ?></th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -587,18 +816,18 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     </table>
                 </div>
                 <?php if ($can_edit_report): ?>
-                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="fb_outlet">➕ Add F&amp;B outlet row</button>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="fb_outlet"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_fb_outlet'), $can_edit_report, 'buttons.add_fb_outlet', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
 
-                <h2 style="margin-top:20px;">Hotel Walk-Round Check</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.walk_round'), $can_edit_report, 'sections.walk_round', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-walk-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
-                                <th>Area</th>
-                                <th>Early Shift</th>
-                                <th>Late Shift</th>
-                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                                <?php foreach (['area_name', 'early_shift', 'late_shift'] as $col): ?>
+                                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'tables.walk_round.' . $col), $can_edit_report, 'tables.walk_round.' . $col, 'th') ?>
+                                <?php endforeach; ?>
+                                <?php if ($can_edit_report): ?><?= str_replace('<th class="', '<th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1 ', opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.actions'), true, 'controls.actions', 'th', 'opr-no-print itm-actions-cell')) ?><?php else: ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1"><?= sanitize(opr_ui_get($ui_json, 'controls.actions')) ?></th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -620,29 +849,23 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     </table>
                 </div>
                 <?php if ($can_edit_report): ?>
-                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="walk_round">➕ Add walk-round row</button>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="walk_round"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_walk_round'), $can_edit_report, 'buttons.add_walk_round', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
 
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="welcomes_notes" style="margin-top:16px;">
-                    <label>Welcomes</label>
+                    <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.welcomes_notes'), $can_edit_report, 'fields.welcomes_notes', 'label') ?>
                     <?= opr_render_editable_field($report['welcomes_notes'] ?? '', $can_edit_report, true) ?>
                 </div>
 
-                <h2 style="margin-top:20px;">Guest Experience Report</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.guest_experience'), $can_edit_report, 'sections.guest_experience', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-guest-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Guest Name</th>
-                                <th>Room</th>
-                                <th>Time</th>
-                                <th>Check Out</th>
-                                <th>Feedback</th>
-                                <th>Actions Taken</th>
-                                <th>Closed</th>
-                                <th>Monitor</th>
-                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                                <?php foreach (['ref_id', 'guest_name', 'room_number', 'time_reported', 'checkout_date', 'feedback', 'action_taken', 'case_closed', 'monitor'] as $col): ?>
+                                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'tables.guest_experience.' . $col), $can_edit_report, 'tables.guest_experience.' . $col, 'th') ?>
+                                <?php endforeach; ?>
+                                <?php if ($can_edit_report): ?><?= str_replace('<th class="', '<th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1 ', opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.actions'), true, 'controls.actions', 'th', 'opr-no-print itm-actions-cell')) ?><?php else: ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1"><?= sanitize(opr_ui_get($ui_json, 'controls.actions')) ?></th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -664,23 +887,18 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     </table>
                 </div>
                 <?php if ($can_edit_report): ?>
-                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="guest_experience">➕ Add guest experience row</button>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="guest_experience"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_guest_experience'), $can_edit_report, 'buttons.add_guest_experience', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
 
-                <h2 style="margin-top:20px;">Courtesy Calls</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.courtesy_calls'), $can_edit_report, 'sections.courtesy_calls', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-courtesy-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
-                                <th>Guest Name</th>
-                                <th>Room</th>
-                                <th>Time</th>
-                                <th>Check Out</th>
-                                <th>Notes</th>
-                                <th>Actions Taken</th>
-                                <th>Closed</th>
-                                <th>Monitor</th>
-                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                                <?php foreach (['guest_name', 'room_number', 'time_reported', 'checkout_date', 'notes', 'action_taken', 'case_closed', 'monitor'] as $col): ?>
+                                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'tables.courtesy_call.' . $col), $can_edit_report, 'tables.courtesy_call.' . $col, 'th') ?>
+                                <?php endforeach; ?>
+                                <?php if ($can_edit_report): ?><?= str_replace('<th class="', '<th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1 ', opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.actions'), true, 'controls.actions', 'th', 'opr-no-print itm-actions-cell')) ?><?php else: ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1"><?= sanitize(opr_ui_get($ui_json, 'controls.actions')) ?></th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -702,17 +920,18 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     </table>
                 </div>
                 <?php if ($can_edit_report): ?>
-                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="courtesy_call">➕ Add courtesy call row</button>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="courtesy_call"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_courtesy_call'), $can_edit_report, 'buttons.add_courtesy_call', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
 
-                <h2 style="margin-top:20px;">Suites Butler Service</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.butler'), $can_edit_report, 'sections.butler', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-butler-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
-                                <th>Room</th>
-                                <th>Notes</th>
-                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                                <?php foreach (['room_number', 'notes'] as $col): ?>
+                                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'tables.butler.' . $col), $can_edit_report, 'tables.butler.' . $col, 'th') ?>
+                                <?php endforeach; ?>
+                                <?php if ($can_edit_report): ?><?= str_replace('<th class="', '<th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1 ', opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.actions'), true, 'controls.actions', 'th', 'opr-no-print itm-actions-cell')) ?><?php else: ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1"><?= sanitize(opr_ui_get($ui_json, 'controls.actions')) ?></th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -735,17 +954,18 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     </table>
                 </div>
                 <?php if ($can_edit_report): ?>
-                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="butler">➕ Add butler row</button>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="butler"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_butler'), $can_edit_report, 'buttons.add_butler', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
 
-                <h2 style="margin-top:20px;">Night Shift (23h00 – 07h30)</h2>
+                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.night_shift'), $can_edit_report, 'sections.night_shift', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-night-shift-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
-                                <th>Guest Name</th>
-                                <th>Notes</th>
-                                <?php if ($can_edit_report): ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1">Actions</th><?php endif; ?>
+                                <?php foreach (['guest_name', 'notes'] as $col): ?>
+                                <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'tables.night_shift.' . $col), $can_edit_report, 'tables.night_shift.' . $col, 'th') ?>
+                                <?php endforeach; ?>
+                                <?php if ($can_edit_report): ?><?= str_replace('<th class="', '<th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1 ', opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.actions'), true, 'controls.actions', 'th', 'opr-no-print itm-actions-cell')) ?><?php else: ?><th class="opr-no-print itm-actions-cell" data-itm-actions-origin="1"><?= sanitize(opr_ui_get($ui_json, 'controls.actions')) ?></th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -768,7 +988,7 @@ $lockedNotice = $can_edit_report ? '' : ' (read-only — D-2 or older; admin may
                     </table>
                 </div>
                 <?php if ($can_edit_report): ?>
-                <button type="button" class="btn btn-sm opr-no-print" data-add-scope="night_shift">➕ Add night shift row</button>
+                <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="night_shift"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_night_shift'), $can_edit_report, 'buttons.add_night_shift', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
             </div>
         </div>
@@ -794,6 +1014,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const display = el.querySelector('.display-val');
         return display ? display.textContent.trim() : '';
+    }
+
+    function uiFieldValue(el) {
+        const input = el.querySelector('.edit-input-ui');
+        return input ? input.value.trim() : (el.textContent || '').trim();
+    }
+
+    function saveUiEdit(el) {
+        const jsonPath = el.dataset.jsonPath;
+        if (!jsonPath) {
+            return;
+        }
+        const value = uiFieldValue(el);
+        const formData = new FormData();
+        formData.append('ajax_inline_edit', '1');
+        formData.append('csrf_token', csrfToken);
+        formData.append('report_date', reportDate);
+        formData.append('scope', 'report_ui');
+        formData.append('json_path', jsonPath);
+        formData.append('field', 'report_ui_json');
+        formData.append('value', value);
+        formData.append('row_id', '0');
+
+        fetch('index.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message || 'Update failed');
+                    location.reload();
+                }
+            })
+            .catch(() => {
+                alert('Update failed');
+            });
     }
 
     function saveEdit(cell) {
@@ -829,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (canEdit) {
-        root.querySelectorAll('.inline-editable .edit-input').forEach(input => {
+        document.querySelectorAll('.inline-editable .edit-input').forEach(input => {
             const cell = input.closest('.inline-editable');
             if (!cell) {
                 return;
@@ -843,6 +1097,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             }
+        });
+
+        document.querySelectorAll('.inline-editable-ui .edit-input-ui').forEach(input => {
+            const cell = input.closest('.inline-editable-ui');
+            if (!cell) {
+                return;
+            }
+            input.addEventListener('mousedown', (e) => e.stopPropagation());
+            input.addEventListener('click', (e) => e.stopPropagation());
+            input.addEventListener('blur', () => saveUiEdit(cell));
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                }
+            });
         });
     }
 
@@ -903,10 +1173,21 @@ function oprFieldValue(el) {
     return display ? display.textContent.trim() : '';
 }
 
+function oprUiFieldValue(el) {
+    const input = el.querySelector('.edit-input-ui');
+    if (input) {
+        return input.value.trim();
+    }
+    return el ? el.textContent.trim() : '';
+}
+
 function exportOPR(format) {
+    const pageTitleEl = document.querySelector('[data-json-path="page_title"]');
+    const pageTitle = pageTitleEl ? oprUiFieldValue(pageTitleEl) : 'Daily Operations Report';
+    const dateSuffix = ' <?= opr_format_date($selected_date) ?>';
     if (format === 'pdf') {
         const originalTitle = document.title;
-        document.title = 'Daily Operations Report <?= opr_format_date($selected_date) ?>';
+        document.title = pageTitle + dateSuffix;
         window.print();
         document.title = originalTitle;
         return;
@@ -922,30 +1203,44 @@ function exportOPR(format) {
 }
 
 function doOprXlsxExport() {
+    const pageTitleEl = document.querySelector('[data-json-path="page_title"]');
+    const pageTitle = pageTitleEl ? oprUiFieldValue(pageTitleEl) : 'Daily Operations Report';
+    const companyLabel = 'Company:';
+    const companyName = <?= json_encode($company_info['company'] ?? '', JSON_UNESCAPED_UNICODE) ?>;
+
     const todayEl = document.querySelector('[data-field="today_shift"]');
     const tomorrowEl = document.querySelector('[data-field="tomorrow_shift"]');
+    const todayLabelEl = document.querySelector('[data-json-path="fields.today_shift"]');
+    const tomorrowLabelEl = document.querySelector('[data-json-path="fields.tomorrow_shift"]');
+    const hotelFiguresEl = document.querySelector('[data-json-path="sections.hotel_figures"]');
+
     const data = [
-        ['Daily Operations Report <?= opr_format_date($selected_date) ?>'],
-        ['Company:', '<?= sanitize($company_info['company'] ?? '') ?>'],
+        [pageTitle + ' <?= opr_format_date($selected_date) ?>'],
+        [companyLabel, companyName],
         [],
-        ['Today Shift', todayEl ? oprFieldValue(todayEl) : ''],
-        ['Tomorrow Shift', tomorrowEl ? oprFieldValue(tomorrowEl) : ''],
+        [todayLabelEl ? oprUiFieldValue(todayLabelEl) : 'Today Shift', todayEl ? oprFieldValue(todayEl) : ''],
+        [tomorrowLabelEl ? oprUiFieldValue(tomorrowLabelEl) : 'Tomorrow Shift', tomorrowEl ? oprFieldValue(tomorrowEl) : ''],
         [],
-        ['Hotel Figures & Revenue']
+        [hotelFiguresEl ? oprUiFieldValue(hotelFiguresEl) : 'Hotel Figures & Revenue']
     ];
 
     document.querySelectorAll('#opr-report-root .opr-metric-grid .opr-metric').forEach(metric => {
-        const label = metric.querySelector('label') ? metric.querySelector('label').textContent : '';
+        const labelEl = metric.querySelector('[data-json-path^="fields."]');
+        const label = labelEl ? oprUiFieldValue(labelEl) : (metric.querySelector('label') ? metric.querySelector('label').textContent.trim() : '');
         let val = oprFieldValue(metric);
         data.push([label, val === '—' ? '' : val]);
     });
 
-    const pushTable = (title, tableId) => {
+    const pushTable = (sectionPath, tableId) => {
+        const titleEl = document.querySelector('[data-json-path="' + sectionPath + '"]');
+        const title = titleEl ? oprUiFieldValue(titleEl) : '';
         data.push([]);
         data.push([title]);
         const table = document.getElementById(tableId);
         if (!table) return;
-        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim()).filter(t => t !== 'Actions');
+        const actionsLabelEl = document.querySelector('[data-json-path="controls.actions"]');
+        const actionsLabel = actionsLabelEl ? oprUiFieldValue(actionsLabelEl) : 'Actions';
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => oprUiFieldValue(th) || th.textContent.trim()).filter(t => t !== actionsLabel);
         data.push(headers);
         table.querySelectorAll('tbody tr').forEach(tr => {
             const row = [];
@@ -958,12 +1253,12 @@ function doOprXlsxExport() {
         });
     };
 
-    pushTable('Food & Beverage Overview', 'opr-fb-table');
-    pushTable('Hotel Walk-Round Check', 'opr-walk-table');
-    pushTable('Guest Experience Report', 'opr-guest-table');
-    pushTable('Courtesy Calls', 'opr-courtesy-table');
-    pushTable('Suites Butler Service', 'opr-butler-table');
-    pushTable('Night Shift (23h00 – 07h30)', 'opr-night-shift-table');
+    pushTable('sections.fb_overview', 'opr-fb-table');
+    pushTable('sections.walk_round', 'opr-walk-table');
+    pushTable('sections.guest_experience', 'opr-guest-table');
+    pushTable('sections.courtesy_calls', 'opr-courtesy-table');
+    pushTable('sections.butler', 'opr-butler-table');
+    pushTable('sections.night_shift', 'opr-night-shift-table');
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
