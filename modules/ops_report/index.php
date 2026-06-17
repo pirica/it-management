@@ -174,12 +174,6 @@ if (!function_exists('opr_default_ui_json')) {
                 'add_night_shift' => '➕ Add night shift row',
             ],
             'controls' => [
-                'day' => 'Day',
-                'month' => 'Month',
-                'year' => 'Year',
-                'go' => 'Go',
-                'export_excel' => '📗 Export Excel',
-                'export_pdf' => '📄 Export PDF',
                 'actions' => 'Actions',
             ],
             'defaults' => [
@@ -236,6 +230,9 @@ if (!function_exists('opr_ui_set')) {
 
 if (!function_exists('opr_is_allowed_ui_path')) {
     function opr_is_allowed_ui_path($path) {
+        if ($path !== 'controls.actions' && strpos((string)$path, 'controls.') === 0) {
+            return false;
+        }
         $root = explode('.', (string)$path)[0];
         $allowed = ['page_title', 'subtitle', 'locked_notice', 'titles', 'sections', 'fields', 'tables', 'buttons', 'controls', 'defaults'];
         return in_array($root, $allowed, true);
@@ -708,7 +705,6 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
         .opr-title-meta .edit-input-ui { font-size:12px; border:none; background:transparent; padding:0; min-width:72px; color:var(--text-secondary); }
         .opr-subtitle .edit-input-ui { border:none; background:transparent; padding:0; width:100%; color:var(--text-secondary); }
         .opr-company-block .edit-input-ui { border:none; background:transparent; padding:0; min-width:120px; }
-        .opr-control-label .edit-input-ui { font-size:inherit; border:none; background:transparent; padding:0; }
         .opr-btn-label .edit-input-ui { border:none; background:transparent; padding:0; min-width:80px; }
         @media print {
             @page { size: landscape; margin: 1cm; }
@@ -750,7 +746,7 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
             <div class="card opr-controls opr-no-print">
                 <form method="GET" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                     <div class="form-group" style="margin:0;">
-                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.day'), $can_edit_report, 'controls.day', 'label', 'opr-control-label') ?>
+                        <label>Day</label>
                         <select name="day" class="form-control" onchange="this.form.submit()">
                             <?php for ($d = 1; $d <= $days_in_month; $d++): ?>
                                 <option value="<?= $d ?>" <?= $d === $selected_day ? 'selected' : '' ?>><?= $d ?></option>
@@ -758,7 +754,7 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
                         </select>
                     </div>
                     <div class="form-group" style="margin:0;">
-                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.month'), $can_edit_report, 'controls.month', 'label', 'opr-control-label') ?>
+                        <label>Month</label>
                         <select name="month" class="form-control" onchange="this.form.submit()">
                             <?php for ($m = 1; $m <= 12; $m++): ?>
                                 <option value="<?= $m ?>" <?= $m === $selected_month ? 'selected' : '' ?>><?= date('F', mktime(0, 0, 0, $m, 1)) ?></option>
@@ -766,19 +762,19 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
                         </select>
                     </div>
                     <div class="form-group" style="margin:0;">
-                        <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.year'), $can_edit_report, 'controls.year', 'label', 'opr-control-label') ?>
+                        <label>Year</label>
                         <select name="year" class="form-control" onchange="this.form.submit()">
                             <?php for ($y = date('Y') - 5; $y <= date('Y') + 5; $y++): ?>
                                 <option value="<?= $y ?>" <?= $y === $selected_year ? 'selected' : '' ?>><?= $y ?></option>
                             <?php endfor; ?>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary opr-btn-label"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.go'), $can_edit_report, 'controls.go', 'span', 'opr-btn-label') ?></button>
+                    <button type="submit" class="btn btn-primary">Go</button>
                 </form>
                 <div style="flex-grow:1;"></div>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-success opr-btn-label" onclick="exportOPR('xlsx')"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.export_excel'), $can_edit_report, 'controls.export_excel', 'span', 'opr-btn-label') ?></button>
-                    <button type="button" class="btn btn-sm btn-danger opr-btn-label" onclick="exportOPR('pdf')"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'controls.export_pdf'), $can_edit_report, 'controls.export_pdf', 'span', 'opr-btn-label') ?></button>
+                    <button type="button" class="btn btn-sm btn-success" onclick="exportOPR('xlsx')">📗 Export Excel</button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="exportOPR('pdf')">📄 Export PDF</button>
                 </div>
             </div>
 
