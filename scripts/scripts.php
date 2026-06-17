@@ -390,6 +390,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
+                    <td><a href="count_db_tables.php">count_db_tables.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code>, echoes the total as plain text, and overwrites <code>scripts/number_db_tables.txt</code> with the same number (for external monitors). <strong>No login required.</strong></td>
+                    <td>Open <a href="count_db_tables.php">count_db_tables.php</a> (plain number response) or run <code>php scripts/count_db_tables.php</code> from the repository root. Output file: <code>scripts/number_db_tables.txt</code>.</td>
+                </tr>
+                <tr>
                     <td>verify_database_schema.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Compares <code>CREATE TABLE</code> names in <code>database.sql</code> with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 88). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
@@ -825,6 +831,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs; seeds <code>company_module_access</code> for new registry rows. Sidebar discovery also auto-registers new tables/folders on page load — use this script for bulk backfill after deploy or when icons/labels need catalog sync.</td>
                     <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code>. Run after adding module folders; optional when only a new MySQL table was created (sidebar auto-scaffold + register).</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_ops_report.php">verify_ops_report.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
+                    <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
