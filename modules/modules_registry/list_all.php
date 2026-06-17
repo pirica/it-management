@@ -1,7 +1,7 @@
 <?php
-$crud_table = $crud_table ?? 'note_labels';
-$crud_title = $crud_title ?? 'Note Labels';
-$crud_action = $crud_action ?? 'view';
+$crud_table = $crud_table ?? 'modules_registry';
+$crud_title = $crud_title ?? 'Modules Registry';
+$crud_action = $crud_action ?? 'list_all';
 ?>
 <?php
 require '../../config/config.php';
@@ -547,8 +547,6 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-// Note: $where might contain search filters built via string concatenation in other versions, but here it's simple ID filter.
-// Using mysqli_query here as it's a simple SELECT and we have escaped identifiers.
 $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
 ?>
 <!DOCTYPE html>

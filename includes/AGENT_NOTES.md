@@ -12,6 +12,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 ## 4. Business Rules (Critical for Agents)
 - **Visibility Helpers**: `alerts_visibility.php` is mandatory for all alert-related queries.
 - **Security Functions**: Use `itm_is_safe_identifier` for dynamic SQL identifiers.
+- **Manufacturers CRUD template (`ui_config.php`):** Only `modules/manufacturers/` may host the live template. Other modules get **copied** PHP via `itm_materialize_manufacturers_crud_module_files()` / `itm_auto_create_module_scaffold()` — never `require __DIR__ . '/../manufacturers/…'`. New auto-scaffolded sidebar entries use **⚠️** (`itm_sidebar_auto_scaffolded_module_emoji()`). Legacy delegate stub folders are removed by QA cleanup (`itm_remove_manufacturers_template_scaffold_module_dirs()`).
 
 ## 7. File Structure
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
@@ -25,6 +26,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **itm_select_options_policy.php** — whitelist and blocked-table policy for `modules/select_options_api.php` quick-add inserts.
 - **itm_api_rate_limit.php** — tier hourly limits; **Free** = unlimited, **no API key**, **session required** (`itm_api_resolve_rate_limit_row()` reads `$_SESSION['company_id']` + `$_SESSION['user_id']` when no key); `itm_api_tier_requires_api_key()`; probe payload `itm_api_build_rate_limit_probe_payload()` (`api_key_required`); `itm_api_enforce_rate_limit_or_exit()` for programmatic endpoints.
 - **itm_company_module_access.php** — `has_module_access()`, `get_company_modules()`, `itm_list_all_modules_registry()`, `itm_ensure_registry_rows_for_module_slugs()`, `itm_sidebar_discovery_probe_cleanup()`, `itm_enforce_module_access_or_exit()`, registry sync/seed helpers; loaded from `config/config.php`.
+- **ui_config.php** — sidebar discovery; manufacturers CRUD materialization (`itm_materialize_manufacturers_crud_module_files()`, `itm_auto_create_module_scaffold()`); ⚠️ prefix for newly scaffolded tables (`itm_sidebar_auto_scaffolded_module_emoji()`); legacy delegate detection (`itm_module_php_file_delegates_to_manufacturers_module()`); QA cleanup (`itm_remove_manufacturers_template_scaffold_module_dirs()`).
 - **itm_it_location_linked_floor_plans.php** — IT Locations view partial; skips HTML when `$conn` / PHPUnit context missing.
 - **employee_profile_photo.php** — employee profile photo paths under `files/{company_id}/Private/{username}_{employee_id}/profile/` (legacy `{username}_{user_id}` still served when `user_id` is set); upload (`emp_profile_photo_store_upload`), serve URL (`emp_profile_photo_url`), birthday display (`emp_format_birthday_display`, `emp_format_birthday_day_only`). Used by `modules/employees/` and `modules/birthdays/`.
 
