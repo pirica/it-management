@@ -5,6 +5,7 @@ $crud_action = 'index';
 ?>
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_users_sensitive_fields.php';
 itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -153,6 +154,10 @@ function cr_fk_label_from_id($conn, $table, $id) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    if ($table === 'users' && itm_users_is_sensitive_field($field)) {
+        return '';
+    }
+
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -293,6 +298,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+$uiColumns = itm_users_filter_ui_columns($uiColumns);
 
 $currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 $currentUserIsAdmin = itm_is_admin($conn, $currentUserId);

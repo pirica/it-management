@@ -346,4 +346,59 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $this->conn->query("DELETE FROM notes WHERE id = $noteId");
     }
+
+    public function testUsersSensitiveFieldsHiddenFromView()
+    {
+        require_once ROOT_PATH . 'includes/itm_users_sensitive_fields.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+
+        $companyId = 1;
+        $testUser = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-users-sensitive-view']);
+        if (!is_array($testUser)) {
+            $this->fail('Unable to create disposable test user.');
+        }
+
+        $userId = (int)$testUser['id'];
+        itm_script_test_user_register_teardown($this->conn, $userId);
+
+        $secretToken = 'PHPUNIT_RESET_' . bin2hex(random_bytes(8));
+        $secretHash = hash('sha256', $secretToken);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        $stmt = $this->conn->prepare('UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?');
+        $stmt->bind_param('sssi', $secretToken, $secretHash, $expiresAt, $userId);
+        $stmt->execute();
+        $stmt->close();
+
+        $uiSample = array_map(function ($name) {
+            return ['Field' => $name];
+        }, array_merge(['username'], itm_users_sensitive_field_names()));
+        $filtered = itm_users_filter_ui_columns($uiSample);
+        $filteredNames = array_column($filtered, 'Field');
+        foreach (itm_users_sensitive_field_names() as $sensitiveField) {
+            $this->assertNotContains($sensitiveField, $filteredNames);
+        }
+
+        $adminStmt = $this->conn->prepare('SELECT id, username FROM users WHERE id = 1 LIMIT 1');
+        $adminStmt->execute();
+        $adminRow = $adminStmt->get_result()->fetch_assoc();
+        $adminStmt->close();
+        if (!is_array($adminRow)) {
+            $this->markTestSkipped('Seed admin user missing.');
+        }
+
+        $session = [
+            'company_id' => $companyId,
+            'user_id' => (int)$adminRow['id'],
+            'username' => (string)$adminRow['username'],
+        ];
+        $get = ['id' => $userId];
+        $extraGlobals = ['crud_action' => 'view'];
+
+        $output = $this->runIsolated(ROOT_PATH . 'modules/users/index.php', $session, [], $get, $extraGlobals);
+        $this->assertStringNotContainsString($secretToken, $output);
+        $this->assertStringNotContainsString($secretHash, $output);
+        $this->assertStringNotContainsString('Reset Token Hash', $output);
+
+        $this->conn->query("DELETE FROM users WHERE id = $userId");
+    }
 }

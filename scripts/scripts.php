@@ -998,6 +998,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/verify_user_idor.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_users_sensitive_view.php">verify_users_sensitive_view.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression check: Users list/view HTML omits password and reset-token columns (<code>itm_users_filter_ui_columns()</code>).</td>
+                    <td><code>php scripts/verify_users_sensitive_view.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_reset_git_history_access.php">verify_reset_git_history_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Confirms lack of access control on destructive Git history reset utility.</td>

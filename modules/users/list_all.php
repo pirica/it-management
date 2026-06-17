@@ -5,6 +5,7 @@ $crud_action = 'list_all';
 ?>
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_users_sensitive_fields.php';
 itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -130,6 +131,10 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
+    if ($table === 'users' && function_exists('itm_users_is_sensitive_field') && itm_users_is_sensitive_field($field)) {
+        return '';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -255,6 +260,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+$uiColumns = itm_users_filter_ui_columns($uiColumns);
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
