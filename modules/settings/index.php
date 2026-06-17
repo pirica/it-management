@@ -479,7 +479,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
             $emoji = trim((string)($_POST['module_sidebar_emoji'][$catalogItemId] ?? ''));
-            if ($emoji !== '') {
+            $companyDefaultIcon = itm_resolve_module_sidebar_icon($conn, (int)$company_id, 0, $moduleSlug);
+            if ($emoji !== '' && $emoji !== $companyDefaultIcon) {
                 $newConfig['module_icon_overrides'][$moduleSlug] = $emoji;
             }
         }
@@ -815,7 +816,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             <button class="btn btn-primary" type="submit">💾</button>
                         </div>
                         <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
-                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections). Optional emoji per link overrides the company default from Company Module Access (empty uses company/registry/catalog).</p>
+                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections). Emoji fields show the effective icon (editable); matching the company default clears your personal override.</p>
                         <div class="sidebar-settings-list" id="sidebar-settings-list">
                             <?php foreach ($sidebarStructure as $section): ?>
                                 <?php $sectionId = $section['id']; ?>
@@ -842,6 +843,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                             $companyModuleIcon = ($moduleSlug !== '' && function_exists('itm_resolve_module_sidebar_icon'))
                                                 ? itm_resolve_module_sidebar_icon($conn, (int)$company_id, 0, $moduleSlug)
                                                 : '';
+                                            $displayModuleIcon = $userModuleIcon !== '' ? $userModuleIcon : $companyModuleIcon;
                                             ?>
                                             <div class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
                                                 <label class="role-flag-option">
@@ -858,12 +860,14 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                                 <?php if ($moduleSlug !== ''): ?>
                                                     <input
                                                         type="text"
+                                                        class="itm-module-icon-input"
                                                         name="module_sidebar_emoji[<?php echo sanitize($itemId); ?>]"
-                                                        value="<?php echo sanitize($userModuleIcon); ?>"
+                                                        value="<?php echo sanitize($displayModuleIcon); ?>"
                                                         maxlength="16"
-                                                        placeholder="<?php echo sanitize($companyModuleIcon); ?>"
-                                                        title="Personal sidebar emoji (empty = company default)"
-                                                        style="max-width:72px;"
+                                                        data-company-icon="<?php echo sanitize($companyModuleIcon); ?>"
+                                                        autocomplete="off"
+                                                        spellcheck="false"
+                                                        title="Personal sidebar emoji (match company default to clear override)"
                                                     >
                                                 <?php endif; ?>
                                                 <div>

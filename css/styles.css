@@ -1052,6 +1052,24 @@ input[type="color"] {
 .sidebar-setting-children {
     padding-left: 12px;
 }
+
+/* Why: Sidebar/CMA emoji fields must stay compact; global input{width:100%} made placeholders look like huge grey bars. */
+.itm-module-icon-input {
+    width: 3.25rem;
+    min-width: 3.25rem;
+    max-width: 3.25rem;
+    flex: 0 0 auto;
+    padding: 6px 4px;
+    text-align: center;
+    font-size: 18px;
+    line-height: 1.2;
+    margin: 0;
+}
+
+#cma-access-matrix .itm-module-icon-input {
+    display: block;
+    margin: 6px auto 0;
+}
 .crud_error {
     display: flex;
     align-items: center;

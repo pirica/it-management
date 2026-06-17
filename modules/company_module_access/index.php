@@ -334,9 +334,8 @@ $modulePathEsc = sanitize($modulePath);
                                         $effectiveEnabled = itm_module_access_effective_enabled($conn, $companyRowId, $moduleId, $accessMap);
                                         $toggleDisabled = !$isActive;
                                         $companyIcon = (string)($iconMap[$companyRowId][$moduleId] ?? '');
-                                        $registryIcon = trim((string)($registryRow['icon'] ?? ''));
-                                        $catalogIcon = itm_module_access_catalog_icon_for_slug($moduleSlug);
-                                        $iconPlaceholder = $companyIcon !== '' ? $companyIcon : ($registryIcon !== '' ? $registryIcon : $catalogIcon);
+                                        $inheritedIcon = itm_module_access_inherited_icon_for_slug($conn, $moduleSlug, $registryRow);
+                                        $displayIcon = $companyIcon !== '' ? $companyIcon : $inheritedIcon;
                                         ?>
                                         <td style="text-align:center;">
                                             <label class="itm-checkbox-control" title="<?= $toggleDisabled ? 'Inactive registry rows cannot be toggled.' : ($isSystem ? 'System module (admins always retain access).' : 'Toggle company access') ?>">
@@ -353,14 +352,16 @@ $modulePathEsc = sanitize($modulePath);
                                             </label>
                                             <input
                                                 type="text"
-                                                class="form-control cma-icon-input"
-                                                style="max-width:72px;margin:6px auto 0;"
+                                                class="itm-module-icon-input cma-icon-input"
                                                 maxlength="16"
-                                                placeholder="<?= sanitize($iconPlaceholder) ?>"
-                                                value="<?= sanitize($companyIcon) ?>"
+                                                value="<?= sanitize($displayIcon) ?>"
+                                                data-inherited-icon="<?= sanitize($inheritedIcon) ?>"
                                                 data-company-id="<?= $companyRowId ?>"
                                                 data-module-id="<?= $moduleId ?>"
-                                                title="Company sidebar emoji (empty = registry/catalog default)"
+                                                data-last-saved="<?= sanitize($companyIcon) ?>"
+                                                autocomplete="off"
+                                                spellcheck="false"
+                                                title="Company sidebar emoji (match inherited value to reset)"
                                             >
                                         </td>
                                     <?php endforeach; ?>

@@ -517,6 +517,24 @@ if (!function_exists('itm_set_company_module_icon')) {
     }
 }
 
+if (!function_exists('itm_module_access_inherited_icon_for_slug')) {
+    function itm_module_access_inherited_icon_for_slug($conn, $module_slug, $registryRow = null)
+    {
+        $module_slug = trim((string)$module_slug);
+        if ($module_slug === '') {
+            return '';
+        }
+        if (!is_array($registryRow) && $conn instanceof mysqli) {
+            $registryRow = itm_module_access_registry_row($conn, $module_slug);
+        }
+        $registryIcon = is_array($registryRow) ? trim((string)($registryRow['icon'] ?? '')) : '';
+        if ($registryIcon !== '') {
+            return $registryIcon;
+        }
+        return itm_module_access_catalog_icon_for_slug($module_slug);
+    }
+}
+
 if (!function_exists('itm_discover_module_slugs_for_registry')) {
     function itm_discover_module_slugs_for_registry()
     {
