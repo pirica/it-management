@@ -534,8 +534,8 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | Script | Purpose |
 |--------|---------|
 | `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs |
-| `php scripts/verify_company_module_access.php` | Regression: registry coverage, strict opt-in deny, seeded company × module rows |
-| `php scripts/seed_company_module_access.php` | Backfill `company_module_access` rows (`enabled=1`) for all companies or one company |
+| `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs visible to admin matrix |
+| `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
 
 Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks.
 

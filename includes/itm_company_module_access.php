@@ -123,7 +123,7 @@ if (!function_exists('itm_module_access_registry_row')) {
 }
 
 if (!function_exists('has_module_access')) {
-    function has_module_access($conn, $company_id, $module_slug)
+  function has_module_access($conn, $company_id, $module_slug)
     {
         $company_id = (int)$company_id;
         $module_slug = trim((string)$module_slug);
@@ -142,7 +142,7 @@ if (!function_exists('has_module_access')) {
 
         $registryRow = itm_module_access_registry_row($conn, $module_slug);
         if ($registryRow === null) {
-            return false;
+            return true;
         }
 
         if ((int)($registryRow['active'] ?? 0) !== 1) {
@@ -166,25 +166,27 @@ if (!function_exists('has_module_access')) {
 
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT 1
+            'SELECT cma.enabled
              FROM company_module_access cma
              INNER JOIN modules_registry mr ON mr.id = cma.module_id
              WHERE cma.company_id = ?
                AND mr.module_slug = ?
-               AND cma.enabled = 1
-               AND mr.active = 1
              LIMIT 1'
         );
         if (!$stmt) {
-            return false;
+            return true;
         }
         mysqli_stmt_bind_param($stmt, 'is', $company_id, $module_slug);
         mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
-        $allowed = mysqli_stmt_num_rows($stmt) > 0;
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
 
-        return $allowed;
+        if (!$row) {
+            return true;
+        }
+
+        return (int)($row['enabled'] ?? 0) === 1;
     }
 }
 
@@ -343,30 +345,7 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
             'inserted' => $inserted,
             'updated' => $updated,
             'total' => count(itm_discover_module_slugs_for_registry()),
-            'access_seeded' => itm_seed_company_module_access_all($conn),
         ];
-    }
-}
-
-if (!function_exists('itm_seed_company_module_access_all')) {
-    function itm_seed_company_module_access_all($conn)
-    {
-        if (!$conn instanceof mysqli
-            || !itm_module_access_table_exists($conn, 'modules_registry')
-            || !itm_module_access_table_exists($conn, 'company_module_access')) {
-            return 0;
-        }
-
-        $sql = 'INSERT IGNORE INTO company_module_access (company_id, module_id, enabled)
-                SELECT c.id, mr.id, 1
-                FROM companies c
-                CROSS JOIN modules_registry mr
-                WHERE c.active = 1';
-        if (!mysqli_query($conn, $sql)) {
-            return 0;
-        }
-
-        return (int)mysqli_affected_rows($conn);
     }
 }
 
@@ -467,19 +446,25 @@ if (!function_exists('itm_seed_company_module_access_for_company')) {
             return 0;
         }
         itm_sync_modules_registry_from_filesystem($conn);
-
-        $stmt = mysqli_prepare(
-            $conn,
-            'INSERT IGNORE INTO company_module_access (company_id, module_id, enabled)
-             SELECT ?, mr.id, 1 FROM modules_registry mr'
-        );
-        if (!$stmt) {
-            return 0;
+        $count = 0;
+        foreach (itm_list_all_modules_registry($conn) as $row) {
+            $moduleId = (int)($row['id'] ?? 0);
+            if ($moduleId <= 0) {
+                continue;
+            }
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT IGNORE INTO company_module_access (company_id, module_id, enabled)
+                 VALUES (?, ?, 1)'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ii', $company_id, $moduleId);
+                if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+                    $count++;
+                }
+                mysqli_stmt_close($stmt);
+            }
         }
-        mysqli_stmt_bind_param($stmt, 'i', $company_id);
-        mysqli_stmt_execute($stmt);
-        $count = (int)mysqli_stmt_affected_rows($stmt);
-        mysqli_stmt_close($stmt);
         return $count;
     }
 }
@@ -491,19 +476,26 @@ if (!function_exists('itm_seed_company_module_access_for_module')) {
         if ($module_id <= 0 || !$conn instanceof mysqli) {
             return 0;
         }
-
-        $stmt = mysqli_prepare(
-            $conn,
-            'INSERT IGNORE INTO company_module_access (company_id, module_id, enabled)
-             SELECT id, ?, 1 FROM companies WHERE active = 1'
-        );
-        if (!$stmt) {
-            return 0;
+        $count = 0;
+        $res = mysqli_query($conn, 'SELECT id FROM companies WHERE active = 1');
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $companyId = (int)($row['id'] ?? 0);
+            if ($companyId <= 0) {
+                continue;
+            }
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT IGNORE INTO company_module_access (company_id, module_id, enabled)
+                 VALUES (?, ?, 1)'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ii', $companyId, $module_id);
+                if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+                    $count++;
+                }
+                mysqli_stmt_close($stmt);
+            }
         }
-        mysqli_stmt_bind_param($stmt, 'i', $module_id);
-        mysqli_stmt_execute($stmt);
-        $count = (int)mysqli_stmt_affected_rows($stmt);
-        mysqli_stmt_close($stmt);
         return $count;
     }
 }
@@ -567,13 +559,13 @@ if (!function_exists('itm_module_access_effective_enabled')) {
         $company_id = (int)$company_id;
         $module_id = (int)$module_id;
         if ($company_id <= 0 || $module_id <= 0) {
-            return false;
+            return true;
         }
         if (!is_array($accessMap)) {
             $accessMap = itm_company_module_access_map($conn);
         }
         if (!isset($accessMap[$company_id][$module_id])) {
-            return false;
+            return true;
         }
         return (int)$accessMap[$company_id][$module_id] === 1;
     }
