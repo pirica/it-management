@@ -15,7 +15,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - All sources → **companies** (tenant filter on every query).
 
 ## 4. Business Rules (Critical for Agents)
-- **Aggregated view only** — mutations happen in source modules, not on a calendar table.
+- **No calendar table** — the grid aggregates source modules. Day-to-day mutations happen in those source modules, **except** ICS import on this module, which inserts rows into **events** for the active company.
 - **Alerts:** include only alerts that have `end_datetime` populated.
 - **Grid layout:** Monday–Sunday week columns (UK English labels).
 - **Tenant isolation:** never mix companies on the grid.
@@ -31,7 +31,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 ## 6. API Actions (If Applicable)
 - **ICS import** (POST `index.php`, `ics_file`) — parses `BEGIN:VEVENT` blocks, inserts into **events** with `company_id` scope; RFC 5545 line folding handled.
 - **ICS export** (GET `index.php?export=ics`) — streams `text/calendar` for tenant events in range.
-- No standalone `api.php`; all calendar mutations happen in source modules.
+- No standalone `api.php`; aside from ICS import on this module, mutations happen in source modules.
 
 ## 7. File Structure
 - `index.php` — calendar grid, ICS import/export, aggregated queries for events/alerts/tickets/equipment/patches.

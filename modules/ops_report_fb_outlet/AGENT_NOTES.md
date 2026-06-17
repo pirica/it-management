@@ -14,14 +14,14 @@ Child rows for Food & Beverage outlet cover counts on a daily Ops Report. Each r
 ## 4. Business Rules (Critical for Agents)
 - Every row must belong to the same `company_id` as its parent **ops_report** row.
 - Default outlet rows are seeded by `opr_ensure_report()` when a daily report is first opened — do not duplicate seed logic here without aligning parent module.
-- **Edit lock (D-2):** when changing data through the parent report UI, non-admins may edit today and yesterday only; older dates are read-only unless `itm_is_admin()`.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - `sort_order` controls display order within the parent report F&B grid.
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD (`index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`).
 - List: search across visible columns, sort, pagination, bulk delete when row count ≥ `records_per_page`, 📗/📄 export, 📥 import (`import_excel_rows`).
 - Hide `company_id` from list/view; render `ops_report_id` as parent report label when FK row exists.
-- CSRF on all POST handlers (`itm_require_post_csrf()`).
+- CSRF on all POST handlers via `cr_require_valid_csrf_token()`; forms include `csrf_token` from `itm_get_csrf_token()`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON bulk import via `index.php` (`data-itm-db-import-endpoint="index.php"`).
@@ -31,8 +31,8 @@ Child rows for Food & Beverage outlet cover counts on a daily Ops Report. Each r
 - **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php** — standard CRUD wrappers.
 
 ## 8. Multi-Tenant Rules
-- All queries filter by `company_id` from session.
-- `ops_report_id` FK must reference an **ops_report** row in the same company.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Database triggers: `trg_ops_report_fb_outlet_audit_insert|update|delete` (includes `ops_report_id` in JSON payload).

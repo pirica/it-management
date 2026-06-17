@@ -16,11 +16,11 @@ Lookup table for categories of printers (e.g., "LaserJet", "InkJet", "MFP").
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
-- **CSRF**: POST handlers use `itm_require_post_csrf()`; forms include hidden `csrf_token`.
+- **CSRF**: POST handlers validate via `cr_require_valid_csrf_token()`; forms include hidden `csrf_token` from `itm_get_csrf_token()`.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
-- **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+- **No `active` column** on `printer_device_types` — only `company_id`, `name`, and timestamps.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
@@ -32,7 +32,7 @@ Lookup table for categories of printers (e.g., "LaserJet", "InkJet", "MFP").
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_printer_device_types_audit_insert`, `trg_printer_device_types_audit_update`, `trg_printer_device_types_audit_delete` on `printer_device_types` in `database.sql` write to `audit_logs` when `enable_audit_logs` is enabled.
+- Database triggers `trg_printer_device_types_audit_insert`, `trg_printer_device_types_audit_update`, `trg_printer_device_types_audit_delete` on `printer_device_types` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
@@ -51,8 +51,8 @@ $stmt->execute();
 
 ### Safe INSERT
 ```php
-$stmt = $conn->prepare("INSERT INTO printer_device_types (company_id, name, active) VALUES (?, ?, ?)");
-$stmt->bind_param("isi", $companyId, $name, $active);
+$stmt = $conn->prepare('INSERT INTO printer_device_types (company_id, name) VALUES (?, ?)');
+$stmt->bind_param('is', $companyId, $name);
 $stmt->execute();
 ```
 

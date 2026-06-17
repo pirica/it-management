@@ -18,10 +18,10 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD via manufacturers-style dynamic schema.
 - List/search/sort/pagination/export/import per module standards.
-- Labels are private — list queries must filter `user_id = logged-in user`.
+- **Known gap:** list queries currently filter by `company_id` only — they do **not** filter `user_id = logged-in user` despite per-user scoping in section 8. Do not document per-user list filtering until code enforces it.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** (JSON POST on `index.php`) — bulk import via `itm_handle_json_table_import($conn, 'note_labels', $company_id)`.
+- **import_excel_rows** (JSON POST on `index.php`) — same manufacturers-template JSON import handler as other flattened CRUD modules (`import_excel_rows` in `index.php`).
 
 ## 7. File Structure
 - `index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — full local CRUD files (materialized from `modules/manufacturers/`).
@@ -33,7 +33,7 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 - `trg_note_labels_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Do not expose another user's labels.
+- Do not expose another user's labels when `user_id` filtering is added — today list queries are company-scoped only (known gap; see section 5).
 - Cross-module manufacturers requires are forbidden; only `modules/manufacturers/` may own that path.
 
 ## 11. Examples of Safe Code Patterns

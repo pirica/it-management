@@ -56,7 +56,7 @@ Manages individual port rows on IDF rack positions (RJ45 and SFP), including sta
 | `trg_idf_ports_audit_update` | UPDATE | old/new JSON for the same port fields |
 | `trg_idf_ports_audit_delete` | DELETE | deleted port row JSON |
 
-Logging honours `enable_audit_logs`; actor fields come from MySQL session variables set in `config.php`.
+Triggers always write to `audit_logs` on DML (not gated by `enable_audit_logs`); actor fields come from MySQL session variables set in `config.php`.
 
 ## 10. Common Pitfalls
 - **Protection Zone:** do not change port sync contracts without explicit request.

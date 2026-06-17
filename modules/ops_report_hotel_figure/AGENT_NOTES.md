@@ -14,7 +14,7 @@ Dynamic extra Hotel Figures & Revenue fields on a daily Ops Report. Each row is 
 ## 4. Business Rules (Critical for Agents)
 - `field_label` is required (NOT NULL in schema).
 - User-defined rows — no automatic seed.
-- **Edit lock (D-2)** on parent report for non-admins.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - Fixed revenue metrics (occupancy, RevPAR, etc.) stay on **ops_report** table, not here.
 
 ## 5. UI Behavior Requirements
@@ -30,7 +30,8 @@ Dynamic extra Hotel Figures & Revenue fields on a daily Ops Report. Each row is 
 - **index.php**, **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php**.
 
 ## 8. Multi-Tenant Rules
-- Strict `company_id`; `ops_report_id` must reference same-company parent.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Triggers: `trg_ops_report_hotel_figure_audit_insert|update|delete`.

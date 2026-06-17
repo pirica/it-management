@@ -14,7 +14,7 @@ Child rows for walk-round area checks on a daily Ops Report. Each row records ea
 ## 4. Business Rules (Critical for Agents)
 - Every row must share `company_id` with its parent **ops_report**.
 - Default walk-round areas are seeded by `opr_ensure_report()` on first open of a report date.
-- **Edit lock (D-2):** parent report enforces today/yesterday edit for non-admins.
+- **Edit lock (D-2) — parent only:** enforced on **modules/ops_report/index.php** AJAX for non-admins (today/yesterday). Standalone CRUD here is not date-locked.
 - `sort_order` controls row order in the walk-round section.
 
 ## 5. UI Behavior Requirements
@@ -29,7 +29,8 @@ Child rows for walk-round area checks on a daily Ops Report. Each row records ea
 - **index.php**, **create.php**, **edit.php**, **view.php**, **delete.php**, **list_all.php**.
 
 ## 8. Multi-Tenant Rules
-- Strict `company_id` scoping; `ops_report_id` must belong to same tenant.
+- All queries must filter by session `company_id`.
+- `ops_report_id` must reference an existing **ops_report** row; DB does not enforce matching `company_id` on the parent (validate in application code if hardening).
 
 ## 9. Audit Logging Requirements
 - Triggers: `trg_ops_report_walk_round_audit_insert|update|delete` (payload includes `ops_report_id`).

@@ -61,7 +61,7 @@ Defines rack-unit placement of devices within an IDF (`position_no`, device type
 | `trg_idf_positions_audit_update` | UPDATE | old/new JSON for position fields |
 | `trg_idf_positions_audit_delete` | DELETE | deleted position JSON |
 
-Entries land in `audit_logs` with `table_name = 'idf_positions'` when `enable_audit_logs` is active.
+Triggers always write to `audit_logs` with `table_name = 'idf_positions'` on DML (not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - **Protection Zone:** no structural changes without explicit user request.

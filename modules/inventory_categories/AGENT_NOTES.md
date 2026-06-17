@@ -29,7 +29,7 @@ Lookup table for inventory item categories (e.g., "Cables", "Peripherals", "Supp
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- `trg_inventory_categories_audit_insert|update|delete` in `database.sql` when `enable_audit_logs` is on.
+- `trg_inventory_categories_audit_insert|update|delete` in `database.sql` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - Deleting categories without detaching `inventory_items.category_id` first — leaves items pointing at missing FK or blocks delete silently.
@@ -37,10 +37,16 @@ Lookup table for inventory item categories (e.g., "Cables", "Peripherals", "Supp
 
 ## 11. Examples of Safe Code Patterns
 
-### Detach children before parent delete
+### Detach children before parent delete (prepared placeholders)
 ```php
-$detachSql = 'UPDATE inventory_items SET category_id = NULL WHERE company_id = ? AND category_id IN (' . implode(',', $idList) . ')';
-// run in same transaction as DELETE FROM inventory_categories ...
+$placeholders = implode(',', array_fill(0, count($idList), '?'));
+$types = 'i' . str_repeat('i', count($idList));
+$params = array_merge([$companyId], $idList);
+$detachSql = 'UPDATE inventory_items SET category_id = NULL WHERE company_id = ? AND category_id IN (' . $placeholders . ')';
+$stmt = $conn->prepare($detachSql);
+$stmt->bind_param($types, ...$params);
+$stmt->execute();
+// then DELETE FROM inventory_categories ... in the same transaction
 ```
 
 ## 12. Module Owner Notes (Optional)

@@ -24,11 +24,11 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - View modes: `all`, `private`, `shared` via `?view=`; folder filter via `?folder_id=`.
 - Folder drag-and-drop reparenting posts `action=move_folder` (CSRF on form).
 - Shared bookmarks: edit/delete only for admin or owning `user_id` (`bkm_can_edit_bookmark()`).
-- `list_all.php` provides flattened table view with standard bulk delete when row count ≥ `records_per_page`.
-- Standard `data-itm-db-import-endpoint` on index table for Excel import.
+- `list_all.php` provides flattened table view; bulk delete toolbar is always shown (`$showBulkActions = true`), not gated by `records_per_page`.
+- Excel import endpoint: `data-itm-db-import-endpoint="list_all.php"` on the flattened list table; dual-pane `index.php` handles JSON import but has no import table attribute.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** (JSON POST on `index.php` / `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; requires CSRF in JSON body.
+- **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when admin or folder owner.
 - **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmarks()`).
 - **export.php** / **export.js** — CSV, XLSX, and Netscape HTML export.
