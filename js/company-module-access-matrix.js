@@ -225,4 +225,48 @@
             });
         });
     }
+
+    function postIcon(companyId, moduleId, icon, input) {
+        var body = new URLSearchParams();
+        body.set('ajax_action', 'set_icon');
+        body.set('csrf_token', window.ITM_CMA_CSRF || '');
+        body.set('company_id', String(companyId));
+        body.set('module_id', String(moduleId));
+        body.set('icon', icon);
+
+        return fetch(window.ITM_CMA_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: body.toString(),
+            credentials: 'same-origin'
+        }).then(function (response) {
+            return response.json();
+        }).then(function (payload) {
+            if (!payload || !payload.ok) {
+                throw new Error((payload && payload.error) || 'Icon update failed');
+            }
+            if (input) {
+                input.value = payload.icon || '';
+            }
+            return payload;
+        });
+    }
+
+    document.querySelectorAll('.cma-icon-input').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var companyId = input.getAttribute('data-company-id');
+            var moduleId = input.getAttribute('data-module-id');
+            var iconValue = input.value.trim();
+            var previous = input.getAttribute('data-last-saved') || input.defaultValue || '';
+            input.disabled = true;
+            postIcon(companyId, moduleId, iconValue, input).then(function () {
+                input.setAttribute('data-last-saved', iconValue);
+            }).catch(function () {
+                input.value = previous;
+                alert('Could not update module icon.');
+            }).finally(function () {
+                input.disabled = false;
+            });
+        });
+    });
 })();

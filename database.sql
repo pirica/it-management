@@ -104,6 +104,7 @@ CREATE TABLE `modules_registry` (
   `id` int NOT NULL AUTO_INCREMENT,
   `module_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `module_slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `icon` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_system_module` tinyint(1) NOT NULL DEFAULT '0',
   `active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -117,6 +118,7 @@ CREATE TABLE `company_module_access` (
   `company_id` int NOT NULL,
   `module_id` int NOT NULL,
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `icon` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -3052,6 +3054,7 @@ CREATE TABLE `ui_configuration` (
   `app_name` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '⚙️ IT Controls',
   `favicon_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `equipment_type_sidebar_visibility` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `module_icon_overrides` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `api_key` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `api_key_is_active` tinyint(1) NOT NULL DEFAULT '1',
   `api_key_last_used_at` timestamp NULL DEFAULT NULL,
@@ -5532,15 +5535,15 @@ DROP TRIGGER IF EXISTS `trg_modules_registry_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_modules_registry_audit_insert` AFTER INSERT ON `modules_registry` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'icon', NEW.`icon`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_modules_registry_audit_update` AFTER UPDATE ON `modules_registry` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'icon', OLD.`icon`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'module_name', NEW.`module_name`, 'module_slug', NEW.`module_slug`, 'icon', NEW.`icon`, 'is_system_module', NEW.`is_system_module`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_modules_registry_audit_delete` AFTER DELETE ON `modules_registry` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(NULLIF(@app_company_id, 0), 1), @app_user_id, @app_username, @app_email, 'modules_registry', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'module_name', OLD.`module_name`, 'module_slug', OLD.`module_slug`, 'icon', OLD.`icon`, 'is_system_module', OLD.`is_system_module`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_company_module_access_audit_insert`;
@@ -5549,15 +5552,15 @@ DROP TRIGGER IF EXISTS `trg_company_module_access_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_company_module_access_audit_insert` AFTER INSERT ON `company_module_access` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'company_module_access', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'enabled', NEW.`enabled`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'company_module_access', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'enabled', NEW.`enabled`, 'icon', NEW.`icon`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_company_module_access_audit_update` AFTER UPDATE ON `company_module_access` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'company_module_access', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'enabled', OLD.`enabled`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'enabled', NEW.`enabled`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'company_module_access', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'enabled', OLD.`enabled`, 'icon', OLD.`icon`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'enabled', NEW.`enabled`, 'icon', NEW.`icon`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_company_module_access_audit_delete` AFTER DELETE ON `company_module_access` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'company_module_access', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'enabled', OLD.`enabled`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'company_module_access', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'enabled', OLD.`enabled`, 'icon', OLD.`icon`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_insert`;

@@ -118,10 +118,21 @@ foreach ($sectionsById as $section) {
                 } elseif (isset($sidebarItem['match_dir'])) {
                     $isActive = $current_dir === $sidebarItem['match_dir'];
                 }
+                $displayLabel = (string)($sidebarItem['label'] ?? '');
+                $moduleSlug = trim((string)($sidebarItem['match_dir'] ?? ''));
+                if ($moduleSlug !== '' && function_exists('itm_resolve_module_sidebar_label')) {
+                    $displayLabel = itm_resolve_module_sidebar_label(
+                        $conn,
+                        (int)($company_id ?? 0),
+                        (int)($_SESSION['user_id'] ?? 0),
+                        $moduleSlug,
+                        $displayLabel
+                    );
+                }
                 ?>
                 <li>
                     <a href="<?php echo BASE_URL . $sidebarItem['href']; ?>" class="<?php echo $isActive ? 'active' : ''; ?>">
-                        <?php echo sanitize($sidebarItem['label']); ?>
+                        <?php echo sanitize($displayLabel); ?>
                     </a>
                 </li>
             <?php endforeach; ?>

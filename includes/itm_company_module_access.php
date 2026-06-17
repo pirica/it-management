@@ -105,7 +105,7 @@ if (!function_exists('itm_module_access_registry_row')) {
         }
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id, module_slug, module_name, is_system_module, active
+            'SELECT id, module_slug, module_name, icon, is_system_module, active
              FROM modules_registry
              WHERE module_slug = ?
              LIMIT 1'
@@ -225,7 +225,7 @@ if (!function_exists('itm_list_all_modules_registry')) {
         }
 
         $rows = [];
-        $sql = 'SELECT id, module_slug, module_name, is_system_module, active, created_at, updated_at
+        $sql = 'SELECT id, module_slug, module_name, icon, is_system_module, active, created_at, updated_at
                 FROM modules_registry
                 ORDER BY module_slug ASC';
         $res = mysqli_query($conn, $sql);
@@ -262,6 +262,261 @@ if (!function_exists('itm_module_access_default_label')) {
     }
 }
 
+if (!function_exists('itm_module_access_split_catalog_label')) {
+    function itm_module_access_split_catalog_label($label)
+    {
+        $label = trim((string)$label);
+        if ($label === '') {
+            return ['icon' => '', 'text' => ''];
+        }
+        $text = itm_module_access_strip_catalog_label_prefix($label);
+        if ($text === $label) {
+            return ['icon' => '', 'text' => $label];
+        }
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            $icon = trim(mb_substr($label, 0, mb_strlen($label) - mb_strlen($text)));
+        } else {
+            $icon = trim(substr($label, 0, max(0, strlen($label) - strlen($text))));
+        }
+        return ['icon' => $icon, 'text' => trim($text)];
+    }
+}
+
+if (!function_exists('itm_module_access_catalog_icon_for_slug')) {
+    function itm_module_access_catalog_icon_for_slug($moduleSlug)
+    {
+        $moduleSlug = trim((string)$moduleSlug);
+        if ($moduleSlug === '' || !function_exists('itm_sidebar_item_catalog')) {
+            return '';
+        }
+        $catalog = itm_sidebar_item_catalog();
+        if (!isset($catalog[$moduleSlug])) {
+            return '';
+        }
+        $parts = itm_module_access_split_catalog_label((string)($catalog[$moduleSlug]['label'] ?? ''));
+        return (string)($parts['icon'] ?? '');
+    }
+}
+
+if (!function_exists('itm_module_access_normalize_icon')) {
+    function itm_module_access_normalize_icon($icon)
+    {
+        $icon = trim((string)$icon);
+        if ($icon === '') {
+            return null;
+        }
+        if (function_exists('mb_substr')) {
+            $icon = mb_substr($icon, 0, 16);
+        } else {
+            $icon = substr($icon, 0, 16);
+        }
+        return $icon;
+    }
+}
+
+if (!function_exists('itm_ensure_module_access_icon_columns')) {
+    function itm_ensure_module_access_icon_columns($conn)
+    {
+        if (!$conn instanceof mysqli) {
+            return false;
+        }
+        $altered = true;
+        if (itm_module_access_table_exists($conn, 'modules_registry')) {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `modules_registry` LIKE 'icon'");
+            if ($check && mysqli_num_rows($check) === 0) {
+                $altered = $altered && mysqli_query(
+                    $conn,
+                    'ALTER TABLE `modules_registry` ADD COLUMN `icon` VARCHAR(16) NULL DEFAULT NULL AFTER `module_slug`'
+                ) === true;
+            }
+        }
+        if (itm_module_access_table_exists($conn, 'company_module_access')) {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `company_module_access` LIKE 'icon'");
+            if ($check && mysqli_num_rows($check) === 0) {
+                $altered = $altered && mysqli_query(
+                    $conn,
+                    'ALTER TABLE `company_module_access` ADD COLUMN `icon` VARCHAR(16) NULL DEFAULT NULL AFTER `enabled`'
+                ) === true;
+            }
+        }
+        return $altered;
+    }
+}
+
+if (!function_exists('itm_company_module_icon_map')) {
+    function itm_company_module_icon_map($conn)
+    {
+        if (!$conn instanceof mysqli || !itm_module_access_table_exists($conn, 'company_module_access')) {
+            return [];
+        }
+        itm_ensure_module_access_icon_columns($conn);
+
+        $map = [];
+        $sql = 'SELECT company_id, module_id, icon FROM company_module_access WHERE icon IS NOT NULL AND icon <> \'\'';
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $companyId = (int)($row['company_id'] ?? 0);
+            $moduleId = (int)($row['module_id'] ?? 0);
+            if ($companyId <= 0 || $moduleId <= 0) {
+                continue;
+            }
+            $map[$companyId][$moduleId] = trim((string)($row['icon'] ?? ''));
+        }
+        return $map;
+    }
+}
+
+if (!function_exists('itm_resolve_module_sidebar_icon')) {
+    function itm_resolve_module_sidebar_icon($conn, $company_id, $user_id, $module_slug)
+    {
+        $company_id = (int)$company_id;
+        $user_id = (int)$user_id;
+        $module_slug = trim((string)$module_slug);
+        if ($module_slug === '') {
+            return '';
+        }
+
+        if ($user_id > 0 && $conn instanceof mysqli && function_exists('itm_get_ui_configuration')) {
+            $uiConfig = itm_get_ui_configuration($conn, $company_id, $user_id);
+            $overrides = is_array($uiConfig['module_icon_overrides'] ?? null) ? $uiConfig['module_icon_overrides'] : [];
+            if (isset($overrides[$module_slug])) {
+                $overrideIcon = trim((string)$overrides[$module_slug]);
+                if ($overrideIcon !== '') {
+                    return $overrideIcon;
+                }
+            }
+        }
+
+        if ($company_id > 0 && $conn instanceof mysqli && itm_module_access_table_exists($conn, 'company_module_access')) {
+            itm_ensure_module_access_icon_columns($conn);
+            $stmt = mysqli_prepare(
+                $conn,
+                'SELECT cma.icon
+                 FROM company_module_access cma
+                 INNER JOIN modules_registry mr ON mr.id = cma.module_id
+                 WHERE cma.company_id = ?
+                   AND mr.module_slug = ?
+                 LIMIT 1'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'is', $company_id, $module_slug);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = $res ? mysqli_fetch_assoc($res) : null;
+                mysqli_stmt_close($stmt);
+                $companyIcon = trim((string)($row['icon'] ?? ''));
+                if ($companyIcon !== '') {
+                    return $companyIcon;
+                }
+            }
+        }
+
+        $registryRow = itm_module_access_registry_row($conn, $module_slug);
+        if ($registryRow !== null) {
+            $registryIcon = trim((string)($registryRow['icon'] ?? ''));
+            if ($registryIcon !== '') {
+                return $registryIcon;
+            }
+        }
+
+        return itm_module_access_catalog_icon_for_slug($module_slug);
+    }
+}
+
+if (!function_exists('itm_resolve_module_sidebar_label')) {
+    function itm_resolve_module_sidebar_label($conn, $company_id, $user_id, $module_slug, $catalogLabel = null)
+    {
+        $module_slug = trim((string)$module_slug);
+        if ($catalogLabel === null && function_exists('itm_sidebar_item_catalog')) {
+            $catalog = itm_sidebar_item_catalog();
+            $catalogLabel = (string)($catalog[$module_slug]['label'] ?? '');
+        }
+        $catalogLabel = (string)$catalogLabel;
+        $parts = itm_module_access_split_catalog_label($catalogLabel);
+        $text = trim((string)($parts['text'] ?? ''));
+        if ($text === '') {
+            $registryRow = itm_module_access_registry_row($conn, $module_slug);
+            $text = trim((string)($registryRow['module_name'] ?? itm_module_access_default_label($module_slug)));
+        }
+
+        $icon = itm_resolve_module_sidebar_icon($conn, $company_id, $user_id, $module_slug);
+        if ($icon !== '') {
+            return trim($icon . ' ' . $text);
+        }
+
+        return $catalogLabel !== '' ? $catalogLabel : $text;
+    }
+}
+
+if (!function_exists('itm_set_company_module_icon')) {
+    function itm_set_company_module_icon($conn, $company_id, $module_id, $icon)
+    {
+        $company_id = (int)$company_id;
+        $module_id = (int)$module_id;
+        if ($company_id <= 0 || $module_id <= 0 || !$conn instanceof mysqli) {
+            return false;
+        }
+        itm_ensure_module_access_icon_columns($conn);
+
+        $iconValue = itm_module_access_normalize_icon($icon);
+        $oldValues = null;
+        $stmtFetch = mysqli_prepare(
+            $conn,
+            'SELECT id FROM company_module_access WHERE company_id = ? AND module_id = ? LIMIT 1'
+        );
+        if ($stmtFetch) {
+            mysqli_stmt_bind_param($stmtFetch, 'ii', $company_id, $module_id);
+            mysqli_stmt_execute($stmtFetch);
+            $resFetch = mysqli_stmt_get_result($stmtFetch);
+            $existingId = ($resFetch && ($row = mysqli_fetch_assoc($resFetch))) ? (int)$row['id'] : 0;
+            mysqli_stmt_close($stmtFetch);
+            if ($existingId > 0 && function_exists('itm_fetch_audit_record')) {
+                $oldValues = itm_fetch_audit_record($conn, 'company_module_access', $existingId, $company_id);
+            }
+        }
+
+        $enabled = 1;
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO company_module_access (company_id, module_id, enabled, icon)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE icon = VALUES(icon), updated_at = CURRENT_TIMESTAMP'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iiis', $company_id, $module_id, $enabled, $iconValue);
+        $ok = mysqli_stmt_execute($stmt);
+        $recordId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmt);
+        if (!$ok) {
+            return false;
+        }
+
+        if ($recordId <= 0) {
+            $stmtLookup = mysqli_prepare(
+                $conn,
+                'SELECT id FROM company_module_access WHERE company_id = ? AND module_id = ? LIMIT 1'
+            );
+            if ($stmtLookup) {
+                mysqli_stmt_bind_param($stmtLookup, 'ii', $company_id, $module_id);
+                mysqli_stmt_execute($stmtLookup);
+                $resLookup = mysqli_stmt_get_result($stmtLookup);
+                $recordId = ($resLookup && ($lookup = mysqli_fetch_assoc($resLookup))) ? (int)$lookup['id'] : 0;
+                mysqli_stmt_close($stmtLookup);
+            }
+        }
+
+        if (function_exists('itm_log_audit') && $recordId > 0) {
+            $newValues = itm_fetch_audit_record($conn, 'company_module_access', $recordId, $company_id);
+            $action = $oldValues ? 'UPDATE' : 'INSERT';
+            itm_log_audit($conn, 'company_module_access', $recordId, $action, $oldValues, $newValues);
+        }
+
+        return true;
+    }
+}
+
 if (!function_exists('itm_discover_module_slugs_for_registry')) {
     function itm_discover_module_slugs_for_registry()
     {
@@ -295,6 +550,8 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
             return ['inserted' => 0, 'updated' => 0, 'total' => 0];
         }
 
+        itm_ensure_module_access_icon_columns($conn);
+
         $inserted = 0;
         $updated = 0;
         $systemSlugs = itm_module_access_system_slugs();
@@ -314,6 +571,9 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
                 $label = itm_module_access_default_label($slug);
             }
 
+            $catalogIcon = itm_module_access_catalog_icon_for_slug($slug);
+            $catalogIcon = itm_module_access_normalize_icon($catalogIcon);
+
             $isSystem = in_array($slug, $systemSlugs, true) ? 1 : 0;
             if ($slug === 'company_module_access') {
                 $isSystem = 1;
@@ -323,11 +583,11 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
             if ($existing === null) {
                 $stmt = mysqli_prepare(
                     $conn,
-                    'INSERT INTO modules_registry (module_slug, module_name, is_system_module, active)
-                     VALUES (?, ?, ?, 1)'
+                    'INSERT INTO modules_registry (module_slug, module_name, icon, is_system_module, active)
+                     VALUES (?, ?, ?, ?, 1)'
                 );
                 if ($stmt) {
-                    mysqli_stmt_bind_param($stmt, 'ssi', $slug, $label, $isSystem);
+                    mysqli_stmt_bind_param($stmt, 'sssi', $slug, $label, $catalogIcon, $isSystem);
                     if (mysqli_stmt_execute($stmt)) {
                         $inserted++;
                     }
@@ -339,11 +599,11 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
             $stmt = mysqli_prepare(
                 $conn,
                 'UPDATE modules_registry
-                 SET module_name = ?, is_system_module = ?
+                 SET module_name = ?, is_system_module = ?, icon = IF(icon IS NULL OR icon = \'\', ?, icon)
                  WHERE module_slug = ?'
             );
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'sis', $label, $isSystem, $slug);
+                mysqli_stmt_bind_param($stmt, 'siss', $label, $isSystem, $catalogIcon, $slug);
                 if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
                     $updated++;
                 }

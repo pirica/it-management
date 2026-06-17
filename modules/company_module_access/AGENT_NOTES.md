@@ -5,7 +5,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 2. Key Tables
 
 - `modules_registry` — global catalog of module slugs and display names
-- `company_module_access` — per-company enabled/disabled flags (`enabled` tinyint)
+- `company_module_access` — per-company enabled/disabled flags (`enabled` tinyint) and optional company-default sidebar emoji (`icon` varchar)
 
 ## 3. Required Relationships
 
@@ -19,13 +19,14 @@ Admin-only module that manages per-company module visibility. Administrators use
 - Opt-in policy: `has_module_access()` requires `company_module_access.enabled = 1` plus active registry row; missing row denies access. Fresh installs seed all company × module rows in `database.sql`.
 - The admin matrix must show **all** registry modules — never filter rows like the sidebar does.
 - Matrix and registry list order: `module_slug ASC` (stable ascending; avoids emoji-prefixed `module_name` sorting after letters).
+- Sidebar emoji precedence (rendered in `includes/sidebar.php` via `itm_resolve_module_sidebar_label()`): **Settings per-user override** → **company_module_access.icon** → **modules_registry.icon** → **ui_config catalog** fallback. Icons are stored separately from `module_name` for stable sorting.
 - System modules appear in the matrix; `settings` stays always available to all users.
 - Inactive registry rows (`active = 0`) are listed but toggles are disabled.
 - AJAX toggles must use CSRF and write through `itm_set_company_module_access()`.
 
 ## 5. UI Behavior Requirements
 
-- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), Select All / Cancel Select / Unselect All, client-side filter.
+- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), per-cell company-default emoji inputs, Select All / Cancel Select / Unselect All, client-side filter.
 - `list_all.php` — flat registry list with search.
 - `create.php` / `edit.php` — registry row CRUD with checkbox pattern for `active` and `is_system_module`.
 - Standard layout shell with sidebar/header.
@@ -33,6 +34,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 6. API Actions (If Applicable)
 
 - `ajax_action=toggle_access` — POST JSON toggle for one `(company_id, module_id)` pair.
+- `ajax_action=set_icon` — POST JSON set/clear company-default sidebar emoji for one `(company_id, module_id)` pair.
 - `ajax_action=bulk_toggle_access` — POST JSON bulk toggle via `pairs_json`.
 
 ## 7. File Structure

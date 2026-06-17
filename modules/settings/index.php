@@ -472,6 +472,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['sidebar_main_order'] = is_array($sidebarMainOrderInput) ? $sidebarMainOrderInput : [];
         $newConfig['sidebar_submenu_order'] = is_array($sidebarSubmenuOrderInput) ? $sidebarSubmenuOrderInput : [];
 
+        $newConfig['module_icon_overrides'] = [];
+        foreach (itm_sidebar_item_catalog() as $catalogItemId => $catalogItem) {
+            $moduleSlug = trim((string)($catalogItem['match_dir'] ?? ''));
+            if ($moduleSlug === '') {
+                continue;
+            }
+            $emoji = trim((string)($_POST['module_sidebar_emoji'][$catalogItemId] ?? ''));
+            if ($emoji !== '') {
+                $newConfig['module_icon_overrides'][$moduleSlug] = $emoji;
+            }
+        }
+
         if ($error !== '') {
             // Why: Preserve the existing config when upload validation fails in a mixed form submit.
         } elseif ((int)$company_id <= 0) {
@@ -803,7 +815,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                             <button class="btn btn-primary" type="submit">💾</button>
                         </div>
                         <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
-                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections).</p>
+                        <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections). Optional emoji per link overrides the company default from Company Module Access (empty uses company/registry/catalog).</p>
                         <div class="sidebar-settings-list" id="sidebar-settings-list">
                             <?php foreach ($sidebarStructure as $section): ?>
                                 <?php $sectionId = $section['id']; ?>
@@ -820,7 +832,17 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                     </div>
                                     <div class="sidebar-setting-children">
                                         <?php foreach ($section['items'] as $item): ?>
-                                            <?php $itemId = $item['id']; ?>
+                                            <?php
+                                            $itemId = $item['id'];
+                                            $moduleSlug = trim((string)($item['match_dir'] ?? ''));
+                                            $userModuleIcon = '';
+                                            if ($moduleSlug !== '') {
+                                                $userModuleIcon = trim((string)(($currentUiConfig['module_icon_overrides'] ?? [])[$moduleSlug] ?? ''));
+                                            }
+                                            $companyModuleIcon = ($moduleSlug !== '' && function_exists('itm_resolve_module_sidebar_icon'))
+                                                ? itm_resolve_module_sidebar_icon($conn, (int)$company_id, 0, $moduleSlug)
+                                                : '';
+                                            ?>
                                             <div class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
                                                 <label class="role-flag-option">
                                                     <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
@@ -833,6 +855,17 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                                         <?php echo sanitize($item['label']); ?>
                                                     </a>
                                                 </label>
+                                                <?php if ($moduleSlug !== ''): ?>
+                                                    <input
+                                                        type="text"
+                                                        name="module_sidebar_emoji[<?php echo sanitize($itemId); ?>]"
+                                                        value="<?php echo sanitize($userModuleIcon); ?>"
+                                                        maxlength="16"
+                                                        placeholder="<?php echo sanitize($companyModuleIcon); ?>"
+                                                        title="Personal sidebar emoji (empty = company default)"
+                                                        style="max-width:72px;"
+                                                    >
+                                                <?php endif; ?>
                                                 <div>
                                                     <button type="button" class="btn btn-sm sidebar-submove-up">↑</button>
                                                     <button type="button" class="btn btn-sm sidebar-submove-down">↓</button>
