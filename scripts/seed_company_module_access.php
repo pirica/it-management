@@ -24,14 +24,10 @@ $total = 0;
 
 if ($companyId > 0) {
     $total = itm_seed_company_module_access_for_company($conn, $companyId);
-    echo 'Seeded ' . $total . ' rows for company ' . $companyId . '.' . $nl;
+    echo 'Seeded ' . $total . ' access rows for company ' . $companyId . ' (enabled=1).' . $nl;
     exit(0);
 }
 
-$res = mysqli_query($conn, 'SELECT id FROM companies WHERE active = 1');
-while ($res && ($row = mysqli_fetch_assoc($res))) {
-    $total += itm_seed_company_module_access_for_company($conn, (int)$row['id']);
-}
-
-echo 'Seeded ' . $total . ' company_module_access rows across active companies.' . $nl;
+$total = itm_seed_company_module_access_all($conn);
+echo 'Seeded ' . $total . ' company_module_access rows (company x module, enabled=1).' . $nl;
 exit(0);

@@ -21,10 +21,11 @@ if (!$conn instanceof mysqli) {
 $result = itm_sync_modules_registry_from_filesystem($conn);
 
 $summary = sprintf(
-    'Registry sync complete. Discovered: %d, inserted: %d, updated: %d.',
+    'Registry sync complete. Discovered: %d, inserted: %d, updated: %d. Access rows seeded: %d.',
     (int)($result['total'] ?? 0),
     (int)($result['inserted'] ?? 0),
-    (int)($result['updated'] ?? 0)
+    (int)($result['updated'] ?? 0),
+    (int)($result['access_seeded'] ?? 0)
 );
 
 echo $summary . $nl;

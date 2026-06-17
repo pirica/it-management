@@ -370,7 +370,7 @@ The Bookmarks module provides a hierarchical management system for links, featur
 The `company_module_access` module lets administrators (`itm_is_admin()`) enable or disable modules per company.
 
 1. **Tables:** `modules_registry` (global slug catalog) and `company_module_access` (`company_id`, `module_id`, `enabled`).
-2. **Opt-out policy:** No row or `enabled = 1` allows access; only an explicit `enabled = 0` row denies access for that company.
+2. **Opt-in policy:** Access requires a `company_module_access` row with `enabled = 1` and an active `modules_registry` row. `database.sql` seeds all active-company × module rows as `enabled = 1`; use `php scripts/seed_company_module_access.php` after upgrades or `itm_seed_company_module_access_for_company()` / `itm_seed_company_module_access_for_module()` when adding companies or registry slugs.
 3. **Helpers:** `includes/itm_company_module_access.php` — `has_module_access()`, `get_company_modules()`, `itm_list_all_modules_registry()`, `itm_enforce_module_access_or_exit()`.
 4. **Central enforcement:** `config/config.php` calls `itm_enforce_module_access_or_exit()` after `company_id` is set — individual module entry files do not need duplicated guards.
 5. **Navigation:** `includes/sidebar.php` and `dashboard.php` hide disabled modules; `modules/calendar/index.php` skips integrated sources when the parent module is disabled.

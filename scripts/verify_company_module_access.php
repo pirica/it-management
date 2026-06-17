@@ -41,6 +41,17 @@ if (!has_module_access($conn, 1, 'settings')) {
     echo '[PASS] settings access allowed for company 1.' . $nl;
 }
 
+$expectedAccessRows = $registryCount * 5;
+$accessCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM company_module_access');
+$accessCountRow = $accessCountRes ? mysqli_fetch_assoc($accessCountRes) : null;
+$accessCount = (int)($accessCountRow['count'] ?? 0);
+if ($accessCount < $expectedAccessRows) {
+    echo '[FAIL] company_module_access row count (' . $accessCount . ') is lower than expected company x module seeds (' . $expectedAccessRows . ').' . $nl;
+    $failures++;
+} else {
+    echo '[PASS] company_module_access contains ' . $accessCount . ' seeded rows (expected at least ' . $expectedAccessRows . ').' . $nl;
+}
+
 $suppliersId = 0;
 $stmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
 if ($stmt) {
@@ -60,6 +71,18 @@ if ($suppliersId > 0) {
         $failures++;
     } else {
         echo '[PASS] suppliers denied after explicit enabled=0 for company 1.' . $nl;
+    }
+    $stmtDelete = mysqli_prepare($conn, 'DELETE FROM company_module_access WHERE company_id = 1 AND module_id = ? LIMIT 1');
+    if ($stmtDelete) {
+        mysqli_stmt_bind_param($stmtDelete, 'i', $suppliersId);
+        mysqli_stmt_execute($stmtDelete);
+        mysqli_stmt_close($stmtDelete);
+    }
+    if (has_module_access($conn, 1, 'suppliers')) {
+        echo '[FAIL] suppliers should be denied when company_module_access row is missing (strict opt-in).' . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] suppliers denied when company_module_access row is missing.' . $nl;
     }
     itm_set_company_module_access($conn, 1, $suppliersId, 1);
 } else {
