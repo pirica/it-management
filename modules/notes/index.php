@@ -272,6 +272,7 @@ if (isset($_GET["download_zip"])) {
 
 if (isset($_GET["ajax_action"])) {
     if (!itm_validate_csrf_token($_POST["csrf_token"] ?? $_POST["CSRF_TOKEN"] ?? "")) {
+        http_response_code(403);
         echo json_encode(["ok" => false, "error" => "CSRF token mismatch"]);
         die();
     }
@@ -309,24 +310,21 @@ if (isset($_GET["ajax_action"])) {
         $is_pinned = (int)($_POST["is_pinned"] ?? 0);
         $stmt = $conn->prepare("UPDATE notes SET is_pinned = ? WHERE id = ? AND company_id = ? AND user_id = ?");
         $stmt->bind_param("iiii", $is_pinned, $id, $company_id, $logged_user_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "toggle_archived") {
         $id = (int)($_POST["id"] ?? 0);
         $is_archived = (int)($_POST["is_archived"] ?? 0);
         $stmt = $conn->prepare("UPDATE notes SET is_archived = ? WHERE id = ? AND company_id = ? AND user_id = ?");
         $stmt->bind_param("iiii", $is_archived, $id, $company_id, $logged_user_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "restore") {
         $id = (int)($_POST["id"] ?? 0);
         $visSql = itm_notes_visibility_sql();
         $stmt = $conn->prepare("UPDATE notes SET active = 1 WHERE id = ? AND company_id = ? AND ($visSql)");
         $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "single_delete") {
         $id = (int)($_POST["id"] ?? 0);
@@ -341,48 +339,59 @@ if (isset($_GET["ajax_action"])) {
             $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
         }
         $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false, "error" => $stmt->error]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "toggle_important") {
         $id = (int)($_POST["id"] ?? 0);
         $is_important = (int)($_POST["is_important"] ?? 0);
         $stmt = $conn->prepare("UPDATE notes SET is_important = ? WHERE id = ? AND company_id = ? AND user_id = ?");
         $stmt->bind_param("iiii", $is_important, $id, $company_id, $logged_user_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "rename_tag") {
         $old = $_POST["old_name"] ?? "";
         $new = $_POST["new_name"] ?? "";
-        if ($new === "") { echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]); die(); }
+        if ($new === "") {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]);
+            die();
+        }
         $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE user_id = ? AND label = ? AND company_id = ? LIMIT 1");
         $stmtC->bind_param("isi", $logged_user_id, $new, $company_id);
         $stmtC->execute();
-        if ($stmtC->get_result()->fetch_assoc()) { echo json_encode(["ok" => false, "error" => "Tag already exists"]); die(); }
+        if ($stmtC->get_result()->fetch_assoc()) {
+            http_response_code(409);
+            echo json_encode(["ok" => false, "error" => "Tag already exists"]);
+            die();
+        }
         $stmt = $conn->prepare("UPDATE note_labels SET label = ? WHERE label = ? AND user_id = ? AND company_id = ?");
         $stmt->bind_param("ssii", $new, $old, $logged_user_id, $company_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "delete_tag") {
         $name = $_POST["name"] ?? "";
         $stmt = $conn->prepare("DELETE FROM note_labels WHERE label = ? AND user_id = ? AND company_id = ?");
         $stmt->bind_param("sii", $name, $logged_user_id, $company_id);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "add_tag") {
         $name = trim($_POST["name"] ?? "");
-        if ($name === "") { echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]); die(); }
+        if ($name === "") {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]);
+            die();
+        }
         $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE user_id = ? AND label = ? AND company_id = ? LIMIT 1");
         $stmtC->bind_param("isi", $logged_user_id, $name, $company_id);
         $stmtC->execute();
-        if ($stmtC->get_result()->fetch_assoc()) { echo json_encode(["ok" => false, "error" => "Tag already exists"]); die(); }
+        if ($stmtC->get_result()->fetch_assoc()) {
+            http_response_code(409);
+            echo json_encode(["ok" => false, "error" => "Tag already exists"]);
+            die();
+        }
         $stmt = $conn->prepare("INSERT INTO note_labels (company_id, user_id, label) VALUES (?, ?, ?)");
         $stmt->bind_param("iis", $company_id, $logged_user_id, $name);
-        if ($stmt->execute()) echo json_encode(["ok" => true]); else echo json_encode(["ok" => false]);
-        die();
+        itm_notes_json_mutation_response($stmt);
     }
     if ($action === "download_all_images") {
         $id = (int)($_POST["id"] ?? 0);
@@ -390,8 +399,17 @@ if (isset($_GET["ajax_action"])) {
         $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
         $stmt->execute();
         $resD = $stmt->get_result()->fetch_assoc();
+        if (!$resD) {
+            http_response_code(404);
+            echo json_encode(["ok" => false, "error" => "Record not found or not permitted"]);
+            die();
+        }
         $imgs = json_decode($resD['images_json'] ?? '[]', true);
-        if (empty($imgs)) { echo json_encode(["ok" => false, "error" => "No images to download"]); die(); }
+        if (empty($imgs)) {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "No images to download"]);
+            die();
+        }
 
         $title = $resD['title'] ?: "note_{$id}";
         $safeTitle = preg_replace('/[^A-Za-z0-9_\-]/', '_', $title);
@@ -413,6 +431,7 @@ if (isset($_GET["ajax_action"])) {
                 if (file_exists($zipPath)) {
                     unlink($zipPath);
                 }
+                http_response_code(400);
                 echo json_encode(["ok" => false, "error" => "No images to download"]);
                 die();
             }
