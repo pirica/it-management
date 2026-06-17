@@ -128,6 +128,7 @@ function efm_view_label_map(): array
         'workstation_mode_id' => ['Workstation Mode', 'workstation_mode_name'],
         'assignment_type_id' => ['Assignment Type', 'assignment_type_name'],
         'reports_to' => ['Reports To', 'manager_name'],
+        'location_id' => ['IT Location', 'location_name'],
     ];
 }
 
@@ -198,11 +199,13 @@ $criticalFormFields = [
     'first_name', 'last_name', 'display_name', 'work_email', 'personal_email', 'mobile_phone',
     'external_number', 'dect', 'extension', 'on_contacts', 'on_orgchart', 'external_id', 'username',
     'job_code', 'employee_position_id', 'reports_to', 'department_id', 'office_key_card_department_id',
-    'raw_status_code', 'employment_status_id', 'start_date', 'employee_type_id', 'termination_date',
+    'raw_status_code', 'employment_status_id', 'employee_code', 'location_id',
+    'request_date', 'requested_by', 'termination_requested_by',
+    'start_date', 'employee_type_id', 'termination_date',
     'birthday', 'hide_year', 'photo', 'workstation_mode_id', 'assignment_type_id', 'comments',
 ];
 $optionalFormFields = [
-    'duplicate', 'employee_code', 'location_id', 'request_date', 'requested_by', 'termination_requested_by',
+    'duplicate',
 ];
 
 echo 'Employees schema/UI audit' . $nl;

@@ -62,6 +62,8 @@ $form = [
     'assignment_type_id' => '', 'comments' => '', 'office_key_card_department_id' => '',
     'mobile_phone' => '', 'external_number' => '', 'dect' => '', 'extension' => '', 'on_contacts' => '0', 'on_orgchart' => '0',
     'start_date' => '', 'employee_type_id' => '', 'termination_date' => '',
+    'employee_code' => '', 'location_id' => '',
+    'request_date' => '', 'requested_by' => '', 'termination_requested_by' => '',
     'birthday' => '', 'hide_year' => '0', 'photo' => '',
 ];
 
@@ -109,6 +111,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $startDate = $form['start_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['start_date']) . "'";
         $employeeTypeId = $form['employee_type_id'] === '' ? 'NULL' : (string)(int)$form['employee_type_id'];
         $terminationDate = $form['termination_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_date']) . "'";
+        $employeeCode = $form['employee_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['employee_code']) . "'";
+        $locationId = $form['location_id'] === '' ? 'NULL' : (string)(int)$form['location_id'];
+        $requestDate = $form['request_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['request_date']) . "'";
+        $requestedBy = $form['requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['requested_by']) . "'";
+        $terminationRequestedBy = $form['termination_requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_requested_by']) . "'";
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
         $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
@@ -119,14 +126,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $birthday = $form['birthday'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['birthday']) . "'";
     $hideYear = (int)$form['hide_year'];
         $sql = "INSERT INTO employees (
-            company_id, first_name, last_name, display_name, work_email, personal_email, external_id, username,
-            department_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
+            company_id, first_name, last_name, display_name, work_email, personal_email, external_id, username, employee_code,
+            department_id, location_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
             employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id,
+            request_date, requested_by, termination_requested_by,
             start_date, employee_type_id, termination_date, birthday, hide_year
         ) VALUES (
-            " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$workEmail}, {$personalEmail}, {$externalId}, {$username},
-            {$departmentId}, {$jobCode}, {$comments}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$onOrgchart}, {$rawStatusCode}, {$employmentStatusId},
+            " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$workEmail}, {$personalEmail}, {$externalId}, {$username}, {$employeeCode},
+            {$departmentId}, {$locationId}, {$jobCode}, {$comments}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$onOrgchart}, {$rawStatusCode}, {$employmentStatusId},
             {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId},
+            {$requestDate}, {$requestedBy}, {$terminationRequestedBy},
             {$startDate}, {$employeeTypeId}, {$terminationDate}, {$birthday}, {$hideYear}
         )";
 
@@ -213,6 +222,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                             </label>
                         </div>
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
+                        <?php include __DIR__ . '/includes/profile_employee_code_field.php'; ?>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Position Title</label>
@@ -247,6 +257,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
+                        <?php include __DIR__ . '/includes/profile_location_field.php'; ?>
                         <div class="form-group"><label>Office Key Card Department</label>
                             <select name="office_key_card_department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="office key card department">
                                 <option value="">-- None --</option>
@@ -266,6 +277,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
+                        <?php include __DIR__ . '/includes/profile_request_fields.php'; ?>
                         <?php include __DIR__ . '/includes/profile_start_date_field.php'; ?>
                         <?php include __DIR__ . '/includes/profile_employee_type_fields.php'; ?>
                         <?php include __DIR__ . '/includes/profile_termination_date_field.php'; ?>

@@ -99,6 +99,9 @@ function emp_canonical_header($header) {
         'requested by' => 'requested_by',
         'termination requested by' => 'termination_requested_by',
         'department name' => 'department_name',
+        'it location' => 'location_id',
+        'location' => 'location_id',
+        'location name' => 'location_id',
         'on orgchart' => 'on_orgchart',
         'on org chart' => 'on_orgchart',
         'position title' => 'employee_position_id',
@@ -420,6 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'workstation_mode_id' => ['table' => 'workstation_modes', 'col' => 'mode_name'],
                     'assignment_type_id' => ['table' => 'assignment_types', 'col' => 'name'],
                     'employee_type_id' => ['table' => 'employee_type', 'col' => 'name_type'],
+                    'location_id' => ['table' => 'it_locations', 'col' => 'name'],
                     'office_key_card_department_id' => ['table' => 'departments', 'col' => 'name'],
                 ];
                 foreach ($lookupMaps as $targetField => $info) {
@@ -502,7 +506,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
@@ -516,7 +520,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         } else {
                             $values[$col] = '0';
                         }
-                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'employee_type_id', 'office_key_card_department_id'], true)) {
+                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'location_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'employee_type_id', 'office_key_card_department_id'], true)) {
                         $values[$col] = (string)(int)$value;
                     } else {
                         $values[$col] = "'" . mysqli_real_escape_string($conn, $value) . "'";
@@ -592,8 +596,8 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
-$hiddenColumns = ['company_id','employee_code','location','location_id','user_id'];
+$preferredOrder = ['id','duplicate','external_id','employee_code','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
+$hiddenColumns = ['company_id','location','user_id'];
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
 
@@ -627,6 +631,7 @@ $countSql = 'SELECT COUNT(*) AS total
              LEFT JOIN departments d ON d.id = e.department_id
              LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
              LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id
+             LEFT JOIN it_locations il ON il.id = e.location_id AND il.company_id = e.company_id
              LEFT JOIN workstation_modes wm ON wm.id = e.workstation_mode_id AND wm.company_id = e.company_id
              LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id
              LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id
@@ -645,7 +650,7 @@ if ($page > $totalPages) {
 // Final Fetch including lookups and system access data
 $rows = mysqli_query(
     $conn,
-    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name, et.name_type AS employee_type_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
+    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name, et.name_type AS employee_type_name, il.name AS location_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
             ep.name AS position_name, m.display_name AS manager_name,
             esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
             esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
@@ -654,6 +659,7 @@ $rows = mysqli_query(
      LEFT JOIN departments d ON d.id = e.department_id
      LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
      LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id
+     LEFT JOIN it_locations il ON il.id = e.location_id AND il.company_id = e.company_id
      LEFT JOIN workstation_modes wm ON wm.id = e.workstation_mode_id AND wm.company_id = e.company_id
      LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id
      LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id
@@ -678,6 +684,8 @@ function emp_label($field) {
     if ($field === 'workstation_mode_id') return 'Workstation Mode';
     if ($field === 'assignment_type_id') return 'Assignment Type';
     if ($field === 'external_id') return 'External ID';
+    if ($field === 'employee_code') return 'Employee Code';
+    if ($field === 'location_id') return 'IT Location';
     if ($field === 'on_contacts') return 'On Contacts';
     if ($field === 'on_orgchart') return 'On Org Chart';
     if ($field === 'external_number') return 'External Number';
@@ -807,6 +815,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                     <?php if (($col === 'work_email' || $col === 'personal_email') && !empty($row[$col])): ?>
                                         <a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
                                     <?php elseif ($col === 'department_id'): ?><?php echo sanitize((string)($row['department_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'location_id'): ?><?php echo sanitize((string)($row['location_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employee_position_id'): ?><?php echo sanitize((string)($row['position_name'] ?? '')); ?>
                                     <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($row['manager_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employment_status_id'): ?><?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>

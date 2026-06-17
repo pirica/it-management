@@ -20,7 +20,7 @@ if ($employeeId <= 0) {
     exit;
 }
 
-$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name, ep.name AS position_name, m.display_name AS manager_name, et.name_type AS employee_type_name '
+$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name, ep.name AS position_name, m.display_name AS manager_name, et.name_type AS employee_type_name, il.name AS location_name '
     . 'FROM employees e '
     . 'LEFT JOIN departments d ON d.id = e.department_id '
     . 'LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id '
@@ -30,6 +30,7 @@ $sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_depar
     . 'LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id '
     . 'LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id '
     . 'LEFT JOIN employees m ON m.id = e.reports_to '
+    . 'LEFT JOIN it_locations il ON il.id = e.location_id AND il.company_id = e.company_id '
     . 'WHERE e.id = ? AND e.company_id = ? '
     . 'LIMIT 1';
 
@@ -75,14 +76,19 @@ $profileFields = [
     'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '✅' : '❌'),
     'On Orgchart' => ((int)($employee['on_orgchart'] ?? 0) === 1 ? '✅' : '❌'),
     'External ID' => (string)($employee['external_id'] ?? ''),
+    'Employee Code' => (string)($employee['employee_code'] ?? ''),
     'Username' => (string)($employee['username'] ?? ''),
     'Department' => (string)($employee['department_name'] ?? ''),
+    'IT Location' => (string)($employee['location_name'] ?? ''),
     'Office Key Card Department' => (string)($employee['office_key_card_department_name'] ?? ''),
     'Job Code' => (string)($employee['job_code'] ?? ''),
     'Position Title' => (string)($employee['position_name'] ?? ''),
     'Reports To' => (string)($employee['manager_name'] ?? ''),
     'Raw Status Code' => (string)($employee['raw_status_code'] ?? ''),
     'Employment Status' => (string)($employee['employment_status_name'] ?? ''),
+    'Request Date' => (string)($employee['request_date'] ?? ''),
+    'Requested By' => (string)($employee['requested_by'] ?? ''),
+    'Termination Requested By' => (string)($employee['termination_requested_by'] ?? ''),
     'Start Date' => (string)($employee['start_date'] ?? ''),
     'Employee Type' => (string)($employee['employee_type_name'] ?? ''),
     'Termination Date' => (string)($employee['termination_date'] ?? ''),
@@ -90,9 +96,6 @@ $profileFields = [
     'Hide Year' => ((int)($employee['hide_year'] ?? 0) === 1 ? '✅' : '❌'),
     'Workstation Mode' => (string)($employee['workstation_mode_name'] ?? ''),
     'Assignment Type' => (string)($employee['assignment_type_name'] ?? ''),
-    'Requested By' => (string)($employee['requested_by'] ?? ''),
-    'Termination Requested By' => (string)($employee['termination_requested_by'] ?? ''),
-    'Request Date' => (string)($employee['request_date'] ?? ''),
     'Comments' => (string)($employee['comments'] ?? ''),
     'Duplicate Flag' => emp_view_bool_icon($employee['duplicate'] ?? 0),
 ];

@@ -13,6 +13,7 @@ The central module for managing employee records, including contact info, hierar
 - **employees** → depends on **employee_positions**.
 - **employees** → depends on **employee_statuses**.
 - **employees** → optionally depends on **employee_type** via `employee_type_id`.
+- **employees** → optionally depends on **it_locations** via `location_id`.
 - **employees** → self-references via `reports_to`.
 - **employees** → optionally links to **users** via `user_id`.
 
@@ -28,14 +29,15 @@ The central module for managing employee records, including contact info, hierar
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
   - **Employee type:** defaults to tenant **Team member** when import omits `employee_type_id`; accepts `employee type` header mapped to `employee_type_id` (`name_type` lookup).
-  - **Start date:** `start_date` date field after `request_date`; import aliases `start date`, `admission date`.
+  - **Start date:** `start_date` date field after request fields; import aliases `start date`, `admission date`.
+  - **Employee code / IT location / request fields:** optional nullable columns (`employee_code`, `location_id` → `it_locations`, `request_date`, `requested_by`, `termination_requested_by`) on create/edit/view/list; import accepts `employee code`, `it location`, `location`, `request date`, `requested by`, `termination requested by`.
 - **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id` (no linked login account required). Legacy photos under `{username}_{user_id}` still resolve when `employees.user_id` is set. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
 - **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
-- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_start_date_field.php` — `start_date` date input. `includes/profile_employee_type_fields.php` — `employee_type_id` select with `__add_new__` quick-add (`data-add-label-col="name_type"`), default **Team member**. `includes/profile_termination_date_field.php` — `termination_date` date input, placed immediately after Employee Type. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed after Termination Date. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` and employee `id` — `edit.php` must pass `id` into `emp_profile_photo_store_upload()` (create inserts the row first, then uploads).
-- **View / list:** `start_date`, `employee_type_id`, and `termination_date` render human-readable values (`employee_type.name_type` for type); never show raw type IDs when a label exists. List column order places `termination_date` after `employee_type_id`.
+- **Profile fields (create/edit):** `includes/profile_fields.php` — circular drag-and-drop photo above the form grid (scoped `.itm-employee-photo-*` CSS). Uses `js/itm-upload-helper.js` on `.itm-employee-photo-target`. `includes/profile_employee_code_field.php` — optional `employee_code` text input after External ID. `includes/profile_location_field.php` — optional `location_id` select (`it_locations`, default NULL). `includes/profile_request_fields.php` — `request_date`, `requested_by`, `termination_requested_by` before start date. `includes/profile_start_date_field.php` — `start_date` date input. `includes/profile_employee_type_fields.php` — `employee_type_id` select with `__add_new__` quick-add (`data-add-label-col="name_type"`), default **Team member**. `includes/profile_termination_date_field.php` — `termination_date` date input, placed immediately after Employee Type. `includes/profile_birthday_fields.php` — `birthday` date input and `hide_year` checkbox, placed after Termination Date. Forms use `enctype="multipart/form-data"`. Photo upload needs `username` and employee `id` — `edit.php` must pass `id` into `emp_profile_photo_store_upload()` (create inserts the row first, then uploads).
+- **View / list:** `employee_code`, `location_id` (`it_locations.name`), `request_date`, `requested_by`, `termination_requested_by`, `start_date`, `employee_type_id`, and `termination_date` render human-readable values; never show raw FK IDs when a label exists. List columns include `employee_code` and `location_id` (no longer hidden).
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 
@@ -45,6 +47,9 @@ The central module for managing employee records, including contact info, hierar
 ## 7. File Structure
 - Standard CRUD structure + `delete_clear_table.php`.
 - **includes/profile_fields.php** — shared profile photo drag-and-drop for create/edit.
+- **includes/profile_employee_code_field.php** — optional employee code text field.
+- **includes/profile_location_field.php** — optional IT location FK select.
+- **includes/profile_request_fields.php** — request date and requester fields.
 - **includes/profile_start_date_field.php** — admission/start date field.
 - **includes/profile_employee_type_fields.php** — employee type select before termination/birthday fields.
 - **includes/profile_termination_date_field.php** — termination date field after employee type.

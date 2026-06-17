@@ -105,6 +105,11 @@ $form = [
     'start_date' => (string)($employee['start_date'] ?? ''),
     'employee_type_id' => (string)($employee['employee_type_id'] ?? ''),
     'termination_date' => (string)($employee['termination_date'] ?? ''),
+    'employee_code' => (string)($employee['employee_code'] ?? ''),
+    'location_id' => (string)($employee['location_id'] ?? ''),
+    'request_date' => (string)($employee['request_date'] ?? ''),
+    'requested_by' => (string)($employee['requested_by'] ?? ''),
+    'termination_requested_by' => (string)($employee['termination_requested_by'] ?? ''),
     'birthday' => (string)($employee['birthday'] ?? ''),
     'hide_year' => (string)($employee['hide_year'] ?? '0'),
     'photo' => (string)($employee['photo'] ?? ''),
@@ -152,6 +157,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $startDate = $form['start_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['start_date']) . "'";
         $employeeTypeId = $form['employee_type_id'] === '' ? 'NULL' : (string)(int)$form['employee_type_id'];
         $terminationDate = $form['termination_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_date']) . "'";
+        $employeeCode = $form['employee_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['employee_code']) . "'";
+        $locationId = $form['location_id'] === '' ? 'NULL' : (string)(int)$form['location_id'];
+        $requestDate = $form['request_date'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['request_date']) . "'";
+        $requestedBy = $form['requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['requested_by']) . "'";
+        $terminationRequestedBy = $form['termination_requested_by'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['termination_requested_by']) . "'";
         $comments = $form['comments'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['comments']) . "'";
         $mobilePhone = $form['mobile_phone'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['mobile_phone']) . "'";
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
@@ -182,11 +192,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$errors) {
         $sql = "UPDATE employees SET
             first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
-            work_email={$workEmail}, personal_email={$personalEmail}, external_id={$externalId}, username={$username},
-            department_id={$departmentId}, job_code={$jobCode}, mobile_phone={$mobilePhone}, external_number={$externalNumber}, dect={$dect}, extension={$extension}, on_contacts={$onContacts}, on_orgchart={$onOrgchart},
+            work_email={$workEmail}, personal_email={$personalEmail}, external_id={$externalId}, username={$username}, employee_code={$employeeCode},
+            department_id={$departmentId}, location_id={$locationId}, job_code={$jobCode}, mobile_phone={$mobilePhone}, external_number={$externalNumber}, dect={$dect}, extension={$extension}, on_contacts={$onContacts}, on_orgchart={$onOrgchart},
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
             employee_position_id={$employeePositionId}, reports_to={$reportsTo},
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
+            request_date={$requestDate}, requested_by={$requestedBy}, termination_requested_by={$terminationRequestedBy},
             start_date={$startDate}, employee_type_id={$employeeTypeId}, termination_date={$terminationDate},
             comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}'
             WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
@@ -260,6 +271,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                             </label>
                         </div>
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
+                        <?php include __DIR__ . '/includes/profile_employee_code_field.php'; ?>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Position Title</label>
@@ -294,6 +306,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
+                        <?php include __DIR__ . '/includes/profile_location_field.php'; ?>
                         <div class="form-group"><label>Office Key Card Department</label>
                             <select name="office_key_card_department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="office key card department">
                                 <option value="">-- None --</option>
@@ -313,6 +326,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
+                        <?php include __DIR__ . '/includes/profile_request_fields.php'; ?>
                         <?php include __DIR__ . '/includes/profile_start_date_field.php'; ?>
                         <?php include __DIR__ . '/includes/profile_employee_type_fields.php'; ?>
                         <?php include __DIR__ . '/includes/profile_termination_date_field.php'; ?>
