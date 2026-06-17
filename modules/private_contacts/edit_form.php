@@ -4,30 +4,9 @@
         <div class="card">
             <div class="card-header"><h5 class="mb-0">Basic Information</h5></div>
             <div class="card-body">
+                <?php include __DIR__ . '/includes/profile_photo_fields.php'; ?>
                 <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div class="position-relative itm-photo-upload-target cursor-pointer text-center mx-auto" style="border: 2px dashed currentColor; border-radius: 50%; padding: 5px; width: 110px; height: 110px;">
-                            <input type="file" name="photo" id="photo-input" class="d-none" accept=".png" style="display: none;">
-                            <input type="hidden" name="confirm_replace" id="confirm_replace" value="0">
-                            <label for="photo-input" class="mb-0 cursor-pointer d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                                <?php if (!empty($contact['photo'])): ?>
-                                    <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['user_id'] . '/private_contacts/' . $contact['photo']) ?>" id="photo-preview" class="rounded-circle" width="100" height="100" style="object-fit: cover;">
-                                <?php else: ?>
-                                    <div id="photo-placeholder" class="rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                                        <i class="fas fa-camera fa-2x text-muted"></i>
-                                    </div>
-                                    <img src="../../images/5x5-pixel.png" id="photo-preview" class="rounded-circle d-none" width="100" height="100" style="object-fit: cover;">
-                                <?php endif; ?>
-                            </label>
-                            
-                             <!--   <i class="fas fa-plus"></i> -->
-                          
-                        </div>
-                        <small class="text-muted d-block mt-2">Click to upload photo</small>
-                    </div>
-                    <div class="col-md-9">
-                        <div class="row">
-                            <div class="col-md-2 form-group">
+                    <div class="col-md-2 form-group">
                                 <label>Prefix</label>
                                 <input type="text" name="name_prefix" class="form-control" placeholder="Mr/Ms" value="<?php echo htmlspecialchars($contact['name_prefix'] ?? ''); ?>">
                             </div>
@@ -62,9 +41,6 @@
                                 <input type="text" name="file_as" class="form-control" placeholder="Lastname, Firstname" value="<?php echo htmlspecialchars($contact['file_as'] ?? ''); ?>">
                             </div>
                         </div>
-                    </div>
-                </div>
-
                 <div class="row mt-3">
                     <div class="col-md-4 form-group">
                         <label>Phonetic First</label>
@@ -255,41 +231,3 @@
         </div>
     </div>
 </div>
-
-<script src="../../js/itm-upload-helper.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    itmUploadHelper.setupByClass(".itm-photo-upload-target");
-
-    var photoInput = document.getElementById('photo-input');
-    photoInput.addEventListener("change", function(evt) {
-        var [file] = evt.target.files;
-        if (file) {
-            if (!file.name.toLowerCase().endsWith(".png")) {
-                alert("Only .png files are allowed.");
-                evt.target.value = "";
-                return;
-            }
-            <?php if (!empty($contact["photo"])): ?>
-            if (confirm("A photo already exists. Do you want to replace it?")) {
-                document.getElementById("confirm_replace").value = "1";
-            } else {
-                evt.target.value = "";
-                return;
-            }
-            <?php endif; ?>
-            document.getElementById("photo-preview").src = URL.createObjectURL(file);
-            document.getElementById("photo-preview").classList.remove("d-none");
-            if (document.getElementById("photo-placeholder")) {
-                document.getElementById("photo-placeholder").classList.add("d-none");
-            }
-        }
-    });
-});
-</script>
-<style>
-.itm-photo-upload-target.is-dragover {
-    border-color: #007bff !important;
-    background-color: rgba(0, 123, 255, 0.05);
-}
-</style>

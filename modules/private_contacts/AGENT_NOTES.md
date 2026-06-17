@@ -19,11 +19,15 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Custom list with search, favourite star (AJAX), photo thumbnails.
 - `data-itm-db-import-endpoint` on index table for Excel import.
 - Actions column uses `itm-actions-cell` markers.
+- Create/edit profile photo uses the same employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, PNG/JPG). Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
 
 ## 7. File Structure
 - `index.php` — HTML list view.
 - `index_logic.php` — auth, POST handlers, contact query.
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD screens.
+- `edit_form.php` — shared form sections for create/edit.
+- `includes/profile_photo_fields.php` — employees-matching photo UI for create/edit.
+- `includes/private_contact_photo.php` — photo URL + upload store helpers.
 
 ## 8. Multi-Tenant Rules
 - `company_id` plus **mandatory** `user_id` filter on every SELECT/UPDATE/DELETE.
@@ -35,6 +39,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Do not reuse company contacts visibility rules — this module is user-private only.
 - Photo paths must stay inside the user's Private explorer segment.
 - Do not drop `user_id` from DELETE/WHERE clauses.
+- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; accept PNG and JPG only.
 
 ## 11. Examples of Safe Code Patterns
 
