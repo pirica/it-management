@@ -11,7 +11,7 @@ CSRF, SQLi, and security guardrail tests.
 
 ## 7. File Structure
 - **VulnerabilityVerificationTest.php** — June 2026 security review regression tests (assert remediated behaviour); uses disposable users via `itm_script_test_user_create()` for Notes ZIP traversal, Notes IDOR view, and audit reset-token omission checks.
-- **SecurityFixesTest.php** — subprocess verification of fixed security paths.
+- **SecurityFixesTest.php** — subprocess verification of fixed security paths; includes `testJsonImportRejectsInvalidDecimal` for `itm_handle_json_table_import()` numeric validation.
 
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.

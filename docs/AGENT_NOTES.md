@@ -10,7 +10,7 @@ Contains system documentation, including architecture diagrams, README images, i
 - **`VULNERABILITY_SUMMARY.md`** — executive summary of critical/high findings with remediation status.
 - **`vulnerability_report_*.md`** — per-finding write-ups; update when code fixes land.
 - **`vulnerability_report_select_api.md`** — Select Options API privilege-escalation finding; remediation in `includes/itm_select_options_policy.php`.
-- **`API-Auth_Validation_Tenant-Scoping.md`** — API audit; tracks remaining contract gaps (misleading JSON responses, weak import validation).
+- **`API-Auth_Validation_Tenant-Scoping.md`** — API audit; JSON import numeric validation and Notes AJAX HTTP status contracts (see verify scripts in that doc).
 - **PHPUNIT_PLAN.md** — phased plan for expanding PHPUnit HTML coverage (`includes/`, `scripts/`, then module functional pilots). Canonical implementation checklist; see also `phpunit/tests/PREFERENCES.md` and `scripts/SCRIPTS.md`.
 
 ## 12. Module Owner Notes (Optional)

@@ -401,4 +401,45 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $this->conn->query("DELETE FROM users WHERE id = $userId");
     }
+
+    public function testJsonImportRejectsInvalidDecimal(): void
+    {
+        $companyId = 1;
+        $uniqueModel = 'PhpUnitImport-' . bin2hex(random_bytes(4));
+        $payload = [
+            'csrf_token' => 'test_token',
+            'import_excel_rows' => [
+                ['Model', 'Price'],
+                [$uniqueModel, 'invalid-price'],
+            ],
+        ];
+
+        $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+require_once '" . ROOT_PATH . "config/config.php';
+\$_SESSION['user_id'] = 1;
+\$_SESSION['company_id'] = 1;
+\$_SESSION['csrf_token'] = 'test_token';
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['CONTENT_TYPE'] = 'application/json';
+\$payload = " . var_export($payload, true) . ";
+echo json_encode(itm_handle_json_table_import(\$conn, 'catalogs', 1, \$payload, true));
+?>";
+        $tmpFile = tempnam(sys_get_temp_dir(), 'import_decimal_test');
+        file_put_contents($tmpFile, $code);
+        $output = $this->runPhpScriptFile($tmpFile);
+        unlink($tmpFile);
+
+        $result = json_decode($output, true);
+        $this->assertIsArray($result);
+        $this->assertFalse($result['ok'] ?? true);
+        $this->assertSame(0, (int)($result['inserted'] ?? -1));
+
+        $stmt = $this->conn->prepare('SELECT id FROM catalogs WHERE company_id = ? AND model = ? LIMIT 1');
+        $stmt->bind_param('is', $companyId, $uniqueModel);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $this->assertSame(0, $res ? mysqli_num_rows($res) : -1);
+        $stmt->close();
+    }
 }
