@@ -5,17 +5,57 @@
  * CLI: php scripts/verify_employee_type_resignations.php
  */
 
-if (php_sapi_name() !== 'cli') {
-    fwrite(STDERR, "CLI only.\n");
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>CLI only</title></head><body>';
+    echo '<p>Run from repository root:</p><pre>php scripts/verify_employee_type_resignations.php</pre>';
+    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
     exit(1);
 }
 
-define('ITM_CLI_SCRIPT', true);
+if (!defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
 require_once __DIR__ . '/../config/config.php';
+
+/**
+ * Why: STDERR is not defined on some Windows SAPIs (e.g. Apache module); fall back safely.
+ */
+function etr_verify_stderr($message)
+{
+    $line = (string)$message;
+    if ($line !== '' && substr($line, -1) !== "\n") {
+        $line .= "\n";
+    }
+    if (defined('STDERR') && is_resource(STDERR)) {
+        fwrite(STDERR, $line);
+        return;
+    }
+    $stream = @fopen('php://stderr', 'wb');
+    if (is_resource($stream)) {
+        fwrite($stream, $line);
+        fclose($stream);
+        return;
+    }
+    echo $line;
+}
+
+function etr_verify_stdout($message)
+{
+    $line = (string)$message;
+    if ($line !== '' && substr($line, -1) !== "\n") {
+        $line .= "\n";
+    }
+    if (defined('STDOUT') && is_resource(STDOUT)) {
+        fwrite(STDOUT, $line);
+        return;
+    }
+    echo $line;
+}
 
 $conn = $GLOBALS['conn'] ?? null;
 if (!$conn) {
-    fwrite(STDERR, "[FAIL] No database connection.\n");
+    etr_verify_stderr('[FAIL] No database connection.');
     exit(1);
 }
 
@@ -26,12 +66,12 @@ function etr_verify_fail($message)
 {
     global $failures;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    etr_verify_stderr("[FAIL] {$message}");
 }
 
 function etr_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    etr_verify_stdout("[PASS] {$message}");
 }
 
 $res = mysqli_query($conn, "SHOW TABLES LIKE 'employee_type'");
@@ -136,9 +176,9 @@ if (!mysqli_query($conn, $insertSql)) {
 }
 
 if ($failures > 0) {
-    fwrite(STDERR, "Completed with {$failures} failure(s).\n");
+    etr_verify_stderr("Completed with {$failures} failure(s).");
     exit(1);
 }
 
-fwrite(STDOUT, "All employee_type/resignations checks passed.\n");
+etr_verify_stdout('All employee_type/resignations checks passed.');
 exit(0);
