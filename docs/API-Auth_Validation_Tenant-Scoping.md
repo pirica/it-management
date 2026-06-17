@@ -118,7 +118,18 @@ POST /modules/notes/index.php?ajax_action=single_delete
 
 1.  **Strict Table Allow-lists:** For any generic API (like Select Options), implement a strict allow-list of permitted tables and columns.
 2.  **Schema-Based Validation:** Introduce a structured way to validate incoming JSON payloads against expected schemas.
-3.  **Standardize Response Contract:** Define a consistent JSON response format and appropriate HTTP status codes (400, 401, 403, 404, 500) for all API endpoints.
+3.  **Standardize Response Contract (partial — Notes + JSON import):** Use `{"ok":bool,...}` with HTTP status codes that match the outcome. Implemented patterns:
+
+    | Condition | HTTP | JSON |
+    | :--- | :--- | :--- |
+    | CSRF invalid / missing | 403 | `ok:false` |
+    | Malformed or invalid input | 400 | `ok:false` + error detail |
+    | Auth / tenant block (sensitive import table) | 403 | `ok:false` |
+    | Scoped mutation matched zero rows | 404 | `ok:false` |
+    | Duplicate conflict (e.g. tag exists) | 409 | `ok:false` |
+    | Import validation failed (no rows saved) | 400 | `ok:false`, `failed` ≥ 1 |
+
+    Helpers: `itm_notes_json_mutation_response()` (Notes AJAX); `itm_handle_json_table_import()` (module imports). Regressions: `php scripts/verify_notes_ajax_contract.php`, `php scripts/verify_json_import_validation.php`. Remaining specialised AJAX handlers (Rack Planner, Org Chart, switch ports) should adopt the same mapping in future sweeps.
 4.  **Enforce Mandatory Tenant Scoping:** Ensure all database queries involving multi-tenant tables include a `company_id` filter derived *only* from the session.
 5.  **Implement Rate Limiting:** Add application-level throttling for sensitive or resource-intensive API actions.
 6.  **Introduce Structured Read APIs:** Develop JSON-based endpoints for retrieving record details to replace current HTML scraping patterns.
