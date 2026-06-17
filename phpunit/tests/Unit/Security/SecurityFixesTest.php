@@ -210,4 +210,32 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         // Cleanup
         $this->conn->query("DELETE FROM users WHERE id = $attacker_id");
     }
+
+    public function testRegistrationInvitationsAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'user_id' => 999,
+            'username' => 'nobody',
+            'role_name' => 'User'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'modules/registration_invitations/index.php', $session);
+
+        $this->assertStringNotContainsString('Registration Invitations Management', $output, "Non-admin users should be redirected from Registration Invitations.");
+    }
+
+    public function testResetGitHistoryAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'user_id' => 999,
+            'username' => 'nobody',
+            'role_name' => 'User'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'reset_git_history.php', $session);
+
+        $this->assertStringNotContainsString('Starting Git history reset', $output, "Non-admin users should be redirected from reset_git_history.php.");
+    }
 }

@@ -1045,6 +1045,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Reproduction script for Zip Slip (path traversal during extraction) vulnerability.</td>
                     <td><code>php scripts/repro_zip_slip.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="verify_git_reset_csrf.php">verify_git_reset_csrf.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification for POST and CSRF enforcement in reset_git_history.php.</td>
+                    <td><code>php scripts/verify_git_reset_csrf.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
