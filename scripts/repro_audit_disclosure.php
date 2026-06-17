@@ -12,6 +12,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('Audit Log Info Disclosure Verification');
 
@@ -22,16 +23,26 @@ $company_id = 1;
 // Ensure audit logging is enabled for this test
 mysqli_query($conn, "UPDATE ui_configuration SET enable_audit_logs = 1 WHERE company_id = $company_id");
 
-// 1. Simulate a password reset request
-$user_id = 1; // Existing user
+$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-audit-disclosure']);
+if (!is_array($testUser)) {
+    echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+$user_id = (int)$testUser['id'];
+$username = (string)$testUser['username'];
+$sensitiveColumns = ['reset_token', 'reset_token_hash', 'reset_token_expires_at'];
+$snapshot = itm_script_test_user_snapshot($conn, $user_id, $sensitiveColumns);
+itm_script_test_user_register_teardown($conn, $user_id, $snapshot);
+
+// 1. Simulate a password reset request on the disposable user
 $token = bin2hex(random_bytes(32));
 $tokenHash = hash('sha256', $token);
 $tokenExpiresAt = date('Y-m-d H:i:s', time() + 3600);
 
-// Audit triggers rely on these variables
-mysqli_query($conn, "SET @app_user_id = 1");
-mysqli_query($conn, "SET @app_company_id = $company_id");
-mysqli_query($conn, "SET @app_username = 'admin'");
+itm_script_test_user_set_audit_context($conn, $user_id, $username, $company_id);
+mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $testUser['email']) . "'");
 
 $sql = "UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?";
 $stmt = $conn->prepare($sql);
@@ -39,7 +50,7 @@ $stmt->bind_param("sssi", $token, $tokenHash, $tokenExpiresAt, $user_id);
 $stmt->execute();
 $stmt->close();
 
-echo "Triggered password reset for user ID $user_id." . $nl;
+echo "Triggered password reset for disposable user ID $user_id ($username)." . $nl;
 
 // 2. Inspect the latest audit log entry for the users table
 $res = mysqli_query($conn, "SELECT * FROM audit_logs WHERE table_name = 'users' AND record_id = $user_id ORDER BY id DESC LIMIT 1");
@@ -56,8 +67,5 @@ if ($log) {
 } else {
     echo "No audit log entry captured." . $nl;
 }
-
-// Cleanup
-mysqli_query($conn, "UPDATE users SET reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL WHERE id = $user_id");
 
 itm_script_output_end();

@@ -721,6 +721,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
+                    <td><a href="check_script_disposable_users.php">check_script_disposable_users.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>users</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_user.php</code>.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_script_disposable_users.php</code> — run after changing audit repro scripts; exit <code>1</code> on failure.</td>
+                </tr>
+                <tr>
                     <td><a href="check_sql_injection_coverage.php">check_sql_injection_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>
@@ -1054,7 +1060,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_audit_logs_disclosure.php">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens).</td>
+                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable users via <code>itm_script_test_user.php</code>.</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
                 </tr>
                 <tr>
@@ -1084,7 +1090,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_audit_disclosure.php">repro_audit_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Sensitive Information Disclosure (reset tokens) in Audit Logs.</td>
+                    <td>PoC for Sensitive Information Disclosure (reset tokens) in Audit Logs. Uses a disposable script test user (not seed Admin id 1).</td>
                     <td><code>php scripts/repro_audit_disclosure.php</code></td>
                 </tr>
             </tbody>

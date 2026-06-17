@@ -117,6 +117,26 @@ Catalog: `scripts/scripts.php`.
 
 Run after changes to `modules/select_options_api.php` or `includes/itm_select_options_policy.php`. Requires MySQL (`itmanagement` schema). The script creates disposable test users and removes them on exit. Catalog: `scripts/scripts.php`.
 
+### Disposable script test users
+
+Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or other live accounts. Use **`scripts/lib/itm_script_test_user.php`**:
+
+| Helper | Purpose |
+|--------|---------|
+| `itm_script_test_user_username($scriptSlug)` | Unique username `script-{slug}-{hex}` |
+| `itm_script_test_user_create($conn, $companyId, $options)` | INSERT disposable `users` row |
+| `itm_script_test_user_snapshot($conn, $userId, $columns)` | Read sensitive columns before mutation |
+| `itm_script_test_user_restore($conn, $userId, $snapshot)` | Restore prior values |
+| `itm_script_test_user_delete($conn, $userId)` | DELETE row (disposable prefix only) |
+| `itm_script_test_user_register_teardown($conn, $userId, $snapshot)` | Shutdown restore + delete |
+| `itm_script_test_user_set_audit_context($conn, $userId, $username, $companyId)` | `SET @app_user_id` / `@app_company_id` / `@app_username` |
+
+**Static guard:** `php scripts/check_script_disposable_users.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE users`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_users.unittest.php`.
+
+**PHPUnit:** `ItmScriptTestUserTest.php`, `ReproAuditDisclosureTest.php`; security repro tests in `VulnerabilityVerificationTest.php` use the same helper. All `phpunit/**/AGENT_NOTES.md` files document this contract.
+
+**Related:** `scripts/lib/itm_api_tier_test_helpers.php` (disposable `ui_configuration` slots only); `includes/itm_mbqa_test_user.php` (MBQA runner row tags).
+
 ## 4. Path Handling
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.
 - Avoid platform-specific separators; use `DIRECTORY_SEPARATOR` or normalize to forward slashes.

@@ -2,6 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('Explorer ZIP Leak Verification');
 
@@ -43,15 +44,29 @@ echo ob_get_clean();
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying Explorer ZIP Leak..." . $nl;
 
-$storage_root = ROOT_PATH . 'files/1';
-if (!is_dir($storage_root . '/Private')) {
-    @mkdir($storage_root . '/Private', 0777, true);
+$company_id = 1;
+$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-explorer-zip-leak']);
+if (!is_array($testUser)) {
+    echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+
+$storage_root = ROOT_PATH . 'files/' . $company_id;
+$user_private = (string)$testUser['username'] . '_' . (int)$testUser['id'];
+if (!is_dir($storage_root . '/Private/' . $user_private)) {
+    if (function_exists('itm_ensure_files_storage_directory')) {
+        itm_ensure_files_storage_directory($storage_root . '/Private/' . $user_private);
+    } else {
+        @mkdir($storage_root . '/Private/' . $user_private, 0777, true);
+    }
 }
 
 $session = [
-    'company_id' => 1,
-    'user_id' => 1,
-    'username' => 'admin'
+    'company_id' => $company_id,
+    'user_id' => (int)$testUser['id'],
+    'username' => (string)$testUser['username'],
 ];
 $get = [
     'downloadZip' => 1,
@@ -65,3 +80,5 @@ if (strpos($output, "Invalid path or permission denied") === false) {
 } else {
     echo colorText("[PASS] Explorer: ZIP leak blocked.", 'pass') . $nl;
 }
+
+itm_script_output_end();

@@ -2,6 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 itm_script_output_begin('User IDOR Verification');
 
@@ -44,8 +45,14 @@ $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying User Management IDOR..." . $nl;
 
 // 1. Create a victim user in the same company
-mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'victim', 'victim@example.com', 'pass', 2, 2, 1)");
-$victimId = mysqli_insert_id($conn);
+$victimUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'verify-user-idor-victim']);
+if (!is_array($victimUser)) {
+    echo colorText('[FAIL] Unable to create disposable victim user.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+$victimId = (int)$victimUser['id'];
+itm_script_test_user_register_teardown($conn, $victimId);
 
 // 2. Mock a regular user session
 $session = [
@@ -69,5 +76,6 @@ if (mysqli_num_rows($res) === 0) {
     echo colorText("[FAIL] Users Module: Regular user successfully deleted another user via IDOR!", 'fail') . $nl;
 } else {
     echo colorText("[PASS] Users Module: IDOR deletion blocked. Output: $output", 'pass') . $nl;
-    mysqli_query($conn, "DELETE FROM users WHERE id = $victimId");
 }
+
+itm_script_output_end();

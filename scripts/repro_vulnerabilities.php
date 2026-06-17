@@ -6,6 +6,7 @@ if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_user.php';
 
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 
@@ -16,9 +17,16 @@ if (PHP_SAPI !== 'cli') {
 function test_explorer_rce($conn, $nl) {
     echo "Testing Explorer RCE..." . $nl;
     $company_id = 1;
+    $testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-vulnerabilities-explorer']);
+    if (!is_array($testUser)) {
+        echo colorText('[FAIL] Explorer RCE: unable to create disposable test user.', 'fail') . $nl;
+        return;
+    }
+    itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+
     $_SESSION['company_id'] = $company_id;
-    $_SESSION['user_id'] = 1;
-    $_SESSION['username'] = 'admin';
+    $_SESSION['user_id'] = (int)$testUser['id'];
+    $_SESSION['username'] = (string)$testUser['username'];
     $_SESSION['csrf_token'] = 'test_token';
 
     $php_content = "<?php echo 'RCE Success'; ?>";
@@ -78,21 +86,28 @@ echo ob_get_clean();
 
 function test_user_privilege_escalation($conn, $nl) {
     echo "Testing User Privilege Escalation..." . $nl;
-    // Create a dummy user
-    mysqli_query($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'victim', 'victim@example.com', 'pass', 5, 2, 1)");
-    $victim_id = mysqli_insert_id($conn);
+    $testUser = itm_script_test_user_create($conn, 1, [
+        'script_slug' => 'repro-vulnerabilities-victim',
+        'role_id' => 5,
+    ]);
+    if (!is_array($testUser)) {
+        echo colorText('[FAIL] User Privilege Escalation: unable to create disposable test user.', 'fail') . $nl;
+        return;
+    }
+    $victim_id = (int)$testUser['id'];
+    itm_script_test_user_register_teardown($conn, $victim_id);
 
     $session = [
         'company_id' => 1,
         'user_id' => $victim_id,
-        'username' => 'victim',
+        'username' => (string)$testUser['username'],
         'csrf_token' => 'test_token'
     ];
 
     $post = [
         'csrf_token' => 'test_token',
-        'username' => 'victim',
-        'email' => 'victim@example.com',
+        'username' => (string)$testUser['username'],
+        'email' => (string)$testUser['email'],
         'role_id' => 1,
         'access_level_id' => 1,
         'active' => 1
@@ -109,8 +124,6 @@ function test_user_privilege_escalation($conn, $nl) {
     } else {
         echo colorText("[PASS] User Privilege Escalation: Role update blocked.", 'pass') . $nl;
     }
-
-    mysqli_query($conn, "DELETE FROM users WHERE id = $victim_id");
 }
 
 function test_role_module_permissions_access($conn, $nl) {

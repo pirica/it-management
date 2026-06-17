@@ -211,9 +211,17 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
         return $result;
     }
 
-    mysqli_query($conn, 'SET @app_user_id = 1');
+    require_once __DIR__ . '/itm_script_test_user.php';
+
     mysqli_query($conn, 'SET @app_company_id = 1');
-    mysqli_query($conn, "SET @app_username = 'cli-cleanup'");
+    $auditUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'equipment-type-modules-cleanup']);
+    if (is_array($auditUser)) {
+        itm_script_test_user_set_audit_context($conn, (int)$auditUser['id'], (string)$auditUser['username'], 1);
+        itm_script_test_user_register_teardown($conn, (int)$auditUser['id']);
+    } else {
+        mysqli_query($conn, 'SET @app_user_id = NULL');
+        mysqli_query($conn, "SET @app_username = 'cli-cleanup'");
+    }
     mysqli_query($conn, "SET @app_email = 'cli-cleanup@example.com'");
     mysqli_query($conn, "SET @app_ip_address = '127.0.0.1'");
     mysqli_query($conn, "SET @app_user_agent = 'equipment_test_module_artifacts_cleanup'");

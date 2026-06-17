@@ -4,6 +4,7 @@
 Unit tests for shared helpers under `includes/` that are safe to exercise without loading full module entry files. Improves HTML coverage for visibility SQL, MBQA markers, coverage guards, and switch-port AJAX helpers.
 
 ## 4. Business Rules (Critical for Agents)
+- **Disposable script test users:** when tests INSERT/UPDATE `users` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_user.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
 - **DB-free first:** visibility and MBQA tests must pass with `ITM_SKIP_DB_TESTS=1`.
 - **No top-level side effects:** follow `phpunit/tests/AGENT_NOTES.md` (`TestCase` only, no `echo`).
 - **Switch port helpers:** `SwitchPortApiHelpersTest` skips when `$conn` is unavailable; `find_lookup_id` tests run without MySQL.
