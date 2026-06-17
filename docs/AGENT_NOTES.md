@@ -6,9 +6,9 @@ Contains system documentation, including architecture diagrams, README images, i
 ## 7. File Structure
 - **readme/** — images used in the main project README.
 - **`file_upload_modules.md`** — canonical map of upload modules, storage paths, and **managed `.htaccess` policy bodies** (`upload`, `deny_http`, `deny_all`). Update when adding upload modules or changing hardening rules.
-- **`app---flagged-vulnerabilities.json`** — machine-readable catalog of June 2026 security findings; `status` is `active` or `remediated` (all entries remediated as of doc sync).
+- **`app---flagged-vulnerabilities.json`** — machine-readable catalog of June 2026 security findings; `status` is `active`, `remediated`, or `deferred` (git-reset finding deferred as accepted BETA risk).
 - **`VULNERABILITY_SUMMARY.md`** — executive summary of critical/high findings with remediation status.
-- **`vulnerability_report_*.md`** — per-finding write-ups; update when code fixes land.
+- **`vulnerability_report_*.md`** — per-finding write-ups; update when code fixes land. **`vulnerability_report_git_reset.md`** tracks deferred BETA status for `reset_git_history.php` (not active remediation).
 - **`vulnerability_report_select_api.md`** — Select Options API privilege-escalation finding; remediation in `includes/itm_select_options_policy.php`.
 - **`API-Auth_Validation_Tenant-Scoping.md`** — API audit; JSON import numeric validation and Notes AJAX HTTP status contracts (see verify scripts in that doc).
 - **PHPUNIT_PLAN.md** — phased plan for expanding PHPUnit HTML coverage (`includes/`, `scripts/`, then module functional pilots). Canonical implementation checklist; see also `phpunit/tests/PREFERENCES.md` and `scripts/SCRIPTS.md`.
