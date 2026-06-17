@@ -1019,6 +1019,7 @@ input[type="color"] {
     flex-direction: column;
     gap: 12px;
     margin-bottom: 14px;
+    max-width: 760px;
 }
 
 .sidebar-setting-section {
@@ -1036,6 +1037,11 @@ input[type="color"] {
     padding: 6px 4px;
 }
 
+.sidebar-setting-section .sidebar-settings-table .sidebar-setting-row {
+    display: table-row;
+    padding: 0;
+}
+
 .sidebar-setting-row label {
     display: flex;
     align-items: center;
@@ -1046,11 +1052,88 @@ input[type="color"] {
 
 .sidebar-setting-main {
     border-bottom: 1px dashed var(--border);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+}
+
+.itm-sidebar-settings-section-actions {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.sidebar-settings-table {
+    width: 100%;
+    margin: 0;
+    table-layout: fixed;
+}
+
+.sidebar-settings-table th,
+.sidebar-settings-table td {
+    vertical-align: middle;
+    padding: 6px 8px;
+}
+
+.sidebar-settings-columns-head th {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.itm-sidebar-settings-show-col {
+    width: 56px;
+}
+
+.itm-sidebar-settings-icon-col {
+    width: 72px;
+}
+
+.itm-sidebar-settings-actions-col {
+    width: 88px;
+}
+
+.itm-sidebar-settings-show {
+    text-align: center;
+}
+
+.itm-sidebar-settings-show-label {
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.itm-sidebar-settings-icon {
+    text-align: center;
+}
+
+.itm-sidebar-settings-label a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.itm-sidebar-settings-label a:hover {
+    text-decoration: underline;
+}
+
+.itm-sidebar-settings-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .sidebar-setting-children {
-    padding-left: 12px;
+    padding-left: 0;
 }
 
 /* Why: Sidebar/CMA emoji fields must stay compact; global input{width:100%} made placeholders look like huge grey bars. */
@@ -1387,6 +1470,19 @@ input[type="submit"] {
     .sidebar-setting-row {
         flex-wrap: wrap;
         align-items: flex-start;
+    }
+
+    .sidebar-setting-section .sidebar-settings-table .sidebar-setting-row {
+        display: table-row;
+    }
+
+    .sidebar-settings-list {
+        max-width: none;
+    }
+
+    .sidebar-settings-table th,
+    .sidebar-settings-table td {
+        padding: 8px 6px;
     }
 
     .sidebar-setting-row > div {

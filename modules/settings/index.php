@@ -818,6 +818,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                         <h3 style="margin-top:6px;">SideMenu (Sidebar)</h3>
                         <p class="form-hint" style="margin-bottom:10px;">Show/Hide items and use ↑ / ↓ to reorder main sections and submenu links (including moving submenu items between sections). Emoji fields show the effective icon (editable); matching the company default clears your personal override.</p>
                         <div class="sidebar-settings-list" id="sidebar-settings-list">
+                            <?php $sidebarSettingsTableHeaderRendered = false; ?>
                             <?php foreach ($sidebarStructure as $section): ?>
                                 <?php $sectionId = $section['id']; ?>
                                 <div class="sidebar-setting-section" data-section-id="<?php echo sanitize($sectionId); ?>">
@@ -826,12 +827,30 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                             <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$sectionId] ?? 1) === 1) ? 'checked' : ''; ?>>
                                             <span><?php echo sanitize($section['title']); ?></span>
                                         </label>
-                                        <div>
+                                        <div class="itm-sidebar-settings-section-actions">
                                             <button type="button" class="btn btn-sm sidebar-move-up">↑</button>
                                             <button type="button" class="btn btn-sm sidebar-move-down">↓</button>
                                         </div>
                                     </div>
-                                    <div class="sidebar-setting-children">
+                                    <table class="table sidebar-settings-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
+                                        <colgroup>
+                                            <col class="itm-sidebar-settings-show-col">
+                                            <col class="itm-sidebar-settings-icon-col">
+                                            <col class="itm-sidebar-settings-label-col">
+                                            <col class="itm-sidebar-settings-actions-col">
+                                        </colgroup>
+                                        <?php if (!$sidebarSettingsTableHeaderRendered): ?>
+                                            <thead>
+                                                <tr class="sidebar-settings-columns-head">
+                                                    <th scope="col">Show</th>
+                                                    <th scope="col">Icon</th>
+                                                    <th scope="col">Module</th>
+                                                    <th scope="col" class="itm-sidebar-settings-actions">Order</th>
+                                                </tr>
+                                            </thead>
+                                            <?php $sidebarSettingsTableHeaderRendered = true; ?>
+                                        <?php endif; ?>
+                                        <tbody class="sidebar-setting-children">
                                         <?php foreach ($section['items'] as $item): ?>
                                             <?php
                                             $itemId = $item['id'];
@@ -844,39 +863,53 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                                 ? itm_resolve_module_sidebar_icon($conn, (int)$company_id, 0, $moduleSlug)
                                                 : '';
                                             $displayModuleIcon = $userModuleIcon !== '' ? $userModuleIcon : $companyModuleIcon;
+                                            $itemLabelParts = function_exists('itm_module_access_split_catalog_label')
+                                                ? itm_module_access_split_catalog_label((string)($item['label'] ?? ''))
+                                                : ['icon' => '', 'text' => (string)($item['label'] ?? '')];
+                                            $itemLabelText = trim((string)($itemLabelParts['text'] ?? ''));
+                                            if ($itemLabelText === '') {
+                                                $itemLabelText = (string)($item['label'] ?? $itemId);
+                                            }
                                             ?>
-                                            <div class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
-                                                <label class="role-flag-option">
-                                                    <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                            <tr class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
+                                                <td class="itm-sidebar-settings-show">
+                                                    <label class="role-flag-option itm-sidebar-settings-show-label">
+                                                        <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                                        <span class="sr-only">Show <?php echo sanitize($itemLabelText); ?></span>
+                                                    </label>
+                                                </td>
+                                                <td class="itm-sidebar-settings-icon">
+                                                    <?php if ($moduleSlug !== ''): ?>
+                                                        <input
+                                                            type="text"
+                                                            class="itm-module-icon-input"
+                                                            name="module_sidebar_emoji[<?php echo sanitize($itemId); ?>]"
+                                                            value="<?php echo sanitize($displayModuleIcon); ?>"
+                                                            maxlength="16"
+                                                            data-company-icon="<?php echo sanitize($companyModuleIcon); ?>"
+                                                            autocomplete="off"
+                                                            spellcheck="false"
+                                                            title="Personal sidebar emoji (match company default to clear override)"
+                                                        >
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="itm-sidebar-settings-label">
                                                     <a
                                                         href="<?php echo BASE_URL . ($item['href'] ?? ''); ?>"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        style="text-decoration:none;color:inherit;"
                                                     >
-                                                        <?php echo sanitize($item['label']); ?>
+                                                        <?php echo sanitize($itemLabelText); ?>
                                                     </a>
-                                                </label>
-                                                <?php if ($moduleSlug !== ''): ?>
-                                                    <input
-                                                        type="text"
-                                                        class="itm-module-icon-input"
-                                                        name="module_sidebar_emoji[<?php echo sanitize($itemId); ?>]"
-                                                        value="<?php echo sanitize($displayModuleIcon); ?>"
-                                                        maxlength="16"
-                                                        data-company-icon="<?php echo sanitize($companyModuleIcon); ?>"
-                                                        autocomplete="off"
-                                                        spellcheck="false"
-                                                        title="Personal sidebar emoji (match company default to clear override)"
-                                                    >
-                                                <?php endif; ?>
-                                                <div>
+                                                </td>
+                                                <td class="itm-sidebar-settings-actions">
                                                     <button type="button" class="btn btn-sm sidebar-submove-up">↑</button>
                                                     <button type="button" class="btn btn-sm sidebar-submove-down">↓</button>
-                                                </div>
-                                            </div>
+                                                </td>
+                                            </tr>
                                         <?php endforeach; ?>
-                                    </div>
+                                        </tbody>
+                                    </table>
                                 </div>
                             <?php endforeach; ?>
                         </div>
