@@ -2,37 +2,39 @@
 /**
  * Employee Type + Resignations regression checks.
  *
+ * Browser: scripts/verify_employee_type_resignations.php
  * CLI: php scripts/verify_employee_type_resignations.php
  */
 
-if (php_sapi_name() !== 'cli') {
-    fwrite(STDERR, "CLI only.\n");
-    exit(1);
-}
-
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
-$conn = $GLOBALS['conn'] ?? null;
-if (!$conn) {
-    fwrite(STDERR, "[FAIL] No database connection.\n");
-    exit(1);
-}
+itm_script_output_begin('Employee Type + Resignations Verification');
 
-$companyId = 1;
+$nl = itm_script_output_nl();
 $failures = 0;
 
 function etr_verify_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo colorText('[FAIL] ' . $message, 'fail') . $nl;
 }
 
 function etr_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
+
+$conn = $GLOBALS['conn'] ?? null;
+if (!$conn) {
+    etr_verify_fail('No database connection.');
+    exit(1);
+}
+
+$companyId = 1;
 
 $res = mysqli_query($conn, "SHOW TABLES LIKE 'employee_type'");
 if (!$res || mysqli_num_rows($res) !== 1) {
@@ -136,9 +138,9 @@ if (!mysqli_query($conn, $insertSql)) {
 }
 
 if ($failures > 0) {
-    fwrite(STDERR, "Completed with {$failures} failure(s).\n");
+    echo colorText("Completed with {$failures} failure(s).", 'fail') . $nl;
     exit(1);
 }
 
-fwrite(STDOUT, "All employee_type/resignations checks passed.\n");
+echo colorText('All employee_type/resignations checks passed.', 'pass') . $nl;
 exit(0);

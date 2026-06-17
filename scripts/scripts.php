@@ -409,7 +409,7 @@ require_once __DIR__ . '/../config/config.php';
                 </tr>
                 <tr>
                     <td><a href="verify_employee_type_resignations.php">verify_employee_type_resignations.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs <code>employee_type</code> and <code>resignations</code>, and the weekly resignations SQL filter used by <code>modules/resignations/index.php</code>.</td>
                     <td><code>php scripts/verify_employee_type_resignations.php</code>. Run when changing <code>modules/employee_type/</code>, <code>modules/resignations/</code>, employee start/type fields, or related tables in <code>database.sql</code>.</td>
                 </tr>
