@@ -37,6 +37,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 
 ## 10. Common Pitfalls
 - Do not list another user's private notes — always apply `itm_notes_visibility_sql()`.
+- View/edit GET load must use `itm_notes_fetch_visible_by_id()` — do not SELECT by `id + company_id` alone.
 - Do not store share targets as plain text; use `shared_with_json`.
 - Label import must resolve names against `note_labels` for the current user.
 - **`images_json` attachments:** store leaf filenames only. ZIP download (`download_all_images`) resolves paths via `itm_notes_resolve_image_path()` in `includes/notes_visibility.php` — never concatenate raw JSON values into filesystem paths.
@@ -49,6 +50,15 @@ $sql = "SELECT * FROM notes WHERE company_id = ? AND (" . itm_notes_visibility_s
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("iii", $companyId, $loggedUserId, $loggedUserId);
 $stmt->execute();
+```
+
+### Safe single-record view/edit load
+```php
+$data = itm_notes_fetch_visible_by_id($conn, $editId, $companyId, $loggedUserId, true);
+if (!$data) {
+    header('Location: index.php');
+    die();
+}
 ```
 
 ## 12. Module Owner Notes (Optional)
