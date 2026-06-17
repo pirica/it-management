@@ -24,6 +24,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **switch_port_api_helpers.php** — shared lookup/VLAN helpers for port AJAX endpoints (avoids redeclare fatals during coverage).
 - **itm_select_options_policy.php** — whitelist and blocked-table policy for `modules/select_options_api.php` quick-add inserts.
 - **itm_api_rate_limit.php** — tier hourly limits; **Free** = unlimited, **no API key**, **session required** (`itm_api_resolve_rate_limit_row()` reads `$_SESSION['company_id']` + `$_SESSION['user_id']` when no key); `itm_api_tier_requires_api_key()`; probe payload `itm_api_build_rate_limit_probe_payload()` (`api_key_required`); `itm_api_enforce_rate_limit_or_exit()` for programmatic endpoints.
+- **itm_company_module_access.php** — `has_module_access()`, `get_company_modules()`, `itm_list_all_modules_registry()`, `itm_enforce_module_access_or_exit()`, registry sync/seed helpers; loaded from `config/config.php`.
 - **itm_it_location_linked_floor_plans.php** — IT Locations view partial; skips HTML when `$conn` / PHPUnit context missing.
 - **employee_profile_photo.php** — employee profile photo paths under `files/{company_id}/Private/{username}_{employee_id}/profile/` (legacy `{username}_{user_id}` still served when `user_id` is set); upload (`emp_profile_photo_store_upload`), serve URL (`emp_profile_photo_url`), birthday display (`emp_format_birthday_display`, `emp_format_birthday_day_only`). Used by `modules/employees/` and `modules/birthdays/`.
 
