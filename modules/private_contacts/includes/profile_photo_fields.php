@@ -12,7 +12,7 @@ $pcHasExistingPhoto = $pcPhotoUrl !== '';
 <div class="itm-employee-photo-field">
     <label class="itm-employee-photo-label">Profile Photo</label>
     <div class="itm-employee-photo-target itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload profile photo">
-        <input type="file" name="photo" id="private-contact-photo-input" class="itm-employee-photo-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg">
+        <input type="file" name="photo" id="private-contact-photo-input" class="itm-employee-photo-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg,image/jpg,image/pjpeg">
         <input type="hidden" name="confirm_replace" id="confirm_replace" value="0">
         <label for="private-contact-photo-input" class="itm-employee-photo-trigger">
             <?php if ($pcPhotoUrl !== ''): ?>
