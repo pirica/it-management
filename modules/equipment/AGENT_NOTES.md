@@ -42,7 +42,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 
 ## 8. Multi-Tenant Rules
 - Strictly scoped by `company_id`.
-- Employee assignee POST values must belong to the active company (`employees.company_id` + `active = 1`).
+- Employee assignee POST values must belong to the active company (`employees.company_id`). The `employees` table has no `active` column — use `employment_status_id` / `employee_statuses` elsewhere; the assignee dropdown lists all tenant employees (see `equipment_fetch_employee_options()`).
 
 ## 9. Audit Logging Requirements
 - Managed via database triggers (`department_id`, `supplier_id`, `assigned_to_employee_id` in equipment audit JSON payloads).
@@ -51,7 +51,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Deleting with Relations**: Deleting equipment may fail if it has active switch port assignments or is linked to tickets.
 - **Supplier quick-add:** `suppliers.status_id` is NOT NULL — the equipment form passes `status_id` via `data-add-extra-fields`.
 - **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held (see **`modules/employee_assignment_history/AGENT_NOTES.md`**).
-- **Do not edit `modules/employees/`** from equipment — load dropdown options read-only.
+- **Assign To Employee dropdown empty:** do not filter `employees` with `active = 1` — that column was removed from the schema; scope by `company_id` only in `equipment_fetch_employee_options()`.
 
 ## 11. Examples of Safe Code Patterns
 
