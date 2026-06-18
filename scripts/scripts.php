@@ -1180,6 +1180,8 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification for Audit Log Sensitive Data Exposure.</td>
                     <td><code>php scripts/repro_audit_token_leak.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="repro_destructive_import.php">repro_destructive_import.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for destructive employee import.</td>
