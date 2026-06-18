@@ -7,6 +7,10 @@ require_once __DIR__ . '/itm_system_status_native.php';
 require_once __DIR__ . '/itm_system_status_powershell.php';
 require_once __DIR__ . '/itm_system_status_storage.php';
 
+if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
+    require_once __DIR__ . '/itm_role_module_permissions.php';
+}
+
 function itm_system_status_cache_tab_keys(): array
 {
     return ['monitoring', 'php_settings', 'database'];
@@ -15,26 +19,29 @@ function itm_system_status_cache_tab_keys(): array
 /**
  * @return array{payload:array,refreshed_at:string|null}|null
  */
-function itm_system_status_cache_get($conn, string $tabKey): ?array
+function itm_system_status_cache_get($conn, string $tabKey, int $companyId = 1): ?array
 {
     if (!$conn || !in_array($tabKey, itm_system_status_cache_tab_keys(), true)) {
         return null;
     }
 
+    if ($companyId <= 0) {
+        $companyId = 1;
+    }
+
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT payload_json, updated_at FROM system_status WHERE tab_key = ? AND active = 1 LIMIT 1'
+        'SELECT payload_json, updated_at FROM system_status WHERE tab_key = ? AND company_id = ? AND active = 1 LIMIT 1'
     );
     if (!$stmt) {
         return null;
     }
-    mysqli_stmt_bind_param($stmt, 's', $tabKey);
+    mysqli_stmt_bind_param($stmt, 'si', $tabKey, $companyId);
     if (!mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
         return null;
     }
-    $result = mysqli_stmt_get_result($stmt);
-    $row = $result ? mysqli_fetch_assoc($result) : null;
+    $row = itm_mysqli_stmt_fetch_assoc($stmt);
     mysqli_stmt_close($stmt);
 
     if (!$row) {

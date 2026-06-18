@@ -42,8 +42,8 @@ if (!function_exists('todo_merge_assignee_users')) {
             if (!mysqli_stmt_execute($stmt)) {
                 continue;
             }
-            $res = mysqli_stmt_get_result($stmt);
-            if ($res && ($row = mysqli_fetch_assoc($res))) {
+            $row = itm_mysqli_stmt_fetch_assoc($stmt);
+            if (is_array($row)) {
                 $users[(int)$row['id']] = $row;
             }
         }
@@ -75,11 +75,8 @@ if ($stmtUser === false) {
 } else {
     mysqli_stmt_bind_param($stmtUser, 'iii', $company_id, $company_id, $company_id);
     mysqli_stmt_execute($stmtUser);
-    $resUser = mysqli_stmt_get_result($stmtUser);
-    if ($resUser) {
-        while ($row = mysqli_fetch_assoc($resUser)) {
-            $users[$row['id']] = $row;
-        }
+    foreach (itm_mysqli_stmt_fetch_all_assoc($stmtUser) as $row) {
+        $users[$row['id']] = $row;
     }
     mysqli_stmt_close($stmtUser);
 }
