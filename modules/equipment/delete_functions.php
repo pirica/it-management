@@ -3,6 +3,8 @@
  * Equipment delete helpers (single, bulk, clear-table) shared by delete.php and CLI tests.
  */
 
+require_once __DIR__ . '/equipment_assignment_sync.php';
+
 if (!function_exists('equipment_table_has_column')) {
     function equipment_table_has_column(mysqli $conn, string $table, string $column): bool
     {
@@ -172,6 +174,11 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
 
         if (!itm_can_delete_record($conn, 'equipment', 'id', $id, $companyId, $usageError)) {
             throw new RuntimeException($usageError !== '' ? $usageError : 'This record is in use and cannot be deleted.');
+        }
+
+        $assignmentCloseError = equipment_close_assignment_history_on_delete($conn, $companyId, $id);
+        if ($assignmentCloseError !== null) {
+            throw new RuntimeException($assignmentCloseError);
         }
 
         $deleteStmt = mysqli_prepare($conn, 'DELETE FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');

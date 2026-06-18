@@ -31,11 +31,18 @@ $workstationRamSelect = $hasWorkstationRamIdColumn ? ', wr.name workstation_ram_
 $workstationRamJoin = $hasWorkstationRamIdColumn
     ? ' LEFT JOIN workstation_ram wr ON wr.id = e.workstation_ram_id AND wr.company_id = e.company_id'
     : '';
+$hasAssignedEmployeeColumn = equipment_view_table_has_column($conn, 'equipment', 'assigned_to_employee_id');
+$assignedEmployeeSelect = $hasAssignedEmployeeColumn
+    ? ", COALESCE(NULLIF(TRIM(CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, ''))), ''), NULLIF(TRIM(COALESCE(emp.display_name, '')), '')) AS assigned_employee_label"
+    : '';
+$assignedEmployeeJoin = $hasAssignedEmployeeColumn
+    ? ' LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id AND emp.company_id = e.company_id'
+    : '';
 
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                d.name department_name, s.name supplier_name,
                r.name rack_name, idf.name idf_name, es.name status_name, wt.name warranty_type_name,
-               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$equipmentRj45SpeedSelect$workstationOsVersionSelect$workstationRamSelect
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$equipmentRj45SpeedSelect$workstationOsVersionSelect$workstationRamSelect$assignedEmployeeSelect
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
@@ -54,6 +61,7 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         $equipmentRj45SpeedJoin
         $workstationOsVersionJoin
         $workstationRamJoin
+        $assignedEmployeeJoin
         WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
@@ -114,6 +122,7 @@ function equipment_field_label($key) {
         'workstation_ram_name' => 'RAM',
         'department_name' => 'Department',
         'supplier_name' => 'Supplier',
+        'assigned_employee_label' => 'Assign To Employee',
         'workstation_storage' => 'Storage (GB/TB)',
         'workstation_os_installed_on' => 'Workstation OS Installed On',
         'switch_fiber_port_label' => 'Fiber Port Label',
