@@ -39,6 +39,8 @@ $page_title = "System Status";
         .refresh-toolbar h1 { margin: 0; font-size: 1.5rem; }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
         .metrics-stack { display: flex; flex-direction: column; gap: 16px; }
+        .ss-extensions-list { max-height: 320px; overflow: auto; }
+        .ss-extensions-columns { column-count: 3; gap: 20px; }
         .metric-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
         .metric-card h3 { margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .metric-value { font-size: 1.25rem; font-weight: 700; }

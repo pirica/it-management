@@ -19,7 +19,7 @@ Displays core system metrics:
 Rendered directly from the **active Apache PHP runtime** (no AJAX or PowerShell):
 - **PHP Core:** Version, SAPI, binary path, and loaded `php.ini` file.
 - **Resource Limits:** `memory_limit`, `upload_max_filesize`, `post_max_size`, `max_execution_time`.
-- **Enabled Extensions:** All loaded modules from `get_loaded_extensions()`.
+- **Enabled Extensions:** All loaded modules from `get_loaded_extensions()`, shown in a vertical stack card with a scrollable three-column list (max-height 320px).
 - **Full detail:** Admin link to `scripts/system_status_phpinfo.php` (`phpinfo()`).
 
 ### 3. Database
