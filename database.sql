@@ -3976,6 +3976,7 @@ SELECT
     l_target.`id`,
     r_target.`id`,
     t.`name`, t.`serial_number`, t.`model`, t.`hostname`, t.`ip_address`, t.`patch_port`, t.`mac_address`,
+    dept_target.`id`,
     COALESCE(es_target.`id`, es_fallback.`id`),
     t.`purchase_date`, t.`purchase_cost`, t.`warranty_expiry`, t.`certificate_expiry`,
     wt_target.`id`,
@@ -4014,6 +4015,8 @@ LEFT JOIN `it_locations` l_source ON l_source.`id` = t.`location_id`
 LEFT JOIN `it_locations` l_target ON l_target.`company_id` = c.`id` AND l_target.`name` = l_source.`name`
 LEFT JOIN `racks` r_source ON r_source.`id` = t.`rack_id`
 LEFT JOIN `racks` r_target ON r_target.`company_id` = c.`id` AND r_target.`name` = r_source.`name`
+LEFT JOIN `departments` dept_source ON dept_source.`id` = t.`department_id`
+LEFT JOIN `departments` dept_target ON dept_target.`company_id` = c.`id` AND dept_target.`name` = dept_source.`name`
 LEFT JOIN `equipment_statuses` es_source ON es_source.`id` = t.`status_id`
 LEFT JOIN `equipment_statuses` es_target ON es_target.`company_id` = c.`id` AND es_target.`name` = es_source.`name`
 LEFT JOIN (
