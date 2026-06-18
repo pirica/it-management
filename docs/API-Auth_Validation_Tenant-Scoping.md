@@ -139,10 +139,14 @@ POST /modules/notes/index.php?ajax_action=single_delete
 4.  **Mandatory Tenant Scoping on JSON Import:** Session-derived `company_id` on insert; updates require matching tenant row. Sensitive tables admin-only.
 5.  **Rate Limiting:** Per-user API tiers on `ui_configuration`; enforcement in `includes/itm_api_rate_limit.php`. Probe: `GET scripts/api.php?rate_limit=1`. Regressions: `php scripts/apitest_tier_free.php`, `php scripts/apitest_tier_basic.php`.
 6.  **Maintenance Script RBAC (catalogued tools):** Browser Admin gate via `includes/itm_maintenance_script_admin_gate.php` on `module_browser_qa_runner.php`, `compare_database_sql_modules.php`, and `test_sql_injection.php`. Regression: `php scripts/verify_maintenance_scripts_rbac.php`.
+7.  **User Companies admin gate:** `itm_require_admin()` on every `modules/user_companies/` entry file. Regression: `php scripts/repro_user_companies_bac.php`.
+8.  **Users module tenant scoping:** List and mutation queries filter by session `company_id` for all roles (including tenant admins). Regression: `php scripts/repro_user_companies_leak.php`.
+9.  **Expenses delete RBAC:** Server-side `itm_require_role_module_permission(..., 'Expenses', 'delete')` before CSRF/delete SQL in `modules/expenses/index.php`. Regression: `php scripts/repro_rbac_bypass.php`.
 
 ### 5.2 Remaining follow-ups (not open vulnerability findings)
 
 1.  **Schema-Based Validation:** Per-table schemas for Select Options `extra_fields` and broader import payloads.
 2.  **Structured Read APIs:** JSON endpoints to replace HTML scraping in `api-examples/`.
 3.  **Maintenance Script RBAC (extended sweep):** Apply the same browser Admin gate to any remaining sensitive documented scripts.
+4.  **CRUD module RBAC (extended sweep):** Roll `itm_require_role_module_permission()` out to create/edit/delete handlers on modules beyond Expenses (UI-only RBAC remains elsewhere until then).
 
