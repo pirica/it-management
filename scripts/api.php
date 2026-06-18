@@ -516,7 +516,7 @@ function itmDocSwitchPortApiEndpoints(): array
             'method' => 'POST',
             'path' => 'includes/update_port.php',
             'params' => 'id, switch_id, csrf_token, port fields (label/status/color/VLAN/IDF/management/etc.; company_id from session only — do not send in payload)',
-            'response' => '{"success":true,"updated":N} or {"success":false,"error":"…"} (HTTP 404 when zero rows updated via itm_api_mutation_requires_rows())',
+            'response' => '{"success":true,"updated":N} or {"success":false,"error":"…"} (HTTP 404 when zero switch_ports rows updated, before IDF auto-sync)',
             'purpose' => 'Equipment Switch Port Manager: update switch_ports scoped by company_id + equipment_id; may sync linked idf_ports when To IDF/management fields change.',
         ],
     ];
@@ -836,7 +836,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>Switch Port Manager API (<code>includes/get_ports.php</code>, <code>includes/update_port.php</code>)</h2>
-        <p>Used by the equipment module Switch Port Manager tiles (<code>modules/equipment/index.php</code>). <strong>POST only</strong>; requires authenticated session (<code>company_id</code> in session — do not send in payload; server ignores client-supplied tenant ids), valid CSRF token, and tenant-scoped SQL on every query. Zero-row updates on <code>update_port.php</code> return HTTP <code>404</code> via <code>itm_api_mutation_requires_rows()</code>. Responses use <code>itm_api_json_response()</code> with <code>JSON_UNESCAPED_UNICODE</code>. Shared lookup helpers live in <code>includes/switch_port_api_helpers.php</code>; prepared-statement reads use <code>itm_mysqli_stmt_fetch_assoc()</code> / <code>itm_mysqli_stmt_fetch_all_assoc()</code> (mysqlnd fallback).</p>
+        <p>Used by the equipment module Switch Port Manager tiles (<code>modules/equipment/index.php</code>). <strong>POST only</strong>; requires authenticated session (<code>company_id</code> in session — do not send in payload; server ignores client-supplied tenant ids). Missing session tenant → HTTP <code>403</code>. Valid CSRF token required. Tenant-scoped prepared SQL on every query. Zero-row <code>switch_ports</code> updates return HTTP <code>404</code> before To IDF auto-sync runs. Responses use <code>itm_api_json_response()</code> with <code>JSON_UNESCAPED_UNICODE</code>. Shared lookup helpers live in <code>includes/switch_port_api_helpers.php</code>; prepared-statement reads use <code>itm_mysqli_stmt_fetch_assoc()</code> / <code>itm_mysqli_stmt_fetch_all_assoc()</code> (mysqlnd fallback).</p>
         <table>
             <thead><tr><th>Method</th><th>Endpoint</th><th>Parameters</th><th>Response</th><th>Purpose</th></tr></thead>
             <tbody>

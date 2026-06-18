@@ -32,8 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $raw = file_get_contents('php://input');
 $decoded = json_decode($raw, true);
 $input = is_array($decoded) ? $decoded : $_POST;
-
-// CSRF Validation
+// Why: Tenant scope comes from session only; discard client-supplied company_id if present.
+unset($input['company_id']);
 $csrfToken = (string)($input['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
 if (!itm_validate_csrf_token($csrfToken)) {
     itm_api_json_response(['success' => false, 'error' => 'Invalid CSRF token'], 403);

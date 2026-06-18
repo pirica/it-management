@@ -242,8 +242,8 @@ Equipment Switch Port Manager tiles call these shared endpoints (not module-loca
 
 | Endpoint | Role |
 |----------|------|
-| **`includes/get_ports.php`** | POST `switch_id` + CSRF. Seeds missing `switch_ports` rows for RJ45/SFP capacity, then returns ports and lookup metadata (statuses, colors, VLANs, IDF/rack/location options). Success: `{"success":true,…}` via `itm_api_json_response()`. Tenant `company_id` from session only — ignore client-supplied company ids. |
-| **`includes/update_port.php`** | POST port `id`, `switch_id`, field updates + CSRF. Tenant-scoped UPDATE on `switch_ports`; may sync linked `idf_ports` when To IDF/management fields change (wrap multi-table sync in a transaction). Zero-row updates return HTTP `404` via `itm_api_mutation_requires_rows()` / `itm_api_json_response()`. |
+| **`includes/get_ports.php`** | POST `switch_id` + CSRF. Seeds missing `switch_ports` rows for RJ45/SFP capacity, then returns ports and lookup metadata (statuses, colors, VLANs, IDF/rack/location options). Success: `{"success":true,…}` via `itm_api_json_response()`. Tenant `company_id` from session only — ignore client-supplied company ids; missing session tenant → HTTP `403`. |
+| **`includes/update_port.php`** | POST port `id`, `switch_id`, field updates + CSRF. Tenant-scoped UPDATE on `switch_ports`; To IDF auto-sync in a transaction when `management_id` exists. Zero-row updates return HTTP `404` before IDF sync (manual check — not `itm_api_mutation_requires_rows()`, which exits immediately on success). |
 
 Shared helpers: **`includes/switch_port_api_helpers.php`** (lookup maps, VLAN list). Prepared reads use **`itm_mysqli_stmt_fetch_assoc()`** / **`itm_mysqli_stmt_fetch_all_assoc()`** (mysqlnd fallback). Entry scripts use **`includes/itm_script_entry_guard.php`** and **`includes/itm_api_json_response.php`**.
 
