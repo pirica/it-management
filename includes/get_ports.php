@@ -16,6 +16,8 @@ require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/switch_port_api_helpers.php';
 require_once __DIR__ . '/itm_api_json_response.php';
 
+$company_id = isset($company_id) ? (int)$company_id : 0;
+
 header('Content-Type: application/json; charset=utf-8');
 // Disable direct error output to avoid corrupting JSON response
 ini_set('display_errors', '0');
