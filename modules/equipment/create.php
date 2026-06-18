@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once __DIR__ . '/equipment_assignment_sync.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $isEdit = $id > 0;
@@ -101,6 +102,109 @@ function equipment_append_persisted_supplier_option(mysqli $conn, array &$suppli
 
     if ($label !== '') {
         $suppliers[] = ['id' => $supplierId, 'label' => $label];
+    }
+}
+
+function equipment_fetch_employee_options(mysqli $conn, int $companyId): array
+{
+    $items = [];
+    if ($companyId <= 0) {
+        return $items;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT id,
+                COALESCE(
+                    NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''),
+                    NULLIF(TRIM(COALESCE(display_name, '')), ''),
+                    CONCAT('Employee #', id)
+                ) AS label
+         FROM employees
+         WHERE company_id = ? AND active = 1
+         ORDER BY label"
+    );
+    if (!$stmt) {
+        return $items;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $items[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    return $items;
+}
+
+function equipment_resolve_employee_label(mysqli $conn, int $employeeId, int $companyId): string
+{
+    if ($employeeId <= 0) {
+        return '';
+    }
+
+    $label = '';
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT COALESCE(
+                    NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''),
+                    NULLIF(TRIM(COALESCE(display_name, '')), ''),
+                    CONCAT('Employee #', id)
+                ) AS label
+         FROM employees
+         WHERE id = ? AND company_id = ?
+         LIMIT 1"
+    );
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $employeeId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        $label = trim((string)($row['label'] ?? ''));
+    }
+
+    if ($label === '') {
+        $stmtFallback = mysqli_prepare(
+            $conn,
+            "SELECT COALESCE(
+                        NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''),
+                        NULLIF(TRIM(COALESCE(display_name, '')), ''),
+                        CONCAT('Employee #', id)
+                    ) AS label
+             FROM employees
+             WHERE id = ?
+             LIMIT 1"
+        );
+        if ($stmtFallback) {
+            mysqli_stmt_bind_param($stmtFallback, 'i', $employeeId);
+            mysqli_stmt_execute($stmtFallback);
+            $resFallback = mysqli_stmt_get_result($stmtFallback);
+            $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
+            mysqli_stmt_close($stmtFallback);
+            $label = trim((string)($rowFallback['label'] ?? ''));
+        }
+    }
+
+    return $label;
+}
+
+function equipment_append_persisted_employee_option(mysqli $conn, array &$employees, int $employeeId, int $companyId): void
+{
+    if ($employeeId <= 0) {
+        return;
+    }
+
+    foreach ($employees as $row) {
+        if ((int)($row['id'] ?? 0) === $employeeId) {
+            return;
+        }
+    }
+
+    $label = equipment_resolve_employee_label($conn, $employeeId, $companyId);
+    if ($label !== '') {
+        $employees[] = ['id' => $employeeId, 'label' => $label];
     }
 }
 
@@ -1476,6 +1580,7 @@ $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $departments = fetch_options($conn, 'departments');
 $suppliers = fetch_options($conn, 'suppliers');
+$employees = equipment_fetch_employee_options($conn, (int)$company_id);
 $supplierStatuses = fetch_options($conn, 'supplier_statuses');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
 $locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
@@ -1536,7 +1641,7 @@ foreach ($types as $typeItem) {
 
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'idf_id' => '', 'name' => '',
-    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '',
+    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '', 'assigned_to_employee_id' => '',
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
@@ -1580,7 +1685,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','department_id','supplier_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','rj45_speed_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_poe_id','switch_environment_id'] as $fkField) {
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','department_id','supplier_id','assigned_to_employee_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','rj45_speed_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_poe_id','switch_environment_id'] as $fkField) {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
@@ -1616,6 +1721,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $idfAssignmentError = equipment_validate_idf_assignment($conn, (int)$company_id, $assignmentCheckEquipmentId, $requestedIdfId);
         if ($idfAssignmentError !== '') {
             $error = $idfAssignmentError;
+        }
+    }
+
+    if (!$error && (int)($data['assigned_to_employee_id'] ?? 0) > 0) {
+        $requestedEmployeeId = (int)$data['assigned_to_employee_id'];
+        $employeeCheckStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employees WHERE id = ? AND company_id = ? AND active = 1 LIMIT 1'
+        );
+        $employeeCheckOk = false;
+        if ($employeeCheckStmt) {
+            mysqli_stmt_bind_param($employeeCheckStmt, 'ii', $requestedEmployeeId, $company_id);
+            mysqli_stmt_execute($employeeCheckStmt);
+            $employeeCheckRes = mysqli_stmt_get_result($employeeCheckStmt);
+            $employeeCheckOk = $employeeCheckRes && mysqli_num_rows($employeeCheckRes) === 1;
+            mysqli_stmt_close($employeeCheckStmt);
+        }
+        if (!$employeeCheckOk) {
+            $error = 'Selected employee is invalid for this company.';
         }
     }
 
@@ -1936,6 +2060,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($error === '') {
+                $newAssigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
+                $newAssigneeId = $newAssigneeId > 0 ? $newAssigneeId : null;
+                $oldAssigneeId = null;
+                if ($isEdit && is_array($originalData)) {
+                    $oldAssigneeId = (int)($originalData['assigned_to_employee_id'] ?? 0);
+                    $oldAssigneeId = $oldAssigneeId > 0 ? $oldAssigneeId : null;
+                }
+                $assignedByUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+                $assignmentAssetDescription = equipment_build_assignment_asset_description(
+                    (string)$data['name'],
+                    (string)$data['model']
+                );
+                $assignmentSyncError = equipment_sync_assigned_employee(
+                    $conn,
+                    (int)$company_id,
+                    $id,
+                    $newAssigneeId,
+                    $oldAssigneeId,
+                    $assignedByUserId,
+                    $assignmentAssetDescription
+                );
+                if ($assignmentSyncError !== null) {
+                    $error = $assignmentSyncError;
+                }
+            }
+
+            if ($error === '') {
                 mysqli_commit($conn);
             } else {
                 mysqli_rollback($conn);
@@ -2065,6 +2216,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['switch_poe_id'] ?? 0), (int)$company_id);
 equipment_append_persisted_department_option($conn, $departments, (int)($data['department_id'] ?? 0), (int)$company_id);
 equipment_append_persisted_supplier_option($conn, $suppliers, (int)($data['supplier_id'] ?? 0), (int)$company_id);
+equipment_append_persisted_employee_option($conn, $employees, (int)($data['assigned_to_employee_id'] ?? 0), (int)$company_id);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -2228,7 +2380,7 @@ equipment_append_persisted_supplier_option($conn, $suppliers, (int)($data['suppl
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
                 <div class="form-group"><label>Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" value="<?php echo sanitize($data['purchase_cost']); ?>"></div>
-                <div class="form-group"><label>Department</label><select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department" data-add-extra-fields="<?php echo $departmentExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($departments, $data['department_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"></div>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -2267,6 +2419,11 @@ equipment_append_persisted_supplier_option($conn, $suppliers, (int)($data['suppl
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
                 <div class="form-group"><label>Workstation OS Installed On</label><input type="date" name="workstation_os_installed_on" value="<?php echo sanitize($data['workstation_os_installed_on']); ?>"></div>
                 <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
+            </div>
+            <div class="form-row form-row-3">
+                <div class="form-group"><label>Assign To Employee</label><select name="assigned_to_employee_id"><option value="">-- None --</option><?php render_options($employees, $data['assigned_to_employee_id']); ?></select></div>
+                <div class="form-group"><label>Department</label><select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department" data-add-extra-fields="<?php echo $departmentExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($departments, $data['department_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"></div>
             </div>
             <div class="form-group"><label>Notes</label><textarea name="notes" rows="5"><?php echo sanitize($data['notes']); ?></textarea></div>
             <div id="switch-fields" style="display:block;">

@@ -69,6 +69,9 @@ if ($searchRaw !== '') {
         OR COALESCE(d.name, '') LIKE '{$searchEsc}'
         OR COALESCE(s.name, '') LIKE '{$searchEsc}'
         OR COALESCE(s.supplier_code, '') LIKE '{$searchEsc}'
+        OR COALESCE(emp.first_name, '') LIKE '{$searchEsc}'
+        OR COALESCE(emp.last_name, '') LIKE '{$searchEsc}'
+        OR COALESCE(emp.display_name, '') LIKE '{$searchEsc}'
         OR c.company LIKE '{$searchEsc}'
         OR et.name LIKE '{$searchEsc}'
         OR m.name LIKE '{$searchEsc}'
@@ -105,6 +108,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
         LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
         LEFT JOIN suppliers s ON s.id = e.supplier_id AND s.company_id = e.company_id
+        LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id AND emp.company_id = e.company_id
         LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
         LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
         LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
@@ -142,6 +146,7 @@ $countSql = "SELECT COUNT(*) AS total
              LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
              LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
              LEFT JOIN suppliers s ON s.id = e.supplier_id AND s.company_id = e.company_id
+             LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id AND emp.company_id = e.company_id
              LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
              LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
              LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
