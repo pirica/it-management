@@ -980,7 +980,14 @@ require_once __DIR__ . '/../config/config.php';
                 </tr>
             </thead>
             <tbody>
-                <tr><td><a href="test_system_info.php">test_system_info.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests system_info.ps1 output.</td><td><code>php scripts/test_system_info.php</code></td></tr>
+                <tr>
+                    <td><a href="verify_system_status.php">verify_system_status.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>modules/system_status/</code>: file layout, registry row, native API payloads, DB size query; Windows also runs <code>test_*.php</code> PowerShell wrappers.</td>
+                    <td><code>php scripts/verify_system_status.php</code></td>
+                </tr>
+                <tr><td><a href="system_status_api.php">system_status_api.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td><td>Admin JSON API dispatcher (<code>?action=system_info</code>, etc.). Documented in <a href="api.php">api.php</a>.</td><td>GET <code>scripts/system_status_api.php?action=cpu_usage</code> (Admin session)</td></tr>
+                <tr><td><a href="test_system_info.php">test_system_info.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests <code>includes/system_info.ps1</code> JSON output (Windows Laragon).</td><td><code>php scripts/test_system_info.php</code></td></tr>
                 <tr><td><a href="test_cpu_usage.php">test_cpu_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests cpu_usage.ps1 output.</td><td><code>php scripts/test_cpu_usage.php</code></td></tr>
                 <tr><td><a href="test_ram_usage.php">test_ram_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests ram_usage.ps1 output.</td><td><code>php scripts/test_ram_usage.php</code></td></tr>
                 <tr><td><a href="test_disk_usage.php">test_disk_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests disk_usage.ps1 output.</td><td><code>php scripts/test_disk_usage.php</code></td></tr>

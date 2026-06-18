@@ -613,6 +613,28 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
 
+### System Status scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_system_status.php` | Regression: module files, `modules_registry` row, native API payloads, `information_schema` size query; on Windows also runs each `test_*.php` PowerShell wrapper |
+| `php scripts/test_system_info.php` | Validates `includes/system_info.ps1` JSON (Windows; skips with warning when PowerShell unavailable) |
+| `php scripts/test_cpu_usage.php` | Validates `cpu_usage.ps1` |
+| `php scripts/test_ram_usage.php` | Validates `ram_usage.ps1` |
+| `php scripts/test_disk_usage.php` | Validates `disk_usage.ps1` |
+| `php scripts/test_uptime.php` | Validates `uptime.ps1` |
+| `php scripts/test_php_version.php` | Validates `php_version.ps1` |
+| `php scripts/test_php_extensions.php` | Validates `php_extensions.ps1` |
+| `php scripts/test_php_ini_values.php` | Validates `php_ini_values.ps1` |
+| `php scripts/test_mysql_status.php` | Validates `mysql_status.ps1` |
+| `php scripts/test_mysql_version.php` | Validates `mysql_version.ps1` |
+| `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` |
+| `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` |
+
+Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, or any `includes/*.ps1` metrics script. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only). Module UI: `modules/system_status/index.php`.
+
+Screenshots for README: `python3 scripts/take_screenshots_modules.py` (captures `system_status` monitoring tab to `docs/readme/system_status.png`; requires Playwright + local Apache at `http://localhost/it-management/`). Set `ITM_SCREENSHOT_ONLY=system_status` to capture only that module.
+
 ### Resignations and employee profile scripts
 
 | Script | Purpose |
@@ -928,22 +950,3 @@ php scripts/ensure_files_htaccess_chain.php
   - `.is-dragover`: Applied to the target during drag events to provide visual feedback.
   - `.itm-dropzone-hint`: Used for instructional text within the dropzone.
 - **JavaScript:** Implementation involves using `itmUploadHelper.setupById(targetId, inputId)` or `itmUploadHelper.setupByClass(className)`. The helper handles preventing default drag events, toggling visual states, and assigning files to the input while triggering the `change` event.
-
-### System Status Verification Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `php scripts/test_system_info.php` | Validates `system_info.ps1` JSON output. |
-| `php scripts/test_cpu_usage.php` | Validates `cpu_usage.ps1` JSON output. |
-| `php scripts/test_ram_usage.php` | Validates `ram_usage.ps1` JSON output. |
-| `php scripts/test_disk_usage.php` | Validates `disk_usage.ps1` JSON output. |
-| `php scripts/test_uptime.php` | Validates `uptime.ps1` JSON output. |
-| `php scripts/test_php_version.php` | Validates `php_version.ps1` JSON output. |
-| `php scripts/test_php_extensions.php` | Validates `php_extensions.ps1` JSON output. |
-| `php scripts/test_php_ini_values.php` | Validates `php_ini_values.ps1` JSON output. |
-| `php scripts/test_mysql_status.php` | Validates `mysql_status.ps1` JSON output. |
-| `php scripts/test_mysql_version.php` | Validates `mysql_version.ps1` JSON output. |
-| `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` JSON output. |
-| `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` JSON output. |
-
-These scripts execute the corresponding PowerShell scripts and assert that the returned JSON is valid and follows the expected structure (`status` and `data` fields).

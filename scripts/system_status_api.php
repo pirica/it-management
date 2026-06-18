@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/../config/config.php';
+require_once ROOT_PATH . 'includes/itm_system_status_native.php';
 
 // Authentication and Authorization check
 if (!isset($_SESSION['user_id']) || !itm_is_admin($conn, $_SESSION['user_id'])) {
@@ -30,10 +31,26 @@ if (!in_array($action, $allowed_actions)) {
     exit;
 }
 
+header('Content-Type: application/json; charset=utf-8');
+
+// Why: Laragon uses PowerShell; Linux/CI hosts fall back to PHP-native metrics.
+if (!itm_system_status_is_windows()) {
+    $json_data = itm_system_status_native_payload($action, $conn);
+    if ($json_data === null) {
+        http_response_code(501);
+        echo json_encode(['status' => 'error', 'message' => 'Action not supported on this platform.']);
+        exit;
+    }
+    if (($json_data['status'] ?? '') !== 'success') {
+        http_response_code(500);
+    }
+    echo json_encode($json_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 $script_path = ROOT_PATH . 'includes/' . $action . '.ps1';
 
 if (!file_exists($script_path)) {
-    header('Content-Type: application/json; charset=utf-8');
     http_response_code(404);
     echo json_encode(['status' => 'error', 'message' => 'PowerShell script not found.']);
     exit;
@@ -43,8 +60,6 @@ if (!file_exists($script_path)) {
 // -ExecutionPolicy Bypass is necessary to allow script execution
 $command = "powershell.exe -ExecutionPolicy Bypass -File " . escapeshellarg($script_path);
 $output = shell_exec($command);
-
-header('Content-Type: application/json; charset=utf-8');
 
 if ($output === null) {
     http_response_code(500);
