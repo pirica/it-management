@@ -30,6 +30,11 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
   - **`includes/get_ports.php`** — fetch/seed ports and return lookup maps for the port grid UI.
   - **`includes/update_port.php`** — persist port label/status/color/VLAN/IDF fields; keeps `idf_ports` aligned when To IDF sync runs.
   - Both require session `company_id`, CSRF, POST only; JSON via `itm_api_json_response()` (`JSON_UNESCAPED_UNICODE`). Prepared reads use `itm_mysqli_stmt_fetch_assoc()` / `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback). See `scripts/api.php` → Switch Port Manager API.
+- **Switch Port Manager transactions and tenant scoping:**
+  - Port updates that change management or To IDF fields **must** keep `switch_ports`, `idf_ports`, and related IDF tables transactionally consistent. Wrap the full multi-table sync in a single DB transaction and rollback on any failure (see `AGENTS.md` → IDF synchronization guardrail and `scripts/SCRIPTS.md` → Switch Port Manager AJAX).
+  - Derive `company_id` from the authenticated session only; do **not** read or trust `company_id` from the request body or query string when implementing or modifying `includes/get_ports.php` or `includes/update_port.php`.
+  - All SQL must use prepared statements; JSON responses must go through `itm_api_json_response()` to avoid leaking raw DB errors to clients.
+  - After any change to switch-port or IDF sync logic, re-run `php scripts/idfs_sync_human_test.php` and do not ship while any `[FAIL]` results remain.
 
 ## 7. File Structure
 - `index.php` — list/grid and CRUD routing (may absorb wrapper actions).

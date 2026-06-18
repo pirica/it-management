@@ -113,14 +113,32 @@ class ApiFunctionsTest extends TestCase
     public function testSwitchPortApiEndpointsCatalog()
     {
         $endpoints = itmDocSwitchPortApiEndpoints();
-        $this->assertCount(2, $endpoints);
+        // Why: Catalog currently documents exactly get_ports + update_port; allow growth without brittle exact count.
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($endpoints),
+            'Expected at least the core switch-port endpoints in itmDocSwitchPortApiEndpoints().'
+        );
         $paths = array_column($endpoints, "path");
-        $this->assertContains("includes/get_ports.php", $paths);
-        $this->assertContains("includes/update_port.php", $paths);
+        $this->assertContains(
+            "includes/get_ports.php",
+            $paths,
+            'Switch-port get_ports.php endpoint not documented in itmDocSwitchPortApiEndpoints().'
+        );
+        $this->assertContains(
+            "includes/update_port.php",
+            $paths,
+            'Switch-port update_port.php endpoint not documented in itmDocSwitchPortApiEndpoints().'
+        );
         foreach ($endpoints as $row) {
             $this->assertSame("POST", $row["method"]);
             $this->assertArrayHasKey("response", $row);
             $this->assertNotSame("", trim((string)$row["purpose"]));
+            $this->assertStringContainsString(
+                "company_id",
+                (string)$row["params"],
+                'Switch-port endpoint params should document session-derived company_id (not client payload).'
+            );
         }
     }
 

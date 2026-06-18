@@ -30,8 +30,8 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
 - **Switch Port Manager (equipment index tiles):**
-  - **`includes/get_ports.php`** (POST, JSON or form) — `switch_id`, `csrf_token`. Loads/seeds tenant-scoped `switch_ports` for the active switch and returns ports plus lookup metadata (statuses, colors, VLANs, IDF/rack options). Success: `{"success":true,"ports":[…],…}` via `itm_api_json_response()`. Documented in `scripts/api.php`.
-  - **`includes/update_port.php`** (POST, JSON or form) — `id`, `switch_id`, `csrf_token`, port field updates. Updates `switch_ports` scoped by `company_id`; may sync linked `idf_ports` when management/To IDF fields change. Errors use HTTP 4xx/5xx with `{"success":false,"error":"…"}`. Shared helpers: `includes/switch_port_api_helpers.php`.
+  - **`includes/get_ports.php`** (POST, JSON or form) — `switch_id`, `csrf_token`. Loads/seeds tenant-scoped `switch_ports` for the active switch and returns ports plus lookup metadata (statuses, colors, VLANs, IDF/rack options). Success: `{"success":true,"ports":[…],…}` via `itm_api_json_response()`. `company_id` comes from session only (never from client payload). Documented in `scripts/api.php`.
+  - **`includes/update_port.php`** (POST, JSON or form) — `id`, `switch_id`, `csrf_token`, port field updates. Updates `switch_ports` scoped by session `company_id`; may sync linked `idf_ports` when management/To IDF fields change (transaction + rollback per IDF guardrail). Zero-row updates: HTTP `404` via `itm_api_mutation_requires_rows()`. Shared helpers: `includes/switch_port_api_helpers.php`. Regression: `php scripts/idfs_sync_human_test.php`.
 
 ## 7. File Structure
 - Standard CRUD structure + `delete_functions.php`.
