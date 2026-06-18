@@ -26,24 +26,24 @@ if (!function_exists('todo_merge_assignee_users')) {
         }
 
         $ids = array_values($missing);
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT u.id, u.username
+        $sql = 'SELECT u.id, u.username
                 FROM users u
                 LEFT JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
-                WHERE u.id IN ($placeholders) AND (u.company_id = ? OR uc.company_id = ?)
-                GROUP BY u.id";
+                WHERE u.id = ? AND (u.company_id = ? OR uc.company_id = ?)
+                LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt === false) {
             return;
         }
 
-        $types = 'i' . str_repeat('i', count($ids)) . 'ii';
-        $params = array_merge([$company_id], $ids, [$company_id, $company_id]);
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        if ($res) {
-            while ($row = mysqli_fetch_assoc($res)) {
+        foreach ($ids as $uid) {
+            $uid = (int)$uid;
+            mysqli_stmt_bind_param($stmt, 'iiii', $company_id, $uid, $company_id, $company_id);
+            if (!mysqli_stmt_execute($stmt)) {
+                continue;
+            }
+            $res = mysqli_stmt_get_result($stmt);
+            if ($res && ($row = mysqli_fetch_assoc($res))) {
                 $users[(int)$row['id']] = $row;
             }
         }

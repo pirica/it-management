@@ -161,7 +161,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_user.php`; prepared `UPDATE users` for token fields. |
 
-Repro runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
+Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path (`verify_explorer_*`, `verify_user_idor.php`, `verify_company_deletion.php`, `verify_git_reset_csrf.php`, `verify_reset_git_history_access.php`, `verify_select_options_escalation.php`). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
 ## 4. Path Handling
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.
@@ -184,7 +184,7 @@ Repro runners that spawn temporary PHP subprocesses use `escapeshellarg()` on th
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
 | `php scripts/verify_explorer_rce_marker.php` | PoC — `.htaccess` with ITM marker cannot persist RCE directives |
 
-Run path/ZIP checks after Explorer ACL changes. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`.
+Run path/ZIP checks after Explorer ACL changes. Isolated subprocess spawns use `escapeshellarg()`. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`.
 
 ## 5. Verification & Testing
 - New scripts should ideally be accompanied by a unit test or a verification PoC.

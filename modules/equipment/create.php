@@ -59,18 +59,6 @@ function equipment_append_persisted_department_option(mysqli $conn, array &$depa
         $label = trim((string)($row['name'] ?? ''));
     }
 
-    if ($label === '') {
-        $stmtFallback = mysqli_prepare($conn, 'SELECT name FROM departments WHERE id = ? LIMIT 1');
-        if ($stmtFallback) {
-            mysqli_stmt_bind_param($stmtFallback, 'i', $departmentId);
-            mysqli_stmt_execute($stmtFallback);
-            $resFallback = mysqli_stmt_get_result($stmtFallback);
-            $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
-            mysqli_stmt_close($stmtFallback);
-            $label = trim((string)($rowFallback['name'] ?? ''));
-        }
-    }
-
     if ($label !== '') {
         $departments[] = ['id' => $departmentId, 'label' => $label];
     }

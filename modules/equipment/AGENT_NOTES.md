@@ -16,7 +16,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
-- **Department:** Optional FK to `departments.id`, tenant-scoped on save and joins (`company_id`). Create/edit use the shared quick-add select (`data-add-table="departments"`, label column `name`); `select_options_api.php` auto-fills `company_id` and `active`. Quick-add requires **name** only; **code** is optional via `data-add-extra-fields`. List shows `departments.code` with fallback to `departments.name`; view shows `departments.name`.
+- **Department:** Optional FK to `departments.id`, tenant-scoped on save and joins (`company_id`). Create/edit use the shared quick-add select (`data-add-table="departments"`, label column `name`); `select_options_api.php` auto-fills `company_id` and `active`. Quick-add requires **name** only; **code** is optional via `data-add-extra-fields`. Persisted department fallback in `equipment_append_persisted_department_option()` is **company-scoped only** (no id-only cross-tenant lookup). List shows `departments.code` with fallback to `departments.name`; view shows `departments.name`.
 - **IDF synchronization:** Create/Edit/Update/Delete/Copy/Move must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` aligned — transactions required; run `php scripts/idfs_sync_human_test.php` after changes.
 - **Asset Tagging:** Each item should ideally have a unique serial or asset number within the company.
 - **Type-Specific Logic:** `modules/is_*` façades delegate here; do not delete canonical `is_switch`, `is_server`, etc.

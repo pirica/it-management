@@ -56,7 +56,7 @@ function itm_system_status_directory_metrics(string $absolutePath): array
 {
     $bytes = 0;
     $files = 0;
-    if (!is_dir($absolutePath)) {
+    if (!is_dir($absolutePath) || !is_readable($absolutePath)) {
         return ['bytes' => 0, 'files' => 0];
     }
 
