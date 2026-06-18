@@ -14,6 +14,7 @@ if (itm_skip_http_entry_unless_direct(__FILE__)) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/switch_port_api_helpers.php';
+require_once __DIR__ . '/itm_api_json_response.php';
 
 header('Content-Type: application/json; charset=utf-8');
 // Disable direct error output to avoid corrupting JSON response
@@ -21,10 +22,8 @@ ini_set('display_errors', '0');
 
 // Access Control: Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
     header('Allow: POST');
-    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Method not allowed'], 405);
 }
 
 // CSRF Validation (checks multiple possible header/body locations)
@@ -36,16 +35,12 @@ if (!is_array($jsonInput)) {
 
 $csrfToken = (string)($jsonInput['csrf_token'] ?? ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')));
 if (!itm_validate_csrf_token($csrfToken)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Invalid CSRF token'], 403);
 }
 
 // Ensure the user has a valid company context
 if ($company_id <= 0) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Unauthorized'], 401);
 }
 
 /**
@@ -57,8 +52,7 @@ function fetch_available_port_types(mysqli $conn): array
     $stmt = mysqli_prepare($conn, 'SELECT type FROM switch_port_types ORDER BY id ASC');
     if ($stmt) {
         mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
+        foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
             $normalized = normalize_port_type((string)($row['type'] ?? ''));
             if ($normalized === '') {
                 continue;
@@ -83,8 +77,7 @@ function fetch_default_fiber_name(mysqli $conn, int $companyId): string
         $tableCheckStmt = mysqli_prepare($conn, "SHOW TABLES LIKE 'equipment_fiber'");
         if ($tableCheckStmt) {
             mysqli_stmt_execute($tableCheckStmt);
-            $tableCheckRes = mysqli_stmt_get_result($tableCheckStmt);
-            $tableExists = $tableCheckRes && mysqli_num_rows($tableCheckRes) > 0;
+            $tableExists = itm_mysqli_stmt_fetch_assoc($tableCheckStmt) !== null;
             mysqli_stmt_close($tableCheckStmt);
         }
     }
@@ -108,8 +101,7 @@ function fetch_default_fiber_name(mysqli $conn, int $companyId): string
         if ($tenantStmt) {
             mysqli_stmt_bind_param($tenantStmt, 'i', $companyId);
             mysqli_stmt_execute($tenantStmt);
-            $tenantRes = mysqli_stmt_get_result($tenantStmt);
-            $tenantRow = $tenantRes ? mysqli_fetch_assoc($tenantRes) : null;
+            $tenantRow = itm_mysqli_stmt_fetch_assoc($tenantStmt);
             mysqli_stmt_close($tenantStmt);
             if (is_array($tenantRow) && trim((string)($tenantRow['name'] ?? '')) !== '') {
                 return strtolower(trim((string)$tenantRow['name']));
@@ -175,8 +167,7 @@ function fetch_port_type_id_map(mysqli $conn, int $companyId): array
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $companyId);
         mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
+        foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
             $normalized = normalize_port_type((string)($row['type'] ?? ''));
             if ($normalized === '' || isset($map[$normalized])) {
                 continue;
@@ -204,8 +195,7 @@ $hasPortTypesTable = false;
 $stmtTable = mysqli_prepare($conn, "SHOW TABLES LIKE 'switch_port_types'");
 if ($stmtTable) {
     mysqli_stmt_execute($stmtTable);
-    $resTable = mysqli_stmt_get_result($stmtTable);
-    $hasPortTypesTable = $resTable && mysqli_num_rows($resTable) > 0;
+    $hasPortTypesTable = itm_mysqli_stmt_fetch_assoc($stmtTable) !== null;
     mysqli_stmt_close($stmtTable);
 }
 
@@ -218,9 +208,7 @@ if (!in_array('rj45', $availablePortTypes, true)) {
 
 // Schema validation
 if (!$hasStatusId || !$hasColorId) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns'], 500);
 }
 
 // Pre-fetch lookups
@@ -235,9 +223,7 @@ $idfOptions = fetch_lookup_map($conn, 'idfs', 'idf_code');
 $rackOptions = fetch_lookup_map($conn, 'racks', 'name');
 $locationOptions = fetch_lookup_map($conn, 'it_locations', 'name');
 if (empty($statuses) || empty($colors)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'switch_status/cable_colors lookup tables are empty']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'switch_status/cable_colors lookup tables are empty'], 500);
 }
 
 $defaultStatusId = lookup_id_by_name($statuses, 'Unknown');
@@ -245,9 +231,7 @@ $defaultColorId = lookup_id_by_name($colors, 'grey', lookup_id_by_name($colors, 
 
 $switchId = (int)($jsonInput['switch_id'] ?? ($_POST['switch_id'] ?? 0));
 if ($switchId <= 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Missing switch id']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Missing switch id'], 400);
 }
 
 // Fetch switch configuration from the equipment table
@@ -273,15 +257,12 @@ if ($switchStmt) {
     $companyId = (int)$company_id;
     mysqli_stmt_bind_param($switchStmt, 'ii', $switchId, $companyId);
     if (mysqli_stmt_execute($switchStmt)) {
-        $switchRes = mysqli_stmt_get_result($switchStmt);
-        $switch = $switchRes ? mysqli_fetch_assoc($switchRes) : null;
+        $switch = itm_mysqli_stmt_fetch_assoc($switchStmt);
     }
     mysqli_stmt_close($switchStmt);
 }
 if (!$switch) {
-    http_response_code(404);
-    echo json_encode(['success' => false, 'error' => 'Switch not found']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Switch not found'], 404);
 }
 
 // Calculate RJ45 port count
@@ -332,8 +313,7 @@ if ($hasManagementIdColumn) {
         $companyId = (int)$company_id;
         mysqli_stmt_bind_param($stmtUnmanaged, 'i', $companyId);
         mysqli_stmt_execute($stmtUnmanaged);
-        $resUnmanaged = mysqli_stmt_get_result($stmtUnmanaged);
-        $unmanagedRow = $resUnmanaged ? mysqli_fetch_assoc($resUnmanaged) : null;
+        $unmanagedRow = itm_mysqli_stmt_fetch_assoc($stmtUnmanaged);
         mysqli_stmt_close($stmtUnmanaged);
         if ($unmanagedRow) {
             $defaultManagementId = (int)($unmanagedRow['id'] ?? 0);
@@ -366,8 +346,7 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
                 mysqli_stmt_bind_param($existingStmt, 'iis', $companyId, $switchId, $portTypeFilter);
             }
             if (mysqli_stmt_execute($existingStmt)) {
-                $existingRes = mysqli_stmt_get_result($existingStmt);
-                while ($existingRes && ($existingRow = mysqli_fetch_assoc($existingRes))) {
+                foreach (itm_mysqli_stmt_fetch_all_assoc($existingStmt) as $existingRow) {
                     $portNumber = (int)($existingRow['port_number'] ?? 0);
                     if ($portNumber > 0) {
                         $existingPortNumbers[$portNumber] = true;
@@ -432,8 +411,8 @@ function seed_ports(mysqli $conn, int $companyId, int $switchId, string $portTyp
     if ($existsStmt) {
         mysqli_stmt_bind_param($existsStmt, 'i', $companyId);
         if (mysqli_stmt_execute($existsStmt)) {
-            $existsRes = mysqli_stmt_get_result($existsStmt);
-            $existingCount = (int)(($existsRes ? mysqli_fetch_assoc($existsRes) : [])['c'] ?? 0);
+            $existsRow = itm_mysqli_stmt_fetch_assoc($existsStmt);
+            $existingCount = (int)($existsRow['c'] ?? 0);
         }
         mysqli_stmt_close($existsStmt);
     }
@@ -495,6 +474,7 @@ seed_ports($conn, (int)$company_id, $switchId, 'sfp', $sfpCount, $hasEquipmentId
 remove_duplicate_ports($conn, (int)$company_id, $switchId, $hasEquipmentId, $hasPortType);
 
 // Fetch all port details including status, color, and VLAN
+$ports = [];
 if ($hasEquipmentId && $hasPortType) {
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
     $portTypeSelectSql = $isNumericPortTypeColumn ? "COALESCE(spt.type, 'RJ45')" : 'sp.port_type';
@@ -520,14 +500,23 @@ if ($hasEquipmentId && $hasPortType) {
               AND sp.equipment_id = ?
             ORDER BY CASE WHEN LOWER(TRIM(COALESCE({$portTypeSelectSql}, 'RJ45'))) LIKE 'sfp%' THEN 1 ELSE 0 END ASC, sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);
-    $result = false;
-    if ($stmt) {
-        $companyId = (int)$company_id;
-        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $switchId);
-        if (mysqli_stmt_execute($stmt)) {
-            $result = mysqli_stmt_get_result($stmt);
-        }
+    if (!$stmt) {
+        itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
     }
+    $companyId = (int)$company_id;
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $switchId);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
+    }
+    foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
+        $row['port_type'] = normalize_port_type((string)($row['port_type'] ?? 'rj45'));
+        if (!array_key_exists('label', $row) && array_key_exists('to_patch_port', $row)) {
+            $row['label'] = (string)$row['to_patch_port'];
+        }
+        $ports[] = $row;
+    }
+    mysqli_stmt_close($stmt);
 } else {
     // Legacy fallback query
     $vlanSelect = $hasVlanId ? ', sp.vlan_id, v.vlan_name, v.vlan_color' : ', NULL AS vlan_id, NULL AS vlan_name, NULL AS vlan_color';
@@ -550,32 +539,24 @@ if ($hasEquipmentId && $hasPortType) {
             WHERE sp.company_id = ?
             ORDER BY sp.port_number ASC";
     $stmt = mysqli_prepare($conn, $sql);
-    $result = false;
-    if ($stmt) {
-        $companyId = (int)$company_id;
-        mysqli_stmt_bind_param($stmt, 'i', $companyId);
-        if (mysqli_stmt_execute($stmt)) {
-            $result = mysqli_stmt_get_result($stmt);
+    if (!$stmt) {
+        itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
+    }
+    $companyId = (int)$company_id;
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
+    }
+    foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
+        $row['port_type'] = normalize_port_type((string)($row['port_type'] ?? 'rj45'));
+        if (!array_key_exists('label', $row) && array_key_exists('to_patch_port', $row)) {
+            $row['label'] = (string)$row['to_patch_port'];
         }
+        $ports[] = $row;
     }
+    mysqli_stmt_close($stmt);
 }
-
-if (!$result) {
-    if ($stmt) { mysqli_stmt_close($stmt); }
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'DB error']);
-    exit;
-}
-
-$ports = [];
-while ($row = mysqli_fetch_assoc($result)) {
-    $row['port_type'] = normalize_port_type((string)($row['port_type'] ?? 'rj45'));
-    if (!array_key_exists('label', $row) && array_key_exists('to_patch_port', $row)) {
-        $row['label'] = (string)$row['to_patch_port'];
-    }
-    $ports[] = $row;
-}
-if ($stmt) { mysqli_stmt_close($stmt); }
 
 // If using legacy schema, SFPs are only "virtual" in memory
 if (!($hasEquipmentId && $hasPortType)) {
@@ -597,8 +578,7 @@ if (!($hasEquipmentId && $hasPortType)) {
 
 }
 
-// Return final JSON payload
-echo json_encode([
+itm_api_json_response([
     'success' => true,
     'ports' => $ports,
     'statuses' => $statuses,
@@ -616,4 +596,4 @@ echo json_encode([
         'sfp' => $sfpCount,
     ],
     'port_types' => $availablePortTypes,
-]);
+], 200);

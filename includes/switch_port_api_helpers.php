@@ -6,6 +6,10 @@
  * in one file to avoid "Cannot redeclare" fatals (PHP registers functions at compile time).
  */
 
+if (!function_exists('itm_mysqli_stmt_fetch_all_assoc')) {
+    require_once __DIR__ . '/itm_role_module_permissions.php';
+}
+
 if (!function_exists('fetch_lookup_map')) {
     function fetch_lookup_map(mysqli $conn, string $table, string $labelColumn): array
     {
@@ -17,7 +21,6 @@ if (!function_exists('fetch_lookup_map')) {
         $hasCompanyId = itm_table_has_column($conn, $table, 'company_id');
         $companyId = isset($GLOBALS['company_id']) ? (int)$GLOBALS['company_id'] : 0;
 
-        $res = false;
         if ($hasCompanyId && $companyId > 0) {
             $sql = "SELECT id, `{$labelColumn}` AS label";
             if ($table === 'cable_colors' && itm_table_has_column($conn, $table, 'hex_color')) {
@@ -28,26 +31,32 @@ if (!function_exists('fetch_lookup_map')) {
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'i', $companyId);
                 mysqli_stmt_execute($stmt);
-                $res = mysqli_stmt_get_result($stmt);
+                $stmtRows = itm_mysqli_stmt_fetch_all_assoc($stmt);
                 mysqli_stmt_close($stmt);
+                foreach ($stmtRows as $row) {
+                    $entry = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
+                    if ($table === 'cable_colors' && array_key_exists('hex_color', $row)) {
+                        $entry['hex_color'] = (string)($row['hex_color'] ?? '');
+                    }
+                    $rows[] = $entry;
+                }
             }
         }
 
-        if (!$res || mysqli_num_rows($res) === 0) {
+        if ($rows === []) {
             $sql = "SELECT id, `{$labelColumn}` AS label";
             if ($table === 'cable_colors' && itm_table_has_column($conn, $table, 'hex_color')) {
                 $sql .= ", `hex_color`";
             }
             $sql .= " FROM `{$table}` ORDER BY id ASC";
             $res = mysqli_query($conn, $sql);
-        }
-
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $entry = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
-            if ($table === 'cable_colors' && array_key_exists('hex_color', $row)) {
-                $entry['hex_color'] = (string)($row['hex_color'] ?? '');
+            while ($res && ($row = mysqli_fetch_assoc($res))) {
+                $entry = ['id' => (int)$row['id'], 'name' => (string)$row['label']];
+                if ($table === 'cable_colors' && array_key_exists('hex_color', $row)) {
+                    $entry['hex_color'] = (string)($row['hex_color'] ?? '');
+                }
+                $rows[] = $entry;
             }
-            $rows[] = $entry;
         }
 
         return $rows;
@@ -65,8 +74,7 @@ if (!function_exists('fetch_company_vlans')) {
         }
         mysqli_stmt_bind_param($stmt, 'i', $companyId);
         if (mysqli_stmt_execute($stmt)) {
-            $res = mysqli_stmt_get_result($stmt);
-            while ($res && ($row = mysqli_fetch_assoc($res))) {
+            foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
                 $rows[] = [
                     'id' => (int)$row['id'],
                     'name' => (string)$row['vlan_name'],
