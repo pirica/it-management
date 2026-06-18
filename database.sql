@@ -6974,3 +6974,44 @@ CREATE TRIGGER `trg_note_labels_audit_delete` AFTER DELETE ON `note_labels` FOR 
   NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
+
+-- Table structure for `system_status` (admin diagnostics cache — one row per tab)
+DROP TABLE IF EXISTS `system_status`;
+CREATE TABLE `system_status` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL DEFAULT 1,
+  `tab_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_status_tab_key` (`tab_key`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `system_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Triggers for `system_status`
+DELIMITER $$
+CREATE TRIGGER `trg_system_status_audit_insert` AFTER INSERT ON `system_status` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'system_status', NEW.`id`, 'INSERT', NULL,
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'tab_key', NEW.`tab_key`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_system_status_audit_update` AFTER UPDATE ON `system_status` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'system_status', NEW.`id`, 'UPDATE',
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'tab_key', OLD.`tab_key`, 'active', OLD.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'tab_key', NEW.`tab_key`, 'active', NEW.`active`),
+  @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_system_status_audit_delete` AFTER DELETE ON `system_status` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'system_status', OLD.`id`, 'DELETE',
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'tab_key', OLD.`tab_key`, 'active', OLD.`active`),
+  NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;

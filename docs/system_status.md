@@ -1,35 +1,54 @@
 # System Status Module
 
 ## Overview
-The **System Status** module provides real-time monitoring and configuration insights for administrators. It is optimised for **Windows 11 + Laragon** (PowerShell metrics) and ships **PHP-native fallbacks** on Linux/CI so the same tabs and API actions keep working without `powershell.exe`.
+The **System Status** module provides monitoring and configuration insights for administrators. Metrics are **cached in the `system_status` table** (one row per tab). **Refresh** collects live data and upserts the cache; tab views read from the database.
+
+Optimised for **Windows 11 + Laragon** (PowerShell hardware collection) with **PHP-native fallbacks** on Linux/CI.
 
 Module path: `modules/system_status/index.php` (Admin only).
 
+## Cache table (`system_status`)
+
+| Column | Purpose |
+|--------|---------|
+| `tab_key` | `monitoring`, `php_settings`, or `database` (unique) |
+| `payload_json` | UTF-8 JSON snapshot for that tab |
+| `company_id` | Tenant anchor for standard fields (cache rows use company `1`) |
+| `updated_at` | Last successful Refresh timestamp |
+
+Helpers: `includes/itm_system_status_cache.php` — `itm_system_status_cache_get()`, `itm_system_status_cache_save()`, `itm_system_status_refresh_tab()`, `itm_system_status_refresh_all()`.
+
 ## Tabs
 
-### 1. Monitoring
-Displays core system metrics:
-- **System Overview:** OS version, hostname, uptime, CPU model, and core/thread counts.
-- **CPU Usage:** Real-time gauge showing total CPU load.
-- **RAM Usage:** Real-time gauge showing used vs total physical memory.
-- **Disk Usage:** Progress bars for each local physical drive showing used and free space.
-- **Sub Storage:** On-disk usage for Explorer (`files/{company_id}/` with expandable Common, Departments, Private, Trash), `tickets_photos/`, `images/`, `floor_plans/` (by company), and `backups/`.
+### 1. Monitoring (`?tab=monitoring`)
+Cached payload includes:
+- **System Overview:** OS version, hostname, uptime, CPU model, cores/threads (from `system_info` action).
+- **CPU Usage:** Gauge from cached `cpu_usage`.
+- **RAM Usage:** Gauge from cached `system_info` RAM fields.
+- **Disk Usage:** Progress bars from cached `system_info.disks`.
+- **Sub Storage:** Explorer (`files/{company_id}/` tree) and upload directories from cached `storage_report`.
 
-### 2. PHP Settings
-Rendered directly from the **active Apache PHP runtime** (no AJAX or PowerShell):
-- **PHP Core:** Version, SAPI, binary path, and loaded `php.ini` file.
+### 2. PHP Settings (`?tab=php_settings`)
+Cached payload includes:
+- **PHP Core:** Version, SAPI, binary path, loaded `php.ini`.
 - **Resource Limits:** `memory_limit`, `upload_max_filesize`, `post_max_size`, `max_execution_time`.
-- **Enabled Extensions:** All loaded modules from `get_loaded_extensions()`, shown in a vertical stack card with a scrollable three-column list (max-height 320px).
-- **Full detail:** Admin link to `scripts/system_status_phpinfo.php` (`phpinfo()`).
+- **Enabled Extensions:** `get_loaded_extensions()` list.
+- **Full detail:** Admin link to `scripts/system_status_phpinfo.php` (live `phpinfo()`, not cached).
 
-### 3. Database
-Rendered from the **active mysqli connection** and `DB_NAME` (no AJAX):
-- **MySQL Service:** Running/Stopped from `mysqli_ping()`, version from `mysqli_get_server_info()`.
-- **Storage Summary:** Total size, table count, and approximate row total for the active database only.
-- **Database Metrics:** Every table in `DB_NAME` with approximate row count and size, plus a totals row.
+### 3. Database (`?tab=database`)
+Cached payload includes:
+- **MySQL Service:** Running/Stopped, version, active `DB_NAME`.
+- **Storage Summary:** Total size, table count, approximate rows for active database.
+- **Database Metrics:** Per-table row counts and sizes from `information_schema`.
 
-## PowerShell Scripts (Windows hardware only)
-On Windows, **Monitoring** hardware metrics (`system_info`, `cpu_usage`, etc.) use PowerShell scripts in `includes/`. PHP and MySQL API actions always use the native PHP/mysqli runtime — the `.ps1` PHP/MySQL scripts remain for `test_*.php` regression only.
+## Refresh workflow
+1. Admin clicks **Refresh** (POST with CSRF) on any tab.
+2. `itm_system_status_refresh_all()` collects live metrics for all three tabs and upserts `system_status`.
+3. Page reloads the active tab from cache; toolbar shows **Last refreshed** (`dd/mm/yyyy HH:MM`).
+4. First visit to a tab with no cache row auto-seeds that tab once.
+
+## PowerShell Scripts (Windows hardware collection)
+On Windows, **Refresh** for the Monitoring tab uses PowerShell scripts in `includes/` for hardware metrics (`system_info`, `cpu_usage`, etc.). PHP and MySQL collection always uses the native PHP/mysqli runtime.
 
 ```json
 {
@@ -55,7 +74,7 @@ On Windows, **Monitoring** hardware metrics (`system_info`, `cpu_usage`, etc.) u
 ## PHP-native runtime (all platforms)
 `includes/itm_system_status_native.php` serves PHP/MySQL actions on every host, and hardware actions on Linux/CI (`/proc`, `disk_*_space`). `includes/itm_system_status_powershell.php` runs Windows hardware scripts with `shell_exec` permission checks.
 
-`scripts/system_status_api.php` routes PHP/MySQL actions through native first; Windows hardware uses PowerShell.
+`scripts/system_status_api.php` remains available for programmatic JSON probes (Admin session). Module tabs no longer call it on page load — they use the DB cache.
 
 Admin `phpinfo()`: `scripts/system_status_phpinfo.php`.
 
@@ -69,7 +88,7 @@ Full action list: `scripts/api.php` → **System Status API**.
 ## Verification
 | Command | Purpose |
 |---------|---------|
-| `php scripts/verify_system_status.php` | Module layout, registry row, native payloads, DB size query |
+| `php scripts/verify_system_status.php` | Module files, registry row, cache table, cache refresh/read, native payloads, storage + DB reports |
 | `php scripts/test_system_info.php` (etc.) | Per-script PowerShell JSON validation on Windows |
 | `php scripts/run_tests.php --filter SystemStatusApiTest` | PHPUnit file-existence checks |
 

@@ -4,11 +4,11 @@
 
 ## 1. Module Purpose
 
-Admin-only diagnostic dashboard for server health: real-time monitoring (CPU, RAM, disk), on-disk **Sub Storage** breakdown (Explorer + upload trees), PHP configuration, and MySQL/database metrics.
+Admin-only diagnostic dashboard for server health: monitoring (CPU, RAM, disk), on-disk **Sub Storage** breakdown (Explorer + upload trees), PHP configuration, and MySQL/database metrics.
 
-- **Monitoring tab:** hardware metrics via AJAX (`scripts/system_status_api.php`); **Sub Storage** server-rendered via `includes/itm_system_status_storage.php`.
-- **PHP Settings tab:** server-rendered from the active Apache PHP runtime (no AJAX).
-- **Database tab:** server-rendered from the active mysqli connection and `DB_NAME` (no AJAX).
+- **Cache:** one `system_status` row per tab (`monitoring`, `php_settings`, `database`) stores JSON snapshots.
+- **Refresh:** POST collects live metrics for **all** tabs and upserts the cache.
+- **Display:** tabs read cached `payload_json`; first visit auto-seeds the active tab when no row exists.
 
 Canonical overview: `docs/system_status.md`.
 
@@ -16,10 +16,14 @@ Canonical overview: `docs/system_status.md`.
 
 ## 2. Key Tables
 
-No owned tables. Read-only queries:
+| Table | Role |
+|-------|------|
+| **`system_status`** | Owned cache — `tab_key` (unique), `payload_json`, `company_id` (seed `1`), `active`, timestamps. Audit triggers on INSERT/UPDATE/DELETE. |
 
-- **information_schema.TABLES** — per-table row counts and sizes for **active** `DB_NAME` only on the Database tab.
-- **companies**, **departments**, **users**, **user_companies** — read for Explorer storage tree labels only (not tenant-scoped display).
+Read-only queries (during Refresh collection only):
+
+- **information_schema.TABLES** — per-table row counts and sizes for **active** `DB_NAME` on the Database tab.
+- **companies**, **departments**, **users**, **user_companies** — Explorer storage tree labels.
 
 Registry: `modules_registry.module_slug = system_status` (system module, active).
 
@@ -27,18 +31,18 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 
 ## 3. Required Relationships
 
-N/A — no FK-owned data.
+- `system_status.company_id` → `companies.id` (ON DELETE CASCADE). Cache rows use company `1` as the global anchor.
 
 ---
 
 ## 4. Business Rules (Critical for Agents)
 
 - **Admin only:** `index.php`, `scripts/system_status_api.php`, and `scripts/system_status_phpinfo.php` require `itm_is_admin()`; non-admins redirect to `dashboard.php` (module UI) or receive HTTP 403 (`system_status_phpinfo.php`, API).
-- **Read-only:** no INSERT/UPDATE/DELETE; no audit triggers required.
-- **PHP + MySQL API actions:** always native (`ini_get()`, `get_loaded_extensions()`, mysqli) — never PowerShell — so Laragon tabs work when `shell_exec` is disabled.
-- **Hardware (Monitoring tab):** Windows uses `includes/*.ps1` via `itm_system_status_run_powershell_action()`; non-Windows uses `itm_system_status_native_payload()` (`/proc`, `disk_*_space`).
-- **API action allowlist:** `scripts/system_status_api.php` rejects unknown `action` values with HTTP 400. `itm_system_status_run_powershell_action()` allowlists **hardware actions only** and requires `[a-z0-9_]+` before loading `includes/{action}.ps1`.
-- **Win11 troubleshooting:** run `php scripts/verify_system_status.php` — checks layout, registry, native payloads, storage/DB reports, `information_schema`; on Windows also checks `shell_exec`, `.ps1` readability, and per-script `test_*.php` wrappers.
+- **Refresh is write-only maintenance:** POST `refresh_cache` + CSRF runs `itm_system_status_refresh_all()`; tabs do not re-query live metrics on normal GET.
+- **PHP + MySQL collection:** always native (`ini_get()`, `get_loaded_extensions()`, mysqli) during Refresh — never PowerShell.
+- **Hardware (Monitoring Refresh):** Windows uses `includes/*.ps1` via `itm_system_status_fetch_action_payload()`; non-Windows uses `itm_system_status_native_payload()`.
+- **API action allowlist:** `scripts/system_status_api.php` rejects unknown `action` values with HTTP 400. `itm_system_status_run_powershell_action()` allowlists **hardware actions only** and requires `[a-z0-9_]+` before loading `includes/{action}.ps1`. Module UI no longer depends on AJAX for tab rendering.
+- **Win11 troubleshooting:** run `php scripts/verify_system_status.php` — checks layout, registry, cache table, cache refresh/read, native payloads, storage/DB reports; on Windows also checks `shell_exec`, `.ps1` readability, and per-script `test_*.php` wrappers.
 - **Not standard CRUD:** no `create.php` / `delete.php`; tab router only (`?tab=monitoring|php_settings|database`).
 
 ---
@@ -53,12 +57,19 @@ N/A — no FK-owned data.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
 - **Refresh:** toolbar **Refresh** reloads current tab (`?tab=` preserved).
 - **Layout:** shared `sidebar.php` / `header.php`; module-specific CSS in `index.php` (`.metrics-grid`, `.metrics-stack`, `.metric-card`, `.ss-storage-*`, `.status-badge`).
+- **Refresh:** toolbar form POST (`refresh_cache` + CSRF) refreshes **all** tabs; shows **Last refreshed** from `system_status.updated_at` (`dd/mm/yyyy HH:MM`).
+- **Monitoring:** server-rendered from cached `system_info`, `cpu_usage`, and `storage_report` (Chart.js gauges initialised from embedded JSON).
+- **Sub Storage:** cached Explorer `files/{company_id}/` tree plus `tickets_photos/`, `images/`, `floor_plans/`, `backups/`. Parent folders with children include direct files (`itm_system_status_directory_direct_metrics()`).
+- **PHP Settings tab:** cached PHP core, limits, extensions; link to live `scripts/system_status_phpinfo.php`.
+- **Database tab:** cached MySQL status + `itm_system_status_build_database_table_report()` snapshot for active `DB_NAME`.
+- **Empty cache:** warning banner until Refresh (or first-visit auto-seed for active tab).
+- **Layout:** shared `sidebar.php` / `header.php`; module-specific CSS in `index.php`.
 
 ---
 
 ## 6. API Actions (If Applicable)
 
-Dispatcher: `scripts/system_status_api.php` (Admin session required; JSON `Content-Type: charset=utf-8`).
+Dispatcher: `scripts/system_status_api.php` (Admin session; JSON). Used for programmatic probes — **not** for module tab page loads after cache migration.
 
 | action | Source |
 |--------|--------|
@@ -67,13 +78,13 @@ Dispatcher: `scripts/system_status_api.php` (Admin session required; JSON `Conte
 | `ram_usage` | Windows: `includes/ram_usage.ps1`. Linux: `/proc/meminfo` |
 | `disk_usage` | Windows: `includes/disk_usage.ps1`. Linux: `disk_*_space` |
 | `uptime` | Windows: `includes/uptime.ps1`. Linux: `/proc/uptime` |
-| `php_version` | Always native (`PHP_VERSION`, `php_ini_loaded_file()`) |
-| `php_extensions` | Always native (`get_loaded_extensions()`) |
-| `php_ini_values` | Always native (`ini_get()`) |
-| `mysql_status` | Always native (`mysqli_ping()`) |
-| `mysql_version` | Always native (`mysqli_get_server_info()`) |
-| `mysql_databases` | Always native (`SHOW DATABASES`) |
-| `mysql_size` | Always native (`information_schema`) |
+| `php_version` | Always native |
+| `php_extensions` | Always native |
+| `php_ini_values` | Always native |
+| `mysql_status` | Always native |
+| `mysql_version` | Always native |
+| `mysql_databases` | Always native |
+| `mysql_size` | Always native |
 
 Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued in `scripts/scripts.php` and `scripts/SCRIPTS.md` → System Status scripts.
 
@@ -83,21 +94,22 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued i
 
 | Path | Role |
 |------|------|
-| `index.php` | Admin gate, tab router, shared module CSS |
-| `tabs/monitoring.php` | System overview, CPU/RAM gauges, disk cards, Sub Storage tree |
-| `tabs/php_settings.php` | Server-rendered PHP core, limits, extensions; phpinfo link |
-| `tabs/database.php` | Active `DB_NAME` table metrics with row counts and totals |
+| `index.php` | Admin gate, Refresh POST handler, cache load, tab router, shared CSS |
+| `tabs/monitoring.php` | Cached system overview, CPU/RAM gauges, disk cards, Sub Storage tree |
+| `tabs/php_settings.php` | Cached PHP core, limits, extensions; phpinfo link |
+| `tabs/database.php` | Cached MySQL status + active `DB_NAME` table metrics |
 | `AGENT_NOTES.md` | This file |
 
 **Shared helpers**
 
 | Path | Role |
 |------|------|
+| `includes/itm_system_status_cache.php` | Cache get/save/refresh; per-tab payload collectors |
 | `includes/itm_system_status_native.php` | PHP/MySQL + Linux hardware JSON payloads |
 | `includes/itm_system_status_powershell.php` | Windows hardware `shell_exec` runner; hardware-only action allowlist |
-| `includes/itm_system_status_storage.php` | On-disk storage tree + active DB table report |
+| `includes/itm_system_status_storage.php` | On-disk storage tree + active DB table report builders |
 | `includes/*.ps1` | Windows hardware metrics (12 scripts; PHP/MySQL API actions no longer route here) |
-| `scripts/system_status_api.php` | Admin JSON dispatcher |
+| `scripts/system_status_api.php` | Admin JSON dispatcher (probes) |
 | `scripts/system_status_phpinfo.php` | Admin-only full `phpinfo()` |
 | `scripts/verify_system_status.php` | Regression runner (CLI + browser) |
 
@@ -105,39 +117,41 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued i
 
 ## 8. Multi-Tenant Rules
 
-System-wide metrics; not scoped by `company_id` for display. Admin gate is the access control. Storage tree lists all companies' Explorer folders. Database size queries use the active mysqli connection (server-wide `information_schema`).
+System-wide metrics; not scoped by active session `company_id` for display. Admin gate is the access control. Storage tree lists all companies' Explorer folders. Cache rows use `company_id = 1` as schema anchor.
 
 ---
 
 ## 9. Audit Logging Requirements
 
-N/A (read-only).
+`system_status` has `trg_system_status_audit_insert|update|delete` in `database.sql`. Refresh upserts log via UPDATE/INSERT triggers when `enable_audit_logs` is on.
 
 ---
 
 ## 10. Common Pitfalls
 
-- **Element IDs:** Monitoring tab uses hyphenated IDs (`system-info-loader`, `system-info-content`); mismatched underscores leave loaders visible forever.
-- **PowerShell on Linux:** hardware actions use native `/proc` paths; never call `powershell.exe`.
-- **Laragon paths:** `.ps1` scripts use `Get-CimInstance`; Apache/PHP user must **read** `includes/*.ps1` (verify with `php scripts/verify_system_status.php`).
-- **`shell_exec` disabled:** Monitoring hardware metrics fail with an inline error; PHP Settings and Database tabs still render (server-side PHP/mysqli).
-- **Stale AJAX tabs:** PHP Settings and Database must not fetch PowerShell — they are server-rendered only.
-- **MySQL service status on Linux:** native `mysql_status` reports Running when `mysqli_ping()` succeeds (not Windows Service Control Manager).
-- **Storage parent totals:** nodes with children must include direct files in that folder — do not sum only child bytes (see `itm_system_status_directory_direct_metrics()`).
-- **README screenshot:** `python3 scripts/take_screenshots_modules.py` must wait for `#system-info-content` populated — otherwise `docs/readme/system_status.png` shows login or Loading….
+- **Stale tabs after deploy:** re-import `database.sql` (or create `system_status`) before Refresh works.
+- **PowerShell on Linux:** hardware Refresh uses native `/proc` paths; never call `powershell.exe`.
+- **`shell_exec` disabled on Windows:** Monitoring Refresh may record partial errors; PHP Settings and Database cache paths still work.
+- **phpinfo link:** always live — not cached.
+- **Storage parent totals:** nodes with children must include direct files in that folder — do not sum only child bytes.
+- **README screenshot:** wait for `#system-info-content` populated (cached data) before capture.
 
 ---
 
 ## 11. Examples of Safe Code Patterns
 
-### Native-first PHP/MySQL (API)
+### Cache read (index)
 
 ```php
-if (itm_system_status_prefers_native($action)) {
-    $json_data = itm_system_status_native_payload($action, $conn);
-    echo json_encode($json_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
+$ssCache = itm_system_status_cache_get($conn, $active_tab);
+$ssPayload = is_array($ssCache['payload'] ?? null) ? $ssCache['payload'] : null;
+```
+
+### Refresh all tabs (POST)
+
+```php
+itm_require_post_csrf();
+$refreshResult = itm_system_status_refresh_all($conn, 1);
 ```
 
 ### Admin gate (index)
@@ -146,14 +160,6 @@ if (itm_system_status_prefers_native($action)) {
 if (!isset($_SESSION['user_id']) || !itm_is_admin($conn, $_SESSION['user_id'])) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
-}
-```
-
-### PowerShell action guard (runner)
-
-```php
-if (!in_array($action, $allowedActions, true) || !preg_match('/^[a-z0-9_]+$/', $action)) {
-    return ['status' => 'error', 'message' => 'Invalid PowerShell action requested.'];
 }
 ```
 
@@ -168,4 +174,4 @@ if (!in_array($action, $allowedActions, true) || !preg_match('/^[a-z0-9_]+$/', $
 | PHPUnit | `phpunit/tests/Unit/Modules/SystemStatusApiTest.php` |
 | README screenshot | `ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py` → `docs/readme/system_status.png` |
 
-Run verification when changing this module, `scripts/system_status_api.php`, `includes/itm_system_status_*.php`, or any `includes/*.ps1` metrics script.
+Run verification when changing this module, `includes/itm_system_status_*.php`, `database.sql` `system_status`, or any `includes/*.ps1` metrics script.
