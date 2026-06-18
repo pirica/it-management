@@ -264,7 +264,7 @@ php scripts/idfs_sync_human_test.php
 
 **`verify_update_port_zero_row.php`:** asserts HTTP `404` on zero-row `update_port.php` before IDF auto-sync. Creates disposable probe equipment + `switch_ports` row when the tenant has none (transaction-wrapped). Subprocess seeds `$_SESSION['company_id']` before `config.php`, stubs `itm_api_json_response()` to capture HTTP status, and sets `$company_id` before including `update_port.php`. Optional env: `ITM_TEST_COMPANY_ID` (default `1`).
 
-**`verify_metadata_column_cache.php`:** asserts table-level caching in `itm_table_has_column()` / `itm_table_column_is_nullable()` (`includes/bootstrap_helpers.php`, `docs/bolt.md`). Cold batch on `switch_ports` (15 checks matching `update_port.php`) expects MySQL `Questions` delta 1–2; warm repeat expects delta 0. Optional env: `ITM_META_CACHE_TABLE` (default `switch_ports`).
+**`verify_metadata_column_cache.php`:** asserts table-level caching in `itm_table_has_column()` / `itm_table_column_is_nullable()` (`includes/bootstrap_helpers.php`, `docs/bolt.md`). Cold batch on `switch_ports` (15 checks matching `update_port.php`) expects schema `Questions` delta 1–2; warm repeat expects schema delta 0 (measurement excludes trailing `SHOW STATUS`). Optional env: `ITM_META_CACHE_TABLE` (default `switch_ports`).
 
 **`idfs_sync_human_test.php`:** after Admin login, POSTs to `index.php` to align session `company_id` with `ITM_COMPANY_ID` (login otherwise pre-selects the first active company alphabetically). Company-selection GET resolves `Location` redirects manually (open_basedir-safe; does not rely on `CURLOPT_FOLLOWLOCATION`). When `ITM_COMPANY_ID` / `ITM_IDF_ID` do not match an active IDF row, resolves the first active IDF in the database.
 

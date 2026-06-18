@@ -1144,7 +1144,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_metadata_column_cache.php">verify_metadata_column_cache.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for table-level <code>information_schema</code> caching in <code>itm_table_has_column()</code> and <code>itm_table_column_is_nullable()</code> (<code>includes/bootstrap_helpers.php</code>, <code>docs/bolt.md</code>). Cold batch expects MySQL <code>Questions</code> delta 1–2; warm repeat expects delta 0. Optional env: <code>ITM_META_CACHE_TABLE</code> (default <code>switch_ports</code>).</td>
+                    <td>Regression for table-level <code>information_schema</code> caching in <code>itm_table_has_column()</code> and <code>itm_table_column_is_nullable()</code> (<code>includes/bootstrap_helpers.php</code>, <code>docs/bolt.md</code>). Cold batch expects schema <code>Questions</code> delta 1–2; warm repeat expects schema delta 0 (trailing <code>SHOW STATUS</code> excluded from delta). Optional env: <code>ITM_META_CACHE_TABLE</code> (default <code>switch_ports</code>).</td>
                     <td><code>php scripts/verify_metadata_column_cache.php</code></td>
                 </tr>
                 <tr>
