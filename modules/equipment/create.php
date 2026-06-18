@@ -64,6 +64,46 @@ function equipment_append_persisted_department_option(mysqli $conn, array &$depa
     }
 }
 
+function equipment_append_persisted_supplier_option(mysqli $conn, array &$suppliers, int $supplierId, int $companyId): void
+{
+    if ($supplierId <= 0) {
+        return;
+    }
+
+    foreach ($suppliers as $row) {
+        if ((int)($row['id'] ?? 0) === $supplierId) {
+            return;
+        }
+    }
+
+    $label = '';
+    $stmt = mysqli_prepare($conn, 'SELECT name FROM suppliers WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'ii', $supplierId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        $label = trim((string)($row['name'] ?? ''));
+    }
+
+    if ($label === '') {
+        $stmtFallback = mysqli_prepare($conn, 'SELECT name FROM suppliers WHERE id = ? LIMIT 1');
+        if ($stmtFallback) {
+            mysqli_stmt_bind_param($stmtFallback, 'i', $supplierId);
+            mysqli_stmt_execute($stmtFallback);
+            $resFallback = mysqli_stmt_get_result($stmtFallback);
+            $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
+            mysqli_stmt_close($stmtFallback);
+            $label = trim((string)($rowFallback['name'] ?? ''));
+        }
+    }
+
+    if ($label !== '') {
+        $suppliers[] = ['id' => $supplierId, 'label' => $label];
+    }
+}
+
 function equipment_table_exists(mysqli $conn, string $table): bool
 {
     static $cache = [];
@@ -1435,6 +1475,8 @@ function equipment_encode_photo_filenames(array $filenames): string
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
 $departments = fetch_options($conn, 'departments');
+$suppliers = fetch_options($conn, 'suppliers');
+$supplierStatuses = fetch_options($conn, 'supplier_statuses');
 $locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
 $locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
 $racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
@@ -1494,7 +1536,7 @@ foreach ($types as $typeItem) {
 
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'idf_id' => '', 'name' => '',
-    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '',
+    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '',
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
@@ -1538,7 +1580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','department_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','rj45_speed_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_poe_id','switch_environment_id'] as $fkField) {
+    foreach (['equipment_type_id','manufacturer_id','location_id','rack_id','idf_id','department_id','supplier_id','status_id','warranty_type_id','printer_device_type_id','workstation_device_type_id','workstation_os_type_id','workstation_office_id','rj45_speed_id','workstation_os_version_id','workstation_ram_id','switch_rj45_id','switch_port_numbering_layout_id','switch_fiber_id','switch_fiber_patch_id','switch_fiber_rack_id','switch_poe_id','switch_environment_id'] as $fkField) {
         if (($data[$fkField] ?? '') === '__add_new__') {
             $data[$fkField] = '';
         }
@@ -1682,6 +1724,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rack_id = (int)$data['rack_id'] ?: 'NULL';
         $idf_id = (int)$data['idf_id'] ?: 'NULL';
         $department_id = (int)$data['department_id'] ?: 'NULL';
+        $supplier_id = (int)$data['supplier_id'] ?: 'NULL';
         $name = "'" . escape_sql($data['name'], $conn) . "'";
         $serial_number = $data['serial_number'] === '' ? 'NULL' : "'" . escape_sql($data['serial_number'], $conn) . "'";
         $model = $data['model'] === '' ? 'NULL' : "'" . escape_sql($data['model'], $conn) . "'";
@@ -1773,7 +1816,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $switchFiberPortLabelInsertValues = $hasSwitchFiberPortLabelColumn ? ", $switch_fiber_port_label" : '';
 
         if ($isEdit) {
-            $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id, idf_id=$idf_id, department_id=$department_id,
+            $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id, idf_id=$idf_id, department_id=$department_id, supplier_id=$supplier_id,
                     name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
                     status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
                     warranty_type_id=$warranty_type_id, printer_device_type_id=$printer_device_type_id,
@@ -1787,11 +1830,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     photo_filename=$photo, active=$active
                     WHERE id=$id AND company_id=$company_id";
         } else {
-            $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, name, serial_number, model, hostname,
+            $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, supplier_id, name, serial_number, model, hostname,
                     ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id,
                     printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
                     workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, active)
-                    VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $name, $serial_number, $model, $hostname,
+                    VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $supplier_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
                     $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
@@ -1987,6 +2030,32 @@ $departmentExtraFieldsJson = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
+// Why: suppliers.status_id is NOT NULL; quick-add must collect it (name + company_id/active auto-set).
+$supplierExtraFieldsConfig = [
+    [
+        'name' => 'status_id',
+        'label' => 'Supplier Status',
+        'type' => 'select',
+        'required' => true,
+        'options' => array_map(static function ($status) {
+            return [
+                'value' => (string)((int)($status['id'] ?? 0)),
+                'label' => (string)($status['label'] ?? ''),
+            ];
+        }, $supplierStatuses),
+    ],
+    [
+        'name' => 'supplier_code',
+        'label' => 'Supplier Code',
+        'type' => 'text',
+        'required' => false,
+    ],
+];
+$supplierExtraFieldsJson = htmlspecialchars(
+    json_encode($supplierExtraFieldsConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ENT_QUOTES,
+    'UTF-8'
+);
 $currentPhotoFilenames = equipment_parse_photo_filenames($data['photo_filename'] ?? '');
 $currentPhotoUrls = [];
 foreach ($currentPhotoFilenames as $currentPhotoFilename) {
@@ -1995,6 +2064,7 @@ foreach ($currentPhotoFilenames as $currentPhotoFilename) {
 
 itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['switch_poe_id'] ?? 0), (int)$company_id);
 equipment_append_persisted_department_option($conn, $departments, (int)($data['department_id'] ?? 0), (int)$company_id);
+equipment_append_persisted_supplier_option($conn, $suppliers, (int)($data['supplier_id'] ?? 0), (int)$company_id);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -2123,12 +2193,12 @@ equipment_append_persisted_department_option($conn, $departments, (int)($data['d
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
                 <div class="form-group"><label>Type *</label><select name="equipment_type_id" required data-addable-select="1" data-add-table="equipment_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment type"><option value="">-- Select --</option><?php render_options($types, $data['equipment_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
+                <div class="form-group"><label>MAC Address</label><input name="mac_address" value="<?php echo sanitize($data['mac_address']); ?>"></div>
             </div>
             <div class="form-row form-row-3"> 
                 <div class="form-group"><label>Hostname</label><input name="hostname" value="<?php echo sanitize($data['hostname']); ?>"></div>
                 <div class="form-group"><label>IP Address</label><input name="ip_address" value="<?php echo sanitize($data['ip_address']); ?>"></div>
-                <div class="form-group"><label>MAC Address</label><input name="mac_address" value="<?php echo sanitize($data['mac_address']); ?>"></div>
+                <div class="form-group"><label>Manufacturer</label><select name="manufacturer_id" data-addable-select="1" data-add-table="manufacturers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="manufacturer"><option value="">-- None --</option><?php render_options($manufacturers, $data['manufacturer_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div id="printer-fields" style="display:none;">
                 <div class="form-row">
@@ -2142,7 +2212,7 @@ equipment_append_persisted_department_option($conn, $departments, (int)($data['d
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Serial Number</label><input name="serial_number" value="<?php echo sanitize($data['serial_number']); ?>"></div>
                 <div class="form-group"><label>Model</label><input name="model" value="<?php echo sanitize($data['model']); ?>"></div>
-                <div class="form-group"></div>
+                <div class="form-group"><label>Supplier</label><select name="supplier_id" data-addable-select="1" data-add-table="suppliers" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="supplier" data-add-extra-fields="<?php echo $supplierExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($suppliers, $data['supplier_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
