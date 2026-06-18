@@ -156,6 +156,8 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS: HTTP 403 message + row retained). Seeds via a free `cost_centers` slot (`uq_expenses_company_scope` is one row per company + cost center). Do not stub `cr_require_valid_csrf_token()` in subprocess harnesses (fatal redeclare). |
 | `php scripts/repro_user_companies_bac.php` | PoC — non-admin must not access `user_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
 | `php scripts/repro_user_companies_leak.php` | PoC — multi-tenant leak checks for Users module. |
+| `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
+| `php scripts/apply_crud_rbac_guards.php` | CLI repair — bulk-insert CRUD RBAC guards on flattened index handlers (idempotent; skips exempt modules and files that already have guards). |
 | `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, and role-module permission access. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |

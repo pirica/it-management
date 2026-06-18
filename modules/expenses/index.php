@@ -624,13 +624,7 @@ if ($crud_action === 'delete') {
         exit('Method not allowed.');
     }
 
-    itm_require_role_module_permission(
-        $conn,
-        (int)($_SESSION['user_id'] ?? 0),
-        itm_resolve_active_company_id((int)($company_id ?? 0)),
-        'Expenses',
-        'delete'
-    );
+    itm_require_crud_role_module_permission($conn, 'delete', 'expenses');
 
     cr_require_valid_csrf_token();
 
@@ -743,6 +737,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+    // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, $crud_action, 'expenses');
     cr_require_valid_csrf_token();
 
     foreach ($fieldColumns as $col) {

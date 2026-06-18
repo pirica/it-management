@@ -720,6 +720,9 @@ if ($crud_action === 'delete') {
         exit;
     }
 
+    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, 'delete', 'patches_updates');
+
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
@@ -848,6 +851,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+    // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, $crud_action, 'patches_updates');
     cr_require_valid_csrf_token();
 
     $isPatchEdit = ($crud_action === 'edit' && $editId > 0);

@@ -1178,6 +1178,18 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/repro_audit_disclosure.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="check_crud_rbac_coverage.php">check_crud_rbac_coverage.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit for server-side CRUD RBAC on flattened <code>modules/*/index.php</code> delete/create/edit handlers. Exit <code>1</code> when guards are missing.</td>
+                    <td><code>php scripts/check_crud_rbac_coverage.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="apply_crud_rbac_guards.php">apply_crud_rbac_guards.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Bulk repair — insert <code>itm_require_crud_role_module_permission()</code> on flattened CRUD index handlers (skips exempt modules).</td>
+                    <td><code>php scripts/apply_crud_rbac_guards.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="repro_rbac_bypass.php">repro_rbac_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for RBAC bypass on Expenses <code>delete.php</code>: read-only role must get HTTP 403 and retain the row. Uses a free <code>cost_centers</code> slot (<code>uq_expenses_company_scope</code>). Subprocess spawn uses <code>escapeshellarg()</code>; do not stub <code>cr_require_valid_csrf_token()</code>.</td>

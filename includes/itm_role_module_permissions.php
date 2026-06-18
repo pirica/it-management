@@ -301,3 +301,113 @@ if (!function_exists('itm_require_role_module_permission')) {
         exit;
     }
 }
+
+if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
+    /**
+     * Modules that use alternate guards (admin gate, protection zone, custom ACL).
+     *
+     * @return string[]
+     */
+    function itm_crud_rbac_exempt_module_slugs()
+    {
+        return [
+            'audit_logs',
+            'cable_colors',
+            'calendar',
+            'company_module_access',
+            'contacts',
+            'employee_system_access',
+            'employees',
+            'equipment',
+            'explorer',
+            'floor_designer',
+            'idf_links',
+            'idf_ports',
+            'idf_positions',
+            'idfs',
+            'modules_registry',
+            'org_chart',
+            'passwords',
+            'rack_planner',
+            'role_assignment_rights',
+            'role_hierarchy',
+            'role_module_permissions',
+            'settings',
+            'switch_ports',
+            'ui_configuration',
+            'user_companies',
+            'user_roles',
+        ];
+    }
+}
+
+if (!function_exists('itm_resolve_rbac_module_name_for_slug')) {
+    function itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug)
+    {
+        static $cache = [];
+
+        $moduleSlug = strtolower(trim((string)$moduleSlug));
+        if ($moduleSlug === '') {
+            return '';
+        }
+        if (isset($cache[$moduleSlug])) {
+            return $cache[$moduleSlug];
+        }
+
+        $moduleName = '';
+        if ($conn instanceof mysqli) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'SELECT module_name FROM modules_registry WHERE module_slug = ? AND active = 1 LIMIT 1'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 's', $moduleSlug);
+                mysqli_stmt_execute($stmt);
+                $row = itm_mysqli_stmt_fetch_assoc($stmt);
+                mysqli_stmt_close($stmt);
+                if (is_array($row)) {
+                    $moduleName = trim((string)($row['module_name'] ?? ''));
+                }
+            }
+        }
+
+        if ($moduleName === '') {
+            $moduleName = ucwords(str_replace('_', ' ', $moduleSlug));
+        }
+
+        $cache[$moduleSlug] = $moduleName;
+
+        return $moduleName;
+    }
+}
+
+if (!function_exists('itm_require_crud_role_module_permission')) {
+    /**
+     * Enforce role_module_permissions for flattened CRUD mutations (create/edit/delete/import/export).
+     */
+    function itm_require_crud_role_module_permission($conn, $crudAction, $moduleSlug)
+    {
+        $moduleSlug = strtolower(trim((string)$moduleSlug));
+        if ($moduleSlug === '' || in_array($moduleSlug, itm_crud_rbac_exempt_module_slugs(), true)) {
+            return;
+        }
+
+        $action = strtolower(trim((string)$crudAction));
+        if (!in_array($action, ['view', 'create', 'edit', 'delete', 'import', 'export'], true)) {
+            return;
+        }
+
+        $moduleName = itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug);
+        if ($moduleName === '') {
+            return;
+        }
+
+        itm_require_role_module_permission(
+            $conn,
+            (int)($_SESSION['user_id'] ?? 0),
+            itm_resolve_active_company_id((int)($GLOBALS['company_id'] ?? 0)),
+            $moduleName,
+            $action
+        );
+    }
+}

@@ -469,6 +469,9 @@ if ($crud_action === 'delete') {
         exit;
     }
 
+    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, 'delete', 'users');
+
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
