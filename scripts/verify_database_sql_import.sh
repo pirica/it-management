@@ -9,7 +9,7 @@
 #   MYSQL_HOST=127.0.0.1   (default)
 #   MYSQL_USER=root        (default)
 #   MYSQL_PASSWORD=itmanagement
-#   EXPECTED_TABLE_COUNT=88  (default)
+#   EXPECTED_TABLE_COUNT=    (optional override; default derived from CREATE TABLE lines in database.sql)
 
 set -euo pipefail
 
@@ -19,12 +19,21 @@ cd "$ROOT"
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
 MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-itmanagement}"
-EXPECTED_TABLE_COUNT="${EXPECTED_TABLE_COUNT:-88}"
 SQL_FILE="${ROOT}/database.sql"
 
 if [[ ! -f "$SQL_FILE" ]]; then
   echo "FAIL: missing ${SQL_FILE}"
   exit 1
+fi
+
+# Why: Table count grows with schema; derive from database.sql so CI does not rely on a stale constant.
+DERIVED_TABLE_COUNT="$(grep -c '^CREATE TABLE' "$SQL_FILE" || true)"
+if [[ -z "${EXPECTED_TABLE_COUNT:-}" ]]; then
+  EXPECTED_TABLE_COUNT="$DERIVED_TABLE_COUNT"
+fi
+
+if [[ "$EXPECTED_TABLE_COUNT" != "$DERIVED_TABLE_COUNT" ]]; then
+  echo "WARN: EXPECTED_TABLE_COUNT=${EXPECTED_TABLE_COUNT} differs from database.sql CREATE TABLE count (${DERIVED_TABLE_COUNT})"
 fi
 
 MYSQL=(mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --default-character-set=utf8mb4)
@@ -39,5 +48,8 @@ if [[ "$TABLE_COUNT" != "$EXPECTED_TABLE_COUNT" ]]; then
   echo "FAIL: expected ${EXPECTED_TABLE_COUNT} tables, got ${TABLE_COUNT}"
   exit 1
 fi
+
+echo "==> Verifying table names match database.sql"
+php scripts/verify_database_schema.php
 
 echo "OK: database.sql import completed (${TABLE_COUNT} tables)."

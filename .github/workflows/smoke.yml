@@ -46,6 +46,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mysqli
+          coverage: none
+
       - name: Import database.sql
         env:
           MYSQL_HOST: 127.0.0.1

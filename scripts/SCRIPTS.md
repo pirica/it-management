@@ -331,7 +331,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi audits (no MySQL) |
-| **database-import** | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import on MySQL 8.0 service; asserts **88** tables (catches INSERT/SELECT column-count mismatches such as cross-company `equipment` seed at `department_id`) |
+| **database-import** | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import on MySQL 8.0 service; asserts table count matches **116** `CREATE TABLE` entries in `database.sql` (catches INSERT/SELECT column-count mismatches such as cross-company `equipment` seed at `department_id`) |
 
 **smoke** job steps only:
 
