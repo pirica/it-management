@@ -203,6 +203,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("is_server", "Is Server", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("is_switch", "Is Switch", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("is_workstation", "Is Workstation", 0, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("license_management", "License Management", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("it_locations", "It Locations", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("location_types", "Location Types", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("manufacturers", "Manufacturers", 0, 1);
@@ -1914,6 +1915,73 @@ INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`
 (3, 3, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 13, 17, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 3, 3, 1, '2026-01-01 00:00:01', '2026-05-17 05:07:05'),
 (4, 4, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 19, 25, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 4, 4, 1, '2026-01-01 00:00:01', '2026-05-17 05:05:19'),
 (5, 5, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 25, 33, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 5, 5, 1, '2026-01-01 00:00:01', '2026-05-17 05:07:27');
+-- Table structure for `license_types`
+DROP TABLE IF EXISTS `license_types`;
+CREATE TABLE `license_types` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `license_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Per User', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '2', 'Per Device', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '3', 'Enterprise', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '4', 'Subscription', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '5', 'Other', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '6', 'Per User', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '7', 'Per Device', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '8', 'Enterprise', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '9', 'Subscription', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '10', 'Other', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '11', 'Per User', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '12', 'Per Device', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '13', 'Enterprise', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '14', 'Subscription', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '15', 'Other', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '16', 'Per User', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '17', 'Per Device', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '18', 'Enterprise', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '19', 'Subscription', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '20', 'Other', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '21', 'Per User', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '22', 'Per Device', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '23', 'Enterprise', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '24', 'Subscription', '1', '2026-01-01 00:00:01');
+INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '25', 'Other', '1', '2026-01-01 00:00:01');
+-- Table structure for `license_management`
+DROP TABLE IF EXISTS `license_management`;
+CREATE TABLE `license_management` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `license_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `license_type_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `supplier_id` int DEFAULT NULL,
+  `purchase_date` date DEFAULT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `license_type_id` (`license_type_id`),
+  KEY `supplier_id` (`supplier_id`),
+  CONSTRAINT `license_management_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `license_management_ibfk_license_type` FOREIGN KEY (`license_type_id`) REFERENCES `license_types` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `license_management_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('2', '2', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '6', '1', '2', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('3', '3', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '11', '1', '3', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('4', '4', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '16', '1', '4', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('5', '5', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '21', '1', '5', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
 CREATE TABLE `it_locations` (
@@ -3948,6 +4016,7 @@ INSERT IGNORE INTO `ticket_priorities` (`company_id`, `name`, `level`, `color`, 
 INSERT IGNORE INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color`, t.`is_closed`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `user_roles` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `user_roles` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `warranty_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `license_types` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `license_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `idf_device_type` (`company_id`, `idfdevicetype_name`, `created_at`) SELECT c.`id`, t.`idfdevicetype_name`, '2026-01-01 00:00:01' FROM `idf_device_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `patches_updates_status` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `patches_updates_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `patches_updates_level` (`company_id`, `level`, `created_at`) SELECT c.`id`, t.`level`, '2026-01-01 00:00:01' FROM `patches_updates_level` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -5029,6 +5098,40 @@ END$$
 CREATE TRIGGER `trg_it_locations_audit_delete` AFTER DELETE ON `it_locations` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'it_locations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'location_code', OLD.`location_code`, 'address', OLD.`address`, 'city', OLD.`city`, 'state', OLD.`state`, 'country', OLD.`country`, 'postal_code', OLD.`postal_code`, 'phone', OLD.`phone`, 'type_id', OLD.`type_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_license_management_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_license_management_audit_update`;
+DROP TRIGGER IF EXISTS `trg_license_management_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_license_management_audit_insert` AFTER INSERT ON `license_management` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'license_management', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'license_key', NEW.`license_key`, 'license_type_id', NEW.`license_type_id`, 'quantity', NEW.`quantity`, 'supplier_id', NEW.`supplier_id`, 'purchase_date', NEW.`purchase_date`, 'expiry_date', NEW.`expiry_date`, 'price', NEW.`price`, 'active', NEW.`active`, 'notes', NEW.`notes`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_license_management_audit_update` AFTER UPDATE ON `license_management` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'license_management', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'license_key', OLD.`license_key`, 'license_type_id', OLD.`license_type_id`, 'quantity', OLD.`quantity`, 'supplier_id', OLD.`supplier_id`, 'purchase_date', OLD.`purchase_date`, 'expiry_date', OLD.`expiry_date`, 'price', OLD.`price`, 'active', OLD.`active`, 'notes', OLD.`notes`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'license_key', NEW.`license_key`, 'license_type_id', NEW.`license_type_id`, 'quantity', NEW.`quantity`, 'supplier_id', NEW.`supplier_id`, 'purchase_date', NEW.`purchase_date`, 'expiry_date', NEW.`expiry_date`, 'price', NEW.`price`, 'active', NEW.`active`, 'notes', NEW.`notes`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_license_management_audit_delete` AFTER DELETE ON `license_management` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'license_management', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'license_key', OLD.`license_key`, 'license_type_id', OLD.`license_type_id`, 'quantity', OLD.`quantity`, 'supplier_id', OLD.`supplier_id`, 'purchase_date', OLD.`purchase_date`, 'expiry_date', OLD.`expiry_date`, 'price', OLD.`price`, 'active', OLD.`active`, 'notes', OLD.`notes`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_license_types_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_license_types_audit_update`;
+DROP TRIGGER IF EXISTS `trg_license_types_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_license_types_audit_insert` AFTER INSERT ON `license_types` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_user_id, @app_username, @app_email, 'license_types', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_license_types_audit_update` AFTER UPDATE ON `license_types` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'license_types', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_license_types_audit_delete` AFTER DELETE ON `license_types` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_user_id, @app_username, @app_email, 'license_types', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_ip_addresses_audit_insert`;
