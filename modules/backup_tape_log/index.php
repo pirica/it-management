@@ -216,6 +216,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
 
 // Handle deletion
 if ($crud_action === 'delete') {
+    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, 'delete', 'backup_tape_log');
+
     itm_require_post_csrf();
     $id = (int)($_POST['id'] ?? 0);
 

@@ -2,26 +2,26 @@
     "findings": [
         {
             "title": "RBAC Bypass in CRUD Modules allowing unauthorized data modification",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "9065d719dc5b8b4932f0f19740d3a00695e07510",
             "detected_at_pst": "2026-06-18T12:57:57-07:00",
-            "reported_link": "",
-            "location": "modules/expenses/index.php"
+            "reported_link": "docs/API-Auth_Validation_Tenant-Scoping.md §5.1 item 9; php scripts/check_crud_rbac_coverage.php; php scripts/repro_rbac_bypass.php",
+            "location": "modules/expenses/index.php (extended to in-scope flattened CRUD modules via itm_require_crud_role_module_permission)"
         },
         {
             "title": "Multi-Tenant Data Leak in Users Module exposing all system users to tenant admins",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "9065d719dc5b8b4932f0f19740d3a00695e07510",
             "detected_at_pst": "2026-06-18T12:57:57-07:00",
-            "reported_link": "",
+            "reported_link": "docs/API-Auth_Validation_Tenant-Scoping.md §5.1 item 8; php scripts/repro_user_companies_leak.php",
             "location": "modules/users/index.php"
         },
         {
             "title": "Broken Access Control in User Companies Module allowing regular users to manage mappings",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "9065d719dc5b8b4932f0f19740d3a00695e07510",
             "detected_at_pst": "2026-06-18T12:57:57-07:00",
-            "reported_link": "",
+            "reported_link": "docs/API-Auth_Validation_Tenant-Scoping.md §5.1 item 7; php scripts/repro_user_companies_bac.php",
             "location": "modules/user_companies/index.php"
         }
     ]
