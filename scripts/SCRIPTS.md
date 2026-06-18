@@ -617,7 +617,8 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_system_status.php` | Regression: module files, `modules_registry` row, native API payloads, `information_schema` size query; on Windows also checks `shell_exec`, `.ps1` readability, and runs each `test_*.php` PowerShell wrapper |
+| `php scripts/verify_system_status.php` | Regression: module files, `modules_registry` row, native API payloads, storage tree + active DB table reports, `information_schema` size query; on Windows also checks `shell_exec`, `.ps1` readability, and runs each `test_*.php` PowerShell wrapper |
+| `php scripts/system_status_api.php` | Admin JSON dispatcher (`?action=…`). PHP/MySQL actions always native; Windows hardware uses `includes/*.ps1`. Action allowlist in dispatcher and `itm_system_status_run_powershell_action()`. Documented in `scripts/api.php`. |
 | `php scripts/system_status_phpinfo.php` | Admin-only full `phpinfo()` for the active Apache SAPI (browser; requires Admin session) |
 | `php scripts/test_system_info.php` | Validates `includes/system_info.ps1` JSON (Windows; skips with warning when PowerShell unavailable) |
 | `php scripts/test_cpu_usage.php` | Validates `cpu_usage.ps1` |
@@ -632,7 +633,7 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 | `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` |
 | `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` |
 
-Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, or any `includes/*.ps1` metrics script. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only). Module UI: `modules/system_status/index.php`. PHP Settings and Database tabs are server-rendered; only Monitoring uses the API for hardware metrics.
+Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, or any `includes/*.ps1` metrics script. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php`. PHP Settings and Database tabs are server-rendered; only Monitoring uses the API for hardware metrics. Sub Storage parent nodes sum child totals plus direct files in each folder.
 
 Screenshots for README: `python3 scripts/take_screenshots_modules.py` (captures `system_status` monitoring tab to `docs/readme/system_status.png`; requires Playwright + local Apache at `http://localhost/it-management/`). Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie. Set `ITM_SCREENSHOT_ONLY=system_status` to capture only that module. The script waits for `#system-info-content` before saving so README does not show the login page or perpetual Loading….
 
