@@ -261,7 +261,7 @@ php scripts/verify_update_port_zero_row.php
 php scripts/idfs_sync_human_test.php
 ```
 
-**`verify_update_port_zero_row.php`:** asserts HTTP `404` on zero-row `update_port.php` before IDF auto-sync. Creates disposable probe equipment + `switch_ports` row when the tenant has none (transaction-wrapped). Invokes `update_port.php` in a subprocess with `ITM_HTTP_ENDPOINT_CONTRACT_TEST` and a stub `itm_api_json_response()` so HTTP status is captured before `exit()`. Uses mysqlnd-safe fetch helpers and reports subprocess failures explicitly. Optional env: `ITM_TEST_COMPANY_ID` (default `1`).
+**`verify_update_port_zero_row.php`:** asserts HTTP `404` on zero-row `update_port.php` before IDF auto-sync. Creates disposable probe equipment + `switch_ports` row when the tenant has none (transaction-wrapped). Subprocess seeds `$_SESSION['company_id']` before `config.php`, stubs `itm_api_json_response()` to capture HTTP status, and sets `$company_id` before including `update_port.php`. Optional env: `ITM_TEST_COMPANY_ID` (default `1`).
 
 **`idfs_sync_human_test.php`:** after Admin login, POSTs to `index.php` to align session `company_id` with `ITM_COMPANY_ID` (login otherwise pre-selects the first active company alphabetically). Company-selection GET follows redirects when `index.php` returns 302. When `ITM_COMPANY_ID` / `ITM_IDF_ID` do not match an active IDF row, resolves the first active IDF in the database.
 

@@ -226,9 +226,13 @@ function itm_api_json_response(array \$payload, \$httpStatus = 200) {
 \$_SERVER['REQUEST_METHOD'] = 'POST';
 \$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 \$_SERVER['HTTP_HOST'] = 'localhost';
-require " . var_export($configPath, true) . ";
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 \$_SESSION['user_id'] = 1;
 \$_SESSION['company_id'] = " . (int)$companyId . ";
+require " . var_export($configPath, true) . ";
+\$company_id = " . (int)$companyId . ";
 \$_POST = " . var_export($postPayload, true) . ";
 \$_REQUEST = \$_POST;
 chdir(" . var_export($includesDir, true) . ");
