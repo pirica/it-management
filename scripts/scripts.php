@@ -1168,19 +1168,19 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_rbac_bypass.php">repro_rbac_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for RBAC Bypass in CRUD modules (Expenses deletion).</td>
+                    <td>PoC for RBAC Bypass in CRUD modules (Expenses deletion). Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_rbac_bypass.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_user_companies_leak.php">repro_user_companies_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Multi-Tenant Data Leak in Users module.</td>
+                    <td>PoC for Multi-Tenant Data Leak in Users module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_user_companies_leak.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_user_companies_bac.php">repro_user_companies_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Broken Access Control in User Companies module.</td>
+                    <td>PoC for Broken Access Control in User Companies module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_user_companies_bac.php</code></td>
                 </tr>
                 <tr>

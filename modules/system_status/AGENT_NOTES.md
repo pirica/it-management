@@ -33,7 +33,7 @@ N/A — no FK-owned data.
 
 ## 4. Business Rules (Critical for Agents)
 
-- **Admin only:** `index.php`, `scripts/system_status_api.php`, and `scripts/system_status_phpinfo.php` require `itm_is_admin()`; non-admins redirect to `dashboard.php` (UI) or receive HTTP 403 (API).
+- **Admin only:** `index.php`, `scripts/system_status_api.php`, and `scripts/system_status_phpinfo.php` require `itm_is_admin()`; non-admins redirect to `dashboard.php` (module UI) or receive HTTP 403 (`system_status_phpinfo.php`, API).
 - **Read-only:** no INSERT/UPDATE/DELETE; no audit triggers required.
 - **PHP + MySQL API actions:** always native (`ini_get()`, `get_loaded_extensions()`, mysqli) — never PowerShell — so Laragon tabs work when `shell_exec` is disabled.
 - **Hardware (Monitoring tab):** Windows uses `includes/*.ps1` via `itm_system_status_run_powershell_action()`; non-Windows uses `itm_system_status_native_payload()` (`/proc`, `disk_*_space`).

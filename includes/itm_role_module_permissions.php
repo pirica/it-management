@@ -3,6 +3,61 @@
  * Role module permission helpers for server-side RBAC enforcement.
  */
 
+if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
+    /**
+     * Fetch one associative row from a prepared statement (mysqlnd or bind_result fallback).
+     *
+     * @return array<string,mixed>|null
+     */
+    function itm_mysqli_stmt_fetch_assoc($stmt)
+    {
+        if (!($stmt instanceof mysqli_stmt)) {
+            return null;
+        }
+
+        if (function_exists('mysqli_stmt_get_result')) {
+            $res = @mysqli_stmt_get_result($stmt);
+            if ($res instanceof mysqli_result) {
+                $row = mysqli_fetch_assoc($res);
+                return is_array($row) ? $row : null;
+            }
+        }
+
+        if (!mysqli_stmt_store_result($stmt)) {
+            return null;
+        }
+
+        $meta = mysqli_stmt_result_metadata($stmt);
+        if (!$meta) {
+            return null;
+        }
+
+        $row = [];
+        $bind = [];
+        while ($field = mysqli_fetch_field($meta)) {
+            $row[$field->name] = null;
+            $bind[] = &$row[$field->name];
+        }
+        mysqli_free_result($meta);
+
+        if ($bind === []) {
+            return null;
+        }
+
+        call_user_func_array([$stmt, 'bind_result'], $bind);
+        if (!mysqli_stmt_fetch($stmt)) {
+            return null;
+        }
+
+        $out = [];
+        foreach ($row as $key => $value) {
+            $out[$key] = $value;
+        }
+
+        return $out;
+    }
+}
+
 if (!function_exists('itm_resolve_active_company_id')) {
     /**
      * Resolve tenant company from global config and session.
@@ -68,8 +123,7 @@ if (!function_exists('itm_role_module_permission_row')) {
 
         mysqli_stmt_bind_param($stmt, 'iis', $companyId, $roleId, $moduleName);
         mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
+        $row = itm_mysqli_stmt_fetch_assoc($stmt);
         mysqli_stmt_close($stmt);
 
         if (is_array($row)) {
@@ -113,8 +167,7 @@ if (!function_exists('itm_user_has_role_module_permission')) {
 
         mysqli_stmt_bind_param($stmt, 'i', $userId);
         mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $userRow = $res ? mysqli_fetch_assoc($res) : null;
+        $userRow = itm_mysqli_stmt_fetch_assoc($stmt);
         mysqli_stmt_close($stmt);
 
         if (!is_array($userRow)) {

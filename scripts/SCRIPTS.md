@@ -149,6 +149,16 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 
 **Related:** `scripts/lib/itm_api_tier_test_helpers.php` (disposable `ui_configuration` slots only); `includes/itm_mbqa_test_user.php` (MBQA runner row tags).
 
+### Security repro scripts (validated findings)
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS after RBAC guard). |
+| `php scripts/repro_user_companies_bac.php` | PoC — non-admin must not access `user_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
+| `php scripts/repro_user_companies_leak.php` | PoC — multi-tenant leak checks for Users module. |
+
+Repro runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
+
 ## 4. Path Handling
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.
 - Avoid platform-specific separators; use `DIRECTORY_SEPARATOR` or normalize to forward slashes.

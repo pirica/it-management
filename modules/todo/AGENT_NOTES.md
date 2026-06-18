@@ -14,6 +14,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 ## 4. Business Rules (Critical for Agents)
 - Global tasks: `assigned_to_user_id IS NULL` (visible to company).
 - Private/assigned tasks: user must be in `assigned_to_user_id` (comma-separated IDs via `FIND_IN_SET`) or be `created_by_user_id`.
+- **Assignee dropdown:** load users scoped to active `company_id` only (`users.company_id` or `user_companies` row for that company). Do not include global `Admin` via username bypass.
 - Import resolves category names, department names/codes, and usernames to IDs.
 - Use `itm_todo_visibility_sql()` on all list queries.
 
