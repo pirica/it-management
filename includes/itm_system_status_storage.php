@@ -27,7 +27,7 @@ function itm_system_status_directory_direct_metrics(string $absolutePath): array
 {
     $bytes = 0;
     $files = 0;
-    if (!is_dir($absolutePath)) {
+    if (!is_dir($absolutePath) || !is_readable($absolutePath)) {
         return ['bytes' => 0, 'files' => 0];
     }
 
@@ -42,7 +42,7 @@ function itm_system_status_directory_direct_metrics(string $absolutePath): array
                 $files++;
             }
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         return ['bytes' => 0, 'files' => 0];
     }
 
@@ -75,7 +75,7 @@ function itm_system_status_directory_metrics(string $absolutePath): array
                 $files++;
             }
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         return ['bytes' => 0, 'files' => 0];
     }
 
@@ -89,7 +89,6 @@ function itm_system_status_directory_metrics(string $absolutePath): array
 function itm_system_status_storage_node(string $label, string $relativePath, array $children = []): array
 {
     $absolutePath = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
-    $metrics = itm_system_status_directory_metrics($absolutePath);
     $childBytes = 0;
     $childFiles = 0;
     foreach ($children as $child) {
@@ -102,6 +101,7 @@ function itm_system_status_storage_node(string $label, string $relativePath, arr
         $bytes = $childBytes + (int)$directMetrics['bytes'];
         $files = $childFiles + (int)$directMetrics['files'];
     } else {
+        $metrics = itm_system_status_directory_metrics($absolutePath);
         $bytes = (int)$metrics['bytes'];
         $files = (int)$metrics['files'];
     }

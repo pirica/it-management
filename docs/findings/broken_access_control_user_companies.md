@@ -15,10 +15,10 @@ Accessing `modules/user_companies/index.php`.
 3. The module loads successfully, exposing administrative data and allowing unauthorized management of company assignments.
 
 ## Location
-`modules/user_companies/index.php`, `edit.php`, `view.php`, `list_all.php` (and `delete.php` via `index.php`).
+`modules/user_companies/index.php`, `edit.php`, `view.php`, `list_all.php` (and `delete.php` via `index.php`). This module has no standalone `create.php`; create flows use `index.php`.
 
 ## Impact
 Unauthorized users can view and potentially manipulate user-to-company assignments, facilitating further privilege escalation or data access across tenants.
 
 ## Remediation
-Call `itm_require_admin($conn, $_SESSION['user_id'] ?? 0);` immediately after `config.php` on **every** entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`). `delete.php` routes through `index.php`, which already carries the gate.
+Call `itm_require_admin($conn, $_SESSION['user_id'] ?? 0);` immediately after `config.php` on **every** entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`). `delete.php` and create flows route through `index.php`, which carries the gate.

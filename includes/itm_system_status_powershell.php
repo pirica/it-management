@@ -30,10 +30,7 @@ function itm_system_status_powershell_binary(): string
  */
 function itm_system_status_run_powershell_action(string $action): array
 {
-    $allowedActions = array_merge(
-        itm_system_status_hardware_actions(),
-        ['php_version', 'php_extensions', 'php_ini_values', 'mysql_status', 'mysql_version', 'mysql_databases', 'mysql_size']
-    );
+    $allowedActions = itm_system_status_hardware_actions();
     if (!in_array($action, $allowedActions, true) || !preg_match('/^[a-z0-9_]+$/', $action)) {
         return ['status' => 'error', 'message' => 'Invalid PowerShell action requested.'];
     }

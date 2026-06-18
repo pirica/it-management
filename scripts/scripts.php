@@ -1072,7 +1072,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_auth_bypass_v3.php">repro_auth_bypass_v3.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction script for Auth Bypass v3 vulnerability.</td>
+                    <td>Reproduction script for Auth Bypass v3 vulnerability. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_auth_bypass_v3.php</code></td>
                 </tr>
                 <tr>

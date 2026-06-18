@@ -156,6 +156,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS after RBAC guard). |
 | `php scripts/repro_user_companies_bac.php` | PoC — non-admin must not access `user_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
 | `php scripts/repro_user_companies_leak.php` | PoC — multi-tenant leak checks for Users module. |
+| `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, and role-module permission access. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_user.php`; prepared `UPDATE users` for token fields. |
@@ -646,7 +647,7 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 | `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` |
 | `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` |
 
-Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, or any `includes/*.ps1` metrics script. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php`. PHP Settings and Database tabs are server-rendered; only Monitoring uses the API for hardware metrics. Sub Storage parent nodes sum child totals plus direct files in each folder.
+Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, or any `includes/*.ps1` metrics script. On large tenants the storage tree scan and `information_schema` queries can be slow — run from CLI or raise PHP `max_execution_time` in browser if needed. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php`. PHP Settings and Database tabs are server-rendered; only Monitoring uses the API for hardware metrics. Sub Storage parent nodes sum child totals plus direct files in each folder.
 
 Screenshots for README: `python3 scripts/take_screenshots_modules.py` (captures `system_status` monitoring tab to `docs/readme/system_status.png`; requires Playwright + local Apache at `http://localhost/it-management/`). Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie; derives `PHPSESSID` cookie domain from the screenshot base URL hostname (`urlparse`). Set `ITM_SCREENSHOT_ONLY=system_status` to capture only that module. The script waits for `#system-info-content` before saving so README does not show the login page or perpetual Loading….
 
