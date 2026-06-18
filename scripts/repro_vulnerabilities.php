@@ -79,7 +79,7 @@ echo ob_get_clean();
     $tmp_file = tempnam(sys_get_temp_dir(), 'repro');
     file_put_contents($tmp_file, $code);
     $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-    $output = shell_exec("$php_bin -d error_reporting=0 $tmp_file 2>/dev/null");
+    $output = shell_exec(escapeshellarg($php_bin) . ' -d error_reporting=0 ' . escapeshellarg($tmp_file) . ' 2>/dev/null');
     unlink($tmp_file);
     return $output;
 }

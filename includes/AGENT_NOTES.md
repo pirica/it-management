@@ -38,6 +38,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **itm_system_status_native.php** — PHP/MySQL + Linux hardware JSON for `scripts/system_status_api.php` (`itm_system_status_native_payload()`, `/proc` + mysqli).
 - **itm_system_status_storage.php** — Explorer/upload directory sizes and active-database table metrics for System Status tabs; parent nodes with children sum child totals plus direct files in the parent folder (`itm_system_status_directory_direct_metrics()`).
 - **itm_system_status_powershell.php** — Windows hardware runner: `shell_exec` availability, `.ps1` readability, `itm_system_status_run_powershell_action()` (action allowlist + `[a-z0-9_]+` guard before loading `includes/{action}.ps1`).
+- **bootstrap_helpers.php** — upload directory hardening (`itm_ensure_upload_directory*`, `itm_upload_directory_policy_body()`); schema introspection helpers `itm_table_has_column()` and `itm_table_column_is_nullable()` cache `information_schema` keys case-insensitively (`strtolower`) and treat missing nullable columns as non-nullable (`array_key_exists`, not `!empty()`).
 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
