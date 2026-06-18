@@ -357,7 +357,21 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'POST',
             'path' => 'modules/select_options_api.php',
             'params' => 'table, id_col, label_col, new_value, company_scoped, extra_fields, csrf_token',
-            'purpose' => 'Create reference row from js/select-add-option.js; table whitelist enforced.',
+            'purpose' => 'Create reference row from js/select-add-option.js; table whitelist in includes/itm_select_options_policy.php (includes license_types for License Management Type ➕).',
+        ],
+        [
+            'group' => 'License Management',
+            'method' => 'POST',
+            'path' => 'modules/license_management/index.php',
+            'params' => 'import_excel_rows, csrf_token; form POST fields name, license_key, license_type_id, quantity, supplier_id, purchase_date, expiry_date, price, active, notes',
+            'purpose' => 'Software license CRUD and JSON Excel import; Type FK quick-add inserts into license_types via select_options_api.php.',
+        ],
+        [
+            'group' => 'License Management',
+            'method' => 'POST',
+            'path' => 'modules/license_types/index.php',
+            'params' => 'import_excel_rows, csrf_token; form POST name, active (checkbox, default 1)',
+            'purpose' => 'Tenant license type lookup CRUD; company_id hidden in UI; rows also created by select_options_api.php from License Management forms.',
         ],
         [
             'group' => 'IDF helpers',
@@ -646,6 +660,27 @@ function itmDocCollectApiExamples(string $rootPath): array
     return $examples;
 }
 
+/**
+ * Why: Keep quick-add documentation aligned with includes/itm_select_options_policy.php without hand-maintaining table names.
+ */
+function itmDocSelectOptionsAllowedTables(): array
+{
+    $policyFile = dirname(__DIR__) . '/includes/itm_select_options_policy.php';
+    if (!is_file($policyFile)) {
+        return [];
+    }
+
+    require_once $policyFile;
+    if (!function_exists('itm_select_options_allowed_tables')) {
+        return [];
+    }
+
+    $tables = itm_select_options_allowed_tables();
+    sort($tables, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $tables;
+}
+
 $moduleImportEndpoints = itmDocCollectModuleImportEndpoints($itmRootPath);
 $modulesWithoutImportEndpoint = itmDocCollectModulesWithoutImportEndpoint($itmRootPath, $moduleImportEndpoints);
 $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
@@ -659,6 +694,7 @@ $todoAjaxActions = itmDocTodoAjaxActions();
 $systemStatusApiActions = itmDocSystemStatusApiActions();
 $apiExamples = itmDocCollectApiExamples($itmRootPath);
 $apiRateLimitTiers = itmDocApiRateLimitTiers();
+$selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -698,6 +734,7 @@ $apiRateLimitTiers = itmDocApiRateLimitTiers();
             <li>Explorer storage is under <code>files/{company_id}/</code> with <code>deny_http</code>; authorised downloads use <code>modules/explorer/file.php</code>.</li>
             <li>Passwords vault endpoints require <code>$_SESSION['vault_key']</code> after unlock.</li>
             <li>Module Excel imports use <code>import_excel_rows</code> at <code>modules/&lt;module&gt;/index.php</code> (auto-detected below).</li>
+            <li><strong>License Management</strong> — <code>modules/license_management/</code> (licenses) and <code>modules/license_types/</code> (Type lookup); Type ➕ quick-add posts <code>table=license_types</code> to <code>modules/select_options_api.php</code>.</li>
             <li>Optional API key auth uses per-user rows in <code>ui_configuration</code> with tier-based hourly rate limits (see below).</li>
         </ul>
     </div>
@@ -872,6 +909,20 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
     </div>
 
     <div class="card">
+        <h2>Select Options quick-add whitelist (<code>modules/select_options_api.php</code>)</h2>
+        <p>Only lookup tables listed in <code>includes/itm_select_options_policy.php</code> accept POST inserts from <code>js/select-add-option.js</code>. Blocked tables (for example <code>users</code>, <code>role_module_permissions</code>) return <code>{"ok":false,"error":"This list cannot be updated from quick-add."}</code>. Regression: <code>php scripts/verify_select_options_escalation.php</code>.</p>
+        <p><strong><?= (int)count($selectOptionsAllowedTables); ?></strong> allowed table(s). Notable entries: <code>license_types</code> (License Management Type dropdown), <code>departments</code>, <code>suppliers</code>, <code>warranty_types</code>.</p>
+        <details>
+            <summary>Full allowed table list</summary>
+            <p><code><?= itmDocEscape(implode(', ', $selectOptionsAllowedTables)); ?></code></p>
+        </details>
+<pre><code># License Management — add a new Type from the create/edit form (➕)
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/select_options_api.php" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "csrf_token=&lt;csrf_token&gt;&amp;table=license_types&amp;id_col=id&amp;label_col=name&amp;new_value=Site+License&amp;company_scoped=1"</code></pre>
+    </div>
+
+    <div class="card">
         <h2>System Status API (<code>scripts/system_status_api.php?action=…</code>)</h2>
         <p>Restricted to <strong>Admin</strong> role. Unknown <code>action</code> values return HTTP <code>400</code>. <strong>PHP and MySQL</strong> actions always use the active Apache/mysqli runtime (native). <strong>Hardware monitoring</strong> uses <code>includes/*.ps1</code> on Windows (requires <code>shell_exec</code>; action allowlist + <code>[a-z0-9_]+</code> guard in <code>itm_system_status_run_powershell_action()</code>) or native <code>/proc</code> metrics on Linux. Module UI tabs read cached JSON from <code>system_status</code>; <strong>Refresh</strong> upserts the cache. Full phpinfo: <code>scripts/system_status_phpinfo.php</code> (non-admin → HTTP <code>403</code>).</p>
         <table>
@@ -979,6 +1030,10 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 <pre><code>curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/index.php" \
   -H "Content-Type: application/json" \
   -d '{"csrf_token":"&lt;csrf_token&gt;","import_excel_rows":[["Name","Active"],["IT","1"]]}'</code></pre>
+<pre><code># License Management import (dates dd/mm/yyyy in UI; stored as MySQL DATE)
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/license_management/index.php" \
+  -H "Content-Type: application/json" \
+  -d '{"csrf_token":"&lt;csrf_token&gt;","import_excel_rows":[["Name","License Key","Type","Quantity","Supplier","Purchase Date","Expiry Date","Price","Active"],["Microsoft 365 E3","XXXXX-XXXXX-XXXXX","Per User","1","Acme Supplies","15/01/2025","15/01/2026","150.00","1"]]}'</code></pre>
     </div>
 
     <div class="card">
