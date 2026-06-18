@@ -10,7 +10,7 @@ function cr_form_display_value($value) {
  */
 
 $crud_table = $crud_table ?? 'license_management';
-$crud_title = $crud_title ?? 'License Management';
+$crud_title = $crud_title ?? 'Licence Management';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
@@ -130,7 +130,7 @@ function cr_humanize_field($field) {
 
     $map = [
         'license_type_id' => 'Type',
-        'license_key' => 'License Key',
+        'license_key' => 'Licence Key',
         'purchase_date' => 'Purchase Date',
         'expiry_date' => 'Expiry Date',
         'supplier_id' => 'Supplier',
@@ -861,16 +861,20 @@ $offset = ($page - 1) * $perPage;
 $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: ('🧩 ' . $crud_title);
 $newButtonPosition = (string)(($ui_config ?? [])['new_button_position'] ?? 'left_right');
+$htmlLang = 'en-GB';
+$promptClearTable = 'Clear all records in this table? This action cannot be undone.';
+$promptDeleteRecord = 'Are you sure you want to delete this record?';
+$promptDeleteSelected = 'Are you sure you want to delete the selected records?';
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo sanitize($htmlLang); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo sanitize($crud_title); ?> Management</title>
+    <title><?php echo sanitize($crud_title); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -898,10 +902,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </div>
             <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('<?php echo sanitize($promptClearTable); ?>');">Clear Table</button>
                     </form>
                 </div>
             <?php endif; ?>
@@ -963,7 +968,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('<?php echo sanitize($promptDeleteRecord); ?>');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

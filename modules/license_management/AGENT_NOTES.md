@@ -1,7 +1,7 @@
-# AGENT_NOTES.md - License Management
+# AGENT_NOTES.md - Licence Management
 
 ## 1. Module Purpose
-Tracks software licenses per company: name, key, type, quantity, supplier, purchase/expiry dates, price, active flag, and notes.
+Tracks software licences per company: name, key, type, quantity, supplier, purchase/expiry dates, price, active flag, and notes. UI labels and confirm prompts use UK English (en-GB): **Licence Management**, **Licence Key**.
 
 ## 2. Key Tables
 - **license_management** — main license records (CRUD module table).
@@ -25,7 +25,8 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - Standard flattened CRUD duplicated from **departments** scaffold: bulk delete, search, pagination, Excel import/export, empty-state sample data.
 - **company_id** hidden in list/create/edit/view.
 - **FK labels:** list/view must show Type and Supplier names (not raw IDs) via `cr_fk_label_by_id()` / `itm_fk_label_by_id()`.
-- Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
+- Form field order: Name, Licence Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
+- Confirm prompts (en-GB): clear-table and single-delete use explicit `$promptClearTable` / `$promptDeleteRecord` strings in `index.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON import on `index.php` (`data-itm-db-import-endpoint="index.php"`).
@@ -42,6 +43,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 
 ## 10. Common Pitfalls
 - **`license_types` has no module folder** — do not expect CRUD under `modules/license_types/`; maintain seeds in `database.sql`.
+- **`license_management` seeds in `database.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (company 1 row id=1).
 - **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown.
 - **Deleting a `license_types` row** referenced by `license_management` fails (RESTRICT FK).
 - **Price import:** normalise comma decimals before `cr_validate_numeric_value()`.
@@ -64,4 +66,4 @@ mysqli_stmt_execute($stmt);
 
 ## 12. Module Owner Notes (Optional)
 Sample seed row per company: Microsoft 365 E3 (`license_types.name = Per User`, supplier from tenant `suppliers` seed).
-Authoritative cross-module rules: **`AGENTS.md` → License Management (mandatory)**. README screenshots: `docs/readme/license_management.png`, `docs/readme/demo_license_management.png`. MBQA: `php scripts/module_browser_qa_runner.php --module=license_management --company=1` (see **`scripts/SCRIPTS.md`**).
+Authoritative cross-module rules: **`AGENTS.md` → Licence Management (mandatory)**. Sidebar/registry label: **Licence Management** (`modules_registry.module_name`). README screenshots: `docs/readme/license_management.png`, `docs/readme/demo_license_management.png`. MBQA: `php scripts/module_browser_qa_runner.php --module=license_management --company=1` (see **`scripts/SCRIPTS.md`**).

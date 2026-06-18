@@ -203,7 +203,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("is_server", "Is Server", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("is_switch", "Is Switch", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("is_workstation", "Is Workstation", 0, 1);
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("license_management", "License Management", 0, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("license_management", "Licence Management", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("it_locations", "It Locations", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("location_types", "Location Types", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("manufacturers", "Manufacturers", 0, 1);
@@ -1953,35 +1953,6 @@ INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`)
 INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '23', 'Enterprise', '1', '2026-01-01 00:00:01');
 INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '24', 'Subscription', '1', '2026-01-01 00:00:01');
 INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '25', 'Other', '1', '2026-01-01 00:00:01');
--- Table structure for `license_management`
-DROP TABLE IF EXISTS `license_management`;
-CREATE TABLE `license_management` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `company_id` int NOT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `license_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `license_type_id` int NOT NULL,
-  `quantity` int NOT NULL DEFAULT '1',
-  `supplier_id` int DEFAULT NULL,
-  `purchase_date` date DEFAULT NULL,
-  `expiry_date` date DEFAULT NULL,
-  `price` decimal(10,2) DEFAULT NULL,
-  `active` tinyint DEFAULT '1',
-  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `company_id` (`company_id`),
-  KEY `license_type_id` (`license_type_id`),
-  KEY `supplier_id` (`supplier_id`),
-  CONSTRAINT `license_management_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `license_management_ibfk_license_type` FOREIGN KEY (`license_type_id`) REFERENCES `license_types` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `license_management_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
-INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('2', '2', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '6', '1', '2', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
-INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('3', '3', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '11', '1', '3', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
-INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('4', '4', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '16', '1', '4', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
-INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('5', '5', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '21', '1', '5', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
 -- Table structure for `it_locations`
 DROP TABLE IF EXISTS `it_locations`;
 CREATE TABLE `it_locations` (
@@ -2631,6 +2602,35 @@ INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_p
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('3', '3', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '11', '1', '2026-01-01 00:00:01');
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('4', '4', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '16', '1', '2026-01-01 00:00:01');
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('5', '5', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '21', '1', '2026-01-01 00:00:01');
+-- Table structure for `license_management`
+DROP TABLE IF EXISTS `license_management`;
+CREATE TABLE `license_management` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `license_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `license_type_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `supplier_id` int DEFAULT NULL,
+  `purchase_date` date DEFAULT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
+  `active` tinyint DEFAULT '1',
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `license_type_id` (`license_type_id`),
+  KEY `supplier_id` (`supplier_id`),
+  CONSTRAINT `license_management_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `license_management_ibfk_license_type` FOREIGN KEY (`license_type_id`) REFERENCES `license_types` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `license_management_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('2', '2', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '6', '1', '2', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('3', '3', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '11', '1', '3', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('4', '4', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '16', '1', '4', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
+INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('5', '5', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '21', '1', '5', '2025-01-15', '2026-01-15', '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
 -- Table structure for `cable_colors`
 DROP TABLE IF EXISTS `cable_colors`;
 CREATE TABLE `cable_colors` (
