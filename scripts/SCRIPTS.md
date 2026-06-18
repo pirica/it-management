@@ -928,3 +928,22 @@ php scripts/ensure_files_htaccess_chain.php
   - `.is-dragover`: Applied to the target during drag events to provide visual feedback.
   - `.itm-dropzone-hint`: Used for instructional text within the dropzone.
 - **JavaScript:** Implementation involves using `itmUploadHelper.setupById(targetId, inputId)` or `itmUploadHelper.setupByClass(className)`. The helper handles preventing default drag events, toggling visual states, and assigning files to the input while triggering the `change` event.
+
+### System Status Verification Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/test_system_info.php` | Validates `system_info.ps1` JSON output. |
+| `php scripts/test_cpu_usage.php` | Validates `cpu_usage.ps1` JSON output. |
+| `php scripts/test_ram_usage.php` | Validates `ram_usage.ps1` JSON output. |
+| `php scripts/test_disk_usage.php` | Validates `disk_usage.ps1` JSON output. |
+| `php scripts/test_uptime.php` | Validates `uptime.ps1` JSON output. |
+| `php scripts/test_php_version.php` | Validates `php_version.ps1` JSON output. |
+| `php scripts/test_php_extensions.php` | Validates `php_extensions.ps1` JSON output. |
+| `php scripts/test_php_ini_values.php` | Validates `php_ini_values.ps1` JSON output. |
+| `php scripts/test_mysql_status.php` | Validates `mysql_status.ps1` JSON output. |
+| `php scripts/test_mysql_version.php` | Validates `mysql_version.ps1` JSON output. |
+| `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` JSON output. |
+| `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` JSON output. |
+
+These scripts execute the corresponding PowerShell scripts and assert that the returned JSON is valid and follows the expected structure (`status` and `data` fields).

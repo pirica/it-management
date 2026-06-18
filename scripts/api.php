@@ -542,6 +542,24 @@ function itmDocTodoAjaxActions(): array
     ];
 }
 
+function itmDocSystemStatusApiActions(): array
+{
+    return [
+        ['action' => 'system_info', 'params' => 'action=system_info', 'purpose' => 'Execute system_info.ps1 and return OS, CPU, RAM, Disk, and Network info.'],
+        ['action' => 'cpu_usage', 'params' => 'action=cpu_usage', 'purpose' => 'Execute cpu_usage.ps1 and return current CPU load %.'],
+        ['action' => 'ram_usage', 'params' => 'action=ram_usage', 'purpose' => 'Execute ram_usage.ps1 and return Used/Free/Total RAM.'],
+        ['action' => 'disk_usage', 'params' => 'action=disk_usage', 'purpose' => 'Execute disk_usage.ps1 and return usage for all local disks.'],
+        ['action' => 'uptime', 'params' => 'action=uptime', 'purpose' => 'Execute uptime.ps1 and return human-readable uptime.'],
+        ['action' => 'php_version', 'params' => 'action=php_version', 'purpose' => 'Execute php_version.ps1 and return active PHP version and ini path.'],
+        ['action' => 'php_extensions', 'params' => 'action=php_extensions', 'purpose' => 'Execute php_extensions.ps1 and list enabled extensions.'],
+        ['action' => 'php_ini_values', 'params' => 'action=php_ini_values', 'purpose' => 'Execute php_ini_values.ps1 and return key ini settings.'],
+        ['action' => 'mysql_status', 'params' => 'action=mysql_status', 'purpose' => 'Execute mysql_status.ps1 and check if MySQL service is running.'],
+        ['action' => 'mysql_version', 'params' => 'action=mysql_version', 'purpose' => 'Execute mysql_version.ps1 and return MySQL version.'],
+        ['action' => 'mysql_databases', 'params' => 'action=mysql_databases', 'purpose' => 'Execute mysql_databases.ps1 and list all databases.'],
+        ['action' => 'mysql_size', 'params' => 'action=mysql_size', 'purpose' => 'Execute mysql_size.ps1 and return size of each DB.'],
+    ];
+}
+
 /**
  * Why: api-examples/*.php is the canonical integration sample set; scan every file so docs never omit a script.
  */
@@ -617,6 +635,7 @@ $projectJsonEndpoints = itmDocProjectJsonEndpoints();
 $passwordsApiActions = itmDocPasswordsApiActions();
 $notesAjaxActions = itmDocNotesAjaxActions();
 $todoAjaxActions = itmDocTodoAjaxActions();
+$systemStatusApiActions = itmDocSystemStatusApiActions();
 $apiExamples = itmDocCollectApiExamples($itmRootPath);
 $apiRateLimitTiers = itmDocApiRateLimitTiers();
 ?>
@@ -800,6 +819,23 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
                     <td><code><?= itmDocEscape((string)$endpoint['path']); ?></code></td>
                     <td><code><?= itmDocEscape((string)($endpoint['params'] ?? '')); ?></code></td>
                     <td><?= itmDocEscape((string)$endpoint['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>System Status API (<code>scripts/system_status_api.php?action=…</code>)</h2>
+        <p>Restricted to <strong>Admin</strong> role. Executes PowerShell scripts on Windows Laragon.</p>
+        <table>
+            <thead><tr><th>action</th><th>Parameters</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($systemStatusApiActions as $row): ?>
+                <tr>
+                    <td><code><?= itmDocEscape((string)$row['action']); ?></code></td>
+                    <td><code><?= itmDocEscape((string)$row['params']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['purpose']); ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
