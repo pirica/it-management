@@ -5,7 +5,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 
 ## 2. Key Tables
 - **equipment** — main asset records.
-- **employee_assignment_history** — one row per `(company_id, employee_id)`; synced from equipment assignee changes.
+- **employee_assignment_history** — one row per `(company_id, employee_id)`; synced from equipment assignee changes. Row shape, UPSERT rules, and manual CRUD pitfalls: **`modules/employee_assignment_history/AGENT_NOTES.md`**.
 
 ## 3. Required Relationships
 - **equipment** → depends on **companies**.
@@ -50,7 +50,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 ## 10. Common Pitfalls
 - **Deleting with Relations**: Deleting equipment may fail if it has active switch port assignments or is linked to tickets.
 - **Supplier quick-add:** `suppliers.status_id` is NOT NULL — the equipment form passes `status_id` via `data-add-extra-fields`.
-- **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held.
+- **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held (see **`modules/employee_assignment_history/AGENT_NOTES.md`**).
 - **Do not edit `modules/employees/`** from equipment — load dropdown options read-only.
 
 ## 11. Examples of Safe Code Patterns
