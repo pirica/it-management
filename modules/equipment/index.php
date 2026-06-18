@@ -65,6 +65,7 @@ if ($searchRaw !== '') {
         OR e.hostname LIKE '{$searchEsc}'
         OR e.ip_address LIKE '{$searchEsc}'
         OR e.mac_address LIKE '{$searchEsc}'
+        OR COALESCE(NULLIF(TRIM(d.code), ''), d.name, '') LIKE '{$searchEsc}'
         OR c.company LIKE '{$searchEsc}'
         OR et.name LIKE '{$searchEsc}'
         OR m.name LIKE '{$searchEsc}'
@@ -86,6 +87,7 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
 $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.mac_address,
+               COALESCE(NULLIF(TRIM(d.code), ''), d.name) AS department_label,
                c.company AS company_name,
                et.name AS equipment_type_name,
                m.name AS manufacturer_name,
@@ -98,6 +100,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
+        LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
         LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
         LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
         LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
@@ -105,7 +108,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         WHERE e.company_id = $company_id
         {$moduleFilterSql}
         {$searchSql}";
-$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'status_name'];
+$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'department_label', 'status_name'];
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -125,6 +128,7 @@ $orderByMap = [
     'location_name' => 'l.name',
     'manufacturer_name' => 'm.name',
     'mac_address' => 'e.mac_address',
+    'department_label' => 'COALESCE(NULLIF(TRIM(d.code), \'\'), d.name)',
     'status_name' => 'es.name',
 ];
 $countSql = "SELECT COUNT(*) AS total
@@ -132,6 +136,7 @@ $countSql = "SELECT COUNT(*) AS total
              LEFT JOIN companies c ON c.id = e.company_id
              LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
              LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
+             LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
              LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
              LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
              LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
@@ -328,6 +333,7 @@ if (!empty($_SESSION['crud_success'])) {
                             'location_name' => 'Location',
                             'manufacturer_name' => 'Manufacturer',
                             'mac_address' => 'MAC Address',
+                            'department_label' => 'Department',
                             'status_name' => 'Status',
                         ] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -361,6 +367,7 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td><?php echo sanitize($row['location_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['manufacturer_name'] ?? '-'); ?></td>
                                 <td><?php echo sanitize($row['mac_address'] ?? '-'); ?></td>
+                                <td><?php echo sanitize($row['department_label'] ?? '-'); ?></td>
                                 <td>
                                     <?php
                                     $statusText = trim((string)($row['status_name'] ?? ''));

@@ -1010,6 +1010,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/verify_reset_git_history_access.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_git_reset_csrf.php">verify_git_reset_csrf.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression: <code>reset_git_history.php</code> rejects non-POST requests and POST without a valid CSRF token. Uses disposable admin-like user via <code>itm_script_test_user.php</code>.</td>
+                    <td><code>php scripts/verify_git_reset_csrf.php</code> — run after changing Git reset maintenance endpoints or CSRF guards.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_explorer_zip_leak.php">verify_explorer_zip_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for multi-tenant data leak via root ZIP downloads in Explorer.</td>

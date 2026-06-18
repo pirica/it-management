@@ -33,6 +33,7 @@ $workstationRamJoin = $hasWorkstationRamIdColumn
     : '';
 
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
+               d.name department_name,
                r.name rack_name, idf.name idf_name, es.name status_name, wt.name warranty_type_name,
                pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$equipmentRj45SpeedSelect$workstationOsVersionSelect$workstationRamSelect
         FROM equipment e
@@ -40,6 +41,7 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
         LEFT JOIN manufacturers m ON m.id = e.manufacturer_id AND m.company_id = e.company_id
         LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
+        LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
         LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
         LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
         LEFT JOIN equipment_statuses es ON es.id = e.status_id AND es.company_id = e.company_id
@@ -109,6 +111,7 @@ function equipment_field_label($key) {
         'rj45_cable_type' => 'RJ45 Cable',
         'workstation_os_version_name' => 'Workstation OS Version',
         'workstation_ram_name' => 'RAM',
+        'department_name' => 'Department',
         'workstation_storage' => 'Storage (GB/TB)',
         'workstation_os_installed_on' => 'Workstation OS Installed On',
         'switch_fiber_port_label' => 'Fiber Port Label',

@@ -118,6 +118,17 @@ Catalog: `scripts/scripts.php`.
 
 Run after changes to `modules/select_options_api.php` or `includes/itm_select_options_policy.php`. Requires MySQL (`itmanagement` schema). The script creates disposable test users and removes them on exit. Catalog: `scripts/scripts.php`.
 
+**Departments quick-add (`__add_new__`):** whitelisted in `includes/itm_select_options_policy.php`. `select_options_api.php` auto-inserts `company_id` (when `data-add-company-scoped="1"`) and `active=1`. Only **`name`** is required in the modal (`new_value`); **`code`** is optional via `data-add-extra-fields` (`required: false`). Used on equipment create/edit (`modules/equipment/create.php`).
+
+### Git history reset verification
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_git_reset_csrf.php` | Regression — `reset_git_history.php` rejects non-POST and POST without valid CSRF. Disposable admin-like user via `itm_script_test_user.php`. |
+| `php scripts/verify_reset_git_history_access.php` | Documents access-control expectations for the destructive Git history reset utility. |
+
+Run after changing `reset_git_history.php` or maintenance CSRF guards. Catalog: `scripts/scripts.php`.
+
 ### Disposable script test users
 
 Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or other live accounts. Use **`scripts/lib/itm_script_test_user.php`**:
