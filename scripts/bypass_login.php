@@ -62,7 +62,15 @@ $sessionId = session_id();
 // Fix permissions so Apache can read the session file created by CLI
 $sessionFile = ini_get('session.save_path') . '/sess_' . $sessionId;
 if (file_exists($sessionFile)) {
-    chmod($sessionFile, 0644);
+    chmod($sessionFile, 0664);
+    // Why: Playwright/bypass hijack needs www-data to open the sess file Apache will read.
+    if (function_exists('posix_getpwnam')) {
+        $wwwData = posix_getpwnam('www-data');
+        if (is_array($wwwData)) {
+            @chown($sessionFile, (int)$wwwData['uid']);
+            @chgrp($sessionFile, (int)$wwwData['gid']);
+        }
+    }
 }
 
 if (!defined('PHPUNIT_RUNNING')) {

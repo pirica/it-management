@@ -69,8 +69,12 @@ foreach ($psScripts as $script) {
     $path = ROOT_PATH . 'includes/' . $script;
     if (!is_file($path)) {
         ss_verify_fail('Missing includes/' . $script);
-    } else {
-        ss_verify_pass('Found includes/' . $script);
+        continue;
+    }
+    ss_verify_pass('Found includes/' . $script);
+    $size = filesize($path);
+    if ($size === false || $size < 32) {
+        ss_verify_fail('includes/' . $script . ' looks empty or unreadable');
     }
 }
 
