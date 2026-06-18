@@ -177,7 +177,11 @@ function itm_system_status_load_departments_for_company($conn, int $companyId): 
         return $rows;
     }
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    mysqli_stmt_execute($stmt);
+    if (!mysqli_stmt_execute($stmt)) {
+        error_log('itm_system_status_load_departments_for_company: execute failed for company_id=' . $companyId);
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
     foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
         $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['name']];
     }
@@ -204,7 +208,11 @@ function itm_system_status_load_users_for_company($conn, int $companyId): array
         return $rows;
     }
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    mysqli_stmt_execute($stmt);
+    if (!mysqli_stmt_execute($stmt)) {
+        error_log('itm_system_status_load_users_for_company: execute failed for company_id=' . $companyId);
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
     foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
         $fullName = trim((string)$row['first_name'] . ' ' . (string)$row['last_name']);
         $label = $fullName !== '' ? $fullName . ' (' . $row['username'] . ')' : (string)$row['username'];
@@ -382,7 +390,17 @@ function itm_system_status_build_database_table_report($conn, string $databaseNa
     );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 's', $databaseName);
-        mysqli_stmt_execute($stmt);
+        if (!mysqli_stmt_execute($stmt)) {
+            error_log('itm_system_status_build_database_table_report: execute failed for database=' . $databaseName);
+            mysqli_stmt_close($stmt);
+            return [
+                'database' => $databaseName,
+                'tables' => $tables,
+                'total_rows' => $totalRows,
+                'total_size_mb' => $totalSizeMb,
+                'table_count' => count($tables),
+            ];
+        }
         foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
             $rowLower = array_change_key_case($row, CASE_LOWER);
             $rowCount = (int)($rowLower['table_rows'] ?? 0);
