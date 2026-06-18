@@ -2,92 +2,52 @@
 /**
  * PHP Settings Tab
  *
- * Displays detailed PHP configuration and enabled extensions.
+ * Renders the active Apache PHP runtime directly (no PowerShell / AJAX).
  */
+
+$phpIniPath = php_ini_loaded_file() ?: '';
+$phpExtensions = get_loaded_extensions();
+sort($phpExtensions);
+$phpIniValues = [
+    'memory_limit' => (string)ini_get('memory_limit'),
+    'upload_max_filesize' => (string)ini_get('upload_max_filesize'),
+    'post_max_size' => (string)ini_get('post_max_size'),
+    'max_execution_time' => (string)ini_get('max_execution_time'),
+];
+$phpInfoUrl = '../../scripts/system_status_phpinfo.php';
 ?>
 <div class="metrics-grid">
-    <!-- PHP Version & Core Info -->
     <div class="metric-card">
         <h3>PHP Core</h3>
-        <div id="php-core-loader" class="text-center">Loading...</div>
-        <div id="php-core-content" style="display:none;">
-            <table class="info-table">
-                <tr><td>Version</td><td id="php_version_str"></td></tr>
-                <tr><td>Configuration File</td><td id="php_ini_path" style="word-break:break-all; font-size: 0.8rem;"></td></tr>
-            </table>
-        </div>
+        <table class="info-table">
+            <tr><td>Version</td><td><?php echo sanitize('PHP ' . PHP_VERSION); ?></td></tr>
+            <tr><td>SAPI</td><td><?php echo sanitize(php_sapi_name()); ?></td></tr>
+            <tr><td>Binary</td><td style="word-break:break-all; font-size: 0.8rem;"><?php echo sanitize(PHP_BINARY); ?></td></tr>
+            <tr><td>Configuration File</td><td style="word-break:break-all; font-size: 0.8rem;"><?php echo sanitize($phpIniPath !== '' ? $phpIniPath : 'None'); ?></td></tr>
+        </table>
+        <p style="margin-top:12px;">
+            <a class="btn btn-sm" href="<?php echo sanitize($phpInfoUrl); ?>" target="_blank" rel="noopener">Open full phpinfo()</a>
+        </p>
     </div>
 
-    <!-- PHP INI Limits -->
     <div class="metric-card">
         <h3>Resource Limits</h3>
-        <div id="php-limits-loader" class="text-center">Loading...</div>
-        <div id="php-limits-content" style="display:none;">
-            <table class="info-table">
-                <tr><td>memory_limit</td><td id="php_mem_limit"></td></tr>
-                <tr><td>upload_max_filesize</td><td id="php_upload_max"></td></tr>
-                <tr><td>post_max_size</td><td id="php_post_max"></td></tr>
-                <tr><td>max_execution_time</td><td id="php_max_exec"></td></tr>
-            </table>
-        </div>
+        <table class="info-table">
+            <tr><td>memory_limit</td><td><?php echo sanitize($phpIniValues['memory_limit']); ?></td></tr>
+            <tr><td>upload_max_filesize</td><td><?php echo sanitize($phpIniValues['upload_max_filesize']); ?></td></tr>
+            <tr><td>post_max_size</td><td><?php echo sanitize($phpIniValues['post_max_size']); ?></td></tr>
+            <tr><td>max_execution_time</td><td><?php echo sanitize($phpIniValues['max_execution_time']); ?>s</td></tr>
+        </table>
     </div>
 
-    <!-- PHP Extensions -->
     <div class="metric-card" style="grid-column: span 2;">
-        <h3>Enabled Extensions</h3>
-        <div id="php-ext-loader" class="text-center">Loading...</div>
-        <div id="php-ext-content" style="display:none; column-count: 3; gap: 20px;">
-            <ul id="php_extensions_list" style="margin:0; padding:0; list-style:none; font-size: 0.85rem;">
-                <!-- Extensions will be populated here -->
+        <h3>Enabled Extensions (<?php echo count($phpExtensions); ?>)</h3>
+        <div style="column-count: 3; gap: 20px;">
+            <ul style="margin:0; padding:0; list-style:none; font-size: 0.85rem;">
+                <?php foreach ($phpExtensions as $extension): ?>
+                    <li style="padding: 2px 0;">✅ <?php echo sanitize($extension); ?></li>
+                <?php endforeach; ?>
             </ul>
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const apiBase = '../../scripts/system_status_api.php?action=';
-
-    fetch(apiBase + 'php_version')
-        .then(response => response.json())
-        .then(res => {
-            if (res.status === 'success') {
-                document.getElementById('php_version_str').textContent = res.data.version;
-                document.getElementById('php_ini_path').textContent = res.data.ini_path;
-                document.getElementById('php-core-loader').style.display = 'none';
-                document.getElementById('php-core-content').style.display = 'block';
-            }
-        });
-
-    fetch(apiBase + 'php_ini_values')
-        .then(response => response.json())
-        .then(res => {
-            if (res.status === 'success') {
-                const d = res.data;
-                document.getElementById('php_mem_limit').textContent = d.memory_limit;
-                document.getElementById('php_upload_max').textContent = d.upload_max_filesize;
-                document.getElementById('php_post_max').textContent = d.post_max_size;
-                document.getElementById('php_max_exec').textContent = d.max_execution_time + 's';
-                document.getElementById('php-limits-loader').style.display = 'none';
-                document.getElementById('php-limits-content').style.display = 'block';
-            }
-        });
-
-    fetch(apiBase + 'php_extensions')
-        .then(response => response.json())
-        .then(res => {
-            if (res.status === 'success') {
-                const list = document.getElementById('php_extensions_list');
-                const extensions = [].concat(res.data || []);
-                extensions.sort().forEach(ext => {
-                    const li = document.createElement('li');
-                    li.textContent = '✅ ' + ext;
-                    li.style.padding = '2px 0';
-                    list.appendChild(li);
-                });
-                document.getElementById('php-ext-loader').style.display = 'none';
-                document.getElementById('php-ext-content').style.display = 'block';
-            }
-        });
-});
-</script>

@@ -4,7 +4,7 @@
 
 ## 1. Module Purpose
 
-Admin-only diagnostic dashboard for server health: real-time monitoring (CPU, RAM, disk), PHP configuration, and MySQL/database metrics. Primary target is **Windows 11 + Laragon** (PowerShell metrics). **Linux/CI** hosts use PHP-native fallbacks via `includes/itm_system_status_native.php` so tabs and `scripts/system_status_api.php` still return JSON without `powershell.exe`.
+Admin-only diagnostic dashboard for server health: real-time monitoring (CPU, RAM, disk), PHP configuration, and MySQL/database metrics. **PHP Settings** and **Database** tabs are **server-rendered** from the active Apache/mysqli runtime (no AJAX). **Monitoring** uses `scripts/system_status_api.php` — hardware via `includes/*.ps1` on Windows (requires `shell_exec`) or `includes/itm_system_status_native.php` on Linux/CI. Full PHP detail: `scripts/system_status_phpinfo.php` (admin-only `phpinfo()`).
 
 Canonical overview: `docs/system_status.md`.
 
@@ -30,8 +30,9 @@ N/A — no FK-owned data.
 
 - **Admin only:** `index.php` and `scripts/system_status_api.php` call `itm_is_admin()`; non-admins redirect to `dashboard.php` (UI) or receive HTTP 403 (API).
 - **Read-only:** no INSERT/UPDATE/DELETE; no audit triggers required.
-- **Windows:** full metrics via `includes/*.ps1` executed by `system_status_api.php`.
-- **Non-Windows:** same `action=` values served from `itm_system_status_native_payload()` (`/proc` metrics, `ini_get()`, mysqli).
+- **PHP + MySQL:** always native (`ini_get()`, `get_loaded_extensions()`, mysqli) — never PowerShell — so Laragon tabs work when `shell_exec` is disabled.
+- **Hardware (Monitoring tab):** Windows uses `includes/*.ps1` via `itm_system_status_run_powershell_action()`; non-Windows uses `itm_system_status_native_payload()` (`/proc`, `disk_*_space`).
+- **Win11 troubleshooting:** run `php scripts/verify_system_status.php` — checks `shell_exec`, `.ps1` readability, and per-script `test_*.php` wrappers.
 - **Not standard CRUD:** no `create.php` / `delete.php`; tab router only (`?tab=monitoring|php_settings|database`).
 
 ---
@@ -39,9 +40,10 @@ N/A — no FK-owned data.
 ## 5. UI Behavior Requirements
 
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`).
-- **AJAX:** tabs fetch `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts on Monitoring).
+- **AJAX:** Monitoring tab only — fetches `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts). Failed hardware calls show an inline error instead of perpetual Loading….
+- **PHP Settings tab:** server-rendered PHP core, limits, extensions; link to `scripts/system_status_phpinfo.php`.
+- **Database tab:** server-rendered MySQL service card, storage summary, and full `information_schema` size table.
 - **Refresh:** toolbar **Refresh** reloads current tab.
-- **Database tab:** PHP-rendered size table (top 10) plus PowerShell/native AJAX table.
 - **Layout:** uses shared `sidebar.php` / `header.php`; module-specific CSS in `index.php`.
 
 ---
@@ -50,20 +52,20 @@ N/A — no FK-owned data.
 
 Dispatcher: `scripts/system_status_api.php` (Admin session required).
 
-| action | Windows source | Non-Windows fallback |
-|--------|----------------|----------------------|
-| `system_info` | `includes/system_info.ps1` | `/proc/meminfo`, `/proc/cpuinfo`, disk space |
-| `cpu_usage` | `includes/cpu_usage.ps1` | `/proc/loadavg` |
-| `ram_usage` | `includes/ram_usage.ps1` | `/proc/meminfo` |
-| `disk_usage` | `includes/disk_usage.ps1` | `disk_total_space` / `disk_free_space` |
-| `uptime` | `includes/uptime.ps1` | `/proc/uptime` |
-| `php_version` | `includes/php_version.ps1` | `PHP_VERSION`, `php_ini_loaded_file()` |
-| `php_extensions` | `includes/php_extensions.ps1` | `get_loaded_extensions()` |
-| `php_ini_values` | `includes/php_ini_values.ps1` | `ini_get()` |
-| `mysql_status` | `includes/mysql_status.ps1` | `mysqli_ping()` |
-| `mysql_version` | `includes/mysql_version.ps1` | `mysqli_get_server_info()` |
-| `mysql_databases` | `includes/mysql_databases.ps1` | `SHOW DATABASES` |
-| `mysql_size` | `includes/mysql_size.ps1` | `information_schema` aggregate |
+| action | Source |
+|--------|--------|
+| `system_info` | Windows: `includes/system_info.ps1`. Linux: `/proc` native |
+| `cpu_usage` | Windows: `includes/cpu_usage.ps1`. Linux: `/proc/loadavg` |
+| `ram_usage` | Windows: `includes/ram_usage.ps1`. Linux: `/proc/meminfo` |
+| `disk_usage` | Windows: `includes/disk_usage.ps1`. Linux: `disk_*_space` |
+| `uptime` | Windows: `includes/uptime.ps1`. Linux: `/proc/uptime` |
+| `php_version` | Always native (`PHP_VERSION`, `php_ini_loaded_file()`) |
+| `php_extensions` | Always native (`get_loaded_extensions()`) |
+| `php_ini_values` | Always native (`ini_get()`) |
+| `mysql_status` | Always native (`mysqli_ping()`) |
+| `mysql_version` | Always native (`mysqli_get_server_info()`) |
+| `mysql_databases` | Always native (`SHOW DATABASES`) |
+| `mysql_size` | Always native (`information_schema`) |
 
 Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`).
 
@@ -73,14 +75,16 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`).
 
 - `index.php` — Admin gate, tab router, shared styles.
 - `tabs/monitoring.php` — System overview, CPU/RAM gauges, disk cards.
-- `tabs/php_settings.php` — PHP core, limits, extensions list.
-- `tabs/database.php` — MySQL service card, storage summary, size tables.
+- `tabs/php_settings.php` — Server-rendered PHP core, limits, extensions; phpinfo link.
+- `tabs/database.php` — Server-rendered MySQL service, storage summary, size table.
 - `AGENT_NOTES.md` — this file.
 
 Shared helpers:
 
-- `includes/itm_system_status_native.php` — non-Windows JSON payloads.
-- `includes/*.ps1` — Windows Laragon metrics (12 scripts).
+- `includes/itm_system_status_native.php` — PHP/MySQL + Linux hardware JSON payloads.
+- `includes/itm_system_status_powershell.php` — Windows `shell_exec` runner and permission checks.
+- `includes/*.ps1` — Windows hardware metrics (12 scripts; PHP/MySQL API actions no longer route here).
+- `scripts/system_status_phpinfo.php` — admin-only full `phpinfo()`.
 
 ---
 
@@ -99,19 +103,20 @@ N/A (read-only).
 ## 10. Common Pitfalls
 
 - **Element IDs:** Monitoring tab uses hyphenated IDs (`system-info-loader`, `system-info-content`); mismatched underscores leave loaders visible forever.
-- **PowerShell on Linux:** `shell_exec('powershell.exe …')` returns null — native fallback must run first on non-Windows.
-- **Laragon paths:** `.ps1` scripts fall back to `C:\laragon\bin\…` when binaries are not on PATH.
-- **`shell_exec` disabled:** Windows metrics fail even for admins; PHP/native paths still work for PHP and DB actions on Linux.
+- **PowerShell on Linux:** hardware actions use native `/proc` paths; never call `powershell.exe`.
+- **Laragon paths:** `.ps1` scripts use `Get-CimInstance`; Apache/PHP user must **read** `includes/*.ps1` (verify with `php scripts/verify_system_status.php`).
+- **`shell_exec` disabled:** Monitoring hardware metrics fail with an inline error; PHP Settings and Database tabs still render (server-side PHP/mysqli).
+- **Stale AJAX tabs:** PHP Settings and Database must not fetch PowerShell — they are server-rendered only.
 - **MySQL service status on Linux:** native `mysql_status` reports Running when `mysqli_ping()` succeeds (not Windows Service Control Manager).
 
 ---
 
 ## 11. Examples of Safe Code Patterns
 
-### Native fallback before PowerShell (API)
+### Native-first PHP/MySQL (API)
 
 ```php
-if (!itm_system_status_is_windows()) {
+if (itm_system_status_prefers_native($action)) {
     $json_data = itm_system_status_native_payload($action, $conn);
     echo json_encode($json_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;

@@ -15,19 +15,20 @@ Displays core system metrics:
 - **Disk Usage:** Progress bars for each local physical drive showing used and free space.
 
 ### 2. PHP Settings
-Provides a detailed look at the PHP environment:
-- **PHP Core:** Active version and path to the loaded `php.ini` file.
-- **Resource Limits:** Key configuration values like `memory_limit`, `upload_max_filesize`, `post_max_size`, and `max_execution_time`.
-- **Enabled Extensions:** A comprehensive list of all loaded PHP modules.
+Rendered directly from the **active Apache PHP runtime** (no AJAX or PowerShell):
+- **PHP Core:** Version, SAPI, binary path, and loaded `php.ini` file.
+- **Resource Limits:** `memory_limit`, `upload_max_filesize`, `post_max_size`, `max_execution_time`.
+- **Enabled Extensions:** All loaded modules from `get_loaded_extensions()`.
+- **Full detail:** Admin link to `scripts/system_status_phpinfo.php` (`phpinfo()`).
 
 ### 3. Database
-Metrics related to the MySQL/MariaDB service:
-- **MySQL Service:** Service status (Running/Stopped), display name, and binary version.
+Rendered from the **active mysqli connection** (no AJAX):
+- **MySQL Service:** Running/Stopped from `mysqli_ping()`, version from `mysqli_get_server_info()`.
 - **Storage Summary:** Total data size across all databases.
-- **Database Metrics:** List of all databases and their respective sizes on disk (PHP `information_schema` plus API table).
+- **Database Metrics:** Full `information_schema` size table for every database.
 
-## PowerShell Scripts (Windows)
-Metrics on Laragon are collected using PowerShell scripts in `includes/`. All scripts return data in a standardized JSON format:
+## PowerShell Scripts (Windows hardware only)
+On Windows, **Monitoring** hardware metrics (`system_info`, `cpu_usage`, etc.) use PowerShell scripts in `includes/`. PHP and MySQL API actions always use the native PHP/mysqli runtime — the `.ps1` PHP/MySQL scripts remain for `test_*.php` regression only.
 
 ```json
 {
@@ -50,8 +51,12 @@ Metrics on Laragon are collected using PowerShell scripts in `includes/`. All sc
 - `mysql_databases.ps1`
 - `mysql_size.ps1`
 
-## PHP-native fallbacks (Linux / CI)
-`includes/itm_system_status_native.php` serves the same `action=` values without PowerShell (`/proc` metrics, `ini_get()`, mysqli). Used automatically by `scripts/system_status_api.php` when not on Windows.
+## PHP-native runtime (all platforms)
+`includes/itm_system_status_native.php` serves PHP/MySQL actions on every host, and hardware actions on Linux/CI (`/proc`, `disk_*_space`). `includes/itm_system_status_powershell.php` runs Windows hardware scripts with `shell_exec` permission checks.
+
+`scripts/system_status_api.php` routes PHP/MySQL actions through native first; Windows hardware uses PowerShell.
+
+Admin `phpinfo()`: `scripts/system_status_phpinfo.php`.
 
 ## API Endpoints
 `scripts/system_status_api.php` dispatches metrics. Access is restricted to the **Admin** role (session).

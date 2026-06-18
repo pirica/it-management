@@ -11,6 +11,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once ROOT_PATH . 'includes/itm_system_status_native.php';
+require_once ROOT_PATH . 'includes/itm_system_status_powershell.php';
 
 itm_script_output_begin('System Status Verification');
 
@@ -115,6 +116,19 @@ foreach ($nativeActions as $action) {
 }
 
 if (itm_system_status_is_windows()) {
+    if (itm_system_status_shell_exec_available()) {
+        ss_verify_pass('shell_exec is available for PowerShell metrics');
+    } else {
+        ss_verify_fail('shell_exec is disabled — Windows Monitoring tab hardware metrics will not load (enable shell_exec in php.ini).');
+    }
+
+    foreach ($psScripts as $script) {
+        $path = ROOT_PATH . 'includes/' . $script;
+        if (!is_readable($path)) {
+            ss_verify_fail('includes/' . $script . ' is not readable by PHP');
+        }
+    }
+
     foreach ($psScripts as $script) {
         $action = basename($script, '.ps1');
         $testScript = ROOT_PATH . 'scripts/test_' . $action . '.php';

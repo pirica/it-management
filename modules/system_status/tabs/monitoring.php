@@ -94,9 +94,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Fetch Data
-    fetch(apiBase + 'system_info')
-        .then(response => response.json())
-        .then(res => {
+    function ssShowError(loaderId, message) {
+        const el = document.getElementById(loaderId);
+        if (!el) {
+            return;
+        }
+        el.textContent = message;
+        el.style.color = '#a52727';
+    }
+
+    function ssFetchJson(action) {
+        return fetch(apiBase + action).then(function(response) {
+            return response.json().then(function(body) {
+                if (!response.ok || (body && body.status !== 'success')) {
+                    const detail = (body && body.message) ? body.message : ('HTTP ' + response.status);
+                    throw new Error(detail);
+                }
+                return body;
+            });
+        });
+    }
+
+    ssFetchJson('system_info')
+        .then(function(res) {
             if (res.status === 'success') {
                 const d = res.data;
                 document.getElementById('os_version').textContent = d.os_version;
@@ -141,17 +161,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     diskContainer.appendChild(diskCard);
                 });
             }
+        })
+        .catch(function(err) {
+            ssShowError('system-info-loader', 'Unable to load system metrics: ' + err.message);
         });
 
-    fetch(apiBase + 'cpu_usage')
-        .then(response => response.json())
-        .then(res => {
+    ssFetchJson('cpu_usage')
+        .then(function(res) {
             if (res.status === 'success') {
                 const load = res.data.cpu_load;
                 document.getElementById('cpu_load_val').textContent = load;
                 cpuChart.data.datasets[0].data = [load, 100 - load];
                 cpuChart.update();
             }
+        })
+        .catch(function() {
+            document.getElementById('cpu_load_val').textContent = 'N/A';
         });
 });
 </script>
