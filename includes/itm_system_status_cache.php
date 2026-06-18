@@ -29,7 +29,10 @@ function itm_system_status_cache_get($conn, string $tabKey): ?array
         return null;
     }
     mysqli_stmt_bind_param($stmt, 's', $tabKey);
-    mysqli_stmt_execute($stmt);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        return null;
+    }
     $result = mysqli_stmt_get_result($stmt);
     $row = $result ? mysqli_fetch_assoc($result) : null;
     mysqli_stmt_close($stmt);
