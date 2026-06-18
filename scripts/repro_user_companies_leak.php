@@ -28,7 +28,7 @@ echo ob_get_clean();
 ?>";
     file_put_contents($tmp_file, $code);
     $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-    $output = shell_exec("$php_bin $tmp_file 2>&1");
+    $output = shell_exec(escapeshellarg($php_bin) . ' ' . escapeshellarg($tmp_file) . ' 2>&1');
     unlink($tmp_file);
     return $output;
 }

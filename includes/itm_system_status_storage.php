@@ -42,7 +42,7 @@ function itm_system_status_directory_direct_metrics(string $absolutePath): array
                 $files++;
             }
         }
-    } catch (UnexpectedValueException $e) {
+    } catch (Exception $e) {
         return ['bytes' => 0, 'files' => 0];
     }
 
@@ -75,7 +75,7 @@ function itm_system_status_directory_metrics(string $absolutePath): array
                 $files++;
             }
         }
-    } catch (UnexpectedValueException $e) {
+    } catch (Exception $e) {
         return ['bytes' => 0, 'files' => 0];
     }
 

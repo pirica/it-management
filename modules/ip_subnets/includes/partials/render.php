@@ -179,7 +179,7 @@
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1) + (!empty($itmSubnetListBulkGenerateColumn) ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($uiColumns) + ($showBulkActions ? 2 : 1) + (!empty($itmSubnetListBulkGenerateColumn) ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>

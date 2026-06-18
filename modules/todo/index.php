@@ -20,11 +20,12 @@ if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id
 $users = [];
 $userSql = "SELECT u.id, u.username
             FROM users u
-            LEFT JOIN user_companies uc ON uc.user_id = u.id
-            WHERE u.company_id = ? OR uc.company_id = ? OR LOWER(u.username) = 'admin'
-            GROUP BY u.id";
+            LEFT JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+            WHERE u.active = 1 AND (u.company_id = ? OR uc.company_id = ?)
+            GROUP BY u.id
+            ORDER BY u.username";
 $stmtUser = mysqli_prepare($conn, $userSql);
-mysqli_stmt_bind_param($stmtUser, 'ii', $company_id, $company_id);
+mysqli_stmt_bind_param($stmtUser, 'iii', $company_id, $company_id, $company_id);
 mysqli_stmt_execute($stmtUser);
 $resUser = mysqli_stmt_get_result($stmtUser);
 if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']] = $row; } }
