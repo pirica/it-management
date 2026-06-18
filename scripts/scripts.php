@@ -891,7 +891,7 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>bypass_login.php</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
-                    <td><code>php scripts/bypass_login.php</code> — Follow CLI instructions to hijack the session in your browser using Developer Tools.</td>
+                    <td><code>php scripts/bypass_login.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
                 <tr>
                     <td><a href="sql_insert.php">sql_insert.php</a></td>
