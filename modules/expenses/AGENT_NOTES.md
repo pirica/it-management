@@ -14,6 +14,7 @@ Tracks actual financial expenditures against budgets.
 ## 4. Business Rules (Critical for Agents)
 - **Decimal Precision**: Amounts must be handled with 2-decimal precision.
 - **Reporting Period**: Each expense has a `date` which determines which budget month/year it impacts.
+- **RBAC (delete)**: POST delete handlers call `itm_require_role_module_permission(..., 'Expenses', 'delete')` before CSRF/delete SQL so read-only roles cannot bypass UI-hidden delete buttons.
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.

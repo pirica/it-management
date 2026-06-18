@@ -10,7 +10,7 @@ CSRF, SQLi, and security guardrail tests.
 - **Windows:** `SecurityFixesTest` must not use Unix-only shell redirects such as `2>/dev/null` (cmd.exe prints "The system cannot find the path specified."). Use `exec()` with `2>&1` via `runPhpScriptFile()`.
 
 ## 7. File Structure
-- **VulnerabilityVerificationTest.php** — June 2026 security review regression tests (assert remediated behaviour); uses disposable users via `itm_script_test_user_create()` for Notes ZIP traversal, Notes IDOR view, and audit reset-token omission checks.
+- **VulnerabilityVerificationTest.php** — June 2026 security review regression tests (assert remediated behaviour); uses disposable users via `itm_script_test_user_create()` for Notes ZIP traversal, Notes IDOR view, audit reset-token omission, RBAC delete on Expenses, users tenant scoping, and user_companies admin gate checks. `createDisposableUser()` honours optional `company_id` in options (defaults to company `1`).
 - **SecurityFixesTest.php** — subprocess verification of fixed security paths; includes JSON import decimal/datetime validation tests.
 
 ## 12. Module Owner Notes (Optional)

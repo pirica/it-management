@@ -9,6 +9,10 @@
 
 // Why: Many entry files use `require` (not `require_once`); skip re-execution when already loaded.
 if (defined('ITM_CONFIG_LOADED')) {
+    if (function_exists('itm_resolve_active_company_id')) {
+        global $company_id;
+        $company_id = itm_resolve_active_company_id(isset($company_id) ? (int)$company_id : 0);
+    }
     return;
 }
 define('ITM_CONFIG_LOADED', true);
@@ -252,6 +256,7 @@ require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/itm_company_module_access.php';
+require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 
 // Establish Database Connection
@@ -404,7 +409,7 @@ if (
     exit();
 }
 
-$company_id = $_SESSION['company_id'] ?? 0;
+$company_id = itm_resolve_active_company_id((int)($_SESSION['company_id'] ?? 0));
 
 if ($company_id > 0 && isset($conn) && $conn instanceof mysqli) {
     $itmIpamHelpersPath = ROOT_PATH . 'includes/ipam_helpers.php';
