@@ -908,8 +908,8 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><code>take_screenshots_modules.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
-                    <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of modules. Requires Playwright.</td>
-                    <td><code>python3 scripts/take_screenshots_modules.py</code></td>
+                    <td>Playwright screenshots for README module images. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file, then waits for System Status AJAX before saving <code>docs/readme/system_status.png</code>.</td>
+                    <td><code>ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py</code></td>
                 </tr>
                 <tr>
                     <td><code>take_screenshots_modules_all.py</code></td>

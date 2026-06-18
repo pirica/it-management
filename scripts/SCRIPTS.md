@@ -633,7 +633,7 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 
 Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, or any `includes/*.ps1` metrics script. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only). Module UI: `modules/system_status/index.php`.
 
-Screenshots for README: `python3 scripts/take_screenshots_modules.py` (captures `system_status` monitoring tab to `docs/readme/system_status.png`; requires Playwright + local Apache at `http://localhost/it-management/`). Set `ITM_SCREENSHOT_ONLY=system_status` to capture only that module.
+Screenshots for README: `python3 scripts/take_screenshots_modules.py` (captures `system_status` monitoring tab to `docs/readme/system_status.png`; requires Playwright + local Apache at `http://localhost/it-management/`). Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie. Set `ITM_SCREENSHOT_ONLY=system_status` to capture only that module. The script waits for `#system-info-content` before saving so README does not show the login page or perpetual Loading….
 
 ### Resignations and employee profile scripts
 
