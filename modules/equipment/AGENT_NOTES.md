@@ -30,8 +30,31 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
 - **Switch Port Manager (equipment index tiles):**
-  - **`includes/get_ports.php`** (POST, JSON or form) — `switch_id`, `csrf_token`. Loads/seeds tenant-scoped `switch_ports` for the active switch and returns ports plus lookup metadata (statuses, colors, VLANs, IDF/rack options). Success: `{"success":true,"ports":[…],…}` via `itm_api_json_response()`. `company_id` comes from session only (never from client payload). Documented in `scripts/api.php`.
-  - **`includes/update_port.php`** (POST, JSON or form) — `id`, `switch_id`, `csrf_token`, port field updates. Updates `switch_ports` scoped by session `company_id`; may sync linked `idf_ports` when management/To IDF fields change (transaction + rollback per IDF guardrail). Zero-row updates: HTTP `404` via `itm_api_mutation_requires_rows()`. Shared helpers: `includes/switch_port_api_helpers.php`. Regression: `php scripts/idfs_sync_human_test.php`.
+  - **`includes/get_ports.php`** (POST, JSON or form) — `switch_id`, `csrf_token`. Loads/seeds tenant-scoped `switch_ports` for the active switch and returns ports plus lookup metadata (statuses, colors, VLANs, IDF/rack options). Success: `{"success":true,"ports":[…],…}` via `itm_api_json_response()`. **Handlers MUST derive `$company_id` from `config.php` / the authenticated session and ignore any `company_id` in the request body or query string.** Missing session tenant → HTTP `403`. Documented in `scripts/api.php`.
+
+    ```php
+    // Canonical pattern (includes/get_ports.php, includes/update_port.php)
+    require_once dirname(__DIR__) . '/config/config.php';
+
+    if ($company_id <= 0) {
+        itm_api_json_response([
+            'success' => false,
+            'error' => 'Tenant context required (company_id in session).',
+        ], 403);
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, port_number, to_patch_port, status_id
+           FROM switch_ports
+          WHERE company_id = ? AND equipment_id = ?
+          ORDER BY port_number ASC'
+    );
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $switchId);
+    // … itm_mysqli_stmt_fetch_all_assoc(); respond via itm_api_json_response()
+    ```
+
+  - **`includes/update_port.php`** (POST, JSON or form) — `id`, `switch_id`, `csrf_token`, port field updates. Updates `switch_ports` scoped by session `company_id`; To IDF auto-sync runs in a **single transaction** with `idf_ports` when `management_id` column exists (rollback on failure). Zero-row updates: HTTP `404`. Shared helpers: `includes/switch_port_api_helpers.php`. Regression: `php scripts/idfs_sync_human_test.php`.
 
 ## 7. File Structure
 - Standard CRUD structure + `delete_functions.php`.

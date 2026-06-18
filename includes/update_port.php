@@ -18,9 +18,9 @@ require_once __DIR__ . '/itm_api_json_response.php';
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 
-// Access Control: Authentication check
+// Access Control: Authentication check (session company_id via config.php — ignore payload company_id)
 if ($company_id <= 0) {
-    itm_api_json_response(['success' => false, 'error' => 'Unauthorized'], 401);
+    itm_api_json_response(['success' => false, 'error' => 'Tenant context required (company_id in session).'], 403);
 }
 
 // Only allow POST requests
