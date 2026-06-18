@@ -23,6 +23,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.
+- **verify_database_sql_import.sh** — full `database.sql` import + 88-table assertion; CI job **database-import** in `.github/workflows/smoke.yml`.
 - **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV; post-run link to `phpunit/coverage/html/coverage.html`. Browser coverage URL: `run_tests.php?run=1&mode=coverage`. Full docs: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **verify_select_options_escalation.php** — regression for Select Options API table whitelist (`includes/itm_select_options_policy.php`); see **`scripts/SCRIPTS.md` → Select Options API verification**.
