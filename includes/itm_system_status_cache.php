@@ -77,7 +77,12 @@ function itm_system_status_cache_save($conn, string $tabKey, array $payload, int
 
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) {
-        error_log('itm_system_status_cache_save: json_encode failed: ' . json_last_error_msg());
+        error_log(sprintf(
+            'itm_system_status_cache_save: json_encode failed (%s) tab_key=%s company_id=%d',
+            json_last_error_msg(),
+            $tabKey,
+            $companyId
+        ));
         return false;
     }
 
