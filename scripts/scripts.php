@@ -790,6 +790,7 @@ require_once __DIR__ . '/../config/config.php';
                         <code>php scripts/module_browser_qa_runner.php</code><br>
                         <code>php scripts/module_browser_qa_runner.php --pilot-only</code> (expenses only)<br>
                         <code>php scripts/module_browser_qa_runner.php --module=expenses --company=1</code><br>
+                        <code>php scripts/module_browser_qa_runner.php --module=license_management --company=1</code><br>
                         <code>php scripts/module_browser_qa_runner.php --ui-click-smoke --module=expenses --company=1</code> (CLI guard only — real clicks need the browser form)<br>
                         <code>php scripts/module_browser_qa_runner.php --help</code>
                     </td>

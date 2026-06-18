@@ -37,6 +37,10 @@
 
 <p align="center"><img src="docs/readme/demo_equipment.png" alt="Equipment module list" /></p>
 
+<p align="center"><strong>License Management</strong> — software licenses with type, supplier, quantity, purchase/expiry dates, and price.</p>
+
+<p align="center"><img src="docs/readme/demo_license_management.png" alt="License Management module list" /></p>
+
 <p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
 
 <p align="center"><img src="docs/readme/private_contacts.png" alt="Private Contacts module" /></p>
@@ -52,6 +56,10 @@
 <p align="center"><strong>Equipment</strong> — module list with search, sort, and table tools (export / import).</p>
 
 <p align="center"><img src="docs/readme/equipment.png" alt="Equipment module list" /></p>
+
+<p align="center"><strong>License Management</strong> — tenant-scoped license records with Type and Supplier labels, dd/mm/yyyy dates, and standard CRUD tools.</p>
+
+<p align="center"><img src="docs/readme/license_management.png" alt="License Management module list" /></p>
 
 <p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
 
@@ -141,11 +149,11 @@
 
 #### Inventory, assets, and procurement
 
-`equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `patches_updates`, `patches_updates_level`, `patches_updates_status`
+`equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `license_management`, `license_types`, `patches_updates`, `patches_updates_level`, `patches_updates_status`
 
-**Purpose:** Asset management, procurement catalogues, warranty and patch tracking, and consumable inventory.
+**Purpose:** Asset management, procurement catalogues, software license tracking, warranty and patch tracking, and consumable inventory.
 
-**Modules:** `equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `patches_updates`, `patches_updates_level`, `patches_updates_status`, `expiring` (read-only dashboard for warranty/certificate/alert end dates)
+**Modules:** `equipment`, `equipment_types`, `equipment_statuses`, `equipment_environment`, `manufacturers`, `suppliers`, `supplier_statuses`, `inventory_categories`, `inventory_items`, `warranty_types`, `catalogs`, `license_management`, `expiring` (read-only dashboard for warranty/certificate/alert end dates), `patches_updates`, `patches_updates_level`, `patches_updates_status` — **`license_types`** is a seed-only lookup (no separate CRUD module)
 
 **Equipment-type facades** (filter views delegating to `equipment`): `is_printer`, `is_workstation`, `is_server`, `is_switch`, `is_router`, `is_firewall`, `is_access_point`, `is_cctv`, `is_phone`, `is_pos`, `is_port_patch_panel`, `is_other`
 
@@ -290,6 +298,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Equipment Types / Statuses / Environment | `modules/equipment_types/`, `equipment_statuses/`, `equipment_environment/` | Reference data for assets |
 | Catalogs | `modules/catalogs/` | Product catalogue (models, prices, images) for procurement and rack planner |
 | Manufacturers / Suppliers | `modules/manufacturers/`, `suppliers/`, `supplier_statuses/` | Vendor reference data |
+| License Management | `modules/license_management/` | Software licenses (type, supplier, quantity, dates, price) |
 | Inventory | `modules/inventory_categories/`, `inventory_items/` | Consumable and supply tracking |
 | Warranty Types | `modules/warranty_types/` | Warranty classification |
 | Patches & Updates | `modules/patches_updates/`, `patches_updates_level/`, `patches_updates_status/` | Patch/update tracking on equipment |
