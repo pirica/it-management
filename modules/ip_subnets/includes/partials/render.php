@@ -21,6 +21,7 @@
             <?php endif; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
+                <?php $itmSubnetListBulkGenerateColumn = (($crud_table ?? '') === 'ip_subnets'); ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <a href="create.php" class="btn btn-primary">➕</a>
@@ -118,6 +119,9 @@
                             <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
+                                <?php if (!empty($itmSubnetListBulkGenerateColumn) && $field === 'active'): ?>
+                                    <th>Generate host IPs</th>
+                                <?php endif; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
                                     <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
@@ -134,6 +138,25 @@
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
+                                    <?php if (!empty($itmSubnetListBulkGenerateColumn) && $f === 'active'): ?>
+                                        <?php
+                                            $itmRowSubnetId = (int)($row['id'] ?? 0);
+                                            $itmRowBulkUi = function_exists('itm_ipam_subnet_bulk_generate_ui')
+                                                ? itm_ipam_subnet_bulk_generate_ui((int)($row['prefix_length'] ?? 0))
+                                                : ['can_generate' => false, 'confirm_message' => '', 'button_label' => 'Generate host IPs'];
+                                        ?>
+                                        <td>
+                                            <?php if (!empty($itmRowBulkUi['can_generate'])): ?>
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo json_encode((string)($itmRowBulkUi['confirm_message'] ?? '')); ?>);">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                    <input type="hidden" name="subnet_id" value="<?php echo $itmRowSubnetId; ?>">
+                                                    <button type="submit" name="generate_subnet_ips" value="1" class="btn btn-sm"><?php echo sanitize((string)($itmRowBulkUi['button_label'] ?? 'Generate host IPs')); ?></button>
+                                                </form>
+                                            <?php else: ?>
+                                                —
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endif; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
@@ -156,7 +179,7 @@
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1) + (!empty($itmSubnetListBulkGenerateColumn) ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>

@@ -8,14 +8,13 @@ if (($crud_action ?? '') !== 'view') {
 
 $itmSubnetViewId = (int)($data['id'] ?? 0);
 $itmSubnetPrefixLength = (int)($data['prefix_length'] ?? 0);
-$itmSubnetBulkMaxHosts = function_exists('itm_ipam_subnet_bulk_generate_max_hosts')
-    ? itm_ipam_subnet_bulk_generate_max_hosts($itmSubnetPrefixLength)
-    : 0;
-$itmSubnetCanBulkGenerate = $itmSubnetBulkMaxHosts > 0;
-$itmSubnetBulkHostTotal = ($itmSubnetPrefixLength >= 0 && $itmSubnetPrefixLength <= 30)
-    ? max(0, (int)(2 ** (32 - $itmSubnetPrefixLength)) - 2)
-    : 0;
-$itmSubnetBulkIsCapped = $itmSubnetCanBulkGenerate && $itmSubnetBulkHostTotal > $itmSubnetBulkMaxHosts;
+$itmSubnetBulkUi = function_exists('itm_ipam_subnet_bulk_generate_ui')
+    ? itm_ipam_subnet_bulk_generate_ui($itmSubnetPrefixLength)
+    : ['can_generate' => false, 'max_hosts' => 0, 'host_total' => 0, 'is_capped' => false, 'confirm_message' => '', 'button_label' => 'Generate host IPs'];
+$itmSubnetBulkMaxHosts = (int)($itmSubnetBulkUi['max_hosts'] ?? 0);
+$itmSubnetCanBulkGenerate = !empty($itmSubnetBulkUi['can_generate']);
+$itmSubnetBulkHostTotal = (int)($itmSubnetBulkUi['host_total'] ?? 0);
+$itmSubnetBulkIsCapped = !empty($itmSubnetBulkUi['is_capped']);
 $itmSubnetAddressTotal = 0;
 
 if ($itmSubnetViewId > 0 && function_exists('itm_ipam_count_subnet_addresses')) {
@@ -40,18 +39,10 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_count_subnet_addresses')) 
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <a class="btn btn-sm btn-primary" href="../ip_addresses/index.php?subnet_id=<?php echo (int)$itmSubnetViewId; ?>">Open IP list</a>
             <?php if ($itmSubnetCanBulkGenerate): ?>
-                <?php
-                    $itmBulkConfirm = $itmSubnetBulkIsCapped
-                        ? 'Generate up to ' . (int)$itmSubnetBulkMaxHosts . ' host IPs (first usable addresses in this subnet)? Existing IPs are kept.'
-                        : 'Generate all host IPs for this subnet? Existing IPs are kept.';
-                    $itmBulkButtonLabel = $itmSubnetBulkIsCapped
-                        ? 'Generate host IPs (up to ' . (int)$itmSubnetBulkMaxHosts . ')'
-                        : 'Generate host IPs';
-                ?>
-                <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo json_encode($itmBulkConfirm); ?>);">
+                <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo json_encode((string)($itmSubnetBulkUi['confirm_message'] ?? '')); ?>);">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="subnet_id" value="<?php echo (int)$itmSubnetViewId; ?>">
-                    <button type="submit" name="generate_subnet_ips" value="1" class="btn btn-sm"><?php echo sanitize($itmBulkButtonLabel); ?></button>
+                    <button type="submit" name="generate_subnet_ips" value="1" class="btn btn-sm"><?php echo sanitize((string)($itmSubnetBulkUi['button_label'] ?? 'Generate host IPs')); ?></button>
                 </form>
             <?php endif; ?>
         </div>

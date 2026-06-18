@@ -4,4 +4,4 @@
 Partial templates for IP Subnets list and detail UI.
 
 ## 12. Module Owner Notes (Optional)
-Coordinate column changes with `modules/ip_addresses/` when subnet labels are shared.
+Coordinate column changes with `modules/ip_addresses/` when subnet labels are shared. Index list inserts a **Generate host IPs** column immediately before **Active**; keep header/body colspan in sync when changing list columns.
