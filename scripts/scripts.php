@@ -1129,6 +1129,30 @@ require_once __DIR__ . '/../config/config.php';
                     <td>PoC for Sensitive Information Disclosure (reset tokens) in Audit Logs. Uses a disposable script test user (not seed Admin id 1).</td>
                     <td><code>php scripts/repro_audit_disclosure.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="repro_destructive_import.php">repro_destructive_import.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for destructive employee import.</td>
+                    <td><code>php scripts/repro_destructive_import.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_todo_user_leak.php">repro_todo_user_leak.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for multi-tenant username leak in Todo module.</td>
+                    <td><code>php scripts/repro_todo_user_leak.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_cross_tenant_admin.php">repro_cross_tenant_admin.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for cross-tenant admin access in Users module.</td>
+                    <td><code>php scripts/repro_cross_tenant_admin.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="fix_users_audit_triggers.php">fix_users_audit_triggers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Fix script to update Users audit triggers to exclude sensitive fields.</td>
+                    <td><code>php scripts/fix_users_audit_triggers.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>

@@ -562,15 +562,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
             }
 
-            // Sync duplicate flags and handle deletions of missing records (full sync)
+            // Sync duplicate flags
             emp_recalculate_duplicates($conn, $company_id);
-            if (!empty($matchedIds)) {
-                $matchedIds = array_values(array_unique(array_map('intval', $matchedIds)));
-                $deleteSql = 'DELETE FROM employees WHERE company_id=' . (int)$company_id . ' AND id NOT IN (' . implode(',', $matchedIds) . ')';
-                if (mysqli_query($conn, $deleteSql)) { $deleted = (int)mysqli_affected_rows($conn); }
-            }
 
-            $messages[] = "Import complete: {$created} created, {$updated} updated, {$deleted} removed, {$skipped} skipped.";
+            $messages[] = "Import complete: {$created} created, {$updated} updated, {$skipped} skipped.";
             if (!empty($importErrors)) {
                 $errors = array_merge($errors, array_slice($importErrors, 0, 10));
             }

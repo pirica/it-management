@@ -14,15 +14,23 @@ $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 
 // Metadata
 $categories = [];
-$resCat = mysqli_query($conn, "SELECT id, name FROM todo_categories WHERE company_id = $company_id OR company_id IS NULL");
+$resCat = mysqli_query($conn, "SELECT id, name FROM todo_categories WHERE company_id = " . (int)$company_id . " OR company_id IS NULL");
 if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id']] = $row; } }
 
 $users = [];
-$resUser = mysqli_query($conn, "SELECT id, username FROM users");
+$userSql = "SELECT u.id, u.username
+            FROM users u
+            LEFT JOIN user_companies uc ON uc.user_id = u.id
+            WHERE u.company_id = ? OR uc.company_id = ? OR LOWER(u.username) = 'admin'
+            GROUP BY u.id";
+$stmtUser = mysqli_prepare($conn, $userSql);
+mysqli_stmt_bind_param($stmtUser, 'ii', $company_id, $company_id);
+mysqli_stmt_execute($stmtUser);
+$resUser = mysqli_stmt_get_result($stmtUser);
 if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']] = $row; } }
 
 $departments = [];
-$resDept = mysqli_query($conn, "SELECT id, name, code FROM departments WHERE company_id = $company_id OR company_id IS NULL");
+$resDept = mysqli_query($conn, "SELECT id, name, code FROM departments WHERE company_id = " . (int)$company_id . " OR company_id IS NULL");
 if ($resDept) { while ($row = mysqli_fetch_assoc($resDept)) { $departments[$row['id']] = $row; } }
 
 // Handle Excel/CSV database import requests from table-tools.js.

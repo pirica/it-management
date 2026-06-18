@@ -303,7 +303,7 @@ $uiColumns = itm_users_filter_ui_columns($uiColumns);
 $currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 $currentUserIsAdmin = itm_is_admin($conn, $currentUserId);
 
-$applyCompanyScope = $hasCompany && $company_id > 0 && !$currentUserIsAdmin;
+$applyCompanyScope = $hasCompany && $company_id > 0;
 $hideAdminAccounts = !$currentUserIsAdmin;
 $hideAdminAccountsSql = "LOWER(COALESCE(`username`, '')) <> 'admin' AND COALESCE((SELECT LOWER(COALESCE(urv.name, '')) FROM `user_roles` urv WHERE urv.id = `users`.`role_id` LIMIT 1), '') <> 'admin'";
 
