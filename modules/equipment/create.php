@@ -1641,7 +1641,7 @@ foreach ($types as $typeItem) {
 
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'idf_id' => '', 'name' => '',
-    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '', 'assigned_to_employee_id' => '',
+    'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '', 'assigned_to_employee_id' => '', 'assigned_date' => '',
     'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
@@ -1680,6 +1680,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($k === 'active') {
             $postedActive = $_POST['active'] ?? $data['active'];
             $data[$k] = (int)$postedActive === 1 ? 1 : 0;
+        } elseif ($k === 'assigned_date') {
+            $data[$k] = trim($_POST['assigned_date'] ?? '');
         } else {
             $data[$k] = trim($_POST[$k] ?? '');
         }
@@ -2068,6 +2070,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $oldAssigneeId = $oldAssigneeId > 0 ? $oldAssigneeId : null;
                 }
                 $assignedByUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+                $assignmentAssignedDate = equipment_fetch_assignment_assigned_date($conn, (int)$company_id, $id);
                 $assignmentAssetDescription = equipment_build_assignment_asset_description(
                     (string)$data['name'],
                     (string)$data['model']
@@ -2079,6 +2082,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $newAssigneeId,
                     $oldAssigneeId,
                     $assignedByUserId,
+                    $assignmentAssignedDate,
                     $assignmentAssetDescription
                 );
                 if ($assignmentSyncError !== null) {
@@ -2217,6 +2221,8 @@ itm_equipment_poe_append_persisted_row($conn, $switchPoeOptions, (int)($data['sw
 equipment_append_persisted_department_option($conn, $departments, (int)($data['department_id'] ?? 0), (int)$company_id);
 equipment_append_persisted_supplier_option($conn, $suppliers, (int)($data['supplier_id'] ?? 0), (int)$company_id);
 equipment_append_persisted_employee_option($conn, $employees, (int)($data['assigned_to_employee_id'] ?? 0), (int)$company_id);
+$assignmentAssignedDateHidden = equipment_resolve_assignment_assigned_date($data['updated_at'] ?? $data['created_at'] ?? '');
+$data['assigned_date'] = $assignmentAssignedDateHidden;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -2421,7 +2427,7 @@ equipment_append_persisted_employee_option($conn, $employees, (int)($data['assig
                 <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row form-row-3">
-                <div class="form-group"><label>Assign To Employee</label><select name="assigned_to_employee_id"><option value="">-- None --</option><?php render_options($employees, $data['assigned_to_employee_id']); ?></select></div>
+                <div class="form-group"><label>Assign To Employee</label><select name="assigned_to_employee_id"><option value="">-- None --</option><?php render_options($employees, $data['assigned_to_employee_id']); ?></select><input type="hidden" name="assigned_date" value="<?php echo sanitize($assignmentAssignedDateHidden); ?>"></div>
                 <div class="form-group"><label>Department</label><select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department" data-add-extra-fields="<?php echo $departmentExtraFieldsJson; ?>"><option value="">-- None --</option><?php render_options($departments, $data['department_id']); ?><option value="__add_new__">➕</option></select></div>
                 <div class="form-group"></div>
             </div>
