@@ -22,7 +22,8 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **todo_visibility.php** — global/assigned/creator filter for Todo module.
 - **delete_functions.php** — shared logic for complex deletions (e.g., equipment).
 - **companies_view_redirect.php** — legacy company view redirect; guarded via `itm_script_entry_guard.php`.
-- **get_ports.php** / **update_port.php** — switch port AJAX endpoints; guarded + shared helpers in **switch_port_api_helpers.php**; all JSON exits use `itm_api_json_response()` with `JSON_UNESCAPED_UNICODE`; prepared-statement reads use `itm_mysqli_stmt_fetch_assoc()` (mysqlnd fallback).
+- **get_ports.php** / **update_port.php** — switch port AJAX endpoints; guarded + shared helpers in **switch_port_api_helpers.php** (lookup maps and VLAN lists use `itm_mysqli_stmt_fetch_all_assoc()`); all JSON exits use `itm_api_json_response()` with `JSON_UNESCAPED_UNICODE`; prepared-statement reads use `itm_mysqli_stmt_fetch_assoc()` / `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback).
+- **switch_port_api_helpers.php** — shared lookup/VLAN helpers for port AJAX endpoints; tenant-scoped prepared queries use mysqlnd-safe fetch helpers.
 - **itm_script_entry_guard.php** — `itm_skip_http_entry_unless_direct()`, `itm_skip_view_partial_unless_context()`, PHPUnit processing detection.
 - **switch_port_api_helpers.php** — shared lookup/VLAN helpers for port AJAX endpoints (avoids redeclare fatals during coverage).
 - **itm_select_options_policy.php** — whitelist and blocked-table policy for `modules/select_options_api.php` quick-add inserts.
