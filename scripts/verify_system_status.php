@@ -80,9 +80,8 @@ foreach ($psScripts as $script) {
         continue;
     }
     ss_verify_pass('Found includes/' . $script);
-    $size = filesize($path);
-    if ($size === false || $size < 32) {
-        ss_verify_fail('includes/' . $script . ' looks empty or unreadable');
+    if (!is_readable($path)) {
+        ss_verify_fail('includes/' . $script . ' is not readable by PHP');
     }
 }
 

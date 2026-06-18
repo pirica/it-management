@@ -36,13 +36,13 @@ if (!function_exists('itm_table_has_column')) {
                 mysqli_stmt_execute($stmt);
                 $res = mysqli_stmt_get_result($stmt);
                 while ($res && ($row = mysqli_fetch_assoc($res))) {
-                    $tableCache[$table][$row['COLUMN_NAME']] = true;
+                    $tableCache[$table][strtolower((string)$row['COLUMN_NAME'])] = true;
                 }
                 mysqli_stmt_close($stmt);
             }
         }
 
-        return isset($tableCache[$table][$column]);
+        return isset($tableCache[$table][strtolower((string)$column)]);
     }
 }
 
@@ -68,13 +68,19 @@ if (!function_exists('itm_table_column_is_nullable')) {
                 mysqli_stmt_execute($stmt);
                 $res = mysqli_stmt_get_result($stmt);
                 while ($res && ($row = mysqli_fetch_assoc($res))) {
-                    $nullableCache[$table][$row['COLUMN_NAME']] = (strtoupper((string)($row['IS_NULLABLE'] ?? '')) === 'YES');
+                    $colName = strtolower((string)$row['COLUMN_NAME']);
+                    $nullableCache[$table][$colName] = (strtoupper((string)($row['IS_NULLABLE'] ?? '')) === 'YES');
                 }
                 mysqli_stmt_close($stmt);
             }
         }
 
-        return !empty($nullableCache[$table][$column]);
+        $normalizedColumn = strtolower((string)$column);
+        if (!array_key_exists($normalizedColumn, $nullableCache[$table])) {
+            return false;
+        }
+
+        return (bool)$nullableCache[$table][$normalizedColumn];
     }
 }
 

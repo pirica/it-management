@@ -908,7 +908,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><code>take_screenshots_modules.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
-                    <td>Playwright screenshots for README module images. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file, then waits for System Status AJAX before saving <code>docs/readme/system_status.png</code>.</td>
+                    <td>Playwright screenshots for README module images. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file; cookie domain follows the base URL hostname; waits for System Status AJAX before saving <code>docs/readme/system_status.png</code>.</td>
                     <td><code>ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py</code></td>
                 </tr>
                 <tr>
@@ -962,7 +962,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_vulnerabilities.php">repro_vulnerabilities.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions.</td>
+                    <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
             </tbody>
@@ -983,7 +983,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_system_status.php">verify_system_status.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>modules/system_status/</code>: file layout, registry row, native API payloads, storage tree + active DB table reports, <code>information_schema</code> query; Windows also runs <code>test_*.php</code> PowerShell wrappers.</td>
+                    <td>Regression for <code>modules/system_status/</code>: file layout, registry row, native API payloads, storage tree + active DB table reports, <code>information_schema</code> query; Windows also checks <code>is_readable()</code> on each <code>includes/*.ps1</code> and runs <code>test_*.php</code> PowerShell wrappers.</td>
                     <td><code>php scripts/verify_system_status.php</code></td>
                 </tr>
                 <tr><td><a href="system_status_api.php">system_status_api.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td><td>Admin JSON API dispatcher (<code>?action=system_info</code>, etc.). PHP/MySQL actions always native; Windows hardware uses <code>includes/*.ps1</code> via allowlisted <code>itm_system_status_run_powershell_action()</code>. Invalid <code>action</code> → HTTP 400. Documented in <a href="api.php">api.php</a>.</td><td>GET <code>scripts/system_status_api.php?action=cpu_usage</code> (Admin session)</td></tr>
@@ -1186,7 +1186,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_audit_token_leak.php">repro_audit_token_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification for Audit Log Sensitive Data Exposure.</td>
+                    <td>Verification for Audit Log Sensitive Data Exposure. Disposable test user; prepared <code>UPDATE users</code> for <code>reset_token</code> fields.</td>
                     <td><code>php scripts/repro_audit_token_leak.php</code></td>
                 </tr>
                 <tr>

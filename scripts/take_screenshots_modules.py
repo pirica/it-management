@@ -1,8 +1,14 @@
 import os
+import re
 import subprocess
 import sys
 import time
+from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
+
+def cookie_domain_for(base_url):
+    """Derive cookie domain from screenshot base URL hostname."""
+    return urlparse(base_url).hostname or 'localhost'
 
 def prepare_admin_session():
     """Create an Admin session file Apache (www-data) can read."""
@@ -12,11 +18,7 @@ def prepare_admin_session():
         text=True,
         check=False,
     )
-    match = None
-    for line in result.stdout.splitlines():
-        if line.startswith('Session ID:'):
-            match = line.split(':', 1)[1].strip()
-            break
+    match = re.search(r'Session ID:\s*(\S+)', result.stdout or '')
     if not match:
         raise RuntimeError('bypass_login.php did not return a session id')
 
@@ -24,12 +26,12 @@ def prepare_admin_session():
         ['php', '-r', 'echo ini_get("session.save_path");'],
         text=True,
     ).strip()
-    session_file = os.path.join(session_dir, f'sess_{match}')
+    session_file = os.path.join(session_dir, f'sess_{match.group(1)}')
     if os.path.isfile(session_file):
         subprocess.run(['sudo', 'chown', 'www-data:www-data', session_file], check=False)
         subprocess.run(['sudo', 'chmod', '664', session_file], check=False)
 
-    return match
+    return match.group(1)
 
 def login_admin(context, base_url):
     session_id = prepare_admin_session()
@@ -37,7 +39,7 @@ def login_admin(context, base_url):
         {
             'name': 'PHPSESSID',
             'value': session_id,
-            'domain': 'localhost',
+            'domain': cookie_domain_for(base_url),
             'path': '/',
         }
     ])
@@ -51,9 +53,9 @@ def assert_system_status_page(page):
     if 'login.php' in page.url:
         raise RuntimeError('Redirected to login.php instead of System Status')
     page.wait_for_selector('h1', timeout=15000)
-    headings = [h.inner_text().strip() for h in page.locator('h1').all()]
-    if not any('System Status' in h for h in headings):
-        raise RuntimeError(f'Expected System Status heading, got: {headings!r}')
+    heading = page.locator('h1').first.inner_text().strip()
+    if 'System Status' not in heading:
+        raise RuntimeError(f'Expected System Status heading, got: {heading!r}')
     page.wait_for_selector('.status-tabs a.status-tab', timeout=15000)
 
 def wait_for_monitoring_data(page):

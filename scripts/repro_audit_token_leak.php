@@ -29,14 +29,27 @@ $tokenHash = hash('sha256', $token);
 $tokenExpiresAt = date('Y-m-d H:i:s', time() + 3600);
 
 echo "Triggering password reset for $email...\n";
-// Manually update to trigger the database trigger
-// We need to set @app variables for the trigger
-mysqli_query($conn, "SET @app_user_id = " . (int)$testUser['id']);
-mysqli_query($conn, "SET @app_company_id = $company_id");
+mysqli_query($conn, 'SET @app_user_id = ' . (int)$testUser['id']);
+mysqli_query($conn, 'SET @app_company_id = ' . (int)$company_id);
 mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $testUser['username']) . "'");
 
-$sql = "UPDATE users SET reset_token = '$token', reset_token_hash = '$tokenHash', reset_token_expires_at = '$tokenExpiresAt' WHERE email = '$email'";
-mysqli_query($conn, $sql);
+$stmt = mysqli_prepare(
+    $conn,
+    'UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE email = ? LIMIT 1'
+);
+if (!$stmt) {
+    echo colorText('[FAIL] Unable to prepare reset_token UPDATE.', 'fail') . itm_script_output_nl();
+    itm_script_output_end();
+    exit(1);
+}
+mysqli_stmt_bind_param($stmt, 'ssss', $token, $tokenHash, $tokenExpiresAt, $email);
+if (!mysqli_stmt_execute($stmt)) {
+    echo colorText('[FAIL] reset_token UPDATE failed: ' . mysqli_stmt_error($stmt), 'fail') . itm_script_output_nl();
+    mysqli_stmt_close($stmt);
+    itm_script_output_end();
+    exit(1);
+}
+mysqli_stmt_close($stmt);
 
 // 2. Check audit_logs for the plaintext token
 echo "Checking audit_logs for leaked token...\n";
