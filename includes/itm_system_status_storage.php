@@ -19,6 +19,25 @@ function itm_system_status_format_bytes(int $bytes): string
 }
 
 /**
+ * Why: Managed placeholders and agent docs are not user/upload content for Sub Storage totals.
+ */
+function itm_system_status_is_ignored_storage_file(string $filename): bool
+{
+    $base = basename(str_replace('\\', '/', $filename));
+    if ($base === '.htaccess') {
+        return true;
+    }
+    if (strcasecmp($base, 'index.html') === 0) {
+        return true;
+    }
+    if (strcasecmp($base, 'AGENT_NOTES.md') === 0) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * Why: Parent folders with children need direct-file totals without re-counting subdirectories.
  *
  * @return array{bytes:int,files:int}
@@ -34,6 +53,9 @@ function itm_system_status_directory_direct_metrics(string $absolutePath): array
     try {
         foreach (new FilesystemIterator($absolutePath, FilesystemIterator::SKIP_DOTS) as $fileInfo) {
             if (!$fileInfo->isFile()) {
+                continue;
+            }
+            if (itm_system_status_is_ignored_storage_file($fileInfo->getFilename())) {
                 continue;
             }
             $size = $fileInfo->getSize();
@@ -67,6 +89,9 @@ function itm_system_status_directory_metrics(string $absolutePath): array
         );
         foreach ($iterator as $fileInfo) {
             if (!$fileInfo->isFile()) {
+                continue;
+            }
+            if (itm_system_status_is_ignored_storage_file($fileInfo->getFilename())) {
                 continue;
             }
             $size = $fileInfo->getSize();
