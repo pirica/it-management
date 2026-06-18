@@ -121,7 +121,7 @@ function equipment_fetch_employee_options(mysqli $conn, int $companyId): array
                     CONCAT('Employee #', id)
                 ) AS label
          FROM employees
-         WHERE company_id = ? AND active = 1
+         WHERE company_id = ?
          ORDER BY label"
     );
     if (!$stmt) {
@@ -1736,7 +1736,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requestedEmployeeId = (int)$data['assigned_to_employee_id'];
         $employeeCheckStmt = mysqli_prepare(
             $conn,
-            'SELECT id FROM employees WHERE id = ? AND company_id = ? AND active = 1 LIMIT 1'
+            'SELECT id FROM employees WHERE id = ? AND company_id = ? LIMIT 1'
         );
         $employeeCheckOk = false;
         if ($employeeCheckStmt) {
