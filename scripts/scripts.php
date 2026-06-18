@@ -1142,6 +1142,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/repro_notes_idor.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_metadata_column_cache.php">verify_metadata_column_cache.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for table-level <code>information_schema</code> caching in <code>itm_table_has_column()</code> and <code>itm_table_column_is_nullable()</code> (<code>includes/bootstrap_helpers.php</code>, <code>docs/bolt.md</code>). Cold batch expects MySQL <code>Questions</code> delta 1–2; warm repeat expects delta 0. Optional env: <code>ITM_META_CACHE_TABLE</code> (default <code>switch_ports</code>).</td>
+                    <td><code>php scripts/verify_metadata_column_cache.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_update_port_zero_row.php">verify_update_port_zero_row.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>includes/update_port.php</code>: zero-row tenant-scoped UPDATE returns HTTP 404 before any IDF auto-sync (idf_ports row count unchanged). Creates disposable probe equipment in a transaction when the tenant has no switch_ports rows. Subprocess seeds session tenant before <code>config.php</code>, uses <code>ITM_HTTP_ENDPOINT_CONTRACT_TEST</code>, and stubs <code>itm_api_json_response()</code> to capture HTTP status. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
