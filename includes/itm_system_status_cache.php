@@ -38,7 +38,7 @@ function itm_system_status_cache_get($conn, string $tabKey, int $companyId = 1):
     }
     mysqli_stmt_bind_param($stmt, 'si', $tabKey, $companyId);
     if (!mysqli_stmt_execute($stmt)) {
-        error_log('itm_system_status_cache_get: execute failed for tab_key=' . $tabKey . ' company_id=' . $companyId . ': ' . mysqli_stmt_error($stmt));
+        error_log('itm_system_status_cache_get: execute failed for tab_key=' . $tabKey . ' company_id=' . $companyId);
         mysqli_stmt_close($stmt);
         return null;
     }
