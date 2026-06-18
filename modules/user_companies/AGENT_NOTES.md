@@ -27,8 +27,8 @@ Maps users to companies they may access after login. Drives the company picker o
 - **import_excel_rows** (JSON POST on `index.php`) — bulk import with admin-row guards on each row.
 
 ## 7. File Structure
-- `index.php` — list, import, admin delete guards, bulk actions.
-- `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD entry points.
+- `index.php` — list, create (via `$crud_action === 'create'`), import, admin delete guards, bulk actions.
+- `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD entry wrappers (no standalone `create.php`).
 
 ## 8. Multi-Tenant Rules
 - Cross-tenant by design: one user may map to many companies; each row still validates both `user_id` and `company_id`.

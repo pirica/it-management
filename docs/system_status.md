@@ -11,12 +11,12 @@ Module path: `modules/system_status/index.php` (Admin only).
 
 | Column | Purpose |
 |--------|---------|
-| `tab_key` | `monitoring`, `php_settings`, or `database` (unique) |
+| `tab_key` | `monitoring`, `php_settings`, or `database` |
 | `payload_json` | UTF-8 JSON snapshot for that tab |
-| `company_id` | Tenant anchor for standard fields (cache rows use company `1`) |
+| `company_id` | Tenant scope for cache rows (`UNIQUE (company_id, tab_key)`) |
 | `updated_at` | Last successful Refresh timestamp |
 
-Helpers: `includes/itm_system_status_cache.php` — `itm_system_status_cache_get()`, `itm_system_status_cache_save()`, `itm_system_status_refresh_tab()`, `itm_system_status_refresh_all()`.
+Helpers: `includes/itm_system_status_cache.php` — `itm_system_status_cache_get($conn, $tabKey, $companyId)`, `itm_system_status_cache_save()`, `itm_system_status_refresh_tab()`, `itm_system_status_refresh_all()`.
 
 ## Tabs
 

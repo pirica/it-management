@@ -28,7 +28,7 @@ $token = 'POC_TOKEN_' . bin2hex(random_bytes(16));
 $tokenHash = hash('sha256', $token);
 $tokenExpiresAt = date('Y-m-d H:i:s', time() + 3600);
 
-echo "Triggering password reset for $email...\n";
+echo "Triggering password reset for " . (itm_script_cli_is_cli() ? $email : htmlspecialchars($email, ENT_QUOTES, 'UTF-8')) . "...\n";
 mysqli_query($conn, 'SET @app_user_id = ' . (int)$testUser['id']);
 mysqli_query($conn, 'SET @app_company_id = ' . (int)$company_id);
 mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $testUser['username']) . "'");
@@ -56,7 +56,10 @@ echo "Checking audit_logs for leaked token...\n";
 $auditRes = mysqli_query($conn, "SELECT new_values FROM audit_logs WHERE table_name = 'users' AND record_id = " . (int)$testUser['id'] . " AND action = 'UPDATE' ORDER BY id DESC LIMIT 1");
 if ($auditRow = mysqli_fetch_assoc($auditRes)) {
     $newValues = $auditRow['new_values'];
-    echo "Audit Log new_values: $newValues\n";
+    $displayValues = itm_script_cli_is_cli()
+        ? (string)$newValues
+        : htmlspecialchars((string)$newValues, ENT_QUOTES, 'UTF-8');
+    echo "Audit Log new_values: {$displayValues}\n";
     if (strpos($newValues, $token) !== false) {
         echo colorText("[FAIL] Vulnerability Confirmed: Plaintext reset token found in audit logs!", 'fail') . itm_script_output_nl();
     } else {

@@ -14,7 +14,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 ## 4. Business Rules (Critical for Agents)
 - Global tasks: `assigned_to_user_id IS NULL` (visible to company).
 - Private/assigned tasks: user must be in `assigned_to_user_id` (comma-separated IDs via `FIND_IN_SET`) or be `created_by_user_id`.
-- **Assignee dropdown:** load active users scoped to `company_id` only (`users.company_id` or active `user_companies` row via `COALESCE(uc.active, 1) = 1`). After tasks load, `todo_merge_assignee_users()` augments the map with inactive assignees via tenant-scoped per-id lookups so list/view labels stay visible. Do not include global `Admin` via username bypass.
+- **Assignee dropdown:** load active users scoped to `company_id` only (`users.company_id` or active `user_companies` row via `COALESCE(uc.active, 1) = 1`) using `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback). After tasks load, `todo_merge_assignee_users()` augments the map with inactive assignees via tenant-scoped per-id lookups (`itm_mysqli_stmt_fetch_assoc()`) so list/view labels stay visible. Do not include global `Admin` via username bypass.
 - Import resolves category names, department names/codes, and usernames to IDs.
 - Use `itm_todo_visibility_sql()` on all list queries.
 

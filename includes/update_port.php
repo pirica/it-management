@@ -20,16 +20,12 @@ ini_set('display_errors', '0');
 
 // Access Control: Authentication check
 if ($company_id <= 0) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Unauthorized'], 401);
 }
 
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Method Not Allowed'], 405);
 }
 
 // Input parsing (handles multiple content types)
@@ -40,9 +36,7 @@ $input = is_array($decoded) ? $decoded : $_POST;
 // CSRF Validation
 $csrfToken = (string)($input['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
 if (!itm_validate_csrf_token($csrfToken)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Invalid CSRF token'], 403);
 }
 
 // Schema detection
@@ -63,9 +57,7 @@ $hasHostname = itm_table_has_column($conn, 'switch_ports', 'hostname');
 $hasManagementId = itm_table_has_column($conn, 'switch_ports', 'management_id');
 
 if (!$hasStatusId || !$hasColorId) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'switch_ports schema is missing status_id/color_id columns'], 500);
 }
 
 // Pre-fetch reference data
@@ -76,22 +68,16 @@ $vlans = fetch_company_vlans($conn, (int)$company_id);
 
 // Parameter validation
 if (empty($input['id'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Missing id']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Missing id'], 400);
 }
 
 $id = (int)$input['id'];
 if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid id']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Invalid id'], 400);
 }
 $switchId = (int)($input['switch_id'] ?? 0);
 if ($switchId <= 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Missing switch id']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Missing switch id'], 400);
 }
 
 // Resolve lookup values
@@ -274,8 +260,7 @@ if ($hasManagementId) {
 }
 
 if (empty($fields)) {
-    echo json_encode(['success' => false, 'error' => 'Nothing to update']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'Nothing to update'], 400);
 }
 
 // Scoped update query for security
@@ -292,19 +277,15 @@ if ($hasEquipmentId) {
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'DB error']);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
 }
 
 mysqli_stmt_bind_param($stmt, $types, ...$params);
 $ok = mysqli_stmt_execute($stmt);
 
 if (!$ok) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'DB error']);
     mysqli_stmt_close($stmt);
-    exit;
+    itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
 }
 
 $updated = mysqli_stmt_affected_rows($stmt);
@@ -467,9 +448,7 @@ if ($hasManagementId) {
                     }
                 }
                 if ($emptyPositionId <= 0) {
-                    http_response_code(422);
-                    echo json_encode(['success' => false, 'error' => 'There is none Empty positions, add more positions on IDF.']);
-                    exit;
+                    itm_api_json_response(['success' => false, 'error' => 'There is none Empty positions, add more positions on IDF.'], 422);
                 }
                 $targetInsertPositionId = $emptyPositionId;
             }
@@ -587,4 +566,4 @@ if ($updated <= 0) {
     itm_api_json_response(['success' => false, 'error' => 'Port not found or not permitted', 'updated' => 0], 404);
 }
 
-echo json_encode(['success' => true, 'updated' => $updated]);
+itm_api_json_response(['success' => true, 'updated' => $updated], 200);

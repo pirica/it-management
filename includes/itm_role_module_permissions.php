@@ -60,6 +60,69 @@ if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
     }
 }
 
+if (!function_exists('itm_mysqli_stmt_fetch_all_assoc')) {
+    /**
+     * Fetch all associative rows from a prepared statement (mysqlnd or bind_result fallback).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    function itm_mysqli_stmt_fetch_all_assoc($stmt)
+    {
+        if (!($stmt instanceof mysqli_stmt)) {
+            return [];
+        }
+
+        if (function_exists('mysqli_stmt_get_result')) {
+            $res = @mysqli_stmt_get_result($stmt);
+            if ($res instanceof mysqli_result) {
+                $rows = [];
+                while ($row = mysqli_fetch_assoc($res)) {
+                    if (is_array($row)) {
+                        $rows[] = $row;
+                    }
+                }
+                return $rows;
+            }
+        }
+
+        if (!mysqli_stmt_store_result($stmt)) {
+            error_log('itm_mysqli_stmt_fetch_all_assoc: mysqli_stmt_store_result failed: ' . mysqli_stmt_error($stmt));
+            return [];
+        }
+
+        $meta = mysqli_stmt_result_metadata($stmt);
+        if (!$meta) {
+            error_log('itm_mysqli_stmt_fetch_all_assoc: mysqli_stmt_result_metadata failed: ' . mysqli_stmt_error($stmt));
+            return [];
+        }
+
+        $row = [];
+        $bind = [];
+        while ($field = mysqli_fetch_field($meta)) {
+            $row[$field->name] = null;
+            $bind[] = &$row[$field->name];
+        }
+        mysqli_free_result($meta);
+
+        if ($bind === []) {
+            return [];
+        }
+
+        call_user_func_array([$stmt, 'bind_result'], $bind);
+
+        $rows = [];
+        while (mysqli_stmt_fetch($stmt)) {
+            $out = [];
+            foreach ($row as $key => $value) {
+                $out[$key] = $value;
+            }
+            $rows[] = $out;
+        }
+
+        return $rows;
+    }
+}
+
 if (!function_exists('itm_resolve_active_company_id')) {
     /**
      * Resolve tenant company from global config and session.

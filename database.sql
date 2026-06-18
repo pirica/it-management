@@ -6986,7 +6986,7 @@ CREATE TABLE `system_status` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_system_status_tab_key` (`tab_key`),
+  UNIQUE KEY `uq_system_status_company_tab` (`company_id`, `tab_key`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `system_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

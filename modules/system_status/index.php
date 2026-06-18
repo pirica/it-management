@@ -23,13 +23,14 @@ if (!in_array($active_tab, $allowed_tabs)) {
 
 $refreshErrors = [];
 $refreshNotice = '';
+$cacheCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
+if ($cacheCompanyId <= 0) {
+    $cacheCompanyId = 1;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_cache'])) {
     itm_require_post_csrf();
-    $refreshCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
-    if ($refreshCompanyId <= 0) {
-        $refreshCompanyId = 1;
-    }
+    $refreshCompanyId = $cacheCompanyId;
     $refreshResult = itm_system_status_refresh_all($conn, $refreshCompanyId);
     if ($refreshResult['ok']) {
         $refreshNotice = 'Cache refreshed for all tabs.';
@@ -38,15 +39,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_cache'])) {
     }
 }
 
-$ssCache = itm_system_status_cache_get($conn, $active_tab);
+$ssCache = itm_system_status_cache_get($conn, $active_tab, $cacheCompanyId);
 if ($ssCache === null && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     // Why: First visit should populate cache so tabs are not empty until manual Refresh.
-    $seedCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
-    if ($seedCompanyId <= 0) {
-        $seedCompanyId = 1;
-    }
-    itm_system_status_refresh_tab($conn, $active_tab, $seedCompanyId);
-    $ssCache = itm_system_status_cache_get($conn, $active_tab);
+    itm_system_status_refresh_tab($conn, $active_tab, $cacheCompanyId);
+    $ssCache = itm_system_status_cache_get($conn, $active_tab, $cacheCompanyId);
 }
 
 $ssPayload = is_array($ssCache['payload'] ?? null) ? $ssCache['payload'] : null;

@@ -138,7 +138,7 @@ if (!$conn) {
         ss_verify_pass('system_status cache refresh works for php_settings');
     }
 
-    $cacheGet = itm_system_status_cache_get($conn, 'php_settings');
+    $cacheGet = itm_system_status_cache_get($conn, 'php_settings', 1);
     if (is_array($cacheGet) && is_array($cacheGet['payload'] ?? null) && ($cacheGet['payload']['version'] ?? '') !== '') {
         ss_verify_pass('system_status cache read returns php_settings payload');
     } else {

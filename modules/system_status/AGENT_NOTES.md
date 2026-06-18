@@ -18,7 +18,7 @@ Canonical overview: `docs/system_status.md`.
 
 | Table | Role |
 |-------|------|
-| **`system_status`** | Owned cache — `tab_key` (unique), `payload_json`, `company_id` (seed `1`), `active`, timestamps. Audit triggers on INSERT/UPDATE/DELETE. |
+| **`system_status`** | Owned cache — `tab_key`, `payload_json`, `company_id` (composite unique with `tab_key`), `active`, timestamps. Audit triggers on INSERT/UPDATE/DELETE. |
 
 Read-only queries (during Refresh collection only):
 
@@ -31,7 +31,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 
 ## 3. Required Relationships
 
-- `system_status.company_id` → `companies.id` (ON DELETE CASCADE). Cache rows use company `1` as the global anchor.
+- `system_status.company_id` → `companies.id` (ON DELETE CASCADE). Cache rows are scoped per tenant (`UNIQUE (company_id, tab_key)`); Refresh and reads use the active session `company_id` (fallback `1`).
 
 ---
 
@@ -146,7 +146,11 @@ System-wide metrics; not scoped by active session `company_id` for display. Admi
 ### Cache read (index)
 
 ```php
-$ssCache = itm_system_status_cache_get($conn, $active_tab);
+$cacheCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
+if ($cacheCompanyId <= 0) {
+    $cacheCompanyId = 1;
+}
+$ssCache = itm_system_status_cache_get($conn, $active_tab, $cacheCompanyId);
 $ssPayload = is_array($ssCache['payload'] ?? null) ? $ssCache['payload'] : null;
 ```
 
@@ -154,7 +158,7 @@ $ssPayload = is_array($ssCache['payload'] ?? null) ? $ssCache['payload'] : null;
 
 ```php
 itm_require_post_csrf();
-$refreshResult = itm_system_status_refresh_all($conn, 1);
+$refreshResult = itm_system_status_refresh_all($conn, $cacheCompanyId);
 ```
 
 ### Admin gate (index)
