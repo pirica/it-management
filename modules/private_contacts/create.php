@@ -1,0 +1,108 @@
+<?php
+require_once '../../config/config.php';
+require_once __DIR__ . '/includes/private_contact_photo.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+
+    $userId = $_SESSION['user_id'];
+    $companyId = $_SESSION['company_id'];
+    $username = $_SESSION['username'];
+
+    $sql = "INSERT INTO private_contacts (
+        company_id, user_id, name_prefix, first_name, middle_name, last_name, name_suffix,
+        phonetic_first_name, phonetic_middle_name, phonetic_last_name, nickname, file_as,
+        email1_label, email1_value, phone1_label, phone1_value,
+        address1_label, address1_country, address1_street, address1_extended, address1_city, address1_region, address1_postcode, address1_po_box,
+        organization_name, organization_title, organization_department,
+        birthday, event1_label, event1_value, relation1_label, relation1_value,
+        website1_label, website1_value, custom_field1_label, custom_field1_value,
+        notes, labels, is_favorite
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    $stmt = $conn->prepare($sql);
+
+    $is_favorite = isset($_POST['is_favorite']) ? 1 : 0;
+    $birthday = $_POST['birthday'] ?: null;
+    $event1_value = $_POST['event1_value'] ?: null;
+
+    $stmt->bind_param("iissssssssssssssssssssssssssssssssssssi",
+        $companyId, $userId, $_POST['name_prefix'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'], $_POST['name_suffix'],
+        $_POST['phonetic_first_name'], $_POST['phonetic_middle_name'], $_POST['phonetic_last_name'], $_POST['nickname'], $_POST['file_as'],
+        $_POST['email1_label'], $_POST['email1_value'], $_POST['phone1_label'], $_POST['phone1_value'],
+        $_POST['address1_label'], $_POST['address1_country'], $_POST['address1_street'], $_POST['address1_extended'], $_POST['address1_city'], $_POST['address1_region'], $_POST['address1_postcode'], $_POST['address1_po_box'],
+        $_POST['organization_name'], $_POST['organization_title'], $_POST['organization_department'],
+        $birthday, $_POST['event1_label'], $event1_value, $_POST['relation1_label'], $_POST['relation1_value'],
+        $_POST['website1_label'], $_POST['website1_value'], $_POST['custom_field1_label'], $_POST['custom_field1_value'],
+        $_POST['notes'], $_POST['labels'], $is_favorite
+    );
+
+    if ($stmt->execute()) {
+        $insertId = (int)$stmt->insert_id;
+        $redirect = 'index.php?msg=created';
+        if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $photoResult = pc_contact_photo_store_upload(
+                $_FILES['photo'],
+                $insertId,
+                $companyId,
+                $username,
+                $userId
+            );
+            if (($photoResult['ok'] ?? false) && ($photoResult['filename'] ?? '') !== '') {
+                $photoFilename = (string)$photoResult['filename'];
+                $updateStmt = $conn->prepare('UPDATE private_contacts SET photo = ? WHERE id = ? AND user_id = ?');
+                $updateStmt->bind_param('sii', $photoFilename, $insertId, $userId);
+                $updateStmt->execute();
+                $redirect = 'view.php?id=' . $insertId . '&msg=created';
+            } elseif (!($photoResult['ok'] ?? false) && ($photoResult['error'] ?? '') !== '') {
+                $redirect = 'view.php?id=' . $insertId . '&msg=created&photo_error=' . rawurlencode((string)$photoResult['error']);
+            }
+        }
+        header('Location: ' . $redirect);
+    } else {
+        echo "Error: " . $stmt->error;
+    }
+    exit();
+}
+
+$contact = [];
+$pageTitle = "Add Private Contact";
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($pageTitle); ?> Management</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+<div class="container">
+    <?php include '../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <?php include '../../includes/header.php'; ?>
+        <div class="content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="index.php" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i>🔙</a>
+                <h1>Create Private Contact</h1>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                <?php include 'edit_form.php'; ?>
+                <div class="form-actions" style="margin-top:20px; display:flex; gap:10px;">
+                    <button class="btn btn-primary" type="submit">💾</button>
+                    <a href="index.php" class="btn">🔙</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="../../js/theme.js"></script>
+</body>
+</html>

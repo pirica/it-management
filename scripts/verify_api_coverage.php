@@ -1,0 +1,61 @@
+<?php
+/**
+ * Verification script to detect missing API documentation or behavior.
+ */
+require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/../scripts/api.php';
+
+itm_script_output_begin('API documentation coverage');
+
+$nl = itm_script_output_nl();
+echo '--- API Documentation Coverage Report ---' . $nl;
+echo 'Date: ' . date('Y-m-d H:i:s') . $nl . $nl;
+
+$root = __DIR__ . '/..';
+$endpoints = itmDocCollectModuleImportEndpoints($root);
+$missing = itmDocCollectModulesWithoutImportEndpoint($root, $endpoints);
+
+echo '1. Modules without Import Endpoint:' . $nl;
+if (empty($missing)) {
+    echo colorText('   [OK] All modules have import endpoints.', 'pass') . $nl;
+} else {
+    foreach ($missing as $m) {
+        echo '   - ' . $m . $nl;
+    }
+}
+
+echo $nl . '2. Bespoke Endpoints Validation:' . $nl;
+$bespoke = $projectJsonEndpoints;
+foreach ($bespoke as $b) {
+    $path = $root . '/' . ltrim($b['path'], '/');
+    $actualPath = explode('?', $path)[0];
+    if (file_exists($actualPath)) {
+        echo colorText('   [OK] ' . $actualPath . ' exists.', 'pass') . $nl;
+    } else {
+        echo colorText('   [FAIL] ' . $actualPath . ' does NOT exist.', 'fail') . $nl;
+    }
+}
+
+echo $nl . '3. Checking for undocumented module AJAX handlers:' . $nl;
+foreach (glob($root . '/modules/*/*.php') as $file) {
+    if (basename($file) === 'index.php') {
+        continue;
+    }
+    $content = file_get_contents($file);
+    if (strpos($content, 'application/json') === false) {
+        continue;
+    }
+    $relPath = str_replace($root . '/', '', $file);
+    $found = false;
+    foreach ($bespoke as $b) {
+        if (strpos($b['path'], $relPath) !== false) {
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        echo colorText('   [WARN] Undocumented JSON handler: ' . $relPath, 'warn') . $nl;
+    }
+}
+
+echo $nl . '--- End of Report ---' . $nl;
