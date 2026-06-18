@@ -257,6 +257,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_os_types", "Workstation Os Types", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_os_versions", "Workstation Os Versions", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_ram", "Workstation Ram", 0, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("system_status", "System Status", 1, 1);
 -- Data for `company_module_access`
 INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
