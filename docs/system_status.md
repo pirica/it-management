@@ -13,6 +13,7 @@ Displays core system metrics:
 - **CPU Usage:** Real-time gauge showing total CPU load.
 - **RAM Usage:** Real-time gauge showing used vs total physical memory.
 - **Disk Usage:** Progress bars for each local physical drive showing used and free space.
+- **Sub Storage:** On-disk usage for Explorer (`files/{company_id}/` with expandable Common, Departments, Private, Trash), `tickets_photos/`, `images/`, `floor_plans/` (by company), and `backups/`.
 
 ### 2. PHP Settings
 Rendered directly from the **active Apache PHP runtime** (no AJAX or PowerShell):
@@ -22,10 +23,10 @@ Rendered directly from the **active Apache PHP runtime** (no AJAX or PowerShell)
 - **Full detail:** Admin link to `scripts/system_status_phpinfo.php` (`phpinfo()`).
 
 ### 3. Database
-Rendered from the **active mysqli connection** (no AJAX):
+Rendered from the **active mysqli connection** and `DB_NAME` (no AJAX):
 - **MySQL Service:** Running/Stopped from `mysqli_ping()`, version from `mysqli_get_server_info()`.
-- **Storage Summary:** Total data size across all databases.
-- **Database Metrics:** Full `information_schema` size table for every database.
+- **Storage Summary:** Total size, table count, and approximate row total for the active database only.
+- **Database Metrics:** Every table in `DB_NAME` with approximate row count and size, plus a totals row.
 
 ## PowerShell Scripts (Windows hardware only)
 On Windows, **Monitoring** hardware metrics (`system_info`, `cpu_usage`, etc.) use PowerShell scripts in `includes/`. PHP and MySQL API actions always use the native PHP/mysqli runtime — the `.ps1` PHP/MySQL scripts remain for `test_*.php` regression only.

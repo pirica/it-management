@@ -4,7 +4,7 @@
 
 ## 1. Module Purpose
 
-Admin-only diagnostic dashboard for server health: real-time monitoring (CPU, RAM, disk), PHP configuration, and MySQL/database metrics. **PHP Settings** and **Database** tabs are **server-rendered** from the active Apache/mysqli runtime (no AJAX). **Monitoring** uses `scripts/system_status_api.php` — hardware via `includes/*.ps1` on Windows (requires `shell_exec`) or `includes/itm_system_status_native.php` on Linux/CI. Full PHP detail: `scripts/system_status_phpinfo.php` (admin-only `phpinfo()`).
+Admin-only diagnostic dashboard for server health: real-time monitoring (CPU, RAM, disk), on-disk **Sub Storage** breakdown (Explorer + upload trees), PHP configuration, and MySQL/database metrics. **PHP Settings** and **Database** tabs are **server-rendered** from the active Apache/mysqli runtime (no AJAX). **Monitoring** uses `scripts/system_status_api.php` for hardware and server-renders storage via `includes/itm_system_status_storage.php`.
 
 Canonical overview: `docs/system_status.md`.
 
@@ -14,7 +14,7 @@ Canonical overview: `docs/system_status.md`.
 
 No owned tables. Read-only queries:
 
-- **information_schema.TABLES** — database sizes on the Database tab (`tabs/database.php`).
+- **information_schema.TABLES** — per-table row counts and sizes for **active** `DB_NAME` only on the Database tab.
 
 Registry: `modules_registry.module_slug = system_status` (system module, active).
 
@@ -40,9 +40,11 @@ N/A — no FK-owned data.
 ## 5. UI Behavior Requirements
 
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`).
-- **AJAX:** Monitoring tab only — fetches `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts). Failed hardware calls show an inline error instead of perpetual Loading….
-- **PHP Settings tab:** server-rendered PHP core, limits, extensions; link to `scripts/system_status_phpinfo.php`.
-- **Database tab:** server-rendered MySQL service card, storage summary, and full `information_schema` size table.
+- **AJAX:** Monitoring hardware only — fetches `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts). Failed hardware calls show an inline error instead of perpetual Loading….
+- **Sub Storage (Monitoring):** server-rendered Explorer `files/{company_id}/` tree (Common, Departments by dept, Private by user, Trash), plus `tickets_photos/`, `images/`, `floor_plans/` (by company), `backups/`.
+- **PHP Settings tab:** server-rendered PHP core, limits, extensions; link to `scripts/system_status_phpinfo.php`. Long paths wrap via `.ss-path-value`.
+- **Database tab:** active `DB_NAME` only — table list with approximate row counts, per-table size, and totals.
+- **Tabs UI:** active tab uses `var(--accent)` background with white label text.
 - **Refresh:** toolbar **Refresh** reloads current tab.
 - **Layout:** uses shared `sidebar.php` / `header.php`; module-specific CSS in `index.php`.
 
@@ -74,15 +76,16 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`).
 ## 7. File Structure
 
 - `index.php` — Admin gate, tab router, shared styles.
-- `tabs/monitoring.php` — System overview, CPU/RAM gauges, disk cards.
+- `tabs/monitoring.php` — System overview, CPU/RAM gauges, disk cards, Sub Storage tree.
 - `tabs/php_settings.php` — Server-rendered PHP core, limits, extensions; phpinfo link.
-- `tabs/database.php` — Server-rendered MySQL service, storage summary, size table.
+- `tabs/database.php` — Active `DB_NAME` table metrics with row counts and totals.
 - `AGENT_NOTES.md` — this file.
 
 Shared helpers:
 
 - `includes/itm_system_status_native.php` — PHP/MySQL + Linux hardware JSON payloads.
-- `includes/itm_system_status_powershell.php` — Windows `shell_exec` runner and permission checks.
+- `includes/itm_system_status_powershell.php` — Windows hardware `shell_exec` runner.
+- `includes/itm_system_status_storage.php` — on-disk storage tree + active DB table report.
 - `includes/*.ps1` — Windows hardware metrics (12 scripts; PHP/MySQL API actions no longer route here).
 - `scripts/system_status_phpinfo.php` — admin-only full `phpinfo()`.
 
