@@ -31,107 +31,64 @@ function vmcc_session_questions(mysqli $conn): ?int
 }
 
 /**
+ * Why: Each measurement ends with one SHOW STATUS; subtract that query from the delta.
+ *
  * @return array{pass:bool,delta:int,checks:int,note:string}
  */
-function vmcc_run_has_column_batch(mysqli $conn, string $table, array $columns, string $label): array
-{
-    $before = vmcc_session_questions($conn);
-    if ($before === null) {
-        return ['pass' => false, 'delta' => -1, 'checks' => count($columns), 'note' => $label . ': unable to read Questions counter'];
-    }
-
-    foreach ($columns as $column) {
-        itm_table_has_column($conn, $table, $column);
-    }
-
-    $after = vmcc_session_questions($conn);
-    if ($after === null) {
-        return ['pass' => false, 'delta' => -1, 'checks' => count($columns), 'note' => $label . ': unable to read Questions counter after batch'];
-    }
-
-    $delta = $after - $before;
-    $checks = count($columns);
-    $logicalUncached = $checks;
-    $logicalCached = 1;
-    $reductionPct = $logicalUncached > 0
-        ? round((1 - ($logicalCached / $logicalUncached)) * 100, 1)
-        : 0.0;
-
-    // Why: MySQL may count prepare + execute as 2 Questions for one information_schema fetch.
-    $pass = ($delta >= 1 && $delta <= 2);
-    $note = sprintf(
-        '%s: %d checks, Questions delta=%d (expect 1-2 for first table load), logical %d→1 (%.1f%% reduction)',
-        $label,
-        $checks,
-        $delta,
-        $logicalUncached,
-        $reductionPct
-    );
-
-    return ['pass' => $pass, 'delta' => $delta, 'checks' => $checks, 'note' => $note];
-}
-
-/**
- * @return array{pass:bool,delta:int,checks:int,note:string}
- */
-function vmcc_run_nullable_batch(mysqli $conn, string $table, array $columns, string $label): array
-{
-    $before = vmcc_session_questions($conn);
-    if ($before === null) {
-        return ['pass' => false, 'delta' => -1, 'checks' => count($columns), 'note' => $label . ': unable to read Questions counter'];
-    }
-
-    foreach ($columns as $column) {
-        itm_table_column_is_nullable($conn, $table, $column);
-    }
-
-    $after = vmcc_session_questions($conn);
-    if ($after === null) {
-        return ['pass' => false, 'delta' => -1, 'checks' => count($columns), 'note' => $label . ': unable to read Questions counter after batch'];
-    }
-
-    $delta = $after - $before;
-    $checks = count($columns);
-    $pass = ($delta >= 1 && $delta <= 2);
-    $note = sprintf(
-        '%s: %d nullable checks, Questions delta=%d (expect 1-2 for first nullable table load)',
-        $label,
-        $checks,
-        $delta
-    );
-
-    return ['pass' => $pass, 'delta' => $delta, 'checks' => $checks, 'note' => $note];
-}
-
-/**
- * @return array{pass:bool,delta:int,checks:int,note:string}
- */
-function vmcc_run_warm_repeat(mysqli $conn, string $table, array $columns, callable $fn, string $label): array
-{
-    $before = vmcc_session_questions($conn);
-    if ($before === null) {
-        return ['pass' => false, 'delta' => -1, 'checks' => count($columns), 'note' => $label . ': unable to read Questions counter'];
-    }
-
+function vmcc_measure_batch(
+    mysqli $conn,
+    string $table,
+    array $columns,
+    callable $fn,
+    string $label,
+    int &$questionsBaseline,
+    bool $expectColdLoad
+): array {
     foreach ($columns as $column) {
         $fn($conn, $table, $column);
     }
 
     $after = vmcc_session_questions($conn);
     if ($after === null) {
-        return ['pass' => false, 'delta' => -1, 'checks' => count($columns), 'note' => $label . ': unable to read Questions counter after repeat'];
+        return [
+            'pass' => false,
+            'delta' => -1,
+            'checks' => count($columns),
+            'note' => $label . ': unable to read Questions counter after batch',
+        ];
     }
 
-    $delta = $after - $before;
-    $pass = ($delta === 0);
-    $note = sprintf(
-        '%s: repeated %d checks, Questions delta=%d (expect 0 when cache is warm)',
-        $label,
-        count($columns),
-        $delta
-    );
+    // Why: The trailing SHOW STATUS increments Questions once; exclude it from batch cost.
+    $delta = $after - $questionsBaseline - 1;
+    $questionsBaseline = $after;
 
-    return ['pass' => $pass, 'delta' => $delta, 'checks' => count($columns), 'note' => $note];
+    $checks = count($columns);
+    if ($expectColdLoad) {
+        $logicalUncached = $checks;
+        $logicalCached = 1;
+        $reductionPct = $logicalUncached > 0
+            ? round((1 - ($logicalCached / $logicalUncached)) * 100, 1)
+            : 0.0;
+        $pass = ($delta >= 1 && $delta <= 2);
+        $note = sprintf(
+            '%s: %d checks, schema Questions delta=%d (expect 1-2 for first table load), logical %d→1 (%.1f%% reduction)',
+            $label,
+            $checks,
+            $delta,
+            $logicalUncached,
+            $reductionPct
+        );
+    } else {
+        $pass = ($delta === 0);
+        $note = sprintf(
+            '%s: repeated %d checks, schema Questions delta=%d (expect 0 when cache is warm)',
+            $label,
+            $checks,
+            $delta
+        );
+    }
+
+    return ['pass' => $pass, 'delta' => $delta, 'checks' => $checks, 'note' => $note];
 }
 
 $table = (string)(getenv('ITM_META_CACHE_TABLE') ?: 'switch_ports');
@@ -162,45 +119,62 @@ $switchPortColumns = [
 
 $nullableSampleColumns = ['status_id', 'color_id', 'vlan_id', 'hostname', 'management_id'];
 
+$questionsBaseline = vmcc_session_questions($conn);
+if ($questionsBaseline === null) {
+    echo colorText('[FAIL] Unable to read initial Questions counter.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
 $passAll = true;
 $results = [];
 
-$coldHas = vmcc_run_has_column_batch($conn, $table, $switchPortColumns, 'Cold itm_table_has_column');
-$results[] = $coldHas;
-$passAll = $passAll && $coldHas['pass'];
-
-$warmHas = vmcc_run_warm_repeat(
+$results[] = vmcc_measure_batch(
     $conn,
     $table,
     $switchPortColumns,
     'itm_table_has_column',
-    'Warm itm_table_has_column'
+    'Cold itm_table_has_column',
+    $questionsBaseline,
+    true
 );
-$results[] = $warmHas;
-$passAll = $passAll && $warmHas['pass'];
-
-$coldNullable = vmcc_run_nullable_batch($conn, $table, $nullableSampleColumns, 'Cold itm_table_column_is_nullable');
-$results[] = $coldNullable;
-$passAll = $passAll && $coldNullable['pass'];
-
-$warmNullable = vmcc_run_warm_repeat(
+$results[] = vmcc_measure_batch(
+    $conn,
+    $table,
+    $switchPortColumns,
+    'itm_table_has_column',
+    'Warm itm_table_has_column',
+    $questionsBaseline,
+    false
+);
+$results[] = vmcc_measure_batch(
     $conn,
     $table,
     $nullableSampleColumns,
     'itm_table_column_is_nullable',
-    'Warm itm_table_column_is_nullable'
+    'Cold itm_table_column_is_nullable',
+    $questionsBaseline,
+    true
 );
-$results[] = $warmNullable;
-$passAll = $passAll && $warmNullable['pass'];
+$results[] = vmcc_measure_batch(
+    $conn,
+    $table,
+    $nullableSampleColumns,
+    'itm_table_column_is_nullable',
+    'Warm itm_table_column_is_nullable',
+    $questionsBaseline,
+    false
+);
 
 foreach ($results as $result) {
+    $passAll = $passAll && $result['pass'];
     $type = $result['pass'] ? 'pass' : 'fail';
     echo colorText('[' . strtoupper($type) . '] ' . $result['note'], $type) . $nl;
 }
 
 if ($passAll) {
     echo colorText(
-        '[PASS] Table-level metadata cache verified. Questions delta 1-2 on cold load is normal (prepare+execute); warm repeat must stay 0.',
+        '[PASS] Table-level metadata cache verified. Cold schema delta 1-2 is normal (prepare+execute); warm repeat schema delta must stay 0.',
         'pass'
     ) . $nl;
 } else {

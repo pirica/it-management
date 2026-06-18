@@ -28,7 +28,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
 - **verify_select_options_escalation.php** — regression for Select Options API table whitelist (`includes/itm_select_options_policy.php`); see **`scripts/SCRIPTS.md` → Select Options API verification**.
 - **verify_notes_ajax_contract.php** — Notes AJAX blocked mutations return HTTP 404 with `ok:false` when `affected_rows === 0`.
-- **verify_metadata_column_cache.php** — table-level `information_schema` cache in `itm_table_has_column()` / `itm_table_column_is_nullable()`; cold batch Questions delta 1–2, warm repeat delta 0 (`docs/bolt.md`).
+- **verify_metadata_column_cache.php** — table-level `information_schema` cache in `itm_table_has_column()` / `itm_table_column_is_nullable()`; cold schema Questions delta 1–2, warm repeat schema delta 0 (`docs/bolt.md`; measurement excludes trailing `SHOW STATUS`).
 - **verify_json_import_validation.php** — JSON import rejects invalid numeric/date column values instead of silent NULL inserts.
 - **verify_maintenance_scripts_rbac.php** — browser Admin gate on MBQA runner, compare_database_sql_modules, and test_sql_injection.
 - **lib/script_cli_output.php** — browser `<pre>` wrapper, `colorText()`, `itm_script_shell_stderr_discard()` for cross-platform subprocess stderr suppression.
