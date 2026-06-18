@@ -1,7 +1,7 @@
 <?php
 /**
  * Verifies per-request table-level caching in itm_table_has_column() and
- * itm_table_column_is_nullable() (docs/bolt.md metadata optimization).
+ * itm_table_column_is_nullable() per-request table-level information_schema cache.
  */
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
@@ -179,7 +179,7 @@ if ($passAll) {
     ) . $nl;
 } else {
     echo colorText(
-        '[FAIL] Metadata cache contract not satisfied. See notes above; compare with docs/bolt.md.',
+        '[FAIL] Metadata cache contract not satisfied. See notes above; see includes/bootstrap_helpers.php and scripts/SCRIPTS.md.',
         'fail'
     ) . $nl;
 }
