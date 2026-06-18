@@ -6,7 +6,7 @@
  */
 
 $crud_table = $crud_table ?? 'license_management';
-$crud_title = $crud_title ?? 'Licence Management';
+$crud_title = $crud_title ?? 'License Management';
 $crud_action = $crud_action ?? 'edit';
 ?>
 <?php
