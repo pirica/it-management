@@ -1,0 +1,28 @@
+{
+    "findings": [
+        {
+            "title": "RBAC Bypass in CRUD Modules allowing unauthorized data modification",
+            "status": "active",
+            "commit_hash": "9065d719dc5b8b4932f0f19740d3a00695e07510",
+            "detected_at_pst": "2026-06-18T12:57:57-07:00",
+            "reported_link": "",
+            "location": "modules/expenses/index.php"
+        },
+        {
+            "title": "Multi-Tenant Data Leak in Users Module exposing all system users to tenant admins",
+            "status": "active",
+            "commit_hash": "9065d719dc5b8b4932f0f19740d3a00695e07510",
+            "detected_at_pst": "2026-06-18T12:57:57-07:00",
+            "reported_link": "",
+            "location": "modules/users/index.php"
+        },
+        {
+            "title": "Broken Access Control in User Companies Module allowing regular users to manage mappings",
+            "status": "active",
+            "commit_hash": "9065d719dc5b8b4932f0f19740d3a00695e07510",
+            "detected_at_pst": "2026-06-18T12:57:57-07:00",
+            "reported_link": "",
+            "location": "modules/user_companies/index.php"
+        }
+    ]
+}
