@@ -19,7 +19,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **Browser vs CLI**: Many scripts provide both a plain-text/HTML browser view and a CLI output mode.
 
 ## 6. API Actions (If Applicable)
-- **api.php** — browser HTML catalogue of JSON/AJAX endpoints (session + CSRF). Documents Explorer file actions, Switch Port Manager (`includes/get_ports.php`, `includes/update_port.php` — `itm_api_json_response()`, mysqlnd-safe fetch helpers), IDF `api/*`, module imports, passwords vault, notes/todo AJAX, System Status API, API key rate limits (**Free** = no key, session required; paid = key required), and tier regression runners (`apitest_tier_free.php`, `apitest_tier_basic.php`). Collector helpers: `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`. Maintenance rules: **`scripts/SCRIPTS.md` → API documentation (`scripts/api.php`)**.
+- **api.php** — browser HTML catalogue of JSON/AJAX endpoints (session + CSRF). Documents Explorer file actions, Switch Port Manager (`includes/get_ports.php`, `includes/update_port.php` — `itm_api_json_response()`, mysqlnd-safe fetch helpers), IDF `api/*`, module imports, **License Management** (`license_management`, `license_types`, Type quick-add via `select_options_api.php`), passwords vault, notes/todo AJAX, System Status API, API key rate limits (**Free** = no key, session required; paid = key required), and tier regression runners (`apitest_tier_free.php`, `apitest_tier_basic.php`). Collector helpers: `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`. Maintenance rules: **`scripts/SCRIPTS.md` → API documentation (`scripts/api.php`)**.
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage.

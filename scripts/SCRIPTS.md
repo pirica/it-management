@@ -227,6 +227,7 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 | `itmDocSwitchPortApiEndpoints()` | Switch Port Manager (`includes/get_ports.php`, `includes/update_port.php`) response contracts |
 | `itmDocPasswordsApiActions()` / `itmDocNotesAjaxActions()` / `itmDocTodoAjaxActions()` | Module-specific action matrices |
 | `itmDocCollectApiExamples()` | Scan every `api-examples/*.php` file (title/category/purpose table in `api.php`) |
+| `itmDocSelectOptionsAllowedTables()` | Load allowed quick-add tables from `includes/itm_select_options_policy.php` (includes `license_types`) |
 | `itmDocApiRateLimitTiers()` | Tier → hourly limit table for API key documentation |
 
 **Verify after API doc changes:**

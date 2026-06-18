@@ -102,6 +102,34 @@ class ApiFunctionsTest extends TestCase
         $this->assertContains("modules/select_options_api.php", $paths);
     }
 
+    public function testProjectJsonEndpointsIncludesLicenseManagement()
+    {
+        $endpoints = itmDocProjectJsonEndpoints();
+        $paths = array_column($endpoints, "path");
+        $this->assertContains("modules/license_management/index.php", $paths);
+        $this->assertContains("modules/license_types/index.php", $paths);
+    }
+
+    public function testSelectOptionsAllowedTablesIncludesLicenseTypes()
+    {
+        if (!function_exists("itmDocSelectOptionsAllowedTables")) {
+            ob_start();
+            @require_once __DIR__ . "/../../../../scripts/api.php";
+            ob_end_clean();
+        }
+        $tables = itmDocSelectOptionsAllowedTables();
+        $this->assertContains("license_types", $tables);
+    }
+
+    public function testCollectModuleImportEndpointsIncludesLicenseModules()
+    {
+        $rootPath = realpath(__DIR__ . "/../../../../");
+        $endpoints = itmDocCollectModuleImportEndpoints($rootPath);
+        $modules = array_column($endpoints, "module");
+        $this->assertContains("license_management", $modules);
+        $this->assertContains("license_types", $modules);
+    }
+
     public function testProjectJsonEndpointsIncludesSwitchPortHandlers()
     {
         $endpoints = itmDocProjectJsonEndpoints();
