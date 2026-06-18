@@ -30,7 +30,7 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
                 <td><span class="ss-path-value"><?php echo sanitize($phpIniPath !== '' ? $phpIniPath : 'None'); ?></span></td>
             </tr>
         </table>
-        <p style="margin-top:12px;">
+        <p class="ss-phpinfo-actions">
             <a class="btn btn-sm" href="<?php echo sanitize($phpInfoUrl); ?>" target="_blank" rel="noopener">Open full phpinfo()</a>
         </p>
     </div>
@@ -50,7 +50,7 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
         <div class="ss-extensions-list" tabindex="0">
             <ul class="ss-extensions-columns">
                 <?php foreach ($phpExtensions as $extension): ?>
-                    <li style="padding: 2px 0;">✅ <?php echo sanitize((string)$extension); ?></li>
+                    <li class="ss-extension-item">✅ <?php echo sanitize((string)$extension); ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
