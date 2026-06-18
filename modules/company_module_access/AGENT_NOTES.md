@@ -53,7 +53,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 9. Audit Logging Requirements
 
 - DB triggers on `modules_registry` and `company_module_access`.
-- PHP `itm_log_audit()` on registry CRUD and via `itm_set_company_module_access()` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- PHP `itm_log_audit()` on registry CRUD (including registry DELETE via `delete.php`) and via `itm_set_company_module_access()` on INSERT/UPDATE only (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

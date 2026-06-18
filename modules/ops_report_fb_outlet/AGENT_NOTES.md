@@ -21,7 +21,7 @@ Child rows for Food & Beverage outlet cover counts on a daily Ops Report. Each r
 - Standard flattened CRUD (`index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`).
 - List: search across visible columns, sort, pagination, bulk delete when row count ≥ `records_per_page`, 📗/📄 export, 📥 import (`import_excel_rows`).
 - Hide `company_id` from list/view; render `ops_report_id` as parent report label when FK row exists.
-- CSRF on all POST handlers via `cr_require_valid_csrf_token()`; forms include `csrf_token` from `itm_get_csrf_token()`.
+- CSRF: form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()` on the request body token. Forms include `csrf_token` from `cr_get_csrf_token()`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON bulk import via `index.php` (`data-itm-db-import-endpoint="index.php"`).

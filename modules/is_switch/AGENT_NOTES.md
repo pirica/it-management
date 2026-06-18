@@ -25,11 +25,11 @@ A filtered view of the Equipment module specifically for network switch devices.
 ## 5. UI Behavior Requirements
 - **Standard Equipment list** (search, sort, pagination, export) scoped to switches.
 - **Switch port manager** tiles and RJ45/SFP icon mapping (Unknown vs active PNG paths) inherited from equipment.
-- **List and view** enforce the type filter via wrapper variables; **edit** routes to `equipment/edit.php` without setting `$equipmentTypeNameFilter` — a direct edit URL can open any equipment id (known gap; document, do not claim edit is type-guarded).
+- **List and view** enforce the type filter via wrapper variables; **edit** routes to `equipment/edit.php` without setting `$equipmentTypeNameFilter` — a direct edit URL can open any company-scoped equipment id (type filter not enforced on edit; `company_id` still enforced in `equipment/create.php`).
 - **company_id** hidden from UI (inherited from equipment).
 
 ## 6. API Actions (If Applicable)
-- None in this folder. Inherits equipment JSON handlers and port-update actions from `modules/equipment/index.php`.
+- None in this folder. Inherits **import_excel_rows** JSON import only from `modules/equipment/index.php` when the façade `index.php` requires equipment index; switch port manager uses form POST under equipment.
 
 ## 7. File Structure
 - **index.php** — sets `$equipmentTypeNameFilter = 'Switch'` and wrapper flags; `require '../equipment/index.php'`.

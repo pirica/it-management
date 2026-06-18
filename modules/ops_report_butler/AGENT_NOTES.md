@@ -20,7 +20,7 @@ Dynamic suites-butler service rows on a daily Ops Report. Each row records a roo
 - Standard flattened CRUD (secondary access path).
 - Search across `room_number` and `notes`.
 - Standard bulk toolbar, pagination, export/import.
-- CSRF on all POST handlers via `cr_require_valid_csrf_token()`; forms include `csrf_token` from `itm_get_csrf_token()`.
+- CSRF: form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()` on the request body token. Forms include `csrf_token` from `cr_get_csrf_token()`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — `index.php`.

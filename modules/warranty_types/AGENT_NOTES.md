@@ -16,7 +16,7 @@ Lookup table for types of warranties (e.g., "On-site", "NBD", "Depot").
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
-- **CSRF**: POST handlers validate via `cr_require_valid_csrf_token()`; forms include hidden `csrf_token` from `itm_get_csrf_token()`.
+- **CSRF**: Form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()` on the request body token. Forms include hidden `csrf_token` from `cr_get_csrf_token()`.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.

@@ -21,11 +21,11 @@ A filtered view of the Equipment module specifically for workstation devices (de
 
 ## 5. UI Behavior Requirements
 - **Standard Equipment list** (search, sort, pagination, export) scoped to workstations.
-- **List and view** enforce the type filter via wrapper variables; **edit** routes to `equipment/edit.php` without setting `$equipmentTypeNameFilter` — a direct edit URL can open any equipment id (known gap; document, do not claim edit is type-guarded).
+- **List and view** enforce the type filter via wrapper variables; **edit** routes to `equipment/edit.php` without setting `$equipmentTypeNameFilter` — a direct edit URL can open any company-scoped equipment id (type filter not enforced on edit; `company_id` still enforced in `equipment/create.php`).
 - **company_id** hidden from UI (inherited from equipment).
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** and other JSON handlers in `modules/equipment/index.php` also run when requests hit this façade's `index.php` (wrapper `require`s equipment index).
+- **import_excel_rows** only — JSON bulk import via `modules/equipment/index.php` when this façade's `index.php` requires equipment index.
 
 ## 7. File Structure
 - **index.php** — sets `$equipmentTypeNameFilter = 'Workstation'` and wrapper flags; `require '../equipment/index.php'`.

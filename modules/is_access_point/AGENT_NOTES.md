@@ -24,7 +24,7 @@ A filtered view of the Equipment module specifically for wireless access points 
 - **company_id** hidden from UI (inherited from equipment).
 
 ## 6. API Actions (If Applicable)
-- None in this folder. Inherits **import_excel_rows** and other equipment JSON handlers from `modules/equipment/index.php` when invoked on the parent module.
+- None in this folder. Inherits **import_excel_rows** JSON import only from `modules/equipment/index.php` when the façade `index.php` requires equipment index.
 
 ## 7. File Structure
 - **index.php** — sets `$equipmentTypeNameFilter = 'Access Point'` and wrapper flags; `require '../equipment/index.php'`.
