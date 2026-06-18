@@ -102,6 +102,28 @@ class ApiFunctionsTest extends TestCase
         $this->assertContains("modules/select_options_api.php", $paths);
     }
 
+    public function testProjectJsonEndpointsIncludesSwitchPortHandlers()
+    {
+        $endpoints = itmDocProjectJsonEndpoints();
+        $paths = array_column($endpoints, "path");
+        $this->assertContains("includes/get_ports.php", $paths);
+        $this->assertContains("includes/update_port.php", $paths);
+    }
+
+    public function testSwitchPortApiEndpointsCatalog()
+    {
+        $endpoints = itmDocSwitchPortApiEndpoints();
+        $this->assertCount(2, $endpoints);
+        $paths = array_column($endpoints, "path");
+        $this->assertContains("includes/get_ports.php", $paths);
+        $this->assertContains("includes/update_port.php", $paths);
+        foreach ($endpoints as $row) {
+            $this->assertSame("POST", $row["method"]);
+            $this->assertArrayHasKey("response", $row);
+            $this->assertNotSame("", trim((string)$row["purpose"]));
+        }
+    }
+
     public function testPasswordsApiActionsCatalog()
     {
         $actions = itmDocPasswordsApiActions();

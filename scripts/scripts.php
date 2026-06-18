@@ -110,8 +110,8 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="api.php">api.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>HTML reference for JSON/AJAX endpoints: Explorer file manager (list, upload, rename, delete, restore, copy/move paste, zip/unzip, year/month/day folders, Trash), downloads, IDF APIs, module imports (auto-detected), passwords, notes, todo, and shared includes.</td>
-                    <td>Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers.</td>
+                    <td>HTML reference for JSON/AJAX endpoints: Explorer file manager, Switch Port Manager (<code>includes/get_ports.php</code>, <code>includes/update_port.php</code>), IDF APIs, module imports (auto-detected), passwords, notes, todo, System Status API, and shared includes. Switch-port handlers document <code>itm_api_json_response()</code> contracts and mysqlnd-safe fetch helpers.</td>
+                    <td>Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers. After switch-port changes also run <code>php scripts/idfs_sync_human_test.php</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>

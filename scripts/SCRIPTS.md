@@ -222,6 +222,7 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 | `itmDocCollectExplorerApiActions()` | Parse Explorer `switch` actions from live `modules/explorer/api.php` |
 | `itmDocCollectIdfApiEndpoints()` | List IDF API files with purpose blurbs |
 | `itmDocProjectJsonEndpoints()` | Curated non-import AJAX endpoints |
+| `itmDocSwitchPortApiEndpoints()` | Switch Port Manager (`includes/get_ports.php`, `includes/update_port.php`) response contracts |
 | `itmDocPasswordsApiActions()` / `itmDocNotesAjaxActions()` / `itmDocTodoAjaxActions()` | Module-specific action matrices |
 | `itmDocCollectApiExamples()` | Scan every `api-examples/*.php` file (title/category/purpose table in `api.php`) |
 | `itmDocApiRateLimitTiers()` | Tier → hourly limit table for API key documentation |
@@ -234,6 +235,30 @@ php scripts/run_tests.php --filter ApiFunctionsTest
 ```
 
 Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tables render.
+
+#### Switch Port Manager AJAX (`includes/get_ports.php`, `includes/update_port.php`)
+
+Equipment Switch Port Manager tiles call these shared endpoints (not module-local PHP under `modules/switch_ports/`).
+
+| Endpoint | Role |
+|----------|------|
+| **`includes/get_ports.php`** | POST `switch_id` + CSRF. Seeds missing `switch_ports` rows for RJ45/SFP capacity, then returns ports and lookup metadata (statuses, colors, VLANs, IDF/rack/location options). Success: `{"success":true,…}` via `itm_api_json_response()`. |
+| **`includes/update_port.php`** | POST port `id`, `switch_id`, field updates + CSRF. Tenant-scoped UPDATE on `switch_ports`; may sync linked `idf_ports` when To IDF/management fields change. Zero-row updates return HTTP `404` with `{"success":false,…}`. |
+
+Shared helpers: **`includes/switch_port_api_helpers.php`** (lookup maps, VLAN list). Prepared reads use **`itm_mysqli_stmt_fetch_assoc()`** / **`itm_mysqli_stmt_fetch_all_assoc()`** (mysqlnd fallback). Entry scripts use **`includes/itm_script_entry_guard.php`** and **`includes/itm_api_json_response.php`**.
+
+Documented in **`scripts/api.php`** (Switch Port Manager API section) and module notes: **`modules/equipment/AGENT_NOTES.md`**, **`modules/switch_ports/AGENT_NOTES.md`**.
+
+**Verify after switch-port endpoint changes:**
+
+```bash
+php -l includes/get_ports.php
+php -l includes/update_port.php
+php -l includes/switch_port_api_helpers.php
+php scripts/check_sql_injection_coverage.php
+php scripts/run_tests.php --filter ApiFunctionsTest
+php scripts/idfs_sync_human_test.php
+```
 
 #### API tier rate-limit regression (`apitest_tier_*.php`)
 

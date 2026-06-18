@@ -26,6 +26,10 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import on `index.php`.
+- **Shared Switch Port Manager endpoints** (used from `modules/equipment/index.php` tiles, not module-local PHP):
+  - **`includes/get_ports.php`** — fetch/seed ports and return lookup maps for the port grid UI.
+  - **`includes/update_port.php`** — persist port label/status/color/VLAN/IDF fields; keeps `idf_ports` aligned when To IDF sync runs.
+  - Both require session `company_id`, CSRF, POST only; JSON via `itm_api_json_response()` (`JSON_UNESCAPED_UNICODE`). Prepared reads use `itm_mysqli_stmt_fetch_assoc()` / `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback). See `scripts/api.php` → Switch Port Manager API.
 
 ## 7. File Structure
 - `index.php` — list/grid and CRUD routing (may absorb wrapper actions).
