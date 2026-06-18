@@ -262,6 +262,22 @@ if (empty($fields)) {
     itm_api_json_response(['success' => false, 'error' => 'Nothing to update'], 400);
 }
 
+// Why: When management/To IDF auto-sync runs, switch_ports + idf_ports must commit or rollback together.
+$itmUpdatePortTxActive = false;
+$itmUpdatePortAbort = function (array $payload, $httpStatus = 400) use ($conn, &$itmUpdatePortTxActive) {
+    if ($itmUpdatePortTxActive) {
+        mysqli_rollback($conn);
+        $itmUpdatePortTxActive = false;
+    }
+    itm_api_json_response($payload, $httpStatus);
+};
+if ($hasManagementId) {
+    if (!mysqli_begin_transaction($conn)) {
+        itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
+    }
+    $itmUpdatePortTxActive = true;
+}
+
 // Scoped update query for security
 $sql = 'UPDATE switch_ports SET ' . implode(', ', $fields) . ' WHERE id = ? AND company_id = ?';
 $types .= 'ii';
@@ -276,6 +292,10 @@ if ($hasEquipmentId) {
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
+    if ($itmUpdatePortTxActive) {
+        mysqli_rollback($conn);
+        $itmUpdatePortTxActive = false;
+    }
     itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
 }
 
@@ -284,11 +304,19 @@ $ok = mysqli_stmt_execute($stmt);
 
 if (!$ok) {
     mysqli_stmt_close($stmt);
+    if ($itmUpdatePortTxActive) {
+        mysqli_rollback($conn);
+        $itmUpdatePortTxActive = false;
+    }
     itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
 }
 
 $updated = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
+
+if ($updated <= 0) {
+    $itmUpdatePortAbort(['success' => false, 'error' => 'Port not found or not permitted', 'updated' => 0], 404);
+}
 
 if ($hasManagementId) {
     $autoSyncMarker = '[SPM-AUTO-TO-IDF]';
@@ -441,7 +469,7 @@ if ($hasManagementId) {
                     }
                 }
                 if ($emptyPositionId <= 0) {
-                    itm_api_json_response(['success' => false, 'error' => 'There is none Empty positions, add more positions on IDF.'], 422);
+                    $itmUpdatePortAbort(['success' => false, 'error' => 'There is none Empty positions, add more positions on IDF.'], 422);
                 }
                 $targetInsertPositionId = $emptyPositionId;
             }
@@ -489,7 +517,10 @@ if ($hasManagementId) {
                         $existingIdfPortId,
                         $companyIdParam
                     );
-                    mysqli_stmt_execute($stmtUpdateIdfPort);
+                    if (!mysqli_stmt_execute($stmtUpdateIdfPort)) {
+                        mysqli_stmt_close($stmtUpdateIdfPort);
+                        $itmUpdatePortAbort(['success' => false, 'error' => 'DB error'], 500);
+                    }
                     mysqli_stmt_close($stmtUpdateIdfPort);
                 }
 
@@ -501,7 +532,10 @@ if ($hasManagementId) {
                     if ($stmtDeleteAutoIdfPort) {
                         $companyIdParam = (int)$company_id;
                         mysqli_stmt_bind_param($stmtDeleteAutoIdfPort, 'ii', $existingIdfPortId, $companyIdParam);
-                        mysqli_stmt_execute($stmtDeleteAutoIdfPort);
+                        if (!mysqli_stmt_execute($stmtDeleteAutoIdfPort)) {
+                            mysqli_stmt_close($stmtDeleteAutoIdfPort);
+                            $itmUpdatePortAbort(['success' => false, 'error' => 'DB error'], 500);
+                        }
                         mysqli_stmt_close($stmtDeleteAutoIdfPort);
                     }
                 }
@@ -545,7 +579,10 @@ if ($hasManagementId) {
                         $idfManagementId,
                         $idfNotes
                     );
-                    mysqli_stmt_execute($stmtInsertIdfPort);
+                    if (!mysqli_stmt_execute($stmtInsertIdfPort)) {
+                        mysqli_stmt_close($stmtInsertIdfPort);
+                        $itmUpdatePortAbort(['success' => false, 'error' => 'DB error'], 500);
+                    }
                     mysqli_stmt_close($stmtInsertIdfPort);
                 }
             }
@@ -553,10 +590,12 @@ if ($hasManagementId) {
     }
 }
 
-
-
-if ($updated <= 0) {
-    itm_api_json_response(['success' => false, 'error' => 'Port not found or not permitted', 'updated' => 0], 404);
+if ($itmUpdatePortTxActive) {
+    if (!mysqli_commit($conn)) {
+        mysqli_rollback($conn);
+        itm_api_json_response(['success' => false, 'error' => 'DB error'], 500);
+    }
+    $itmUpdatePortTxActive = false;
 }
 
 itm_api_json_response(['success' => true, 'updated' => $updated], 200);
