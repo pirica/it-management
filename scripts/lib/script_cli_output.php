@@ -82,6 +82,12 @@ if (!function_exists('itm_script_cli_is_cli')) {
         return $text;
     }
 
+    /** Why: POSIX vs Windows stderr discard when spawning isolated PHP subprocesses from repro/verify scripts. */
+    function itm_script_shell_stderr_discard(): string
+    {
+        return DIRECTORY_SEPARATOR === '\\' ? '2>NUL' : '2>/dev/null';
+    }
+
     /** Why: SCRIPTS.md cross-environment pass/fail/warn/info colouring for CLI and browser audits. */
     function colorText($text, $type)
     {

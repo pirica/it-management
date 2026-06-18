@@ -161,7 +161,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_user.php`; prepared `UPDATE users` for token fields. |
 
-Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path (`verify_explorer_*`, `verify_user_idor.php`, `verify_company_deletion.php`, `verify_git_reset_csrf.php`, `verify_reset_git_history_access.php`, `verify_select_options_escalation.php`). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
+Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
 ## 4. Path Handling
 - Always use `dirname(__DIR__)` or `ROOT_PATH` to resolve absolute paths.

@@ -24,11 +24,13 @@ if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
         }
 
         if (!mysqli_stmt_store_result($stmt)) {
+            error_log('itm_mysqli_stmt_fetch_assoc: mysqli_stmt_store_result failed: ' . mysqli_stmt_error($stmt));
             return null;
         }
 
         $meta = mysqli_stmt_result_metadata($stmt);
         if (!$meta) {
+            error_log('itm_mysqli_stmt_fetch_assoc: mysqli_stmt_result_metadata failed: ' . mysqli_stmt_error($stmt));
             return null;
         }
 

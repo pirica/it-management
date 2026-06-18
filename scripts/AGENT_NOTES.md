@@ -30,6 +30,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **verify_notes_ajax_contract.php** — Notes AJAX blocked mutations return HTTP 404 with `ok:false` when `affected_rows === 0`.
 - **verify_json_import_validation.php** — JSON import rejects invalid numeric/date column values instead of silent NULL inserts.
 - **verify_maintenance_scripts_rbac.php** — browser Admin gate on MBQA runner, compare_database_sql_modules, and test_sql_injection.
+- **lib/script_cli_output.php** — browser `<pre>` wrapper, `colorText()`, `itm_script_shell_stderr_discard()` for cross-platform subprocess stderr suppression.
 - **lib/itm_script_test_user.php** — disposable `users` rows for repro/verify scripts and PHPUnit (`script-{slug}-{hex}` usernames, snapshot/restore, teardown delete). Static guard: `check_script_disposable_users.php`.
 - **apitest_tier_free.php** / **apitest_tier_basic.php** — disposable `ui_configuration` tier rate-limit regressions; Free HTTP probe publishes CLI `PHPSESSID` via **`scripts/lib/itm_api_tier_test_helpers.php`** (`itm_apitest_publish_http_session()`).
 - **verify_company_module_access.php** — registry/CMA regression plus sidebar discovery probes (registry-only, new MySQL table, folder-only, both, neither); PHPUnit wrapper: `phpunit/tests/Unit/Scripts/CompanyModuleAccessVerifyTest.php`.
