@@ -459,6 +459,19 @@ unset($_SESSION['calendar_success']);
 
         .alert { padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; }
         .alert-success { background: rgba(63, 185, 80, 0.15); border: 1px solid var(--success); color: var(--success); }
+
+        @media (max-width: 768px) {
+            .calendar-container { flex-direction: column; height: auto; min-height: calc(100vh - 150px); }
+            .calendar-side-panel { width: 100%; max-height: none; }
+            .calendar-main { min-height: 360px; }
+            .calendar-header { flex-direction: column; align-items: stretch; }
+            .calendar-view-selector { flex-wrap: wrap; }
+            .calendar-grid-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .week-time-grid,
+            .week-all-day-grid { min-width: 560px; }
+            .calendar-day { min-height: 72px; }
+            .all-day-item { white-space: normal; }
+        }
     </style>
 </head>
 <body>

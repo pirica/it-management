@@ -23,6 +23,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 - **Searchable**: Search by table name, record ID, user, or action.
 - **Detailed View**: View the JSON diff between old and new states.
 - **Admin toolbar**: Download ALL Logs, Backup ALL Logs, and Clear ALL Logs buttons (admin role only).
+- **Responsive:** filter/KPI grids single column below 768px; audit user cells wrap on mobile.
 
 ## 6. API Actions (If Applicable)
 - None.

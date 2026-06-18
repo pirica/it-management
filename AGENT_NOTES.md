@@ -16,6 +16,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
+- **css/styles.css** — global stylesheet with responsive breakpoints and shared layout utilities (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR, `phpunit.xml`, and `tests/` tree. Runner: **`scripts/run_tests.php`**; coverage report: **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 
 ## 12. Module Owner Notes (Optional)

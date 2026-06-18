@@ -212,6 +212,11 @@ $employeesJson = json_encode($employees, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_
             height: 5000px;
             pointer-events: none;
         }
+        @media (max-width: 768px) {
+            .org-chart-container { height: min(700px, 60vh); padding: 16px; }
+            .org-node { width: min(240px, 80vw); }
+            .toolbar { flex-wrap: wrap; }
+        }
     </style>
 </head>
 <body>

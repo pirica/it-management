@@ -23,6 +23,7 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 - **Grid View**: A custom interactive grid instead of a standard list.
 - **Time Punch**: A "⌛" icon is used to auto-fill the current time into timestamp fields.
 - **AJAX Updates**: Supports inline editing via POST requests.
+- **Responsive:** monthly grid table scrolls horizontally below 768px (card uses `overflow:auto`).
 
 ## 6. API Actions (If Applicable)
 - **ajax_inline_edit** — Handles async updates to status and timestamps.

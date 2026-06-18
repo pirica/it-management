@@ -18,6 +18,7 @@ Interactive org chart from `employees.reports_to` reporting lines with drag-and-
 
 ## 5. UI Behavior Requirements
 - Visual tree diagram; optional image export.
+- **Responsive:** chart viewport height capped on mobile; toolbar wraps; nodes scale to `min(240px, 80vw)` below 768px.
 
 ## 6. API Actions (If Applicable)
 - **update_hierarchy** (POST `index.php`, `action=update_hierarchy`) — params: `employee_id`, `reports_to` (0 = top-level). Runs `itm_is_circular_reporting()` before UPDATE; returns JSON via `itm_api_json_response()` / `itm_api_mutation_requires_rows()` (HTTP 404 when zero rows affected).

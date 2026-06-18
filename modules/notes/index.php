@@ -605,6 +605,14 @@ $displayFieldColumns = $uiColumns;
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
         th { background: var(--bg-secondary); }
+
+        @media (max-width: 768px) {
+            .notes-container { flex-direction: column; height: auto; min-height: calc(100vh - 120px); }
+            .notes-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+            .notes-content { padding: 16px; }
+            .empty-state { padding: 40px 16px; }
+            .modal-dialog { margin: 0.5rem; max-width: none; }
+        }
     </style>
 </head>
 <body>

@@ -19,9 +19,12 @@
             border-radius: 12px;
             border: 1px solid var(--border);
             margin-top: 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
         }
         .rack-visualizer-top {
-            width: 600px;
+            width: min(600px, 100%);
             height: 35px;
             background: #f2f2f2;
             border: 1px solid #d9d9d9;
@@ -41,7 +44,7 @@
             border-radius: 2px 2px 0 0;
         }
         .rack-visualizer-frame {
-            width: 600px;
+            width: min(600px, 100%);
             background: #fff;
             border: 1px solid #d9d9d9;
             padding: 20px 50px;
@@ -161,7 +164,7 @@
             color: #999;
         }
         .rack-visualizer-base {
-            width: 600px;
+            width: min(600px, 100%);
             height: 70px;
             background: #f2f2f2;
             border: 1px solid #d9d9d9;
@@ -183,7 +186,7 @@
             border-radius: 3px;
         }
         .rack-visualizer-feet {
-            width: 520px;
+            width: min(520px, 100%);
             display: flex;
             justify-content: space-between;
             margin-top: 5px;
@@ -289,6 +292,10 @@
             background: #dc2626;
             color: #fff;
             border-color: #b91c1c;
+        }
+        @media (max-width: 768px) {
+            .rack-visualizer-container { padding: 16px; }
+            .rack-planner-header { flex-wrap: wrap; gap: 12px; }
         }
     </style>
 </head>

@@ -252,6 +252,17 @@ body {
 /* BADGES */
 .badge-private { font-size: 10px; background: #ff4757; color: #fff; padding: 2px 4px; border-radius: 3px; position: absolute; top: 5px; right: 5px; }
 
+@media (max-width: 768px) {
+    #main { margin: 10px; }
+    .topbar { flex-wrap: wrap; gap: 10px; align-items: stretch; }
+    .topbar > div { width: 100%; justify-content: space-between; }
+    .search { width: 100%; max-width: none; flex: 1; min-width: 0; }
+    .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .tab { flex-shrink: 0; max-width: none; }
+    .desktop { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 12px; padding: 12px; }
+    .preview-media embed { height: min(480px, 60vh); }
+}
+
 </style>
 </head>
 <body>

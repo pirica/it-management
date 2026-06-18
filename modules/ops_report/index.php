@@ -735,6 +735,15 @@ $lockedNotice = $can_edit_report ? '' : ' ' . opr_ui_get($ui_json, 'locked_notic
             .opr-controls, .opr-no-print, .btn { display:none !important; }
             .card { border:none !important; box-shadow:none !important; }
         }
+        @media (max-width: 900px) {
+            .opr-header-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .opr-section { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+            .opr-table { min-width: 640px; }
+            .opr-table th { white-space: normal; }
+            .opr-page-title .edit-input-ui { min-width: 0; width: 100%; }
+        }
     </style>
 </head>
 <body>
