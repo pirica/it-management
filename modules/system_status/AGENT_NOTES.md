@@ -37,7 +37,7 @@ N/A — no FK-owned data.
 - **Read-only:** no INSERT/UPDATE/DELETE; no audit triggers required.
 - **PHP + MySQL API actions:** always native (`ini_get()`, `get_loaded_extensions()`, mysqli) — never PowerShell — so Laragon tabs work when `shell_exec` is disabled.
 - **Hardware (Monitoring tab):** Windows uses `includes/*.ps1` via `itm_system_status_run_powershell_action()`; non-Windows uses `itm_system_status_native_payload()` (`/proc`, `disk_*_space`).
-- **API action allowlist:** `scripts/system_status_api.php` rejects unknown `action` values with HTTP 400. `itm_system_status_run_powershell_action()` repeats the allowlist and requires `[a-z0-9_]+` before loading `includes/{action}.ps1`.
+- **API action allowlist:** `scripts/system_status_api.php` rejects unknown `action` values with HTTP 400. `itm_system_status_run_powershell_action()` allowlists **hardware actions only** and requires `[a-z0-9_]+` before loading `includes/{action}.ps1`.
 - **Win11 troubleshooting:** run `php scripts/verify_system_status.php` — checks layout, registry, native payloads, storage/DB reports, `information_schema`; on Windows also checks `shell_exec`, `.ps1` readability, and per-script `test_*.php` wrappers.
 - **Not standard CRUD:** no `create.php` / `delete.php`; tab router only (`?tab=monitoring|php_settings|database`).
 
@@ -94,7 +94,7 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued i
 | Path | Role |
 |------|------|
 | `includes/itm_system_status_native.php` | PHP/MySQL + Linux hardware JSON payloads |
-| `includes/itm_system_status_powershell.php` | Windows hardware `shell_exec` runner; action allowlist |
+| `includes/itm_system_status_powershell.php` | Windows hardware `shell_exec` runner; hardware-only action allowlist |
 | `includes/itm_system_status_storage.php` | On-disk storage tree + active DB table report |
 | `includes/*.ps1` | Windows hardware metrics (12 scripts; PHP/MySQL API actions no longer route here) |
 | `scripts/system_status_api.php` | Admin JSON dispatcher |

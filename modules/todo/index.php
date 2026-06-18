@@ -6,6 +6,51 @@
 require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/todo_visibility.php";
 
+if (!function_exists('todo_merge_assignee_users')) {
+    /**
+     * Why: Active-only assignee dropdown must still show labels for inactive users on existing tasks.
+     */
+    function todo_merge_assignee_users(mysqli $conn, int $company_id, array &$users, array $assigneeIdStrings): void
+    {
+        $missing = [];
+        foreach ($assigneeIdStrings as $idCsv) {
+            foreach (array_filter(explode(',', (string)$idCsv)) as $uid) {
+                $uid = (int)$uid;
+                if ($uid > 0 && !isset($users[$uid])) {
+                    $missing[$uid] = $uid;
+                }
+            }
+        }
+        if (!$missing) {
+            return;
+        }
+
+        $ids = array_values($missing);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT u.id, u.username
+                FROM users u
+                LEFT JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+                WHERE u.id IN ($placeholders) AND (u.company_id = ? OR uc.company_id = ?)
+                GROUP BY u.id";
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt === false) {
+            return;
+        }
+
+        $types = 'i' . str_repeat('i', count($ids)) . 'ii';
+        $params = array_merge([$company_id], $ids, [$company_id, $company_id]);
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $users[(int)$row['id']] = $row;
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
 $crud_table = "todo";
 $crud_title = "Todo";
 $crud_action = $crud_action ?? "index";
@@ -25,10 +70,19 @@ $userSql = "SELECT u.id, u.username
             GROUP BY u.id
             ORDER BY u.username";
 $stmtUser = mysqli_prepare($conn, $userSql);
-mysqli_stmt_bind_param($stmtUser, 'iii', $company_id, $company_id, $company_id);
-mysqli_stmt_execute($stmtUser);
-$resUser = mysqli_stmt_get_result($stmtUser);
-if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']] = $row; } }
+if ($stmtUser === false) {
+    $users = [];
+} else {
+    mysqli_stmt_bind_param($stmtUser, 'iii', $company_id, $company_id, $company_id);
+    mysqli_stmt_execute($stmtUser);
+    $resUser = mysqli_stmt_get_result($stmtUser);
+    if ($resUser) {
+        while ($row = mysqli_fetch_assoc($resUser)) {
+            $users[$row['id']] = $row;
+        }
+    }
+    mysqli_stmt_close($stmtUser);
+}
 
 $departments = [];
 $resDept = mysqli_query($conn, "SELECT id, name, code FROM departments WHERE company_id = " . (int)$company_id . " OR company_id IS NULL");
@@ -262,6 +316,8 @@ if ($crud_action === "index") {
     $stmt->execute();
     $res = $stmt->get_result();
     $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    $assigneeCsv = array_column($tasks, 'assigned_to_user_id');
+    todo_merge_assignee_users($conn, $company_id, $users, $assigneeCsv);
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     $visSql = itm_todo_visibility_sql();
     $stmt = $conn->prepare("SELECT * FROM todo WHERE id = ? AND company_id = ? AND active = 1 AND ($visSql)");
@@ -272,6 +328,7 @@ if ($crud_action === "index") {
         header("Location: index.php");
         die();
     }
+    todo_merge_assignee_users($conn, $company_id, $users, [(string)($data['assigned_to_user_id'] ?? '')]);
 } elseif ($crud_action === "create") {
     $data = [];
     if ($filter === "my_day") {
