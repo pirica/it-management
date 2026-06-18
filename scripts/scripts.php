@@ -399,13 +399,13 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td>verify_database_schema.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Compares <code>CREATE TABLE</code> names in <code>database.sql</code> with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 116). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
+                    <td>Compares <code>CREATE TABLE</code> names in <code>database.sql</code> with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 117). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>database.sql</code> import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
                 <tr>
                     <td>verify_database_sql_import.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Imports the full <code>database.sql</code> against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>database.sql</code> (currently <strong>116</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>.</td>
+                    <td>Imports the full <code>database.sql</code> against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>database.sql</code> (currently <strong>117</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>.</td>
                     <td><code>bash scripts/verify_database_sql_import.sh</code> — requires MySQL on <code>127.0.0.1</code>, user <code>root</code>, password <code>itmanagement</code>. Env: <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>, optional <code>EXPECTED_TABLE_COUNT</code> override.</td>
                 </tr>
                 <tr>

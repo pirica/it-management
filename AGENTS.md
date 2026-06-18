@@ -663,7 +663,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
     "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
     ```
-    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **116**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`user_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
+    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **117**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`user_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
   * **PowerShell piping:** `database.sql` in git is **LF**; `-split "`r`n"` can yield a single “line” and skip the strip branch — still import the **complete** file. Prefer `cmd /c "\"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe\" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql"` from the repo directory over stdin `Process` piping when imports truncate.
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
@@ -809,7 +809,7 @@ Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-
 | **MySQL 8.0** | `sudo mkdir -p /var/run/mysqld && sudo chown mysql:mysql /var/run/mysqld && sudo chmod 755 /var/run/mysqld && sudo mysqld --user=mysql --datadir=/var/lib/mysql &` then `sleep 5` | `mysqladmin -u root -pitmanagement ping` → `mysqld is alive` |
 | **Apache 2.4** | `sudo apachectl start` | `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` |
 
-MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 116 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
+MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 117 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
 
 ### Apache alias
 

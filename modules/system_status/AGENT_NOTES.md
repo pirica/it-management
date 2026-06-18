@@ -50,20 +50,15 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 ## 5. UI Behavior Requirements
 
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`). Invalid `tab` query falls back to `monitoring`.
-- **AJAX (Monitoring hardware only):** fetches `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts). Failed hardware calls show an inline error instead of perpetual Loading….
-- **Sub Storage (Monitoring):** server-rendered Explorer `files/{company_id}/` tree (Common, Departments by dept, Private by user, Trash), plus `tickets_photos/`, `images/`, `floor_plans/` (by company), `backups/`. Parent folders with children include **direct files in that folder** plus child totals (`itm_system_status_directory_direct_metrics()`).
-- **PHP Settings tab:** vertical stack (`.metrics-stack`) of three cards — PHP Core, Resource Limits, Enabled Extensions. Extensions use a scrollable responsive multi-column list (`.ss-extensions-list`, `.ss-extensions-columns` with 1/2/3 columns by viewport, max-height 320px, `tabindex="0"`). Link to `scripts/system_status_phpinfo.php`. Long paths wrap via `.ss-path-value`.
-- **Database tab:** active `DB_NAME` only — table list with approximate row counts, per-table size, and totals via `itm_system_status_build_database_table_report()`.
+- **Cache display:** tabs render from `system_status.payload_json`; Chart.js gauges on Monitoring use embedded cached JSON (no live API calls on GET).
+- **Refresh:** toolbar POST (`refresh_cache` + CSRF) runs `itm_system_status_refresh_all()` for **all** tabs; preserves active `?tab=` on redirect; shows **Last refreshed** from `updated_at` (`dd/mm/yyyy HH:MM`).
+- **First visit:** when the active tab has no cache row, `index.php` auto-seeds that tab once on GET.
+- **Empty cache:** warning banner on tab partials until Refresh or first-visit seed completes.
+- **Monitoring:** cached `system_info`, `cpu_usage`, and `storage_report`; Sub Storage tree via `itm_system_status_render_storage_node()`.
+- **PHP Settings:** cached PHP core, limits, extensions (responsive `.ss-extensions-columns`); live detail via `scripts/system_status_phpinfo.php`.
+- **Database:** cached MySQL status + `db_report` snapshot for active `DB_NAME`.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
-- **Refresh:** toolbar **Refresh** reloads current tab (`?tab=` preserved).
 - **Layout:** shared `sidebar.php` / `header.php`; module-specific CSS in `index.php` (`.metrics-grid`, `.metrics-stack`, `.metric-card`, `.ss-storage-*`, `.status-badge`).
-- **Refresh:** toolbar form POST (`refresh_cache` + CSRF) refreshes **all** tabs; shows **Last refreshed** from `system_status.updated_at` (`dd/mm/yyyy HH:MM`).
-- **Monitoring:** server-rendered from cached `system_info`, `cpu_usage`, and `storage_report` (Chart.js gauges initialised from embedded JSON).
-- **Sub Storage:** cached Explorer `files/{company_id}/` tree plus `tickets_photos/`, `images/`, `floor_plans/`, `backups/`. Parent folders with children include direct files (`itm_system_status_directory_direct_metrics()`).
-- **PHP Settings tab:** cached PHP core, limits, extensions; link to live `scripts/system_status_phpinfo.php`.
-- **Database tab:** cached MySQL status + `itm_system_status_build_database_table_report()` snapshot for active `DB_NAME`.
-- **Empty cache:** warning banner until Refresh (or first-visit auto-seed for active tab).
-- **Layout:** shared `sidebar.php` / `header.php`; module-specific CSS in `index.php`.
 
 ---
 
