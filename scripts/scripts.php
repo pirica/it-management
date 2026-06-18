@@ -1142,6 +1142,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/repro_notes_idor.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_update_port_zero_row.php">verify_update_port_zero_row.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>includes/update_port.php</code>: zero-row tenant-scoped UPDATE returns HTTP 404 before any IDF auto-sync (idf_ports row count unchanged).</td>
+                    <td><code>php scripts/verify_update_port_zero_row.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_notes_ajax_contract.php">verify_notes_ajax_contract.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for Notes AJAX mutations: blocked single_delete returns HTTP 404 with ok:false when affected_rows is zero.</td>

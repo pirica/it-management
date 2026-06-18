@@ -66,6 +66,21 @@ define('DB_USER', 'root');
 define('DB_PASS', 'itmanagement');
 define('DB_NAME', 'itmanagement');
 
+// System Status cache fallback (admin-only module reads before company selection).
+if (!defined('ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID')) {
+    define('ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID', 1);
+}
+$itmSystemStatusDisableFallback = getenv('SYSTEM_STATUS_DISABLE_TENANT_FALLBACK');
+if (!defined('SYSTEM_STATUS_DISABLE_TENANT_FALLBACK')) {
+    define(
+        'SYSTEM_STATUS_DISABLE_TENANT_FALLBACK',
+        filter_var(
+            $itmSystemStatusDisableFallback !== false ? $itmSystemStatusDisableFallback : '0',
+            FILTER_VALIDATE_BOOLEAN
+        )
+    );
+}
+
 // Application Settings
 define('APP_NAME', 'IT Management System');
 define('APP_VERSION', '1.0.0');

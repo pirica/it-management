@@ -26,13 +26,19 @@ $refreshNotice = '';
 $sessionCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
 $cacheCompanyId = $sessionCompanyId;
 if ($cacheCompanyId <= 0) {
+    if (defined('SYSTEM_STATUS_DISABLE_TENANT_FALLBACK') && SYSTEM_STATUS_DISABLE_TENANT_FALLBACK) {
+        header('Location: ' . BASE_URL . 'dashboard.php');
+        exit;
+    }
     // Why: Admin diagnostics remain usable before company selection; cache key fallback only (admin gate above).
-    $correlationId = bin2hex(random_bytes(8));
+    $correlationId = itm_system_status_make_correlation_id();
     error_log(
-        'system_status: cache company_id fallback to 1 (session company_id missing/invalid). correlation_id='
+        'system_status: cache company_id fallback to '
+        . ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID
+        . ' (session company_id missing/invalid). correlation_id='
         . $correlationId
     );
-    $cacheCompanyId = 1;
+    $cacheCompanyId = ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_cache'])) {
