@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('cpu_cores').textContent = d.cpu_cores;
                 document.getElementById('cpu_threads').textContent = d.cpu_threads;
 
-                document.getElementById('system_info_loader').style.display = 'none';
-                document.getElementById('system_info_content').style.display = 'block';
+                document.getElementById('system-info-loader').style.display = 'none';
+                document.getElementById('system-info-content').style.display = 'block';
 
                 // Update RAM Chart
                 const totalGb = (d.ram_total / 1073741824).toFixed(2);

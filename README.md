@@ -73,6 +73,10 @@
 
 <p align="center"><img src="docs/readme/org_chart.png" alt="Org Chart" /></p>
 
+<p align="center"><strong>System Status</strong> — Admin-only server dashboard with monitoring gauges, PHP settings, and database metrics.</p>
+
+<p align="center"><img src="docs/readme/system_status.png" alt="System Status monitoring tab" /></p>
+
 <h2 align="center">Architecture</h2>
 
 <p align="center">High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.</p>
@@ -359,6 +363,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | To-Do | `modules/todo/`, `todo_categories/` | Global and private tasks |
 | Calendar | `modules/calendar/` | Aggregated view of alerts, events, tickets, and equipment expiries |
 | Events | `modules/events/`, `event_categories/` | Company events and categories |
+| System Status | `modules/system_status/` | Admin-only server monitoring (CPU, RAM, disk, PHP, MySQL) |
 
 <h2 align="center">Floor Plans gallery</h2>
 

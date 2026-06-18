@@ -1,7 +1,9 @@
 # System Status Module
 
 ## Overview
-The **System Status** module provides real-time monitoring and configuration insights for a Windows 11 Laragon-based web-server. It is designed for administrators to quickly assess server health, PHP environment, and database status.
+The **System Status** module provides real-time monitoring and configuration insights for administrators. It is optimised for **Windows 11 + Laragon** (PowerShell metrics) and ships **PHP-native fallbacks** on Linux/CI so the same tabs and API actions keep working without `powershell.exe`.
+
+Module path: `modules/system_status/index.php` (Admin only).
 
 ## Tabs
 
@@ -22,10 +24,10 @@ Provides a detailed look at the PHP environment:
 Metrics related to the MySQL/MariaDB service:
 - **MySQL Service:** Service status (Running/Stopped), display name, and binary version.
 - **Storage Summary:** Total data size across all databases.
-- **Database Metrics:** List of all databases and their respective sizes on disk (calculated via PHP/SQL).
+- **Database Metrics:** List of all databases and their respective sizes on disk (PHP `information_schema` plus API table).
 
-## PowerShell Scripts
-Metrics are collected using PowerShell scripts located in `/includes/`. All scripts return data in a standardized JSON format:
+## PowerShell Scripts (Windows)
+Metrics on Laragon are collected using PowerShell scripts in `includes/`. All scripts return data in a standardized JSON format:
 
 ```json
 {
@@ -48,10 +50,24 @@ Metrics are collected using PowerShell scripts located in `/includes/`. All scri
 - `mysql_databases.ps1`
 - `mysql_size.ps1`
 
-## API Endpoints
-The module uses `scripts/system_status_api.php` as a dispatcher to execute these scripts. Access is restricted to the **Admin** role.
+## PHP-native fallbacks (Linux / CI)
+`includes/itm_system_status_native.php` serves the same `action=` values without PowerShell (`/proc` metrics, `ini_get()`, mysqli). Used automatically by `scripts/system_status_api.php` when not on Windows.
 
-Example usage: `/scripts/system_status_api.php?action=cpu_usage`
+## API Endpoints
+`scripts/system_status_api.php` dispatches metrics. Access is restricted to the **Admin** role (session).
+
+Example: `/scripts/system_status_api.php?action=cpu_usage`
+
+Full action list: `scripts/api.php` → **System Status API**.
 
 ## Verification
-A suite of test scripts is provided in `/scripts/` to validate the output of each PowerShell script. See `scripts/SCRIPTS.md` for details.
+| Command | Purpose |
+|---------|---------|
+| `php scripts/verify_system_status.php` | Module layout, registry row, native payloads, DB size query |
+| `php scripts/test_system_info.php` (etc.) | Per-script PowerShell JSON validation on Windows |
+| `php scripts/run_tests.php --filter SystemStatusApiTest` | PHPUnit file-existence checks |
+
+See `scripts/SCRIPTS.md` → **System Status scripts** and `modules/system_status/AGENT_NOTES.md`.
+
+## Screenshots
+`python3 scripts/take_screenshots_modules.py` captures `docs/readme/system_status.png` (monitoring tab) for README.

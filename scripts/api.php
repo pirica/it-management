@@ -827,7 +827,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>System Status API (<code>scripts/system_status_api.php?action=…</code>)</h2>
-        <p>Restricted to <strong>Admin</strong> role. Executes PowerShell scripts on Windows Laragon.</p>
+        <p>Restricted to <strong>Admin</strong> role. On <strong>Windows Laragon</strong>, executes matching <code>includes/*.ps1</code> scripts. On <strong>Linux/CI</strong>, returns PHP-native metrics from <code>includes/itm_system_status_native.php</code> (same JSON shape).</p>
         <table>
             <thead><tr><th>action</th><th>Parameters</th><th>Purpose</th></tr></thead>
             <tbody>
