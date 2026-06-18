@@ -1,0 +1,60 @@
+# AGENT_NOTES.md - Tickets
+
+## 1. Module Purpose
+The central helpdesk/ticketing module for managing support requests.
+
+## 2. Key Tables
+- **tickets** — main ticket storage.
+
+## 3. Required Relationships
+- **tickets** → depends on **companies**.
+- **tickets** → depends on **ticket_categories**.
+- **tickets** → depends on **ticket_priorities**.
+- **tickets** → depends on **ticket_statuses**.
+- **tickets** → links to **employees** (Requester).
+- **tickets** → links to **users** (Assigned To).
+- **tickets** → links to **equipment** (Affected Asset).
+
+## 4. Business Rules (Critical for Agents)
+- **Archiving**: Prefer `is_archived = 1` over hard delete — `archive.php` toggles archive state; list defaults to active tickets (`is_archived = 0`).
+- **Asset Link**: Tickets can be linked to specific equipment for asset lifecycle tracking.
+- **Due dates**: `due_date` feeds **calendar** integration when tickets module enabled for company.
+- **Photos**: `tickets_photos` stores JSON filename list under `tickets_photos/` upload tree.
+- **Search vs archive filter**: when `?search=` is set, archive filter may include both active and archived rows (see `index.php`).
+
+## 5. UI Behavior Requirements
+- **Standard CRUD** with FK label columns (`status_name`, `priority_name`, etc.).
+- **Photo Upload**: Supports uploading photos/screenshots for troubleshooting.
+- **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view.
+- **Archive toggle**: `archive.php` POST sets `is_archived` 0/1 with company scope.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** — handles bulk JSON import on `index.php`.
+- **archive.php** — POST archive/unarchive by ticket `id` + `company_id`.
+
+## 7. File Structure
+- Standard CRUD structure + `archive.php`.
+
+## 8. Multi-Tenant Rules
+- Strictly scoped by `company_id`.
+
+## 9. Audit Logging Requirements
+- `trg_tickets_audit_insert|update|delete` in `database.sql`.
+
+## 10. Common Pitfalls
+- Hard-deleting tickets that should be archived — breaks history and calendar due-date traces.
+- Listing raw `status_id` / `assigned_to_user_id` when label rows exist.
+- `tickets_ensure_is_archived_column()` runtime ALTER — prefer matching `database.sql` on fresh installs.
+- Photo paths must use `ticket_photo_public_path()` / upload helpers, not raw `../../tickets_photos/` assumptions.
+
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT
+```php
+$stmt = $conn->prepare("SELECT * FROM tickets WHERE company_id = ? AND status_id = ?");
+$stmt->bind_param("ii", $companyId, $statusId);
+$stmt->execute();
+```
+
+## 12. Module Owner Notes (Optional)
+The primary interface for IT support operations.
