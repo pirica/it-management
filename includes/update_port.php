@@ -112,8 +112,7 @@ if ($hasManagementId) {
         $companyId = (int)$company_id;
         mysqli_stmt_bind_param($stmtEquipmentManagement, 'ii', $switchId, $companyId);
         mysqli_stmt_execute($stmtEquipmentManagement);
-        $resEquipmentManagement = mysqli_stmt_get_result($stmtEquipmentManagement);
-        $equipmentManagementRow = $resEquipmentManagement ? mysqli_fetch_assoc($resEquipmentManagement) : null;
+        $equipmentManagementRow = itm_mysqli_stmt_fetch_assoc($stmtEquipmentManagement);
         mysqli_stmt_close($stmtEquipmentManagement);
         if ($equipmentManagementRow) {
             $equipmentManagementId = (int)($equipmentManagementRow['switch_environment_id'] ?? 0);
@@ -304,8 +303,7 @@ if ($hasManagementId) {
         $companyIdParam = (int)$company_id;
         mysqli_stmt_bind_param($stmtSwitchPort, 'iii', $id, $companyIdParam, $switchId);
         mysqli_stmt_execute($stmtSwitchPort);
-        $resSwitchPort = mysqli_stmt_get_result($stmtSwitchPort);
-        $switchPortRow = $resSwitchPort ? mysqli_fetch_assoc($resSwitchPort) : null;
+        $switchPortRow = itm_mysqli_stmt_fetch_assoc($stmtSwitchPort);
         mysqli_stmt_close($stmtSwitchPort);
     }
 
@@ -324,8 +322,7 @@ if ($hasManagementId) {
                     $companyIdParam = (int)$company_id;
                     mysqli_stmt_bind_param($stmtPortType, 'is', $companyIdParam, $portTypeRaw);
                     mysqli_stmt_execute($stmtPortType);
-                    $resPortType = mysqli_stmt_get_result($stmtPortType);
-                    $portTypeRow = $resPortType ? mysqli_fetch_assoc($resPortType) : null;
+                    $portTypeRow = itm_mysqli_stmt_fetch_assoc($stmtPortType);
                     mysqli_stmt_close($stmtPortType);
                     if ($portTypeRow) {
                         $portTypeId = (int)($portTypeRow['id'] ?? 0);
@@ -350,8 +347,7 @@ if ($hasManagementId) {
             $companyIdParam = (int)$company_id;
             mysqli_stmt_bind_param($stmtPosition, 'ii', $companyIdParam, $switchId);
             mysqli_stmt_execute($stmtPosition);
-            $resPosition = mysqli_stmt_get_result($stmtPosition);
-            $positionRow = $resPosition ? mysqli_fetch_assoc($resPosition) : null;
+            $positionRow = itm_mysqli_stmt_fetch_assoc($stmtPosition);
             mysqli_stmt_close($stmtPosition);
             if ($positionRow) {
                 $positionId = (int)($positionRow['id'] ?? 0);
@@ -371,8 +367,7 @@ if ($hasManagementId) {
                     $companyIdParam = (int)$company_id;
                     mysqli_stmt_bind_param($stmtToIdf, 'ii', $destinationIdfId, $companyIdParam);
                     mysqli_stmt_execute($stmtToIdf);
-                    $resToIdf = mysqli_stmt_get_result($stmtToIdf);
-                    $toIdfRow = $resToIdf ? mysqli_fetch_assoc($resToIdf) : null;
+                    $toIdfRow = itm_mysqli_stmt_fetch_assoc($stmtToIdf);
                     mysqli_stmt_close($stmtToIdf);
                     if ($toIdfRow) {
                         $idfCode = trim((string)($toIdfRow['idf_code'] ?? ''));
@@ -416,8 +411,7 @@ if ($hasManagementId) {
             }
             if ($stmtExistingIdfPort) {
                 mysqli_stmt_execute($stmtExistingIdfPort);
-                $resExistingIdfPort = mysqli_stmt_get_result($stmtExistingIdfPort);
-                $existingIdfPortRow = $resExistingIdfPort ? mysqli_fetch_assoc($resExistingIdfPort) : null;
+                $existingIdfPortRow = itm_mysqli_stmt_fetch_assoc($stmtExistingIdfPort);
                 mysqli_stmt_close($stmtExistingIdfPort);
                 if ($existingIdfPortRow) {
                     $existingIdfPortId = (int)($existingIdfPortRow['id'] ?? 0);
@@ -440,8 +434,7 @@ if ($hasManagementId) {
                     $companyIdParam = (int)$company_id;
                     mysqli_stmt_bind_param($stmtEmptyPosition, 'ii', $companyIdParam, $destinationIdfId);
                     mysqli_stmt_execute($stmtEmptyPosition);
-                    $resEmptyPosition = mysqli_stmt_get_result($stmtEmptyPosition);
-                    $emptyPositionRow = $resEmptyPosition ? mysqli_fetch_assoc($resEmptyPosition) : null;
+                    $emptyPositionRow = itm_mysqli_stmt_fetch_assoc($stmtEmptyPosition);
                     mysqli_stmt_close($stmtEmptyPosition);
                     if ($emptyPositionRow) {
                         $emptyPositionId = (int)($emptyPositionRow['id'] ?? 0);

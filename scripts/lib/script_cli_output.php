@@ -82,7 +82,7 @@ if (!function_exists('itm_script_cli_is_cli')) {
         return $text;
     }
 
-    /** Why: POSIX vs Windows stderr discard when spawning isolated PHP subprocesses from repro/verify scripts. */
+    /** Why: Discard subprocess stderr on Windows (2>NUL) and POSIX (2>/dev/null) when spawning isolated PHP from repro/verify scripts. */
     function itm_script_shell_stderr_discard(): string
     {
         return DIRECTORY_SEPARATOR === '\\' ? '2>NUL' : '2>/dev/null';

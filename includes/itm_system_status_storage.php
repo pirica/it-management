@@ -3,6 +3,10 @@
  * Why: System Status Monitoring tab needs on-disk storage breakdown for Explorer and upload trees.
  */
 
+if (!function_exists('itm_mysqli_stmt_fetch_all_assoc')) {
+    require_once __DIR__ . '/itm_role_module_permissions.php';
+}
+
 function itm_system_status_format_bytes(int $bytes): string
 {
     if ($bytes >= 1073741824) {
@@ -174,11 +178,8 @@ function itm_system_status_load_departments_for_company($conn, int $companyId): 
     }
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
     mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['name']];
-        }
+    foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
+        $rows[] = ['id' => (int)$row['id'], 'name' => (string)$row['name']];
     }
     mysqli_stmt_close($stmt);
 
@@ -204,17 +205,14 @@ function itm_system_status_load_users_for_company($conn, int $companyId): array
     }
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
     mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $fullName = trim((string)$row['first_name'] . ' ' . (string)$row['last_name']);
-            $label = $fullName !== '' ? $fullName . ' (' . $row['username'] . ')' : (string)$row['username'];
-            $rows[] = [
-                'id' => (int)$row['id'],
-                'username' => (string)$row['username'],
-                'label' => $label,
-            ];
-        }
+    foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
+        $fullName = trim((string)$row['first_name'] . ' ' . (string)$row['last_name']);
+        $label = $fullName !== '' ? $fullName . ' (' . $row['username'] . ')' : (string)$row['username'];
+        $rows[] = [
+            'id' => (int)$row['id'],
+            'username' => (string)$row['username'],
+            'label' => $label,
+        ];
     }
     mysqli_stmt_close($stmt);
 
@@ -385,20 +383,17 @@ function itm_system_status_build_database_table_report($conn, string $databaseNa
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 's', $databaseName);
         mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        if ($result) {
-            while ($row = mysqli_fetch_assoc($result)) {
-                $rowLower = array_change_key_case($row, CASE_LOWER);
-                $rowCount = (int)($rowLower['table_rows'] ?? 0);
-                $sizeMb = (float)($rowLower['size_mb'] ?? 0);
-                $tables[] = [
-                    'name' => (string)($rowLower['table_name'] ?? ''),
-                    'rows' => $rowCount,
-                    'size_mb' => $sizeMb,
-                ];
-                $totalRows += $rowCount;
-                $totalSizeMb += $sizeMb;
-            }
+        foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
+            $rowLower = array_change_key_case($row, CASE_LOWER);
+            $rowCount = (int)($rowLower['table_rows'] ?? 0);
+            $sizeMb = (float)($rowLower['size_mb'] ?? 0);
+            $tables[] = [
+                'name' => (string)($rowLower['table_name'] ?? ''),
+                'rows' => $rowCount,
+                'size_mb' => $sizeMb,
+            ];
+            $totalRows += $rowCount;
+            $totalSizeMb += $sizeMb;
         }
         mysqli_stmt_close($stmt);
     }

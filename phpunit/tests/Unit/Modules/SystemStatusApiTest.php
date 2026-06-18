@@ -61,14 +61,20 @@ class SystemStatusApiTest extends TestCase
 
         $tempDir = sys_get_temp_dir() . '/itm-ss-storage-' . uniqid('', true);
         mkdir($tempDir, 0775, true);
-        file_put_contents($tempDir . '/sample.txt', str_repeat('a', 128));
+        try {
+            file_put_contents($tempDir . '/sample.txt', str_repeat('a', 128));
 
-        $metrics = itm_system_status_directory_metrics($tempDir);
-        $this->assertSame(128, $metrics['bytes']);
-        $this->assertSame(1, $metrics['files']);
-
-        unlink($tempDir . '/sample.txt');
-        rmdir($tempDir);
+            $metrics = itm_system_status_directory_metrics($tempDir);
+            $this->assertSame(128, $metrics['bytes']);
+            $this->assertSame(1, $metrics['files']);
+        } finally {
+            if (is_file($tempDir . '/sample.txt')) {
+                unlink($tempDir . '/sample.txt');
+            }
+            if (is_dir($tempDir)) {
+                rmdir($tempDir);
+            }
+        }
     }
 
     public function testStorageMetricsIgnoreSystemFiles(): void
@@ -81,20 +87,26 @@ class SystemStatusApiTest extends TestCase
 
         $tempDir = sys_get_temp_dir() . '/itm-ss-storage-ignore-' . uniqid('', true);
         mkdir($tempDir, 0775, true);
-        file_put_contents($tempDir . '/sample.txt', str_repeat('b', 64));
-        file_put_contents($tempDir . '/index.html', '');
-        file_put_contents($tempDir . '/.htaccess', 'deny');
-        file_put_contents($tempDir . '/AGENT_NOTES.md', '# notes');
+        try {
+            file_put_contents($tempDir . '/sample.txt', str_repeat('b', 64));
+            file_put_contents($tempDir . '/index.html', '');
+            file_put_contents($tempDir . '/.htaccess', 'deny');
+            file_put_contents($tempDir . '/AGENT_NOTES.md', '# notes');
 
-        $metrics = itm_system_status_directory_metrics($tempDir);
-        $this->assertSame(64, $metrics['bytes']);
-        $this->assertSame(1, $metrics['files']);
-
-        unlink($tempDir . '/sample.txt');
-        unlink($tempDir . '/index.html');
-        unlink($tempDir . '/.htaccess');
-        unlink($tempDir . '/AGENT_NOTES.md');
-        rmdir($tempDir);
+            $metrics = itm_system_status_directory_metrics($tempDir);
+            $this->assertSame(64, $metrics['bytes']);
+            $this->assertSame(1, $metrics['files']);
+        } finally {
+            foreach (['sample.txt', 'index.html', '.htaccess', 'AGENT_NOTES.md'] as $file) {
+                $path = $tempDir . '/' . $file;
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+            if (is_dir($tempDir)) {
+                rmdir($tempDir);
+            }
+        }
     }
 
     public function testCacheTabKeysAndPhpSettingsCollector(): void
