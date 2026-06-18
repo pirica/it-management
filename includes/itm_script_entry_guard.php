@@ -63,6 +63,10 @@ if (!function_exists('itm_skip_http_entry_unless_direct')) {
         if (itm_is_phpunit_processing()) {
             return true;
         }
+        // Why: Contract-test subprocesses include HTTP endpoints under CLI with stubs for CSRF/JSON exit.
+        if (defined('ITM_HTTP_ENDPOINT_CONTRACT_TEST') && ITM_HTTP_ENDPOINT_CONTRACT_TEST) {
+            return false;
+        }
         if (PHP_SAPI === 'cli') {
             return true;
         }
