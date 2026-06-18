@@ -16,7 +16,7 @@ $phpIniValues = [
 ];
 $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
 ?>
-<div class="metrics-grid">
+<div class="metrics-stack">
     <div class="metric-card">
         <h3>PHP Core</h3>
         <table class="info-table">
@@ -46,7 +46,7 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
         </table>
     </div>
 
-    <div class="metric-card" style="grid-column: span 2;">
+    <div class="metric-card">
         <h3>Enabled Extensions (<?php echo count($phpExtensions); ?>)</h3>
         <div style="column-count: 3; gap: 20px;">
             <ul style="margin:0; padding:0; list-style:none; font-size: 0.85rem;">

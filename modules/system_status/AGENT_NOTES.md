@@ -42,7 +42,7 @@ N/A — no FK-owned data.
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`).
 - **AJAX:** Monitoring hardware only — fetches `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts). Failed hardware calls show an inline error instead of perpetual Loading….
 - **Sub Storage (Monitoring):** server-rendered Explorer `files/{company_id}/` tree (Common, Departments by dept, Private by user, Trash), plus `tickets_photos/`, `images/`, `floor_plans/` (by company), `backups/`.
-- **PHP Settings tab:** server-rendered PHP core, limits, extensions; link to `scripts/system_status_phpinfo.php`. Long paths wrap via `.ss-path-value`.
+- **PHP Settings tab:** server-rendered PHP core, limits, extensions (vertical stack layout); link to `scripts/system_status_phpinfo.php`. Long paths wrap via `.ss-path-value`.
 - **Database tab:** active `DB_NAME` only — table list with approximate row counts, per-table size, and totals.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
 - **Refresh:** toolbar **Refresh** reloads current tab.
