@@ -47,6 +47,20 @@ Cached payload includes:
 3. Page reloads the active tab from cache; toolbar shows **Last refreshed** (`dd/mm/yyyy HH:MM`).
 4. First visit to a tab with no cache row auto-seeds that tab once.
 
+## Responsive layout
+Module CSS lives in `modules/system_status/index.php` (not global `css/styles.css`). Tab partials avoid layout inline styles; shared classes include:
+
+| Class | Role |
+|-------|------|
+| `.metrics-grid` | Auto-fit card grid (`minmax(min(100%, 280px), 1fr)`) |
+| `.ss-metric-span-wide` / `.ss-metric-span-full` | Full width on mobile; 2- or 3-column span from 768px / 1024px |
+| `.ss-disk-grid` | Nested disk drive tiles |
+| `.ss-extensions-columns` | 1 / 2 / 3 CSS columns by breakpoint |
+| `.audit-table-wrap` | Horizontal scroll for wide database table |
+| `.ss-storage-summary` / `.ss-storage-leaf` | Stack to one column below 576px |
+
+Disk usage progress bars keep a dynamic inline `width` percentage only.
+
 ## PowerShell Scripts (Windows hardware collection)
 On Windows, **Refresh** for the Monitoring tab uses PowerShell scripts in `includes/` for hardware metrics (`system_info`, `cpu_usage`, etc.). PHP and MySQL collection always uses the native PHP/mysqli runtime.
 

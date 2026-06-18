@@ -25,10 +25,10 @@ $cpuLoad = (is_array($cpuUsagePayload) && ($cpuUsagePayload['status'] ?? '') ===
     : null;
 ?>
 <div class="metrics-grid">
-    <div class="metric-card" style="grid-column: span 2;">
+    <div class="metric-card ss-metric-span-wide">
         <h3>System Overview</h3>
         <?php if ($systemInfo === null): ?>
-            <div class="text-center" style="color:#a52727;">
+            <div class="text-center ss-error-msg">
                 <?php echo sanitize((string)($systemInfoPayload['message'] ?? 'Cached system info unavailable.')); ?>
             </div>
         <?php else: ?>
@@ -64,9 +64,9 @@ $cpuLoad = (is_array($cpuUsagePayload) && ($cpuUsagePayload['status'] ?? '') ===
         </div>
     </div>
 
-    <div class="metric-card" style="grid-column: span 3;">
+    <div class="metric-card ss-metric-span-full">
         <h3>Disk Usage</h3>
-        <div id="disk-usage-content" class="metrics-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+        <div id="disk-usage-content" class="metrics-grid ss-disk-grid">
             <?php if ($systemInfo !== null): ?>
                 <?php foreach (($systemInfo['disks'] ?? []) as $disk): ?>
                     <?php
@@ -83,8 +83,8 @@ $cpuLoad = (is_array($cpuUsagePayload) && ($cpuUsagePayload['status'] ?? '') ===
                     <div class="metric-card text-center">
                         <div class="metric-label">Drive <?php echo sanitize((string)($disk['DeviceID'] ?? '')); ?></div>
                         <div class="metric-value"><?php echo sanitize((string)$diskPercent); ?>%</div>
-                        <div class="progress-bar-container" style="height:8px; background:#f0f3f6; border-radius:4px; margin:8px 0;">
-                            <div style="width:<?php echo (float)$diskPercent; ?>%; height:100%; background:#17a2b8; border-radius:4px;"></div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width:<?php echo (float)$diskPercent; ?>%;"></div>
                         </div>
                         <div class="metric-label"><?php echo sanitize(number_format($diskUsedGb, 1)); ?>G / <?php echo sanitize(number_format($diskTotalGb, 1)); ?>G</div>
                     </div>
@@ -94,9 +94,9 @@ $cpuLoad = (is_array($cpuUsagePayload) && ($cpuUsagePayload['status'] ?? '') ===
     </div>
 </div>
 
-<div class="metric-card" style="margin-top: 16px;">
+<div class="metric-card ss-storage-section">
     <h3>Sub Storage — Explorer and upload trees</h3>
-    <p class="metric-label" style="margin-top:0;">On-disk usage for Explorer segments by company, plus shared upload directories.</p>
+    <p class="metric-label ss-section-intro">On-disk usage for Explorer segments by company, plus shared upload directories.</p>
     <?php foreach ($storageReport['sections'] as $section): ?>
         <?php itm_system_status_render_storage_node($section); ?>
     <?php endforeach; ?>

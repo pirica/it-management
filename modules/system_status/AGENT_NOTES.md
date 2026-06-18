@@ -59,6 +59,12 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 - **Database:** cached MySQL status + `db_report` snapshot for active `DB_NAME`.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
 - **Layout:** shared `sidebar.php` / `header.php`; module-specific CSS in `index.php` (`.metrics-grid`, `.metrics-stack`, `.metric-card`, `.ss-storage-*`, `.status-badge`).
+- **Responsive layout:** tab partials use CSS classes only (no layout inline styles). Breakpoints in `index.php`:
+  - **≤575px:** info-table label column auto-width; Sub Storage summary/leaf grids stack to one column; storage meta wraps.
+  - **≥768px:** `.ss-metric-span-wide` spans two grid columns; PHP extensions list uses two columns (`.ss-extensions-columns`).
+  - **≥1024px:** `.ss-metric-span-full` spans three grid columns; extensions list uses three columns.
+  - **Database table:** `.audit-table-wrap` horizontal scroll on narrow viewports; numeric columns use `.ss-table-num`.
+  - **Dynamic only:** disk progress bar fill width remains inline (`width: N%`) because it is computed per drive.
 
 ---
 
