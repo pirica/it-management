@@ -27,3 +27,27 @@ jobs:
 
       - name: Run smoke test runner
         run: bash scripts/smoke_test.sh
+
+  database-import:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: itmanagement
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -pitmanagement"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Import database.sql
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PASSWORD: itmanagement
+        run: bash scripts/verify_database_sql_import.sh

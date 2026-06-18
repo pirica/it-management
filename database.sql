@@ -3968,6 +3968,7 @@ WHERE t.`company_id` = @replicate_source_company_id
         AND COALESCE(e.`starting_date`, '1000-01-01') = COALESCE(t.`starting_date`, '1000-01-01')
         AND COALESCE(e.`request_date`, '1000-01-01') = COALESCE(t.`request_date`, '1000-01-01')
   );
+-- Why: department_id resolves by departments.name on the target company; unmatched or NULL source departments stay NULL (same FK remap pattern as location/rack).
 INSERT IGNORE INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_office_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `rj45_speed_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `created_at`, `updated_at`)
 SELECT
     c.`id`,

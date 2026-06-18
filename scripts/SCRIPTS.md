@@ -326,13 +326,22 @@ Materialized examples: `modules/note_labels/`, `modules/modules_registry/`.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 
-GitHub Actions (`.github/workflows/smoke.yml`) and local CI use **`bash scripts/smoke_test.sh`** — **only** these three checks:
+GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
+
+| Job | Command | Purpose |
+|-----|---------|---------|
+| **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi audits (no MySQL) |
+| **database-import** | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import on MySQL 8.0 service; asserts **88** tables (catches INSERT/SELECT column-count mismatches such as cross-company `equipment` seed at `department_id`) |
+
+**smoke** job steps only:
 
 | Step | Command | Purpose |
 |------|---------|---------|
 | 1 | `php -l` on every `*.php` | Syntax lint |
 | 2 | `php scripts/check_csrf_coverage.php` | POST handlers / forms have CSRF |
 | 3 | `php scripts/check_sql_injection_coverage.php` | SQLi coverage audit |
+
+Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import**.
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
