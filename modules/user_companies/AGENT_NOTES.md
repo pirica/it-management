@@ -12,6 +12,7 @@ Maps users to companies they may access after login. Drives the company picker o
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` §3).
+- **Administrator gate:** `index.php` calls `itm_require_admin()` immediately after `config.php` — non-admins are redirected away from this module on GET and receive HTTP 403 on POST mutations routed through `index.php`.
 - **Primary link:** rows determine which companies appear in the company selection list.
 - **Admin row guard:** delete/import flows check `cr_is_admin_user_company_row()` — prevents removing last admin access without confirmation (`itmConfirmUserCompanyDelete()`).
 - **MBQA bypass:** `itm_user_company_assignment_bypasses_admin_delete_guard()` allows disposable test users through QA delete steps only.

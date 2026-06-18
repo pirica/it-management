@@ -7,6 +7,7 @@ $crud_action = 'index';
 require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_users_sensitive_fields.php';
 itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
+$company_id = itm_resolve_active_company_id((int)($company_id ?? 0));
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');

@@ -624,6 +624,14 @@ if ($crud_action === 'delete') {
         exit('Method not allowed.');
     }
 
+    itm_require_role_module_permission(
+        $conn,
+        (int)($_SESSION['user_id'] ?? 0),
+        itm_resolve_active_company_id((int)($company_id ?? 0)),
+        'Expenses',
+        'delete'
+    );
+
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
