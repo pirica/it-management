@@ -70,6 +70,7 @@ if (!function_exists('itm_select_options_allowed_tables')) {
             'idfs',
             'inventory_categories',
             'it_locations',
+            'license_types',
             'location_types',
             'manufacturers',
             'note_labels',
