@@ -545,18 +545,18 @@ function itmDocTodoAjaxActions(): array
 function itmDocSystemStatusApiActions(): array
 {
     return [
-        ['action' => 'system_info', 'params' => 'action=system_info', 'purpose' => 'Execute system_info.ps1 and return OS, CPU, RAM, Disk, and Network info.'],
-        ['action' => 'cpu_usage', 'params' => 'action=cpu_usage', 'purpose' => 'Execute cpu_usage.ps1 and return current CPU load %.'],
-        ['action' => 'ram_usage', 'params' => 'action=ram_usage', 'purpose' => 'Execute ram_usage.ps1 and return Used/Free/Total RAM.'],
-        ['action' => 'disk_usage', 'params' => 'action=disk_usage', 'purpose' => 'Execute disk_usage.ps1 and return usage for all local disks.'],
-        ['action' => 'uptime', 'params' => 'action=uptime', 'purpose' => 'Execute uptime.ps1 and return human-readable uptime.'],
-        ['action' => 'php_version', 'params' => 'action=php_version', 'purpose' => 'Execute php_version.ps1 and return active PHP version and ini path.'],
-        ['action' => 'php_extensions', 'params' => 'action=php_extensions', 'purpose' => 'Execute php_extensions.ps1 and list enabled extensions.'],
-        ['action' => 'php_ini_values', 'params' => 'action=php_ini_values', 'purpose' => 'Execute php_ini_values.ps1 and return key ini settings.'],
-        ['action' => 'mysql_status', 'params' => 'action=mysql_status', 'purpose' => 'Execute mysql_status.ps1 and check if MySQL service is running.'],
-        ['action' => 'mysql_version', 'params' => 'action=mysql_version', 'purpose' => 'Execute mysql_version.ps1 and return MySQL version.'],
-        ['action' => 'mysql_databases', 'params' => 'action=mysql_databases', 'purpose' => 'Execute mysql_databases.ps1 and list all databases.'],
-        ['action' => 'mysql_size', 'params' => 'action=mysql_size', 'purpose' => 'Execute mysql_size.ps1 and return size of each DB.'],
+        ['action' => 'system_info', 'params' => 'action=system_info', 'purpose' => 'Windows: system_info.ps1 (hardware). Linux: /proc native metrics.'],
+        ['action' => 'cpu_usage', 'params' => 'action=cpu_usage', 'purpose' => 'Windows: cpu_usage.ps1. Linux: /proc/loadavg native.'],
+        ['action' => 'ram_usage', 'params' => 'action=ram_usage', 'purpose' => 'Windows: ram_usage.ps1. Linux: /proc/meminfo native.'],
+        ['action' => 'disk_usage', 'params' => 'action=disk_usage', 'purpose' => 'Windows: disk_usage.ps1. Linux: disk_free_space native.'],
+        ['action' => 'uptime', 'params' => 'action=uptime', 'purpose' => 'Windows: uptime.ps1. Linux: /proc/uptime native.'],
+        ['action' => 'php_version', 'params' => 'action=php_version', 'purpose' => 'Always native: active Apache PHP version + php.ini path (not PowerShell).'],
+        ['action' => 'php_extensions', 'params' => 'action=php_extensions', 'purpose' => 'Always native: get_loaded_extensions() for the active SAPI.'],
+        ['action' => 'php_ini_values', 'params' => 'action=php_ini_values', 'purpose' => 'Always native: ini_get() limits for the active SAPI.'],
+        ['action' => 'mysql_status', 'params' => 'action=mysql_status', 'purpose' => 'Always native: mysqli_ping() on the active connection.'],
+        ['action' => 'mysql_version', 'params' => 'action=mysql_version', 'purpose' => 'Always native: mysqli_get_server_info().'],
+        ['action' => 'mysql_databases', 'params' => 'action=mysql_databases', 'purpose' => 'Always native: SHOW DATABASES.'],
+        ['action' => 'mysql_size', 'params' => 'action=mysql_size', 'purpose' => 'Always native: information_schema size aggregate.'],
     ];
 }
 
@@ -827,7 +827,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>System Status API (<code>scripts/system_status_api.php?action=…</code>)</h2>
-        <p>Restricted to <strong>Admin</strong> role. On <strong>Windows Laragon</strong>, executes matching <code>includes/*.ps1</code> scripts. On <strong>Linux/CI</strong>, returns PHP-native metrics from <code>includes/itm_system_status_native.php</code> (same JSON shape).</p>
+        <p>Restricted to <strong>Admin</strong> role. <strong>PHP and MySQL</strong> actions always use the active Apache/mysqli runtime (native). <strong>Hardware monitoring</strong> uses <code>includes/*.ps1</code> on Windows (requires <code>shell_exec</code>) or native <code>/proc</code> metrics on Linux. Full phpinfo: <code>scripts/system_status_phpinfo.php</code>.</p>
         <table>
             <thead><tr><th>action</th><th>Parameters</th><th>Purpose</th></tr></thead>
             <tbody>

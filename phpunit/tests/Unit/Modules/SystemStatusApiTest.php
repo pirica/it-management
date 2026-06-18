@@ -26,4 +26,28 @@ class SystemStatusApiTest extends TestCase
         $apiPath = dirname(__DIR__, 4) . '/scripts/system_status_api.php';
         $this->assertFileExists($apiPath);
     }
+
+    public function testPrefersNativeForPhpAndMysqlActions(): void
+    {
+        require_once dirname(__DIR__, 4) . '/includes/itm_system_status_powershell.php';
+
+        $nativeActions = [
+            'php_version', 'php_extensions', 'php_ini_values',
+            'mysql_status', 'mysql_version', 'mysql_databases', 'mysql_size',
+        ];
+        foreach ($nativeActions as $action) {
+            $this->assertTrue(
+                itm_system_status_prefers_native($action),
+                "Action {$action} should use native PHP/mysqli runtime."
+            );
+        }
+
+        $hardwareActions = ['system_info', 'cpu_usage', 'ram_usage', 'disk_usage', 'uptime'];
+        foreach ($hardwareActions as $action) {
+            $this->assertFalse(
+                itm_system_status_prefers_native($action),
+                "Action {$action} should not be forced to native on Windows."
+            );
+        }
+    }
 }
