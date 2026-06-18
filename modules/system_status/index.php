@@ -23,9 +23,15 @@ if (!in_array($active_tab, $allowed_tabs)) {
 
 $refreshErrors = [];
 $refreshNotice = '';
-$cacheCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
+$sessionCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+$cacheCompanyId = $sessionCompanyId;
 if ($cacheCompanyId <= 0) {
-    // Why: Admin diagnostics remain usable before company selection; cache key fallback only.
+    // Why: Admin diagnostics remain usable before company selection; cache key fallback only (admin gate above).
+    $correlationId = bin2hex(random_bytes(8));
+    error_log(
+        'system_status: cache company_id fallback to 1 (session company_id missing/invalid). correlation_id='
+        . $correlationId
+    );
     $cacheCompanyId = 1;
 }
 

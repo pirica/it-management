@@ -123,6 +123,11 @@ Collected metrics are **system-wide** (hardware, PHP, MySQL) — not filtered by
 
 **Cache rows** are tenant-scoped: `UNIQUE (company_id, tab_key)` in `database.sql`. Refresh and tab reads use the active session `company_id`. When session `company_id` is missing or invalid (`<= 0`), the module falls back to `1` so admin diagnostics remain usable before company selection — intentional for this system-wide admin tool.
 
+**Operational / security notes (cache fallback):**
+- Access remains **admin-only** (`itm_is_admin()` gate on `index.php`, API, phpinfo script).
+- Each fallback to `company_id = 1` logs `error_log()` with a correlation id (auditable; no raw session dump).
+- Metrics displayed are system-wide; fallback affects cache row key only, not hardware/PHP/MySQL collection scope.
+
 ---
 
 ## 9. Audit Logging Requirements
