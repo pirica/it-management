@@ -18,7 +18,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **Quantity** defaults to **1** when omitted on create/save.
 - **Price** accepts `.` as decimal separator; **comma is converted to dot** on POST (`cr_normalize_price_input()`).
 - **Dates** stored as MySQL `DATE`; list/view/import use **dd/mm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
-- **Type** values come from tenant-scoped `license_types` rows (seeded in `database.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select may insert into `license_types` — there is no separate admin module.
+- **Type** values come from tenant-scoped `license_types` rows (seeded in `database.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
 - **Active** uses the standard checkbox double-label pattern on forms and badges on list/view.
 
 ## 5. UI Behavior Requirements
@@ -41,7 +41,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - Database triggers: `trg_license_management_audit_*`, `trg_license_types_audit_*` (when lookup rows are quick-added).
 
 ## 10. Common Pitfalls
-- **`license_types` has no module folder** — do not expect CRUD under `modules/license_types/`; maintain seeds in `database.sql`.
+- **`modules/license_types/`** — lookup CRUD; keep **`company_id`** in `$hideCompanyIdTables` on every duplicated entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`).
 - **`license_management` seeds in `database.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5).
 - **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `database.sql`.
 - **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown.

@@ -387,7 +387,7 @@ The Bookmarks module provides a hierarchical management system for links, featur
 
 The license management module (`modules/license_management/`) tracks software licenses per company.
 
-1. **Tables:** **`license_management`** (CRUD module table) and seed-only **`license_types`** lookup (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`). There is **no** separate `modules/license_types/` admin module — maintain lookup seeds in `database.sql` and cross-company `INSERT IGNORE` replication.
+1. **Tables:** **`license_management`** (CRUD module table) and **`license_types`** lookup (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`). **`modules/license_types/`** provides CRUD for the lookup; **`company_id`** must stay hidden in list/view/forms (same as warranty_types). Maintain default seeds in `database.sql` and cross-company `INSERT IGNORE` replication.
 2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`active`** defaults to **1**.
 3. **Foreign keys:** **`license_type_id`** → `license_types` (**RESTRICT** on delete); **`supplier_id`** → `suppliers` (**SET NULL** on delete).
 4. **Price:** Accepts `.` as decimal separator; **comma is converted to dot** on POST and Excel import (`cr_normalize_price_input()`).
