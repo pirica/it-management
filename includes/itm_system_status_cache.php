@@ -11,6 +11,10 @@ if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
     require_once __DIR__ . '/itm_role_module_permissions.php';
 }
 
+if (!defined('ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID')) {
+    define('ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID', 1);
+}
+
 function itm_system_status_cache_tab_keys(): array
 {
     return ['monitoring', 'php_settings', 'database'];
@@ -19,7 +23,7 @@ function itm_system_status_cache_tab_keys(): array
 /**
  * @return array{payload:array,refreshed_at:string|null}|null
  */
-function itm_system_status_cache_get($conn, string $tabKey, int $companyId = 1): ?array
+function itm_system_status_cache_get($conn, string $tabKey, int $companyId = ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID): ?array
 {
     if (!$conn || !in_array($tabKey, itm_system_status_cache_tab_keys(), true)) {
         return null;
@@ -65,7 +69,7 @@ function itm_system_status_cache_get($conn, string $tabKey, int $companyId = 1):
 /**
  * @return bool
  */
-function itm_system_status_cache_save($conn, string $tabKey, array $payload, int $companyId = 1): bool
+function itm_system_status_cache_save($conn, string $tabKey, array $payload, int $companyId = ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID): bool
 {
     if (!$conn || !in_array($tabKey, itm_system_status_cache_tab_keys(), true)) {
         return false;
@@ -181,7 +185,7 @@ function itm_system_status_collect_monitoring_payload($conn): array
 /**
  * @return array{ok:bool,errors:array<int,string>}
  */
-function itm_system_status_refresh_tab($conn, string $tabKey, int $companyId = 1): array
+function itm_system_status_refresh_tab($conn, string $tabKey, int $companyId = ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID): array
 {
     $errors = [];
     $payload = [];
@@ -216,7 +220,7 @@ function itm_system_status_refresh_tab($conn, string $tabKey, int $companyId = 1
 /**
  * @return array{ok:bool,errors:array<int,string>}
  */
-function itm_system_status_refresh_all($conn, int $companyId = 1): array
+function itm_system_status_refresh_all($conn, int $companyId = ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID): array
 {
     $errors = [];
     foreach (itm_system_status_cache_tab_keys() as $tabKey) {

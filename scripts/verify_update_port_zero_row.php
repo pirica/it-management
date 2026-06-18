@@ -7,6 +7,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once dirname(__DIR__) . '/includes/itm_role_module_permissions.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Switch Port update_port Zero-Row Contract');
@@ -37,7 +38,7 @@ function vupzr_find_existing_switch_context(mysqli $conn, int $companyId): ?arra
     }
     $stmt->bind_param('i', $companyId);
     $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
+    $row = itm_mysqli_stmt_fetch_assoc($stmt);
     $stmt->close();
 
     return is_array($row) ? [
@@ -57,10 +58,24 @@ function vupzr_lookup_tenant_id(mysqli $conn, int $companyId, string $sql, strin
         $stmt->bind_param($types, ...$params);
     }
     $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
+    $row = itm_mysqli_stmt_fetch_assoc($stmt);
     $stmt->close();
 
     return (int)($row['id'] ?? 0);
+}
+
+function vupzr_count_idf_ports(mysqli $conn, int $companyId): int
+{
+    $stmt = $conn->prepare('SELECT COUNT(*) AS c FROM idf_ports WHERE company_id = ?');
+    if (!$stmt) {
+        return 0;
+    }
+    $stmt->bind_param('i', $companyId);
+    $stmt->execute();
+    $row = itm_mysqli_stmt_fetch_assoc($stmt);
+    $stmt->close();
+
+    return (int)($row['c'] ?? 0);
 }
 
 /**
@@ -106,7 +121,7 @@ function vupzr_create_probe_switch_context(mysqli $conn, int $companyId): ?array
     if ($stmtStatus) {
         $stmtStatus->bind_param('ii', $switchStatusId, $companyId);
         $stmtStatus->execute();
-        $statusRow = $stmtStatus->get_result()->fetch_assoc();
+        $statusRow = itm_mysqli_stmt_fetch_assoc($stmtStatus);
         $stmtStatus->close();
     }
     $colorRow = null;
@@ -114,7 +129,7 @@ function vupzr_create_probe_switch_context(mysqli $conn, int $companyId): ?array
     if ($stmtColor) {
         $stmtColor->bind_param('ii', $colorId, $companyId);
         $stmtColor->execute();
-        $colorRow = $stmtColor->get_result()->fetch_assoc();
+        $colorRow = itm_mysqli_stmt_fetch_assoc($stmtColor);
         $stmtColor->close();
     }
 
@@ -125,40 +140,57 @@ function vupzr_create_probe_switch_context(mysqli $conn, int $companyId): ?array
     }
 
     $probeName = 'ITM-VUPZR-probe-' . uniqid('', true);
-    $stmtEquipment = $conn->prepare(
-        'INSERT INTO equipment (company_id, equipment_type_id, status_id, name, active)
-         VALUES (?, ?, ?, ?, 1)'
-    );
-    if (!$stmtEquipment) {
-        return null;
-    }
-    $stmtEquipment->bind_param('iiis', $companyId, $equipmentTypeId, $equipmentStatusId, $probeName);
-    if (!$stmtEquipment->execute()) {
-        $stmtEquipment->close();
-        return null;
-    }
-    $equipmentId = (int)$stmtEquipment->insert_id;
-    $stmtEquipment->close();
-    if ($equipmentId <= 0) {
+    $equipmentId = 0;
+    $portId = 0;
+
+    if (!mysqli_begin_transaction($conn)) {
         return null;
     }
 
-    $stmtPort = $conn->prepare(
-        "INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, to_patch_port, status_id, color_id)
-         VALUES (?, ?, 'RJ45', 1, '0', ?, ?)"
-    );
-    if (!$stmtPort) {
-        $conn->query('DELETE FROM equipment WHERE id = ' . (int)$equipmentId . ' AND company_id = ' . (int)$companyId);
-        return null;
-    }
-    $stmtPort->bind_param('iiii', $companyId, $equipmentId, $switchStatusId, $colorId);
-    if (!$stmtPort->execute()) {
+    try {
+        $stmtEquipment = $conn->prepare(
+            'INSERT INTO equipment (company_id, equipment_type_id, status_id, name, active)
+             VALUES (?, ?, ?, ?, 1)'
+        );
+        if (!$stmtEquipment) {
+            throw new RuntimeException('equipment prepare failed');
+        }
+        $stmtEquipment->bind_param('iiis', $companyId, $equipmentTypeId, $equipmentStatusId, $probeName);
+        if (!$stmtEquipment->execute()) {
+            $stmtEquipment->close();
+            throw new RuntimeException('equipment insert failed');
+        }
+        $equipmentId = (int)$stmtEquipment->insert_id;
+        $stmtEquipment->close();
+        if ($equipmentId <= 0) {
+            throw new RuntimeException('equipment insert id missing');
+        }
+
+        $stmtPort = $conn->prepare(
+            "INSERT INTO switch_ports (company_id, equipment_id, port_type, port_number, to_patch_port, status_id, color_id)
+             VALUES (?, ?, 'RJ45', 1, '0', ?, ?)"
+        );
+        if (!$stmtPort) {
+            throw new RuntimeException('switch_ports prepare failed');
+        }
+        $stmtPort->bind_param('iiii', $companyId, $equipmentId, $switchStatusId, $colorId);
+        if (!$stmtPort->execute()) {
+            $stmtPort->close();
+            throw new RuntimeException('switch_ports insert failed');
+        }
+        $portId = (int)$stmtPort->insert_id;
         $stmtPort->close();
-        $conn->query('DELETE FROM equipment WHERE id = ' . (int)$equipmentId . ' AND company_id = ' . (int)$companyId);
+        if ($portId <= 0) {
+            throw new RuntimeException('switch_ports insert id missing');
+        }
+
+        if (!mysqli_commit($conn)) {
+            throw new RuntimeException('commit failed');
+        }
+    } catch (Throwable $e) {
+        mysqli_rollback($conn);
         return null;
     }
-    $portId = (int)$stmtPort->insert_id;
-    $stmtPort->close();
 
     return [
         'switch_id' => $equipmentId,
@@ -166,6 +198,113 @@ function vupzr_create_probe_switch_context(mysqli $conn, int $companyId): ?array
         'color_name' => $colorName,
         'equipment_id' => $equipmentId,
         'port_id' => $portId,
+    ];
+}
+
+/**
+ * @return array{http_status:int,body:string,error:string}
+ */
+function vupzr_invoke_update_port_contract(
+    int $companyId,
+    array $postPayload,
+    string $configPath,
+    string $updatePortPath,
+    string $includesDir
+): array {
+    $code = "<?php
+define('ITM_HTTP_ENDPOINT_CONTRACT_TEST', true);
+define('ITM_CLI_SCRIPT', true);
+function itm_validate_csrf_token(\$token) { return true; }
+function itm_api_json_response(array \$payload, \$httpStatus = 200) {
+    \$status = (int)\$httpStatus;
+    echo json_encode([
+        'http_status' => \$status,
+        'body' => json_encode(\$payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit(0);
+}
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+\$_SERVER['HTTP_HOST'] = 'localhost';
+require " . var_export($configPath, true) . ";
+\$_SESSION['user_id'] = 1;
+\$_SESSION['company_id'] = " . (int)$companyId . ";
+\$_POST = " . var_export($postPayload, true) . ";
+\$_REQUEST = \$_POST;
+chdir(" . var_export($includesDir, true) . ");
+ob_start();
+include " . var_export($updatePortPath, true) . ";
+\$body = ob_get_clean();
+echo json_encode([
+    'http_status' => (int)http_response_code(),
+    'body' => \$body,
+    'error' => 'update_port returned without JSON response',
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?>";
+
+    $tmp = tempnam(sys_get_temp_dir(), 'update-port-zero');
+    if ($tmp === false) {
+        return ['http_status' => 0, 'body' => '', 'error' => 'tempnam() failed'];
+    }
+    if (file_put_contents($tmp, $code) === false) {
+        @unlink($tmp);
+        return ['http_status' => 0, 'body' => '', 'error' => 'file_put_contents() failed'];
+    }
+
+    $phpBin = (defined('PHP_BINARY') && PHP_BINARY !== '') ? PHP_BINARY : 'php';
+
+    $output = null;
+    if (function_exists('proc_open')) {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $proc = proc_open([$phpBin, $tmp], $descriptors, $pipes);
+        if (is_resource($proc)) {
+            fclose($pipes[0]);
+            $output = stream_get_contents($pipes[1]);
+            $stderr = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            proc_close($proc);
+            if (trim((string)$output) === '' && trim((string)$stderr) !== '') {
+                @unlink($tmp);
+                return ['http_status' => 0, 'body' => '', 'error' => trim((string)$stderr)];
+            }
+        }
+    }
+
+    if ($output === null) {
+        if (!function_exists('shell_exec')) {
+            @unlink($tmp);
+            return ['http_status' => 0, 'body' => '', 'error' => 'shell_exec and proc_open unavailable'];
+        }
+        $stderrDiscard = function_exists('itm_script_shell_stderr_discard')
+            ? itm_script_shell_stderr_discard()
+            : '2>/dev/null';
+        $output = shell_exec(escapeshellarg($phpBin) . ' ' . escapeshellarg($tmp) . ' ' . $stderrDiscard);
+        if ($output === null || trim((string)$output) === '') {
+            @unlink($tmp);
+            return ['http_status' => 0, 'body' => '', 'error' => 'subprocess returned no output'];
+        }
+    }
+
+    @unlink($tmp);
+
+    $wrapper = json_decode(trim((string)$output), true);
+    if (!is_array($wrapper)) {
+        return [
+            'http_status' => 0,
+            'body' => trim((string)$output),
+            'error' => 'subprocess JSON wrapper decode failed',
+        ];
+    }
+
+    return [
+        'http_status' => (int)($wrapper['http_status'] ?? 0),
+        'body' => (string)($wrapper['body'] ?? ''),
+        'error' => (string)($wrapper['error'] ?? ''),
     ];
 }
 
@@ -187,20 +326,10 @@ try {
     $switchId = (int)$context['switch_id'];
     $statusName = (string)$context['status_name'];
     $colorName = (string)$context['color_name'];
+    $idfCountBefore = vupzr_count_idf_ports($conn, $companyId);
 
-    $stmtIdfCount = $conn->prepare('SELECT COUNT(*) AS c FROM idf_ports WHERE company_id = ?');
-    $idfCountBefore = 0;
-    if ($stmtIdfCount) {
-        $stmtIdfCount->bind_param('i', $companyId);
-        $stmtIdfCount->execute();
-        $idfRow = $stmtIdfCount->get_result()->fetch_assoc();
-        $idfCountBefore = (int)($idfRow['c'] ?? 0);
-        $stmtIdfCount->close();
-    }
-
-    $fakePortId = 2147483000;
     $postPayload = [
-        'id' => $fakePortId,
+        'id' => 2147483000,
         'switch_id' => $switchId,
         'status' => $statusName,
         'color' => $colorName,
@@ -211,45 +340,24 @@ try {
     $configPath = realpath(dirname(__DIR__) . '/config/config.php');
     $updatePortPath = realpath(dirname(__DIR__) . '/includes/update_port.php');
     $includesDir = realpath(dirname(__DIR__) . '/includes');
-
-    $code = "<?php
-define('ITM_CLI_SCRIPT', true);
-\$_SERVER['REQUEST_METHOD'] = 'POST';
-\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-\$_SERVER['HTTP_HOST'] = 'localhost';
-function itm_validate_csrf_token(\$token) { return true; }
-require " . var_export($configPath, true) . ";
-\$_SESSION['user_id'] = 1;
-\$_SESSION['company_id'] = " . (int)$companyId . ";
-\$_POST = " . var_export($postPayload, true) . ";
-\$_REQUEST = \$_POST;
-chdir(" . var_export($includesDir, true) . ");
-ob_start();
-include " . var_export($updatePortPath, true) . ";
-\$body = ob_get_clean();
-\$status = http_response_code();
-echo json_encode(['http_status' => \$status, 'body' => \$body], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-?>";
-
-    $tmp = tempnam(sys_get_temp_dir(), 'update-port-zero');
-    file_put_contents($tmp, $code);
-    $phpBin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-    $shellOutput = shell_exec(escapeshellarg($phpBin) . ' ' . escapeshellarg($tmp) . ' 2>&1');
-    unlink($tmp);
-
-    $wrapper = json_decode(trim((string)$shellOutput), true);
-    $httpStatus = is_array($wrapper) ? (int)($wrapper['http_status'] ?? 0) : 0;
-    $body = is_array($wrapper) ? (string)($wrapper['body'] ?? '') : (string)$shellOutput;
-    $decoded = json_decode($body, true);
-
-    $idfCountAfter = $idfCountBefore;
-    if ($stmtIdfCount = $conn->prepare('SELECT COUNT(*) AS c FROM idf_ports WHERE company_id = ?')) {
-        $stmtIdfCount->bind_param('i', $companyId);
-        $stmtIdfCount->execute();
-        $idfAfterRow = $stmtIdfCount->get_result()->fetch_assoc();
-        $idfCountAfter = (int)($idfAfterRow['c'] ?? 0);
-        $stmtIdfCount->close();
+    if ($configPath === false || $updatePortPath === false || $includesDir === false) {
+        echo colorText('[FAIL] Unable to resolve config/update_port/includes paths.', 'fail') . $nl;
+        itm_script_output_end();
+        exit(1);
     }
+
+    $invoke = vupzr_invoke_update_port_contract(
+        $companyId,
+        $postPayload,
+        $configPath,
+        $updatePortPath,
+        $includesDir
+    );
+    $httpStatus = (int)$invoke['http_status'];
+    $body = (string)$invoke['body'];
+    $invokeError = trim((string)$invoke['error']);
+    $decoded = json_decode($body, true);
+    $idfCountAfter = vupzr_count_idf_ports($conn, $companyId);
 
     $pass = $httpStatus === 404
         && is_array($decoded)
@@ -259,25 +367,31 @@ echo json_encode(['http_status' => \$status, 'body' => \$body], JSON_UNESCAPED_U
     if ($pass) {
         echo colorText('[PASS] Zero-row update_port returned HTTP 404 and idf_ports unchanged.', 'pass') . $nl;
     } else {
+        $detail = 'http_status=' . $httpStatus . ' body=' . trim($body);
+        if ($invokeError !== '') {
+            $detail .= ' error=' . $invokeError;
+        }
         echo colorText(
-            '[FAIL] Expected HTTP 404 with success:false and unchanged idf_ports; '
-            . 'http_status=' . $httpStatus
-            . ' body=' . trim($body),
+            '[FAIL] Expected HTTP 404 with success:false and unchanged idf_ports; ' . $detail,
             'fail'
         ) . $nl;
     }
 } finally {
     if ($probePortId > 0) {
-        $conn->query(
-            'DELETE FROM switch_ports WHERE id = ' . (int)$probePortId
-            . ' AND company_id = ' . (int)$companyId
-        );
+        $stmt = $conn->prepare('DELETE FROM switch_ports WHERE id = ? AND company_id = ?');
+        if ($stmt) {
+            $stmt->bind_param('ii', $probePortId, $companyId);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
     if ($probeEquipmentId > 0) {
-        $conn->query(
-            'DELETE FROM equipment WHERE id = ' . (int)$probeEquipmentId
-            . ' AND company_id = ' . (int)$companyId
-        );
+        $stmt = $conn->prepare('DELETE FROM equipment WHERE id = ? AND company_id = ?');
+        if ($stmt) {
+            $stmt->bind_param('ii', $probeEquipmentId, $companyId);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 }
 

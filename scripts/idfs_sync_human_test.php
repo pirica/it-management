@@ -142,7 +142,8 @@ function itm_test_http_request(
     $cookieFile,
     $body,
     array $headers,
-    &$statusCode
+    &$statusCode,
+    $followRedirects = false
 ) {
     $ch = curl_init($url);
     if ($ch === false) {
@@ -153,7 +154,10 @@ function itm_test_http_request(
     curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieFile);
     curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $followRedirects ? true : false);
+    if ($followRedirects) {
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+    }
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     if ($body !== null) {
@@ -197,7 +201,8 @@ function itm_test_select_company_in_session($baseUrl, $cookieFile, $companyId)
         $cookieFile,
         null,
         [],
-        $indexStatus
+        $indexStatus,
+        true
     );
     itm_test_assert($indexStatus === 200, 'Company selection page is reachable for tenant switch');
     $indexCsrf = itm_test_extract_csrf($indexHtml);
