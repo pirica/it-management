@@ -13,6 +13,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once ROOT_PATH . 'includes/itm_system_status_native.php';
 require_once ROOT_PATH . 'includes/itm_system_status_powershell.php';
 require_once ROOT_PATH . 'includes/itm_system_status_storage.php';
+require_once ROOT_PATH . 'includes/itm_system_status_cache.php';
 
 itm_script_output_begin('System Status Verification');
 
@@ -118,6 +119,30 @@ if (!$conn) {
         ss_verify_pass('Upload storage report builder returns sections');
     } else {
         ss_verify_fail('Upload storage report builder failed');
+    }
+
+    $tableRes = mysqli_query(
+        $conn,
+        "SELECT COUNT(*) AS cnt FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_name = 'system_status'"
+    );
+    if ($tableRes && ($tableRow = mysqli_fetch_assoc($tableRes)) && (int)$tableRow['cnt'] === 1) {
+        ss_verify_pass('system_status cache table exists');
+    } else {
+        ss_verify_fail('system_status cache table missing — re-import database.sql');
+    }
+
+    $cacheRefresh = itm_system_status_refresh_tab($conn, 'php_settings', 1);
+    if (!($cacheRefresh['ok'] ?? false)) {
+        ss_verify_fail('system_status cache refresh failed for php_settings');
+    } else {
+        ss_verify_pass('system_status cache refresh works for php_settings');
+    }
+
+    $cacheGet = itm_system_status_cache_get($conn, 'php_settings');
+    if (is_array($cacheGet) && is_array($cacheGet['payload'] ?? null) && ($cacheGet['payload']['version'] ?? '') !== '') {
+        ss_verify_pass('system_status cache read returns php_settings payload');
+    } else {
+        ss_verify_fail('system_status cache read failed for php_settings');
     }
 }
 

@@ -2,41 +2,58 @@
 /**
  * Monitoring Tab
  *
- * Displays real-time system metrics using Chart.js and PowerShell data.
+ * Renders cached hardware metrics and Sub Storage from system_status.payload_json.
  */
 
-require_once dirname(__DIR__, 3) . '/includes/itm_system_status_storage.php';
+if (!is_array($ssPayload ?? null)) {
+    echo '<div class="alert alert-warning">No cached monitoring data. Click <strong>Refresh</strong> to collect metrics.</div>';
+    return;
+}
 
-$storageReport = itm_system_status_build_storage_report($conn);
+$systemInfoPayload = $ssPayload['system_info'] ?? null;
+$cpuUsagePayload = $ssPayload['cpu_usage'] ?? null;
+$storageReport = is_array($ssPayload['storage_report'] ?? null) ? $ssPayload['storage_report'] : [
+    'sections' => [],
+    'total_bytes' => 0,
+    'total_files' => 0,
+];
+$systemInfo = (is_array($systemInfoPayload) && ($systemInfoPayload['status'] ?? '') === 'success')
+    ? ($systemInfoPayload['data'] ?? [])
+    : null;
+$cpuLoad = (is_array($cpuUsagePayload) && ($cpuUsagePayload['status'] ?? '') === 'success')
+    ? (float)($cpuUsagePayload['data']['cpu_load'] ?? 0)
+    : null;
 ?>
 <div class="metrics-grid">
-    <!-- System Info -->
     <div class="metric-card" style="grid-column: span 2;">
         <h3>System Overview</h3>
-        <div id="system-info-loader" class="text-center">Loading...</div>
-        <div id="system-info-content" style="display:none;">
-            <table class="info-table">
-                <tr><td>OS Version</td><td id="os_version"></td></tr>
-                <tr><td>Hostname</td><td id="hostname"></td></tr>
-                <tr><td>Uptime</td><td id="uptime_str"></td></tr>
-                <tr><td>CPU</td><td id="cpu_model"></td></tr>
-                <tr><td>Cores / Threads</td><td><span id="cpu_cores"></span> / <span id="cpu_threads"></span></td></tr>
-            </table>
-        </div>
+        <?php if ($systemInfo === null): ?>
+            <div class="text-center" style="color:#a52727;">
+                <?php echo sanitize((string)($systemInfoPayload['message'] ?? 'Cached system info unavailable.')); ?>
+            </div>
+        <?php else: ?>
+            <div id="system-info-content">
+                <table class="info-table">
+                    <tr><td>OS Version</td><td id="os_version"><?php echo sanitize((string)($systemInfo['os_version'] ?? '')); ?></td></tr>
+                    <tr><td>Hostname</td><td id="hostname"><?php echo sanitize((string)($systemInfo['hostname'] ?? '')); ?></td></tr>
+                    <tr><td>Uptime</td><td id="uptime_str"><?php echo sanitize((string)($systemInfo['uptime'] ?? '')); ?></td></tr>
+                    <tr><td>CPU</td><td id="cpu_model"><?php echo sanitize((string)($systemInfo['cpu_model'] ?? '')); ?></td></tr>
+                    <tr><td>Cores / Threads</td><td><span id="cpu_cores"><?php echo sanitize((string)($systemInfo['cpu_cores'] ?? '')); ?></span> / <span id="cpu_threads"><?php echo sanitize((string)($systemInfo['cpu_threads'] ?? '')); ?></span></td></tr>
+                </table>
+            </div>
+        <?php endif; ?>
     </div>
 
-    <!-- CPU Usage -->
     <div class="metric-card">
         <h3>CPU Usage</h3>
         <div class="gauge-container">
             <canvas id="cpuChart"></canvas>
         </div>
         <div class="text-center mt-2">
-            <span class="metric-value" id="cpu_load_val">0</span><span class="metric-value">%</span>
+            <span class="metric-value" id="cpu_load_val"><?php echo $cpuLoad !== null ? sanitize((string)$cpuLoad) : 'N/A'; ?></span><span class="metric-value">%</span>
         </div>
     </div>
 
-    <!-- RAM Usage -->
     <div class="metric-card">
         <h3>RAM Usage</h3>
         <div class="gauge-container">
@@ -47,11 +64,32 @@ $storageReport = itm_system_status_build_storage_report($conn);
         </div>
     </div>
 
-    <!-- Disk Usage -->
     <div class="metric-card" style="grid-column: span 3;">
         <h3>Disk Usage</h3>
         <div id="disk-usage-content" class="metrics-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
-            <!-- Dynamic disk cards -->
+            <?php if ($systemInfo !== null): ?>
+                <?php foreach (($systemInfo['disks'] ?? []) as $disk): ?>
+                    <?php
+                        $diskSize = (int)($disk['Size'] ?? 0);
+                        $diskFree = (int)($disk['FreeSpace'] ?? 0);
+                        if ($diskSize <= 0) {
+                            continue;
+                        }
+                        $diskTotalGb = $diskSize / 1073741824;
+                        $diskFreeGb = $diskFree / 1073741824;
+                        $diskUsedGb = max(0, $diskTotalGb - $diskFreeGb);
+                        $diskPercent = $diskTotalGb > 0 ? round(($diskUsedGb / $diskTotalGb) * 100, 1) : 0;
+                    ?>
+                    <div class="metric-card text-center">
+                        <div class="metric-label">Drive <?php echo sanitize((string)($disk['DeviceID'] ?? '')); ?></div>
+                        <div class="metric-value"><?php echo sanitize((string)$diskPercent); ?>%</div>
+                        <div class="progress-bar-container" style="height:8px; background:#f0f3f6; border-radius:4px; margin:8px 0;">
+                            <div style="width:<?php echo (float)$diskPercent; ?>%; height:100%; background:#17a2b8; border-radius:4px;"></div>
+                        </div>
+                        <div class="metric-label"><?php echo sanitize(number_format($diskUsedGb, 1)); ?>G / <?php echo sanitize(number_format($diskTotalGb, 1)); ?>G</div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -70,9 +108,9 @@ $storageReport = itm_system_status_build_storage_report($conn);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const apiBase = '../../scripts/system_status_api.php?action=';
+    const cpuLoad = <?php echo json_encode($cpuLoad, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    const systemInfo = <?php echo json_encode($systemInfo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
-    // Initialize Charts
     const ctxCpu = document.getElementById('cpuChart').getContext('2d');
     const cpuChart = new Chart(ctxCpu, {
         type: 'doughnut',
@@ -109,90 +147,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Fetch Data
-    function ssShowError(loaderId, message) {
-        const el = document.getElementById(loaderId);
-        if (!el) {
-            return;
-        }
-        el.textContent = message;
-        el.style.color = '#a52727';
+    if (cpuLoad !== null) {
+        cpuChart.data.datasets[0].data = [cpuLoad, 100 - cpuLoad];
+        cpuChart.update();
     }
 
-    function ssFetchJson(action) {
-        return fetch(apiBase + action).then(function(response) {
-            return response.json().then(function(body) {
-                if (!response.ok || (body && body.status !== 'success')) {
-                    const detail = (body && body.message) ? body.message : ('HTTP ' + response.status);
-                    throw new Error(detail);
-                }
-                return body;
-            });
-        });
+    if (systemInfo && systemInfo.ram_total > 0) {
+        const totalGb = (systemInfo.ram_total / 1073741824).toFixed(2);
+        const usedGb = (systemInfo.ram_used / 1073741824).toFixed(2);
+        const usedPercent = ((systemInfo.ram_used / systemInfo.ram_total) * 100).toFixed(1);
+
+        document.getElementById('ram_used_gb').textContent = usedGb;
+        document.getElementById('ram_total_gb').textContent = totalGb;
+
+        ramChart.data.datasets[0].data = [usedPercent, 100 - usedPercent];
+        ramChart.update();
     }
-
-    ssFetchJson('system_info')
-        .then(function(res) {
-            if (res.status === 'success') {
-                const d = res.data;
-                document.getElementById('os_version').textContent = d.os_version;
-                document.getElementById('hostname').textContent = d.hostname;
-                document.getElementById('uptime_str').textContent = d.uptime;
-                document.getElementById('cpu_model').textContent = d.cpu_model;
-                document.getElementById('cpu_cores').textContent = d.cpu_cores;
-                document.getElementById('cpu_threads').textContent = d.cpu_threads;
-
-                document.getElementById('system-info-loader').style.display = 'none';
-                document.getElementById('system-info-content').style.display = 'block';
-
-                // Update RAM Chart
-                const totalGb = (d.ram_total / 1073741824).toFixed(2);
-                const usedGb = (d.ram_used / 1073741824).toFixed(2);
-                const usedPercent = ((d.ram_used / d.ram_total) * 100).toFixed(1);
-
-                document.getElementById('ram_used_gb').textContent = usedGb;
-                document.getElementById('ram_total_gb').textContent = totalGb;
-
-                ramChart.data.datasets[0].data = [usedPercent, 100 - usedPercent];
-                ramChart.update();
-
-                // Disks
-                const diskContainer = document.getElementById('disk-usage-content');
-                [].concat(d.disks || []).forEach(disk => {
-                    const diskTotal = (disk.Size / 1073741824).toFixed(1);
-                    const diskFree = (disk.FreeSpace / 1073741824).toFixed(1);
-                    const diskUsed = (diskTotal - diskFree).toFixed(1);
-                    const diskPercent = ((diskUsed / diskTotal) * 100).toFixed(1);
-
-                    const diskCard = document.createElement('div');
-                    diskCard.className = 'metric-card text-center';
-                    diskCard.innerHTML = `
-                        <div class="metric-label">Drive ${disk.DeviceID}</div>
-                        <div class="metric-value">${diskPercent}%</div>
-                        <div class="progress-bar-container" style="height:8px; background:#f0f3f6; border-radius:4px; margin:8px 0;">
-                            <div style="width:${diskPercent}%; height:100%; background:#17a2b8; border-radius:4px;"></div>
-                        </div>
-                        <div class="metric-label">${diskUsed}G / ${diskTotal}G</div>
-                    `;
-                    diskContainer.appendChild(diskCard);
-                });
-            }
-        })
-        .catch(function(err) {
-            ssShowError('system-info-loader', 'Unable to load system metrics: ' + err.message);
-        });
-
-    ssFetchJson('cpu_usage')
-        .then(function(res) {
-            if (res.status === 'success') {
-                const load = res.data.cpu_load;
-                document.getElementById('cpu_load_val').textContent = load;
-                cpuChart.data.datasets[0].data = [load, 100 - load];
-                cpuChart.update();
-            }
-        })
-        .catch(function() {
-            document.getElementById('cpu_load_val').textContent = 'N/A';
-        });
 });
 </script>

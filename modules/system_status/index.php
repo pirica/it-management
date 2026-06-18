@@ -2,12 +2,12 @@
 /**
  * System Status Module - Index
  *
- * Provides a comprehensive overview of the server status, including
- * real-time monitoring, PHP settings, and database metrics.
- * Uses PowerShell scripts on Windows Laragon for metrics collection.
+ * Admin dashboard: Monitoring, PHP Settings, and Database tabs read cached JSON
+ * from system_status; Refresh collects live metrics and upserts the cache.
  */
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
+require_once dirname(__DIR__, 2) . '/includes/itm_system_status_cache.php';
 
 // Authorization check - Admin only
 if (!isset($_SESSION['user_id']) || !itm_is_admin($conn, $_SESSION['user_id'])) {
@@ -21,7 +21,45 @@ if (!in_array($active_tab, $allowed_tabs)) {
     $active_tab = 'monitoring';
 }
 
-$page_title = "System Status";
+$refreshErrors = [];
+$refreshNotice = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_cache'])) {
+    itm_require_post_csrf();
+    $refreshCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
+    if ($refreshCompanyId <= 0) {
+        $refreshCompanyId = 1;
+    }
+    $refreshResult = itm_system_status_refresh_all($conn, $refreshCompanyId);
+    if ($refreshResult['ok']) {
+        $refreshNotice = 'Cache refreshed for all tabs.';
+    } else {
+        $refreshErrors = $refreshResult['errors'];
+    }
+}
+
+$ssCache = itm_system_status_cache_get($conn, $active_tab);
+if ($ssCache === null && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    // Why: First visit should populate cache so tabs are not empty until manual Refresh.
+    $seedCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
+    if ($seedCompanyId <= 0) {
+        $seedCompanyId = 1;
+    }
+    itm_system_status_refresh_tab($conn, $active_tab, $seedCompanyId);
+    $ssCache = itm_system_status_cache_get($conn, $active_tab);
+}
+
+$ssPayload = is_array($ssCache['payload'] ?? null) ? $ssCache['payload'] : null;
+$ssRefreshedAt = isset($ssCache['refreshed_at']) ? (string)$ssCache['refreshed_at'] : null;
+$ssRefreshedDisplay = '';
+if ($ssRefreshedAt !== null && $ssRefreshedAt !== '') {
+    $refreshedDt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $ssRefreshedAt);
+    if ($refreshedDt instanceof DateTimeImmutable) {
+        $ssRefreshedDisplay = $refreshedDt->format('d/m/Y H:i');
+    }
+}
+
+$page_title = 'System Status';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,8 +73,10 @@ $page_title = "System Status";
         .status-tab { padding: 8px 16px; text-decoration: none; color: var(--text-primary); border-radius: 6px; white-space: nowrap; flex-shrink: 0; font-weight: 500; }
         .status-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
         .status-tab:hover:not(.active) { background: var(--bg-secondary); }
-        .refresh-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .refresh-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
         .refresh-toolbar h1 { margin: 0; font-size: 1.5rem; }
+        .refresh-toolbar-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .ss-cache-meta { font-size: 0.875rem; color: var(--text-secondary); }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
         .metrics-stack { display: flex; flex-direction: column; gap: 16px; }
         .ss-extensions-list { max-height: 320px; overflow: auto; }
@@ -77,8 +117,27 @@ $page_title = "System Status";
         <div class="content">
             <div class="refresh-toolbar">
                 <h1><?php echo sanitize($page_title); ?></h1>
-                <a href="?tab=<?php echo sanitize($active_tab); ?>" class="btn btn-primary">🔄 Refresh</a>
+                <div class="refresh-toolbar-meta">
+                    <?php if ($ssRefreshedDisplay !== ''): ?>
+                        <span class="ss-cache-meta">Last refreshed: <?php echo sanitize($ssRefreshedDisplay); ?></span>
+                    <?php endif; ?>
+                    <form method="POST" action="?tab=<?php echo sanitize($active_tab); ?>" style="margin:0;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                        <button type="submit" name="refresh_cache" value="1" class="btn btn-primary">🔄 Refresh</button>
+                    </form>
+                </div>
             </div>
+
+            <?php if ($refreshNotice !== ''): ?>
+                <div class="alert alert-success"><?php echo sanitize($refreshNotice); ?></div>
+            <?php endif; ?>
+            <?php if (!empty($refreshErrors)): ?>
+                <div class="alert alert-danger">
+                    <?php foreach ($refreshErrors as $refreshError): ?>
+                        <div><?php echo sanitize($refreshError); ?></div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
 
             <div class="status-tabs">
                 <a href="?tab=monitoring" class="status-tab <?php echo $active_tab === 'monitoring' ? 'active' : ''; ?>">📊 Monitoring</a>

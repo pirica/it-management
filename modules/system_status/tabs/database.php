@@ -2,19 +2,28 @@
 /**
  * Database Tab
  *
- * MySQL metrics from the active mysqli connection (server-rendered).
+ * Renders cached MySQL metrics from system_status.payload_json.
  */
 
 require_once dirname(__DIR__, 3) . '/includes/itm_system_status_native.php';
-require_once dirname(__DIR__, 3) . '/includes/itm_system_status_storage.php';
 
-$activeDatabase = defined('DB_NAME') ? (string)DB_NAME : '';
-$dbReport = itm_system_status_build_database_table_report($conn, $activeDatabase);
+if (!is_array($ssPayload ?? null)) {
+    echo '<div class="alert alert-warning">No cached database metrics. Click <strong>Refresh</strong> to collect metrics.</div>';
+    return;
+}
 
-$mysqlRunning = ($conn && @mysqli_ping($conn));
-$mysqlVersion = ($conn ? (string)mysqli_get_server_info($conn) : 'Unavailable');
-$mysqlServiceName = itm_system_status_is_windows() ? 'mysql / MariaDB (Windows service)' : 'mysqld';
-$mysqlDisplayName = 'MySQL Server (active PHP connection)';
+$activeDatabase = (string)($ssPayload['active_database'] ?? '');
+$dbReport = is_array($ssPayload['db_report'] ?? null) ? $ssPayload['db_report'] : [
+    'tables' => [],
+    'total_rows' => 0,
+    'total_size_mb' => 0.0,
+    'table_count' => 0,
+    'database' => $activeDatabase,
+];
+$mysqlRunning = !empty($ssPayload['mysql_running']);
+$mysqlVersion = (string)($ssPayload['mysql_version'] ?? 'Unavailable');
+$mysqlServiceName = (string)($ssPayload['mysql_service_name'] ?? 'mysqld');
+$mysqlDisplayName = (string)($ssPayload['mysql_display_name'] ?? 'MySQL Server (active PHP connection)');
 ?>
 <div class="metrics-grid">
     <div class="metric-card">
@@ -38,15 +47,15 @@ $mysqlDisplayName = 'MySQL Server (active PHP connection)';
     <div class="metric-card">
         <h3>Storage Summary</h3>
         <div class="text-center" style="padding: 20px 0;">
-            <div class="metric-value"><?php echo number_format((float)$dbReport['total_size_mb'], 2); ?> MB</div>
+            <div class="metric-value"><?php echo number_format((float)($dbReport['total_size_mb'] ?? 0), 2); ?> MB</div>
             <div class="metric-label">Total Data Size (<?php echo sanitize($activeDatabase); ?>)</div>
         </div>
         <div class="text-center" style="padding: 10px 0;">
-            <div class="metric-value"><?php echo number_format((int)$dbReport['table_count']); ?></div>
+            <div class="metric-value"><?php echo number_format((int)($dbReport['table_count'] ?? 0)); ?></div>
             <div class="metric-label">Tables</div>
         </div>
         <div class="text-center" style="padding: 10px 0;">
-            <div class="metric-value"><?php echo number_format((int)$dbReport['total_rows']); ?></div>
+            <div class="metric-value"><?php echo number_format((int)($dbReport['total_rows'] ?? 0)); ?></div>
             <div class="metric-label">Approx. Total Rows</div>
         </div>
     </div>
@@ -68,15 +77,15 @@ $mysqlDisplayName = 'MySQL Server (active PHP connection)';
                     <?php else: ?>
                         <?php foreach ($dbReport['tables'] as $table): ?>
                             <tr>
-                                <td><?php echo sanitize($table['name']); ?></td>
-                                <td style="text-align: right;"><?php echo number_format((int)$table['rows']); ?></td>
-                                <td style="text-align: right;"><?php echo number_format((float)$table['size_mb'], 2); ?></td>
+                                <td><?php echo sanitize((string)($table['name'] ?? '')); ?></td>
+                                <td style="text-align: right;"><?php echo number_format((int)($table['rows'] ?? 0)); ?></td>
+                                <td style="text-align: right;"><?php echo number_format((float)($table['size_mb'] ?? 0), 2); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         <tr>
                             <td><strong>Total</strong></td>
-                            <td style="text-align: right;"><strong><?php echo number_format((int)$dbReport['total_rows']); ?></strong></td>
-                            <td style="text-align: right;"><strong><?php echo number_format((float)$dbReport['total_size_mb'], 2); ?></strong></td>
+                            <td style="text-align: right;"><strong><?php echo number_format((int)($dbReport['total_rows'] ?? 0)); ?></strong></td>
+                            <td style="text-align: right;"><strong><?php echo number_format((float)($dbReport['total_size_mb'] ?? 0), 2); ?></strong></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
