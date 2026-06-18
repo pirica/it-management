@@ -32,6 +32,8 @@ $jsonInput = json_decode((string)$rawInput, true);
 if (!is_array($jsonInput)) {
     $jsonInput = [];
 }
+// Why: Tenant scope comes from session only; discard client-supplied company_id if present.
+unset($jsonInput['company_id'], $_POST['company_id']);
 
 $csrfToken = (string)($jsonInput['csrf_token'] ?? ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')));
 if (!itm_validate_csrf_token($csrfToken)) {

@@ -25,6 +25,7 @@ $refreshErrors = [];
 $refreshNotice = '';
 $cacheCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 1;
 if ($cacheCompanyId <= 0) {
+    // Why: Admin diagnostics remain usable before company selection; cache key fallback only.
     $cacheCompanyId = 1;
 }
 
