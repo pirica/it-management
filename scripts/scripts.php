@@ -1221,7 +1221,7 @@ require_once __DIR__ . '/../config/config.php';
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="http://myhome.dynip.sapo.pt/delete.php" target="_blank" rel="nofollow noreferrer">delete.php</a></td>
+                    <td><a href="http://myhome.dynip.sapo.pt/deletev2.php" target="_blank" rel="nofollow noreferrer">deletev2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Clone Github + Import Database</td>
                     <td>Open in browser to trigger remote deployment</td>
