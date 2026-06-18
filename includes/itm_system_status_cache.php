@@ -26,7 +26,7 @@ function itm_system_status_cache_get($conn, string $tabKey, int $companyId = 1):
     }
 
     if ($companyId <= 0) {
-        $companyId = 1;
+        $companyId = ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID;
     }
 
     $stmt = mysqli_prepare(
@@ -37,9 +37,11 @@ function itm_system_status_cache_get($conn, string $tabKey, int $companyId = 1):
         return null;
     }
     mysqli_stmt_bind_param($stmt, 'si', $tabKey, $companyId);
-    if (!mysqli_stmt_execute($stmt)) {
-        error_log('itm_system_status_cache_get: execute failed for tab_key=' . $tabKey . ' company_id=' . $companyId);
-        mysqli_stmt_close($stmt);
+    if (!itm_system_status_safe_stmt_execute($stmt, [
+        'fn' => 'itm_system_status_cache_get',
+        'tab_key' => $tabKey,
+        'company_id' => $companyId,
+    ])) {
         return null;
     }
     $row = itm_mysqli_stmt_fetch_assoc($stmt);
@@ -84,10 +86,16 @@ function itm_system_status_cache_save($conn, string $tabKey, array $payload, int
         return false;
     }
     mysqli_stmt_bind_param($stmt, 'iss', $companyId, $tabKey, $json);
-    $ok = mysqli_stmt_execute($stmt);
+    if (!itm_system_status_safe_stmt_execute($stmt, [
+        'fn' => 'itm_system_status_cache_save',
+        'tab_key' => $tabKey,
+        'company_id' => $companyId,
+    ])) {
+        return false;
+    }
     mysqli_stmt_close($stmt);
 
-    return (bool)$ok;
+    return true;
 }
 
 /**

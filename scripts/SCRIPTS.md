@@ -257,6 +257,7 @@ php -l includes/update_port.php
 php -l includes/switch_port_api_helpers.php
 php scripts/check_sql_injection_coverage.php
 php scripts/run_tests.php --filter ApiFunctionsTest
+php scripts/verify_update_port_zero_row.php
 php scripts/idfs_sync_human_test.php
 ```
 

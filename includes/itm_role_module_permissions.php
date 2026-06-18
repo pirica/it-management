@@ -3,6 +3,37 @@
  * Role module permission helpers for server-side RBAC enforcement.
  */
 
+if (!function_exists('itm_mysqli_make_log_correlation_id')) {
+    /**
+     * Why: mysqlnd fallback logs stay actionable without echoing raw mysqli error text.
+     */
+    function itm_mysqli_make_log_correlation_id(): string
+    {
+        try {
+            return bin2hex(random_bytes(8));
+        } catch (Throwable $e) {
+            return bin2hex(uniqid('', true));
+        }
+    }
+}
+
+if (!function_exists('itm_mysqli_log_stmt_fallback_failure')) {
+    /**
+     * @param mysqli_stmt|null $stmt
+     */
+    function itm_mysqli_log_stmt_fallback_failure(string $contextLabel, $stmt = null): void
+    {
+        $parts = [$contextLabel, 'correlation_id=' . itm_mysqli_make_log_correlation_id()];
+        if ($stmt instanceof mysqli_stmt) {
+            $errno = mysqli_stmt_errno($stmt);
+            if ($errno > 0) {
+                $parts[] = 'errno=' . $errno;
+            }
+        }
+        error_log(implode(' ', $parts));
+    }
+}
+
 if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
     /**
      * Fetch one associative row from a prepared statement (mysqlnd or bind_result fallback).
@@ -24,13 +55,13 @@ if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
         }
 
         if (!mysqli_stmt_store_result($stmt)) {
-            error_log('itm_mysqli_stmt_fetch_assoc: mysqli_stmt_store_result failed');
+            itm_mysqli_log_stmt_fallback_failure('itm_mysqli_stmt_fetch_assoc: mysqli_stmt_store_result failed', $stmt);
             return null;
         }
 
         $meta = mysqli_stmt_result_metadata($stmt);
         if (!$meta) {
-            error_log('itm_mysqli_stmt_fetch_assoc: mysqli_stmt_result_metadata failed');
+            itm_mysqli_log_stmt_fallback_failure('itm_mysqli_stmt_fetch_assoc: mysqli_stmt_result_metadata failed', $stmt);
             return null;
         }
 
@@ -86,13 +117,13 @@ if (!function_exists('itm_mysqli_stmt_fetch_all_assoc')) {
         }
 
         if (!mysqli_stmt_store_result($stmt)) {
-            error_log('itm_mysqli_stmt_fetch_all_assoc: mysqli_stmt_store_result failed');
+            itm_mysqli_log_stmt_fallback_failure('itm_mysqli_stmt_fetch_all_assoc: mysqli_stmt_store_result failed', $stmt);
             return [];
         }
 
         $meta = mysqli_stmt_result_metadata($stmt);
         if (!$meta) {
-            error_log('itm_mysqli_stmt_fetch_all_assoc: mysqli_stmt_result_metadata failed');
+            itm_mysqli_log_stmt_fallback_failure('itm_mysqli_stmt_fetch_all_assoc: mysqli_stmt_result_metadata failed', $stmt);
             return [];
         }
 

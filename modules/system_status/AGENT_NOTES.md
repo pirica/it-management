@@ -31,7 +31,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 
 ## 3. Required Relationships
 
-- `system_status.company_id` → `companies.id` (ON DELETE CASCADE). Cache rows are scoped per tenant (`UNIQUE (company_id, tab_key)`); Refresh and reads use the active session `company_id` (fallback `1`).
+- `system_status.company_id` → `companies.id` (ON DELETE CASCADE). Cache rows are scoped per tenant (`UNIQUE (company_id, tab_key)`); Refresh and reads use the active session `company_id` (fallback `ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID`, default `1`). When `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK` is true, missing session tenant redirects to the dashboard instead of falling back.
 
 ---
 

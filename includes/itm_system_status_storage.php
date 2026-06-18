@@ -7,6 +7,57 @@ if (!function_exists('itm_mysqli_stmt_fetch_all_assoc')) {
     require_once __DIR__ . '/itm_role_module_permissions.php';
 }
 
+/**
+ * Why: Ops logs need a non-sensitive correlation token without fatal entropy failures.
+ */
+function itm_system_status_make_correlation_id(): string
+{
+    try {
+        return bin2hex(random_bytes(8));
+    } catch (Throwable $e) {
+        return bin2hex(uniqid('', true));
+    }
+}
+
+/**
+ * @param array<string,scalar|null> $context
+ */
+function itm_system_status_format_stmt_log_context(array $context): string
+{
+    $parts = [];
+    foreach ($context as $key => $value) {
+        $parts[] = $key . '=' . $value;
+    }
+
+    return $parts ? (' ' . implode(' ', $parts)) : '';
+}
+
+/**
+ * Why: Centralise execute guards with errno + correlation id and consistent stmt close on failure.
+ *
+ * @param array<string,scalar|null> $context
+ */
+function itm_system_status_safe_stmt_execute($stmt, array $context): bool
+{
+    if (!($stmt instanceof mysqli_stmt)) {
+        return false;
+    }
+
+    if (!mysqli_stmt_execute($stmt)) {
+        error_log(
+            'itm_system_status_safe_stmt_execute: execute failed errno='
+            . mysqli_stmt_errno($stmt)
+            . ' correlation_id=' . itm_system_status_make_correlation_id()
+            . itm_system_status_format_stmt_log_context($context)
+        );
+        mysqli_stmt_close($stmt);
+
+        return false;
+    }
+
+    return true;
+}
+
 function itm_system_status_format_bytes(int $bytes): string
 {
     if ($bytes >= 1073741824) {
@@ -176,10 +227,14 @@ function itm_system_status_load_departments_for_company($conn, int $companyId): 
     if (!$stmt) {
         return $rows;
     }
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    if (!mysqli_stmt_execute($stmt)) {
-        error_log('itm_system_status_load_departments_for_company: execute failed for company_id=' . $companyId);
+    if (!mysqli_stmt_bind_param($stmt, 'i', $companyId)) {
         mysqli_stmt_close($stmt);
+        return $rows;
+    }
+    if (!itm_system_status_safe_stmt_execute($stmt, [
+        'fn' => 'itm_system_status_load_departments_for_company',
+        'company_id' => $companyId,
+    ])) {
         return $rows;
     }
     foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
@@ -207,10 +262,14 @@ function itm_system_status_load_users_for_company($conn, int $companyId): array
     if (!$stmt) {
         return $rows;
     }
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    if (!mysqli_stmt_execute($stmt)) {
-        error_log('itm_system_status_load_users_for_company: execute failed for company_id=' . $companyId);
+    if (!mysqli_stmt_bind_param($stmt, 'i', $companyId)) {
         mysqli_stmt_close($stmt);
+        return $rows;
+    }
+    if (!itm_system_status_safe_stmt_execute($stmt, [
+        'fn' => 'itm_system_status_load_users_for_company',
+        'company_id' => $companyId,
+    ])) {
         return $rows;
     }
     foreach (itm_mysqli_stmt_fetch_all_assoc($stmt) as $row) {
@@ -389,10 +448,20 @@ function itm_system_status_build_database_table_report($conn, string $databaseNa
          ORDER BY table_name ASC'
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $databaseName);
-        if (!mysqli_stmt_execute($stmt)) {
-            error_log('itm_system_status_build_database_table_report: execute failed for database=' . $databaseName);
+        if (!mysqli_stmt_bind_param($stmt, 's', $databaseName)) {
             mysqli_stmt_close($stmt);
+            return [
+                'database' => $databaseName,
+                'tables' => $tables,
+                'total_rows' => $totalRows,
+                'total_size_mb' => $totalSizeMb,
+                'table_count' => count($tables),
+            ];
+        }
+        if (!itm_system_status_safe_stmt_execute($stmt, [
+            'fn' => 'itm_system_status_build_database_table_report',
+            'database' => $databaseName,
+        ])) {
             return [
                 'database' => $databaseName,
                 'tables' => $tables,

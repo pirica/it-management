@@ -18,7 +18,9 @@ Module path: `modules/system_status/index.php` (Admin only).
 
 Helpers: `includes/itm_system_status_cache.php` — `itm_system_status_cache_get($conn, $tabKey, $companyId)`, `itm_system_status_cache_save()`, `itm_system_status_refresh_tab()`, `itm_system_status_refresh_all()`.
 
-Cache reads and Refresh use session `company_id`. When session `company_id` is missing or invalid, `index.php` falls back to `1` so the admin dashboard can seed/read cache before company selection (metrics remain system-wide). Each fallback is logged via `error_log()` with a correlation id. **Admin-only access is mandatory** — do not expose this module to non-admin roles.
+Cache reads and Refresh use session `company_id`. When session `company_id` is missing or invalid, `index.php` falls back to `ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID` (`1` by default) so the admin dashboard can seed/read cache before company selection (metrics remain system-wide). Each fallback is logged via `error_log()` with a correlation id (`itm_system_status_make_correlation_id()`). Set environment variable `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK=1` (or define `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK` in `config/config.php`) to redirect admins to the dashboard instead of using the fallback. **Admin-only access is mandatory** — do not expose this module to non-admin roles.
+
+Statement execute failures in cache/storage helpers log `errno` and a correlation id via `itm_system_status_safe_stmt_execute()` (no raw `mysqli_stmt_error()` text).
 
 ## Tabs
 
