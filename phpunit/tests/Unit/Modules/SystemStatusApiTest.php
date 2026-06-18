@@ -50,4 +50,24 @@ class SystemStatusApiTest extends TestCase
             );
         }
     }
+
+    public function testStorageHelperFormatsBytesAndScansDirectory(): void
+    {
+        require_once dirname(__DIR__, 4) . '/includes/itm_system_status_storage.php';
+
+        $this->assertSame('512 B', itm_system_status_format_bytes(512));
+        $this->assertSame('1.00 KB', itm_system_status_format_bytes(1024));
+        $this->assertSame('1.00 MB', itm_system_status_format_bytes(1048576));
+
+        $tempDir = sys_get_temp_dir() . '/itm-ss-storage-' . uniqid('', true);
+        mkdir($tempDir, 0775, true);
+        file_put_contents($tempDir . '/sample.txt', str_repeat('a', 128));
+
+        $metrics = itm_system_status_directory_metrics($tempDir);
+        $this->assertSame(128, $metrics['bytes']);
+        $this->assertSame(1, $metrics['files']);
+
+        unlink($tempDir . '/sample.txt');
+        rmdir($tempDir);
+    }
 }

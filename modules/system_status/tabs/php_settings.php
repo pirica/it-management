@@ -22,8 +22,14 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
         <table class="info-table">
             <tr><td>Version</td><td><?php echo sanitize('PHP ' . PHP_VERSION); ?></td></tr>
             <tr><td>SAPI</td><td><?php echo sanitize(php_sapi_name()); ?></td></tr>
-            <tr><td>Binary</td><td style="word-break:break-all; font-size: 0.8rem;"><?php echo sanitize(PHP_BINARY); ?></td></tr>
-            <tr><td>Configuration File</td><td style="word-break:break-all; font-size: 0.8rem;"><?php echo sanitize($phpIniPath !== '' ? $phpIniPath : 'None'); ?></td></tr>
+            <tr>
+                <td>Binary</td>
+                <td><span class="ss-path-value"><?php echo sanitize(PHP_BINARY); ?></span></td>
+            </tr>
+            <tr>
+                <td>Configuration File</td>
+                <td><span class="ss-path-value"><?php echo sanitize($phpIniPath !== '' ? $phpIniPath : 'None'); ?></span></td>
+            </tr>
         </table>
         <p style="margin-top:12px;">
             <a class="btn btn-sm" href="<?php echo sanitize($phpInfoUrl); ?>" target="_blank" rel="noopener">Open full phpinfo()</a>

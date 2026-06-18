@@ -12,6 +12,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once ROOT_PATH . 'includes/itm_system_status_native.php';
 require_once ROOT_PATH . 'includes/itm_system_status_powershell.php';
+require_once ROOT_PATH . 'includes/itm_system_status_storage.php';
 
 itm_script_output_begin('System Status Verification');
 
@@ -61,6 +62,12 @@ if (!is_file(ROOT_PATH . 'scripts/system_status_api.php')) {
     ss_verify_pass('Found scripts/system_status_api.php');
 }
 
+if (!is_file(ROOT_PATH . 'includes/itm_system_status_storage.php')) {
+    ss_verify_fail('Missing includes/itm_system_status_storage.php');
+} else {
+    ss_verify_pass('Found includes/itm_system_status_storage.php');
+}
+
 $psScripts = [
     'system_info.ps1', 'cpu_usage.ps1', 'ram_usage.ps1', 'disk_usage.ps1', 'uptime.ps1',
     'php_version.ps1', 'php_extensions.ps1', 'php_ini_values.ps1',
@@ -98,6 +105,20 @@ if (!$conn) {
         ss_verify_pass('information_schema database size query works');
     } else {
         ss_verify_fail('information_schema database size query failed');
+    }
+
+    $dbReport = itm_system_status_build_database_table_report($conn, DB_NAME);
+    if (!empty($dbReport['tables']) && ($dbReport['database'] ?? '') === DB_NAME) {
+        ss_verify_pass('Active database table report works for ' . DB_NAME);
+    } else {
+        ss_verify_fail('Active database table report failed for ' . DB_NAME);
+    }
+
+    $storageReport = itm_system_status_build_storage_report($conn);
+    if (isset($storageReport['sections']) && is_array($storageReport['sections'])) {
+        ss_verify_pass('Upload storage report builder returns sections');
+    } else {
+        ss_verify_fail('Upload storage report builder failed');
     }
 }
 

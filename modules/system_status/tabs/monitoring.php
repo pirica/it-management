@@ -4,6 +4,10 @@
  *
  * Displays real-time system metrics using Chart.js and PowerShell data.
  */
+
+require_once dirname(__DIR__, 3) . '/includes/itm_system_status_storage.php';
+
+$storageReport = itm_system_status_build_storage_report($conn);
 ?>
 <div class="metrics-grid">
     <!-- System Info -->
@@ -49,6 +53,18 @@
         <div id="disk-usage-content" class="metrics-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
             <!-- Dynamic disk cards -->
         </div>
+    </div>
+</div>
+
+<div class="metric-card" style="margin-top: 16px;">
+    <h3>Sub Storage — Explorer and upload trees</h3>
+    <p class="metric-label" style="margin-top:0;">On-disk usage for Explorer segments by company, plus shared upload directories.</p>
+    <?php foreach ($storageReport['sections'] as $section): ?>
+        <?php itm_system_status_render_storage_node($section); ?>
+    <?php endforeach; ?>
+    <div class="ss-storage-total">
+        Total: <?php echo sanitize(itm_system_status_format_bytes((int)$storageReport['total_bytes'])); ?>
+        · <?php echo number_format((int)$storageReport['total_files']); ?> files
     </div>
 </div>
 
