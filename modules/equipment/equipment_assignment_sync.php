@@ -3,6 +3,52 @@
  * Keeps equipment.assigned_to_employee_id aligned with employee_assignment_history.
  */
 
+if (!function_exists('equipment_resolve_assignment_assigned_date')) {
+    function equipment_resolve_assignment_assigned_date($updatedAtRaw): string
+    {
+        $updatedAtRaw = trim((string)$updatedAtRaw);
+        if ($updatedAtRaw !== '') {
+            $timestamp = strtotime($updatedAtRaw);
+            if ($timestamp !== false) {
+                return date('Y-m-d', $timestamp);
+            }
+        }
+
+        if (function_exists('itm_parse_date_input')) {
+            $today = itm_parse_date_input(date('Y-m-d'));
+            if ($today !== '') {
+                return $today;
+            }
+        }
+
+        return date('Y-m-d');
+    }
+}
+
+if (!function_exists('equipment_fetch_assignment_assigned_date')) {
+    function equipment_fetch_assignment_assigned_date(mysqli $conn, int $companyId, int $equipmentId): string
+    {
+        if ($companyId <= 0 || $equipmentId <= 0) {
+            return equipment_resolve_assignment_assigned_date('');
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT COALESCE(updated_at, created_at) AS assignment_timestamp FROM equipment WHERE id = ? AND company_id = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return equipment_resolve_assignment_assigned_date('');
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return equipment_resolve_assignment_assigned_date($row['assignment_timestamp'] ?? '');
+    }
+}
+
 if (!function_exists('equipment_build_assignment_asset_description')) {
     function equipment_build_assignment_asset_description(string $name, string $model): string
     {
@@ -94,6 +140,7 @@ if (!function_exists('equipment_sync_assigned_employee')) {
         ?int $newEmployeeId,
         ?int $oldEmployeeId,
         ?int $assignedByUserId,
+        string $assignedDate,
         string $assetDescription
     ): ?string {
         if ($companyId <= 0 || $equipmentId <= 0) {
@@ -117,6 +164,13 @@ if (!function_exists('equipment_sync_assigned_employee')) {
             }
 
             return null;
+        }
+
+        $assignedDate = function_exists('itm_parse_date_input')
+            ? itm_parse_date_input($assignedDate)
+            : trim($assignedDate);
+        if ($assignedDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $assignedDate)) {
+            return 'Invalid assignment date.';
         }
 
         $otherEquipmentStmt = mysqli_prepare(
@@ -176,7 +230,7 @@ if (!function_exists('equipment_sync_assigned_employee')) {
         $assetDescriptionTrimmed = substr(trim($assetDescription), 0, 255);
         $upsertSql = 'INSERT INTO employee_assignment_history
             (company_id, employee_id, equipment_id, assigned_date, returned_date, assigned_by_user_id, asset_description, active)
-            VALUES (?, ?, ?, CURDATE(), NULL, ?, ?, 1)
+            VALUES (?, ?, ?, ?, NULL, ?, ?, 1)
             ON DUPLICATE KEY UPDATE
                 equipment_id = VALUES(equipment_id),
                 assigned_date = VALUES(assigned_date),
@@ -190,10 +244,11 @@ if (!function_exists('equipment_sync_assigned_employee')) {
         }
         mysqli_stmt_bind_param(
             $upsertStmt,
-            'iiiis',
+            'iiisis',
             $companyId,
             $newEmployeeId,
             $equipmentId,
+            $assignedDate,
             $assignedByBind,
             $assetDescriptionTrimmed
         );
