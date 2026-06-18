@@ -10,6 +10,7 @@ Tests for maintenance/audit scripts under `scripts/`.
 - **`BypassLoginTest`:** skips when `$conn` is unavailable; requires MySQL for full run.
 
 ## 7. File Structure
+- **ApiFunctionsTest.php** — collector helpers in `scripts/api.php` (module imports, Explorer actions, IDF endpoints, switch-port API catalog, api-examples list).
 - **BypassLoginTest.php** — includes `scripts/bypass_login.php` in-process; verifies session keys and Admin role.
 - **CompanyModuleAccessVerifyTest.php** — subprocess CLI run of `scripts/verify_company_module_access.php` (sidebar discovery probes).
 - **ItmScriptTestUserTest.php** — unit tests for `scripts/lib/itm_script_test_user.php` (create, snapshot, restore, delete).

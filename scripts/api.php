@@ -342,15 +342,15 @@ function itmDocProjectJsonEndpoints(): array
             'group' => 'Shared includes',
             'method' => 'POST',
             'path' => 'includes/get_ports.php',
-            'params' => 'switch_id, csrf_token',
-            'purpose' => 'Fetch/seed switch_ports and lookup metadata for equipment port manager.',
+            'params' => 'switch_id (required), csrf_token; JSON body or form POST',
+            'purpose' => 'Switch Port Manager: fetch/seed tenant switch_ports + lookup metadata (see Switch Port Manager API section).',
         ],
         [
             'group' => 'Shared includes',
             'method' => 'POST',
             'path' => 'includes/update_port.php',
-            'params' => 'id, switch_id, csrf_token, port fields',
-            'purpose' => 'Update switch_ports; sync linked idf_ports when To IDF changes.',
+            'params' => 'id, switch_id, csrf_token, port fields (label/status/color/VLAN/IDF/etc.)',
+            'purpose' => 'Switch Port Manager: update switch_ports; sync linked idf_ports when To IDF/management changes (see Switch Port Manager API section).',
         ],
         [
             'group' => 'Quick-add selects',
@@ -502,6 +502,26 @@ function itmDocProjectJsonEndpoints(): array
     ];
 }
 
+function itmDocSwitchPortApiEndpoints(): array
+{
+    return [
+        [
+            'method' => 'POST',
+            'path' => 'includes/get_ports.php',
+            'params' => 'switch_id (required), csrf_token; JSON body or form POST',
+            'response' => '{"success":true,"ports":[…],"statuses":[…],"colors":[…],"vlans":[…],…} or {"success":false,"error":"…"}',
+            'purpose' => 'Equipment Switch Port Manager: load/seed tenant switch_ports for a switch and return lookup metadata (statuses, colors, VLANs, IDF/rack/location options, layout counts).',
+        ],
+        [
+            'method' => 'POST',
+            'path' => 'includes/update_port.php',
+            'params' => 'id, switch_id, csrf_token, port fields (label/status/color/VLAN/IDF/management/etc.)',
+            'response' => '{"success":true,"updated":N} or {"success":false,"error":"…"} (HTTP 404 when zero rows updated)',
+            'purpose' => 'Equipment Switch Port Manager: update switch_ports scoped by company_id + equipment_id; may sync linked idf_ports when To IDF/management fields change.',
+        ],
+    ];
+}
+
 function itmDocPasswordsApiActions(): array
 {
     return [
@@ -632,6 +652,7 @@ $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
 $explorerApiActions = itmDocCollectExplorerApiActions($itmRootPath);
 $explorerDownloadEndpoints = itmDocExplorerDownloadEndpoints();
 $projectJsonEndpoints = itmDocProjectJsonEndpoints();
+$switchPortApiEndpoints = itmDocSwitchPortApiEndpoints();
 $passwordsApiActions = itmDocPasswordsApiActions();
 $notesAjaxActions = itmDocNotesAjaxActions();
 $todoAjaxActions = itmDocTodoAjaxActions();
@@ -745,10 +766,15 @@ curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data "email=Admin&amp;password=Admin&amp;csrf_token=&lt;token_from_login_form&gt;"
 
-# Protected JSON POST
+# Protected JSON POST (Switch Port Manager — load ports)
 curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.php" \
   -H "Content-Type: application/json" \
-  -d '{"switch_id":1,"csrf_token":"&lt;csrf_token&gt;"}'</code></pre>
+  -d '{"switch_id":1,"csrf_token":"&lt;csrf_token&gt;"}'
+
+# Protected JSON POST (Switch Port Manager — update port)
+curl -b cookies.txt -X POST "http://localhost/it-management/includes/update_port.php" \
+  -H "Content-Type: application/json" \
+  -d '{"id":12,"switch_id":1,"status":"Active","color":"Green","csrf_token":"&lt;csrf_token&gt;"}'</code></pre>
     </div>
 
     <div class="card">
@@ -805,6 +831,25 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/explorer/api
 
 # Download folder ZIP
 curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php?downloadZip=1&amp;path=Common/Reports"</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Switch Port Manager API (<code>includes/get_ports.php</code>, <code>includes/update_port.php</code>)</h2>
+        <p>Used by the equipment module Switch Port Manager tiles (<code>modules/equipment/index.php</code>). <strong>POST only</strong>; requires authenticated session (<code>company_id</code> in session — do not send in payload), valid CSRF token, and tenant-scoped SQL on every query. Responses use <code>itm_api_json_response()</code> with <code>JSON_UNESCAPED_UNICODE</code>. Shared lookup helpers live in <code>includes/switch_port_api_helpers.php</code>; prepared-statement reads use <code>itm_mysqli_stmt_fetch_assoc()</code> / <code>itm_mysqli_stmt_fetch_all_assoc()</code> (mysqlnd fallback).</p>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Parameters</th><th>Response</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($switchPortApiEndpoints as $row): ?>
+                <tr>
+                    <td><?= itmDocEscape((string)$row['method']); ?></td>
+                    <td><code><?= itmDocEscape((string)$row['path']); ?></code></td>
+                    <td><code><?= itmDocEscape((string)$row['params']); ?></code></td>
+                    <td><code><?= itmDocEscape((string)$row['response']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 
     <div class="card">
