@@ -121,7 +121,7 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued i
 
 Collected metrics are **system-wide** (hardware, PHP, MySQL) — not filtered by tenant for display. Admin gate is the access control. The Sub Storage tree lists all companies' Explorer/upload folders.
 
-**Cache rows** are tenant-scoped: `UNIQUE (company_id, tab_key)` in `database.sql`. Refresh and tab reads use the active session `company_id` (fallback `1` when missing/invalid). Each company may hold its own cached snapshot per tab even though payload content is largely identical server metrics.
+**Cache rows** are tenant-scoped: `UNIQUE (company_id, tab_key)` in `database.sql`. Refresh and tab reads use the active session `company_id`. When session `company_id` is missing or invalid (`<= 0`), the module falls back to `1` so admin diagnostics remain usable before company selection — intentional for this system-wide admin tool.
 
 ---
 

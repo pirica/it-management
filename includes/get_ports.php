@@ -38,9 +38,9 @@ if (!itm_validate_csrf_token($csrfToken)) {
     itm_api_json_response(['success' => false, 'error' => 'Invalid CSRF token'], 403);
 }
 
-// Ensure the user has a valid company context
+// Ensure the user has a valid company context (session via config.php — never from request payload)
 if ($company_id <= 0) {
-    itm_api_json_response(['success' => false, 'error' => 'Unauthorized'], 401);
+    itm_api_json_response(['success' => false, 'error' => 'Tenant context required (company_id in session).'], 403);
 }
 
 /**

@@ -18,6 +18,8 @@ Module path: `modules/system_status/index.php` (Admin only).
 
 Helpers: `includes/itm_system_status_cache.php` — `itm_system_status_cache_get($conn, $tabKey, $companyId)`, `itm_system_status_cache_save()`, `itm_system_status_refresh_tab()`, `itm_system_status_refresh_all()`.
 
+Cache reads and Refresh use session `company_id`. When session `company_id` is missing or invalid, `index.php` falls back to `1` so the admin dashboard can seed/read cache before company selection (metrics remain system-wide).
+
 ## Tabs
 
 ### 1. Monitoring (`?tab=monitoring`)
