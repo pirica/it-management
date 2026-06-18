@@ -18,7 +18,7 @@ Canonical overview: `docs/system_status.md`.
 
 | Table | Role |
 |-------|------|
-| **`system_status`** | Owned cache — `tab_key`, `payload_json`, `company_id` (composite unique with `tab_key`), `active`, timestamps. Audit triggers on INSERT/UPDATE/DELETE. |
+| **`system_status`** | Owned cache — `tab_key`, `payload_json` (`LONGTEXT` utf8mb4), `company_id` (composite unique with `tab_key`), `active`, timestamps. Audit triggers on INSERT/UPDATE/DELETE. |
 
 Read-only queries (during Refresh collection only):
 
@@ -119,7 +119,9 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued i
 
 ## 8. Multi-Tenant Rules
 
-System-wide metrics; not scoped by active session `company_id` for display. Admin gate is the access control. Storage tree lists all companies' Explorer folders. Cache rows use `company_id = 1` as schema anchor.
+Collected metrics are **system-wide** (hardware, PHP, MySQL) — not filtered by tenant for display. Admin gate is the access control. The Sub Storage tree lists all companies' Explorer/upload folders.
+
+**Cache rows** are tenant-scoped: `UNIQUE (company_id, tab_key)` in `database.sql`. Refresh and tab reads use the active session `company_id` (fallback `1` when missing/invalid). Each company may hold its own cached snapshot per tab even though payload content is largely identical server metrics.
 
 ---
 

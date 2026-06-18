@@ -1233,6 +1233,7 @@ function itm_ipam_subnet_bulk_generate_ui(int $prefixLength): array
         ? max(0, (int)(2 ** (32 - $prefixLength)) - 2)
         : 0;
     if ($hostTotal === 0 && $maxHosts > 0) {
+        // Why: /31 and /32 have no classic network/broadcast pair; use max_hosts for UI totals.
         $hostTotal = $maxHosts;
     }
     $isCapped = $canGenerate && $hostTotal > $maxHosts;

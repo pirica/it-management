@@ -2,7 +2,7 @@
 /**
  * CLI Bypass Login Utility
  * 
- * Authenticates as the Admin user and sets up the session for development/testing.
+ * Authenticates as an Admin user and sets up the session for development/testing.
  * Outputs the session ID which can be used to hijack the session in a browser.
  */
 
@@ -13,29 +13,51 @@ if (PHP_SAPI !== 'cli' && !defined('PHPUNIT_RUNNING')) {
     die("This script can only be run from the CLI.\n");
 }
 
+if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
+    require_once __DIR__ . '/../includes/itm_role_module_permissions.php';
+}
+
 // Parse CLI arguments
 $options = getopt("", ["user:", "company:"]);
 $username = $options['user'] ?? 'admin';
 $companyId = isset($options['company']) ? (int)$options['company'] : 1;
 $password = 'Admin'; // Default password for seeding/development
 
-// Fetch User details
-$stmt = mysqli_prepare($conn, 'SELECT id, username, email FROM users WHERE LOWER(username) = ? OR id = ? LIMIT 1');
+// Fetch User details (match login.php role join)
+$stmt = mysqli_prepare(
+    $conn,
+    'SELECT u.id, u.username, u.email, ur.name AS role_name
+     FROM users u
+     LEFT JOIN user_roles ur ON u.role_id = ur.id
+     WHERE u.active = 1 AND (LOWER(u.username) = LOWER(?) OR u.id = ?)
+     LIMIT 1'
+);
 $idSearch = is_numeric($username) ? (int)$username : -1;
 mysqli_stmt_bind_param($stmt, 'si', $username, $idSearch);
-mysqli_stmt_execute($stmt);
-$user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+if (!mysqli_stmt_execute($stmt)) {
+    mysqli_stmt_close($stmt);
+    die("Error: Failed to load user record.\n");
+}
+$user = itm_mysqli_stmt_fetch_assoc($stmt);
 mysqli_stmt_close($stmt);
 
 if (!$user) {
     die("Error: User '{$username}' not found in database.\n");
 }
 
+$userId = (int)$user['id'];
+if (!itm_is_admin($conn, $userId)) {
+    die("Error: Bypass login is restricted to Admin users. User '{$user['username']}' is not an admin.\n");
+}
+
 // Fetch Company details
 $stmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE id = ? LIMIT 1');
 mysqli_stmt_bind_param($stmt, 'i', $companyId);
-mysqli_stmt_execute($stmt);
-$company = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+if (!mysqli_stmt_execute($stmt)) {
+    mysqli_stmt_close($stmt);
+    die("Error: Failed to load company record.\n");
+}
+$company = itm_mysqli_stmt_fetch_assoc($stmt);
 mysqli_stmt_close($stmt);
 
 if (!$company) {
@@ -43,9 +65,11 @@ if (!$company) {
 }
 
 // Set session variables (matching login.php logic)
-$_SESSION['user_id'] = (int)$user['id'];
+$_SESSION['user_id'] = $userId;
 $_SESSION['username'] = (string)$user['username'];
-$_SESSION['role_name'] = 'admin'; // Forcing admin role for bypass utility
+$_SESSION['role_name'] = strtolower((string)($user['role_name'] ?? '')) === 'admin'
+    ? 'admin'
+    : (string)($user['role_name'] ?? 'admin');
 $_SESSION['company_id'] = (int)$company['id'];
 $_SESSION['company_name'] = (string)$company['company'];
 $_SESSION['read_only_user_config'] = 0;

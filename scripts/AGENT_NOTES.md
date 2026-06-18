@@ -44,7 +44,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **count_db_tables.php** — counts live `information_schema` tables for `itmanagement`, echoes the total, and overwrites `scripts/number_db_tables.txt`. Browser and CLI; no login (`ITM_SCRIPT_NO_AUTH` allowlist in `config/config.php`).
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
 - **data/** — contains excluded modules and prefixes for audits.
-- **bypass_login.php** — CLI utility to authenticate as Admin without the UI.
+- **bypass_login.php** — CLI-only utility to authenticate as **Admin** without the UI. Resolves the target user via prepared statement + `itm_mysqli_stmt_fetch_assoc()` (mysqlnd fallback), rejects non-admin users via `itm_is_admin()`, then sets session keys (including `vault_key` for Passwords). Not for production use.
 - **take_screenshots.py** — Python script using Playwright to automate screenshot capture.
 
 ## 8. Multi-Tenant Rules
@@ -93,7 +93,7 @@ Browser (login required): `scripts/debug_resignations_termination_date.php?date=
 ## 12. Bypass Login (CLI Information)
 The `scripts/bypass_login.php` script allows you to:
 - **Faster Screenshots**: Quickly authenticate an automated browser (like Playwright) by setting the `PHPSESSID` cookie.
-- **Debug as Admin**: Directly establish an authenticated state to test admin-only logic or view protected modules without manual login.
+- **Debug as Admin**: Directly establish an authenticated state to test admin-only logic or view protected modules without manual login. **Admin users only** — non-admin `--user` values exit with an error.
 - **Unlock Vault**: Automatically sets the `vault_key` session variable required for the Passwords module.
 - **CLI Permissions**: The script automatically adjusts session file permissions (`0644`) so the web server (Apache) can read the session created in the CLI context.
 
