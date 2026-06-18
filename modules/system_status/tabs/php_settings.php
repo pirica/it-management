@@ -2,29 +2,28 @@
 /**
  * PHP Settings Tab
  *
- * Renders the active Apache PHP runtime directly (no PowerShell / AJAX).
+ * Renders cached PHP runtime settings from system_status.payload_json.
  */
 
-$phpIniPath = php_ini_loaded_file() ?: '';
-$phpExtensions = get_loaded_extensions();
-sort($phpExtensions);
-$phpIniValues = [
-    'memory_limit' => (string)ini_get('memory_limit'),
-    'upload_max_filesize' => (string)ini_get('upload_max_filesize'),
-    'post_max_size' => (string)ini_get('post_max_size'),
-    'max_execution_time' => (string)ini_get('max_execution_time'),
-];
+if (!is_array($ssPayload ?? null)) {
+    echo '<div class="alert alert-warning">No cached PHP settings. Click <strong>Refresh</strong> to collect metrics.</div>';
+    return;
+}
+
+$phpIniPath = (string)($ssPayload['ini_path'] ?? '');
+$phpExtensions = is_array($ssPayload['extensions'] ?? null) ? $ssPayload['extensions'] : [];
+$phpIniValues = is_array($ssPayload['ini_values'] ?? null) ? $ssPayload['ini_values'] : [];
 $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
 ?>
 <div class="metrics-stack">
     <div class="metric-card">
         <h3>PHP Core</h3>
         <table class="info-table">
-            <tr><td>Version</td><td><?php echo sanitize('PHP ' . PHP_VERSION); ?></td></tr>
-            <tr><td>SAPI</td><td><?php echo sanitize(php_sapi_name()); ?></td></tr>
+            <tr><td>Version</td><td><?php echo sanitize((string)($ssPayload['version'] ?? '')); ?></td></tr>
+            <tr><td>SAPI</td><td><?php echo sanitize((string)($ssPayload['sapi'] ?? '')); ?></td></tr>
             <tr>
                 <td>Binary</td>
-                <td><span class="ss-path-value"><?php echo sanitize(PHP_BINARY); ?></span></td>
+                <td><span class="ss-path-value"><?php echo sanitize((string)($ssPayload['binary'] ?? '')); ?></span></td>
             </tr>
             <tr>
                 <td>Configuration File</td>
@@ -39,10 +38,10 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
     <div class="metric-card">
         <h3>Resource Limits</h3>
         <table class="info-table">
-            <tr><td>memory_limit</td><td><?php echo sanitize($phpIniValues['memory_limit']); ?></td></tr>
-            <tr><td>upload_max_filesize</td><td><?php echo sanitize($phpIniValues['upload_max_filesize']); ?></td></tr>
-            <tr><td>post_max_size</td><td><?php echo sanitize($phpIniValues['post_max_size']); ?></td></tr>
-            <tr><td>max_execution_time</td><td><?php echo sanitize($phpIniValues['max_execution_time']); ?>s</td></tr>
+            <tr><td>memory_limit</td><td><?php echo sanitize((string)($phpIniValues['memory_limit'] ?? '')); ?></td></tr>
+            <tr><td>upload_max_filesize</td><td><?php echo sanitize((string)($phpIniValues['upload_max_filesize'] ?? '')); ?></td></tr>
+            <tr><td>post_max_size</td><td><?php echo sanitize((string)($phpIniValues['post_max_size'] ?? '')); ?></td></tr>
+            <tr><td>max_execution_time</td><td><?php echo sanitize((string)($phpIniValues['max_execution_time'] ?? '')); ?>s</td></tr>
         </table>
     </div>
 
@@ -51,7 +50,7 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
         <div class="ss-extensions-list" tabindex="0">
             <ul class="ss-extensions-columns" style="margin:0; padding:0; list-style:none; font-size: 0.85rem;">
                 <?php foreach ($phpExtensions as $extension): ?>
-                    <li style="padding: 2px 0;">✅ <?php echo sanitize($extension); ?></li>
+                    <li style="padding: 2px 0;">✅ <?php echo sanitize((string)$extension); ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>

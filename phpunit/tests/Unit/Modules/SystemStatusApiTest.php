@@ -70,4 +70,19 @@ class SystemStatusApiTest extends TestCase
         unlink($tempDir . '/sample.txt');
         rmdir($tempDir);
     }
+
+    public function testCacheTabKeysAndPhpSettingsCollector(): void
+    {
+        require_once dirname(__DIR__, 4) . '/includes/itm_system_status_cache.php';
+
+        $this->assertSame(
+            ['monitoring', 'php_settings', 'database'],
+            itm_system_status_cache_tab_keys()
+        );
+
+        $payload = itm_system_status_collect_php_settings_payload();
+        $this->assertArrayHasKey('version', $payload);
+        $this->assertArrayHasKey('extensions', $payload);
+        $this->assertContains('Core', $payload['extensions']);
+    }
 }

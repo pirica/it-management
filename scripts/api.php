@@ -827,7 +827,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>System Status API (<code>scripts/system_status_api.php?action=…</code>)</h2>
-        <p>Restricted to <strong>Admin</strong> role. Unknown <code>action</code> values return HTTP <code>400</code>. <strong>PHP and MySQL</strong> actions always use the active Apache/mysqli runtime (native). <strong>Hardware monitoring</strong> uses <code>includes/*.ps1</code> on Windows (requires <code>shell_exec</code>; action allowlist + <code>[a-z0-9_]+</code> guard in <code>itm_system_status_run_powershell_action()</code>) or native <code>/proc</code> metrics on Linux. Module UI: Monitoring tab uses this API for hardware only; PHP Settings and Database tabs are server-rendered. Full phpinfo: <code>scripts/system_status_phpinfo.php</code> (non-admin → HTTP <code>403</code>).</p>
+        <p>Restricted to <strong>Admin</strong> role. Unknown <code>action</code> values return HTTP <code>400</code>. <strong>PHP and MySQL</strong> actions always use the active Apache/mysqli runtime (native). <strong>Hardware monitoring</strong> uses <code>includes/*.ps1</code> on Windows (requires <code>shell_exec</code>; action allowlist + <code>[a-z0-9_]+</code> guard in <code>itm_system_status_run_powershell_action()</code>) or native <code>/proc</code> metrics on Linux. Module UI tabs read cached JSON from <code>system_status</code>; <strong>Refresh</strong> upserts the cache. Full phpinfo: <code>scripts/system_status_phpinfo.php</code> (non-admin → HTTP <code>403</code>).</p>
         <table>
             <thead><tr><th>action</th><th>Parameters</th><th>Purpose</th></tr></thead>
             <tbody>
