@@ -48,7 +48,7 @@ N/A — no FK-owned data.
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`). Invalid `tab` query falls back to `monitoring`.
 - **AJAX (Monitoring hardware only):** fetches `../../scripts/system_status_api.php?action=…` (Chart.js doughnuts). Failed hardware calls show an inline error instead of perpetual Loading….
 - **Sub Storage (Monitoring):** server-rendered Explorer `files/{company_id}/` tree (Common, Departments by dept, Private by user, Trash), plus `tickets_photos/`, `images/`, `floor_plans/` (by company), `backups/`. Parent folders with children include **direct files in that folder** plus child totals (`itm_system_status_directory_direct_metrics()`).
-- **PHP Settings tab:** vertical stack (`.metrics-stack`) of three cards — PHP Core, Resource Limits, Enabled Extensions. Extensions use a scrollable three-column list (`.ss-extensions-list`, max-height 320px, `tabindex="0"`). Link to `scripts/system_status_phpinfo.php`. Long paths wrap via `.ss-path-value`.
+- **PHP Settings tab:** vertical stack (`.metrics-stack`) of three cards — PHP Core, Resource Limits, Enabled Extensions. Extensions use a scrollable responsive multi-column list (`.ss-extensions-list`, `.ss-extensions-columns` with 1/2/3 columns by viewport, max-height 320px, `tabindex="0"`). Link to `scripts/system_status_phpinfo.php`. Long paths wrap via `.ss-path-value`.
 - **Database tab:** active `DB_NAME` only — table list with approximate row counts, per-table size, and totals via `itm_system_status_build_database_table_report()`.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
 - **Refresh:** toolbar **Refresh** reloads current tab (`?tab=` preserved).

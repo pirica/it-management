@@ -1232,6 +1232,9 @@ function itm_ipam_subnet_bulk_generate_ui(int $prefixLength): array
     $hostTotal = ($prefixLength >= 0 && $prefixLength <= 30)
         ? max(0, (int)(2 ** (32 - $prefixLength)) - 2)
         : 0;
+    if ($hostTotal === 0 && $maxHosts > 0) {
+        $hostTotal = $maxHosts;
+    }
     $isCapped = $canGenerate && $hostTotal > $maxHosts;
     $confirmMessage = $isCapped
         ? 'Generate up to ' . $maxHosts . ' host IPs (first usable addresses in this subnet)? Existing IPs are kept.'

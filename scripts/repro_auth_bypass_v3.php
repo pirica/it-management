@@ -73,7 +73,7 @@ echo ob_get_clean();
     }
     file_put_contents($tmp_file, $code);
     $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-    $output = shell_exec(escapeshellarg($php_bin) . ' -d error_reporting=0 ' . escapeshellarg($tmp_file) . ' 2>/dev/null');
+    $output = shell_exec(escapeshellarg($php_bin) . ' -d error_reporting=0 ' . escapeshellarg($tmp_file) . ' ' . itm_script_shell_stderr_discard());
     @unlink($tmp_file);
     return (string) $output;
 }

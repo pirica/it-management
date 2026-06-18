@@ -40,7 +40,9 @@ $page_title = "System Status";
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
         .metrics-stack { display: flex; flex-direction: column; gap: 16px; }
         .ss-extensions-list { max-height: 320px; overflow: auto; }
-        .ss-extensions-columns { column-count: 3; gap: 20px; }
+        .ss-extensions-columns { column-count: 1; gap: 20px; margin: 0; padding: 0; list-style: none; font-size: 0.85rem; }
+        @media (min-width: 768px) { .ss-extensions-columns { column-count: 2; } }
+        @media (min-width: 1024px) { .ss-extensions-columns { column-count: 3; } }
         .metric-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
         .metric-card h3 { margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .metric-value { font-size: 1.25rem; font-weight: 700; }

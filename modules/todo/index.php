@@ -66,7 +66,7 @@ $users = [];
 $userSql = "SELECT u.id, u.username
             FROM users u
             LEFT JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
-            WHERE u.active = 1 AND (u.company_id = ? OR uc.company_id = ?)
+            WHERE u.active = 1 AND COALESCE(uc.active, 1) = 1 AND (u.company_id = ? OR uc.company_id = ?)
             GROUP BY u.id
             ORDER BY u.username";
 $stmtUser = mysqli_prepare($conn, $userSql);

@@ -49,7 +49,7 @@ $phpInfoUrl = '../../scripts/system_status_phpinfo.php';
     <div class="metric-card">
         <h3>Enabled Extensions (<?php echo count($phpExtensions); ?>)</h3>
         <div class="ss-extensions-list" tabindex="0">
-            <ul class="ss-extensions-columns" style="margin:0; padding:0; list-style:none; font-size: 0.85rem;">
+            <ul class="ss-extensions-columns">
                 <?php foreach ($phpExtensions as $extension): ?>
                     <li style="padding: 2px 0;">✅ <?php echo sanitize($extension); ?></li>
                 <?php endforeach; ?>
