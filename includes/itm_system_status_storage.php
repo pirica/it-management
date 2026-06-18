@@ -19,6 +19,37 @@ function itm_system_status_format_bytes(int $bytes): string
 }
 
 /**
+ * Why: Parent folders with children need direct-file totals without re-counting subdirectories.
+ *
+ * @return array{bytes:int,files:int}
+ */
+function itm_system_status_directory_direct_metrics(string $absolutePath): array
+{
+    $bytes = 0;
+    $files = 0;
+    if (!is_dir($absolutePath)) {
+        return ['bytes' => 0, 'files' => 0];
+    }
+
+    try {
+        foreach (new FilesystemIterator($absolutePath, FilesystemIterator::SKIP_DOTS) as $fileInfo) {
+            if (!$fileInfo->isFile()) {
+                continue;
+            }
+            $size = $fileInfo->getSize();
+            if ($size !== false) {
+                $bytes += (int)$size;
+                $files++;
+            }
+        }
+    } catch (UnexpectedValueException $e) {
+        return ['bytes' => 0, 'files' => 0];
+    }
+
+    return ['bytes' => $bytes, 'files' => $files];
+}
+
+/**
  * @return array{bytes:int,files:int}
  */
 function itm_system_status_directory_metrics(string $absolutePath): array
@@ -66,11 +97,20 @@ function itm_system_status_storage_node(string $label, string $relativePath, arr
         $childFiles += (int)($child['files'] ?? 0);
     }
 
+    if ($children) {
+        $directMetrics = itm_system_status_directory_direct_metrics($absolutePath);
+        $bytes = $childBytes + (int)$directMetrics['bytes'];
+        $files = $childFiles + (int)$directMetrics['files'];
+    } else {
+        $bytes = (int)$metrics['bytes'];
+        $files = (int)$metrics['files'];
+    }
+
     return [
         'label' => $label,
         'path' => $relativePath,
-        'bytes' => $children ? $childBytes : $metrics['bytes'],
-        'files' => $children ? $childFiles : $metrics['files'],
+        'bytes' => $bytes,
+        'files' => $files,
         'children' => $children,
     ];
 }

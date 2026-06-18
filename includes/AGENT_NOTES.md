@@ -36,8 +36,8 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **itm_profile_photo_upload.php** — shared PNG/JPG resolver (`itm_profile_photo_allowed_extension`) using `getimagesize()`, finfo MIME, browser `type`, and filename fallback; used by `modules/private_contacts/includes/private_contact_photo.php`.
 - **fk_dropdown_helpers.php** — tenant FK label resolution (`itm_fk_label_column_for_table()` prefers `name_type` for `employee_type`); business-key remap via `itm_fk_resolve_company_equivalent_id()`.
 - **itm_system_status_native.php** — PHP/MySQL + Linux hardware JSON for `scripts/system_status_api.php` (`itm_system_status_native_payload()`, `/proc` + mysqli).
-- **itm_system_status_storage.php** — Explorer/upload directory sizes and active-database table metrics for System Status tabs.
-- **itm_system_status_powershell.php** — Windows hardware runner: `shell_exec` availability, `.ps1` readability, `itm_system_status_run_powershell_action()`.
+- **itm_system_status_storage.php** — Explorer/upload directory sizes and active-database table metrics for System Status tabs; parent nodes with children sum child totals plus direct files in the parent folder (`itm_system_status_directory_direct_metrics()`).
+- **itm_system_status_powershell.php** — Windows hardware runner: `shell_exec` availability, `.ps1` readability, `itm_system_status_run_powershell_action()` (action allowlist + `[a-z0-9_]+` guard before loading `includes/{action}.ps1`).
 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.

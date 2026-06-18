@@ -30,6 +30,14 @@ function itm_system_status_powershell_binary(): string
  */
 function itm_system_status_run_powershell_action(string $action): array
 {
+    $allowedActions = array_merge(
+        itm_system_status_hardware_actions(),
+        ['php_version', 'php_extensions', 'php_ini_values', 'mysql_status', 'mysql_version', 'mysql_databases', 'mysql_size']
+    );
+    if (!in_array($action, $allowedActions, true) || !preg_match('/^[a-z0-9_]+$/', $action)) {
+        return ['status' => 'error', 'message' => 'Invalid PowerShell action requested.'];
+    }
+
     $script_path = ROOT_PATH . 'includes/' . $action . '.ps1';
     if (!is_file($script_path)) {
         return ['status' => 'error', 'message' => 'PowerShell script not found: includes/' . $action . '.ps1'];
