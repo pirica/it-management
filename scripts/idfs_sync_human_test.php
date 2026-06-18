@@ -142,8 +142,7 @@ function itm_test_http_request(
     $cookieFile,
     $body,
     array $headers,
-    &$statusCode,
-    $followRedirects = false
+    &$statusCode
 ) {
     $ch = curl_init($url);
     if ($ch === false) {
@@ -154,10 +153,7 @@ function itm_test_http_request(
     curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieFile);
     curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $followRedirects ? true : false);
-    if ($followRedirects) {
-        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-    }
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     if ($body !== null) {
@@ -174,6 +170,93 @@ function itm_test_http_request(
     $statusCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     return (string)$response;
+}
+
+function itm_test_http_parse_location_header($headerBlock)
+{
+    if (preg_match('/^Location:\s*(.+)$/mi', (string)$headerBlock, $matches) === 1) {
+        return trim($matches[1]);
+    }
+
+    return '';
+}
+
+function itm_test_http_resolve_url($baseUrl, $location)
+{
+    $location = trim((string)$location);
+    if ($location === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $location) === 1) {
+        return $location;
+    }
+
+    $baseParts = parse_url(rtrim((string)$baseUrl, '/'));
+    $scheme = isset($baseParts['scheme']) ? (string)$baseParts['scheme'] : 'http';
+    $host = isset($baseParts['host']) ? (string)$baseParts['host'] : 'localhost';
+    $port = isset($baseParts['port']) ? ':' . (int)$baseParts['port'] : '';
+
+    if (strpos($location, '/') === 0) {
+        return $scheme . '://' . $host . $port . $location;
+    }
+
+    $path = isset($baseParts['path']) ? rtrim((string)$baseParts['path'], '/') : '';
+    return $scheme . '://' . $host . $port . $path . '/' . ltrim($location, '/');
+}
+
+/**
+ * Why: CURLOPT_FOLLOWLOCATION is ignored or warns when open_basedir is set; follow Location manually.
+ */
+function itm_test_http_get_following_redirects($baseUrl, $url, $cookieFile, &$statusCode, $maxHops = 5)
+{
+    $currentUrl = (string)$url;
+    $body = '';
+
+    for ($hop = 0; $hop < $maxHops; $hop++) {
+        $ch = curl_init($currentUrl);
+        if ($ch === false) {
+            itm_test_fail('Failed to initialize cURL.');
+        }
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieFile);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+
+        $raw = curl_exec($ch);
+        if ($raw === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            itm_test_fail('HTTP request failed: ' . $error);
+        }
+
+        $statusCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = (int)curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        $headers = substr((string)$raw, 0, $headerSize);
+        $body = substr((string)$raw, $headerSize);
+
+        if (!in_array($statusCode, [301, 302, 303, 307, 308], true)) {
+            return (string)$body;
+        }
+
+        $location = itm_test_http_parse_location_header($headers);
+        if ($location === '') {
+            return (string)$body;
+        }
+
+        $nextUrl = itm_test_http_resolve_url($baseUrl, $location);
+        if ($nextUrl === '') {
+            return (string)$body;
+        }
+        $currentUrl = $nextUrl;
+    }
+
+    return (string)$body;
 }
 
 function itm_test_extract_csrf($html)
@@ -195,14 +278,11 @@ function itm_test_select_company_in_session($baseUrl, $cookieFile, $companyId)
     }
 
     $indexStatus = 0;
-    $indexHtml = itm_test_http_request(
-        'GET',
+    $indexHtml = itm_test_http_get_following_redirects(
+        $baseUrl,
         rtrim($baseUrl, '/') . '/index.php',
         $cookieFile,
-        null,
-        [],
-        $indexStatus,
-        true
+        $indexStatus
     );
     itm_test_assert($indexStatus === 200, 'Company selection page is reachable for tenant switch');
     $indexCsrf = itm_test_extract_csrf($indexHtml);

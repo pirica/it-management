@@ -250,66 +250,67 @@ echo json_encode([
     if ($tmp === false) {
         return ['http_status' => 0, 'body' => '', 'error' => 'tempnam() failed'];
     }
-    if (file_put_contents($tmp, $code) === false) {
-        @unlink($tmp);
-        return ['http_status' => 0, 'body' => '', 'error' => 'file_put_contents() failed'];
-    }
 
-    $phpBin = (defined('PHP_BINARY') && PHP_BINARY !== '') ? PHP_BINARY : 'php';
+    try {
+        if (file_put_contents($tmp, $code) === false) {
+            return ['http_status' => 0, 'body' => '', 'error' => 'file_put_contents() failed'];
+        }
 
-    $output = null;
-    if (function_exists('proc_open')) {
-        $descriptors = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-        $proc = proc_open([$phpBin, $tmp], $descriptors, $pipes);
-        if (is_resource($proc)) {
-            fclose($pipes[0]);
-            $output = stream_get_contents($pipes[1]);
-            $stderr = stream_get_contents($pipes[2]);
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-            proc_close($proc);
-            if (trim((string)$output) === '' && trim((string)$stderr) !== '') {
-                @unlink($tmp);
-                return ['http_status' => 0, 'body' => '', 'error' => trim((string)$stderr)];
+        $phpBin = (defined('PHP_BINARY') && PHP_BINARY !== '') ? PHP_BINARY : 'php';
+
+        $output = null;
+        if (function_exists('proc_open')) {
+            $descriptors = [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ];
+            $proc = proc_open([$phpBin, $tmp], $descriptors, $pipes);
+            if (is_resource($proc)) {
+                fclose($pipes[0]);
+                $output = stream_get_contents($pipes[1]);
+                $stderr = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                proc_close($proc);
+                if (trim((string)$output) === '' && trim((string)$stderr) !== '') {
+                    return ['http_status' => 0, 'body' => '', 'error' => trim((string)$stderr)];
+                }
             }
         }
-    }
 
-    if ($output === null) {
-        if (!function_exists('shell_exec')) {
-            @unlink($tmp);
-            return ['http_status' => 0, 'body' => '', 'error' => 'shell_exec and proc_open unavailable'];
+        if ($output === null) {
+            if (!function_exists('shell_exec')) {
+                return ['http_status' => 0, 'body' => '', 'error' => 'shell_exec and proc_open unavailable'];
+            }
+            $stderrDiscard = function_exists('itm_script_shell_stderr_discard')
+                ? itm_script_shell_stderr_discard()
+                : '2>/dev/null';
+            $output = shell_exec(escapeshellarg($phpBin) . ' ' . escapeshellarg($tmp) . ' ' . $stderrDiscard);
+            if ($output === null || trim((string)$output) === '') {
+                return ['http_status' => 0, 'body' => '', 'error' => 'subprocess returned no output'];
+            }
         }
-        $stderrDiscard = function_exists('itm_script_shell_stderr_discard')
-            ? itm_script_shell_stderr_discard()
-            : '2>/dev/null';
-        $output = shell_exec(escapeshellarg($phpBin) . ' ' . escapeshellarg($tmp) . ' ' . $stderrDiscard);
-        if ($output === null || trim((string)$output) === '') {
-            @unlink($tmp);
-            return ['http_status' => 0, 'body' => '', 'error' => 'subprocess returned no output'];
+
+        $wrapper = json_decode(trim((string)$output), true);
+        if (!is_array($wrapper)) {
+            return [
+                'http_status' => 0,
+                'body' => trim((string)$output),
+                'error' => 'subprocess JSON wrapper decode failed',
+            ];
         }
-    }
 
-    @unlink($tmp);
-
-    $wrapper = json_decode(trim((string)$output), true);
-    if (!is_array($wrapper)) {
         return [
-            'http_status' => 0,
-            'body' => trim((string)$output),
-            'error' => 'subprocess JSON wrapper decode failed',
+            'http_status' => (int)($wrapper['http_status'] ?? 0),
+            'body' => (string)($wrapper['body'] ?? ''),
+            'error' => (string)($wrapper['error'] ?? ''),
         ];
+    } finally {
+        if (is_string($tmp) && $tmp !== '') {
+            @unlink($tmp);
+        }
     }
-
-    return [
-        'http_status' => (int)($wrapper['http_status'] ?? 0),
-        'body' => (string)($wrapper['body'] ?? ''),
-        'error' => (string)($wrapper['error'] ?? ''),
-    ];
 }
 
 try {

@@ -64,7 +64,8 @@ if (!function_exists('itm_skip_http_entry_unless_direct')) {
             return true;
         }
         // Why: Contract-test subprocesses include HTTP endpoints under CLI with stubs for CSRF/JSON exit.
-        // Scope: define ITM_HTTP_ENDPOINT_CONTRACT_TEST only in trusted scripts (e.g. verify_update_port_zero_row.php).
+        // Threat model: only trusted scripts under scripts/ may define ITM_HTTP_ENDPOINT_CONTRACT_TEST;
+        // never derive this constant from HTTP input (would bypass CLI entry guards).
         if (defined('ITM_HTTP_ENDPOINT_CONTRACT_TEST') && ITM_HTTP_ENDPOINT_CONTRACT_TEST) {
             return false;
         }
