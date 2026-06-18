@@ -71,6 +71,32 @@ class SystemStatusApiTest extends TestCase
         rmdir($tempDir);
     }
 
+    public function testStorageMetricsIgnoreSystemFiles(): void
+    {
+        require_once dirname(__DIR__, 4) . '/includes/itm_system_status_storage.php';
+
+        $this->assertTrue(itm_system_status_is_ignored_storage_file('.htaccess'));
+        $this->assertTrue(itm_system_status_is_ignored_storage_file('index.html'));
+        $this->assertTrue(itm_system_status_is_ignored_storage_file('AGENT_NOTES.md'));
+
+        $tempDir = sys_get_temp_dir() . '/itm-ss-storage-ignore-' . uniqid('', true);
+        mkdir($tempDir, 0775, true);
+        file_put_contents($tempDir . '/sample.txt', str_repeat('b', 64));
+        file_put_contents($tempDir . '/index.html', '');
+        file_put_contents($tempDir . '/.htaccess', 'deny');
+        file_put_contents($tempDir . '/AGENT_NOTES.md', '# notes');
+
+        $metrics = itm_system_status_directory_metrics($tempDir);
+        $this->assertSame(64, $metrics['bytes']);
+        $this->assertSame(1, $metrics['files']);
+
+        unlink($tempDir . '/sample.txt');
+        unlink($tempDir . '/index.html');
+        unlink($tempDir . '/.htaccess');
+        unlink($tempDir . '/AGENT_NOTES.md');
+        rmdir($tempDir);
+    }
+
     public function testCacheTabKeysAndPhpSettingsCollector(): void
     {
         require_once dirname(__DIR__, 4) . '/includes/itm_system_status_cache.php';

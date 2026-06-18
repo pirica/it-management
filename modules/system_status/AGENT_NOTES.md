@@ -55,6 +55,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 - **First visit:** when the active tab has no cache row, `index.php` auto-seeds that tab once on GET.
 - **Empty cache:** warning banner on tab partials until Refresh or first-visit seed completes.
 - **Monitoring:** cached `system_info`, `cpu_usage`, and `storage_report`; Sub Storage tree via `itm_system_status_render_storage_node()`.
+- **Sub Storage:** file/byte totals exclude system placeholders `.htaccess`, `index.html`, and `AGENT_NOTES.md` (`itm_system_status_is_ignored_storage_file()`).
 - **PHP Settings:** cached PHP core, limits, extensions (responsive `.ss-extensions-columns`); live detail via `scripts/system_status_phpinfo.php`.
 - **Database:** cached MySQL status + `db_report` snapshot for active `DB_NAME`.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
@@ -135,6 +136,7 @@ System-wide metrics; not scoped by active session `company_id` for display. Admi
 - **`shell_exec` disabled on Windows:** Monitoring Refresh may record partial errors; PHP Settings and Database cache paths still work.
 - **phpinfo link:** always live — not cached.
 - **Storage parent totals:** nodes with children must include direct files in that folder — do not sum only child bytes.
+- **System file exclusions:** Sub Storage file/byte totals skip `.htaccess`, `index.html`, and `AGENT_NOTES.md` (managed placeholders and agent docs, not user content).
 - **README screenshot:** wait for `#system-info-content` populated (cached data) before capture.
 
 ---

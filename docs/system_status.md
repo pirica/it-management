@@ -26,7 +26,7 @@ Cached payload includes:
 - **CPU Usage:** Gauge from cached `cpu_usage`.
 - **RAM Usage:** Gauge from cached `system_info` RAM fields.
 - **Disk Usage:** Progress bars from cached `system_info.disks`.
-- **Sub Storage:** Explorer (`files/{company_id}/` tree) and upload directories from cached `storage_report`.
+- **Sub Storage:** Explorer (`files/{company_id}/` tree) and upload directories from cached `storage_report`. File counts exclude system placeholders: `.htaccess`, `index.html`, `AGENT_NOTES.md`.
 
 ### 2. PHP Settings (`?tab=php_settings`)
 Cached payload includes:
