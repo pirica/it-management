@@ -248,6 +248,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: repro_* and fix_* scripts are CLI maintenance/test tools.
+    if (preg_match('#^scripts/(repro|fix)_.+\.php$#', $relativePath)) {
+        $skipped[] = [
+            $relativePath,
+            'CLI-only maintenance/repro script; not a web-accessible endpoint',
+        ];
+        continue;
+    }
+
     if (!$hasFileLevelGuard) {
         $missing[] = [$path, 'POST/mutation surface without CSRF guard reference'];
     }

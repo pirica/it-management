@@ -65,6 +65,7 @@ require_once __DIR__ . '/../config/config.php';
             <li><a href="#idf">IDF &amp; equipment</a></li>
             <li><a href="#ui-modules">UI &amp; modules</a></li>
             <li><a href="#admin-tools">Administrative Tools</a></li>
+            <li><a href="#system-status">System Status</a></li>
             <li><a href="http://myhome.dynip.sapo.pt/phpmyadmin/" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
             <li><a href="https://github.com/pirica/it-management" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">Github</a></li>
         </ul>
@@ -967,6 +968,33 @@ require_once __DIR__ . '/../config/config.php';
             </tbody>
         </table></div>
     </div>
+    <div class="scripts-card" id="system-status">
+        <h2>System Status</h2>
+        <div class="scripts-table-wrap"><table class="scripts-table">
+            <thead>
+                <tr>
+                    <th>Script</th>
+                    <th class="scripts-access-col">Access</th>
+                    <th>What it does</th>
+                    <th>How to use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><a href="test_system_info.php">test_system_info.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests system_info.ps1 output.</td><td><code>php scripts/test_system_info.php</code></td></tr>
+                <tr><td><a href="test_cpu_usage.php">test_cpu_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests cpu_usage.ps1 output.</td><td><code>php scripts/test_cpu_usage.php</code></td></tr>
+                <tr><td><a href="test_ram_usage.php">test_ram_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests ram_usage.ps1 output.</td><td><code>php scripts/test_ram_usage.php</code></td></tr>
+                <tr><td><a href="test_disk_usage.php">test_disk_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests disk_usage.ps1 output.</td><td><code>php scripts/test_disk_usage.php</code></td></tr>
+                <tr><td><a href="test_uptime.php">test_uptime.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests uptime.ps1 output.</td><td><code>php scripts/test_uptime.php</code></td></tr>
+                <tr><td><a href="test_php_version.php">test_php_version.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests php_version.ps1 output.</td><td><code>php scripts/test_php_version.php</code></td></tr>
+                <tr><td><a href="test_php_extensions.php">test_php_extensions.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests php_extensions.ps1 output.</td><td><code>php scripts/test_php_extensions.php</code></td></tr>
+                <tr><td><a href="test_php_ini_values.php">test_php_ini_values.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests php_ini_values.ps1 output.</td><td><code>php scripts/test_php_ini_values.php</code></td></tr>
+                <tr><td><a href="test_mysql_status.php">test_mysql_status.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_status.ps1 output.</td><td><code>php scripts/test_mysql_status.php</code></td></tr>
+                <tr><td><a href="test_mysql_version.php">test_mysql_version.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_version.ps1 output.</td><td><code>php scripts/test_mysql_version.php</code></td></tr>
+                <tr><td><a href="test_mysql_databases.php">test_mysql_databases.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_databases.ps1 output.</td><td><code>php scripts/test_mysql_databases.php</code></td></tr>
+                <tr><td><a href="test_mysql_size.php">test_mysql_size.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_size.ps1 output.</td><td><code>php scripts/test_mysql_size.php</code></td></tr>
+            </tbody>
+        </table></div>
+    </div>
     <div class="scripts-card" id="verification">
         <h2>Verification (June 2026 Security Review)</h2>
         <div class="scripts-table-wrap"><table class="scripts-table">
@@ -1152,6 +1180,28 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification for Audit Log Sensitive Data Exposure.</td>
                     <td><code>php scripts/repro_audit_token_leak.php</code></td>
+                    <td><a href="repro_destructive_import.php">repro_destructive_import.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for destructive employee import.</td>
+                    <td><code>php scripts/repro_destructive_import.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_todo_user_leak.php">repro_todo_user_leak.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for multi-tenant username leak in Todo module.</td>
+                    <td><code>php scripts/repro_todo_user_leak.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_cross_tenant_admin.php">repro_cross_tenant_admin.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for cross-tenant admin access in Users module.</td>
+                    <td><code>php scripts/repro_cross_tenant_admin.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="fix_users_audit_triggers.php">fix_users_audit_triggers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Fix script to update Users audit triggers to exclude sensitive fields.</td>
+                    <td><code>php scripts/fix_users_audit_triggers.php</code></td>
                 </tr>
             </tbody>
         </table></div>

@@ -16,6 +16,7 @@
 - ✅ Private Contacts (User-scoped, UK localization, multi-field CRUD)
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
+- ✅ System Status — Real-time server monitoring (CPU, RAM, Disk, PHP, MySQL)
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>

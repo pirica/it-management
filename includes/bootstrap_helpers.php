@@ -20,30 +20,29 @@ if (!function_exists('itm_is_safe_identifier')) {
  */
 if (!function_exists('itm_table_has_column')) {
     function itm_table_has_column($conn, $table, $column) {
-        static $cache = [];
-        $key = $table . '.' . $column;
-        if (array_key_exists($key, $cache)) {
-            return $cache[$key];
-        }
+        static $tableCache = [];
 
         if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
-            $cache[$key] = false;
             return false;
         }
 
-        $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
-        $stmt = mysqli_prepare($conn, $sql);
-        if (!$stmt) {
-            $cache[$key] = false;
-            return false;
+        if (!isset($tableCache[$table])) {
+            $tableCache[$table] = [];
+            // Why: Fetch all columns for the table in one query to avoid O(N) queries during bootstrap.
+            $sql = 'SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 's', $table);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                while ($res && ($row = mysqli_fetch_assoc($res))) {
+                    $tableCache[$table][$row['COLUMN_NAME']] = true;
+                }
+                mysqli_stmt_close($stmt);
+            }
         }
 
-        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $cache[$key] = ($res && mysqli_num_rows($res) > 0);
-        mysqli_stmt_close($stmt);
-        return $cache[$key];
+        return isset($tableCache[$table][$column]);
     }
 }
 
@@ -53,34 +52,29 @@ if (!function_exists('itm_table_has_column')) {
 if (!function_exists('itm_table_column_is_nullable')) {
     function itm_table_column_is_nullable($conn, $table, $column): bool
     {
-        static $cache = [];
-        $key = $table . '.' . $column . '.nullable';
-        if (array_key_exists($key, $cache)) {
-            return $cache[$key];
-        }
+        static $nullableCache = [];
 
         if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
-            $cache[$key] = false;
             return false;
         }
 
-        $sql = 'SELECT IS_NULLABLE FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
-        $stmt = mysqli_prepare($conn, $sql);
-        if (!$stmt) {
-            $cache[$key] = false;
-            return false;
+        if (!isset($nullableCache[$table])) {
+            $nullableCache[$table] = [];
+            // Why: Fetch nullability for all columns in the table once per request.
+            $sql = 'SELECT COLUMN_NAME, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 's', $table);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                while ($res && ($row = mysqli_fetch_assoc($res))) {
+                    $nullableCache[$table][$row['COLUMN_NAME']] = (strtoupper((string)($row['IS_NULLABLE'] ?? '')) === 'YES');
+                }
+                mysqli_stmt_close($stmt);
+            }
         }
 
-        mysqli_stmt_bind_param($stmt, 'ss', $table, $column);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = ($res) ? mysqli_fetch_assoc($res) : null;
-        mysqli_stmt_close($stmt);
-
-        $cache[$key] = is_array($row) && strtoupper((string)($row['IS_NULLABLE'] ?? '')) === 'YES';
-
-        return $cache[$key];
+        return !empty($nullableCache[$table][$column]);
     }
 }
 
