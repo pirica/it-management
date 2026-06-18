@@ -60,14 +60,14 @@ if (!function_exists('itm_skip_http_entry_unless_direct')) {
      */
     function itm_skip_http_entry_unless_direct($file = __FILE__)
     {
-        if (itm_is_phpunit_processing()) {
-            return true;
-        }
         // Why: Contract-test subprocesses include HTTP endpoints under CLI with stubs for CSRF/JSON exit.
         // Threat model: only trusted scripts under scripts/ may define ITM_HTTP_ENDPOINT_CONTRACT_TEST;
         // never derive this constant from HTTP input (would bypass CLI entry guards).
         if (defined('ITM_HTTP_ENDPOINT_CONTRACT_TEST') && ITM_HTTP_ENDPOINT_CONTRACT_TEST) {
             return false;
+        }
+        if (itm_is_phpunit_processing()) {
+            return true;
         }
         if (PHP_SAPI === 'cli') {
             return true;

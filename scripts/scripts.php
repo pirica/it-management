@@ -1180,7 +1180,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_rbac_bypass.php">repro_rbac_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for RBAC Bypass in CRUD modules (Expenses deletion). Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td>PoC for RBAC bypass on Expenses <code>delete.php</code>: read-only role must get HTTP 403 and retain the row. Uses a free <code>cost_centers</code> slot (<code>uq_expenses_company_scope</code>). Subprocess spawn uses <code>escapeshellarg()</code>; do not stub <code>cr_require_valid_csrf_token()</code>.</td>
                     <td><code>php scripts/repro_rbac_bypass.php</code></td>
                 </tr>
                 <tr>
