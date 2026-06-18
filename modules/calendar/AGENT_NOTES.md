@@ -27,6 +27,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - ICS export via `?export=ics` (events in ±1 year window).
 - Integrated sources skipped when parent module disabled (`has_module_access()` per slug).
 - Filtering by event category or source type where implemented; colour coding from `event_categories` / priority colours.
+- **Responsive:** side panel stacks above calendar below 768px; week/day grids scroll horizontally on narrow screens.
 
 ## 6. API Actions (If Applicable)
 - **ICS import** (POST `index.php`, `ics_file`) — parses `BEGIN:VEVENT` blocks, inserts into **events** with `company_id` scope; RFC 5545 line folding handled.

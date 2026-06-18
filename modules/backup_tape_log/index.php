@@ -382,6 +382,9 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
             .btl-table { width: 100%; }
             .card { border: none !important; box-shadow: none !important; padding: 0 !important; }
         }
+        @media (max-width: 768px) {
+            .btl-table { min-width: 640px; }
+        }
     </style>
 </head>
 <body>

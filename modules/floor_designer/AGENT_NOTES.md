@@ -26,6 +26,7 @@ Provides an interactive tool for designing and visualizing floor plans, includin
 - **Interactive Map**: Uses SVG or Canvas (check implementation) for point placement.
 - **AJAX Saving**: Points are often saved asynchronously to prevent page reloads.
 - **Standard CRUD**: Supports creating and managing multiple designs.
+- **Responsive:** designer wrapper height capped on mobile; control bar stacks below 768px; comment boxes wrap text.
 
 ## 6. API Actions (If Applicable)
 - **save_point** — (AJAX) updates point coordinates or metadata.

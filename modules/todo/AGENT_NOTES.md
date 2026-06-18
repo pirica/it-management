@@ -20,6 +20,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 
 ## 5. UI Behavior Requirements
 - Custom task UI on index (not standard table-only list).
+- **Responsive:** sidebar stacks above task list below 768px; task titles wrap on narrow viewports (`index.php` inline CSS).
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
 

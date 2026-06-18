@@ -577,6 +577,12 @@ $moduleListHeading = '🧩 ' . $crud_title;
             .designer-container { transform: none !important; }
             .floor-shape { border: 2px solid #000; }
         }
+        @media (max-width: 768px) {
+            .designer-wrapper { height: min(750px, 65vh); }
+            .controls { flex-direction: column; align-items: stretch; }
+            .layer-controls { margin-left: 0; border-left: none; padding-left: 0; flex-wrap: wrap; }
+            .comment-box { white-space: normal; max-width: min(240px, 80vw); }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>

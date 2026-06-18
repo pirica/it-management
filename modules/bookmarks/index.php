@@ -118,6 +118,9 @@ $csrfToken = itm_get_csrf_token();
             .bookmarks-layout { flex-direction: column; }
             .bookmarks-sidebar { width: 100%; }
         }
+        @media (max-width: 480px) {
+            .bookmarks-list { grid-template-columns: 1fr; }
+        }
 
         .dropdown-menu { display: none; position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; padding: 5px 0; margin-top: 5px; }
         .dropdown-menu.show { display: block; }

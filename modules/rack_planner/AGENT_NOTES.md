@@ -24,6 +24,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - Custom handlers in `includes/handlers.php` — disable redundant default exports when custom layout applies.
 - Auto-save AJAX (`ajax_update_layout`) returns HTTP 404 when `rack_planner` row is not tenant-scoped.
 - List view supports bulk delete/clear when row count ≥ `records_per_page`.
+- **Responsive:** rack visualizer uses `min(600px, 100%)` width with horizontal scroll; mobile padding in `includes/partials/render.php`.
 
 ## 6. API Actions (If Applicable)
 - **ajax_update_layout** (POST on create/edit) — `id`, `rack_units`, `layout_json`; normalises layout, persists JSON, syncs prices to source tables; 404 when `affected_rows === 0`.

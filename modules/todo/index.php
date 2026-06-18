@@ -406,6 +406,14 @@ if ($crud_action === "index") {
         .close { padding: 1rem; margin: -1rem -1rem -1rem auto; background-color: transparent; border: 0; font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); text-shadow: 0 1px 0 #fff; opacity: .5; cursor: pointer; }
         .close:hover { opacity: .75; }
 
+        @media (max-width: 768px) {
+            .todo-container { flex-direction: column; height: auto; min-height: calc(100vh - 120px); }
+            .todo-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+            .todo-content { padding: 16px; }
+            .empty-state { padding: 40px 16px; }
+            .task-title { white-space: normal; }
+        }
+
     </style>
 </head>
 <body>

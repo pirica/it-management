@@ -172,6 +172,13 @@ if ($isAdmin) {
             background: rgba(13, 17, 23, 0.82);
         }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .container { padding: 24px 20px; }
+            .logo h1 { font-size: 24px; }
+            .logout-btn { top: 12px; left: 12px; }
+            .theme-btn { top: 12px; right: 12px; width: 44px; height: 44px; font-size: 20px; }
+        }
     </style>
 </head>
 <body>

@@ -555,6 +555,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
         .audit-summary { display:grid; gap:8px; }
         .audit-json { white-space:pre-wrap; word-break:break-word; max-width:520px; margin:0; font-size:12px; line-height:1.4; background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px; }
         @media (max-width:1080px) { .audit-filters form { grid-template-columns:1fr 1fr; } .audit-kpis { grid-template-columns:1fr 1fr; } }
+        @media (max-width:768px) {
+            .audit-filters form { grid-template-columns:1fr; }
+            .audit-kpis { grid-template-columns:1fr; }
+            .audit-user { max-width:none; white-space:normal; }
+        }
     </style>
 </head>
 <body>

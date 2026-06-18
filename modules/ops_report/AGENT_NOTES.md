@@ -31,6 +31,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - Custom single-day report layout (not standard CRUD list).
 - Inline AJAX: `ajax_inline_edit`, `ajax_add_row`, `ajax_delete_row`. Editable dates render **visible** inputs/textareas (blur saves); locked dates show read-only `.display-val` only. UI labels use `.edit-input-ui` and `scope=report_ui`.
 - `data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"`, and `data-itm-no-import-excel="1"` on `#opr-report-root` and every section table — custom 📗/📄 controls live only in the top `.opr-controls` bar (`exportOPR()`).
+- **Responsive:** header grid stacks below 900px; wide section tables scroll horizontally below 768px.
 
 ## 6. API Actions (If Applicable)
 - `POST index.php` with `ajax_inline_edit=1`, `ajax_add_row=1`, or `ajax_delete_row=1` + `csrf_token`. UI labels: `scope=report_ui`, `json_path` (dot notation), `field=report_ui_json`.
