@@ -1221,6 +1221,36 @@ function itm_ipam_can_bulk_generate_subnet(int $prefixLength): bool
 }
 
 /**
+ * Why: Subnet view and index list share the same bulk-generate labels and confirm copy.
+ *
+ * @return array{can_generate:bool,max_hosts:int,host_total:int,is_capped:bool,confirm_message:string,button_label:string}
+ */
+function itm_ipam_subnet_bulk_generate_ui(int $prefixLength): array
+{
+    $maxHosts = itm_ipam_subnet_bulk_generate_max_hosts($prefixLength);
+    $canGenerate = $maxHosts > 0;
+    $hostTotal = ($prefixLength >= 0 && $prefixLength <= 30)
+        ? max(0, (int)(2 ** (32 - $prefixLength)) - 2)
+        : 0;
+    $isCapped = $canGenerate && $hostTotal > $maxHosts;
+    $confirmMessage = $isCapped
+        ? 'Generate up to ' . $maxHosts . ' host IPs (first usable addresses in this subnet)? Existing IPs are kept.'
+        : 'Generate all host IPs for this subnet? Existing IPs are kept.';
+    $buttonLabel = $isCapped
+        ? 'Generate host IPs (up to ' . $maxHosts . ')'
+        : 'Generate host IPs';
+
+    return [
+        'can_generate' => $canGenerate,
+        'max_hosts' => $maxHosts,
+        'host_total' => $hostTotal,
+        'is_capped' => $isCapped,
+        'confirm_message' => $confirmMessage,
+        'button_label' => $buttonLabel,
+    ];
+}
+
+/**
  * Why: Subnet view should show the same totals/range users see in external CIDR calculators.
  *
  * @return array<string, mixed>|null

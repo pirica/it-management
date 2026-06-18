@@ -253,7 +253,7 @@ if ($crud_action === 'delete') {
 
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
-    && $crud_action === 'view'
+    && in_array($crud_action, ['view', 'index', 'list_all'], true)
     && isset($_POST['generate_subnet_ips'])
 ) {
     cr_require_valid_csrf_token();
@@ -273,7 +273,11 @@ if (
         $_SESSION['crud_error'] = 'Invalid subnet selected for bulk generate.';
     }
 
-    header('Location: ' . $modulePath . '/view.php?id=' . max(1, $subnetId));
+    if ($crud_action === 'view') {
+        header('Location: ' . $modulePath . '/view.php?id=' . max(1, $subnetId));
+    } else {
+        header('Location: ' . $listUrl);
+    }
     exit;
 }
 
