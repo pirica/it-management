@@ -530,10 +530,10 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="idfs_sync_human_test.php">idfs_sync_human_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>End-to-end HTTP regression for IDF rack/device flows; asserts sync across <code>idf_ports</code>, <code>switch_ports</code>, <code>equipment</code>, <code>idf_links</code>. <strong>Mutates DB:</strong> creates temporary equipment/port/position/link rows and removes temporary artifacts at the end.</td>
+                    <td>End-to-end HTTP regression for IDF rack/device flows; asserts sync across <code>idf_ports</code>, <code>switch_ports</code>, <code>equipment</code>, <code>idf_links</code>. <strong>Mutates DB:</strong> creates temporary equipment/port/position/link rows and removes temporary artifacts at the end. After login, POSTs to <code>index.php</code> so session <code>company_id</code> matches <code>ITM_COMPANY_ID</code>.</td>
                     <td>
                         CLI (recommended): <code>php scripts/idfs_sync_human_test.php</code><br>
-                        Optional env: <code>ITM_BASE_URL</code>, <code>ITM_USER</code>, <code>ITM_PASS</code>, <code>ITM_COMPANY_ID</code>, <code>ITM_IDF_ID</code>.<br>
+                        Optional env: <code>ITM_BASE_URL</code>, <code>ITM_USER</code>, <code>ITM_PASS</code>, <code>ITM_COMPANY_ID</code>, <code>ITM_IDF_ID</code> (auto-resolved when the pair is missing).<br>
                         Browser: HTML log with <strong>← Scripts index</strong> and module/table links (debugging). Required before IDF-related PRs per AGENTS.md.
                     </td>
                 </tr>
@@ -1144,7 +1144,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_update_port_zero_row.php">verify_update_port_zero_row.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>includes/update_port.php</code>: zero-row tenant-scoped UPDATE returns HTTP 404 before any IDF auto-sync (idf_ports row count unchanged).</td>
+                    <td>Regression for <code>includes/update_port.php</code>: zero-row tenant-scoped UPDATE returns HTTP 404 before any IDF auto-sync (idf_ports row count unchanged). Creates disposable probe equipment when the tenant has no switch_ports rows. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
                     <td><code>php scripts/verify_update_port_zero_row.php</code></td>
                 </tr>
                 <tr>

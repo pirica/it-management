@@ -261,6 +261,10 @@ php scripts/verify_update_port_zero_row.php
 php scripts/idfs_sync_human_test.php
 ```
 
+**`verify_update_port_zero_row.php`:** asserts HTTP `404` on zero-row `update_port.php` before IDF auto-sync. Creates disposable probe equipment + `switch_ports` row when the tenant has none. Optional env: `ITM_TEST_COMPANY_ID` (default `1`).
+
+**`idfs_sync_human_test.php`:** after Admin login, POSTs to `index.php` to align session `company_id` with `ITM_COMPANY_ID` (login otherwise pre-selects the first active company alphabetically). When `ITM_COMPANY_ID` / `ITM_IDF_ID` do not match an active IDF row, resolves the first active IDF in the database.
+
 #### API tier rate-limit regression (`apitest_tier_*.php`)
 
 | Script | Purpose |

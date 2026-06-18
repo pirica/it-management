@@ -18,8 +18,10 @@
  *   ITM_DB_USER    (default: root)
  *   ITM_DB_PASS    (default: itmanagement)
  *   ITM_DB_NAME    (default: itmanagement)
- *   ITM_COMPANY_ID (default: 4)
- *   ITM_IDF_ID     (default: 4)
+ *   ITM_COMPANY_ID (default: 4; auto-resolved with ITM_IDF_ID when pair missing)
+ *   ITM_IDF_ID     (default: 4; auto-resolved with ITM_COMPANY_ID when pair missing)
+ *
+ * After login, POSTs to index.php to set session company_id (Admin login otherwise picks the first active company).
  */
 
 declare(strict_types=1);
@@ -176,6 +178,80 @@ function itm_test_extract_csrf($html)
         return trim((string)$matches[1]);
     }
     return '';
+}
+
+/**
+ * Why: Admin login pre-selects the first active company alphabetically; HTTP tests must match ITM_COMPANY_ID.
+ */
+function itm_test_select_company_in_session($baseUrl, $cookieFile, $companyId)
+{
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return;
+    }
+
+    $indexStatus = 0;
+    $indexHtml = itm_test_http_request(
+        'GET',
+        rtrim($baseUrl, '/') . '/index.php',
+        $cookieFile,
+        null,
+        [],
+        $indexStatus
+    );
+    itm_test_assert($indexStatus === 200, 'Company selection page is reachable for tenant switch');
+    $indexCsrf = itm_test_extract_csrf($indexHtml);
+    itm_test_assert($indexCsrf !== '', 'CSRF token extracted from company selection page');
+
+    $selectStatus = 0;
+    itm_test_http_request(
+        'POST',
+        rtrim($baseUrl, '/') . '/index.php',
+        $cookieFile,
+        http_build_query([
+            'csrf_token' => $indexCsrf,
+            'company_id' => $companyId,
+        ]),
+        ['Content-Type: application/x-www-form-urlencoded'],
+        $selectStatus
+    );
+    itm_test_assert($selectStatus === 302 || $selectStatus === 200, 'Company selection POST completed for company_id=' . $companyId);
+}
+
+/**
+ * @return array{company_id:int,idf_id:int}
+ */
+function itm_test_resolve_company_and_idf($db, $companyId, $idfId)
+{
+    $companyId = (int)$companyId;
+    $idfId = (int)$idfId;
+
+    if ($companyId > 0 && $idfId > 0) {
+        $row = itm_test_db_one(
+            $db,
+            'SELECT id, company_id FROM idfs WHERE id = ? AND company_id = ? AND active = 1 LIMIT 1',
+            'ii',
+            [$idfId, $companyId]
+        );
+        if (is_array($row)) {
+            return ['company_id' => (int)$row['company_id'], 'idf_id' => (int)$row['id']];
+        }
+    }
+
+    $fallback = itm_test_db_one(
+        $db,
+        'SELECT id, company_id FROM idfs WHERE active = 1 ORDER BY company_id ASC, id ASC LIMIT 1',
+        '',
+        []
+    );
+    if (!is_array($fallback)) {
+        itm_test_fail('No active IDF rows available for human sync test.');
+    }
+
+    return [
+        'company_id' => (int)$fallback['company_id'],
+        'idf_id' => (int)$fallback['id'],
+    ];
 }
 
 function itm_test_fetch_idf_view($baseUrl, $idfId, $cookieFile)
@@ -979,6 +1055,10 @@ itm_test_browser_init();
 
 try {
     $db = itm_test_db_connect();
+    $resolvedTenant = itm_test_resolve_company_and_idf($db, $companyId, $idfId);
+    $companyId = (int)$resolvedTenant['company_id'];
+    $idfId = (int)$resolvedTenant['idf_id'];
+    itm_test_out('[INFO] Using company_id=' . $companyId . ' idf_id=' . $idfId . ' for HTTP sync test.');
     $switchLabelColumn = itm_test_switch_label_column($db);
 
     $statusUpId = itm_test_lookup_status_id($db, $companyId, 'Up');
@@ -1030,6 +1110,8 @@ try {
         $loginStatus
     );
     itm_test_assert($loginStatus === 302 || $loginStatus === 200, 'Login request completed');
+
+    itm_test_select_company_in_session($baseUrl, $cookieFile, $companyId);
 
     $idfViewStatus = 0;
     $idfViewHtml = itm_test_http_request(
