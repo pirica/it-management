@@ -383,16 +383,16 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
 
-#### License Management (mandatory)
+#### Licence Management (mandatory)
 
-The license management module (`modules/license_management/`) tracks software licenses per company.
+The licence management module (`modules/license_management/`) tracks software licences per company. UI copy uses UK English (en-GB): **Licence** (noun), **Licence Key**; module slug remains `license_management`.
 
 1. **Tables:** **`license_management`** (CRUD module table) and seed-only **`license_types`** lookup (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`). There is **no** separate `modules/license_types/` admin module — maintain lookup seeds in `database.sql` and cross-company `INSERT IGNORE` replication.
 2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`active`** defaults to **1**.
 3. **Foreign keys:** **`license_type_id`** → `license_types` (**RESTRICT** on delete); **`supplier_id`** → `suppliers` (**SET NULL** on delete).
 4. **Price:** Accepts `.` as decimal separator; **comma is converted to dot** on POST and Excel import (`cr_normalize_price_input()`).
 5. **Dates:** Stored as MySQL `DATE`; list/view/import display **dd/mm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
-6. **FK labels:** List/view must show **Type** and **Supplier** names (not raw IDs) via `itm_fk_label_by_id()` / `cr_fk_label_by_id()`. Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
+6. **FK labels:** List/view must show **Type** and **Supplier** names (not raw IDs) via `itm_fk_label_by_id()` / `cr_fk_label_by_id()`. Form field order: Name, Licence Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
 7. **Standard CRUD:** Flattened departments scaffold — bulk delete, search, pagination, Excel import/export (`import_excel_rows` on `index.php`), empty-state sample data from `database.sql`.
 8. **Audit logging:** `database.sql` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
 9. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/module_browser_qa_runner.php --module=license_management --company=1`.

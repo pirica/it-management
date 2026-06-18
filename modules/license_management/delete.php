@@ -6,7 +6,7 @@
  */
 
 $crud_table = 'license_management';
-$crud_title = 'License Management';
+$crud_title = 'Licence Management';
 $crud_action = 'delete';
 ?>
 <?php
