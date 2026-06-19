@@ -62,8 +62,11 @@ if ($companyId <= 0) {
 }
 
 $resetLink = BASE_URL . 'reset-password.php?token=xyz123';
+$safeResetLink = htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8');
 $subject = 'Reset your password (Test)';
-$html = '<p>This is a test password-reset email. Use the button below to open the reset page.</p>';
+$html = '<p>This is a test password-reset email. Use the button below to open the reset page.</p>'
+    . '<p>If the button does not work, copy and paste this link into your browser:</p>'
+    . '<p style="word-break:break-all;"><a href="' . $safeResetLink . '" style="color:#0969da;">' . $safeResetLink . '</a></p>';
 
 $nl = itm_script_output_nl();
 echo 'Company ID: ' . (int)$companyId . $nl;
