@@ -73,9 +73,9 @@ $output = run_isolated_post(realpath(__DIR__ . '/../modules/employees/delete.php
 
 $res = mysqli_query($conn, "SELECT id FROM employees WHERE id = $victimId");
 if (mysqli_num_rows($res) === 0) {
-    echo colorText("[FAIL] Users Module: Regular user successfully deleted another user via IDOR!", 'fail') . $nl;
+    echo colorText("[FAIL] Employees module: Regular user successfully deleted another employee via IDOR!", 'fail') . $nl;
 } else {
-    echo colorText("[PASS] Users Module: IDOR deletion blocked. Output: $output", 'pass') . $nl;
+    echo colorText("[PASS] Employees module: IDOR deletion blocked. Output: $output", 'pass') . $nl;
 }
 
 itm_script_output_end();

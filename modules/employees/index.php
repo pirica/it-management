@@ -23,6 +23,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
+require_once '../../includes/itm_employees_auth_sensitive_fields.php';
 
 // Lazy-initialize required tables if missing
 esa_ensure_table($conn);
@@ -592,8 +593,8 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
 }
 
 $preferredOrder = ['id','duplicate','external_id','employee_code','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
-$hiddenColumns = ['company_id','location','user_id'];
-$hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()));
+$hiddenColumns = ['company_id', 'location'];
+$hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()), itm_employees_auth_sensitive_field_names());
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
 
 usort($columns, function ($a, $b) use ($preferredOrder) {

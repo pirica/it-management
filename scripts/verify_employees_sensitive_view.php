@@ -22,6 +22,54 @@ $nl = itm_script_output_nl();
 $companyId = 1;
 $failed = false;
 
+/**
+ * Why: Subprocess include mirrors browser session without mutating the runner process.
+ */
+function verify_employees_sensitive_run_isolated($scriptPath, array $session, array $get = [])
+{
+    $sessionExport = var_export($session, true);
+    $getExport = var_export($get, true);
+    $dir = var_export(dirname($scriptPath), true);
+    $base = var_export(basename($scriptPath), true);
+    $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+\$_SESSION = {$sessionExport};
+\$_GET = {$getExport};
+chdir({$dir});
+ob_start();
+include {$base};
+echo ob_get_clean();
+";
+    $tmpFile = tempnam(sys_get_temp_dir(), 'verify_employees_sensitive');
+    file_put_contents($tmpFile, $code);
+    $output = [];
+    exec(PHP_BINARY . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
+    unlink($tmpFile);
+
+    return implode("\n", $output);
+}
+
+function verify_employees_sensitive_html_leaks($html, $secretToken)
+{
+    if ($secretToken !== '' && strpos($html, $secretToken) !== false) {
+        return true;
+    }
+    if (stripos($html, 'reset token hash') !== false || stripos($html, '>Reset Token<') !== false) {
+        return true;
+    }
+    if (stripos($html, '>Password<') !== false && stripos($html, 'password generator') === false) {
+        return true;
+    }
+    if (stripos($html, '>Vault Key Hash<') !== false) {
+        return true;
+    }
+
+    return false;
+}
+
 $testUser = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-employees-sensitive-view']);
 if (!is_array($testUser)) {
     echo colorText('[FAIL] Unable to create disposable test employee.', 'fail') . $nl;
@@ -75,37 +123,28 @@ if (!is_array($adminRow)) {
         'employee_id' => (int)$adminRow['id'],
         'username' => (string)$adminRow['username'],
     ];
-    $get = ['id' => $employeeId];
-    $extraGlobals = ['crud_action' => 'view'];
 
-    $scriptPath = ROOT_PATH . 'modules/employees/index.php';
-    $code = "<?php
-define('ITM_CLI_SCRIPT', true);
-if (session_status() === PHP_SESSION_NONE) session_start();
-\$_SESSION['company_id'] = " . var_export($companyId, true) . ";
-\$_SESSION['employee_id'] = " . var_export((int)$adminRow['id'], true) . ";
-\$_SESSION['username'] = " . var_export((string)$adminRow['username'], true) . ";
-\$_GET['id'] = " . var_export($employeeId, true) . ";
-\$crud_table = 'employees';
-\$crud_title = 'Employees';
-\$crud_action = 'view';
-chdir(" . var_export(dirname($scriptPath), true) . ");
-ob_start();
-include " . var_export(basename($scriptPath), true) . ";
-echo ob_get_clean();
-";
-    $tmpFile = tempnam(sys_get_temp_dir(), 'verify_employees_view');
-    file_put_contents($tmpFile, $code);
-    $output = [];
-    exec(PHP_BINARY . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
-    unlink($tmpFile);
-    $html = implode("\n", $output);
-
-    if (strpos($html, $secretToken) !== false || stripos($html, 'reset token hash') !== false || stripos($html, '>Reset Token<') !== false) {
-        echo colorText('[FAIL] VULNERABLE: Employees view HTML exposes reset-token fields.', 'fail') . $nl;
+    $viewHtml = verify_employees_sensitive_run_isolated(
+        ROOT_PATH . 'modules/employees/view.php',
+        $session,
+        ['id' => $employeeId]
+    );
+    if (verify_employees_sensitive_html_leaks($viewHtml, $secretToken)) {
+        echo colorText('[FAIL] VULNERABLE: Employees view.php HTML exposes reset-token fields.', 'fail') . $nl;
         $failed = true;
     } else {
-        echo colorText('[PASS] Employees view HTML omits reset-token columns.', 'pass') . $nl;
+        echo colorText('[PASS] Employees view.php omits reset-token columns.', 'pass') . $nl;
+    }
+
+    $listHtml = verify_employees_sensitive_run_isolated(
+        ROOT_PATH . 'modules/employees/index.php',
+        $session
+    );
+    if (verify_employees_sensitive_html_leaks($listHtml, $secretToken)) {
+        echo colorText('[FAIL] VULNERABLE: Employees index list HTML exposes auth-sensitive columns.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] Employees index list omits auth-sensitive columns.', 'pass') . $nl;
     }
 }
 

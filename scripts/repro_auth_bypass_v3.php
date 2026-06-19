@@ -123,12 +123,12 @@ if (strpos($output, 'Companies Management') !== false) {
     echo colorText('[PASS] Companies Module: Access restricted.', 'pass') . $nl;
 }
 
-echo '2. Testing Users Module Access for non-admin user...' . $nl;
+echo '2. Testing Employees module access for non-admin user...' . $nl;
 $output = repro_auth_bypass_run_isolated(__DIR__ . '/../modules/employees/index.php', $session);
-if (strpos($output, 'Users Management') !== false) {
-    echo colorText('[FAIL] Users Module: Non-admin user can access management page.', 'fail') . $nl;
+if (strpos($output, 'Employees Management') !== false) {
+    echo colorText('[FAIL] Employees module: Non-admin user can access management page.', 'fail') . $nl;
 } else {
-    echo colorText('[PASS] Users Module: Access restricted.', 'pass') . $nl;
+    echo colorText('[PASS] Employees module: Access restricted.', 'pass') . $nl;
 }
 
 echo '3. Testing Company Deletion for non-admin user...' . $nl;

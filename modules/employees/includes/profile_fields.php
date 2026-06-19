@@ -7,7 +7,6 @@
 $empPhotoEmployee = [
     'id' => (int)($employee['id'] ?? ($form['id'] ?? 0)),
     'username' => (string)($form['username'] ?? ($employee['username'] ?? '')),
-    'user_id' => (int)($form['user_id'] ?? ($employee['user_id'] ?? 0)),
     'photo' => (string)($form['photo'] ?? ($employee['photo'] ?? '')),
 ];
 $empPhotoUrl = emp_profile_photo_url($empPhotoEmployee);

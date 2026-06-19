@@ -113,7 +113,6 @@ $form = [
     'birthday' => (string)($employee['birthday'] ?? ''),
     'hide_year' => (string)($employee['hide_year'] ?? '0'),
     'photo' => (string)($employee['photo'] ?? ''),
-    'user_id' => (string)($employee['user_id'] ?? ''),
 ];
 
 // Load current permission IDs
@@ -176,7 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $photoEmployee = [
                 'id' => (int)$id,
                 'username' => $form['username'],
-                'user_id' => (int)($employee['user_id'] ?? 0),
                 'photo' => (string)($employee['photo'] ?? ''),
             ];
             $photoResult = emp_profile_photo_store_upload((int)$company_id, $photoEmployee, $_FILES['photo']);

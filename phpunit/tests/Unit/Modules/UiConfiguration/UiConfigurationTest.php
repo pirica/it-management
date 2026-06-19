@@ -40,7 +40,7 @@ class UiConfigurationTest extends TestCase
         // 1. Create
         $data = [];
         $user = $this->getOrCreateUser();
-        $data['user_id'] = $user['id'];
+        $data['employee_id'] = $user['id'];
         $data['company_id'] = $user['company_id'];
 
         $data['table_actions_position'] = 'left';
@@ -59,7 +59,7 @@ class UiConfigurationTest extends TestCase
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
-        $bindValues[] = $data['user_id'];
+        $bindValues[] = $data['employee_id'];
         $bindValues[] = $data['table_actions_position'];
         $bindValues[] = $data['new_button_position'];
         $bindValues[] = $data['export_buttons_position'];
