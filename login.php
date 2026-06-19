@@ -9,6 +9,7 @@
 
 session_start();
 include('config/config.php');
+require_once __DIR__ . '/includes/itm_employee_employment_status.php';
 $csrfToken = itm_get_csrf_token();
 
 /**
@@ -93,12 +94,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         itm_record_login_attempt($conn, 'failure', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, null);
         $error = 'Too many login attempts. Please wait a few minutes and try again.';
     } else {
+        $join = itm_employee_active_employment_status_join_sql('e', 'es');
+        $activePredicate = itm_employee_active_employment_status_predicate_sql('es');
         $stmt = mysqli_prepare(
             $conn,
             'SELECT e.id, e.password, e.work_email, e.personal_email, e.username, er.name AS role_name
-             FROM employees e
-             LEFT JOIN employee_roles er ON e.role_id = er.id
-             WHERE e.active = 1
+             FROM employees e'
+            . $join .
+            ' LEFT JOIN employee_roles er ON e.role_id = er.id
+             WHERE ' . $activePredicate . '
                AND e.password IS NOT NULL
                AND (
                     LOWER(COALESCE(e.work_email, "")) = LOWER(?)
@@ -194,26 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
-            $statusStmt = mysqli_prepare(
-                $conn,
-                'SELECT 1
-                 FROM employees e
-                 INNER JOIN employee_statuses es ON es.id = e.employment_status_id
-                 WHERE e.id = ?
-                   AND e.active = 1
-                   AND LOWER(TRIM(COALESCE(es.name, ""))) = "active"
-                 LIMIT 1'
-            );
-            $hasActiveEmployeeMatch = false;
-            if ($statusStmt) {
-                mysqli_stmt_bind_param($statusStmt, 'i', $employeeId);
-                mysqli_stmt_execute($statusStmt);
-                $statusRes = mysqli_stmt_get_result($statusStmt);
-                $hasActiveEmployeeMatch = $statusRes && mysqli_num_rows($statusRes) > 0;
-                mysqli_stmt_close($statusStmt);
-            }
-
-            if (!$hasActiveEmployeeMatch) {
+            if (!itm_employee_has_active_employment_status($conn, $employeeId)) {
                 $_SESSION['read_only_user_config'] = 1;
                 header('Location: user-config.php');
                 exit();

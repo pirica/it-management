@@ -99,10 +99,10 @@ if (!function_exists('itm_script_test_employee_create')) {
         $password = isset($options['password']) ? (string)$options['password'] : 'script-test-pass';
         $roleId = isset($options['role_id']) ? (int)$options['role_id'] : 2;
         $accessLevelId = isset($options['access_level_id']) ? (int)$options['access_level_id'] : 2;
-        $active = isset($options['active']) ? (int)$options['active'] : 1;
+        $employmentStatusId = isset($options['employment_status_id']) ? (int)$options['employment_status_id'] : 1;
 
-        $sql = 'INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)';
+        $sql = 'INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return null;
@@ -110,7 +110,7 @@ if (!function_exists('itm_script_test_employee_create')) {
 
         $firstName = isset($options['first_name']) ? trim((string)$options['first_name']) : 'Script';
         $lastName = isset($options['last_name']) ? trim((string)$options['last_name']) : 'Test';
-        mysqli_stmt_bind_param($stmt, 'isssssiii', $companyId, $firstName, $lastName, $username, $email, $password, $roleId, $accessLevelId, $active);
+        mysqli_stmt_bind_param($stmt, 'isssssiii', $companyId, $firstName, $lastName, $username, $email, $password, $roleId, $accessLevelId, $employmentStatusId);
         if (!mysqli_stmt_execute($stmt)) {
             mysqli_stmt_close($stmt);
             return null;

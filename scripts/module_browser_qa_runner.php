@@ -3767,12 +3767,15 @@ function mbqa_qa_admin_user_id(mysqli $conn): int
     }
 
     $loginId = mbqa_qa_login_identifier();
+    require_once dirname(__DIR__) . '/includes/itm_employee_employment_status.php';
+    $join = itm_employee_active_employment_status_join_sql('e', 'es');
+    $predicate = itm_employee_active_employment_status_predicate_sql('es');
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT id FROM employees WHERE active = 1 AND password IS NOT NULL AND (
-            LOWER(COALESCE(work_email, "")) = LOWER(?)
-            OR LOWER(COALESCE(personal_email, "")) = LOWER(?)
-            OR LOWER(COALESCE(username, "")) = LOWER(?)
+        'SELECT e.id FROM employees e' . $join . ' WHERE e.password IS NOT NULL AND ' . $predicate . ' AND (
+            LOWER(COALESCE(e.work_email, "")) = LOWER(?)
+            OR LOWER(COALESCE(e.personal_email, "")) = LOWER(?)
+            OR LOWER(COALESCE(e.username, "")) = LOWER(?)
         ) LIMIT 1'
     );
     if (!$stmt) {
@@ -5648,7 +5651,7 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
 
 $mbqaAdminUserId = mbqa_qa_admin_user_id($conn);
 if ($mbqaAdminUserId <= 0) {
-    mbqa_err('QA login identifier ' . mbqa_qa_login_identifier() . ' not found in employees table (active row required).' . "\n");
+    mbqa_err('QA login identifier ' . mbqa_qa_login_identifier() . ' not found in employees table (Active employment status + password required).' . "\n");
     exit(1);
 }
 $_SESSION['employee_id'] = $mbqaAdminUserId;

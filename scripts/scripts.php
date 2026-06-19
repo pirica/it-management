@@ -879,7 +879,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_employee_auth_merge.php">verify_employee_auth_merge.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression after merging <code>users</code> into <code>employees</code>: renamed junction tables, admin seed login row, <code>employee_companies</code> links, and absence of legacy <code>users</code> / <code>employees.user_id</code>.</td>
+                    <td>Regression after merging <code>users</code> into <code>employees</code>: renamed junction tables, admin seed login row (Active employment status), <code>employee_companies</code> links, and absence of legacy <code>users</code>, <code>employees.user_id</code>, and <code>employees.active</code>.</td>
                     <td><code>php scripts/verify_employee_auth_merge.php</code>. Run after changing auth/session bootstrap, <code>database.sql</code> employee auth columns, or login/register/reset flows.</td>
                 </tr>
                 <tr>

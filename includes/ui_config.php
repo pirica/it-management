@@ -99,7 +99,6 @@ function itm_sidebar_base_structure() {
                 ['id' => 'inventory_items', 'label' => '📦 Inventory', 'href' => 'modules/inventory_items/', 'match_dir' => 'inventory_items'],
                 ['id' => 'visitors_access_log', 'label' => '📝 Visitors Access Log', 'href' => 'modules/visitors_access_log/', 'match_dir' => 'visitors_access_log'],
                 ['id' => 'backup_tape_log', 'label' => '📼 Backup Tape Log', 'href' => 'modules/backup_tape_log/', 'match_dir' => 'backup_tape_log'],
-                ['id' => 'employees', 'label' => '👥 Users', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
                 ['id' => 'companies', 'label' => '🌍 Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
                 ['id' => 'company_module_access', 'label' => '🧩 Company Module Access', 'href' => 'modules/company_module_access/', 'match_dir' => 'company_module_access'],
             ],

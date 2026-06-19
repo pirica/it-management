@@ -1,7 +1,7 @@
 # AGENT_NOTES.md - Employees
 
 ## 1. Module Purpose
-The central module for managing employee records, including contact info, hierarchy, and employment details.
+The central module for managing employee records, including contact info, hierarchy, employment details, and **login accounts** (auth columns live on `employees` after the users-table merge).
 
 ## 2. Key Tables
 - **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id`, `termination_date` among profile fields).
@@ -16,12 +16,16 @@ The central module for managing employee records, including contact info, hierar
 - **employees** → feeds **resignations** read-only weekly report via `termination_date`, `start_date`, `employment_status_id`, and `employee_type_id` (same company scope).
 - **employees** → optionally depends on **it_locations** via `location_id`.
 - **employees** → self-references via `reports_to`.
-- **employees** → optionally links to **users** via `employee_id`.
+- **employees** → links to **employee_roles** (`role_id`), **access_levels** (`access_level_id`), and **employee_statuses** (`employment_status_id`).
+- **employees** → referenced by **employee_companies**, **employee_sidebar_preferences**, session auth (`$_SESSION['employee_id']`), and audit `@app_employee_id`.
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
-- **Org Chart Visibility:** Only employees with `on_orgchart = 1` and an active status are shown on the Org Chart.
-- **Contact Visibility:** Only employees with `on_contacts = 1` and an active status are shown in the Contacts module.
+- **Org Chart Visibility:** Only employees with `on_orgchart = 1` and an active employment status are shown on the Org Chart.
+- **Contact Visibility:** Only employees with `on_contacts = 1` and an active employment status are shown in the Contacts module.
+- **Login eligibility (mandatory):** use `employment_status_id` → `employee_statuses.name` = **Active** (case-insensitive) via `includes/itm_employee_employment_status.php`. Do **not** use a deprecated `employees.active` column — `emp_drop_active_column_if_exists()` removes it on index load.
+- **List scope:** index lists every employee row for the active session `company_id` only (`WHERE e.company_id = ?`). There is **no** admin exclusion and **no** protection-zone filter on the list query. The seed admin row (`id=1`, `company_id=1`) appears like any other employee; with default sort `id DESC` and many rows, it may sit on the **last** pagination page.
+- **Sidebar label:** sidebar catalog entry id `employees` must appear **once** in `itm_sidebar_base_structure()` (Employee section → `👤 Employees`). A duplicate Admin-section item with the same id previously overwrote the label as `👥 Users`.
 - **Unique Code:** `employee_code` should be unique per company if provided.
 - **Import (mandatory):**
   - Header aliases: `Hilton ID` → `external_id`, `Position Title` → `employee_position_id`, `Department Name` → `department_id`, sort markers like `Id▼` → `id`.
@@ -33,7 +37,8 @@ The central module for managing employee records, including contact info, hierar
   - **Termination date:** `termination_date` nullable `date` on create/edit/view/list (`includes/profile_termination_date_field.php`, after Employee Type). Display and import use **dd/mm/yyyy** via `itm_format_date_display()` / `itm_parse_date_input()`. Drives **Resignations** weekly report (`modules/resignations/`) when set to a valid calendar date; downstream SQL must use `itm_sql_valid_date_predicate('e.termination_date')`, not `<> '0000-00-00'` (MySQL 8 `NO_ZERO_DATE`).
   - **Start date:** `start_date` date field after request fields; import aliases `start date`, `admission date`.
   - **Employee code / IT location / request fields:** optional nullable columns (`employee_code`, `location_id` → `it_locations`, `request_date`, `requested_by`, `termination_requested_by`) on create/edit/view/list; import accepts `employee code`, `it location`, `location`, `request date`, `requested by`, `termination requested by`.
-- **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id` (no linked login account required). Legacy photos under `{username}_{user_id}` still resolve when `employees.user_id` is set. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
+- **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id`. Pre-merge installs may still have files under `{username}_{legacy_id}/profile/`; `emp_profile_photo_serve_path()` checks the canonical path first. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
+- **Auth-sensitive columns:** list/view hide `password`, `vault_key_hash`, and reset-token fields via `includes/itm_employees_auth_sensitive_fields.php`.
 - **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
 ## 5. UI Behavior Requirements

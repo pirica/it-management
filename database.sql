@@ -1113,7 +1113,6 @@ CREATE TABLE `employees` (
   `birthday` date DEFAULT NULL,
   `hide_year` tinyint(1) NOT NULL DEFAULT '0',
   `raw_status_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -1150,7 +1149,7 @@ CREATE TABLE `employees` (
 ) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `employees` (admin login identity merged from former users row id=1)
-INSERT INTO `employees` (`id`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `username`, `password`, `role_id`, `access_level_id`, `employment_status_id`, `active`, `created_at`) VALUES ('1', '1', 'System', 'Admin', 'System Admin', 'admin@techcorp.example', 'admin', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', '1', '1', '1', '1', '2026-01-01 00:00:01');
+INSERT INTO `employees` (`id`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `username`, `password`, `role_id`, `access_level_id`, `employment_status_id`, `created_at`) VALUES ('1', '1', 'System', 'Admin', 'System Admin', 'admin@techcorp.example', 'admin', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', '1', '1', '1', '2026-01-01 00:00:01');
 -- Table structure for `equipment`
 DROP TABLE IF EXISTS `equipment`;
 CREATE TABLE `equipment` (

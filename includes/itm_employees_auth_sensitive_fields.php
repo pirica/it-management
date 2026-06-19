@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared list/view column policy for the Users module.
+ * Shared list/view column policy for the Employees module (auth columns on employees).
  */
 
 function itm_employees_auth_sensitive_field_names()
@@ -20,7 +20,7 @@ function itm_employees_auth_is_sensitive_field($fieldName)
 }
 
 /**
- * Filters Users module list/view columns; credential and reset-token fields never render.
+ * Filters Employees list/view columns; credential and reset-token fields never render.
  */
 function itm_employees_auth_filter_ui_columns(array $columns)
 {

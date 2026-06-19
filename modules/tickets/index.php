@@ -10,6 +10,7 @@
  */
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require __DIR__ . '/sample_seed_helpers.php';
 
 /**
@@ -100,7 +101,12 @@ function tickets_import_default_user_id(mysqli $conn, int $companyId): int
         }
     }
 
-    $fallback = mysqli_query($conn, 'SELECT id FROM employees WHERE active = 1 ORDER BY id ASC LIMIT 1');
+    $join = itm_employee_active_employment_status_join_sql('e', 'es');
+    $predicate = itm_employee_active_employment_status_predicate_sql('es');
+    $fallback = mysqli_query(
+        $conn,
+        'SELECT e.id FROM employees e' . $join . ' WHERE ' . $predicate . ' ORDER BY e.id ASC LIMIT 1'
+    );
     $fallbackRow = $fallback ? mysqli_fetch_assoc($fallback) : null;
 
     return $fallbackRow ? (int)($fallbackRow['id'] ?? 0) : 0;

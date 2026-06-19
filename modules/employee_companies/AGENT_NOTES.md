@@ -1,13 +1,13 @@
 # AGENT_NOTES.md - Employee Companies
 
 ## 1. Module Purpose
-Maps users to companies they may access after login. Drives the company picker on dashboard/login and complements each user's primary `users.company_id`.
+Maps employees (login accounts) to companies they may access after login. Drives the company picker on dashboard/login and complements each employee's primary `employees.company_id`.
 
 ## 2. Key Tables
 - **employee_companies** — `employee_id`, `company_id`, `granted_by_employee_id`, `active`.
 
 ## 3. Required Relationships
-- **employee_companies** → depends on **users**, **companies**.
+- **employee_companies** → depends on **employees**, **companies**.
 - **employee_companies** → referenced by session `company_id` selection and `itm_user_has_company_access()` helpers.
 
 ## 4. Business Rules (Critical for Agents)
@@ -41,7 +41,7 @@ Maps users to companies they may access after login. Drives the company picker o
 - Deleting admin user's last company mapping — locks admin out of tenant switcher.
 - Omitting `company_id` on DELETE — cross-tenant data loss.
 - Treating this module as per-user CRUD for regular users — typically admin-maintained.
-- Confusing with `users.company_id` primary field — both must stay consistent for login defaults.
+- Confusing with `employees.company_id` primary field — both must stay consistent for login defaults.
 
 ## 11. Examples of Safe Code Patterns
 
