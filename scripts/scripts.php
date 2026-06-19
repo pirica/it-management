@@ -264,7 +264,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Test script for Password Reset email delivery verification.</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="test_email_forgot.php">test_email_forgot.php</a>.
-                        CLI: <code>php scripts/test_email_forgot.php email=test@example.com</code>
+                        CLI: <code>php scripts/test_email_forgot.php email=test@example.com</code> or <code>php scripts/test_email_forgot.php email=test@example.com --company=1</code>
                     </td>
                 </tr>
                 <tr>
@@ -273,7 +273,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Test script for Registration Welcome email delivery verification.</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="test_register_mail.php">test_register_mail.php</a>.
-                        CLI: <code>php scripts/test_register_mail.php email=test@example.com</code>
+                        CLI: <code>php scripts/test_register_mail.php email=test@example.com</code> or <code>php scripts/test_register_mail.php email=test@example.com --company=1</code>
                     </td>
                 </tr>
                 <tr>
@@ -286,7 +286,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><a href="run_email_alert_rules.php">run_email_alert_rules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Dispatches enabled <code>email_alert_rules</code> (warranty, license, certificate, alerts, notes, to-do, events) using tenant default SMTP.</td>
-                    <td><code>php scripts/run_email_alert_rules.php</code> or <code>php scripts/run_email_alert_rules.php --company=1</code>. Schedule via cron; admin browser access.</td>
+                    <td><code>php scripts/run_email_alert_rules.php</code>, <code>php scripts/run_email_alert_rules.php --company=1</code>, or <code>php scripts/run_email_alert_rules.php --verbose</code>. Schedule via cron; admin browser access. Use <code>--verbose</code> when dispatched count is 0 to see per-rule match notes.</td>
                 </tr>
                 <tr>
                     <td><a href="../js/itm-user-errors.js">itm-user-errors.js</a></td>

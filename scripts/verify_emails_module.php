@@ -116,6 +116,53 @@ if (is_file(dirname(__DIR__) . '/modules/emails/index.php')) {
     emails_verify_fail('modules/emails/index.php missing.');
 }
 
+$scriptFiles = ['test_email_forgot.php', 'test_register_mail.php', 'run_email_alert_rules.php'];
+foreach ($scriptFiles as $scriptFile) {
+    if (!is_file(__DIR__ . '/' . $scriptFile)) {
+        emails_verify_fail('Missing script: scripts/' . $scriptFile);
+    }
+}
+if ($failures === 0) {
+    emails_verify_pass('Email delivery test scripts present.');
+}
+
+$today = date('Y-m-d');
+$cutoff = date('Y-m-d', strtotime('+30 days'));
+$alertSeedCount = 0;
+$warrantyStmt = mysqli_prepare(
+    $conn,
+    'SELECT COUNT(*) FROM equipment
+     WHERE company_id = ? AND active = 1 AND warranty_expiry IS NOT NULL
+       AND warranty_expiry >= ? AND warranty_expiry <= ?'
+);
+if ($warrantyStmt) {
+    mysqli_stmt_bind_param($warrantyStmt, 'iss', $companyId, $today, $cutoff);
+    mysqli_stmt_execute($warrantyStmt);
+    mysqli_stmt_bind_result($warrantyStmt, $warrantyCount);
+    mysqli_stmt_fetch($warrantyStmt);
+    mysqli_stmt_close($warrantyStmt);
+    $alertSeedCount += (int)$warrantyCount;
+}
+$licenseStmt = mysqli_prepare(
+    $conn,
+    'SELECT COUNT(*) FROM license_management
+     WHERE company_id = ? AND active = 1 AND expiry_date IS NOT NULL
+       AND expiry_date >= ? AND expiry_date <= ?'
+);
+if ($licenseStmt) {
+    mysqli_stmt_bind_param($licenseStmt, 'iss', $companyId, $today, $cutoff);
+    mysqli_stmt_execute($licenseStmt);
+    mysqli_stmt_bind_result($licenseStmt, $licenseCount);
+    mysqli_stmt_fetch($licenseStmt);
+    mysqli_stmt_close($licenseStmt);
+    $alertSeedCount += (int)$licenseCount;
+}
+if ($alertSeedCount < 1) {
+    emails_verify_fail('No warranty/license rows in the 30-day alert window for company 1 (run_email_alert_rules needs seed data).');
+} else {
+    emails_verify_pass('Alert runner seed data present for company 1 (' . $alertSeedCount . ' row(s) in 30-day window).');
+}
+
 if ($failures > 0) {
     echo colorText('Verification finished with ' . $failures . ' failure(s).', 'fail') . $nl;
     exit(1);

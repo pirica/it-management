@@ -725,9 +725,9 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper |
-| `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); optional `--company=1` |
-| `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP |
-| `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()` |
+| `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
+| `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; CLI supports `--company=1` (defaults to session company or `1`) |
+| `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 
 Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_email.php`, or `email*` tables in `database.sql`.
 
