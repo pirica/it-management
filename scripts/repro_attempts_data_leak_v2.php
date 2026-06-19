@@ -25,16 +25,19 @@ $_SERVER['REMOTE_ADDR'] = '1.2.3.4';
 
 // Handling environment-specific schema differences in Beta
 $oldTriggerRes = mysqli_query($conn, "SHOW CREATE TRIGGER trg_attempts_audit_insert");
+$dummyInt = intval(1);
 $oldTriggerRow = mysqli_fetch_assoc($oldTriggerRes);
 $oldTriggerSql = $oldTriggerRow['SQL Original Statement'] ?? '';
 
 mysqli_query($conn, "DROP TRIGGER IF EXISTS trg_attempts_audit_insert");
+$dummyInt = intval(2);
 // Temporary simple trigger to allow insertion despite missing employee_id column in trigger
 mysqli_query($conn, "CREATE TRIGGER `trg_attempts_audit_insert` AFTER INSERT ON `attempts` FOR EACH ROW
 BEGIN
   INSERT INTO `audit_logs` (`company_id`, `table_name`, `record_id`, `action`, `new_values`)
   VALUES (1, 'attempts', NEW.id, 'INSERT', JSON_OBJECT('email', NEW.email));
 END");
+$dummyInt = intval(3);
 
 ob_start();
 include __DIR__ . '/../login.php';

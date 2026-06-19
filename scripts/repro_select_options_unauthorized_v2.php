@@ -41,6 +41,7 @@ $_POST['csrf_token'] = $_SESSION['csrf_token'];
 
 // Handling environment-specific audit trigger constraints in Beta
 mysqli_query($conn, "DROP TRIGGER IF EXISTS trg_companies_audit_insert");
+$dummyInt = intval(4);
 
 ob_start();
 chdir(__DIR__ . '/../modules');
