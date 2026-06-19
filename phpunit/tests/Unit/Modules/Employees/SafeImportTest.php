@@ -16,16 +16,20 @@ class SafeImportTest extends TestCase
     public function testEmployeeImportDoesNotDeleteMissingRecords()
     {
         $companyId = 1;
+        $keepEmail = 'keep@example.com';
+        $otherEmail = 'other@example.com';
 
-        // Seed
-        mysqli_query($this->conn, "DELETE FROM employees WHERE company_id = $companyId");
-        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, display_name, work_email, employment_status_id, duplicate) VALUES (?, 'Keep', 'Me', 'Keep Me', 'keep@example.com', 1, 0)");
-        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        // Seed only the rows this test owns (avoid counting protected seed employees).
+        mysqli_query($this->conn, "DELETE FROM employees WHERE company_id = $companyId AND work_email IN ('$keepEmail', '$otherEmail')");
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, display_name, work_email, employment_status_id, duplicate) VALUES (?, 'Keep', 'Me', 'Keep Me', ?, 1, 0)");
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $keepEmail);
         mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
 
-        $stmt2 = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, display_name, work_email, employment_status_id, duplicate) VALUES (?, 'Other', 'Record', 'Other Record', 'other@example.com', 1, 0)");
-        mysqli_stmt_bind_param($stmt2, 'i', $companyId);
+        $stmt2 = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, display_name, work_email, employment_status_id, duplicate) VALUES (?, 'Other', 'Record', 'Other Record', ?, 1, 0)");
+        mysqli_stmt_bind_param($stmt2, 'is', $companyId, $otherEmail);
         mysqli_stmt_execute($stmt2);
+        mysqli_stmt_close($stmt2);
 
         // Import only 'Keep Me'
         $_SESSION['employee_id'] = 1;
@@ -51,12 +55,15 @@ class SafeImportTest extends TestCase
         ob_end_clean();
         chdir($oldDir);
 
-        $stmt3 = mysqli_prepare($this->conn, "SELECT COUNT(*) as c FROM employees WHERE company_id = ?");
-        mysqli_stmt_bind_param($stmt3, 'i', $companyId);
+        $stmt3 = mysqli_prepare($this->conn, "SELECT COUNT(*) as c FROM employees WHERE company_id = ? AND work_email IN (?, ?)");
+        mysqli_stmt_bind_param($stmt3, 'iss', $companyId, $keepEmail, $otherEmail);
         mysqli_stmt_execute($stmt3);
         $countRes = mysqli_stmt_get_result($stmt3);
         $count = mysqli_fetch_assoc($countRes)['c'];
+        mysqli_stmt_close($stmt3);
 
         $this->assertEquals(2, $count, "Import should not have deleted the record missing from payload");
+
+        mysqli_query($this->conn, "DELETE FROM employees WHERE company_id = $companyId AND work_email IN ('$keepEmail', '$otherEmail')");
     }
 }

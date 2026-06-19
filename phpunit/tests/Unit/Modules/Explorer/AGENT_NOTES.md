@@ -9,7 +9,7 @@ Unit/regression tests for `modules/explorer/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity`); hidden listing entries (`testHiddenSystemEntries`); preview routing (`testPreviewModeRouting`).
+- `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity` uses `$employeeId`, not `$userId`); hidden listing entries (`testHiddenSystemEntries`); preview routing (`testPreviewModeRouting`).
 
 ## 10. Common Pitfalls
 - **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.

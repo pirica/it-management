@@ -23,7 +23,7 @@ class PasswordsFunctionalTest extends TestCase
             $this->markTestSkipped('Database connection unavailable.');
         }
 
-        $_SESSION['employee_id'] = $this->userId;
+        $_SESSION['employee_id'] = $this->employeeId;
         $this->csrfToken = itm_get_csrf_token();
     }
 

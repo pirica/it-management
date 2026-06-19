@@ -18,7 +18,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `sql_injection_detector.php` | SQLi signature tests |
 | `equipment_type_modules.php` | Canonical `is_*` allowlist and cleanup |
 | `itm_api_tier_test_helpers.php` | Disposable `ui_configuration` seed/cleanup, browser probe URL (optional `api_key`; Free uses session URL without key), `itm_apitest_publish_http_session()` for keyless HTTP probes, HTTP probe for `apitest_tier_*.php` |
-| `itm_script_test_employee.php` | Disposable `employees` rows for repro/verify scripts (`script-{slug}-{hex}`), snapshot/restore of sensitive columns, audit `@app_*` context, shutdown teardown |
+| `itm_script_test_employee.php` | Disposable `employees` rows for repro/verify scripts (`script-{slug}-{hex}`), snapshot/restore of sensitive columns, audit `@app_*` context, shutdown teardown. `itm_script_test_employee_create()` returns `id`, `username`, `email`, `company_id`, `role_id`, `access_level_id`, `employment_status_id` (no deprecated `employees.active`). |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.

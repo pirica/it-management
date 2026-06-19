@@ -11,7 +11,8 @@ CSRF, SQLi, and security guardrail tests.
 
 ## 7. File Structure
 - **VulnerabilityVerificationTest.php** — June 2026 security review regression tests (assert remediated behaviour); uses disposable users via `itm_script_test_employee_create()` for Notes ZIP traversal, Notes IDOR view, audit reset-token omission, RBAC delete on Expenses, users tenant scoping, and employee_companies admin gate checks. `createDisposableUser()` honours optional `company_id` in options (defaults to company `1`).
-- **SecurityFixesTest.php** — subprocess verification of fixed security paths; includes JSON import decimal/datetime validation tests.
+- **SecurityFixesTest.php** — subprocess verification of fixed security paths; role-escalation and sensitive-import cases seed attackers via `itm_script_test_employee_create()` (no `employees.active` column).
+- **CrossTenantScopingTest.php** — tenant isolation for Todo and Employees; disposable employee INSERT omits deprecated `employees.active`.
 
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.

@@ -99,26 +99,31 @@ echo ob_get_clean();
 
     public function testUserRoleEscalationBlocked()
     {
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
         // 1. Create a non-admin user
-        $stmt = $this->conn->prepare("INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (1, 'Test', 'User', 'attacker', 'attacker@example.com', 'pass', 5, 2, 1, 1)");
-        $stmt->execute();
-        $attacker_id = mysqli_insert_id($this->conn);
+        $attackerRow = itm_script_test_employee_create($this->conn, 1, [
+            'script_slug' => 'phpunit-role-escalation',
+            'role_id' => 5,
+        ]);
+        $this->assertIsArray($attackerRow);
+        $attacker_id = (int)$attackerRow['id'];
+        $attackerUsername = (string)$attackerRow['username'];
 
         $session = [
             'company_id' => 1,
             'employee_id' => $attacker_id,
-            'username' => 'attacker',
+            'username' => $attackerUsername,
             'csrf_token' => 'test_token'
         ];
 
         // 2. Attempt to update own role to Admin (1)
         $post = [
             'csrf_token' => 'test_token',
-            'username' => 'attacker',
-            'email' => 'attacker@example.com',
+            'username' => $attackerUsername,
+            'email' => (string)$attackerRow['email'],
             'role_id' => 1,
             'access_level_id' => 1,
-            'active' => 1
         ];
         $get = ['id' => $attacker_id];
         $globals = ['crud_action' => 'edit'];
@@ -134,9 +139,7 @@ echo ob_get_clean();
         $this->assertEquals(5, (int)$row['role_id'], "Non-admin user should not be able to update their role to Admin.");
 
         // Cleanup
-        $stmtC = $this->conn->prepare("DELETE FROM employees WHERE id = ?");
-        $stmtC->bind_param("i", $attacker_id);
-        $stmtC->execute();
+        itm_script_test_employee_delete($this->conn, $attacker_id);
     }
 
     public function testRoleModulePermissionsAdminOnly()
@@ -167,15 +170,21 @@ echo ob_get_clean();
 
     public function testSensitiveImportAdminOnly()
     {
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
         // 1. Create a non-admin user
-        $stmt = $this->conn->prepare("INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (1, 'Test', 'User', 'attacker_import', 'attacker_import@example.com', 'pass', 5, 2, 1, 1)");
-        $stmt->execute();
-        $attacker_id = mysqli_insert_id($this->conn);
+        $attackerRow = itm_script_test_employee_create($this->conn, 1, [
+            'script_slug' => 'phpunit-sensitive-import',
+            'role_id' => 5,
+        ]);
+        $this->assertIsArray($attackerRow);
+        $attacker_id = (int)$attackerRow['id'];
+        $attackerUsername = (string)$attackerRow['username'];
 
         $session = [
             'company_id' => 1,
             'employee_id' => $attacker_id,
-            'username' => 'attacker_import',
+            'username' => $attackerUsername,
             'csrf_token' => 'test_token'
         ];
 
@@ -208,7 +217,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         $this->assertFalse($result['ok'] ?? true, "Import should fail for non-admin user on sensitive table.");
 
         // Cleanup
-        $this->conn->query("DELETE FROM employees WHERE id = $attacker_id");
+        itm_script_test_employee_delete($this->conn, $attacker_id);
     }
 
     public function testRegistrationInvitationsAdminOnly()
