@@ -11,6 +11,7 @@ require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
+require_once '../../includes/itm_employees_hidden_accounts.php';
 
 // Keep system access metadata available even in partially initialized environments.
 esa_ensure_table($conn);
@@ -21,7 +22,7 @@ if ($employeeId <= 0) {
     exit;
 }
 
-$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name, ep.name AS position_name, m.display_name AS manager_name, et.name_type AS employee_type_name, il.name AS location_name '
+$sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name, ep.name AS position_name, m.display_name AS manager_name, et.name_type AS employee_type_name, il.name AS location_name, er.name AS role_name, al.name AS access_level_name '
     . 'FROM employees e '
     . 'LEFT JOIN departments d ON d.id = e.department_id '
     . 'LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id '
@@ -32,7 +33,9 @@ $sql = 'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_depar
     . 'LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id '
     . 'LEFT JOIN employees m ON m.id = e.reports_to '
     . 'LEFT JOIN it_locations il ON il.id = e.location_id AND il.company_id = e.company_id '
-    . 'WHERE e.id = ? AND e.company_id = ? '
+    . 'LEFT JOIN employee_roles er ON er.id = e.role_id AND er.company_id = e.company_id '
+    . 'LEFT JOIN access_levels al ON al.id = e.access_level_id AND al.company_id = e.company_id '
+    . 'WHERE e.id = ? AND e.company_id = ? AND e.is_hidden = 0 '
     . 'LIMIT 1';
 
 $stmt = mysqli_prepare($conn, $sql);
@@ -79,6 +82,8 @@ $profileFields = [
     'External ID' => (string)($employee['external_id'] ?? ''),
     'Employee Code' => (string)($employee['employee_code'] ?? ''),
     'Username' => (string)($employee['username'] ?? ''),
+    'Role' => (string)($employee['role_name'] ?? ''),
+    'Access Level' => (string)($employee['access_level_name'] ?? ''),
     'Department' => (string)($employee['department_name'] ?? ''),
     'IT Location' => (string)($employee['location_name'] ?? ''),
     'Office Key Card Department' => (string)($employee['office_key_card_department_name'] ?? ''),

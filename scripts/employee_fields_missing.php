@@ -129,6 +129,8 @@ function efm_view_label_map(): array
         'assignment_type_id' => ['Assignment Type', 'assignment_type_name'],
         'reports_to' => ['Reports To', 'manager_name'],
         'location_id' => ['IT Location', 'location_name'],
+        'role_id' => ['Role', 'role_name'],
+        'access_level_id' => ['Access Level', 'access_level_name'],
     ];
 }
 
@@ -189,7 +191,7 @@ $expected = efm_expected_columns_from_database_sql();
 $live = efm_live_columns($conn);
 $files = efm_module_file_map();
 
-$metaColumns = ['id', 'company_id', 'created_at', 'updated_at', 'user_id'];
+$metaColumns = ['id', 'company_id', 'created_at', 'updated_at', 'user_id', 'is_hidden'];
 $systemAccessColumns = [
     'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms',
     'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system',
@@ -198,6 +200,7 @@ $systemAccessColumns = [
 $criticalFormFields = [
     'first_name', 'last_name', 'display_name', 'work_email', 'personal_email', 'mobile_phone',
     'external_number', 'dect', 'extension', 'on_contacts', 'on_orgchart', 'external_id', 'username',
+    'role_id', 'access_level_id',
     'job_code', 'employee_position_id', 'reports_to', 'department_id', 'office_key_card_department_id',
     'raw_status_code', 'employment_status_id', 'employee_code', 'location_id',
     'request_date', 'requested_by', 'termination_requested_by',

@@ -8,6 +8,7 @@
 require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require __DIR__ . '/delete_clear_table.php';
+require_once ROOT_PATH . 'includes/itm_employees_hidden_accounts.php';
 
 /**
  * @return string|null Error message, or null when deleted successfully.
@@ -16,6 +17,22 @@ function employees_delete_record(mysqli $conn, int $companyId, int $id): ?string
 {
     if ($companyId <= 0 || $id <= 0) {
         return 'Invalid employee ID.';
+    }
+
+    $hiddenCheckStmt = mysqli_prepare($conn, 'SELECT is_hidden FROM employees WHERE id = ? AND company_id = ? LIMIT 1');
+    if (!$hiddenCheckStmt) {
+        return 'Delete failed: ' . mysqli_error($conn);
+    }
+    mysqli_stmt_bind_param($hiddenCheckStmt, 'ii', $id, $companyId);
+    mysqli_stmt_execute($hiddenCheckStmt);
+    $hiddenRes = mysqli_stmt_get_result($hiddenCheckStmt);
+    $hiddenRow = $hiddenRes ? mysqli_fetch_assoc($hiddenRes) : null;
+    mysqli_stmt_close($hiddenCheckStmt);
+    if (!$hiddenRow) {
+        return 'Record not found, or it does not belong to this company.';
+    }
+    if (itm_employees_is_hidden_account($hiddenRow)) {
+        return 'Protected hidden account cannot be deleted from the Employees module.';
     }
 
     $usageError = '';
@@ -38,7 +55,7 @@ function employees_delete_record(mysqli $conn, int $companyId, int $id): ?string
     }
     mysqli_stmt_close($accessStmt);
 
-    $deleteStmt = mysqli_prepare($conn, 'DELETE FROM employees WHERE id = ? AND company_id = ? LIMIT 1');
+    $deleteStmt = mysqli_prepare($conn, 'DELETE FROM employees WHERE id = ? AND company_id = ? AND is_hidden = 0 LIMIT 1');
     if (!$deleteStmt) {
         return 'Delete failed: ' . mysqli_error($conn);
     }
