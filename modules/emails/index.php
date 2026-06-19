@@ -46,13 +46,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = (string)($_POST['password'] ?? '');
         $fromEmail = trim((string)($_POST['from_email'] ?? ''));
         $fromName = trim((string)($_POST['from_name'] ?? ''));
+        $imapPort = (int)($_POST['imap_port'] ?? 143);
+        $pop3Port = (int)($_POST['pop3_port'] ?? 110);
+        $pop3TlsMode = trim((string)($_POST['pop3_tls_mode'] ?? 'None'));
+        $pop3RequireSecure = isset($_POST['pop3_require_secure_connection']) ? 1 : 0;
         $isDefault = isset($_POST['is_default']) ? 1 : 0;
 
         if ($configName === '' || $smtpHost === '' || $fromEmail === '') {
             $errors[] = 'Config Name, SMTP Host, and From Email are required.';
         } elseif (!filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'From Email must be a valid email address.';
+        } elseif ($imapPort < 1 || $imapPort > 65535 || $pop3Port < 1 || $pop3Port > 65535) {
+            $errors[] = 'IMAP and POP3 ports must be between 1 and 65535.';
         } else {
+            if ($pop3TlsMode === '') {
+                $pop3TlsMode = 'None';
+            }
             if ($isDefault === 1) {
                 $clearStmt = mysqli_prepare($conn, 'UPDATE email_smtp_configurations SET is_default = 0 WHERE company_id = ?');
                 if ($clearStmt) {
@@ -69,11 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $conn,
                         'UPDATE email_smtp_configurations
                          SET config_name = ?, smtp_host = ?, smtp_port = ?, username = ?, password_encrypted = ?,
-                             from_email = ?, from_name = ?, is_default = ?
+                             from_email = ?, from_name = ?, imap_port = ?, pop3_port = ?, pop3_tls_mode = ?,
+                             pop3_require_secure_connection = ?, is_default = ?
                          WHERE id = ? AND company_id = ?'
                     );
                     if ($stmt) {
-                        mysqli_stmt_bind_param($stmt, 'ssissssiii', $configName, $smtpHost, $smtpPort, $username, $encrypted, $fromEmail, $fromName, $isDefault, $configId, $company_id);
+                        mysqli_stmt_bind_param($stmt, 'ssissssiiisiii', $configName, $smtpHost, $smtpPort, $username, $encrypted, $fromEmail, $fromName, $imapPort, $pop3Port, $pop3TlsMode, $pop3RequireSecure, $isDefault, $configId, $company_id);
                         mysqli_stmt_execute($stmt);
                         mysqli_stmt_close($stmt);
                     }
@@ -82,11 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $conn,
                         'UPDATE email_smtp_configurations
                          SET config_name = ?, smtp_host = ?, smtp_port = ?, username = ?,
-                             from_email = ?, from_name = ?, is_default = ?
+                             from_email = ?, from_name = ?, imap_port = ?, pop3_port = ?, pop3_tls_mode = ?,
+                             pop3_require_secure_connection = ?, is_default = ?
                          WHERE id = ? AND company_id = ?'
                     );
                     if ($stmt) {
-                        mysqli_stmt_bind_param($stmt, 'ssisssiii', $configName, $smtpHost, $smtpPort, $username, $fromEmail, $fromName, $isDefault, $configId, $company_id);
+                        mysqli_stmt_bind_param($stmt, 'ssisssiiisiii', $configName, $smtpHost, $smtpPort, $username, $fromEmail, $fromName, $imapPort, $pop3Port, $pop3TlsMode, $pop3RequireSecure, $isDefault, $configId, $company_id);
                         mysqli_stmt_execute($stmt);
                         mysqli_stmt_close($stmt);
                     }
@@ -97,11 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = mysqli_prepare(
                     $conn,
                     'INSERT INTO email_smtp_configurations
-                     (company_id, config_name, smtp_host, smtp_port, username, password_encrypted, from_email, from_name, is_default, active)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+                     (company_id, config_name, smtp_host, smtp_port, username, password_encrypted, from_email, from_name,
+                      imap_port, pop3_port, pop3_tls_mode, pop3_require_secure_connection, is_default, active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
                 );
                 if ($stmt) {
-                    mysqli_stmt_bind_param($stmt, 'ississssi', $company_id, $configName, $smtpHost, $smtpPort, $username, $encrypted, $fromEmail, $fromName, $isDefault);
+                    mysqli_stmt_bind_param($stmt, 'ississsiiisiii', $company_id, $configName, $smtpHost, $smtpPort, $username, $encrypted, $fromEmail, $fromName, $imapPort, $pop3Port, $pop3TlsMode, $pop3RequireSecure, $isDefault);
                     mysqli_stmt_execute($stmt);
                     mysqli_stmt_close($stmt);
                     $notices[] = 'SMTP configuration created.';
@@ -216,7 +228,8 @@ if ($logStmt) {
 $smtpConfigs = [];
 $smtpStmt = mysqli_prepare(
     $conn,
-    'SELECT id, config_name, smtp_host, smtp_port, username, password_encrypted, from_email, from_name, is_default
+    'SELECT id, config_name, smtp_host, smtp_port, username, password_encrypted, from_email, from_name,
+            imap_port, pop3_port, pop3_tls_mode, pop3_require_secure_connection, is_default
      FROM email_smtp_configurations
      WHERE company_id = ? AND active = 1
      ORDER BY is_default DESC, config_name ASC'
