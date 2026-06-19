@@ -651,7 +651,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | Script | Purpose |
 |--------|---------|
 | `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs; bulk backfill when sidebar auto-register is not enough |
-| `php scripts/verify_employee_auth_merge.php` | Regression after merging `users` into `employees`: renamed junction tables, admin seed, `employee_companies` links, no legacy `users` table or `employees.user_id` column |
+| `php scripts/verify_employee_auth_merge.php` | Regression after merging `users` into `employees`: renamed junction tables, admin seed with Active employment status, `employee_companies` links, no legacy `users` table or `employees.user_id` / `employees.active` columns |
 | `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither); PHPUnit: `CompanyModuleAccessVerifyTest` |
 | `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
 

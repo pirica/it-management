@@ -5,8 +5,7 @@
 
 require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/notes_visibility.php";
-
-$crud_table = "notes";
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 $crud_title = "Notes";
 $crud_action = $crud_action ?? "index";
 $logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
@@ -21,8 +20,10 @@ $stmtUL->execute();
 $resUserLabels = $stmtUL->get_result();
 if ($resUserLabels) { while ($row = mysqli_fetch_assoc($resUserLabels)) { $user_tags[] = $row["label"]; } }
 
-$users = [];
-$stmtUsers = $conn->prepare("SELECT id, username FROM employees WHERE company_id = ? AND active = 1");
+$crud_table = "notes";
+$join = itm_employee_active_employment_status_join_sql('e', 'es');
+$predicate = itm_employee_active_employment_status_predicate_sql('es');
+$stmtUsers = $conn->prepare('SELECT e.id, e.username FROM employees e' . $join . ' WHERE e.company_id = ? AND ' . $predicate);
 $stmtUsers->bind_param("i", $company_id);
 $stmtUsers->execute();
 $resUser = $stmtUsers->get_result();
@@ -909,7 +910,9 @@ $displayFieldColumns = $uiColumns;
                                 <?php
                                 // Ensure users are always loaded for this dropdown
                                 if (empty($users)) {
-                                    $stmtULoad = $conn->prepare("SELECT id, username FROM employees WHERE active = 1 AND company_id = ?");
+                                    $join = itm_employee_active_employment_status_join_sql('e', 'es');
+                                    $predicate = itm_employee_active_employment_status_predicate_sql('es');
+                                    $stmtULoad = $conn->prepare('SELECT e.id, e.username FROM employees e' . $join . ' WHERE e.company_id = ? AND ' . $predicate);
                                     $stmtULoad->bind_param("i", $company_id);
                                     $stmtULoad->execute();
                                     $resULoad = $stmtULoad->get_result();

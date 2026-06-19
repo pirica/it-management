@@ -102,8 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $userStmt = mysqli_prepare(
                     $conn,
-                    'INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+                    'INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 if ($userStmt) {
                     mysqli_stmt_bind_param(

@@ -16,6 +16,7 @@ if (PHP_SAPI !== 'cli' && !defined('PHPUNIT_RUNNING')) {
 if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
     require_once __DIR__ . '/../includes/itm_role_module_permissions.php';
 }
+require_once __DIR__ . '/../includes/itm_employee_employment_status.php';
 
 // Parse CLI arguments
 $options = getopt("", ["user:", "company:"]);
@@ -28,8 +29,10 @@ $stmt = mysqli_prepare(
     $conn,
     'SELECT u.id, u.username, u.work_email, ur.name AS role_name
      FROM employees u
-     LEFT JOIN employee_roles ur ON u.role_id = ur.id
-     WHERE u.active = 1 AND (LOWER(u.username) = LOWER(?) OR u.id = ?)
+     LEFT JOIN employee_roles ur ON u.role_id = ur.id'
+    . itm_employee_active_employment_status_join_sql('u', 'es') .
+    ' WHERE (LOWER(u.username) = LOWER(?) OR u.id = ?)
+       AND ' . itm_employee_active_employment_status_predicate_sql('es') . '
      LIMIT 1'
 );
 $idSearch = is_numeric($username) ? (int)$username : -1;

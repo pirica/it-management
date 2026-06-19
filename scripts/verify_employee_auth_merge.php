@@ -10,6 +10,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/itm_employee_employment_status.php';
 
 $nl = PHP_SAPI === 'cli' ? PHP_EOL : '<br>';
 $failures = 0;
@@ -47,8 +48,12 @@ foreach (['employee_companies', 'employee_roles', 'employee_sidebar_preferences'
 // Admin seed login row
 $stmt = mysqli_prepare(
     $conn,
-    'SELECT id, username, work_email, password, role_id FROM employees
-     WHERE id = 1 AND active = 1 AND password IS NOT NULL LIMIT 1'
+    'SELECT e.id, e.username, e.work_email, e.password, e.role_id
+     FROM employees e'
+    . itm_employee_active_employment_status_join_sql('e', 'es') .
+    ' WHERE e.id = 1 AND e.password IS NOT NULL AND '
+    . itm_employee_active_employment_status_predicate_sql('es') .
+    ' LIMIT 1'
 );
 if (!$stmt) {
     veam_fail('Cannot prepare admin seed query.');
@@ -91,6 +96,14 @@ if ($stmt) {
     } else {
         veam_pass('Admin password verifies.');
     }
+}
+
+// employees must not use deprecated employees.active (employment_status_id is canonical)
+$colRes = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'active'");
+if ($colRes && mysqli_num_rows($colRes) > 0) {
+    veam_fail('employees.active column still exists — use employment_status_id instead.');
+} else {
+    veam_pass('employees.active column absent.');
 }
 
 // employees must not have legacy user_id link column

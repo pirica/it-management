@@ -40,7 +40,10 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 
 ### Safe SELECT
 ```php
-$stmt = $conn->prepare("SELECT e.* FROM employees e WHERE e.company_id = ? AND e.on_contacts = 1 AND e.active = 1");
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+$join = itm_employee_active_employment_status_join_sql('e', 'es');
+$predicate = itm_employee_active_employment_status_predicate_sql('es');
+$stmt = $conn->prepare("SELECT e.* FROM employees e{$join} WHERE e.company_id = ? AND e.on_contacts = 1 AND {$predicate}");
 $stmt->bind_param("i", $companyId);
 $stmt->execute();
 ```
