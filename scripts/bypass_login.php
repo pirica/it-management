@@ -26,9 +26,9 @@ $password = 'Admin'; // Default password for seeding/development
 // Fetch User details (match login.php role join)
 $stmt = mysqli_prepare(
     $conn,
-    'SELECT u.id, u.username, u.email, ur.name AS role_name
-     FROM users u
-     LEFT JOIN user_roles ur ON u.role_id = ur.id
+    'SELECT u.id, u.username, u.work_email, ur.name AS role_name
+     FROM employees u
+     LEFT JOIN employee_roles ur ON u.role_id = ur.id
      WHERE u.active = 1 AND (LOWER(u.username) = LOWER(?) OR u.id = ?)
      LIMIT 1'
 );
@@ -45,8 +45,8 @@ if (!$user) {
     die("Error: User '{$username}' not found in database.\n");
 }
 
-$userId = (int)$user['id'];
-if (!itm_is_admin($conn, $userId)) {
+$employeeId = (int)$user['id'];
+if (!itm_is_admin($conn, $employeeId)) {
     die("Error: Bypass login is restricted to Admin users. User '{$user['username']}' is not an admin.\n");
 }
 
@@ -65,7 +65,7 @@ if (!$company) {
 }
 
 // Set session variables (matching login.php logic)
-$_SESSION['user_id'] = $userId;
+$_SESSION['employee_id'] = $employeeId;
 $_SESSION['username'] = (string)$user['username'];
 $_SESSION['role_name'] = strtolower((string)($user['role_name'] ?? '')) === 'admin'
     ? 'admin'
@@ -100,7 +100,7 @@ if (file_exists($sessionFile)) {
 if (!defined('PHPUNIT_RUNNING')) {
     echo "Bypass Login Successful!\n";
     echo "------------------------\n";
-    echo "User: " . $_SESSION['username'] . " (ID: " . $_SESSION['user_id'] . ")\n";
+    echo "User: " . $_SESSION['username'] . " (ID: " . $_SESSION['employee_id'] . ")\n";
     echo "Role: " . $_SESSION['role_name'] . "\n";
     echo "Company: " . $_SESSION['company_name'] . " (ID: " . $_SESSION['company_id'] . ")\n";
     echo "Session ID: " . $sessionId . "\n";

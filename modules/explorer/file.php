@@ -9,19 +9,19 @@
 require_once '../../config/config.php';
 
 // Why: Protection Zone - User needs to be logged in and have a company selected.
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
+if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
     http_response_code(403);
     exit("Access denied.");
 }
 
 $company_id = (int)$_SESSION['company_id'];
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 $username = $_SESSION['username'] ?? 'unknown';
 $user_private_dir = "{$username}_{$user_id}";
 
 // Why: Fetch user department for access control.
 $dept_id = 0;
-$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE user_id = $user_id AND company_id = $company_id LIMIT 1");
+$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE employee_id = $user_id AND company_id = $company_id LIMIT 1");
 if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
     $dept_id = (int)$dept_row['department_id'];
 }

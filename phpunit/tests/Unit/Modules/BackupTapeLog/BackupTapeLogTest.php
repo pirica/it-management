@@ -29,7 +29,7 @@ class BackupTapeLogTest extends TestCase
         $data['backup_status'] = 'Full';
         $data['active'] = 1;
         // Find or fallback for server_id (equipment)
-        $resserver_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resserver_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowserver_id = mysqli_fetch_assoc($resserver_id)) {
             $data['server_id'] = $rowserver_id['id'];
         } else {

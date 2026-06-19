@@ -9,7 +9,7 @@
  */
 
 require '../../config/config.php';
-$logged_user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
 // Handle ICS Import
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
@@ -228,7 +228,7 @@ $sql_alerts = "SELECT a.*, ec.name as category_name, ec.color as category_color
                FROM alerts a
                LEFT JOIN event_categories ec ON a.category_id = ec.id
                WHERE a.company_id = ? AND (a.active = 1 OR a.active IS NULL)
-               AND (a.assigned_to_user_id IS NULL OR a.assigned_to_user_id = $logged_user_id OR a.created_by_user_id = $logged_user_id)
+               AND (a.assigned_to_employee_id IS NULL OR a.assigned_to_employee_id = $logged_user_id OR a.created_by_employee_id = $logged_user_id)
                AND NOT (DATE(COALESCE(a.end_datetime, a.start_datetime)) < ? OR DATE(a.start_datetime) > ?)";
 $stmt = mysqli_prepare($conn, $sql_alerts);
 if ($stmt) {
@@ -253,12 +253,12 @@ if ($stmt) {
                     'type' => 'alert',
                     'title' => $row['title'],
                     'color' => $ev_color,
-                    'icon' => (!empty($row['assigned_to_user_id']) && ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id)) ? '⚠️' : '📢',
+                    'icon' => (!empty($row['assigned_to_employee_id']) && ((int)$row['assigned_to_employee_id'] === (int)$logged_user_id && (int)$row['created_by_employee_id'] === (int)$logged_user_id)) ? '⚠️' : '📢',
                     'start' => $row['start_datetime'],
                     'end' => $row['end_datetime'],
                     'id' => $row['id'],
-                    'assigned_to_user_id' => $row['assigned_to_user_id'] ?? null,
-                    'created_by_user_id' => $row['created_by_user_id'] ?? null
+                    'assigned_to_employee_id' => $row['assigned_to_employee_id'] ?? null,
+                    'created_by_employee_id' => $row['created_by_employee_id'] ?? null
                 ];
             }
             $curr_day = strtotime('+1 day', $curr_day);
@@ -506,7 +506,7 @@ unset($_SESSION['calendar_success']);
                                             $icon = sanitize((string)$ev['icon']);
                                             $title = sanitize((string)$ev['title']);
                                             if ($ev['type'] === 'alert') {
-                                                $isPrivate = !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id);
+                                                $isPrivate = !empty($ev['assigned_to_employee_id']) && ((int)$ev['assigned_to_employee_id'] === (int)$logged_user_id && (int)$ev['created_by_employee_id'] === (int)$logged_user_id);
                                                 echo '<a href="../alerts/view.php?id=' . (int)$ev['id'] . '" style="text-decoration: none; color: inherit;">' . ($isPrivate ? '' : '📢 ') . $title . ($isPrivate ? ' ⚠️' : '') . '</a>';
                                             } else {
                                                 echo $icon . " " . $title;
@@ -633,7 +633,7 @@ unset($_SESSION['calendar_success']);
                                                 <?php
                                                     $icon = sanitize((string)$ev['icon']);
                                                     $title = sanitize((string)$ev['title']);
-                                                    if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                    if ($ev['type'] === 'alert' && !empty($ev['assigned_to_employee_id']) && ((int)$ev['assigned_to_employee_id'] === (int)$logged_user_id && (int)$ev['created_by_employee_id'] === (int)$logged_user_id)) {
                                                         echo $title . " ⚠️";
                                                     } else {
                                                         echo $icon . " " . $title;
@@ -725,7 +725,7 @@ unset($_SESSION['calendar_success']);
                                                     <?php
                                                         $icon = sanitize((string)$ev['icon']);
                                                         $title = sanitize((string)$ev['title']);
-                                                        if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                        if ($ev['type'] === 'alert' && !empty($ev['assigned_to_employee_id']) && ((int)$ev['assigned_to_employee_id'] === (int)$logged_user_id && (int)$ev['created_by_employee_id'] === (int)$logged_user_id)) {
                                                             echo $title . " ⚠️";
                                                         } else {
                                                             echo "📢 " . $title;
@@ -770,7 +770,7 @@ unset($_SESSION['calendar_success']);
                                                         <div class="time-event" style="background:<?php echo $color; ?>; top:<?php echo $top; ?>%; height:<?php echo $height; ?>%;" onclick="location.href='<?php echo ($ev['type'] === 'alert') ? '../alerts/view.php?id=' . $ev['id'] : '../events/view.php?id=' . $ev['id']; ?>'">
                                                             <?php
                                                                 $title = sanitize((string)$ev['title']);
-                                                                if ($ev['type'] === 'alert' && !empty($ev['assigned_to_user_id']) && ((int)$ev['assigned_to_user_id'] === (int)$logged_user_id && (int)$ev['created_by_user_id'] === (int)$logged_user_id)) {
+                                                                if ($ev['type'] === 'alert' && !empty($ev['assigned_to_employee_id']) && ((int)$ev['assigned_to_employee_id'] === (int)$logged_user_id && (int)$ev['created_by_employee_id'] === (int)$logged_user_id)) {
                                                                     echo $title . " ⚠️";
                                                                 } else {
                                                                     echo "📢 " . $title;

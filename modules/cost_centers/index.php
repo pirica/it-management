@@ -144,11 +144,11 @@ function cr_user_label_by_id($conn, $company_id, $rawId) {
     $whereCompany = ($company_id > 0)
         ? ' WHERE id=' . $id . ' AND company_id=' . (int)$company_id
         : ' WHERE id=' . $id;
-    $sql = 'SELECT username, first_name, last_name FROM `users`' . $whereCompany . ' LIMIT 1';
+    $sql = 'SELECT username, first_name, last_name FROM `employees`' . $whereCompany . ' LIMIT 1';
     $res = mysqli_query($conn, $sql);
 
     if ((!$res || mysqli_num_rows($res) === 0) && $company_id > 0) {
-        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `users` WHERE id=' . $id . ' LIMIT 1');
+        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `employees` WHERE id=' . $id . ' LIMIT 1');
     }
 
     if ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -174,7 +174,7 @@ function cr_user_options($conn, $company_id) {
     $where = ($company_id > 0)
         ? ' WHERE company_id=' . (int)$company_id
         : '';
-    $sql = 'SELECT id, username, first_name, last_name FROM `users`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
+    $sql = 'SELECT id, username, first_name, last_name FROM `employees`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
     $res = mysqli_query($conn, $sql);
     $options = [];
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -444,7 +444,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'cost_centers', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'cost_centers', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;

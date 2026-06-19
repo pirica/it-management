@@ -4,7 +4,7 @@
 Contains the PHPUnit test suite for validating system functionality and regression prevention.
 
 ## 4. Business Rules (Critical for Agents)
-- **Disposable script test users:** when tests INSERT/UPDATE `users` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_user.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
+- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
 - **Naming:** Test classes must end in `Test.php` or `*.unittest.php` (see `phpunit/phpunit.xml` test suite directories).
 - **No load-time side effects:** Files matching `*Test.php` must be proper `PHPUnit\Framework\TestCase` subclasses — **no top-level `echo`**, **`require` of production scripts with `exit`**, or procedural code at file scope. PHPUnit loads every matching file before the suite runs.
 - **DB tests:** Use `$this->markTestSkipped('Database connection unavailable.')` when `$conn` is missing (see module `*Test.php` and `BypassLoginTest`).
@@ -26,9 +26,9 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 - **Load support from bootstrap** — `ItmScriptCliTestCase` / traits are required in `bootstrap.php`; do not `require_once` them at file scope in test files.
 - **Expecting full suite without MySQL** — many module tests skip; use `ITM_SKIP_DB_TESTS=1` only when intentional.
 - **Expecting high headline %** — with full tree in `phpunit.xml`, totals stay under ~1% until tests load module PHP or scope is narrowed. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.
-- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_user.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4.
+- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_employee.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4.
 
-- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_user.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4.
+- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_employee.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4.
 
 ## 11. Examples of Safe Code Patterns
 

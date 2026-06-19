@@ -2,7 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Explorer ZIP Leak Verification');
 
@@ -45,13 +45,13 @@ $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying Explorer ZIP Leak..." . $nl;
 
 $company_id = 1;
-$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-explorer-zip-leak']);
+$testUser = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'verify-explorer-zip-leak']);
 if (!is_array($testUser)) {
     echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
-itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 $user_private = (string)$testUser['username'] . '_' . (int)$testUser['id'];

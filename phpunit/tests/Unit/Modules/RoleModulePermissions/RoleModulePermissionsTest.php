@@ -30,13 +30,13 @@ class RoleModulePermissionsTest extends TestCase
         $data['can_delete'] = 1;
         $data['can_import'] = 1;
         $data['can_export'] = 1;
-        // Find or fallback for role_id (user_roles)
-        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE " . (strpos('user_roles', 'companies') === false && strpos('user_roles', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        // Find or fallback for role_id (employee_roles)
+        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE " . (strpos('employee_roles', 'companies') === false && strpos('employee_roles', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowrole_id = mysqli_fetch_assoc($resrole_id)) {
             $data['role_id'] = $rowrole_id['id'];
         } else {
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $this->markTestSkipped('Required dependency user_roles not found in database.');
+            $this->markTestSkipped('Required dependency employee_roles not found in database.');
         }
 
         $sql = "INSERT INTO `role_module_permissions` (company_id, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";

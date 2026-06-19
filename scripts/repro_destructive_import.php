@@ -9,7 +9,7 @@ if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 $root = dirname(__DIR__);
 
 session_start();
-$_SESSION['user_id'] = 1;
+$_SESSION['employee_id'] = 1;
 $_SESSION['company_id'] = 1;
 
 require_once $root . '/config/config.php';

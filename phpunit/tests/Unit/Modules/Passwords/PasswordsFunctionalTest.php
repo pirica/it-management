@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
  */
 class PasswordsFunctionalTest extends TestCase
 {
-    private $userId = 1;
+    private $employeeId = 1;
     private $csrfToken;
 
     protected function setUp(): void
@@ -23,7 +23,7 @@ class PasswordsFunctionalTest extends TestCase
             $this->markTestSkipped('Database connection unavailable.');
         }
 
-        $_SESSION['user_id'] = $this->userId;
+        $_SESSION['employee_id'] = $this->userId;
         $this->csrfToken = itm_get_csrf_token();
     }
 

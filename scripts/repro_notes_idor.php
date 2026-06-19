@@ -15,7 +15,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'includes/notes_visibility.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Notes IDOR Verification');
 
@@ -24,8 +24,8 @@ echo "Testing IDOR in Notes View/Edit..." . $nl;
 
 // 1. Setup - two users in the same company
 $company_id = 1;
-$user1 = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-notes-idor-owner']);
-$user2 = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-notes-idor-attacker']);
+$user1 = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'repro-notes-idor-owner']);
+$user2 = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'repro-notes-idor-attacker']);
 if (!is_array($user1) || !is_array($user2)) {
     echo colorText('[FAIL] Unable to create disposable test users.', 'fail') . $nl;
     itm_script_output_end();
@@ -33,15 +33,15 @@ if (!is_array($user1) || !is_array($user2)) {
 }
 $user1_id = (int)$user1['id'];
 $user2_id = (int)$user2['id'];
-itm_script_test_user_register_teardown($conn, $user1_id);
-itm_script_test_user_register_teardown($conn, $user2_id);
+itm_script_test_employee_register_teardown($conn, $user1_id);
+itm_script_test_employee_register_teardown($conn, $user2_id);
 
 echo "User 1 (Owner) ID: $user1_id" . $nl;
 echo "User 2 (Attacker) ID: $user2_id" . $nl;
 
 // 2. User 1 creates a private note
 $secret_content = "SECRET_TOKEN_" . uniqid();
-$stmtInsert = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, active) VALUES (?, ?, 'Private Note', ?, 1)");
+$stmtInsert = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, active) VALUES (?, ?, 'Private Note', ?, 1)");
 $stmtInsert->bind_param('iis', $company_id, $user1_id, $secret_content);
 $stmtInsert->execute();
 $note_id = (int)$stmtInsert->insert_id;
@@ -50,7 +50,7 @@ $stmtInsert->close();
 echo "Created private note ID: $note_id for User 1." . $nl;
 
 // 3. User 2 (Attacker) attempts to view it via visibility contract
-$_SESSION['user_id'] = $user2_id;
+$_SESSION['employee_id'] = $user2_id;
 $_SESSION['company_id'] = $company_id;
 
 $data = itm_notes_fetch_visible_by_id($conn, $note_id, $company_id, $user2_id, true);

@@ -255,8 +255,8 @@ function itm_system_status_load_users_for_company($conn, int $companyId): array
         return $rows;
     }
     $sql = 'SELECT u.id, u.username, u.first_name, u.last_name
-            FROM users u
-            INNER JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+            FROM employees u
+            INNER JOIN employee_companies uc ON uc.employee_id = u.id AND uc.company_id = ?
             ORDER BY u.username ASC';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {

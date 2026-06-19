@@ -124,26 +124,26 @@ Run after changes to `modules/select_options_api.php` or `includes/itm_select_op
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_git_reset_csrf.php` | Regression — `reset_git_history.php` rejects non-POST and POST without valid CSRF. Disposable admin-like user via `itm_script_test_user.php`. |
+| `php scripts/verify_git_reset_csrf.php` | Regression — `reset_git_history.php` rejects non-POST and POST without valid CSRF. Disposable admin-like user via `itm_script_test_employee.php`. |
 | `php scripts/verify_reset_git_history_access.php` | Documents access-control expectations for the destructive Git history reset utility. |
 
 Run after changing `reset_git_history.php` or maintenance CSRF guards. Catalog: `scripts/scripts.php`.
 
 ### Disposable script test users
 
-Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or other live accounts. Use **`scripts/lib/itm_script_test_user.php`**:
+Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or other live accounts. Use **`scripts/lib/itm_script_test_employee.php`**:
 
 | Helper | Purpose |
 |--------|---------|
-| `itm_script_test_user_username($scriptSlug)` | Unique username `script-{slug}-{hex}` |
-| `itm_script_test_user_create($conn, $companyId, $options)` | INSERT disposable `users` row |
-| `itm_script_test_user_snapshot($conn, $userId, $columns)` | Read sensitive columns before mutation |
-| `itm_script_test_user_restore($conn, $userId, $snapshot)` | Restore prior values |
-| `itm_script_test_user_delete($conn, $userId)` | DELETE row (disposable prefix only) |
-| `itm_script_test_user_register_teardown($conn, $userId, $snapshot)` | Shutdown restore + delete |
-| `itm_script_test_user_set_audit_context($conn, $userId, $username, $companyId)` | `SET @app_user_id` / `@app_company_id` / `@app_username` |
+| `itm_script_test_employee_username($scriptSlug)` | Unique username `script-{slug}-{hex}` |
+| `itm_script_test_employee_create($conn, $companyId, $options)` | INSERT disposable `employees` row |
+| `itm_script_test_employee_snapshot($conn, $employeeId, $columns)` | Read sensitive columns before mutation |
+| `itm_script_test_employee_restore($conn, $employeeId, $snapshot)` | Restore prior values |
+| `itm_script_test_employee_delete($conn, $employeeId)` | DELETE row (disposable prefix only) |
+| `itm_script_test_employee_register_teardown($conn, $employeeId, $snapshot)` | Shutdown restore + delete |
+| `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` |
 
-**Static guard:** `php scripts/check_script_disposable_users.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE users`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_users.unittest.php`.
+**Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_employees.unittest.php`.
 
 **PHPUnit:** `ItmScriptTestUserTest.php`, `ReproAuditDisclosureTest.php`; security repro tests in `VulnerabilityVerificationTest.php` use the same helper. All `phpunit/**/AGENT_NOTES.md` files document this contract.
 
@@ -154,14 +154,14 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | Script | Purpose |
 |--------|---------|
 | `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS: HTTP 403 message + row retained). Seeds via a free `cost_centers` slot (`uq_expenses_company_scope` is one row per company + cost center). Do not stub `cr_require_valid_csrf_token()` in subprocess harnesses (fatal redeclare). |
-| `php scripts/repro_user_companies_bac.php` | PoC — non-admin must not access `user_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
-| `php scripts/repro_user_companies_leak.php` | PoC — multi-tenant leak checks for Users module. |
+| `php scripts/repro_employee_companies_bac.php` | PoC — non-admin must not access `employee_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
+| `php scripts/repro_employee_companies_leak.php` | PoC — multi-tenant leak checks for Users module. |
 | `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
 | `php scripts/apply_crud_rbac_guards.php` | CLI repair — bulk-insert CRUD RBAC guards on flattened index handlers (idempotent; skips exempt modules and files that already have guards). |
 | `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, and role-module permission access. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
-| `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_user.php`; prepared `UPDATE users` for token fields. |
+| `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_employee.php`; prepared `UPDATE employees` for token fields. |
 
 Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
@@ -278,7 +278,7 @@ php scripts/idfs_sync_human_test.php
 | `php scripts/apitest_tier_free.php` | Disposable **Free** tier row (empty `api_key`): unlimited status, session resolve without key, repeated consumes allowed. HTTP probe may omit `api_key` when Apache session is signed in. |
 | `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. HTTP probe requires `api_key`. |
 
-Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`user_id` slots, browser URL with optional `api_key`, HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, browser URL with optional `api_key`, HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
 **Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). The Free apitest publishes the CLI session (`itm_apitest_publish_http_session()`) so the HTTP probe can pass without an API key when Apache is running. **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
 
@@ -575,11 +575,11 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 | Runner variable | Modules |
 |---|---|
 | `$bespokeSmoke` (Tier D) | `budget_report`, `expiring`, `rack_planner`, `floor_plans`, `companies` |
-| `$skipClear` | `companies`, `users` |
+| `$skipClear` | `companies`, `employees` |
 
 Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other steps are Pass with notes `N/A smoke`, `Skip (bespoke smoke)`, or `N/A`. **`$skipClear`:** tenant FK-aware clear is never run on these tables (shared auth). Tier D also skips start-of-module clear with note `Skip (bespoke smoke)`.
 
-**Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php`** (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `user_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
+**Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php`** (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `employee_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
 
 **Checklist per standard module (Tier A, including Protection Zone folders)** — step order (runner slug = table name unless a step exception applies):
 
@@ -589,7 +589,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | 2 | **`error_log`** | Start scope: rename `error_log.txt` to next `error_log-N.txt` when present; else record byte offset (only *new* lines count for this module). |
 | 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count. |
 | 4 | **`ui_check`** | When an Actions column is present on the index HTML, verifies **`class="itm-actions-cell"`** + **`data-itm-actions-origin="1"`** on the Actions header and at least one body cell when real data rows render (`js/ui-layout.js` / `table_actions_position`). Single-cell colspan empty-state rows (`No records found`, etc.) are ignored. |
-| 5 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `users` skipped). |
+| 5 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `employees` skipped). |
 | 6 | **`sample_data`** | HTTP sample seed; FK parents first; DB fallback via `itm_seed_table_from_database_sql()` when anchor ids differ. |
 | 7 | **`add`** | Insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first. |
 | 8 | **`pagination`** | Page 1 **Next** / page 2 **Previous** when rows &gt; `records_per_page`. |
@@ -624,8 +624,8 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 * **Tenant clear** walks inbound FKs (`information_schema`), deletes child rows for the active `company_id`, then clears the module table. MySQL **1451** retries parse the **child table** from the error text (`` `schema`.`child_table` ``), not the schema name.
 * **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries — **including Protection Zone tables** when required to unblock the delete.
-* **Never auto-clear** during FK prep or delete retry: **`companies`** and **`users`** only (shared auth).
-* **Skip destructive clear** on `companies` and `users` at the start of each module (same as before).
+* **Never auto-clear** during FK prep or delete retry: **`companies`** and **`employees`** only (shared auth).
+* **Skip destructive clear** on `companies` and `employees` at the start of each module (same as before).
 
 **Sample / export / import:**
 
@@ -651,6 +651,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | Script | Purpose |
 |--------|---------|
 | `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs; bulk backfill when sidebar auto-register is not enough |
+| `php scripts/verify_employee_auth_merge.php` | Regression after merging `users` into `employees`: renamed junction tables, admin seed, `employee_companies` links, no legacy `users` table or `employees.user_id` column |
 | `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither); PHPUnit: `CompanyModuleAccessVerifyTest` |
 | `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
 

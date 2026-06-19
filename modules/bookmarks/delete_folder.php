@@ -2,7 +2,7 @@
 require '../../config/config.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
-        $check_res = mysqli_query($conn, "SELECT user_id FROM bookmark_folders WHERE id = $id AND company_id = $company_id");
+        $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $id AND company_id = $company_id");
         $data = mysqli_fetch_assoc($check_res);
 
         if ($data && ($is_admin || (int)$data['user_id'] === $user_id)) {

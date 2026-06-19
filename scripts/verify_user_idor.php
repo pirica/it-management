@@ -2,7 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('User IDOR Verification');
 
@@ -45,14 +45,14 @@ $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying User Management IDOR..." . $nl;
 
 // 1. Create a victim user in the same company
-$victimUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'verify-user-idor-victim']);
+$victimUser = itm_script_test_employee_create($conn, 1, ['script_slug' => 'verify-user-idor-victim']);
 if (!is_array($victimUser)) {
     echo colorText('[FAIL] Unable to create disposable victim user.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
 $victimId = (int)$victimUser['id'];
-itm_script_test_user_register_teardown($conn, $victimId);
+itm_script_test_employee_register_teardown($conn, $victimId);
 
 // 2. Mock a regular user session
 $session = [
@@ -69,9 +69,9 @@ $post = [
     'id' => $victimId
 ];
 
-$output = run_isolated_post(realpath(__DIR__ . '/../modules/users/delete.php'), $session, $post);
+$output = run_isolated_post(realpath(__DIR__ . '/../modules/employees/delete.php'), $session, $post);
 
-$res = mysqli_query($conn, "SELECT id FROM users WHERE id = $victimId");
+$res = mysqli_query($conn, "SELECT id FROM employees WHERE id = $victimId");
 if (mysqli_num_rows($res) === 0) {
     echo colorText("[FAIL] Users Module: Regular user successfully deleted another user via IDOR!", 'fail') . $nl;
 } else {

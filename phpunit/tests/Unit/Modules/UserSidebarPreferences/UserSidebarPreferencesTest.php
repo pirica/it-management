@@ -30,7 +30,7 @@ class UserSidebarPreferencesTest extends TestCase
         $data['is_visible'] = 1;
         $data['active'] = 1;
 
-        $sql = "INSERT INTO `user_sidebar_preferences` (company_id, `user_id`, `entry_type`, `entry_id`, `display_order`, `is_visible`, `active`) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `employee_sidebar_preferences` (company_id, `employee_id`, `entry_type`, `entry_id`, `display_order`, `is_visible`, `active`) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
@@ -50,31 +50,31 @@ class UserSidebarPreferencesTest extends TestCase
         mysqli_stmt_close($stmt);
 
         // 2. Read
-        $res = mysqli_query($this->conn, "SELECT * FROM `user_sidebar_preferences` WHERE id = $id");
+        $res = mysqli_query($this->conn, "SELECT * FROM `employee_sidebar_preferences` WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertNotNull($row);
         $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
         $updatedValue = 'Updated Value';
-        $updateSql = "UPDATE `user_sidebar_preferences` SET `entry_id` = ? WHERE id = ?";
+        $updateSql = "UPDATE `employee_sidebar_preferences` SET `entry_id` = ? WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $updateSql);
         mysqli_stmt_bind_param($stmt, 'si', $updatedValue, $id);
         $this->assertTrue(mysqli_stmt_execute($stmt));
         mysqli_stmt_close($stmt);
 
-        $res = mysqli_query($this->conn, "SELECT `entry_id` FROM `user_sidebar_preferences` WHERE id = $id");
+        $res = mysqli_query($this->conn, "SELECT `entry_id` FROM `employee_sidebar_preferences` WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals($updatedValue, $row['entry_id']);
 
         // 4. Delete
-        $deleteSql = "DELETE FROM `user_sidebar_preferences` WHERE id = ?";
+        $deleteSql = "DELETE FROM `employee_sidebar_preferences` WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $deleteSql);
         mysqli_stmt_bind_param($stmt, 'i', $id);
         $this->assertTrue(mysqli_stmt_execute($stmt));
         mysqli_stmt_close($stmt);
 
-        $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `user_sidebar_preferences` WHERE id = $id");
+        $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `employee_sidebar_preferences` WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals(0, (int)$row['count']);
     }

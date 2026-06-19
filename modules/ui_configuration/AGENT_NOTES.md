@@ -30,7 +30,7 @@ CRUD UI for per-user and company-default layout preferences: button positions, t
 - `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php` — flattened CRUD (Protection Zone).
 
 ## 8. Multi-Tenant Rules
-- Scoped by `company_id`; optional per-user rows (`user_id`) within tenant.
+- Scoped by `company_id`; optional per-user rows (`employee_id`) within tenant.
 - Hide `company_id` from standard list/detail where applicable.
 
 ## 9. Audit Logging Requirements

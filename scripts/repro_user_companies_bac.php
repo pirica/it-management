@@ -2,9 +2,9 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
-itm_script_output_begin('User Companies BAC PoC');
+itm_script_output_begin('Employee Companies BAC PoC');
 
 function run_request($script_path, $session_data, $post_data = [], $get_data = []) {
     $tmp_file = tempnam(sys_get_temp_dir(), 'repro');
@@ -15,7 +15,7 @@ define('ITM_CLI_SCRIPT', true);
 \$_SERVER['REQUEST_METHOD'] = " . ($post_data ? "'POST'" : "'GET'") . ";
 \$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 \$_SERVER['HTTP_HOST'] = 'localhost';
-\$_SERVER['PHP_SELF'] = '/it-management/modules/user_companies/" . basename($script_path) . "';
+\$_SERVER['PHP_SELF'] = '/it-management/modules/employee_companies/" . basename($script_path) . "';
 \$_SERVER['SCRIPT_FILENAME'] = '$script_path';
 
 require '" . realpath(__DIR__ . "/../config/config.php") . "';
@@ -43,15 +43,15 @@ echo ob_get_clean();
     return $output;
 }
 
-echo "Verifying Broken Access Control in User Companies module...\n";
+echo "Verifying Broken Access Control in Employee Companies module...\n";
 
 $company_id = 1;
 // Create a regular user
-$testUser = itm_script_test_user_create($conn, $company_id, [
+$testUser = itm_script_test_employee_create($conn, $company_id, [
     'script_slug' => 'repro-uc-bac',
     'role_id' => 5 // User
 ]);
-itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $session = [
     'company_id' => $company_id,
@@ -61,12 +61,12 @@ $session = [
 ];
 
 // 1. Attempt to access index page
-$output = run_request(realpath(__DIR__ . '/../modules/user_companies/index.php'), $session);
+$output = run_request(realpath(__DIR__ . '/../modules/employee_companies/index.php'), $session);
 
-if (strpos($output, 'User Companies Management') !== false) {
-    echo colorText("[FAIL] Vulnerability Confirmed: Regular user can access User Companies index page!", 'fail') . itm_script_output_nl();
+if (strpos($output, 'Employee Companies Management') !== false) {
+    echo colorText("[FAIL] Vulnerability Confirmed: Regular user can access Employee Companies index page!", 'fail') . itm_script_output_nl();
 } else {
-    echo colorText("[PASS] Regular user cannot access User Companies index page.", 'pass') . itm_script_output_nl();
+    echo colorText("[PASS] Regular user cannot access Employee Companies index page.", 'pass') . itm_script_output_nl();
 }
 
 itm_script_output_end();

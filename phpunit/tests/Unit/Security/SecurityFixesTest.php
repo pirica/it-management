@@ -100,7 +100,7 @@ echo ob_get_clean();
     public function testUserRoleEscalationBlocked()
     {
         // 1. Create a non-admin user
-        $stmt = $this->conn->prepare("INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'attacker', 'attacker@example.com', 'pass', 5, 2, 1)");
+        $stmt = $this->conn->prepare("INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (1, 'Test', 'User', 'attacker', 'attacker@example.com', 'pass', 5, 2, 1, 1)");
         $stmt->execute();
         $attacker_id = mysqli_insert_id($this->conn);
 
@@ -123,10 +123,10 @@ echo ob_get_clean();
         $get = ['id' => $attacker_id];
         $globals = ['crud_action' => 'edit'];
 
-        $this->runIsolated(ROOT_PATH . 'modules/users/index.php', $session, $post, $get, $globals);
+        $this->runIsolated(ROOT_PATH . 'modules/employees/index.php', $session, $post, $get, $globals);
 
         // 3. Verify role was NOT updated
-        $stmtV = $this->conn->prepare("SELECT role_id FROM users WHERE id = ?");
+        $stmtV = $this->conn->prepare("SELECT role_id FROM employees WHERE id = ?");
         $stmtV->bind_param("i", $attacker_id);
         $stmtV->execute();
         $res = $stmtV->get_result();
@@ -134,7 +134,7 @@ echo ob_get_clean();
         $this->assertEquals(5, (int)$row['role_id'], "Non-admin user should not be able to update their role to Admin.");
 
         // Cleanup
-        $stmtC = $this->conn->prepare("DELETE FROM users WHERE id = ?");
+        $stmtC = $this->conn->prepare("DELETE FROM employees WHERE id = ?");
         $stmtC->bind_param("i", $attacker_id);
         $stmtC->execute();
     }
@@ -168,7 +168,7 @@ echo ob_get_clean();
     public function testSensitiveImportAdminOnly()
     {
         // 1. Create a non-admin user
-        $stmt = $this->conn->prepare("INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (1, 'attacker_import', 'attacker_import@example.com', 'pass', 5, 2, 1)");
+        $stmt = $this->conn->prepare("INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (1, 'Test', 'User', 'attacker_import', 'attacker_import@example.com', 'pass', 5, 2, 1, 1)");
         $stmt->execute();
         $attacker_id = mysqli_insert_id($this->conn);
 
@@ -191,7 +191,7 @@ echo ob_get_clean();
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 require_once '" . ROOT_PATH . "config/config.php';
-\$_SESSION['user_id'] = $attacker_id;
+\$_SESSION['employee_id'] = $attacker_id;
 \$_SESSION['company_id'] = 1;
 \$_SESSION['csrf_token'] = 'test_token';
 \$_SERVER['REQUEST_METHOD'] = 'POST';
@@ -208,7 +208,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         $this->assertFalse($result['ok'] ?? true, "Import should fail for non-admin user on sensitive table.");
 
         // Cleanup
-        $this->conn->query("DELETE FROM users WHERE id = $attacker_id");
+        $this->conn->query("DELETE FROM employees WHERE id = $attacker_id");
     }
 
     public function testRegistrationInvitationsAdminOnly()
@@ -242,25 +242,25 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
     public function testNotesZipTraversalBlocked()
     {
         require_once ROOT_PATH . 'includes/notes_visibility.php';
-        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
         $companyId = 1;
-        $owner = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-zip-fix']);
+        $owner = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-zip-fix']);
         if (!is_array($owner)) {
             $this->fail('Unable to create disposable test user.');
         }
 
-        $userId = (int)$owner['id'];
+        $employeeId = (int)$owner['id'];
         $username = (string)$owner['username'];
-        itm_script_test_user_register_teardown($this->conn, $userId);
+        itm_script_test_employee_register_teardown($this->conn, $employeeId);
 
         $traversalPath = '../../../../../config/config.php';
         $this->assertNull(
-            itm_notes_resolve_image_path($companyId, $username, $userId, $traversalPath),
+            itm_notes_resolve_image_path($companyId, $username, $employeeId, $traversalPath),
             'Path traversal filenames must not resolve to files outside the notes upload directory.'
         );
 
-        $uploadDir = itm_notes_private_images_dir($companyId, $username, $userId);
+        $uploadDir = itm_notes_private_images_dir($companyId, $username, $employeeId);
         if (function_exists('itm_ensure_files_storage_directory')) {
             itm_ensure_files_storage_directory(rtrim($uploadDir, '/'));
         } elseif (!is_dir($uploadDir)) {
@@ -269,8 +269,8 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $title = 'VULN_TEST_TRAVERSAL_FIX';
         $imagesJson = json_encode([$traversalPath]);
-        $stmt = $this->conn->prepare("INSERT INTO notes (company_id, user_id, title, content, images_json, active) VALUES (?, ?, ?, 'test', ?, 1)");
-        $stmt->bind_param('iiss', $companyId, $userId, $title, $imagesJson);
+        $stmt = $this->conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, images_json, active) VALUES (?, ?, ?, 'test', ?, 1)");
+        $stmt->bind_param('iiss', $companyId, $employeeId, $title, $imagesJson);
         $stmt->execute();
         $noteId = (int)$stmt->insert_id;
         $stmt->close();
@@ -283,7 +283,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $addedFiles = 0;
         foreach ($imgs as $img) {
-            $filePath = itm_notes_resolve_image_path($companyId, $username, $userId, $img);
+            $filePath = itm_notes_resolve_image_path($companyId, $username, $employeeId, $img);
             if ($filePath !== null) {
                 $zip->addFile($filePath, basename($filePath));
                 $addedFiles++;
@@ -302,23 +302,23 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
     public function testNotesIdorViewBlocked()
     {
         require_once ROOT_PATH . 'includes/notes_visibility.php';
-        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
         $companyId = 1;
-        $victim = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-victim-fix']);
-        $attacker = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-attacker-fix']);
+        $victim = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-victim-fix']);
+        $attacker = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-attacker-fix']);
         if (!is_array($victim) || !is_array($attacker)) {
             $this->fail('Unable to create disposable test users.');
         }
 
         $victimId = (int)$victim['id'];
         $attackerId = (int)$attacker['id'];
-        itm_script_test_user_register_teardown($this->conn, $victimId);
-        itm_script_test_user_register_teardown($this->conn, $attackerId);
+        itm_script_test_employee_register_teardown($this->conn, $victimId);
+        itm_script_test_employee_register_teardown($this->conn, $attackerId);
 
         $title = 'VULN_TEST_IDOR_VIEW_FIX';
         $secret = 'SECRET_CONTENT_' . bin2hex(random_bytes(8));
-        $stmt = $this->conn->prepare('INSERT INTO notes (company_id, user_id, title, content, active) VALUES (?, ?, ?, ?, 1)');
+        $stmt = $this->conn->prepare('INSERT INTO notes (company_id, employee_id, title, content, active) VALUES (?, ?, ?, ?, 1)');
         $stmt->bind_param('iiss', $companyId, $victimId, $title, $secret);
         $stmt->execute();
         $noteId = (int)$stmt->insert_id;
@@ -349,36 +349,36 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
     public function testUsersSensitiveFieldsHiddenFromView()
     {
-        require_once ROOT_PATH . 'includes/itm_users_sensitive_fields.php';
-        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+        require_once ROOT_PATH . 'includes/itm_employees_auth_sensitive_fields.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
         $companyId = 1;
-        $testUser = itm_script_test_user_create($this->conn, $companyId, ['script_slug' => 'phpunit-users-sensitive-view']);
+        $testUser = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-users-sensitive-view']);
         if (!is_array($testUser)) {
             $this->fail('Unable to create disposable test user.');
         }
 
-        $userId = (int)$testUser['id'];
-        itm_script_test_user_register_teardown($this->conn, $userId);
+        $employeeId = (int)$testUser['id'];
+        itm_script_test_employee_register_teardown($this->conn, $employeeId);
 
         $secretToken = 'PHPUNIT_RESET_' . bin2hex(random_bytes(8));
         $secretHash = hash('sha256', $secretToken);
         $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
-        $stmt = $this->conn->prepare('UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?');
-        $stmt->bind_param('sssi', $secretToken, $secretHash, $expiresAt, $userId);
+        $stmt = $this->conn->prepare('UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?');
+        $stmt->bind_param('sssi', $secretToken, $secretHash, $expiresAt, $employeeId);
         $stmt->execute();
         $stmt->close();
 
         $uiSample = array_map(function ($name) {
             return ['Field' => $name];
-        }, array_merge(['username'], itm_users_sensitive_field_names()));
-        $filtered = itm_users_filter_ui_columns($uiSample);
+        }, array_merge(['username'], itm_employees_auth_sensitive_field_names()));
+        $filtered = itm_employees_auth_filter_ui_columns($uiSample);
         $filteredNames = array_column($filtered, 'Field');
-        foreach (itm_users_sensitive_field_names() as $sensitiveField) {
+        foreach (itm_employees_auth_sensitive_field_names() as $sensitiveField) {
             $this->assertNotContains($sensitiveField, $filteredNames);
         }
 
-        $adminStmt = $this->conn->prepare('SELECT id, username FROM users WHERE id = 1 LIMIT 1');
+        $adminStmt = $this->conn->prepare('SELECT id, username FROM employees WHERE id = 1 LIMIT 1');
         $adminStmt->execute();
         $adminRow = $adminStmt->get_result()->fetch_assoc();
         $adminStmt->close();
@@ -391,15 +391,15 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
             'user_id' => (int)$adminRow['id'],
             'username' => (string)$adminRow['username'],
         ];
-        $get = ['id' => $userId];
+        $get = ['id' => $employeeId];
         $extraGlobals = ['crud_action' => 'view'];
 
-        $output = $this->runIsolated(ROOT_PATH . 'modules/users/index.php', $session, [], $get, $extraGlobals);
+        $output = $this->runIsolated(ROOT_PATH . 'modules/employees/index.php', $session, [], $get, $extraGlobals);
         $this->assertStringNotContainsString($secretToken, $output);
         $this->assertStringNotContainsString($secretHash, $output);
         $this->assertStringNotContainsString('Reset Token Hash', $output);
 
-        $this->conn->query("DELETE FROM users WHERE id = $userId");
+        $this->conn->query("DELETE FROM employees WHERE id = $employeeId");
     }
 
     public function testJsonImportRejectsInvalidDecimal(): void
@@ -417,7 +417,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 require_once '" . ROOT_PATH . "config/config.php';
-\$_SESSION['user_id'] = 1;
+\$_SESSION['employee_id'] = 1;
 \$_SESSION['company_id'] = 1;
 \$_SESSION['csrf_token'] = 'test_token';
 \$_SERVER['REQUEST_METHOD'] = 'POST';
@@ -458,7 +458,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'catalogs', 1, \$payload, 
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 require_once '" . ROOT_PATH . "config/config.php';
-\$_SESSION['user_id'] = 1;
+\$_SESSION['employee_id'] = 1;
 \$_SESSION['company_id'] = 1;
 \$_SESSION['csrf_token'] = 'test_token';
 \$_SERVER['REQUEST_METHOD'] = 'POST';

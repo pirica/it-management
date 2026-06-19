@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         mysqli_begin_transaction($conn);
 
-        $inviteSql = 'SELECT i.id, i.company_id, i.invited_by_user_id, i.role_id, i.access_level_id
+        $inviteSql = 'SELECT i.id, i.company_id, i.invited_by_employee_id, i.role_id, i.access_level_id
                       FROM registration_invitations i
                       INNER JOIN companies c ON c.id = i.company_id
                       WHERE i.invitation_code = ?
@@ -62,11 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $companyId = (int)$invitation['company_id'];
             $invitationId = (int)$invitation['id'];
-            $grantedByUserId = isset($invitation['invited_by_user_id']) ? (int)$invitation['invited_by_user_id'] : null;
+            $grantedByUserId = isset($invitation['invited_by_employee_id']) ? (int)$invitation['invited_by_employee_id'] : null;
 
             $roleId = isset($invitation['role_id']) ? (int)$invitation['role_id'] : 0;
             if ($roleId <= 0) {
-                $roleStmt = mysqli_prepare($conn, 'SELECT id FROM user_roles WHERE company_id = ? AND name = "User" LIMIT 1');
+                $roleStmt = mysqli_prepare($conn, 'SELECT id FROM employee_roles WHERE company_id = ? AND name = "User" LIMIT 1');
                 if ($roleStmt) {
                     mysqli_stmt_bind_param($roleStmt, 'i', $companyId);
                     mysqli_stmt_execute($roleStmt);
@@ -95,16 +95,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Registration cannot continue because default role/access settings are missing for this company.';
             } else {
                 $password = password_hash($rawPassword, PASSWORD_DEFAULT);
+                $emailLocal = strstr($email, '@', true);
+                $firstName = $emailLocal !== false && $emailLocal !== '' ? ucfirst($emailLocal) : ucfirst($username);
+                $lastName = 'User';
+                $employmentStatusId = 1;
 
-                $userStmt = mysqli_prepare($conn, 'INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, ?, ?, ?, 1)');
+                $userStmt = mysqli_prepare(
+                    $conn,
+                    'INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+                );
                 if ($userStmt) {
-                    mysqli_stmt_bind_param($userStmt, 'isssii', $companyId, $username, $email, $password, $roleId, $accessLevelId);
+                    mysqli_stmt_bind_param(
+                        $userStmt,
+                        'isssssiii',
+                        $companyId,
+                        $firstName,
+                        $lastName,
+                        $username,
+                        $email,
+                        $password,
+                        $roleId,
+                        $accessLevelId,
+                        $employmentStatusId
+                    );
                     $userInserted = mysqli_stmt_execute($userStmt);
                     $newUserId = $userInserted ? (int)mysqli_insert_id($conn) : 0;
                     mysqli_stmt_close($userStmt);
 
                     if ($userInserted && $newUserId > 0) {
-                        $companyLinkStmt = mysqli_prepare($conn, 'INSERT INTO user_companies (user_id, company_id, granted_by_user_id) VALUES (?, ?, ?)');
+                        $companyLinkStmt = mysqli_prepare($conn, 'INSERT INTO employee_companies (employee_id, company_id, granted_by_employee_id) VALUES (?, ?, ?)');
                         $invitationUpdateStmt = mysqli_prepare($conn, 'UPDATE registration_invitations SET accepted_at = NOW(), active = 0 WHERE id = ?');
 
                         if ($companyLinkStmt && $invitationUpdateStmt) {

@@ -13,17 +13,17 @@
 require_once '../../config/config.php';
 
 // Why: Protection Zone - User needs to be logged in and have a company selected.
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
+if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
     die();
 }
 
 $company_id = (int)$_SESSION['company_id'];
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 
 // Why: Fallback to database if session username is missing (e.g. legacy session).
 if (!isset($_SESSION['username'])) {
-    $stmt = mysqli_prepare($conn, "SELECT username FROM users WHERE id = ? LIMIT 1");
+    $stmt = mysqli_prepare($conn, "SELECT username FROM employees WHERE id = ? LIMIT 1");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, "i", $user_id);
         mysqli_stmt_execute($stmt);
@@ -43,7 +43,7 @@ $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE |
 
 // Why: Department scope for sidebar and folder navigation (Private/Departments roots are API-blocked).
 $dept_id = 0;
-$dept_stmt = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE user_id = ? AND company_id = ? LIMIT 1");
+$dept_stmt = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE id = ? AND company_id = ? LIMIT 1");
 if ($dept_stmt) {
     mysqli_stmt_bind_param($dept_stmt, "ii", $user_id, $company_id);
     mysqli_stmt_execute($dept_stmt);

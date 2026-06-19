@@ -135,10 +135,10 @@ function cr_is_hidden_employee_field($field) {
 }
 
 
-function cr_username_for_user_id($userId) {
+function cr_username_for_user_id($employeeId) {
     static $cache = [];
 
-    $uid = (int)$userId;
+    $uid = (int)$employeeId;
     if ($uid <= 0) {
         return '';
     }
@@ -149,7 +149,7 @@ function cr_username_for_user_id($userId) {
 
     $username = '';
     if (isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
-        $stmt = mysqli_prepare($GLOBALS['conn'], 'SELECT username FROM users WHERE id = ? LIMIT 1');
+        $stmt = mysqli_prepare($GLOBALS['conn'], 'SELECT username FROM employees WHERE id = ? LIMIT 1');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'i', $uid);
             mysqli_stmt_execute($stmt);
@@ -172,7 +172,7 @@ function cr_attempt_email_is_active(mysqli $conn, $email) {
         return 0;
     }
 
-    $userStmt = mysqli_prepare($conn, 'SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ""))) = ? LIMIT 1');
+    $userStmt = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = ? LIMIT 1');
     if ($userStmt) {
         mysqli_stmt_bind_param($userStmt, 's', $normalizedEmail);
         mysqli_stmt_execute($userStmt);
@@ -184,7 +184,7 @@ function cr_attempt_email_is_active(mysqli $conn, $email) {
         }
     }
 
-    $employeeStmt = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ""))) = ? LIMIT 1');
+    $employeeStmt = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = ? LIMIT 1');
     if ($employeeStmt) {
         mysqli_stmt_bind_param($employeeStmt, 's', $normalizedEmail);
         mysqli_stmt_execute($employeeStmt);
@@ -394,7 +394,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;

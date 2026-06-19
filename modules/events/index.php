@@ -228,7 +228,7 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
             $catColor = sanitize((string)($row['category_color'] ?? '#3b82f6'));
             return '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background-color:' . $catColor . ';"></div>' . sanitize($catName) . '</div>';
         }
-        if ($field === 'assigned_to_user_id') {
+        if ($field === 'assigned_to_employee_id') {
             $firstName = trim((string)($row['first_name'] ?? ''));
             $lastName = trim((string)($row['last_name'] ?? ''));
             $username = trim((string)($row['username'] ?? ''));
@@ -384,7 +384,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['events', 'event_categories', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['events', 'event_categories', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -1068,7 +1068,7 @@ $offset = ($page - 1) * $perPage;
 $rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
      FROM events e
      LEFT JOIN event_categories ec ON e.category_id = ec.id
-     LEFT JOIN users u ON e.assigned_to_user_id = u.id
+     LEFT JOIN employees u ON e.assigned_to_employee_id = u.id
      ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
@@ -1349,7 +1349,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $new
                             $sqlExt = "SELECT ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
                                        FROM events e
                                        LEFT JOIN event_categories ec ON e.category_id = ec.id
-                                       LEFT JOIN users u ON e.assigned_to_user_id = u.id
+                                       LEFT JOIN employees u ON e.assigned_to_employee_id = u.id
                                        WHERE e.id = ? LIMIT 1";
                             $stmtExt = mysqli_prepare($conn, $sqlExt);
                             if ($stmtExt) {

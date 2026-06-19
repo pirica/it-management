@@ -130,13 +130,13 @@ $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
 // an explicit per-request admin check here instead of relying only on menu visibility.
 $canManageBackups = false;
 $canManageMaintenanceTools = false;
-$settingsUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$settingsUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 if ($settingsUserId > 0) {
     $settingsRoleStmt = mysqli_prepare(
         $conn,
         'SELECT LOWER(COALESCE(ur.name, "")) AS role_name, LOWER(COALESCE(u.username, "")) AS username
-         FROM users u
-         LEFT JOIN user_roles ur ON ur.id = u.role_id
+         FROM employees u
+         LEFT JOIN employee_roles ur ON ur.id = u.role_id
          WHERE u.id = ?
          LIMIT 1'
     );

@@ -728,10 +728,10 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_script_disposable_users.php">check_script_disposable_users.php</a></td>
+                    <td><a href="check_script_disposable_employees.php">check_script_disposable_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>users</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_user.php</code>.</td>
-                    <td>Browser: plain-text report. CLI: <code>php scripts/check_script_disposable_users.php</code> — run after changing audit repro scripts; exit <code>1</code> on failure.</td>
+                    <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>users</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_employee.php</code>.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_script_disposable_employees.php</code> — run after changing audit repro scripts; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
                     <td><a href="check_sql_injection_coverage.php">check_sql_injection_coverage.php</a></td>
@@ -875,6 +875,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_employee_auth_merge.php">verify_employee_auth_merge.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression after merging <code>users</code> into <code>employees</code>: renamed junction tables, admin seed login row, <code>employee_companies</code> links, and absence of legacy <code>users</code> / <code>employees.user_id</code>.</td>
+                    <td><code>php scripts/verify_employee_auth_merge.php</code>. Run after changing auth/session bootstrap, <code>database.sql</code> employee auth columns, or login/register/reset flows.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
@@ -1043,7 +1049,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_users_sensitive_view.php">verify_users_sensitive_view.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression check: Users list/view HTML omits password and reset-token columns (<code>itm_users_filter_ui_columns()</code>).</td>
+                    <td>Regression check: Users list/view HTML omits password and reset-token columns (<code>itm_employees_auth_filter_ui_columns()</code>).</td>
                     <td><code>php scripts/verify_users_sensitive_view.php</code></td>
                 </tr>
                 <tr>
@@ -1055,7 +1061,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_git_reset_csrf.php">verify_git_reset_csrf.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression: <code>reset_git_history.php</code> rejects non-POST requests and POST without a valid CSRF token. Uses disposable admin-like user via <code>itm_script_test_user.php</code>.</td>
+                    <td>Regression: <code>reset_git_history.php</code> rejects non-POST requests and POST without a valid CSRF token. Uses disposable admin-like user via <code>itm_script_test_employee.php</code>.</td>
                     <td><code>php scripts/verify_git_reset_csrf.php</code> — run after changing Git reset maintenance endpoints or CSRF guards.</td>
                 </tr>
                 <tr>
@@ -1115,7 +1121,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_audit_logs_disclosure.php">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable users via <code>itm_script_test_user.php</code>.</td>
+                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable users via <code>itm_script_test_employee.php</code>.</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
                 </tr>
                 <tr>
@@ -1197,21 +1203,21 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/repro_rbac_bypass.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_user_companies_leak.php">repro_user_companies_leak.php</a></td>
+                    <td><a href="repro_employee_companies_leak.php">repro_employee_companies_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for Multi-Tenant Data Leak in Users module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
-                    <td><code>php scripts/repro_user_companies_leak.php</code></td>
+                    <td><code>php scripts/repro_employee_companies_leak.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_user_companies_bac.php">repro_user_companies_bac.php</a></td>
+                    <td><a href="repro_employee_companies_bac.php">repro_employee_companies_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Broken Access Control in User Companies module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
-                    <td><code>php scripts/repro_user_companies_bac.php</code></td>
+                    <td>PoC for Broken Access Control in Employee Companies module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td><code>php scripts/repro_employee_companies_bac.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_audit_token_leak.php">repro_audit_token_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification for Audit Log Sensitive Data Exposure. Disposable test user; prepared <code>UPDATE users</code> for <code>reset_token</code> fields.</td>
+                    <td>Verification for Audit Log Sensitive Data Exposure. Disposable test user; prepared <code>UPDATE employees</code> for <code>reset_token</code> fields.</td>
                     <td><code>php scripts/repro_audit_token_leak.php</code></td>
                 </tr>
                 <tr>

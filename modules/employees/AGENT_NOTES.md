@@ -16,7 +16,7 @@ The central module for managing employee records, including contact info, hierar
 - **employees** → feeds **resignations** read-only weekly report via `termination_date`, `start_date`, `employment_status_id`, and `employee_type_id` (same company scope).
 - **employees** → optionally depends on **it_locations** via `location_id`.
 - **employees** → self-references via `reports_to`.
-- **employees** → optionally links to **users** via `user_id`.
+- **employees** → optionally links to **users** via `employee_id`.
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).

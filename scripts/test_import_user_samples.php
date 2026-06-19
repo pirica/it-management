@@ -12,23 +12,23 @@ ini_set('display_errors', 1);
 // Why: config.php redirects to login.php if it doesn't see a CLI session or a logged-in user.
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
-$testUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'test-import-user-samples']);
+$testUser = itm_script_test_employee_create($conn, 1, ['script_slug' => 'test-import-user-samples']);
 if (!is_array($testUser)) {
     die("Unable to create disposable test user.\n");
 }
-itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 // Mock session for audit logs and CSRF
-$_SESSION['user_id'] = (int)$testUser['id'];
+$_SESSION['employee_id'] = (int)$testUser['id'];
 $_SESSION['username'] = (string)$testUser['username'];
 $_SESSION['company_id'] = 1;
 $_SESSION['csrf_token'] = 'test_token';
 
 // Set MySQL session variables for triggers
 if (isset($conn) && $conn) {
-    itm_script_test_user_set_audit_context($conn, (int)$testUser['id'], (string)$testUser['username'], 1);
+    itm_script_test_employee_set_audit_context($conn, (int)$testUser['id'], (string)$testUser['username'], 1);
 }
 
 function test_import($name, $headers, $rows) {

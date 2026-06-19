@@ -2,7 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('RBAC Bypass PoC');
 
@@ -86,11 +86,11 @@ $role_id = 5; // User
 mysqli_query($conn, "DELETE FROM role_module_permissions WHERE role_id = $role_id AND module_name = 'Expenses' AND company_id = $company_id");
 mysqli_query($conn, "INSERT INTO role_module_permissions (company_id, role_id, module_name, can_view, can_create, can_edit, can_delete) VALUES ($company_id, $role_id, 'Expenses', 1, 0, 0, 0)");
 
-$testUser = itm_script_test_user_create($conn, $company_id, [
+$testUser = itm_script_test_employee_create($conn, $company_id, [
     'script_slug' => 'repro-rbac-bypass',
     'role_id' => $role_id
 ]);
-itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $costCenterId = repro_rbac_pick_cost_center_id($conn, $company_id);
 if ($costCenterId <= 0) {

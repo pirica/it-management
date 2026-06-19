@@ -9,7 +9,7 @@ if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 $root = dirname(__DIR__);
 
 session_start();
-$_SESSION['user_id'] = 1;
+$_SESSION['employee_id'] = 1;
 $_SESSION['company_id'] = 1;
 
 require_once $root . '/config/config.php';
@@ -19,13 +19,13 @@ echo "--- Repro: Todo User Leak ---\n";
 // 1. Create a user in Company 2
 $company2Id = 2;
 $leakUser = "leak_user_" . uniqid();
-$stmtIns = mysqli_prepare($conn, "INSERT INTO users (company_id, username, email, password, role_id, access_level_id, active) VALUES (?, ?, ?, 'pass', 1, 1, 1)");
+$stmtIns = mysqli_prepare($conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (?, 'Test', 'User', ?, ?, 'pass', 1, 1, 1, 1)");
 $email = $leakUser . '@example.com';
 mysqli_stmt_bind_param($stmtIns, 'iss', $company2Id, $leakUser, $email);
 mysqli_stmt_execute($stmtIns);
 $leakId = mysqli_insert_id($conn);
 
-$stmtUC = mysqli_prepare($conn, "INSERT INTO user_companies (user_id, company_id) VALUES (?, ?)");
+$stmtUC = mysqli_prepare($conn, "INSERT INTO employee_companies (employee_id, company_id) VALUES (?, ?)");
 mysqli_stmt_bind_param($stmtUC, 'ii', $leakId, $company2Id);
 mysqli_stmt_execute($stmtUC);
 

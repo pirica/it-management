@@ -70,11 +70,11 @@ function tickets_resolve_fk_id_by_name(mysqli $conn, string $table, int $company
 }
 
 /**
- * Default created_by_user_id for imports when Excel omits audit user columns.
+ * Default created_by_employee_id for imports when Excel omits audit user columns.
  */
 function tickets_import_default_user_id(mysqli $conn, int $companyId): int
 {
-    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    $sessionUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
     if ($sessionUserId > 0) {
         return $sessionUserId;
     }
@@ -82,8 +82,8 @@ function tickets_import_default_user_id(mysqli $conn, int $companyId): int
     if ($companyId > 0) {
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT u.id FROM users u
-             INNER JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+            'SELECT u.id FROM employees u
+             INNER JOIN employee_companies uc ON uc.employee_id = u.id AND uc.company_id = ?
              WHERE u.active = 1
              ORDER BY u.id ASC
              LIMIT 1'
@@ -100,7 +100,7 @@ function tickets_import_default_user_id(mysqli $conn, int $companyId): int
         }
     }
 
-    $fallback = mysqli_query($conn, 'SELECT id FROM users WHERE active = 1 ORDER BY id ASC LIMIT 1');
+    $fallback = mysqli_query($conn, 'SELECT id FROM employees WHERE active = 1 ORDER BY id ASC LIMIT 1');
     $fallbackRow = $fallback ? mysqli_fetch_assoc($fallback) : null;
 
     return $fallbackRow ? (int)($fallbackRow['id'] ?? 0) : 0;
@@ -145,10 +145,10 @@ function tickets_prepare_import_excel_rows(mysqli $conn, int $companyId, array $
 
     $appendValues = [];
     if (empty($present['created by user id']) && empty($present['created by'])) {
-        $userId = tickets_import_default_user_id($conn, $companyId);
-        if ($userId > 0) {
-            $headers[] = $importHeader('created_by_user_id');
-            $appendValues[] = (string)$userId;
+        $employeeId = tickets_import_default_user_id($conn, $companyId);
+        if ($employeeId > 0) {
+            $headers[] = $importHeader('created_by_employee_id');
+            $appendValues[] = (string)$employeeId;
         }
     }
 

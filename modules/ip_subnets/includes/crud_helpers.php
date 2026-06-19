@@ -131,11 +131,11 @@ function cr_user_label_by_id($conn, $company_id, $rawId) {
     $whereCompany = ($company_id > 0)
         ? ' WHERE id=' . $id . ' AND company_id=' . (int)$company_id
         : ' WHERE id=' . $id;
-    $sql = 'SELECT username, first_name, last_name FROM `users`' . $whereCompany . ' LIMIT 1';
+    $sql = 'SELECT username, first_name, last_name FROM `employees`' . $whereCompany . ' LIMIT 1';
     $res = mysqli_query($conn, $sql);
 
     if ((!$res || mysqli_num_rows($res) === 0) && $company_id > 0) {
-        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `users` WHERE id=' . $id . ' LIMIT 1');
+        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `employees` WHERE id=' . $id . ' LIMIT 1');
     }
 
     if ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -161,7 +161,7 @@ function cr_user_options($conn, $company_id) {
     $where = ($company_id > 0)
         ? ' WHERE company_id=' . (int)$company_id
         : '';
-    $sql = 'SELECT id, username, first_name, last_name FROM `users`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
+    $sql = 'SELECT id, username, first_name, last_name FROM `employees`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
     $res = mysqli_query($conn, $sql);
     $options = [];
     while ($res && ($row = mysqli_fetch_assoc($res))) {

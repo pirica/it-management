@@ -27,9 +27,9 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $fid = (int)$_POST['folder_id'];
         $new_parent = (int)$_POST['new_parent_id'] ?: null;
 
-        $check_res = mysqli_query($conn, "SELECT user_id FROM bookmark_folders WHERE id = $fid");
+        $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $fid");
         $f_data = mysqli_fetch_assoc($check_res);
-        if ($f_data && (strtolower($_SESSION['role_name'] ?? '') === 'admin') || (int)$f_data['user_id'] === (int)($_SESSION['user_id'] ?? 0)) {
+        if ($f_data && (strtolower($_SESSION['role_name'] ?? '') === 'admin') || (int)$f_data['user_id'] === (int)($_SESSION['employee_id'] ?? 0)) {
             $stmt = mysqli_prepare($conn, "UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?");
             mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
             mysqli_stmt_execute($stmt);
@@ -38,7 +38,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 }
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {

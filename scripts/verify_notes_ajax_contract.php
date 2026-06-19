@@ -9,7 +9,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'includes/notes_visibility.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Notes AJAX Contract Verification');
 
@@ -17,21 +17,21 @@ $nl = itm_script_output_nl();
 echo 'Verifying Notes AJAX blocked single_delete response...' . $nl;
 
 $company_id = 1;
-$owner = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-notes-ajax-owner']);
-$attacker = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-notes-ajax-attacker']);
+$owner = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'verify-notes-ajax-owner']);
+$attacker = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'verify-notes-ajax-attacker']);
 if (!is_array($owner) || !is_array($attacker)) {
     echo colorText('[FAIL] Unable to create disposable test users.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
-itm_script_test_user_register_teardown($conn, (int)$owner['id']);
-itm_script_test_user_register_teardown($conn, (int)$attacker['id']);
+itm_script_test_employee_register_teardown($conn, (int)$owner['id']);
+itm_script_test_employee_register_teardown($conn, (int)$attacker['id']);
 
 $ownerId = (int)$owner['id'];
 $attackerId = (int)$attacker['id'];
 $secret = 'AJAX_CONTRACT_' . uniqid();
 $title = 'Private';
-$stmtInsert = $conn->prepare('INSERT INTO notes (company_id, user_id, title, content, active) VALUES (?, ?, ?, ?, 1)');
+$stmtInsert = $conn->prepare('INSERT INTO notes (company_id, employee_id, title, content, active) VALUES (?, ?, ?, ?, 1)');
 $stmtInsert->bind_param('iiss', $company_id, $ownerId, $title, $secret);
 $stmtInsert->execute();
 $noteId = (int)$stmtInsert->insert_id;
@@ -46,7 +46,7 @@ define('ITM_CLI_SCRIPT', true);
 function itm_validate_csrf_token(\$token) { return true; }
 require '" . realpath(dirname(__DIR__) . '/config/config.php') . "';
 require '" . realpath(ROOT_PATH . 'includes/notes_visibility.php') . "';
-\$_SESSION['user_id'] = " . $attackerId . ";
+\$_SESSION['employee_id'] = " . $attackerId . ";
 \$_SESSION['company_id'] = " . $company_id . ";
 \$_SESSION['username'] = " . var_export((string)$attacker['username'], true) . ";
 \$_POST['csrf_token'] = 'test';

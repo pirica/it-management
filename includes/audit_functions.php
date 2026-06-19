@@ -280,13 +280,13 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
         return false;
     }
 
-    $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+    $user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null;
     $old_json = itm_audit_encode_values($old_values);
     $new_json = itm_audit_encode_values($new_values);
     $ipAddress = itm_get_client_ip_address();
     $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
 
-    $sql = 'INSERT INTO audit_logs (company_id, user_id, table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
+    $sql = 'INSERT INTO audit_logs (company_id, employee_id, table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
          . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
     try {

@@ -25,8 +25,8 @@ $session = [
     'role_name' => 'User'
 ];
 
-// 2. Query audit logs for 'users' table changes
-$sql = "SELECT old_values, new_values FROM audit_logs WHERE table_name = 'users' AND company_id = ? ORDER BY id DESC LIMIT 5";
+// 2. Query audit logs for 'employees' table changes
+$sql = "SELECT old_values, new_values FROM audit_logs WHERE table_name = 'employees' AND company_id = ? ORDER BY id DESC LIMIT 5";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, 'i', $companyId);
 mysqli_stmt_execute($stmt);

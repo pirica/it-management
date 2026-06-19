@@ -12,9 +12,9 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - Visibility helpers in `includes/todo_visibility.php`.
 
 ## 4. Business Rules (Critical for Agents)
-- Global tasks: `assigned_to_user_id IS NULL` (visible to company).
-- Private/assigned tasks: user must be in `assigned_to_user_id` (comma-separated IDs via `FIND_IN_SET`) or be `created_by_user_id`.
-- **Assignee dropdown:** load active users scoped to `company_id` only (`users.company_id` or active `user_companies` row via `COALESCE(uc.active, 1) = 1`) using `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback). After tasks load, `todo_merge_assignee_users()` augments the map with inactive assignees via tenant-scoped per-id lookups (`itm_mysqli_stmt_fetch_assoc()`) so list/view labels stay visible. Do not include global `Admin` via username bypass.
+- Global tasks: `assigned_to_employee_id IS NULL` (visible to company).
+- Private/assigned tasks: user must be in `assigned_to_employee_id` (comma-separated IDs via `FIND_IN_SET`) or be `created_by_employee_id`.
+- **Assignee dropdown:** load active users scoped to `company_id` only (`users.company_id` or active `employee_companies` row via `COALESCE(uc.active, 1) = 1`) using `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback). After tasks load, `todo_merge_assignee_users()` augments the map with inactive assignees via tenant-scoped per-id lookups (`itm_mysqli_stmt_fetch_assoc()`) so list/view labels stay visible. Do not include global `Admin` via username bypass.
 - Import resolves category names, department names/codes, and usernames to IDs.
 - Use `itm_todo_visibility_sql()` on all list queries.
 
@@ -40,7 +40,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 
 ## 10. Common Pitfalls
 - Do not use raw `mysqli_query` with unescaped `$company_id` in new code — prefer prepared statements.
-- `assigned_to_user_id` may hold multiple IDs — use `FIND_IN_SET`, not `=`.
+- `assigned_to_employee_id` may hold multiple IDs — use `FIND_IN_SET`, not `=`.
 - Always apply `itm_todo_append_visibility_filter()` or equivalent SQL.
 
 ## 11. Examples of Safe Code Patterns

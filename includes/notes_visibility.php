@@ -29,9 +29,9 @@ function itm_notes_append_visibility_filter(&$conditions, &$types, &$params, $lo
 {
     $conditions[] = itm_notes_visibility_sql($alias);
     $types .= 'ii';
-    $userId = (int)$loggedUserId;
-    $params[] = $userId;
-    $params[] = $userId;
+    $employeeId = (int)$loggedUserId;
+    $params[] = $employeeId;
+    $params[] = $employeeId;
 }
 
 /**
@@ -66,17 +66,17 @@ function itm_notes_fetch_visible_by_id($conn, $noteId, $companyId, $loggedUserId
 /**
  * Absolute filesystem path for a user's note image uploads (trailing slash).
  */
-function itm_notes_private_images_dir($companyId, $username, $userId)
+function itm_notes_private_images_dir($companyId, $username, $employeeId)
 {
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
         return '';
     }
 
     // Why: Match Explorer private folder naming so ZIP paths align with upload storage.
     $safeUsername = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', (string)$username);
-    return ROOT_PATH . 'files/' . $companyId . '/Private/' . $safeUsername . '_' . $userId . '/notes/';
+    return ROOT_PATH . 'files/' . $companyId . '/Private/' . $safeUsername . '_' . $employeeId . '/notes/';
 }
 
 /**
@@ -100,14 +100,14 @@ function itm_notes_normalize_image_filename($storedName)
 /**
  * Resolves a note attachment to an on-disk file under the user's notes upload directory.
  */
-function itm_notes_resolve_image_path($companyId, $username, $userId, $storedName)
+function itm_notes_resolve_image_path($companyId, $username, $employeeId, $storedName)
 {
     $filename = itm_notes_normalize_image_filename($storedName);
     if ($filename === null) {
         return null;
     }
 
-    $notesDir = itm_notes_private_images_dir($companyId, $username, $userId);
+    $notesDir = itm_notes_private_images_dir($companyId, $username, $employeeId);
     if ($notesDir === '') {
         return null;
     }

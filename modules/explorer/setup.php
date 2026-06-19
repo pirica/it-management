@@ -11,7 +11,7 @@ define('ITM_CLI_SCRIPT', true);
 require_once dirname(dirname(__DIR__)) . '/config/config.php';
 
 // Why: Protection Zone - User needs to be logged in and have a company selected.
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['company_id'])) {
+if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
     if (PHP_SAPI !== 'cli') {
         header('Location: ' . BASE_URL . 'login.php');
         exit;

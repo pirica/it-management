@@ -50,9 +50,9 @@ function eqdct_assert($condition, $message)
     eqdct_out('[PASS] ' . $message);
 }
 
-function eqdct_set_audit_context(mysqli $conn, int $companyId, int $userId = 1): void
+function eqdct_set_audit_context(mysqli $conn, int $companyId, int $employeeId = 1): void
 {
-    mysqli_query($conn, 'SET @app_user_id = ' . (int)$userId);
+    mysqli_query($conn, 'SET @app_employee_id = ' . (int)$employeeId);
     mysqli_query($conn, 'SET @app_company_id = ' . (int)$companyId);
     mysqli_query($conn, "SET @app_username = 'cli-test'");
     mysqli_query($conn, "SET @app_email = 'cli-test@example.com'");

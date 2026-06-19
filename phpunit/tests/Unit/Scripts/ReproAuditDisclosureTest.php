@@ -14,7 +14,7 @@ class ReproAuditDisclosureTest extends ItmScriptCliTestCase
         }
 
         require_once ROOT_PATH . 'config/config.php';
-        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
         global $conn;
         if (!$conn || !($conn instanceof mysqli)) {
@@ -26,7 +26,7 @@ class ReproAuditDisclosureTest extends ItmScriptCliTestCase
 
     public function testReproDoesNotMutateSeedAdminResetFields(): void
     {
-        $adminSnapshot = itm_script_test_user_snapshot($this->conn, 1, [
+        $adminSnapshot = itm_script_test_employee_snapshot($this->conn, 1, [
             'reset_token',
             'reset_token_hash',
             'reset_token_expires_at',
@@ -38,14 +38,14 @@ class ReproAuditDisclosureTest extends ItmScriptCliTestCase
         $this->assertDoesNotMatchRegularExpression('/\buser ID 1\b/', $result['output']);
         $this->assertStringContainsString('disposable user ID', $result['output']);
 
-        $adminAfter = itm_script_test_user_snapshot($this->conn, 1, [
+        $adminAfter = itm_script_test_employee_snapshot($this->conn, 1, [
             'reset_token',
             'reset_token_hash',
             'reset_token_expires_at',
         ]);
         $this->assertSame($adminSnapshot, $adminAfter);
 
-        $res = mysqli_query($this->conn, "SELECT id FROM users WHERE username LIKE 'script-repro-audit-disclosure-%'");
+        $res = mysqli_query($this->conn, "SELECT id FROM employees WHERE username LIKE 'script-repro-audit-disclosure-%'");
         $this->assertSame(0, $res ? mysqli_num_rows($res) : -1);
     }
 }

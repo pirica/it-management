@@ -235,19 +235,19 @@ if (!function_exists('itm_role_module_permission_row')) {
 }
 
 if (!function_exists('itm_user_has_role_module_permission')) {
-    function itm_user_has_role_module_permission($conn, $userId, $companyId, $moduleName, $action)
+    function itm_user_has_role_module_permission($conn, $employeeId, $companyId, $moduleName, $action)
     {
         if (!($conn instanceof mysqli)) {
             return false;
         }
 
-        $userId = (int)$userId;
+        $employeeId = (int)$employeeId;
         $companyId = itm_resolve_active_company_id((int)$companyId);
-        if ($userId <= 0 || $companyId <= 0) {
+        if ($employeeId <= 0 || $companyId <= 0) {
             return false;
         }
 
-        if (function_exists('itm_is_admin') && itm_is_admin($conn, $userId)) {
+        if (function_exists('itm_is_admin') && itm_is_admin($conn, $employeeId)) {
             return true;
         }
 
@@ -256,12 +256,12 @@ if (!function_exists('itm_user_has_role_module_permission')) {
             return false;
         }
 
-        $stmt = mysqli_prepare($conn, 'SELECT role_id FROM users WHERE id = ? LIMIT 1');
+        $stmt = mysqli_prepare($conn, 'SELECT role_id FROM employees WHERE id = ? LIMIT 1');
         if (!$stmt) {
             return false;
         }
 
-        mysqli_stmt_bind_param($stmt, 'i', $userId);
+        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
         mysqli_stmt_execute($stmt);
         $userRow = itm_mysqli_stmt_fetch_assoc($stmt);
         mysqli_stmt_close($stmt);
@@ -285,9 +285,9 @@ if (!function_exists('itm_user_has_role_module_permission')) {
 }
 
 if (!function_exists('itm_require_role_module_permission')) {
-    function itm_require_role_module_permission($conn, $userId, $companyId, $moduleName, $action)
+    function itm_require_role_module_permission($conn, $employeeId, $companyId, $moduleName, $action)
     {
-        if (itm_user_has_role_module_permission($conn, $userId, $companyId, $moduleName, $action)) {
+        if (itm_user_has_role_module_permission($conn, $employeeId, $companyId, $moduleName, $action)) {
             return;
         }
 
@@ -335,8 +335,8 @@ if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
             'settings',
             'switch_ports',
             'ui_configuration',
-            'user_companies',
-            'user_roles',
+            'employee_companies',
+            'employee_roles',
         ];
     }
 }
@@ -404,7 +404,7 @@ if (!function_exists('itm_require_crud_role_module_permission')) {
 
         itm_require_role_module_permission(
             $conn,
-            (int)($_SESSION['user_id'] ?? 0),
+            (int)($_SESSION['employee_id'] ?? 0),
             itm_resolve_active_company_id((int)($GLOBALS['company_id'] ?? 0)),
             $moduleName,
             $action

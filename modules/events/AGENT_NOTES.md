@@ -9,7 +9,7 @@ Manages scheduled events, meetings, and maintenance windows.
 ## 3. Required Relationships
 - **events** → depends on **companies**.
 - **events** → depends on **event_categories**.
-- **events** → links to **users** (via `assigned_to_user_id`).
+- **events** → links to **users** (via `assigned_to_employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Date Validation**: `start_datetime` should generally be before `end_datetime`.

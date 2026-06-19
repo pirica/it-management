@@ -11,16 +11,16 @@ Tracks asset custody per employee: which **equipment** or **inventory item** (op
 - **employee_assignment_history** → depends on **employees** (`employee_id`, `ON DELETE RESTRICT`).
 - **employee_assignment_history** → optional **equipment** (`equipment_id`, `ON DELETE SET NULL`).
 - **employee_assignment_history** → optional **inventory_items** (`inventory_item_id`, `ON DELETE SET NULL`).
-- **employee_assignment_history** → optional **users** (`assigned_by_user_id`, `received_by_user_id`, `ON DELETE SET NULL`).
+- **employee_assignment_history** → optional **users** (`assigned_by_employee_id`, `received_by_employee_id`, `ON DELETE SET NULL`).
 - **equipment** → optional mirror FK **employees** (`assigned_to_employee_id`) — kept in sync when assignment originates from the equipment module.
 
 ## 4. Business Rules (Critical for Agents)
 - **One row per employee per company:** `UNIQUE KEY uq_employee_assignment_history_company_scope (company_id, employee_id)`. Upserts replace the same row; do not insert duplicate `(company_id, employee_id)` pairs.
-- **Required columns:** `employee_id`, `assigned_date` (`date NOT NULL`). Optional: `equipment_id`, `inventory_item_id`, `asset_description`, `returned_date`, `assigned_by_user_id`, `received_by_user_id`, `condition_on_return`, `signed_handover`, `comments`, `sim_imei`.
+- **Required columns:** `employee_id`, `assigned_date` (`date NOT NULL`). Optional: `equipment_id`, `inventory_item_id`, `asset_description`, `returned_date`, `assigned_by_employee_id`, `received_by_employee_id`, `condition_on_return`, `signed_handover`, `comments`, `sim_imei`.
 - **Open assignment:** `returned_date IS NULL` means the employee still holds the linked asset (when `equipment_id` or `inventory_item_id` is set).
 - **Inbound sync from equipment (mandatory contract):** when **Assign To Employee** changes on `modules/equipment/create.php`, `equipment_sync_assigned_employee()` (in `modules/equipment/equipment_assignment_sync.php`) runs inside the equipment save transaction and:
   - Sets `equipment.assigned_to_employee_id`.
-  - **Assign:** UPSERT history for the employee with `equipment_id`, `assigned_date = DATE(COALESCE(equipment.updated_at, equipment.created_at))`, `returned_date = NULL`, `assigned_by_user_id =` session user, `asset_description` from equipment name/model. **Replace policy:** clears assignee on any other equipment that employee held.
+  - **Assign:** UPSERT history for the employee with `equipment_id`, `assigned_date = DATE(COALESCE(equipment.updated_at, equipment.created_at))`, `returned_date = NULL`, `assigned_by_employee_id =` session user, `asset_description` from equipment name/model. **Replace policy:** clears assignee on any other equipment that employee held.
   - **Unassign:** clears `equipment.assigned_to_employee_id`; closes open rows for that `equipment_id` (`returned_date = CURDATE()`).
   - **Delete equipment:** closes open rows for that `equipment_id` before `DELETE` (`returned_date = CURDATE()`); FK clears `equipment_id` on history.
 - **Equipment form hidden fields (posted, not shown in this module):** `equipment_id` (edit id, `0` on create) and `assigned_date` (date from equipment timestamps on load; sync re-reads `DATE(COALESCE(updated_at, created_at))` after save). See `modules/equipment/AGENT_NOTES.md`.
@@ -69,13 +69,13 @@ $stmt->execute();
 ```php
 $stmt = $conn->prepare(
     'INSERT INTO employee_assignment_history
-        (company_id, employee_id, equipment_id, assigned_date, returned_date, assigned_by_user_id, asset_description, active)
+        (company_id, employee_id, equipment_id, assigned_date, returned_date, assigned_by_employee_id, asset_description, active)
      VALUES (?, ?, ?, ?, NULL, ?, ?, 1)
      ON DUPLICATE KEY UPDATE
         equipment_id = VALUES(equipment_id),
         assigned_date = VALUES(assigned_date),
         returned_date = NULL,
-        assigned_by_user_id = VALUES(assigned_by_user_id),
+        assigned_by_employee_id = VALUES(assigned_by_employee_id),
         asset_description = VALUES(asset_description),
         updated_at = CURRENT_TIMESTAMP'
 );

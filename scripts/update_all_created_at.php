@@ -43,11 +43,11 @@ function itm_update_all_created_at_run(mysqli $conn, string $targetCreatedAt, bo
     $errorCount = 0;
 
     // Why: database.sql once shipped sidebar audit triggers with username/user_email columns removed from audit_logs.
-    if (function_exists('itm_ensure_user_sidebar_preferences_audit_triggers')) {
-        if (!itm_ensure_user_sidebar_preferences_audit_triggers($conn)) {
+    if (function_exists('itm_ensure_employee_sidebar_preferences_audit_triggers')) {
+        if (!itm_ensure_employee_sidebar_preferences_audit_triggers($conn)) {
             $lines[] = [
                 'level' => 'error',
-                'table' => 'user_sidebar_preferences',
+                'table' => 'employee_sidebar_preferences',
                 'message' => 'Could not rebuild audit triggers (username/user_email column mismatch).',
                 'rows' => 0,
             ];

@@ -17,7 +17,7 @@ Analysis of `api-examples/` and the documentation in `scripts/api.php` confirms 
 ### 2.1 Generic Select Options API (`modules/select_options_api.php`)
 
 *   **Description:** Provides a generic endpoint for creating new reference records (options) on-the-fly.
-*   **Key Find:** **REMEDIATED (table whitelist).** Quick-add inserts are restricted to lookup tables in `includes/itm_select_options_policy.php`. Sensitive tables (`users`, `user_roles`, `role_module_permissions`, `access_levels`, and related identity/RBAC tables) are blocked; privilege fields such as `role_id` and `access_level_id` are stripped from `extra_fields`. Regression: `php scripts/verify_select_options_escalation.php`.
+*   **Key Find:** **REMEDIATED (table whitelist).** Quick-add inserts are restricted to lookup tables in `includes/itm_select_options_policy.php`. Sensitive tables (`employees`, `employee_roles`, `role_module_permissions`, `access_levels`, and related identity/RBAC tables) are blocked; privilege fields such as `role_id` and `access_level_id` are stripped from `extra_fields`. Regression: `php scripts/verify_select_options_escalation.php`.
 *   **Trusting User-Supplied Identifiers:** The script still accepts `id_col` and `label_col` from POST, but `table` must pass the server-side allow-list before any insert runs.
 *   **Remaining follow-up:** `extra_fields` are not yet validated against a per-table schema at runtime.
 *   **Recommendation (follow-up):** Add schema-based validation for `extra_fields` on allowed tables.
@@ -72,7 +72,7 @@ Targeted tests were executed using sample data and established session contexts 
 ### 3.2 Historical evidence (remediated findings)
 
 #### Privilege Escalation in Select Options API (remediated)
-A regular user attempting to create an Admin via the `users` table receives HTTP 403 and no database row is inserted. Verification: `php scripts/verify_select_options_escalation.php`.
+A regular user attempting to create an Admin via the `employees` table receives HTTP 403 and no database row is inserted. Verification: `php scripts/verify_select_options_escalation.php`.
 
 Previously vulnerable payload (now blocked):
 ```bash
@@ -80,7 +80,7 @@ Previously vulnerable payload (now blocked):
 POST /modules/select_options_api.php
 {
   "csrf_token": "valid_token",
-  "table": "users",
+  "table": "employees",
   "id_col": "id",
   "label_col": "username",
   "new_value": "EvilAdmin",
@@ -139,8 +139,8 @@ POST /modules/notes/index.php?ajax_action=single_delete
 4.  **Mandatory Tenant Scoping on JSON Import:** Session-derived `company_id` on insert; updates require matching tenant row. Sensitive tables admin-only.
 5.  **Rate Limiting:** Per-user API tiers on `ui_configuration`; enforcement in `includes/itm_api_rate_limit.php`. Probe: `GET scripts/api.php?rate_limit=1`. Regressions: `php scripts/apitest_tier_free.php`, `php scripts/apitest_tier_basic.php`.
 6.  **Maintenance Script RBAC (catalogued tools):** Browser Admin gate via `includes/itm_maintenance_script_admin_gate.php` on `module_browser_qa_runner.php`, `compare_database_sql_modules.php`, and `test_sql_injection.php`. Regression: `php scripts/verify_maintenance_scripts_rbac.php`.
-7.  **User Companies admin gate:** `itm_require_admin()` on every `modules/user_companies/` entry file. Regression: `php scripts/repro_user_companies_bac.php`.
-8.  **Users module tenant scoping:** List and mutation queries filter by session `company_id` for all roles (including tenant admins). Regression: `php scripts/repro_user_companies_leak.php`.
+7.  **Employee Companies admin gate:** `itm_require_admin()` on every `modules/employee_companies/` entry file. Regression: `php scripts/repro_employee_companies_bac.php`.
+8.  **Users module tenant scoping:** List and mutation queries filter by session `company_id` for all roles (including tenant admins). Regression: `php scripts/repro_employee_companies_leak.php`.
 9.  **CRUD module RBAC (flattened index handlers):** `itm_require_crud_role_module_permission()` on create/edit/delete POST handlers in in-scope flattened `modules/*/index.php` files (via `includes/itm_role_module_permissions.php`; resolves `modules_registry.module_name`). Exempt modules (protection zone, admin-only, bespoke ACL) are listed in `itm_crud_rbac_exempt_module_slugs()`. Static audit: `php scripts/check_crud_rbac_coverage.php`. Bulk repair: `php scripts/apply_crud_rbac_guards.php`. Expenses regression: `php scripts/repro_rbac_bypass.php`.
 
 ### 5.2 Remaining follow-ups (not open vulnerability findings)

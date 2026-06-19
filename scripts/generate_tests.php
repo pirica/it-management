@@ -101,7 +101,7 @@ class $className extends TestCase
             
             // Generate setup code to find a valid ID for the FK
             $setupCode .= "        // Find or fallback for $fieldName ($refTable)\n";
-            $setupCode .= "        \$res" . $fieldName . " = mysqli_query(\$this->conn, \"SELECT " . $refCol . " FROM `" . $refTable . "` WHERE \" . (strpos('" . $refTable . "', 'companies') === false && strpos('" . $refTable . "', 'users') === false ? \"company_id = {\$this->companyId}\" : \"1=1\") . \" LIMIT 1\");\n";
+            $setupCode .= "        \$res" . $fieldName . " = mysqli_query(\$this->conn, \"SELECT " . $refCol . " FROM `" . $refTable . "` WHERE \" . (strpos('" . $refTable . "', 'companies') === false && strpos('" . $refTable . "', 'employees') === false ? \"company_id = {\$this->companyId}\" : \"1=1\") . \" LIMIT 1\");\n";
             $setupCode .= "        if (\$row" . $fieldName . " = mysqli_fetch_assoc(\$res" . $fieldName . ")) {\n";
             $setupCode .= "            \$data['" . $fieldName . "'] = \$row" . $fieldName . "['" . $refCol . "'];\n";
             $setupCode .= "        } else {\n";

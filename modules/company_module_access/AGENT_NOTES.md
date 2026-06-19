@@ -64,7 +64,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 11. Examples of Safe Code Patterns
 
 ```php
-if (!itm_is_admin($conn, (int)($_SESSION['user_id'] ?? 0))) {
+if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }

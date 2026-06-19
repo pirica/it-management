@@ -5,13 +5,13 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 
 ## 2. Key Tables
 - **ui_configuration** — stores UI element positioning, pagination, favicon, per-user `module_icon_overrides` JSON, and per-user API key / rate-limit metadata.
-- **user_sidebar_preferences** — stores the visibility and order of sidebar items for users.
+- **employee_sidebar_preferences** — stores the visibility and order of sidebar items for users.
 - **equipment_types** — (partially managed here for icons/emojis).
 
 ## 3. Required Relationships
 - Scoped by **companies**.
 - Sidebar preferences linked to **users**.
-- API keys are stored per `company_id` + `user_id` on `ui_configuration`.
+- API keys are stored per `company_id` + `employee_id` on `ui_configuration`.
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` §3).
@@ -48,7 +48,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 
 ### Read UI config (never hardcode pagination)
 ```php
-$uiConfig = itm_get_ui_configuration($conn, $companyId, $userId);
+$uiConfig = itm_get_ui_configuration($conn, $companyId, $employeeId);
 $perPage = itm_resolve_records_per_page($uiConfig);
 ```
 

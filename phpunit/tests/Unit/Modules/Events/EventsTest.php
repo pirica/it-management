@@ -27,20 +27,20 @@ class EventsTest extends TestCase
         $data['start_datetime'] = date('Y-m-d');
         $data['active'] = 1;
         // Find or fallback for category_id (event_categories)
-        $rescategory_id = mysqli_query($this->conn, "SELECT id FROM `event_categories` WHERE " . (strpos('event_categories', 'companies') === false && strpos('event_categories', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $rescategory_id = mysqli_query($this->conn, "SELECT id FROM `event_categories` WHERE " . (strpos('event_categories', 'companies') === false && strpos('event_categories', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcategory_id = mysqli_fetch_assoc($rescategory_id)) {
             $data['category_id'] = $rowcategory_id['id'];
         } else {
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
             $data['category_id'] = null;
         }
-        // Find or fallback for assigned_to_user_id (users)
-        $resassigned_to_user_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowassigned_to_user_id = mysqli_fetch_assoc($resassigned_to_user_id)) {
-            $data['assigned_to_user_id'] = $rowassigned_to_user_id['id'];
+        // Find or fallback for assigned_to_employee_id (users)
+        $resassigned_to_employee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        if ($rowassigned_to_employee_id = mysqli_fetch_assoc($resassigned_to_employee_id)) {
+            $data['assigned_to_employee_id'] = $rowassigned_to_employee_id['id'];
         } else {
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['assigned_to_user_id'] = null;
+            $data['assigned_to_employee_id'] = null;
         }
 
         $sql = "INSERT INTO `events` (company_id, `title`, `start_datetime`, `active`) VALUES (?, ?, ?, ?)";

@@ -67,10 +67,10 @@ function edct_count_for_company(mysqli $conn, string $table, int $companyId): in
 /**
  * @return int
  */
-function edct_set_audit_context(mysqli $conn, int $companyId, int $userId = 1): void
+function edct_set_audit_context(mysqli $conn, int $companyId, int $employeeId = 1): void
 {
     // Why: audit triggers require a valid @app_company_id FK when CLI has no web session.
-    mysqli_query($conn, 'SET @app_user_id = ' . (int)$userId);
+    mysqli_query($conn, 'SET @app_employee_id = ' . (int)$employeeId);
     mysqli_query($conn, 'SET @app_company_id = ' . (int)$companyId);
     mysqli_query($conn, "SET @app_username = 'cli-test'");
     mysqli_query($conn, "SET @app_email = 'cli-test@example.com'");

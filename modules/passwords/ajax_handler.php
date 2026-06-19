@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/config.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     echo json_encode(['ok' => false, 'message' => 'Unauthorized']);
     return;
 }
@@ -17,12 +17,12 @@ if (!$conn) {
     return;
 }
 
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 $action = (string)($_POST['action'] ?? '');
 
 switch ($action) {
     case 'list_folders':
-        $stmt = mysqli_prepare($conn, "SELECT id, name, parent_id FROM password_folders WHERE user_id = ? ORDER BY name ASC");
+        $stmt = mysqli_prepare($conn, "SELECT id, name, parent_id FROM password_folders WHERE employee_id = ? ORDER BY name ASC");
         mysqli_stmt_bind_param($stmt, 'i', $user_id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
@@ -36,7 +36,7 @@ switch ($action) {
         $parent_id = (!empty($_POST['parent_id']) && $_POST['parent_id'] != '0') ? (int)$_POST['parent_id'] : null;
         
         if ($id) {
-            $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND user_id = ?");
+            $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'siii', $name, $parent_id, $id, $user_id);
         } else {
             $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (user_id, name, parent_id) VALUES (?, ?, ?)");
@@ -53,7 +53,7 @@ switch ($action) {
 
     case 'delete_folder':
         $id = (int)($_POST['id'] ?? 0);
-        $stmt = mysqli_prepare($conn, "DELETE FROM password_folders WHERE id = ? AND user_id = ?");
+        $stmt = mysqli_prepare($conn, "DELETE FROM password_folders WHERE id = ? AND employee_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $user_id);
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['ok' => true]);
@@ -71,7 +71,7 @@ switch ($action) {
         $folder_id = (int)($_POST['folder_id'] ?? 0);
         $search = (string)($_POST['search'] ?? '');
         
-        $sql = "SELECT * FROM password_entries WHERE user_id = ?";
+        $sql = "SELECT * FROM password_entries WHERE employee_id = ?";
         if ($folder_id > 0) {
             $sql .= " AND folder_name = ?";
         }
@@ -106,7 +106,7 @@ switch ($action) {
 
     case 'get_entry':
         $id = (int)($_POST['id'] ?? 0);
-        $stmt = mysqli_prepare($conn, "SELECT * FROM password_entries WHERE id = ? AND user_id = ?");
+        $stmt = mysqli_prepare($conn, "SELECT * FROM password_entries WHERE id = ? AND employee_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $user_id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
@@ -132,7 +132,7 @@ switch ($action) {
         $comments = (string)($_POST['comments'] ?? '');
         
         if ($id) {
-            $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_name = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND user_id = ?");
+            $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_name = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'isssssii', $folder_id, $account, $login_name, $password, $website, $comments, $id, $user_id);
         } else {
             $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -149,7 +149,7 @@ switch ($action) {
 
     case 'delete_entry':
         $id = (int)($_POST['id'] ?? 0);
-        $stmt = mysqli_prepare($conn, "DELETE FROM password_entries WHERE id = ? AND user_id = ?");
+        $stmt = mysqli_prepare($conn, "DELETE FROM password_entries WHERE id = ? AND employee_id = ?");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $user_id);
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['ok' => true]);

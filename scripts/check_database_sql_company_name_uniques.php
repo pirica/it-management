@@ -3,7 +3,7 @@
  * Audit database.sql for tenant unique-key policy.
  *
  * Scope column (per table): `name` when present, else the 3rd column after `id` + `company_id`
- * (e.g. `display_name` on `floor_plans`). `user_companies` uses `user_id`.
+ * (e.g. `display_name` on `floor_plans`). `employee_companies` uses `employee_id`.
  *
  * Pass: exactly 2 uniques — PRIMARY KEY (`id`) plus one business UNIQUE led by `company_id`
  * and the scope column (wider composites allowed, e.g. monthly_budgets adds `month`).
@@ -125,7 +125,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
             Parses <code>database.sql</code> for every table with <code>company_id</code>.
             <strong>Scope column:</strong> <code>name</code> when present, otherwise the <strong>3rd column</strong> after
             <code>id</code> and <code>company_id</code> (e.g. <code>annual_budget_id</code> on <code>monthly_budgets</code>,
-            <code>display_name</code> on <code>floor_plans</code>). <code>user_companies</code> uses <code>user_id</code>.
+            <code>display_name</code> on <code>floor_plans</code>). <code>employee_companies</code> uses <code>user_id</code>.
         </p>
         <p class="itm-dsu-muted">
             <strong>Pass:</strong> exactly <strong>2</strong> uniques — <code>PRIMARY KEY</code> (<code>id</code>) plus one business
@@ -140,7 +140,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
             <code>floor_plans & explorer</code> —
             <code>(company_id, IFNULL(folder_id, 0), display_name)</code>.<br>
             The audit accepts only <code>parent_folder_id</code> / <code>folder_id</code> (plain or that exact
-            <code>IFNULL(..., 0)</code>), not other expressions such as <code>IFNULL(created_by_user_id, 0)</code>.<br>
+            <code>IFNULL(..., 0)</code>), not other expressions such as <code>IFNULL(created_by_employee_id, 0)</code>.<br>
             Do <strong>not</strong> add <code>UNIQUE (company_id, folder_id)</code> on <code>floor_plans</code> — that allows only one file per folder.
         </p>
         <p class="itm-dsu-muted">

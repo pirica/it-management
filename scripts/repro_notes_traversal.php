@@ -22,7 +22,7 @@ $nl = itm_script_output_nl();
 echo "Testing Path Traversal in Notes ZIP Download..." . $nl;
 
 // 1. Setup session context
-$user_res = mysqli_query($conn, "SELECT id, username, company_id FROM users WHERE active = 1 LIMIT 1");
+$user_res = mysqli_query($conn, "SELECT id, username, company_id FROM employees WHERE active = 1 LIMIT 1");
 $user = mysqli_fetch_assoc($user_res);
 if (!$user) {
     die("No active users found to test with." . $nl);
@@ -32,7 +32,7 @@ $user_id = (int)$user['id'];
 $company_id = (int)$user['company_id'];
 $username = $user['username'];
 
-$_SESSION['user_id'] = $user_id;
+$_SESSION['employee_id'] = $user_id;
 $_SESSION['company_id'] = $company_id;
 $_SESSION['username'] = $username;
 
@@ -40,7 +40,7 @@ $_SESSION['username'] = $username;
 $malicious_path = "../../../../../config/config.php";
 $images_json = json_encode([$malicious_path]);
 
-$sql = "INSERT INTO notes (company_id, user_id, title, images_json, active) VALUES (?, ?, 'Traversal Test', ?, 1)";
+$sql = "INSERT INTO notes (company_id, employee_id, title, images_json, active) VALUES (?, ?, 'Traversal Test', ?, 1)";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("iis", $company_id, $user_id, $images_json);
 if (!$stmt->execute()) {
@@ -52,7 +52,7 @@ $stmt->close();
 echo "Created malicious note ID: $note_id" . $nl;
 
 // 3. Simulate ZIP creation logic from modules/notes/index.php
-$stmt = $conn->prepare("SELECT title, images_json FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+$stmt = $conn->prepare("SELECT title, images_json FROM notes WHERE id = ? AND company_id = ? AND employee_id = ?");
 $stmt->bind_param("iii", $note_id, $company_id, $user_id);
 $stmt->execute();
 $resD = $stmt->get_result()->fetch_assoc();

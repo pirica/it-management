@@ -27,7 +27,7 @@ class GlAccountsTest extends TestCase
         $data['account_name'] = 'Test account_name';
         $data['active'] = 1;
         // Find or fallback for category_id (budget_categories)
-        $rescategory_id = mysqli_query($this->conn, "SELECT id FROM `budget_categories` WHERE " . (strpos('budget_categories', 'companies') === false && strpos('budget_categories', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $rescategory_id = mysqli_query($this->conn, "SELECT id FROM `budget_categories` WHERE " . (strpos('budget_categories', 'companies') === false && strpos('budget_categories', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcategory_id = mysqli_fetch_assoc($rescategory_id)) {
             $data['category_id'] = $rowcategory_id['id'];
         } else {

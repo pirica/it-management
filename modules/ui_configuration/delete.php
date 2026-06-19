@@ -43,7 +43,7 @@ function cr_fk_map($conn, $table) {
     if ($table === 'ui_configuration' && !isset($map['user_id'])) {
         $map['user_id'] = [
             'COLUMN_NAME' => 'user_id',
-            'REFERENCED_TABLE_NAME' => 'users',
+            'REFERENCED_TABLE_NAME' => 'employees',
             'REFERENCED_COLUMN_NAME' => 'id',
         ];
     }
@@ -81,7 +81,7 @@ function cr_fk_options($conn, $fk, $company_id) {
     }
 
     $rows = [];
-    if ($table === 'users') {
+    if ($table === 'employees') {
         $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, first_name, last_name, username FROM ' . cr_escape_identifier($table) . $where . ' ORDER BY first_name, last_name, username';
         $res = mysqli_query($conn, $sql);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -113,7 +113,7 @@ function cr_fk_label_for_value($conn, $fk, $value, $company_id) {
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
-    if ($table === 'users') {
+    if ($table === 'employees') {
         $baseSql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, first_name, last_name, username FROM ' . cr_escape_identifier($table)
             . ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
 
@@ -342,10 +342,10 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; }
     if ($c['Field'] === 'user_id') { $hasUser = true; }
 }
-$currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$currentUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;

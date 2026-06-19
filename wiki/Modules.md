@@ -56,7 +56,7 @@ Single-screen module (`modules/settings/index.php` only). No `create.php` / `edi
 | Area | What it does |
 | --- | --- |
 | **UI configuration** | Per-company toggles: table actions, + New button, export toolbar, back/save alignment (`ui_configuration` table, via `itm_get_ui_configuration()`) |
-| **Sidebar** | Show/hide and reorder sidebar sections/items (`user_sidebar_preferences`) |
+| **Sidebar** | Show/hide and reorder sidebar sections/items (`employee_sidebar_preferences`) |
 | **Equipment types** | Edit display emoji for equipment types (tenant-scoped) |
 | **Database maintenance** | Verify/create system tables and columns from schema helpers |
 | **Backup & restore** | Create, download, delete, and import SQL dumps under `backups/` (role-restricted) |

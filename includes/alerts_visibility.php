@@ -20,25 +20,25 @@ function itm_alerts_normalize_sql_alias($alias)
 function itm_alerts_visibility_sql($alias = '')
 {
     $prefix = itm_alerts_normalize_sql_alias($alias);
-    return '(' . $prefix . 'assigned_to_user_id IS NULL OR '
-        . $prefix . 'assigned_to_user_id = ? OR '
-        . $prefix . 'created_by_user_id = ?)';
+    return '(' . $prefix . 'assigned_to_employee_id IS NULL OR '
+        . $prefix . 'assigned_to_employee_id = ? OR '
+        . $prefix . 'created_by_employee_id = ?)';
 }
 
 function itm_alerts_visibility_sql_literal($loggedUserId, $alias = '')
 {
-    $userId = (int)$loggedUserId;
+    $employeeId = (int)$loggedUserId;
     $prefix = itm_alerts_normalize_sql_alias($alias);
-    return '(' . $prefix . 'assigned_to_user_id IS NULL OR '
-        . $prefix . 'assigned_to_user_id = ' . $userId . ' OR '
-        . $prefix . 'created_by_user_id = ' . $userId . ')';
+    return '(' . $prefix . 'assigned_to_employee_id IS NULL OR '
+        . $prefix . 'assigned_to_employee_id = ' . $employeeId . ' OR '
+        . $prefix . 'created_by_employee_id = ' . $employeeId . ')';
 }
 
 function itm_alerts_append_visibility_filter(&$conditions, &$types, &$params, $loggedUserId, $alias = '')
 {
     $conditions[] = itm_alerts_visibility_sql($alias);
     $types .= 'ii';
-    $userId = (int)$loggedUserId;
-    $params[] = $userId;
-    $params[] = $userId;
+    $employeeId = (int)$loggedUserId;
+    $params[] = $employeeId;
+    $params[] = $employeeId;
 }

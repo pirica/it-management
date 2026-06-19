@@ -2,18 +2,18 @@
 require_once '../../config/config.php';
 require_once __DIR__ . '/includes/private_contact_photo.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     header("Location: ../../login.php");
     exit();
 }
 
 $id = (int)($_GET['id'] ?? 0);
-$userId = $_SESSION['user_id'];
+$employeeId = $_SESSION['employee_id'];
 $companyId = $_SESSION['company_id'];
 $username = $_SESSION['username'];
 
-$stmt = $conn->prepare("SELECT * FROM private_contacts WHERE id = ? AND user_id = ?");
-$stmt->bind_param("ii", $id, $userId);
+$stmt = $conn->prepare("SELECT * FROM private_contacts WHERE id = ? AND employee_id = ?");
+$stmt->bind_param("ii", $id, $employeeId);
 $stmt->execute();
 $contact = $stmt->get_result()->fetch_assoc();
 
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id,
             $companyId,
             $username,
-            $userId,
+            $employeeId,
             $photo,
             (($_POST['confirm_replace'] ?? '0') === '1')
         );
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         birthday = ?, event1_label = ?, event1_value = ?, relation1_label = ?, relation1_value = ?,
         website1_label = ?, website1_value = ?, custom_field1_label = ?, custom_field1_value = ?,
         notes = ?, labels = ?, photo = ?, is_favorite = ?
-        WHERE id = ? AND user_id = ?";
+        WHERE id = ? AND employee_id = ?";
 
     $stmt = $conn->prepare($sql);
 
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $birthday, $_POST['event1_label'], $event1_value, $_POST['relation1_label'], $_POST['relation1_value'],
         $_POST['website1_label'], $_POST['website1_value'], $_POST['custom_field1_label'], $_POST['custom_field1_value'],
         $_POST['notes'], $_POST['labels'], $photo, $is_favorite,
-        $id, $userId
+        $id, $employeeId
     );
 
     if ($stmt->execute()) {

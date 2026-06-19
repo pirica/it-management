@@ -2,7 +2,7 @@
 require_once '../../config/config.php';
 require_once __DIR__ . '/includes/private_contact_photo.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -10,12 +10,12 @@ if (!isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $userId = $_SESSION['user_id'];
+    $employeeId = $_SESSION['employee_id'];
     $companyId = $_SESSION['company_id'];
     $username = $_SESSION['username'];
 
     $sql = "INSERT INTO private_contacts (
-        company_id, user_id, name_prefix, first_name, middle_name, last_name, name_suffix,
+        company_id, employee_id, name_prefix, first_name, middle_name, last_name, name_suffix,
         phonetic_first_name, phonetic_middle_name, phonetic_last_name, nickname, file_as,
         email1_label, email1_value, phone1_label, phone1_value,
         address1_label, address1_country, address1_street, address1_extended, address1_city, address1_region, address1_postcode, address1_po_box,
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $event1_value = $_POST['event1_value'] ?: null;
 
     $stmt->bind_param("iissssssssssssssssssssssssssssssssssssi",
-        $companyId, $userId, $_POST['name_prefix'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'], $_POST['name_suffix'],
+        $companyId, $employeeId, $_POST['name_prefix'], $_POST['first_name'], $_POST['middle_name'], $_POST['last_name'], $_POST['name_suffix'],
         $_POST['phonetic_first_name'], $_POST['phonetic_middle_name'], $_POST['phonetic_last_name'], $_POST['nickname'], $_POST['file_as'],
         $_POST['email1_label'], $_POST['email1_value'], $_POST['phone1_label'], $_POST['phone1_value'],
         $_POST['address1_label'], $_POST['address1_country'], $_POST['address1_street'], $_POST['address1_extended'], $_POST['address1_city'], $_POST['address1_region'], $_POST['address1_postcode'], $_POST['address1_po_box'],
@@ -51,12 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insertId,
                 $companyId,
                 $username,
-                $userId
+                $employeeId
             );
             if (($photoResult['ok'] ?? false) && ($photoResult['filename'] ?? '') !== '') {
                 $photoFilename = (string)$photoResult['filename'];
-                $updateStmt = $conn->prepare('UPDATE private_contacts SET photo = ? WHERE id = ? AND user_id = ?');
-                $updateStmt->bind_param('sii', $photoFilename, $insertId, $userId);
+                $updateStmt = $conn->prepare('UPDATE private_contacts SET photo = ? WHERE id = ? AND employee_id = ?');
+                $updateStmt->bind_param('sii', $photoFilename, $insertId, $employeeId);
                 $updateStmt->execute();
                 $redirect = 'view.php?id=' . $insertId . '&msg=created';
             } elseif (!($photoResult['ok'] ?? false) && ($photoResult['error'] ?? '') !== '') {

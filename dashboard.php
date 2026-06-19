@@ -9,7 +9,7 @@
 require 'config/config.php';
 
 $companyId = (int)$company_id;
-$userId = (int)($_SESSION['user_id'] ?? 0);
+$employeeId = (int)($_SESSION['employee_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 
 // Determine if the current user can access all companies
@@ -17,13 +17,13 @@ $isAdmin = false;
 $adminStmt = mysqli_prepare(
     $conn,
     'SELECT 1
-     FROM users u
-     LEFT JOIN user_roles ur ON ur.id = u.role_id
+     FROM employees u
+     LEFT JOIN employee_roles ur ON ur.id = u.role_id
      WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
      LIMIT 1'
 );
 if ($adminStmt) {
-    mysqli_stmt_bind_param($adminStmt, 'i', $userId);
+    mysqli_stmt_bind_param($adminStmt, 'i', $employeeId);
     mysqli_stmt_execute($adminStmt);
     $adminRes = mysqli_stmt_get_result($adminStmt);
     $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
@@ -52,12 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
             $conn,
             'SELECT c.company
              FROM companies c
-             INNER JOIN user_companies uc ON uc.company_id = c.id
-             WHERE c.id = ? AND uc.user_id = ? AND c.active = 1
+             INNER JOIN employee_companies uc ON uc.company_id = c.id
+             WHERE c.id = ? AND uc.employee_id = ? AND c.active = 1
              LIMIT 1'
         );
         if ($switchStmt) {
-            mysqli_stmt_bind_param($switchStmt, 'ii', $requestedCompanyId, $userId);
+            mysqli_stmt_bind_param($switchStmt, 'ii', $requestedCompanyId, $employeeId);
             if (mysqli_stmt_execute($switchStmt)) {
                 $switchRes = mysqli_stmt_get_result($switchStmt);
                 $selectedCompany = $switchRes ? mysqli_fetch_assoc($switchRes) : null;
@@ -83,12 +83,12 @@ if ($isAdmin) {
         $conn,
         'SELECT c.id, c.company
          FROM companies c
-         INNER JOIN user_companies uc ON uc.company_id = c.id
-         WHERE c.active = 1 AND uc.user_id = ?
+         INNER JOIN employee_companies uc ON uc.company_id = c.id
+         WHERE c.active = 1 AND uc.employee_id = ?
          ORDER BY c.company'
     );
     if ($companiesStmt) {
-        mysqli_stmt_bind_param($companiesStmt, 'i', $userId);
+        mysqli_stmt_bind_param($companiesStmt, 'i', $employeeId);
         mysqli_stmt_execute($companiesStmt);
         $companies = mysqli_stmt_get_result($companiesStmt);
     }
@@ -189,10 +189,10 @@ $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM emp
 $userDisplayName = '';
 $userEmail = '';
 
-if ($userId > 0) {
-    $userStmt = mysqli_prepare($conn, 'SELECT username, email FROM users WHERE id = ? LIMIT 1');
+if ($employeeId > 0) {
+    $userStmt = mysqli_prepare($conn, 'SELECT username, email FROM employees WHERE id = ? LIMIT 1');
     if ($userStmt) {
-        mysqli_stmt_bind_param($userStmt, 'i', $userId);
+        mysqli_stmt_bind_param($userStmt, 'i', $employeeId);
         if (mysqli_stmt_execute($userStmt)) {
             $userRes = mysqli_stmt_get_result($userStmt);
             $userData = $userRes ? mysqli_fetch_assoc($userRes) : null;

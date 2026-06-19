@@ -27,7 +27,7 @@ class AnnualBudgetsTest extends TestCase
         $data['amount'] = 10.50;
         $data['active'] = 1;
         // Find or fallback for cost_center_id (cost_centers)
-        $rescost_center_id = mysqli_query($this->conn, "SELECT id FROM `cost_centers` WHERE " . (strpos('cost_centers', 'companies') === false && strpos('cost_centers', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $rescost_center_id = mysqli_query($this->conn, "SELECT id FROM `cost_centers` WHERE " . (strpos('cost_centers', 'companies') === false && strpos('cost_centers', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcost_center_id = mysqli_fetch_assoc($rescost_center_id)) {
             $data['cost_center_id'] = $rowcost_center_id['id'];
         } else {
@@ -35,7 +35,7 @@ class AnnualBudgetsTest extends TestCase
             $this->markTestSkipped('Required dependency cost_centers not found in database.');
         }
         // Find or fallback for gl_account_id (gl_accounts)
-        $resgl_account_id = mysqli_query($this->conn, "SELECT id FROM `gl_accounts` WHERE " . (strpos('gl_accounts', 'companies') === false && strpos('gl_accounts', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resgl_account_id = mysqli_query($this->conn, "SELECT id FROM `gl_accounts` WHERE " . (strpos('gl_accounts', 'companies') === false && strpos('gl_accounts', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowgl_account_id = mysqli_fetch_assoc($resgl_account_id)) {
             $data['gl_account_id'] = $rowgl_account_id['id'];
         } else {

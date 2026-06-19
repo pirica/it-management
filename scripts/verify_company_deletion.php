@@ -2,7 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Company Deletion Verification');
 
@@ -46,7 +46,7 @@ echo "Verifying Unauthorized Company Deletion..." . $nl;
 $company_id = 1;
 // Why: companies INSERT audit trigger requires a valid @app_company_id FK before the new row exists.
 mysqli_query($conn, 'SET @app_company_id = ' . (int)$company_id);
-mysqli_query($conn, 'SET @app_user_id = 1');
+mysqli_query($conn, 'SET @app_employee_id = 1');
 
 $incode = 'T' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 5));
 $incodeEsc = mysqli_real_escape_string($conn, $incode);
@@ -62,14 +62,14 @@ if ($targetId <= 0) {
     exit(1);
 }
 
-$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'verify-company-deletion']);
+$testUser = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'verify-company-deletion']);
 if (!is_array($testUser)) {
     echo colorText('[FAIL] Unable to create disposable non-admin user.', 'fail') . $nl;
     mysqli_query($conn, "DELETE FROM companies WHERE id = $targetId");
     itm_script_output_end();
     exit(1);
 }
-itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $session = [
     'user_id' => (int)$testUser['id'],

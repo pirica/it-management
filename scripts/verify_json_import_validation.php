@@ -13,7 +13,7 @@ echo 'Verifying JSON import rejects invalid decimal values...' . $nl;
 
 $companyId = 1;
 $_SESSION['company_id'] = $companyId;
-$_SESSION['user_id'] = 1;
+$_SESSION['employee_id'] = 1;
 $_SESSION['csrf_token'] = 'test_token';
 $_SERVER['REQUEST_METHOD'] = 'POST';
 $_SERVER['CONTENT_TYPE'] = 'application/json';

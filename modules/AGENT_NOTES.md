@@ -9,7 +9,7 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 
 ## 4. Business Rules (Critical for Agents)
 - Every module folder **must** have its own `AGENT_NOTES.md` (template: `templates/AGENT_NOTES.md`).
-- **Protection Zone** modules (`equipment`, `employees`, `contacts`, `idfs*`, `audit_logs`, `settings`, `user_companies`, `employee_system_access`, `cable_colors`, `ui_configuration`) — no logic changes unless explicitly requested.
+- **Protection Zone** modules (`equipment`, `employees`, `contacts`, `idfs*`, `audit_logs`, `settings`, `employee_companies`, `employee_system_access`, `cable_colors`, `ui_configuration`) — no logic changes unless explicitly requested.
 - Standard flattened CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
 - **`is_*` façades** delegate to `modules/equipment/` — do not delete canonical wrappers.
 
@@ -25,6 +25,6 @@ Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` Protection 
 
 ### `select_options_api.php` (module root)
 - Shared JSON endpoint for dropdown quick-add (`js/select-add-option.js`).
-- **Table policy:** inserts are allowed only for tables listed in `includes/itm_select_options_policy.php`; `users`, `user_roles`, `role_module_permissions`, and other identity/RBAC tables are blocked.
+- **Table policy:** inserts are allowed only for tables listed in `includes/itm_select_options_policy.php`; `employees`, `employee_roles`, `role_module_permissions`, and other identity/RBAC tables are blocked.
 - **Company module access:** `config/config.php` enforces `has_module_access()` for all `modules/*` requests; sidebar/dashboard/calendar honour the same helper. Admin matrix: `modules/company_module_access/`.
-- Regression: `php scripts/verify_select_options_escalation.php` (expects PASS — admin user creation via `users` table rejected).
+- Regression: `php scripts/verify_select_options_escalation.php` (expects PASS — admin user creation via `employees` table rejected).

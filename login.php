@@ -2,7 +2,7 @@
 /**
  * User Login Page
  * 
- * Handles user authentication via email/username and password.
+ * Handles employee authentication via work email/username and password.
  * Uses secure password verification only and migrates legacy hash formats on login.
  * Implements CSRF protection and role-based redirection.
  */
@@ -15,20 +15,23 @@ $csrfToken = itm_get_csrf_token();
  * Why: Login endpoint is public and attractive for credential stuffing, so we
  * keep a lightweight audit trail for throttling and incident response.
  */
-function itm_record_login_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $identifier = null, ?int $userId = null): void
+function itm_record_login_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $identifier = null, ?int $employeeId = null): void
 {
     $stmt = mysqli_prepare(
         $conn,
-        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id, active)
+        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, employee_id, active)
          VALUES ('login', ?, ?, ?, ?, IF(
-            EXISTS(SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1)
-            OR EXISTS(SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1),
+            EXISTS(
+                SELECT 1 FROM employees
+                WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ''))) = LOWER(TRIM(COALESCE(?, '')))
+                LIMIT 1
+            ),
             1,
             0
          ))"
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $identifier, $userId, $identifier, $identifier);
+        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $identifier, $employeeId, $identifier);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
@@ -79,9 +82,8 @@ function itm_is_login_rate_limited(mysqli $conn, string $ipAddress, ?string $ide
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token for all POST requests
     itm_require_post_csrf();
-    
+
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
@@ -91,58 +93,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         itm_record_login_attempt($conn, 'failure', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, null);
         $error = 'Too many login attempts. Please wait a few minutes and try again.';
     } else {
-
-        // Search for an active user by email or username
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT u.id, u.password, u.email, u.username, ur.name AS role_name
-             FROM users u
-             LEFT JOIN user_roles ur ON u.role_id = ur.id
-             WHERE u.active = 1 AND (LOWER(u.email) = LOWER(?) OR LOWER(u.username) = LOWER(?)) LIMIT 1'
+            'SELECT e.id, e.password, e.work_email, e.personal_email, e.username, er.name AS role_name
+             FROM employees e
+             LEFT JOIN employee_roles er ON e.role_id = er.id
+             WHERE e.active = 1
+               AND e.password IS NOT NULL
+               AND (
+                    LOWER(COALESCE(e.work_email, "")) = LOWER(?)
+                    OR LOWER(COALESCE(e.personal_email, "")) = LOWER(?)
+                    OR LOWER(COALESCE(e.username, "")) = LOWER(?)
+               )
+             LIMIT 1'
         );
 
+        $user = null;
+        $employeeId = 0;
+        $passwordMatches = false;
+        $resolvedEmail = '';
+
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ss', $loginIdentifier, $loginIdentifier);
+            mysqli_stmt_bind_param($stmt, 'sss', $loginIdentifier, $loginIdentifier, $loginIdentifier);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
             $user = mysqli_fetch_assoc($result);
             mysqli_stmt_close($stmt);
-
-            $storedPassword = (string)($user['password'] ?? '');
-            $userId = (int)($user['id'] ?? 0);
-            $passwordMatches = false;
-            $resolvedEmail = (string)($user['email'] ?? '');
+        }
 
         if ($user) {
-            // Why: Accept modern password_hash() values and transparently upgrade cost/algorithm when needed.
+            $storedPassword = (string)($user['password'] ?? '');
+            $employeeId = (int)($user['id'] ?? 0);
+            $resolvedEmail = trim((string)($user['work_email'] ?? ''));
+            if ($resolvedEmail === '') {
+                $resolvedEmail = trim((string)($user['personal_email'] ?? ''));
+            }
+
             if (password_verify($password, $storedPassword)) {
                 $passwordMatches = true;
-
                 if (password_needs_rehash($storedPassword, PASSWORD_DEFAULT)) {
                     $rehash = password_hash($password, PASSWORD_DEFAULT);
-                    $rehashStmt = mysqli_prepare($conn, 'UPDATE users SET password = ? WHERE id = ? LIMIT 1');
+                    $rehashStmt = mysqli_prepare($conn, 'UPDATE employees SET password = ? WHERE id = ? LIMIT 1');
                     if ($rehashStmt) {
-                        mysqli_stmt_bind_param($rehashStmt, 'si', $rehash, $userId);
+                        mysqli_stmt_bind_param($rehashStmt, 'si', $rehash, $employeeId);
                         mysqli_stmt_execute($rehashStmt);
                         mysqli_stmt_close($rehashStmt);
                     }
                 }
             } else {
-                // Why: Development/staged databases may still contain one-way legacy hashes.
-                //      We allow one-time login via known legacy hashes, then immediately migrate
-                //      to password_hash() without keeping plaintext comparison fallback.
                 $legacyMd5 = md5($password);
                 $legacySha1 = sha1($password);
-
                 if (
                     hash_equals(strtolower($storedPassword), strtolower($legacyMd5))
                     || hash_equals(strtolower($storedPassword), strtolower($legacySha1))
                 ) {
                     $passwordMatches = true;
                     $newHash = password_hash($password, PASSWORD_DEFAULT);
-                    $migrateStmt = mysqli_prepare($conn, 'UPDATE users SET password = ? WHERE id = ? LIMIT 1');
+                    $migrateStmt = mysqli_prepare($conn, 'UPDATE employees SET password = ? WHERE id = ? LIMIT 1');
                     if ($migrateStmt) {
-                        mysqli_stmt_bind_param($migrateStmt, 'si', $newHash, $userId);
+                        mysqli_stmt_bind_param($migrateStmt, 'si', $newHash, $employeeId);
                         mysqli_stmt_execute($migrateStmt);
                         mysqli_stmt_close($migrateStmt);
                     }
@@ -150,42 +159,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-            if ($passwordMatches) {
-                itm_record_login_attempt($conn, 'success', $requestIp, $resolvedEmail !== '' ? $resolvedEmail : ($loginIdentifier === '' ? null : $loginIdentifier), $userId);
+        if ($passwordMatches && $employeeId > 0) {
+            itm_record_login_attempt(
+                $conn,
+                'success',
+                $requestIp,
+                $resolvedEmail !== '' ? $resolvedEmail : ($loginIdentifier === '' ? null : $loginIdentifier),
+                $employeeId
+            );
 
-            $userId = (int)$user['id'];
-            $_SESSION['user_id'] = $userId;
+            $_SESSION['employee_id'] = $employeeId;
             $_SESSION['username'] = (string)($user['username'] ?? 'User');
+            $_SESSION['email'] = $resolvedEmail;
             $_SESSION['role_name'] = (string)($user['role_name'] ?? '');
-
-            // Clear any previously stored company context to ensure a fresh selection
             unset($_SESSION['company_id'], $_SESSION['company_name']);
 
-            // Determine if the user is an admin
-            $isAdmin = false;
-            $adminStmt = mysqli_prepare(
-                $conn,
-                'SELECT 1
-                 FROM users u
-                 LEFT JOIN user_roles ur ON ur.id = u.role_id
-                 WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
-                 LIMIT 1'
-            );
-            if ($adminStmt) {
-                mysqli_stmt_bind_param($adminStmt, 'i', $userId);
-                mysqli_stmt_execute($adminStmt);
-                $adminRes = mysqli_stmt_get_result($adminStmt);
-                $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
-                mysqli_stmt_close($adminStmt);
-            }
-
+            $isAdmin = itm_is_admin($conn, $employeeId);
             $_SESSION['read_only_user_config'] = 0;
 
-            // Admin users bypass employee status checks and go straight to the dashboard
             if ($isAdmin) {
                 $_SESSION['role_name'] = 'admin';
-
-                // Pre-select the first available company for admins for convenience
                 $companyStmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE active = 1 ORDER BY company ASC LIMIT 1');
                 if ($companyStmt) {
                     mysqli_stmt_execute($companyStmt);
@@ -201,42 +194,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
-            // Regular users must have an associated 'Active' employee record to gain full system access
             $statusStmt = mysqli_prepare(
                 $conn,
                 'SELECT 1
-                 FROM users u
-                 INNER JOIN employees e ON LOWER(TRIM(e.email)) = LOWER(TRIM(u.email))
+                 FROM employees e
                  INNER JOIN employee_statuses es ON es.id = e.employment_status_id
-                 WHERE u.id = ?
+                 WHERE e.id = ?
                    AND e.active = 1
                    AND LOWER(TRIM(COALESCE(es.name, ""))) = "active"
                  LIMIT 1'
             );
             $hasActiveEmployeeMatch = false;
             if ($statusStmt) {
-                mysqli_stmt_bind_param($statusStmt, 'i', $userId);
+                mysqli_stmt_bind_param($statusStmt, 'i', $employeeId);
                 mysqli_stmt_execute($statusStmt);
                 $statusRes = mysqli_stmt_get_result($statusStmt);
                 $hasActiveEmployeeMatch = $statusRes && mysqli_num_rows($statusRes) > 0;
                 mysqli_stmt_close($statusStmt);
             }
 
-            // Users without an active employee record are restricted to the user-config page
             if (!$hasActiveEmployeeMatch) {
                 $_SESSION['read_only_user_config'] = 1;
                 header('Location: user-config.php');
                 exit();
             }
 
-            // Successfully authenticated regular user proceeds to company selection
-                header('Location: index.php');
-                exit();
-            }
-
-            itm_record_login_attempt($conn, 'failure', $requestIp, $resolvedEmail !== '' ? $resolvedEmail : ($loginIdentifier === '' ? null : $loginIdentifier), $userId > 0 ? $userId : null);
+            header('Location: index.php');
+            exit();
         }
 
+        itm_record_login_attempt(
+            $conn,
+            'failure',
+            $requestIp,
+            $loginIdentifier === '' ? null : $loginIdentifier,
+            $employeeId > 0 ? $employeeId : null
+        );
         $error = 'Invalid credentials.';
     }
 }
@@ -300,16 +293,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <script>
-        /**
-         * Toggle light/dark theme and persist choice to localStorage
-         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
             localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
         }
-        
-        // Load initial theme from storage
         document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
     </script>
 </body>

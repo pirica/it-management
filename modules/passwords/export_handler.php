@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/config.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     die("Unauthorized");
 }
 
@@ -16,11 +16,11 @@ if (!itm_validate_csrf_token($_GET['csrf_token'] ?? '')) {
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$conn) { die('Connection failed'); }
 
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 $folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0;
 $format = (string)($_GET['format'] ?? 'csv');
 
-$sql = "SELECT * FROM password_entries WHERE user_id = ?";
+$sql = "SELECT * FROM password_entries WHERE employee_id = ?";
 if ($folder_id > 0) {
     $sql .= " AND folder_name = ?";
 }

@@ -27,7 +27,7 @@ class IpAddressesTest extends TestCase
         $data['status'] = 'free';
         $data['active'] = 1;
         // Find or fallback for subnet_id (ip_subnets)
-        $ressubnet_id = mysqli_query($this->conn, "SELECT id FROM `ip_subnets` WHERE " . (strpos('ip_subnets', 'companies') === false && strpos('ip_subnets', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $ressubnet_id = mysqli_query($this->conn, "SELECT id FROM `ip_subnets` WHERE " . (strpos('ip_subnets', 'companies') === false && strpos('ip_subnets', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowsubnet_id = mysqli_fetch_assoc($ressubnet_id)) {
             $data['subnet_id'] = $rowsubnet_id['id'];
         } else {
@@ -35,7 +35,7 @@ class IpAddressesTest extends TestCase
             $this->markTestSkipped('Required dependency ip_subnets not found in database.');
         }
         // Find or fallback for equipment_id (equipment)
-        $resequipment_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resequipment_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowequipment_id = mysqli_fetch_assoc($resequipment_id)) {
             $data['equipment_id'] = $rowequipment_id['id'];
         } else {

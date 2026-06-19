@@ -3,7 +3,7 @@ require '../../config/config.php';
 require './helpers.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, user_id, folder_id, title, url, notes, shared, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes, shared, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $user_id, $folder_id, $title, $url, $notes, $shared, $active);
 
         if (mysqli_stmt_execute($stmt)) {

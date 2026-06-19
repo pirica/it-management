@@ -30,8 +30,8 @@ if ($id > 0) {
          LEFT JOIN manufacturers m ON m.id = i.manufacturer_id
          LEFT JOIN it_locations l ON l.id = i.location_id
          LEFT JOIN suppliers s ON s.id = i.supplier_id
-         LEFT JOIN employees e_scoped ON e_scoped.id = i.last_user_id AND e_scoped.company_id = i.company_id
-         LEFT JOIN employees e_fallback ON e_fallback.id = i.last_user_id
+         LEFT JOIN employees e_scoped ON e_scoped.id = i.last_employee_id AND e_scoped.company_id = i.company_id
+         LEFT JOIN employees e_fallback ON e_fallback.id = i.last_employee_id
          WHERE i.id = ? AND i.company_id = ?
          LIMIT 1'
     );
@@ -59,8 +59,8 @@ $labels = [
     'quantity_on_hand' => 'Quantity On Hand',
     'quantity_minimum' => 'Minimum Quantity',
     'price_eur' => 'Price (€)',
-    'last_user_id' => 'Last User',
-    'last_user_manual' => 'Last User (Manual)',
+    'last_employee_id' => 'Last User',
+    'last_employee_manual' => 'Last User (Manual)',
     'comments' => 'Comments',
     'active' => 'Status',
     'created_at' => 'Created At',
@@ -109,10 +109,10 @@ $labels = [
                                         <?php echo sanitize((string)($item['location_name'] ?? '')); ?>
                                     <?php elseif ($field === 'supplier_id'): ?>
                                         <?php echo sanitize((string)($item['supplier_name'] ?? '')); ?>
-                                    <?php elseif ($field === 'last_user_id'): ?>
+                                    <?php elseif ($field === 'last_employee_id'): ?>
                                         <?php
                                         $lastUserLabel = trim((string)($item['last_user_label'] ?? ''));
-                                        $lastUserManual = trim((string)($item['last_user_manual'] ?? ''));
+                                        $lastUserManual = trim((string)($item['last_employee_manual'] ?? ''));
                                         echo sanitize($lastUserLabel !== '' ? $lastUserLabel : ($lastUserManual !== '' ? $lastUserManual : '-'));
                                         ?>
                                     <?php else: ?>

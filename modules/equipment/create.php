@@ -2075,7 +2075,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $oldAssigneeId = (int)($originalData['assigned_to_employee_id'] ?? 0);
                     $oldAssigneeId = $oldAssigneeId > 0 ? $oldAssigneeId : null;
                 }
-                $assignedByUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+                $assignedByUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null;
                 $assignmentAssignedDate = equipment_fetch_assignment_assigned_date($conn, (int)$company_id, $id);
                 $assignmentAssetDescription = equipment_build_assignment_asset_description(
                     (string)$data['name'],

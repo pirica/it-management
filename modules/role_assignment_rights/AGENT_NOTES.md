@@ -7,7 +7,7 @@ Defines which roles may assign other roles to users (e.g. Admin → IT Staff).
 - **role_assignment_rights** — source role → assignable target role.
 
 ## 3. Required Relationships
-- **role_assignment_rights** → **companies**, **user_roles** (source and target).
+- **role_assignment_rights** → **companies**, **employee_roles** (source and target).
 
 ## 4. Business Rules (Critical for Agents)
 - **Unique mapping:** one row per company + source role + target role.

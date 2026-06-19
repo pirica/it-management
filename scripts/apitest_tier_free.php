@@ -11,12 +11,12 @@ require_once __DIR__ . '/lib/itm_api_tier_test_helpers.php';
 itm_script_output_begin('API Tier Free Test');
 
 $companyId = ITM_APITEST_COMPANY_ID;
-$userId = itm_apitest_disposable_user_id(1);
+$employeeId = itm_apitest_disposable_user_id(1);
 $allPassed = true;
 
 itm_apitest_output_line('[INFO] Seeding disposable Free-tier ui_configuration row…', 'info');
 
-$row = itm_apitest_seed_configuration($conn, $companyId, $userId, 'Free', [
+$row = itm_apitest_seed_configuration($conn, $companyId, $employeeId, 'Free', [
     'api_key' => '',
     'rate_limit_enabled' => 1,
     'rate_limit_window_start' => time(),
@@ -31,7 +31,7 @@ if ($row === null) {
 itm_apitest_print_probe_links('', 'Free-tier', true);
 
 $_SESSION['company_id'] = $companyId;
-$_SESSION['user_id'] = $userId;
+$_SESSION['employee_id'] = $employeeId;
 $resolvedWithoutKey = itm_api_resolve_rate_limit_row($conn);
 $allPassed = itm_apitest_assert(
     'Free resolve without API key via session',
@@ -49,7 +49,7 @@ $allPassed = itm_apitest_assert('Free status limit is zero (no cap)', (int)($sta
 $allPassed = itm_apitest_assert('Free status remaining is null', $status['remaining'] === null) && $allPassed;
 
 for ($attempt = 1; $attempt <= 3; $attempt++) {
-    $freshRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $userId);
+    $freshRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $employeeId);
     if ($freshRow === null) {
         $allPassed = itm_apitest_assert('Reload configuration before consume #' . $attempt, false) && $allPassed;
         break;
@@ -79,7 +79,7 @@ $allPassed = itm_apitest_assert(
     is_array($probePayload) && empty($probePayload['api_key_required'])
 ) && $allPassed;
 
-$httpSessionId = itm_apitest_publish_http_session($companyId, $userId);
+$httpSessionId = itm_apitest_publish_http_session($companyId, $employeeId);
 $probe = itm_apitest_probe_rate_limit_http('', '', $httpSessionId);
 if (is_array($probe)) {
     if (!empty($probe['ok'])) {

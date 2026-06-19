@@ -46,7 +46,7 @@ A filtered view of the Equipment module specifically for network switch devices.
 
 ## 9. Audit Logging Requirements
 - INSERT, UPDATE, and DELETE on `equipment` are logged by MySQL triggers `trg_equipment_audit_insert`, `trg_equipment_audit_update`, and `trg_equipment_audit_delete` (see `database.sql`).
-- Entries are written to **audit_logs** with `table_name = 'equipment'` and JSON payloads (including switch-specific columns); session context comes from `@app_user_id` / `@app_company_id` in `config/config.php`.
+- Entries are written to **audit_logs** with `table_name = 'equipment'` and JSON payloads (including switch-specific columns); session context comes from `@app_employee_id` / `@app_company_id` in `config/config.php`.
 - This façade has no local audit handlers.
 
 ## 10. Common Pitfalls

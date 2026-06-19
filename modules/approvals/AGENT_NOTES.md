@@ -48,7 +48,7 @@ $stmt->execute();
 ### Safe INSERT
 ```php
 $stmt = $conn->prepare("INSERT INTO approvals (company_id, forecast_revision_id, stage, status, approved_by) VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("iiisi", $companyId, $revisionId, $stageId, $status, $userId);
+$stmt->bind_param("iiisi", $companyId, $revisionId, $stageId, $status, $employeeId);
 $stmt->execute();
 ```
 

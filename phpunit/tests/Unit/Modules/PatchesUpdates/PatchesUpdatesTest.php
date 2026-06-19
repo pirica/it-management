@@ -24,7 +24,7 @@ class PatchesUpdatesTest extends TestCase
         $data = [];
         $data['company_id'] = $this->companyId;
         // Find or fallback for equipment_id (equipment)
-        $resequipment_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resequipment_id = mysqli_query($this->conn, "SELECT id FROM `equipment` WHERE " . (strpos('equipment', 'companies') === false && strpos('equipment', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowequipment_id = mysqli_fetch_assoc($resequipment_id)) {
             $data['equipment_id'] = $rowequipment_id['id'];
         } else {
@@ -32,7 +32,7 @@ class PatchesUpdatesTest extends TestCase
             $data['equipment_id'] = null;
         }
         // Find or fallback for status_id (patches_updates_status)
-        $resstatus_id = mysqli_query($this->conn, "SELECT id FROM `patches_updates_status` WHERE " . (strpos('patches_updates_status', 'companies') === false && strpos('patches_updates_status', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resstatus_id = mysqli_query($this->conn, "SELECT id FROM `patches_updates_status` WHERE " . (strpos('patches_updates_status', 'companies') === false && strpos('patches_updates_status', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowstatus_id = mysqli_fetch_assoc($resstatus_id)) {
             $data['status_id'] = $rowstatus_id['id'];
         } else {
@@ -40,7 +40,7 @@ class PatchesUpdatesTest extends TestCase
             $data['status_id'] = null;
         }
         // Find or fallback for level_id (patches_updates_level)
-        $reslevel_id = mysqli_query($this->conn, "SELECT id FROM `patches_updates_level` WHERE " . (strpos('patches_updates_level', 'companies') === false && strpos('patches_updates_level', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $reslevel_id = mysqli_query($this->conn, "SELECT id FROM `patches_updates_level` WHERE " . (strpos('patches_updates_level', 'companies') === false && strpos('patches_updates_level', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowlevel_id = mysqli_fetch_assoc($reslevel_id)) {
             $data['level_id'] = $rowlevel_id['id'];
         } else {
@@ -48,7 +48,7 @@ class PatchesUpdatesTest extends TestCase
             $data['level_id'] = null;
         }
         // Find or fallback for created_by (users)
-        $rescreated_by = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $rescreated_by = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcreated_by = mysqli_fetch_assoc($rescreated_by)) {
             $data['created_by'] = $rowcreated_by['id'];
         } else {

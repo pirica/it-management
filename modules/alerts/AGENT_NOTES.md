@@ -9,12 +9,12 @@ This module manages notifications and alerts within the system. It supports both
 ## 3. Required Relationships
 - **alerts** → depends on **companies** (via `company_id`).
 - **alerts** → depends on **event_categories** (via `category_id`).
-- **alerts** → depends on **users** (via `assigned_to_user_id` for private alerts and `created_by_user_id`).
+- **alerts** → depends on **users** (via `assigned_to_employee_id` for private alerts and `created_by_employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Visibility Logic**:
-    - **Global Alerts**: Records where `assigned_to_user_id IS NULL` are visible to all users in the company.
-    - **Private Alerts**: Records where `assigned_to_user_id = $user_id` are visible only to that user and the creator.
+    - **Global Alerts**: Records where `assigned_to_employee_id IS NULL` are visible to all users in the company.
+    - **Private Alerts**: Records where `assigned_to_employee_id = $user_id` are visible only to that user and the creator.
 - **Visibility Helpers**: Always use `includes/alerts_visibility.php` to generate SQL conditions for visibility.
 - **ICS Support**: Supports importing events from ICS files.
 
@@ -38,7 +38,7 @@ This module manages notifications and alerts within the system. It supports both
 - Mutations are logged via database triggers (`trg_alerts_audit_*`) into `audit_logs`.
 
 ## 10. Common Pitfalls
-- **Leaking Private Alerts**: Failing to include the `assigned_to_user_id` check in custom queries can leak private notifications to other users.
+- **Leaking Private Alerts**: Failing to include the `assigned_to_employee_id` check in custom queries can leak private notifications to other users.
 - **Date/Time Formatting**: Ensure `start_datetime` and `end_datetime` are handled correctly for SQL and UI display.
 
 ## 11. Examples of Safe Code Patterns
@@ -55,7 +55,7 @@ $stmt->execute();
 
 ### Safe INSERT
 ```php
-$stmt = $conn->prepare("INSERT INTO alerts (company_id, title, description, assigned_to_user_id, created_by_user_id) VALUES (?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO alerts (company_id, title, description, assigned_to_employee_id, created_by_employee_id) VALUES (?, ?, ?, ?, ?)");
 $stmt->bind_param("issii", $companyId, $title, $description, $assignedId, $creatorId);
 $stmt->execute();
 ```

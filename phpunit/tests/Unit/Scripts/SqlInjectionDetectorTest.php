@@ -27,7 +27,7 @@ class SqlInjectionDetectorTest extends TestCase
     public function injectionPayloadProvider(): array
     {
         return [
-            ['SELECT * FROM users --', ['comment-sequence']],
+            ['SELECT * FROM employees --', ['comment-sequence']],
             ['1; DROP TABLE users', ['stacked-query']],
             ["' OR 1=1", ['tautology']],
             ["' UNION SELECT NULL", ['union-select']],

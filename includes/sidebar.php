@@ -124,7 +124,7 @@ foreach ($sectionsById as $section) {
                     $displayLabel = itm_resolve_module_sidebar_label(
                         $conn,
                         (int)($company_id ?? 0),
-                        (int)($_SESSION['user_id'] ?? 0),
+                        (int)($_SESSION['employee_id'] ?? 0),
                         $moduleSlug,
                         $displayLabel
                     );

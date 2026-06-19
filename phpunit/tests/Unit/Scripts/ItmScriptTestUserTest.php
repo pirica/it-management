@@ -19,7 +19,7 @@ class ItmScriptTestUserTest extends TestCase
         }
 
         require_once ROOT_PATH . 'config/config.php';
-        require_once ROOT_PATH . 'scripts/lib/itm_script_test_user.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
         global $conn;
         if (!$conn || !($conn instanceof mysqli)) {
@@ -32,8 +32,8 @@ class ItmScriptTestUserTest extends TestCase
     protected function tearDown(): void
     {
         if ($this->conn instanceof mysqli) {
-            foreach ($this->createdUserIds as $userId) {
-                itm_script_test_user_delete($this->conn, (int)$userId);
+            foreach ($this->createdUserIds as $employeeId) {
+                itm_script_test_employee_delete($this->conn, (int)$employeeId);
             }
         }
         $this->createdUserIds = [];
@@ -41,21 +41,21 @@ class ItmScriptTestUserTest extends TestCase
 
     public function testUsernameShapeAndDisposableDetector(): void
     {
-        $username = itm_script_test_user_username('repro-audit');
+        $username = itm_script_test_employee_username('repro-audit');
         $this->assertMatchesRegularExpression('/^script-repro-audit-[a-f0-9]{8}$/', $username);
-        $this->assertTrue(itm_script_test_user_is_disposable($username));
-        $this->assertFalse(itm_script_test_user_is_disposable('admin'));
-        $this->assertFalse(itm_script_test_user_is_disposable('script-short'));
+        $this->assertTrue(itm_script_test_employee_is_disposable($username));
+        $this->assertFalse(itm_script_test_employee_is_disposable('admin'));
+        $this->assertFalse(itm_script_test_employee_is_disposable('script-short'));
     }
 
     public function testCreateSnapshotRestoreAndDelete(): void
     {
-        $row = itm_script_test_user_create($this->conn, 1, ['script_slug' => 'phpunit-script-user']);
+        $row = itm_script_test_employee_create($this->conn, 1, ['script_slug' => 'phpunit-script-user']);
         $this->assertIsArray($row);
         $this->assertGreaterThan(1, (int)$row['id']);
         $this->createdUserIds[] = (int)$row['id'];
 
-        $snapshot = itm_script_test_user_snapshot($this->conn, (int)$row['id'], [
+        $snapshot = itm_script_test_employee_snapshot($this->conn, (int)$row['id'], [
             'reset_token',
             'reset_token_hash',
             'reset_token_expires_at',
@@ -63,22 +63,22 @@ class ItmScriptTestUserTest extends TestCase
         $this->assertArrayHasKey('reset_token', $snapshot);
 
         $token = 'phpunit-token-' . bin2hex(random_bytes(4));
-        $stmt = mysqli_prepare($this->conn, 'UPDATE users SET reset_token = ? WHERE id = ?');
+        $stmt = mysqli_prepare($this->conn, 'UPDATE employees SET reset_token = ? WHERE id = ?');
         mysqli_stmt_bind_param($stmt, 'si', $token, $row['id']);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
 
-        $this->assertTrue(itm_script_test_user_restore($this->conn, (int)$row['id'], $snapshot));
+        $this->assertTrue(itm_script_test_employee_restore($this->conn, (int)$row['id'], $snapshot));
 
-        $after = itm_script_test_user_snapshot($this->conn, (int)$row['id'], ['reset_token']);
+        $after = itm_script_test_employee_snapshot($this->conn, (int)$row['id'], ['reset_token']);
         $this->assertSame($snapshot['reset_token'], $after['reset_token']);
 
-        $this->assertTrue(itm_script_test_user_delete($this->conn, (int)$row['id']));
+        $this->assertTrue(itm_script_test_employee_delete($this->conn, (int)$row['id']));
         $this->createdUserIds = array_values(array_diff($this->createdUserIds, [(int)$row['id']]));
     }
 
     public function testDeleteRefusesNonDisposableUser(): void
     {
-        $this->assertFalse(itm_script_test_user_delete($this->conn, 1));
+        $this->assertFalse(itm_script_test_employee_delete($this->conn, 1));
     }
 }

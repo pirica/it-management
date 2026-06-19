@@ -138,7 +138,7 @@ Document scoping beyond generic `company_id`.
 Examples:
 
 - All queries filter by `company_id` from session.
-- Private data also filters by `user_id` — **only document if code actually does this**.
+- Private data also filters by `employee_id` — **only document if code actually does this**.
 - Child `ops_report_id` rows: FK does not always enforce parent `company_id` match — note if application must validate.
 
 ---
@@ -151,7 +151,7 @@ Describe what is logged and how.
 
 - Name triggers: `trg_{table}_audit_insert|update|delete` in `database.sql`
 - Triggers **always** insert into `audit_logs` on DML — they are **not** gated by the `enable_audit_logs` UI setting
-- Actor context: `@app_user_id`, `@app_company_id` from `config/config.php`
+- Actor context: `@app_employee_id`, `@app_company_id` from `config/config.php`
 
 ### Application / read-only modules
 
@@ -176,7 +176,7 @@ Other examples:
 - Do not delete rows still referenced when schema blocks delete.
 - Do not copy generic “detach first” text without checking `information_schema` / `database.sql`.
 - Protection Zone modules: no logic changes unless explicitly requested.
-- Document **known gaps** (missing `user_id` filter, unguarded edit URLs) rather than ideal behaviour.
+- Document **known gaps** (missing `employee_id` filter, unguarded edit URLs) rather than ideal behaviour.
 
 ---
 

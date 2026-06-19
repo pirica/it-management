@@ -18,9 +18,9 @@ class ItmMbqaTestUserTest extends TestCase
 
     public function testRunnerRowTagShape(): void
     {
-        $tag = itm_mbqa_runner_row_tag('users', 1, 2);
+        $tag = itm_mbqa_runner_row_tag('employees', 1, 2);
         $this->assertMatchesRegularExpression('/^MBQA-users-1-2-[a-f0-9]{6}$/', $tag);
-        $this->assertSame($tag, itm_mbqa_runner_row_tag('users', 1, 2));
+        $this->assertSame($tag, itm_mbqa_runner_row_tag('employees', 1, 2));
     }
 
     public function testRunnerRowTagRejectsInvalidTable(): void
@@ -31,7 +31,7 @@ class ItmMbqaTestUserTest extends TestCase
 
     public function testUsernameIsMbqaRunnerSeededStrict(): void
     {
-        $tag = strtolower(itm_mbqa_runner_row_tag('users', 4, 0));
+        $tag = strtolower(itm_mbqa_runner_row_tag('employees', 4, 0));
         $this->assertTrue(itm_username_is_mbqa_runner_seeded($tag));
         $this->assertFalse(itm_username_is_mbqa_runner_seeded('mbqa-jane'));
         $this->assertFalse(itm_username_is_mbqa_runner_seeded('MBQA-users-1-2-short'));
@@ -46,7 +46,7 @@ class ItmMbqaTestUserTest extends TestCase
 
     public function testAdminDeleteGuardBypass(): void
     {
-        $runnerUser = strtolower(itm_mbqa_runner_row_tag('users', 1, 1));
+        $runnerUser = strtolower(itm_mbqa_runner_row_tag('employees', 1, 1));
         $this->assertTrue(itm_user_company_assignment_bypasses_admin_delete_guard($runnerUser));
         $this->assertTrue(itm_user_company_assignment_bypasses_admin_delete_guard('qa-import-seed-row-01'));
         $this->assertFalse(itm_user_company_assignment_bypasses_admin_delete_guard('regular.user'));

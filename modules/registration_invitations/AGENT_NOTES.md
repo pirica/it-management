@@ -4,12 +4,12 @@
 Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation_code`, recipient email, optional role/access-level defaults, and acceptance/expiry metadata for self-service registration.
 
 ## 2. Key Tables
-- **registration_invitations** — `email`, `invitation_code`, `invited_by_user_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`.
+- **registration_invitations** — `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`.
 
 ## 3. Required Relationships
 - **registration_invitations** → **companies** (`company_id`, unique per company+email).
-- **registration_invitations** → **users** (`invited_by_user_id` sender).
-- **registration_invitations** → **user_roles** (`role_id`), **access_levels** (`access_level_id`).
+- **registration_invitations** → **users** (`invited_by_employee_id` sender).
+- **registration_invitations** → **employee_roles** (`role_id`), **access_levels** (`access_level_id`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Admin only:** all entry points call `itm_require_admin()` — non-admins get HTTP 403 on mutations.
@@ -22,7 +22,7 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 - Standard flattened CRUD (`index.php` procedural template).
 - `invitation_code` kept visible in list/export columns so import payloads always carry the required field.
 - Bulk delete / clear table when row count ≥ `records_per_page`.
-- FK dropdowns for `role_id`, `access_level_id`, `invited_by_user_id` render labels, not raw IDs.
+- FK dropdowns for `role_id`, `access_level_id`, `invited_by_employee_id` render labels, not raw IDs.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — bulk import; auto-generates `invitation_code` when missing from row data.
@@ -49,7 +49,7 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 ### Admin gate at top of entry file
 ```php
 require_once '../../config/config.php';
-itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
+itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 ```
 
 ### Tenant-scoped single delete

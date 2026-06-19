@@ -11,13 +11,13 @@ require_once __DIR__ . '/lib/itm_api_tier_test_helpers.php';
 itm_script_output_begin('API Tier Basic Test');
 
 $companyId = ITM_APITEST_COMPANY_ID;
-$userId = itm_apitest_disposable_user_id(2);
+$employeeId = itm_apitest_disposable_user_id(2);
 $basicLimit = itm_api_tier_hourly_limit('Basic');
 $allPassed = true;
 
 itm_apitest_output_line('[INFO] Seeding disposable Basic-tier ui_configuration row at limit-1…', 'info');
 
-$row = itm_apitest_seed_configuration($conn, $companyId, $userId, 'Basic', [
+$row = itm_apitest_seed_configuration($conn, $companyId, $employeeId, 'Basic', [
     'rate_limit_enabled' => 1,
     'rate_limit_window_start' => time(),
     'rate_limit_request_count' => max(0, $basicLimit - 1),
@@ -35,7 +35,7 @@ $allPassed = itm_apitest_assert('Basic status is not unlimited', empty($status['
 $allPassed = itm_apitest_assert('Basic status limit matches tier cap', (int)($status['limit'] ?? 0) === $basicLimit) && $allPassed;
 $allPassed = itm_apitest_assert('Basic status remaining is one before cap', (int)($status['remaining'] ?? -1) === 1) && $allPassed;
 
-$freshRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $userId);
+$freshRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $employeeId);
 $consumeAllowed = itm_api_consume_rate_limit($conn, $freshRow ?: $row);
 $allPassed = itm_apitest_assert(
     'Basic consume at limit-1 is allowed',
@@ -48,7 +48,7 @@ $allPassed = itm_apitest_assert(
     json_encode($consumeAllowed, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
 ) && $allPassed;
 
-$freshRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $userId);
+$freshRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $employeeId);
 $consumeBlocked = itm_api_consume_rate_limit($conn, $freshRow ?: $row);
 $allPassed = itm_apitest_assert(
     'Basic consume at cap is blocked',
@@ -61,7 +61,7 @@ $allPassed = itm_apitest_assert(
     (string)($consumeBlocked['error'] ?? '')
 ) && $allPassed;
 
-$atCapRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $userId);
+$atCapRow = itm_apitest_reload_configuration($conn, (int)$row['id'], $companyId, $employeeId);
 if (is_array($atCapRow)) {
     $atCapStatus = itm_api_rate_limit_status_from_row($atCapRow);
     $allPassed = itm_apitest_assert('Basic status at cap shows zero remaining', (int)($atCapStatus['remaining'] ?? -1) === 0) && $allPassed;

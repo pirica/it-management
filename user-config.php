@@ -2,20 +2,16 @@
 require_once 'config/config.php';
 
 // Auth check
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
     exit ;
 }
 
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 $csrfToken = itm_get_csrf_token();
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if (!$conn) {
-    die('Connection failed: ' . mysqli_connect_error());
-}
 
-// Fetch current user
-$stmt = mysqli_prepare($conn, 'SELECT * FROM users WHERE id = ?');
+// Fetch current employee login profile
+$stmt = mysqli_prepare($conn, 'SELECT * FROM employees WHERE id = ?');
 mysqli_stmt_bind_param($stmt, 'i', $user_id);
 mysqli_stmt_execute($stmt);
 $current_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
@@ -45,8 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Email update
         $new_email = trim((string)($_POST['email'] ?? ''));
-        if ($new_email !== '' && $new_email !== $current_user['email']) {
-            $update_fields[] = 'email = ?';
+        $currentEmail = trim((string)($current_user['work_email'] ?? $current_user['personal_email'] ?? ''));
+        if ($new_email !== '' && strcasecmp($new_email, $currentEmail) !== 0) {
+            $update_fields[] = 'work_email = ?';
             $params[] = $new_email;
             $types .= 's';
         }
@@ -95,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $new_key_session = hash('sha256', $new_master_key);
                         
                         // Decrypt and Re-encrypt
-                        $res = mysqli_query($conn, "SELECT id, password FROM password_entries WHERE user_id = $user_id");
+                        $res = mysqli_query($conn, "SELECT id, password FROM password_entries WHERE employee_id = $user_id");
                         while ($row = mysqli_fetch_assoc($res)) {
                             $decrypted = itm_decrypt($row['password'], $old_key_session);
                             if ($decrypted !== false) {
@@ -122,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Execute database update
         if ($message === '' && !empty($update_fields)) {
-            $sql_update = 'UPDATE users SET ' . implode(', ', $update_fields) . ' WHERE id = ?';
+            $sql_update = 'UPDATE employees SET ' . implode(', ', $update_fields) . ' WHERE id = ?';
             $types .= 'i';
             $params[] = $user_id;
 
@@ -133,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = 'Profile updated successfully!';
                     $message_type = 'success';
                     // Fetch updated data for display
-                    $stmt_ref = mysqli_prepare($conn, 'SELECT * FROM users WHERE id = ?');
+                    $stmt_ref = mysqli_prepare($conn, 'SELECT * FROM employees WHERE id = ?');
                     mysqli_stmt_bind_param($stmt_ref, 'i', $user_id);
                     mysqli_stmt_execute($stmt_ref);
                     $current_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_ref));
@@ -188,7 +185,7 @@ $messageStyle = ($message_type === 'info') ? 'background: #e8f1ff; border:1px so
                             <div class="card-header"><strong>Account Information</strong></div>
                             <div class="form-group">
                                 <label>Email Address</label>
-                                <input type="email" name="email" value="<?php echo htmlspecialchars($current_user['email']); ?>" required>
+                                <input type="email" name="email" value="<?php echo htmlspecialchars((string)($current_user['work_email'] ?? $current_user['personal_email'] ?? '')); ?>" required>
                             </div>
                         </div>
 

@@ -26,7 +26,7 @@ class CostCentersTest extends TestCase
         $data['name'] = 'Test name';
         $data['active'] = 1;
         // Find or fallback for department_id (departments)
-        $resdepartment_id = mysqli_query($this->conn, "SELECT id FROM `departments` WHERE " . (strpos('departments', 'companies') === false && strpos('departments', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resdepartment_id = mysqli_query($this->conn, "SELECT id FROM `departments` WHERE " . (strpos('departments', 'companies') === false && strpos('departments', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowdepartment_id = mysqli_fetch_assoc($resdepartment_id)) {
             $data['department_id'] = $rowdepartment_id['id'];
         } else {

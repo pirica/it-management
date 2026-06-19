@@ -30,7 +30,7 @@ if (!function_exists('itm_database_sql_unique_audit_resolve_scope_column')) {
      */
     function itm_database_sql_unique_audit_resolve_scope_column(array $columns, string $table = ''): string
     {
-        if ($table === 'user_companies' && in_array('user_id', $columns, true)) {
+        if ($table === 'employee_companies' && in_array('user_id', $columns, true)) {
             return 'user_id';
         }
 

@@ -26,7 +26,7 @@ class RacksTest extends TestCase
         $data['name'] = 'Test name';
         $data['active'] = 1;
         // Find or fallback for location_id (it_locations)
-        $reslocation_id = mysqli_query($this->conn, "SELECT id FROM `it_locations` WHERE " . (strpos('it_locations', 'companies') === false && strpos('it_locations', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $reslocation_id = mysqli_query($this->conn, "SELECT id FROM `it_locations` WHERE " . (strpos('it_locations', 'companies') === false && strpos('it_locations', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowlocation_id = mysqli_fetch_assoc($reslocation_id)) {
             $data['location_id'] = $rowlocation_id['id'];
         } else {
@@ -34,7 +34,7 @@ class RacksTest extends TestCase
             $data['location_id'] = null;
         }
         // Find or fallback for status_id (rack_statuses)
-        $resstatus_id = mysqli_query($this->conn, "SELECT id FROM `rack_statuses` WHERE " . (strpos('rack_statuses', 'companies') === false && strpos('rack_statuses', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resstatus_id = mysqli_query($this->conn, "SELECT id FROM `rack_statuses` WHERE " . (strpos('rack_statuses', 'companies') === false && strpos('rack_statuses', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowstatus_id = mysqli_fetch_assoc($resstatus_id)) {
             $data['status_id'] = $rowstatus_id['id'];
         } else {

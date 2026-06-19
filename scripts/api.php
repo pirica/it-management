@@ -570,7 +570,7 @@ function itmDocNotesAjaxActions(): array
 function itmDocTodoAjaxActions(): array
 {
     return [
-        ['action' => 'quick_add', 'params' => 'title, due_date, reminder_at, repeat_pattern, category_id[], department_id[], assigned_to_user_id[], importance, csrf_token', 'purpose' => 'Create task from inline row.'],
+        ['action' => 'quick_add', 'params' => 'title, due_date, reminder_at, repeat_pattern, category_id[], department_id[], assigned_to_employee_id[], importance, csrf_token', 'purpose' => 'Create task from inline row.'],
         ['action' => 'toggle_completed', 'params' => 'id, completed, csrf_token', 'purpose' => 'Toggle task completion.'],
         ['action' => 'toggle_importance', 'params' => 'id, importance, csrf_token', 'purpose' => 'Toggle task importance.'],
     ];

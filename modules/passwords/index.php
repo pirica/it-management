@@ -2,7 +2,7 @@
 require_once '../../config/config.php';
 
 // Auth Check (Custom for Passwords Module)
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
     die();
 }
@@ -10,10 +10,10 @@ if (!isset($_SESSION['user_id'])) {
 $csrfToken = itm_get_csrf_token();
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 
 // Fetch user's vault status
-$user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM users WHERE id = ?');
+$user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM employees WHERE id = ?');
 mysqli_stmt_bind_param($user_stmt, 'i', $user_id);
 mysqli_stmt_execute($user_stmt);
 $user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($user_stmt));

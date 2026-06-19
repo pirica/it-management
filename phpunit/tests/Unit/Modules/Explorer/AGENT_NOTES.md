@@ -12,7 +12,7 @@ Unit/regression tests for `modules/explorer/`.
 - `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity`); hidden listing entries (`testHiddenSystemEntries`); preview routing (`testPreviewModeRouting`).
 
 ## 10. Common Pitfalls
-- **Disposable script test users:** when tests INSERT/UPDATE `users` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_user.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
+- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
 - `ExplorerTest` requires DB via `config.php`; run with full PHPUnit config: `php phpunit/phpunit.phar -c phpunit/phpunit.xml --filter ExplorerTest`.
 - Path-logic-only checks without DB: `php scripts/test_explorer_paths.php`.
 
