@@ -7,6 +7,7 @@ Supplementary readme documentation assets (not the root `README.md`), including 
 - `company-module-access-architecture.svg` — Company Module Access Management architectural map (UI surfaces, request bootstrap, database tables).
 - `license_management.png` — License Management module list screenshot (Screenshots section in root `README.md`).
 - `demo_license_management.png` — License Management demo screenshot (Features / Login section in root `README.md`).
+- `demo_emails.png` — Email Management demo screenshot (Send Logs tab, stat cards, SMTP/Alert Rules tabs; Features / Login section in root `README.md`).
 
 ## 12. Module Owner Notes (Optional)
 Project entry docs: root `README.md`, authoritative agent rules in `AGENTS.md`, scripts standards in `scripts/SCRIPTS.md`.
