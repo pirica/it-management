@@ -41,7 +41,7 @@ class BypassLoginTest extends TestCase
         $output = ob_get_clean();
 
         // 3. Verify Session Variables
-        $this->assertArrayHasKey('user_id', $_SESSION);
+        $this->assertArrayHasKey('employee_id', $_SESSION);
         $this->assertArrayHasKey('username', $_SESSION);
         $this->assertArrayHasKey('role_name', $_SESSION);
         $this->assertArrayHasKey('company_id', $_SESSION);

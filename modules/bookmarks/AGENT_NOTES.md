@@ -8,11 +8,11 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **bookmark_folders** — folder tree (emoji icons in sidebar).
 
 ## 3. Required Relationships
-- **bookmarks** → **companies**, **users**, **bookmark_folders**.
+- **bookmarks** → **companies**, **employees**, **bookmark_folders**.
 
 ## 4. Business Rules (Critical for Agents)
 - **Privacy:** filter by `employee_id` for private bookmarks and `company_id` for shared ones.
-- **Visibility:** row visible when `(user_id = logged user OR shared = 1)` and `company_id` matches.
+- **Visibility:** row visible when `(employee_id = logged employee OR shared = 1)` and `company_id` matches.
 - **Permissions:** shared bookmarks read-only for regular users; admins and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
 - **Drag-and-drop:** folders reordered/reparented via DnD interactions.
@@ -60,7 +60,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 
 ### Safe visibility WHERE clause
 ```php
-$where = 'company_id = ? AND active = 1 AND (user_id = ? OR shared = 1)';
+$where = 'company_id = ? AND active = 1 AND (employee_id = ? OR shared = 1)';
 $stmt = $conn->prepare("SELECT * FROM bookmarks WHERE $where AND folder_id IS NULL ORDER BY title ASC");
 $stmt->bind_param('ii', $companyId, $employeeId);
 ```

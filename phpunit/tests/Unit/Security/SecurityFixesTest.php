@@ -59,7 +59,7 @@ echo ob_get_clean();
         $company_id = 1;
         $session = [
             'company_id' => $company_id,
-            'user_id' => 1,
+            'employee_id' => 1,
             'username' => 'admin',
             'csrf_token' => 'test_token'
         ];
@@ -106,7 +106,7 @@ echo ob_get_clean();
 
         $session = [
             'company_id' => 1,
-            'user_id' => $attacker_id,
+            'employee_id' => $attacker_id,
             'username' => 'attacker',
             'csrf_token' => 'test_token'
         ];
@@ -143,7 +143,7 @@ echo ob_get_clean();
     {
         $session = [
             'company_id' => 1,
-            'user_id' => 999,
+            'employee_id' => 999,
             'username' => 'nobody',
             'role_name' => 'User'
         ];
@@ -157,7 +157,7 @@ echo ob_get_clean();
     {
         $session = [
             'company_id' => 1,
-            'user_id' => 999,
+            'employee_id' => 999,
             'username' => 'nobody'
         ];
 
@@ -174,7 +174,7 @@ echo ob_get_clean();
 
         $session = [
             'company_id' => 1,
-            'user_id' => $attacker_id,
+            'employee_id' => $attacker_id,
             'username' => 'attacker_import',
             'csrf_token' => 'test_token'
         ];
@@ -215,7 +215,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
     {
         $session = [
             'company_id' => 1,
-            'user_id' => 999,
+            'employee_id' => 999,
             'username' => 'nobody',
             'role_name' => 'User'
         ];
@@ -229,7 +229,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
     {
         $session = [
             'company_id' => 1,
-            'user_id' => 999,
+            'employee_id' => 999,
             'username' => 'nobody',
             'role_name' => 'User'
         ];
@@ -331,7 +331,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $session = [
             'company_id' => $companyId,
-            'user_id' => $attackerId,
+            'employee_id' => $attackerId,
             'username' => (string)$attacker['username'],
         ];
         $get = ['id' => $noteId];
@@ -388,7 +388,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $session = [
             'company_id' => $companyId,
-            'user_id' => (int)$adminRow['id'],
+            'employee_id' => (int)$adminRow['id'],
             'username' => (string)$adminRow['username'],
         ];
         $get = ['id' => $employeeId];

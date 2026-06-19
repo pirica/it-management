@@ -43,7 +43,7 @@ class BackupTapeLogPermissionsTest extends TestCase
         $dir = str_replace('\\', '/', __DIR__);
         $sessionDataMerged = array_merge([
             'company_id' => $this->companyId,
-            'user_id' => 1,
+            'employee_id' => 1,
             'role_name' => 'admin'
         ], $sessionData);
         $sessionDataExport = var_export($sessionDataMerged, true);
@@ -87,7 +87,7 @@ include "index.php";
 
         $sessionData = [
             'role_name' => 'user',
-            'user_id' => 999
+            'employee_id' => 999
         ];
 
         $result = $this->simulateAjaxRequest($postData, $sessionData);
@@ -108,7 +108,7 @@ include "index.php";
 
         $sessionData = [
             'role_name' => 'user',
-            'user_id' => 999
+            'employee_id' => 999
         ];
 
         $result = $this->simulateAjaxRequest($postData, $sessionData);

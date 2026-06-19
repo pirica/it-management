@@ -22,9 +22,9 @@ class PasswordsTest extends TestCase
     {
         // 1. Create
         $name = 'Test Folder ' . uniqid();
-        $sql = "INSERT INTO password_folders (user_id, name) VALUES (?, ?)";
+        $sql = "INSERT INTO password_folders (employee_id, name) VALUES (?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'is', $this->userId, $name);
+        mysqli_stmt_bind_param($stmt, 'is', $this->employeeId, $name);
         $this->assertTrue(mysqli_stmt_execute($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
@@ -63,9 +63,9 @@ class PasswordsTest extends TestCase
     {
         // 1. Create
         $account = 'Test Account ' . uniqid();
-        $sql = "INSERT INTO password_entries (user_id, account, password) VALUES (?, ?, 'secret')";
+        $sql = "INSERT INTO password_entries (employee_id, account, password) VALUES (?, ?, 'secret')";
         $stmt = mysqli_prepare($this->conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'is', $this->userId, $account);
+        mysqli_stmt_bind_param($stmt, 'is', $this->employeeId, $account);
         $this->assertTrue(mysqli_stmt_execute($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);

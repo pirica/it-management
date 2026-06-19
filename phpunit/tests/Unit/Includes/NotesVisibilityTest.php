@@ -25,7 +25,7 @@ class NotesVisibilityTest extends TestCase
     public function testVisibilitySqlWithAlias(): void
     {
         $sql = itm_notes_visibility_sql('n');
-        $this->assertStringContainsString('n.user_id = ?', $sql);
+        $this->assertStringContainsString('n.employee_id = ?', $sql);
         $this->assertStringContainsString('JSON_CONTAINS(n.shared_with_json', $sql);
     }
 
