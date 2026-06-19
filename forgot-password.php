@@ -161,7 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Only attempt to send email if an account was actually found and updated.
             if (mysqli_stmt_affected_rows($stmt) > 0) {
                 $link = BASE_URL . 'reset-password.php?token=' . urlencode($token);
-                $html = '<p>We received a request to reset your password. Use the button below to choose a new one.</p>';
+                $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+                $html = '<p>We received a request to reset your password. Use the button below to choose a new one.</p>'
+                    . '<p>If the button does not work, copy and paste this link into your browser:</p>'
+                    . '<p style="word-break:break-all;"><a href="' . $safeLink . '" style="color:#0969da;">' . $safeLink . '</a></p>';
                 itm_send_email($email, 'Reset Your Password', $html, $auditCompanyId, [
                     'email_template' => [
                         'subtitle' => 'Reset your password',
