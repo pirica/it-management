@@ -4603,7 +4603,6 @@ CREATE TRIGGER `trg_departments_audit_delete` AFTER DELETE ON `departments` FOR 
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'departments', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'description', OLD.`description`, 'email', OLD.`email`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
-END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_email_smtp_configurations_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_email_smtp_configurations_audit_update`;
