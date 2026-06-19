@@ -8,7 +8,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 - **No file-scope requires in test files:** load support classes from `phpunit/tests/bootstrap.php`, not from individual `*Test.php` / `*.unittest.php` files.
 - **ItmScriptCliTestTrait:** subprocess runner for `scripts/*.php` that call `exit()` — always use `2>&1` via `runRepoScript()` / `runPhpScriptFile()`.
 - **ItmScriptCliTestCase:** extend this (not `TestCase` + trait require) for CLI audit script tests.
-- **ItmExtractFunctionTestTrait:** temp-file `require_once` for a single function extracted from module PHP — **never `eval()`** on production source. Prefer `requireExtractedFunction($file, $name)` (brace-balanced extraction); optional third-arg regex is legacy only.
+- **ItmModuleIsolatedTestTrait:** subprocess `runIsolatedModule()` for module `index.php` handlers — required when a test would `include` the same module twice in one PHPUnit process (avoids `Cannot redeclare` fatals from procedural helpers in `modules/employees/index.php` and similar entry files).
 
 ## 7. File Structure
 | File | Role |
@@ -16,6 +16,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 | `ItmScriptCliTestTrait.php` | `runRepoScript()`, `runPhpScriptFile()` |
 | `ItmScriptCliTestCase.php` | Base class for audit `check_*` unittest files |
 | `ItmExtractFunctionTestTrait.php` | `requireExtractedFunction()`, `itmExtractFunctionSource()` (brace-balanced) for Org Chart / Explorer tests |
+| `ItmModuleIsolatedTestTrait.php` | `runIsolatedModule()` — subprocess include for module entry files |
 
 ## 10. Common Pitfalls
 - Including audit scripts at file scope halts PHPUnit — subprocess only.

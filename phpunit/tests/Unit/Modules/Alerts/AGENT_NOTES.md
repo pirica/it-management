@@ -8,7 +8,7 @@ Unit/regression tests for `modules/alerts/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `AlertsTest.php` — CRUD/visibility; seeds extra employees via `itm_script_test_employee_create()` when fewer than three rows exist (never `employees.active`).
+- `AlertsTest.php` — CRUD/visibility; seeds extra employees via `itm_script_test_employee_create()` when fewer than three rows exist (never `employees.active`). Global (unassigned) alert fixtures omit `assigned_to_employee_id` instead of binding NULL as integer.
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.

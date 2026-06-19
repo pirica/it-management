@@ -3,6 +3,8 @@ use PHPUnit\Framework\TestCase;
 
 class CrossTenantScopingTest extends TestCase
 {
+    use ItmModuleIsolatedTestTrait;
+
     private $conn;
 
     protected function setUp(): void
@@ -73,32 +75,23 @@ class CrossTenantScopingTest extends TestCase
         mysqli_stmt_execute($stmt);
         $adminCo2Id = mysqli_insert_id($this->conn);
 
-        // Access Employees module as Admin 2
-        $_SESSION['employee_id'] = $adminCo2Id;
-        $_SESSION['company_id'] = $company2Id;
-        global $company_id;
-        $company_id = $company2Id;
-        $_SERVER['REQUEST_METHOD'] = 'GET';
-        $_SERVER['PHP_SELF'] = '/modules/employees/index.php';
+        $output = $this->runIsolatedModule(
+            ROOT_PATH . 'modules/employees/index.php',
+            [
+                'employee_id' => $adminCo2Id,
+                'company_id' => $company2Id,
+            ],
+            [],
+            [],
+            [
+                'REQUEST_METHOD' => 'GET',
+                'PHP_SELF' => '/modules/employees/index.php',
+            ],
+            ['company_id' => $company2Id]
+        );
 
-        $oldDir = getcwd();
-        chdir(ROOT_PATH . 'modules/employees');
-        ob_start();
-        global $conn, $rows;
-        include 'index.php';
-        ob_end_clean();
-        chdir($oldDir);
-
-        $found = false;
-        mysqli_data_seek($rows, 0);
-        while ($row = mysqli_fetch_assoc($rows)) {
-            if ((int)$row['id'] === (int)$userCo1Id) {
-                $found = true;
-                break;
-            }
-        }
-
-        $this->assertFalse($found, "Admin of company 2 should not see users from company 1");
+        $this->assertStringNotContainsString($userCo1, $output, "Admin of company 2 should not see users from company 1");
+        $this->assertStringNotContainsString($email1, $output, "Admin of company 2 should not see company 1 user email");
 
         // Cleanup
         $stmt = mysqli_prepare($this->conn, "DELETE FROM employees WHERE id IN (?, ?)");
