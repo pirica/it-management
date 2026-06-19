@@ -658,9 +658,24 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 |--------|---------|
 | `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs; bulk backfill when sidebar auto-register is not enough |
 | `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither); PHPUnit: `CompanyModuleAccessVerifyTest` |
+| `php scripts/benchmark_sidebar_module_access.php` | Read-only benchmark: MySQL `Questions` delta for live sidebar path (`itm_sidebar_structure()` + `has_module_access()` filter) vs uncached legacy N+1 simulation; median query count, timing, and reduction %; env thresholds `ITM_BSMA_MAX_FULL_QUERIES` (default 45), `ITM_BSMA_MIN_REDUCTION_PCT` (default 50) |
 | `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
 
-Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks.
+Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks. Run `benchmark_sidebar_module_access.php` after sidebar discovery or module-access caching changes to confirm query reduction (expect large drop vs legacy simulation when prefetch cache is enabled; marketing figures ~417→~7 depend on module count and environment — treat this script as the authoritative local measurement).
+
+### Sidebar module-access benchmark (`benchmark_sidebar_module_access.php`)
+
+| Item | Detail |
+|------|--------|
+| **Purpose** | Verify the per-request prefetch cache in `has_module_access()` and batch registry ensure reduce sidebar-related query volume. |
+| **Method** | Uses `SHOW SESSION STATUS LIKE 'Questions'` (same pattern as `verify_metadata_column_cache.php`). Optimized path mirrors `includes/sidebar.php`: fresh `itm_sidebar_structure($conn, true)`, `itm_sidebar_item_catalog()`, then one `has_module_access()` per sidebar module slug. Legacy path re-runs uncached per-slug registry, admin, and CMA queries plus a separate per-slug registry ensure simulation. |
+| **CLI** | `php scripts/benchmark_sidebar_module_access.php` · `--company=1 --employee=1 --iterations=3` |
+| **Browser** | `scripts/benchmark_sidebar_module_access.php` (optional query params `company`, `employee`, `iterations`) |
+| **Shared lib** | `scripts/lib/itm_benchmark_sidebar_access.php` |
+| **PASS** | Median optimized full-path queries ≤ `ITM_BSMA_MAX_FULL_QUERIES` (default 45) **and** reduction vs legacy combined estimate ≥ `ITM_BSMA_MIN_REDUCTION_PCT` (default 50). |
+| **Notes** | Read-only; no CMA mutations. Without prefetch cache helpers the optimized path stays high and the script warns. Absolute query totals vary by registry row count and discovery — compare optimized vs legacy on the same database rather than hard-coding ~417 or ~7. |
+
+Catalog: `scripts/scripts.php`.
 
 ### Ops Report scripts
 
