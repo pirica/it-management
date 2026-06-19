@@ -124,9 +124,59 @@ if (!function_exists('itm_module_access_registry_row')) {
     }
 }
 
-if (!function_exists('has_module_access')) {
-  function has_module_access($conn, $company_id, $module_slug)
+if (!function_exists('itm_has_module_access_bust_cache')) {
+    function itm_has_module_access_bust_cache()
     {
+        // Why: CMA/registry writers must drop stale per-request permission cache before the next read.
+        global $itm_has_module_access_cache_bust;
+        $itm_has_module_access_cache_bust = true;
+    }
+}
+
+if (!function_exists('itm_module_access_company_enabled_for_slug')) {
+    function itm_module_access_company_enabled_for_slug($conn, $company_id, $module_slug)
+    {
+        $company_id = (int)$company_id;
+        $module_slug = trim((string)$module_slug);
+        if ($company_id <= 0 || $module_slug === '' || !$conn instanceof mysqli) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT cma.enabled
+             FROM company_module_access cma
+             INNER JOIN modules_registry mr ON mr.id = cma.module_id
+             WHERE cma.company_id = ?
+               AND mr.module_slug = ?
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $company_id, $module_slug);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+        mysqli_stmt_close($stmt);
+
+        return $row !== null ? (int)($row['enabled'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('has_module_access')) {
+    function has_module_access($conn, $company_id, $module_slug, $forceRefresh = false)
+    {
+        static $access_cache = [];
+        static $registry_cache = [];
+        static $initialized_company = 0;
+
+        global $itm_has_module_access_cache_bust;
+        if (!empty($itm_has_module_access_cache_bust)) {
+            $forceRefresh = true;
+            $itm_has_module_access_cache_bust = false;
+        }
+
         $company_id = (int)$company_id;
         $module_slug = trim((string)$module_slug);
         if ($module_slug === '' || !$conn instanceof mysqli || $company_id <= 0) {
@@ -142,11 +192,48 @@ if (!function_exists('has_module_access')) {
             return true;
         }
 
-        $registryRow = itm_module_access_registry_row($conn, $module_slug);
-        if ($registryRow === null) {
-            return false;
+        // Why: Pre-fetch all module access for the company in one query to avoid N+1 sidebar performance issues.
+        if ($initialized_company !== $company_id || $forceRefresh) {
+            $access_cache = [];
+            $registry_cache = [];
+            $sql = 'SELECT mr.module_slug, mr.is_system_module, mr.active AS registry_active,
+                           COALESCE(cma.enabled, 0) AS enabled
+                    FROM modules_registry mr
+                    LEFT JOIN company_module_access cma ON cma.module_id = mr.id AND cma.company_id = ?';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $company_id);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                while ($res && ($row = mysqli_fetch_assoc($res))) {
+                    $slug = (string)($row['module_slug'] ?? '');
+                    if ($slug === '') {
+                        continue;
+                    }
+                    $registry_cache[$slug] = [
+                        'is_system_module' => (int)$row['is_system_module'],
+                        'active' => (int)$row['registry_active'],
+                    ];
+                    $access_cache[$slug] = (int)$row['enabled'];
+                }
+                mysqli_stmt_close($stmt);
+                $initialized_company = $company_id;
+            }
         }
 
+        if (!isset($registry_cache[$module_slug])) {
+            $row = itm_module_access_registry_row($conn, $module_slug);
+            if ($row === null) {
+                return false;
+            }
+            $registry_cache[$module_slug] = [
+                'is_system_module' => (int)($row['is_system_module'] ?? 0),
+                'active' => (int)($row['active'] ?? 0),
+            ];
+            $access_cache[$module_slug] = itm_module_access_company_enabled_for_slug($conn, $company_id, $module_slug);
+        }
+
+        $registryRow = $registry_cache[$module_slug];
         if ((int)($registryRow['active'] ?? 0) !== 1) {
             return false;
         }
@@ -166,27 +253,7 @@ if (!function_exists('has_module_access')) {
             return true;
         }
 
-        $stmt = mysqli_prepare(
-            $conn,
-            'SELECT 1
-             FROM company_module_access cma
-             INNER JOIN modules_registry mr ON mr.id = cma.module_id
-             WHERE cma.company_id = ?
-               AND mr.module_slug = ?
-               AND cma.enabled = 1
-               AND mr.active = 1
-             LIMIT 1'
-        );
-        if (!$stmt) {
-            return false;
-        }
-        mysqli_stmt_bind_param($stmt, 'is', $company_id, $module_slug);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
-        $allowed = mysqli_stmt_num_rows($stmt) > 0;
-        mysqli_stmt_close($stmt);
-
-        return $allowed;
+        return !empty($access_cache[$module_slug]);
     }
 }
 
@@ -572,18 +639,21 @@ if (!function_exists('itm_ensure_registry_rows_for_module_slugs')) {
 
         itm_ensure_module_access_icon_columns($conn);
 
+        $existing = [];
+        $res = mysqli_query($conn, "SELECT module_slug FROM modules_registry");
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $existing[$row['module_slug']] = true;
+        }
+
         $inserted = 0;
         $systemSlugs = itm_module_access_system_slugs();
 
         foreach ($slugs as $slug) {
             $slug = trim((string)$slug);
-            if ($slug === '') {
+            if ($slug === '' || isset($existing[$slug])) {
                 continue;
             }
             if (function_exists('itm_sidebar_module_is_hidden') && itm_sidebar_module_is_hidden($slug)) {
-                continue;
-            }
-            if (itm_module_access_registry_row($conn, $slug) !== null) {
                 continue;
             }
 
@@ -625,6 +695,10 @@ if (!function_exists('itm_ensure_registry_rows_for_module_slugs')) {
                 }
             }
             mysqli_stmt_close($stmt);
+        }
+
+        if ($inserted > 0 && function_exists('itm_has_module_access_bust_cache')) {
+            itm_has_module_access_bust_cache();
         }
 
         return $inserted;
@@ -897,6 +971,10 @@ if (!function_exists('itm_set_company_module_access')) {
             $newValues = itm_fetch_audit_record($conn, 'company_module_access', $recordId, $company_id);
             $action = $oldValues ? 'UPDATE' : 'INSERT';
             itm_log_audit($conn, 'company_module_access', $recordId, $action, $oldValues, $newValues);
+        }
+
+        if (function_exists('itm_has_module_access_bust_cache')) {
+            itm_has_module_access_bust_cache();
         }
 
         return true;

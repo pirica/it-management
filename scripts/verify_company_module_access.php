@@ -66,7 +66,7 @@ if ($stmt) {
 
 if ($suppliersId > 0) {
     itm_set_company_module_access($conn, 1, $suppliersId, 0);
-    if (has_module_access($conn, 1, 'suppliers')) {
+    if (has_module_access($conn, 1, 'suppliers', true)) {
         echo '[FAIL] suppliers should be denied after explicit enabled=0 for company 1.' . $nl;
         $failures++;
     } else {
@@ -78,13 +78,14 @@ if ($suppliersId > 0) {
         mysqli_stmt_execute($stmtDelete);
         mysqli_stmt_close($stmtDelete);
     }
-    if (has_module_access($conn, 1, 'suppliers')) {
+    if (has_module_access($conn, 1, 'suppliers', true)) {
         echo '[FAIL] suppliers should be denied when company_module_access row is missing (strict opt-in).' . $nl;
         $failures++;
     } else {
         echo '[PASS] suppliers denied when company_module_access row is missing.' . $nl;
     }
     itm_set_company_module_access($conn, 1, $suppliersId, 1);
+    has_module_access($conn, 1, 'suppliers', true); // restore cache
 } else {
     echo '[FAIL] suppliers registry row not found.' . $nl;
     $failures++;
@@ -161,7 +162,7 @@ if ($probeModuleId > 0) {
     } elseif (!itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
         echo '[FAIL] Registry-only probe missing from sidebar structure.' . $nl;
         $failures++;
-    } elseif (!has_module_access($conn, 1, $probeSlug)) {
+    } elseif (!has_module_access($conn, 1, $probeSlug, true)) {
         echo '[FAIL] Registry-only probe denied by has_module_access after CMA seed.' . $nl;
         $failures++;
     } else {
@@ -194,7 +195,7 @@ if (!mysqli_query($conn, $probeTableSql)) {
     } elseif (!itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
         echo '[FAIL] Table-only probe missing from sidebar structure.' . $nl;
         $failures++;
-    } elseif (!has_module_access($conn, 1, $probeSlug)) {
+    } elseif (!has_module_access($conn, 1, $probeSlug, true)) {
         echo '[FAIL] Table-only probe denied by has_module_access after auto registry ensure.' . $nl;
         $failures++;
     } else {
@@ -222,7 +223,7 @@ if (!is_dir($probeModuleDir) && !mkdir($probeModuleDir, 0775, true) && !is_dir($
         if (!itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
             echo '[FAIL] Folder-only probe missing from sidebar structure.' . $nl;
             $failures++;
-        } elseif (!has_module_access($conn, 1, $probeSlug)) {
+        } elseif (!has_module_access($conn, 1, $probeSlug, true)) {
             echo '[FAIL] Folder-only probe denied by has_module_access after auto registry ensure.' . $nl;
             $failures++;
         } else {
@@ -270,7 +271,7 @@ if ($probeModuleId <= 0) {
         if ($probeCount !== 1) {
             echo '[FAIL] Both-path probe should appear exactly once in sidebar (found ' . $probeCount . ').' . $nl;
             $failures++;
-        } elseif (!has_module_access($conn, 1, $probeSlug)) {
+        } elseif (!has_module_access($conn, 1, $probeSlug, true)) {
             echo '[FAIL] Both-path probe denied by has_module_access.' . $nl;
             $failures++;
         } else {
@@ -285,7 +286,7 @@ itm_sidebar_discovery_probe_cleanup($conn, $probeSlug);
 if (itm_sidebar_structure_contains_slug($conn, $probeSlug, true)) {
     echo '[FAIL] Neither-path probe should be absent from sidebar structure.' . $nl;
     $failures++;
-} elseif (has_module_access($conn, 1, $probeSlug)) {
+} elseif (has_module_access($conn, 1, $probeSlug, true)) {
     echo '[FAIL] Neither-path probe should be denied by has_module_access.' . $nl;
     $failures++;
 } else {
