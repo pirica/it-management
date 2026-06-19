@@ -29,7 +29,7 @@ The central module for managing employee records, including contact info, hierar
 - **Unique Code:** `employee_code` should be unique per company if provided.
 - **Import (mandatory):**
   - Header aliases: `Hilton ID` → `external_id`, `Position Title` → `employee_position_id`, `Department Name` → `department_id`, sort markers like `Id▼` → `id`.
-  - If `id` column present, update existing row instead of duplicate insert.
+  - If `id` column present, update existing row instead of duplicate insert. Only columns provided in the import (or auto-derived) are updated in the database to prevent data loss in missing columns (`providedFields` tracking).
   - Auto-create **departments** and **employee_positions** when names/titles not found.
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
