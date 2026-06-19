@@ -144,8 +144,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Enter a valid test recipient email.';
         } else {
             $subject = 'Test Email from IT Manager Pro';
-            $html = '<p>This is a test message from the Email Management module.</p>';
-            $ok = itm_send_email($testTo, $subject, $html, $company_id, ['smtp_config_id' => $testConfigId > 0 ? $testConfigId : null]);
+            $html = '<p>This is a test message from the Email Management module. If you received this, your SMTP profile is working.</p>';
+            $ok = itm_send_email($testTo, $subject, $html, $company_id, [
+                'smtp_config_id' => $testConfigId > 0 ? $testConfigId : null,
+                'email_template' => [
+                    'subtitle' => 'SMTP test message',
+                    'footer_text' => 'Sent from Email Management → SMTP Configurations.',
+                ],
+            ]);
             if ($ok) {
                 $notices[] = 'Test email sent to ' . $testTo . '.';
             } else {

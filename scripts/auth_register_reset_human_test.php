@@ -24,9 +24,13 @@ $nl = itm_script_output_nl();
 $failures = 0;
 $companyIds = [1, 2];
 
-foreach ($argv as $arg) {
-    if (strpos($arg, '--company=') === 0) {
-        $companyIds = [(int)substr($arg, 10)];
+$argvLocal = $argv ?? [];
+if (PHP_SAPI !== 'cli' && isset($_GET['company'])) {
+    $argvLocal[] = '--company=' . (int)$_GET['company'];
+}
+foreach ($argvLocal as $arg) {
+    if (strpos((string)$arg, '--company=') === 0) {
+        $companyIds = [(int)substr((string)$arg, 10)];
     }
 }
 

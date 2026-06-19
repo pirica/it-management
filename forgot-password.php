@@ -161,8 +161,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Only attempt to send email if an account was actually found and updated.
             if (mysqli_stmt_affected_rows($stmt) > 0) {
                 $link = BASE_URL . 'reset-password.php?token=' . urlencode($token);
-                $html = "Click here to reset your IT Management System password: <a href='" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . "'>" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . "</a>";
-                itm_send_email($email, 'Reset Your Password', $html, $auditCompanyId);
+                $html = '<p>We received a request to reset your password. Use the button below to choose a new one.</p>';
+                itm_send_email($email, 'Reset Your Password', $html, $auditCompanyId, [
+                    'email_template' => [
+                        'subtitle' => 'Reset your password',
+                        'button_text' => 'Reset password',
+                        'button_url' => $link,
+                        'footer_text' => 'If you did not request this, you can ignore this email.',
+                    ],
+                ]);
             }
 
             mysqli_stmt_close($stmt);
