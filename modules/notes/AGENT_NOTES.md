@@ -8,7 +8,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - **note_labels** — per-user label/tag names used when filtering and importing.
 
 ## 3. Required Relationships
-- **notes** → depends on **companies** (`company_id`), **users** (`employee_id`, share targets).
+- **notes** → depends on **companies** (`company_id`), **employees** (`employee_id`, share targets).
 - **notes** → uses **note_labels** for tag metadata.
 - Visibility helpers live in `includes/notes_visibility.php`.
 

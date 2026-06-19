@@ -8,7 +8,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 
 ## 3. Required Relationships
 - **audit_logs** → depends on **companies**.
-- **audit_logs** → depends on **users** (via `employee_id`).
+- **audit_logs** → depends on **employees** (via `employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).

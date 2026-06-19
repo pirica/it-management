@@ -19,7 +19,7 @@ class ItmMbqaTestUserTest extends TestCase
     public function testRunnerRowTagShape(): void
     {
         $tag = itm_mbqa_runner_row_tag('employees', 1, 2);
-        $this->assertMatchesRegularExpression('/^MBQA-users-1-2-[a-f0-9]{6}$/', $tag);
+        $this->assertMatchesRegularExpression('/^MBQA-employees-1-2-[a-f0-9]{6}$/', $tag);
         $this->assertSame($tag, itm_mbqa_runner_row_tag('employees', 1, 2));
     }
 
@@ -34,7 +34,7 @@ class ItmMbqaTestUserTest extends TestCase
         $tag = strtolower(itm_mbqa_runner_row_tag('employees', 4, 0));
         $this->assertTrue(itm_username_is_mbqa_runner_seeded($tag));
         $this->assertFalse(itm_username_is_mbqa_runner_seeded('mbqa-jane'));
-        $this->assertFalse(itm_username_is_mbqa_runner_seeded('MBQA-users-1-2-short'));
+        $this->assertFalse(itm_username_is_mbqa_runner_seeded('MBQA-employees-1-2-short'));
     }
 
     public function testReservedQaImportMarker(): void

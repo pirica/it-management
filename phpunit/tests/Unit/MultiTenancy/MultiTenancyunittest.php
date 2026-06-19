@@ -37,7 +37,7 @@ class MultiTenancyUnittest extends TestCase
         $res = mysqli_query($this->conn, 'SELECT @app_employee_id as employee_id, @app_company_id as company_id');
         $row = mysqli_fetch_assoc($res);
 
-        $this->assertEquals(1, $row['user_id']);
+        $this->assertEquals(1, $row['employee_id']);
         $this->assertEquals(1, $row['company_id']);
     }
 }

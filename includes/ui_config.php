@@ -1037,13 +1037,13 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
         return false;
     }
     if (mysqli_num_rows($newUniqueRes) === 0) {
-        // Why: Legacy installs can contain duplicate company/user rows (commonly user_id=0),
+        // Why: Legacy installs can contain duplicate company/employee rows (commonly employee_id=0),
         // which blocks the unique key migration and causes all future saves to fail.
         $dupPairsRes = mysqli_query(
             $conn,
-            'SELECT company_id, user_id
+            'SELECT company_id, employee_id
              FROM ui_configuration
-             GROUP BY company_id, user_id
+             GROUP BY company_id, employee_id
              HAVING COUNT(*) > 1'
         );
         if ($dupPairsRes === false) {
@@ -1052,7 +1052,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
 
         while ($dupPair = mysqli_fetch_assoc($dupPairsRes)) {
             $dupCompanyId = (int)($dupPair['company_id'] ?? 0);
-            $dupUserId = (int)($dupPair['user_id'] ?? 0);
+            $dupUserId = (int)($dupPair['employee_id'] ?? 0);
 
             $dupRowsRes = mysqli_query(
                 $conn,

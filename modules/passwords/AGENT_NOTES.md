@@ -8,8 +8,8 @@ Secure private password manager with vault encryption. It allows users to store 
 - **password_folders** — hierarchical folders for passwords.
 
 ## 3. Required Relationships
-- **password_entries** → depends on **users** (Ownership).
-- **password_folders** → depends on **users**.
+- **password_entries** → depends on **employees** (ownership via `employee_id`).
+- **password_folders** → depends on **employees** (`employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Vault Security**: Data is encrypted at rest using `itm_encrypt` and a session-based `vault_key`.
@@ -56,7 +56,7 @@ All POST to `ajax_handler.php` with `action` (JSON responses, `employee_id` scop
 ### Safe INSERT (Encrypted)
 ```php
 $encrypted = itm_encrypt($plainText, $_SESSION['vault_key']);
-$stmt = $conn->prepare("INSERT INTO password_entries (user_id, account, login_name, password) VALUES (?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO password_entries (employee_id, account, login_name, password) VALUES (?, ?, ?, ?)");
 $stmt->bind_param("isss", $employeeId, $account, $login, $encrypted);
 $stmt->execute();
 ```
