@@ -1,16 +1,23 @@
 <?php
 /**
  * Password Reset Page
- * 
+ *
  * Finalizes the password reset process. Validates the reset token from the URL,
  * updates the user's password with a new hash, and clears the token.
  */
 
 include('config/config.php');
-// Get the token from the URL query parameter
-$token = $_GET['token'] ?? '';
+
+// Why: POST must keep the token when query strings are stripped by proxies or bookmarks.
+$token = trim((string)($_POST['token'] ?? $_GET['token'] ?? ''));
 $tokenHash = $token !== '' ? hash('sha256', $token) : '';
 $csrfToken = itm_get_csrf_token();
+$error = '';
+$success = false;
+$tokenUserId = null;
+$tokenUserEmail = null;
+$tokenIsValid = false;
+$minPasswordLength = 8;
 
 /**
  * Why: Password reset completion is public, so we record attempts to enforce
@@ -82,50 +89,89 @@ function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipA
     return false;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
-    itm_require_post_csrf();
+/**
+ * Why: Shared lookup for GET display and POST update so invalid links fail with clear copy.
+ */
+function itm_reset_password_lookup_token_user(mysqli $conn, string $tokenHash): array
+{
+    $user = ['id' => null, 'email' => null];
+    if ($tokenHash === '') {
+        return $user;
+    }
 
-    // Why: Keep auth attempt IP selection consistent with login and forgot-password flows.
-    $requestIp = substr(itm_get_login_request_ip(), 0, 45);
-    $matchedUserId = null;
-    $matchedUserEmail = null;
-
-    // Look up a valid, unexpired token hash before attempting an update.
-    $findUserStmt = mysqli_prepare(
+    $stmt = mysqli_prepare(
         $conn,
         'SELECT id, COALESCE(work_email, personal_email) AS email FROM employees
          WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1'
     );
-    if ($findUserStmt) {
-        mysqli_stmt_bind_param($findUserStmt, 's', $tokenHash);
-        mysqli_stmt_execute($findUserStmt);
-        mysqli_stmt_bind_result($findUserStmt, $matchedUserId, $matchedUserEmail);
-        mysqli_stmt_fetch($findUserStmt);
-        mysqli_stmt_close($findUserStmt);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 's', $tokenHash);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $foundId, $foundEmail);
+        if (mysqli_stmt_fetch($stmt)) {
+            $user['id'] = (int)$foundId;
+            $user['email'] = (string)$foundEmail;
+        }
+        mysqli_stmt_close($stmt);
     }
 
-    $isRateLimited = itm_is_password_reset_completion_rate_limited($conn, $requestIp, $matchedUserId);
-    itm_record_password_reset_completion_attempt($conn, $requestIp, $matchedUserId, $matchedUserEmail);
+    return $user;
+}
 
-    if (!$isRateLimited && $matchedUserId !== null) {
-        // Hash the new password before storing it.
-        $new_password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
+if ($token !== '') {
+    $tokenLookup = itm_reset_password_lookup_token_user($conn, $tokenHash);
+    $tokenUserId = $tokenLookup['id'];
+    $tokenUserEmail = $tokenLookup['email'];
+    $tokenIsValid = $tokenUserId !== null;
+}
 
-        // Update password only for valid unexpired token hash and clear reset state after one use.
-        $stmt = mysqli_prepare(
-            $conn,
-            'UPDATE employees
-             SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
-             WHERE id = ? AND reset_token_hash = ? AND reset_token_expires_at >= NOW()'
-        );
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sis', $new_password, $matchedUserId, $tokenHash);
-            if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
-                $success = true;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
+
+    $password = (string)($_POST['password'] ?? '');
+    $passwordConfirm = (string)($_POST['password_confirm'] ?? '');
+
+    if ($token === '') {
+        $error = 'Reset link is missing. Request a new password reset email.';
+    } elseif (!$tokenIsValid || $tokenUserId === null) {
+        $error = 'This reset link is invalid or has expired. Request a new password reset email.';
+    } else {
+        $requestIp = substr(itm_get_login_request_ip(), 0, 45);
+        $isRateLimited = itm_is_password_reset_completion_rate_limited($conn, $requestIp, $tokenUserId);
+        itm_record_password_reset_completion_attempt($conn, $requestIp, $tokenUserId, $tokenUserEmail);
+
+        if ($isRateLimited) {
+            $error = 'Too many reset attempts. Please wait a few minutes and try again.';
+        } elseif ($password === '') {
+            $error = 'Enter a new password.';
+        } elseif (strlen($password) < $minPasswordLength) {
+            $error = 'Password must be at least ' . $minPasswordLength . ' characters.';
+        } elseif ($password !== $passwordConfirm) {
+            $error = 'Passwords do not match.';
+        } else {
+            $newPasswordHash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE employees
+                 SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
+                 WHERE id = ? AND reset_token_hash = ? AND reset_token_expires_at >= NOW()'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'sis', $newPasswordHash, $tokenUserId, $tokenHash);
+                if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+                    $success = true;
+                    $tokenIsValid = false;
+                } else {
+                    $error = 'Unable to update your password. The link may have expired or already been used.';
+                }
+                mysqli_stmt_close($stmt);
+            } else {
+                $error = 'Unable to update your password right now. Please try again.';
             }
-            mysqli_stmt_close($stmt);
         }
     }
+} elseif ($token !== '' && !$tokenIsValid) {
+    $error = 'This reset link is invalid or has expired. Request a new password reset email.';
 }
 ?>
 <!DOCTYPE html>
@@ -158,26 +204,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     </style>
 </head>
 <body>
-    <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     <div class="container">
         <div class="logo">
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Create a new password</p>
         </div>
 
-        <?php if (!empty($success)): ?><p style="color:#2f855a; margin-bottom:14px;">Password updated! <a href="login.php">Login</a></p><?php endif; ?>
+        <?php if ($success): ?>
+            <p style="color:#2f855a; margin-bottom:14px;">Password updated successfully. <a href="login.php">Sign in</a></p>
+        <?php elseif ($error !== ''): ?>
+            <p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
+        <?php endif; ?>
+
+        <?php if (!$success && $tokenIsValid): ?>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+            <input type="hidden" name="token" value="<?php echo htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
             <label for="password">New Password</label>
-            <input id="password" type="password" name="password" placeholder="New Password" required>
-            <button type="submit">Update</button>
+            <input id="password" type="password" name="password" placeholder="New password" required minlength="<?php echo (int)$minPasswordLength; ?>" autocomplete="new-password">
+            <label for="password_confirm">Confirm New Password</label>
+            <input id="password_confirm" type="password" name="password_confirm" placeholder="Confirm new password" required minlength="<?php echo (int)$minPasswordLength; ?>" autocomplete="new-password">
+            <button type="submit" title="Update password">Update</button>
         </form>
-        <div class="links"><a href="login.php">Back to Login</a></div>
+        <?php endif; ?>
+
+        <div class="links">
+            <?php if (!$success): ?>
+                <a href="forgot-password.php">Request a new reset link</a> ·
+            <?php endif; ?>
+            <a href="login.php">Back to Login</a>
+        </div>
     </div>
     <script>
-        /**
-         * Toggle between light and dark themes
-         */
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');

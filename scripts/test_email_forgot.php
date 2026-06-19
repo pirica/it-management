@@ -61,7 +61,43 @@ if ($companyId <= 0) {
     exit(1);
 }
 
-$resetLink = BASE_URL . 'reset-password.php?token=xyz123';
+$employeeId = 0;
+$employeeLookupStmt = mysqli_prepare(
+    $conn,
+    'SELECT id FROM employees
+     WHERE company_id = ?
+       AND LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = LOWER(TRIM(?))
+     LIMIT 1'
+);
+if ($employeeLookupStmt) {
+    mysqli_stmt_bind_param($employeeLookupStmt, 'is', $companyId, $userEmail);
+    mysqli_stmt_execute($employeeLookupStmt);
+    mysqli_stmt_bind_result($employeeLookupStmt, $foundEmployeeId);
+    if (mysqli_stmt_fetch($employeeLookupStmt)) {
+        $employeeId = (int)$foundEmployeeId;
+    }
+    mysqli_stmt_close($employeeLookupStmt);
+}
+
+if ($employeeId <= 0) {
+    echo '❌ No employee found for that email in company ' . (int)$companyId . '. Cannot create a working reset link.' . itm_script_output_nl();
+    exit(1);
+}
+
+$resetToken = bin2hex(random_bytes(32));
+$resetTokenHash = hash('sha256', $resetToken);
+$resetExpiresAt = date('Y-m-d H:i:s', time() + 3600);
+$tokenStmt = mysqli_prepare(
+    $conn,
+    'UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ? AND company_id = ?'
+);
+if ($tokenStmt) {
+    mysqli_stmt_bind_param($tokenStmt, 'sssii', $resetToken, $resetTokenHash, $resetExpiresAt, $employeeId, $companyId);
+    mysqli_stmt_execute($tokenStmt);
+    mysqli_stmt_close($tokenStmt);
+}
+
+$resetLink = BASE_URL . 'reset-password.php?token=' . urlencode($resetToken);
 $safeResetLink = htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8');
 $subject = 'Reset your password (Test)';
 $html = '<p>This is a test password-reset email. Use the button below to open the reset page.</p>'
@@ -70,6 +106,7 @@ $html = '<p>This is a test password-reset email. Use the button below to open th
 
 $nl = itm_script_output_nl();
 echo 'Company ID: ' . (int)$companyId . $nl;
+echo 'Test reset token created for employee id ' . (int)$employeeId . ' (valid for 1 hour).' . $nl;
 echo 'Attempting to send test forgot-password email to: ' . sanitize($userEmail) . $nl;
 
 $defaultCfg = itm_email_get_default_smtp_config($conn, $companyId);
