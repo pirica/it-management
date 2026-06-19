@@ -8,7 +8,7 @@ Unit/regression tests for `modules/todo/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `*Test.php` / `*.unittest.php` — test classes for this module.
+- `TodoTest.php` — visibility, importance/completion, and authorization bypass; seeds extra employees via `itm_script_test_employee_create()` when fewer than three rows exist (never `employees.active`).
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
