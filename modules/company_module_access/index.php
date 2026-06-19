@@ -281,7 +281,7 @@ $modulePathEsc = sanitize($modulePath);
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a class="btn btn-sm" href="<?= $modulePathEsc ?>/index.php">Matrix</a>
                     <a class="btn btn-sm" href="<?= $modulePathEsc ?>/list_all.php">Registry List</a>
-                    <a class="btn btn-sm btn-primary" href="<?= $modulePathEsc ?>/create.php">Add Registry Row</a>
+                    <a class="btn btn-sm btn-primary" href="<?= $modulePathEsc ?>/create.php">➕</a>
                 </div>
             </div>
 
@@ -409,12 +409,12 @@ $modulePathEsc = sanitize($modulePath);
                                     <td><?= ((int)($registryRow['active'] ?? 0) === 1) ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>' ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <div class="itm-actions-wrap">
-                                            <a class="btn btn-sm" href="view.php?id=<?= (int)$registryRow['id'] ?>">View</a>
-                                            <a class="btn btn-sm" href="edit.php?id=<?= (int)$registryRow['id'] ?>">Edit</a>
+                                            <a class="btn btn-sm" href="view.php?id=<?= (int)$registryRow['id'] ?>">🔎</a>
+                                            <a class="btn btn-sm" href="edit.php?id=<?= (int)$registryRow['id'] ?>">✏️</a>
                                             <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this registry row?');">
                                                 <input type="hidden" name="csrf_token" value="<?= sanitize($csrfToken) ?>">
                                                 <input type="hidden" name="id" value="<?= (int)$registryRow['id'] ?>">
-                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                                             </form>
                                         </div>
                                     </td>
@@ -479,8 +479,8 @@ $modulePathEsc = sanitize($modulePath);
                             <p><strong>Global Icon:</strong> <?= sanitize((string)($viewRow['icon'] ?? '')) !== '' ? sanitize((string)$viewRow['icon']) : '—' ?></p>
                             <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
                             <p><strong>Active:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['active'] === 1) ? '✅' : '❌' ?></span></p>
-                            <a class="btn btn-sm" href="edit.php?id=<?= (int)$viewRow['id'] ?>">Edit</a>
-                            <a class="btn btn-sm" href="list_all.php">Back</a>
+                            <a class="btn btn-sm" href="edit.php?id=<?= (int)$viewRow['id'] ?>">✏️</a>
+                            <a class="btn btn-sm" href="list_all.php">🔙</a>
                         <?php endif; ?>
                     </div>
                 </div>
