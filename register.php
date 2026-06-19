@@ -139,6 +139,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             if ($companyLinked && $invitationMarkedUsed) {
                                 mysqli_commit($conn);
+                                $welcomeHtml = '<p>Your account has been created. You can sign in at '
+                                    . htmlspecialchars(BASE_URL . 'login.php', ENT_QUOTES, 'UTF-8') . '.</p>';
+                                itm_send_email($email, 'Welcome to ' . ($app_name ?? itm_ui_config_app_name()), $welcomeHtml, $companyId);
                                 $success = 'Registration successful! You can login now.';
                                 $prefilledEmail = '';
                                 $prefilledInviteCode = '';

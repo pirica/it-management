@@ -161,25 +161,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Only attempt to send email if an account was actually found and updated.
             if (mysqli_stmt_affected_rows($stmt) > 0) {
                 $link = BASE_URL . 'reset-password.php?token=' . urlencode($token);
-                $payload = json_encode([
-                    'from' => 'verified@yourdomain.com', // Replace with your verified sender
-                    'to' => $email,
-                    'subject' => 'Reset Your Password',
-                    'html' => "Click here to reset your IT Management System password: <a href='$link'>$link</a>",
-                ]);
-
-                // Send the reset link using the configured MailerLite API.
-                $ch = curl_init(MAILERLITE_URL);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Content-Type: application/json',
-                    'Accept: application/json',
-                    'Authorization: Bearer ' . MAILERLITE_API_KEY,
-                ]);
-                curl_exec($ch);
-                curl_close($ch);
+                $html = "Click here to reset your IT Management System password: <a href='" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . "'>" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . "</a>";
+                itm_send_email($email, 'Reset Your Password', $html, $auditCompanyId);
             }
 
             mysqli_stmt_close($stmt);

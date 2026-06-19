@@ -156,6 +156,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("employee_positions", "Employee Positions", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("employee_statuses", "Employee Statuses", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("employee_type", "Employee Type", 0, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("emails", "Email Management", 0, 1, "📧");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("employee_system_access", "Employee System Access", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("employees", "Employees", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("equipment", "Equipment", 0, 1);
@@ -983,6 +984,72 @@ INSERT INTO `employee_type` (`company_id`, `id`, `name_type`, `created_at`) VALU
 INSERT INTO `employee_type` (`company_id`, `id`, `name_type`, `created_at`) VALUES ('4', '8', 'Internship', '2026-01-01 00:00:01');
 INSERT INTO `employee_type` (`company_id`, `id`, `name_type`, `created_at`) VALUES ('5', '9', 'Team member', '2026-01-01 00:00:01');
 INSERT INTO `employee_type` (`company_id`, `id`, `name_type`, `created_at`) VALUES ('5', '10', 'Internship', '2026-01-01 00:00:01');
+-- Table structure for `email_smtp_configurations`
+DROP TABLE IF EXISTS `emails`;
+DROP TABLE IF EXISTS `email_alert_rules`;
+DROP TABLE IF EXISTS `email_smtp_configurations`;
+CREATE TABLE `email_smtp_configurations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `config_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `smtp_host` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `smtp_port` int NOT NULL DEFAULT '587',
+  `username` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `from_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_default` tinyint NOT NULL DEFAULT '0',
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `email_smtp_configurations_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `email_smtp_configurations` (`id`, `company_id`, `config_name`, `smtp_host`, `smtp_port`, `username`, `password_encrypted`, `from_email`, `from_name`, `is_default`, `active`, `created_at`) VALUES ('1', '1', 'SMTP Office 365', 'smtp.office365.com', '587', 'noreply@office.com', NULL, 'noreply@office.com', 'Mail Manager', '1', '1', '2026-06-18 02:00:00');
+-- Table structure for `emails`
+CREATE TABLE `emails` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `smtp_config_id` int DEFAULT NULL,
+  `to_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('sent','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'sent',
+  `details` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `sent_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `smtp_config_id` (`smtp_config_id`),
+  CONSTRAINT `emails_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `emails_ibfk_smtp_config` FOREIGN KEY (`smtp_config_id`) REFERENCES `email_smtp_configurations` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `subject`, `status`, `details`, `sent_at`, `active`, `created_at`) VALUES ('1', '1', '1', 'nelson.salvador@gmail.com', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '2026-06-18 02:06:00');
+-- Table structure for `email_alert_rules`
+CREATE TABLE `email_alert_rules` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `rule_slug` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `enabled` tinyint NOT NULL DEFAULT '0',
+  `days_before` int DEFAULT '30',
+  `notify_emails` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_email_alert_rules_company_slug` (`company_id`,`rule_slug`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `email_alert_rules_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'warranty_expiry', '1', '30', 'admin@company.com, it@company.com', '1', '2026-06-18 02:00:00');
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'license_expiry', '1', '30', 'admin@company.com', '1', '2026-06-18 02:00:00');
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'certificate_expiry', '0', '30', NULL, '1', '2026-06-18 02:00:00');
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'alerts_expiry', '0', '30', NULL, '1', '2026-06-18 02:00:00');
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'notes_reminder', '0', '0', NULL, '1', '2026-06-18 02:00:00');
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'todo_deadline', '0', '0', NULL, '1', '2026-06-18 02:00:00');
+INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'events_datetime', '0', '0', NULL, '1', '2026-06-18 02:00:00');
 -- Table structure for `employee_positions`
 DROP TABLE IF EXISTS `employee_positions`;
 CREATE TABLE `employee_positions` (
@@ -4535,6 +4602,57 @@ END$$
 CREATE TRIGGER `trg_departments_audit_delete` AFTER DELETE ON `departments` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'departments', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'code', OLD.`code`, 'description', OLD.`description`, 'email', OLD.`email`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_email_smtp_configurations_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_email_smtp_configurations_audit_update`;
+DROP TRIGGER IF EXISTS `trg_email_smtp_configurations_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_email_smtp_configurations_audit_insert` AFTER INSERT ON `email_smtp_configurations` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_smtp_configurations', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'config_name', NEW.`config_name`, 'smtp_host', NEW.`smtp_host`, 'smtp_port', NEW.`smtp_port`, 'username', NEW.`username`, 'from_email', NEW.`from_email`, 'from_name', NEW.`from_name`, 'is_default', NEW.`is_default`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_email_smtp_configurations_audit_update` AFTER UPDATE ON `email_smtp_configurations` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_smtp_configurations', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'config_name', OLD.`config_name`, 'smtp_host', OLD.`smtp_host`, 'smtp_port', OLD.`smtp_port`, 'username', OLD.`username`, 'from_email', OLD.`from_email`, 'from_name', OLD.`from_name`, 'is_default', OLD.`is_default`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'config_name', NEW.`config_name`, 'smtp_host', NEW.`smtp_host`, 'smtp_port', NEW.`smtp_port`, 'username', NEW.`username`, 'from_email', NEW.`from_email`, 'from_name', NEW.`from_name`, 'is_default', NEW.`is_default`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_email_smtp_configurations_audit_delete` AFTER DELETE ON `email_smtp_configurations` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_smtp_configurations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'config_name', OLD.`config_name`, 'smtp_host', OLD.`smtp_host`, 'smtp_port', OLD.`smtp_port`, 'username', OLD.`username`, 'from_email', OLD.`from_email`, 'from_name', OLD.`from_name`, 'is_default', OLD.`is_default`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_emails_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_emails_audit_update`;
+DROP TRIGGER IF EXISTS `trg_emails_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_emails_audit_insert` AFTER INSERT ON `emails` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'emails', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'smtp_config_id', NEW.`smtp_config_id`, 'to_email', NEW.`to_email`, 'subject', NEW.`subject`, 'status', NEW.`status`, 'details', NEW.`details`, 'sent_at', NEW.`sent_at`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_emails_audit_update` AFTER UPDATE ON `emails` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'emails', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'smtp_config_id', OLD.`smtp_config_id`, 'to_email', OLD.`to_email`, 'subject', OLD.`subject`, 'status', OLD.`status`, 'details', OLD.`details`, 'sent_at', OLD.`sent_at`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'smtp_config_id', NEW.`smtp_config_id`, 'to_email', NEW.`to_email`, 'subject', NEW.`subject`, 'status', NEW.`status`, 'details', NEW.`details`, 'sent_at', NEW.`sent_at`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_emails_audit_delete` AFTER DELETE ON `emails` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'emails', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'smtp_config_id', OLD.`smtp_config_id`, 'to_email', OLD.`to_email`, 'subject', OLD.`subject`, 'status', OLD.`status`, 'details', OLD.`details`, 'sent_at', OLD.`sent_at`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_email_alert_rules_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_email_alert_rules_audit_update`;
+DROP TRIGGER IF EXISTS `trg_email_alert_rules_audit_delete`;
+DELIMITER $$
+CREATE TRIGGER `trg_email_alert_rules_audit_insert` AFTER INSERT ON `email_alert_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_alert_rules', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'rule_slug', NEW.`rule_slug`, 'enabled', NEW.`enabled`, 'days_before', NEW.`days_before`, 'notify_emails', NEW.`notify_emails`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_email_alert_rules_audit_update` AFTER UPDATE ON `email_alert_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_alert_rules', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'rule_slug', OLD.`rule_slug`, 'enabled', OLD.`enabled`, 'days_before', OLD.`days_before`, 'notify_emails', OLD.`notify_emails`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'rule_slug', NEW.`rule_slug`, 'enabled', NEW.`enabled`, 'days_before', NEW.`days_before`, 'notify_emails', NEW.`notify_emails`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+CREATE TRIGGER `trg_email_alert_rules_audit_delete` AFTER DELETE ON `email_alert_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_alert_rules', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'rule_slug', OLD.`rule_slug`, 'enabled', OLD.`enabled`, 'days_before', OLD.`days_before`, 'notify_emails', OLD.`notify_emails`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employee_onboarding_requests_audit_insert`;

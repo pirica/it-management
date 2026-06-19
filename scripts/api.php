@@ -360,6 +360,13 @@ function itmDocProjectJsonEndpoints(): array
             'purpose' => 'Create reference row from js/select-add-option.js; table whitelist in includes/itm_select_options_policy.php (includes license_types for License Management Type ➕).',
         ],
         [
+            'group' => 'Email Management',
+            'method' => 'GET',
+            'path' => 'modules/emails/index.php',
+            'params' => 'tab=send_logs|smtp|alert_rules; status=sent|failed (send logs filter)',
+            'purpose' => 'Send log list, SMTP configuration forms, and alert rule toggles. Default SMTP drives itm_send_email() across forgot-password, register, and onboarding approval emails.',
+        ],
+        [
             'group' => 'License Management',
             'method' => 'POST',
             'path' => 'modules/license_management/index.php',

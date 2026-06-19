@@ -16,6 +16,7 @@
 - ✅ Private Contacts (User-scoped, UK localization, multi-field CRUD)
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
+- ✅ Email Management — SMTP profiles, send logs, and automated expiry alert rules
 - ✅ System Status — Real-time server monitoring (CPU, RAM, Disk, PHP, MySQL)
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
@@ -40,6 +41,10 @@
 <p align="center"><strong>License Management</strong> — software licenses with type, supplier, quantity, purchase/expiry dates, and price.</p>
 
 <p align="center"><img src="docs/readme/demo_license_management.png" alt="License Management module list" /></p>
+
+<p align="center"><strong>Email Management</strong> — send logs, SMTP configurations with default transport, and automated alert rules.</p>
+
+<p align="center"><img src="docs/readme/demo_emails.png" alt="Email Management module" /></p>
 
 <p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
 

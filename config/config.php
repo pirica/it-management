@@ -274,6 +274,7 @@ require_once ROOT_PATH . 'includes/itm_login_attempt_identifier.php';
 require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/itm_company_module_access.php';
+require_once ROOT_PATH . 'includes/itm_email.php';
 require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 
@@ -1774,6 +1775,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $rowValues['department_id'] = (string)$geralDeptId;
                 $deptValue = ($deptIndex >= 0) ? trim((string)($sourceRow[$deptIndex] ?? '')) : '';
                 if ($deptValue !== '' && $deptValue !== '—' && strcasecmp($deptValue, 'null') !== 0) {
+                    $providedFields[] = 'department_id';
                     $depNameEsc = mysqli_real_escape_string($conn, $deptValue);
                     $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$companyId . " AND name='" . $depNameEsc . "' LIMIT 1";
                     $depRes = mysqli_query($conn, $depSql);

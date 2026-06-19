@@ -383,6 +383,20 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
 
+#### Email Management (mandatory)
+
+The email management module (`modules/emails/`) provides tenant SMTP configuration, send logging, and automated alert rules.
+
+1. **Tables:** **`emails`** (send log), **`email_smtp_configurations`** (SMTP profiles), **`email_alert_rules`** (automated alerts per `rule_slug`).
+2. **Default SMTP:** `is_default = 1` on one active `email_smtp_configurations` row per company drives **`itm_send_email()`** in `includes/itm_email.php`.
+3. **Password storage:** SMTP passwords encrypted with `itm_email_encrypt_password()`; never store plain text in the database.
+4. **UI tabs:** Send Logs (XLSX export), SMTP Configurations (toggle **Set as default SMTP**), Alert Rules (warranty, license, certificate, alerts, notes, to-do, events).
+5. **Project integration:** `send-email.php`, `forgot-password.php`, `register.php`, `modules/employee_onboarding_requests/` approval emails, and alert runner must call **`itm_send_email()`** — not MailerLite/Resend directly (Resend remains fallback when no SMTP profile exists).
+6. **Alert runner:** `php scripts/run_email_alert_rules.php` — schedule daily; respects `email_alert_rules.enabled` and `notify_emails`.
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_emails_module.php`.
+8. **Audit logging:** `database.sql` defines `trg_emails_audit_*`, `trg_email_smtp_configurations_audit_*`, `trg_email_alert_rules_audit_*`.
+9. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
+
 #### License Management (mandatory)
 
 The license management module (`modules/license_management/`) tracks software licenses per company.

@@ -277,6 +277,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="verify_emails_module.php">verify_emails_module.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, and <code>itm_send_email()</code> helper.</td>
+                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> tables in <code>database.sql</code>.</td>
+                </tr>
+                <tr>
+                    <td><a href="run_email_alert_rules.php">run_email_alert_rules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Dispatches enabled <code>email_alert_rules</code> (warranty, license, certificate, alerts, notes, to-do, events) using tenant default SMTP.</td>
+                    <td><code>php scripts/run_email_alert_rules.php</code> or <code>php scripts/run_email_alert_rules.php --company=1</code>. Schedule via cron; admin browser access.</td>
+                </tr>
+                <tr>
                     <td><a href="../js/itm-user-errors.js">itm-user-errors.js</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Global JS helpers <code>itmNotifyError()</code>, <code>itmNotifyAjaxError()</code> (modal-aware), and <code>itmNotifySuccess()</code> for themed in-page alerts after AJAX/modal failures (loaded from <code>includes/header.php</code>).</td>
