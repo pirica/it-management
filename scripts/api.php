@@ -1013,7 +1013,9 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/select_optio
     <div class="card">
         <h2>Module Import APIs (auto-detected)</h2>
         <p>Detected <strong><?= (int)count($moduleImportEndpoints); ?></strong> module import JSON endpoints. Used by 📥 Import Excel in <code>js/table-tools.js</code>.</p>
-        <p>Contract: POST <code>Content-Type: application/json</code> with <code>csrf_token</code> and <code>import_excel_rows</code> (header row + data rows). Typical success: <code>{"ok":true,"inserted":N}</code>.</p>
+        <p>Contract: POST <code>Content-Type: application/json</code> with <code>csrf_token</code> and <code>import_excel_rows</code> (header row + data rows). Typical success: <code>{"ok":true,"inserted":N,"updated":N,"skipped":N,"failed":0}</code>.</p>
+        <p><strong>UPDATE semantics (shared handler <code>itm_handle_json_table_import()</code> in <code>config/config.php</code>):</strong> only columns present in the import payload (or auto-derived with a resolved value, such as FK resolution, auto-created lookup rows, or employees email reclassification) are written when an existing row is matched by <code>id</code>. Omitted columns are not set to <code>NULL</code>. <strong>INSERT</strong> still applies column defaults for missing fields. Wholly empty data rows are skipped. Existing rows with no writable import columns increment <code>skipped</code>, not <code>updated</code>. Module-specific employee import in <code>modules/employees/index.php</code> uses the same <code>providedFields</code> contract for updates.</p>
+        <p>Regression (CLI): <code>php scripts/repro_generic_dataloss.php</code>, <code>php scripts/repro_employee_dataloss.php</code>, <code>php scripts/verify_json_import_validation.php</code>.</p>
         <table>
             <thead><tr><th>Method</th><th>Endpoint</th><th>Handler</th><th>Purpose</th></tr></thead>
             <tbody>
@@ -1076,7 +1078,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/license_mana
             <tr><td>Explorer success</td><td><code>{"ok":1}</code></td><td>Mutation succeeded.</td></tr>
             <tr><td>Explorer failure</td><td><code>{"ok":0,"error":"…"}</code></td><td>ACL block or invalid path.</td></tr>
             <tr><td>IDF / AJAX</td><td><code>{"ok":true}</code> / <code>{"ok":false,"error":"…"}</code></td><td>Standard module AJAX.</td></tr>
-            <tr><td>Import</td><td><code>{"ok":true,"inserted":N}</code></td><td>Table-tools save-to-database.</td></tr>
+            <tr><td>Import</td><td><code>{"ok":true,"inserted":N,"updated":N,"skipped":N,"failed":0}</code></td><td>Table-tools save-to-database; UPDATE touches only provided/auto-derived columns.</td></tr>
             <tr><td>CSRF</td><td>HTTP 403 / JSON error</td><td>Missing or invalid <code>csrf_token</code>.</td></tr>
             <tr><td>Session</td><td><code>{"error":"No company selected."}</code></td><td>Missing company context (Explorer).</td></tr>
             <tr><td>API key / rate limit</td><td><code>{"ok":false,"error":"…"}</code></td><td>HTTP 401/403/429 from <code>itm_api_enforce_rate_limit_or_exit()</code> or probe. Free keyless without session → 401.</td></tr>
@@ -1092,6 +1094,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/license_mana
             <li>Explorer <code>path</code> is normalised (trimmed slashes); <code>..</code> traversal blocked.</li>
             <li>Explorer uploads block executable extensions and dot-prefixed filenames.</li>
             <li><code>import_excel_rows</code> requires header row + at least one data row.</li>
+            <li>JSON import UPDATE (shared handler): omitted columns must not overwrite stored values; no-op updates count as <code>skipped</code>. Regression: <code>php scripts/repro_generic_dataloss.php</code>, <code>php scripts/repro_employee_dataloss.php</code>.</li>
             <li>Passwords writes require per-user vault key in session.</li>
             <li>IDF endpoints require JSON body and tenant-scoped <code>company_id</code>.</li>
             <li><code>itm_api_enforce_rate_limit_or_exit($conn)</code> on programmatic endpoints: paid tiers require <code>api_key</code>; Free tier accepts authenticated session (<code>company_id</code> + <code>employee_id</code> in <code>PHPSESSID</code>) when no key is sent.</li>
