@@ -1319,6 +1319,20 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Completely reset Git history and force push a clean master branch. <strong>BETA only</strong> — destructive; rewrites Git history and force-pushes. Used in development to purge history or reset a branch to a clean state.</td>
                     <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong> <strong>BETA / pre-production only</strong> — no implementation changes while the project remains in BETA and not yet in production.</td>
                 </tr>
+                <tr>
+                    <td><strong>Verify Employee Import Data Loss</strong></td>
+                    <td><code>repro_employee_dataloss.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
+                    <td>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Verify Generic Import Data Loss</strong></td>
+                    <td><code>repro_generic_dataloss.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
+                    <td>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>

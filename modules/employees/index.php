@@ -33,13 +33,16 @@ esa_ensure_table($conn);
 /**
  * Escapes database identifiers
  */
+if (!function_exists("emp_escape_identifier")) {
 function emp_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
+}
 }
 
 /**
  * Parses pasted delimited data (tab or comma) into rows
  */
+if (!function_exists("emp_parse_delimited_rows")) {
 function emp_parse_delimited_rows($content) {
     $lines = preg_split('/\r\n|\n|\r/', trim((string)$content));
     if (!$lines || count($lines) < 2) {
@@ -58,10 +61,12 @@ function emp_parse_delimited_rows($content) {
     }
     return $rows;
 }
+}
 
 /**
  * Maps varying import header names to internal canonical database columns
  */
+if (!function_exists("emp_canonical_header")) {
 function emp_canonical_header($header) {
     $normalized = strtolower(trim((string)$header));
     $normalized = preg_replace('/\s+/', ' ', $normalized);
@@ -124,10 +129,12 @@ function emp_canonical_header($header) {
 
     return $map[$normalized] ?? null;
 }
+}
 
 /**
  * Resolves or creates an employment status ID from raw import codes (A, I, L, T)
  */
+if (!function_exists("emp_status_id_from_raw")) {
 function emp_status_id_from_raw($conn, $rawStatus) {
     $status = strtoupper(trim((string)$rawStatus));
     $name = 'Active';
@@ -152,10 +159,12 @@ function emp_status_id_from_raw($conn, $rawStatus) {
 
     return 1;
 }
+}
 
 /**
  * Cleanup legacy unique indexes to allow for duplicate flagging logic instead of hard errors
  */
+if (!function_exists("emp_drop_email_unique_if_exists")) {
 function emp_drop_email_unique_if_exists($conn) {
     $legacyUniqueIndexes = [
         'uq_employees_email_per_company',
@@ -170,34 +179,42 @@ function emp_drop_email_unique_if_exists($conn) {
         }
     }
 }
+}
 
+if (!function_exists("emp_ensure_is_hidden_column")) {
 function emp_ensure_is_hidden_column($conn) {
     return itm_employees_ensure_is_hidden_column($conn);
+}
 }
 
 /**
  * Ensures the 'duplicate' column exists for UI flagging
  */
+if (!function_exists("emp_ensure_duplicate_column")) {
 function emp_ensure_duplicate_column($conn) {
     $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'duplicate'");
     if ($res && mysqli_num_rows($res) === 0) {
         mysqli_query($conn, "ALTER TABLE employees ADD COLUMN `duplicate` TINYINT(1) NOT NULL DEFAULT 0 AFTER `id`");
     }
 }
+}
 
 /**
  * Removes deprecated employees.active column if still present
  */
+if (!function_exists("emp_drop_active_column_if_exists")) {
 function emp_drop_active_column_if_exists($conn) {
     $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'active'");
     if ($res && mysqli_num_rows($res) === 1) {
         mysqli_query($conn, 'ALTER TABLE employees DROP COLUMN `active`');
     }
 }
+}
 
 /**
  * Generates a helpful label for identify skipped rows during import
  */
+if (!function_exists("emp_import_identity_label")) {
 function emp_import_identity_label($mapped) {
     $parts = [];
     if (!empty($mapped['display_name'])) { $parts[] = 'Name: ' . (string)$mapped['display_name']; }
@@ -208,10 +225,12 @@ function emp_import_identity_label($mapped) {
     if (!$parts) { return 'No identifying data'; }
     return implode(' | ', $parts);
 }
+}
 
 /**
  * Generates tokens for identity matching (Email, Code, External ID)
  */
+if (!function_exists("emp_identifier_tokens")) {
 function emp_identifier_tokens($mapped) {
     $tokens = [];
     if (!empty($mapped['work_email'])) { $tokens[] = 'work_email:' . strtolower(trim((string)$mapped['work_email'])); }
@@ -221,10 +240,12 @@ function emp_identifier_tokens($mapped) {
     sort($tokens);
     return $tokens;
 }
+}
 
 /**
  * Determines if an email address is likely personal or corporate
  */
+if (!function_exists("emp_is_personal_email")) {
 function emp_is_personal_email($email) {
     $personalDomains = [
         'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
@@ -233,11 +254,13 @@ function emp_is_personal_email($email) {
     $domain = strtolower(substr(strrchr((string)$email, "@"), 1));
     return in_array($domain, $personalDomains, true);
 }
+}
 
 
 /**
  * Runs a cross-check within the database to find and flag duplicate records
  */
+if (!function_exists("emp_recalculate_duplicates")) {
 function emp_recalculate_duplicates($conn, $company_id) {
     $cid = (int)$company_id;
     mysqli_query($conn, 'UPDATE employees SET duplicate=0 WHERE company_id=' . $cid);
@@ -256,10 +279,12 @@ function emp_recalculate_duplicates($conn, $company_id) {
     $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id=' . $cid . ' AND duplicate=1');
     return (int)($countRes ? (mysqli_fetch_assoc($countRes)['count'] ?? 0) : 0);
 }
+}
 
 /**
  * Collects actual duplicate values to show specific reasons in the UI
  */
+if (!function_exists("emp_collect_duplicate_values")) {
 function emp_collect_duplicate_values($conn, $company_id) {
     $cid = (int)$company_id;
     $maps = ['work_email' => [], 'personal_email' => [], 'employee_code' => [], 'external_id' => []];
@@ -275,10 +300,12 @@ function emp_collect_duplicate_values($conn, $company_id) {
     }
     return $maps;
 }
+}
 
 /**
  * Identifies why a specific row was flagged as a duplicate
  */
+if (!function_exists("emp_duplicate_reasons_for_row")) {
 function emp_duplicate_reasons_for_row($row, $duplicateValueMaps) {
     $reasons = [];
     foreach (['work_email' => 'Work Email', 'personal_email' => 'Personal Email', 'employee_code' => 'Employee Code', 'external_id' => 'External ID'] as $field => $label) {
@@ -288,6 +315,7 @@ function emp_duplicate_reasons_for_row($row, $duplicateValueMaps) {
         }
     }
     return $reasons;
+}
 }
 
 $messages = [];
@@ -374,12 +402,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'employee_position_id' => null, 'on_orgchart' => 0, 'on_contacts' => 0, 'id' => null
                 ];
 
+                $providedFields = ['company_id', 'duplicate'];
                 $importEmail = '';
                 foreach ($validIdx as $idx => $field) {
                     if ($field === 'work_email') {
                         $importEmail = trim((string)($row[$idx] ?? ''));
                     } else {
                         $mapped[$field] = trim((string)($row[$idx] ?? ''));
+                        $providedFields[] = $field;
                     }
                 }
 
@@ -387,19 +417,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 if ($importEmail !== '') {
                     if (emp_is_personal_email($importEmail)) {
                         $mapped['personal_email'] = $importEmail;
+                        $providedFields[] = 'personal_email';
                     } else {
                         $mapped['work_email'] = $importEmail;
+                        $providedFields[] = 'work_email';
                     }
                 }
 
                 // Auto-fill names
                 if ($mapped['display_name'] === '' && ($mapped['first_name'] !== '' || $mapped['last_name'] !== '')) {
                     $mapped['display_name'] = trim($mapped['first_name'] . ' ' . $mapped['last_name']);
+                    if (!in_array('display_name', $providedFields, true)) { $providedFields[] = 'display_name'; }
                 }
                 if ($mapped['first_name'] === '' && $mapped['display_name'] !== '') {
                     $parts = preg_split('/\s+/', $mapped['display_name']);
                     $mapped['first_name'] = $parts[0] ?? '';
-                    if ($mapped['last_name'] === '') { $mapped['last_name'] = trim(implode(' ', array_slice($parts, 1))); }
+                    if (!in_array('first_name', $providedFields, true)) { $providedFields[] = 'first_name'; }
+                    if ($mapped['last_name'] === '') {
+                        $mapped['last_name'] = trim(implode(' ', array_slice($parts, 1)));
+                        if (!in_array('last_name', $providedFields, true)) { $providedFields[] = 'last_name'; }
+                    }
                 }
 
                 // Skip completely empty rows
@@ -412,10 +449,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 if (empty($mapped['raw_status_code']) && !empty($mapped['employment_status_id']) && !is_numeric($mapped['employment_status_id'])) {
                     $mapped['raw_status_code'] = $mapped['employment_status_id'];
                 }
-                $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
+                if (!empty($mapped['raw_status_code'])) {
+                    $mapped['employment_status_id'] = emp_status_id_from_raw($conn, $mapped['raw_status_code']);
+                    if (!in_array('employment_status_id', $providedFields, true)) { $providedFields[] = 'employment_status_id'; }
+                } else {
+                    $mapped['employment_status_id'] = 1;
+                }
 
                 // Auto-map departments (Default to Geral if missing)
-                $mapped['department_id'] = $geralDeptId;
                 if (!empty($mapped['department_name']) || (!empty($mapped['department_id']) && !is_numeric($mapped['department_id']))) {
                     $depName = !empty($mapped['department_name']) ? $mapped['department_name'] : $mapped['department_id'];
                     $depNameEsc = mysqli_real_escape_string($conn, (string)$depName);
@@ -428,6 +469,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                             $mapped['department_id'] = (int)mysqli_insert_id($conn);
                         }
                     }
+                    if (!in_array('department_id', $providedFields, true)) { $providedFields[] = 'department_id'; }
+                } else {
+                    $mapped['department_id'] = $geralDeptId;
                 }
 
                 // Resolve other names to IDs
@@ -449,6 +493,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         } else {
                             $mapped[$targetField] = null;
                         }
+                        if (!in_array($targetField, $providedFields, true)) { $providedFields[] = $targetField; }
                     }
                 }
 
@@ -474,6 +519,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                             $mapped['employee_position_id'] = null;
                         }
                     }
+                    if (!in_array('employee_position_id', $providedFields, true)) { $providedFields[] = 'employee_position_id'; }
                 }
 
 
@@ -517,6 +563,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     if ($teamMemberRes && mysqli_num_rows($teamMemberRes) === 1) {
                         $mapped['employee_type_id'] = (int)(mysqli_fetch_assoc($teamMemberRes)['id'] ?? 0);
                     }
+                } else {
+                    if (!in_array('employee_type_id', $providedFields, true)) { $providedFields[] = 'employee_type_id'; }
                 }
 
                 // Prepare values for SQL
@@ -550,7 +598,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     // Update if record changed
                     $hasChanges = false;
                     $existingCurrent = $existingRowMap[$existingId] ?? [];
-                    foreach ($columns as $col) {
+                    $updateColumns = array_values(array_intersect($columns, $providedFields));
+
+                    foreach ($updateColumns as $col) {
                         if ($col === 'company_id') continue;
                         $incomingNorm = ($mapped[$col] === '') ? null : $mapped[$col];
                         $existingNorm = ($existingCurrent[$col] === '') ? null : $existingCurrent[$col];
@@ -559,7 +609,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
                     if ($hasChanges) {
                         $sets = [];
-                        foreach ($columns as $col) { if ($col !== 'company_id') { $sets[] = emp_escape_identifier($col) . '=' . $values[$col]; } }
+                        foreach ($updateColumns as $col) { if ($col !== 'company_id') { $sets[] = emp_escape_identifier($col) . '=' . $values[$col]; } }
                         $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
                         if (mysqli_query($conn, $sql)) {
                             $updated += 1; $matchedIds[] = $existingId; $processedIdMap[$existingId] = true;
@@ -691,6 +741,7 @@ $rows = mysqli_query(
 /**
  * Humanizes labels specifically for the employee module
  */
+if (!function_exists("emp_label")) {
 function emp_label($field) {
     if ($field === 'department_id') return 'Department Name';
     if ($field === 'employee_position_id') return 'Position Title';
@@ -712,14 +763,17 @@ function emp_label($field) {
     if ($field === 'external_number') return 'External Number';
     return ucwords(str_replace('_', ' ', trim((string)$field)));
 }
+}
 
 /**
  * Build clean URL queries
  */
+if (!function_exists("emp_build_query")) {
 function emp_build_query($params) {
     $normalized = [];
     foreach ($params as $key => $value) { if ($value !== null && $value !== '') { $normalized[$key] = $value; } }
     return http_build_query($normalized);
+}
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '👤 Employees';
