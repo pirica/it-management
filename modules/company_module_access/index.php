@@ -395,7 +395,9 @@ $modulePathEsc = sanitize($modulePath);
                             <?php foreach ($registryRows as $registryRow): ?>
                                 <tr>
                                     <td><?= sanitize((string)($registryRow['module_name'] ?? '')) ?></td>
-                                    <td><?= sanitize((string)($registryRow['module_slug'] ?? '')) ?></td>
+                                    <td><a href="<?= sanitize((string)($registryRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
+                                        <?= sanitize((string)($registryRow['module_slug'] ?? '')) ?></a>
+                                    </td>
                                     <td><?= ((int)($registryRow['is_system_module'] ?? 0) === 1) ? '<span class="badge">System</span>' : '<span class="badge badge-danger">No</span>' ?></td>
                                     <td><?= ((int)($registryRow['active'] ?? 0) === 1) ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>' ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
