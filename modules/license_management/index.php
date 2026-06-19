@@ -157,7 +157,7 @@ function cr_is_hidden_employee_field($field) {
         return false;
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'location', 'employee_code'];
+    $hidden = ['company_id', 'employee_id', 'location_id', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 

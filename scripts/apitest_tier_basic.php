@@ -73,6 +73,14 @@ if (is_array($probe)) {
         $allPassed = itm_apitest_assert('HTTP probe returns ok=1', true) && $allPassed;
         $allPassed = itm_apitest_assert('HTTP probe reports Basic tier', (string)($probe['tier'] ?? '') === 'Basic') && $allPassed;
         $allPassed = itm_apitest_assert('HTTP probe is not unlimited', empty($probe['unlimited'])) && $allPassed;
+        $allPassed = itm_apitest_assert(
+            'HTTP probe includes employee_id',
+            (int)($probe['employee_id'] ?? 0) === $employeeId
+        ) && $allPassed;
+        $allPassed = itm_apitest_assert(
+            'HTTP probe omits legacy user_id key',
+            !array_key_exists('user_id', $probe)
+        ) && $allPassed;
     } else {
         itm_apitest_output_line(
             '[INFO] HTTP probe returned error: ' . (string)($probe['error'] ?? 'unknown')

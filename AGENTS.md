@@ -256,7 +256,7 @@ Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logi
 
 3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves via API key **or** (Free only) authenticated session. Paid tiers without a key return `401`. Helpers: `itm_api_tier_requires_api_key()`, `itm_api_lookup_configuration_by_user()`, `itm_api_build_rate_limit_probe_payload()`.
 
-4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `employee_id`; paid tiers must send a key. Response includes `api_key_required` (boolean).
+4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON including `employee_id`, `company_id`, and `api_key_required`. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `employee_id`; paid tiers must send a key.
 
 5. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`):
 

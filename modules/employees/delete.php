@@ -6,6 +6,7 @@
  */
 
 require '../../config/config.php';
+itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require __DIR__ . '/delete_clear_table.php';
 
 /**

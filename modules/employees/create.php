@@ -11,6 +11,7 @@
  */
 
 require '../../config/config.php';
+itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
 

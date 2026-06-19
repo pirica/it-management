@@ -147,7 +147,9 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 
 **Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 
-**Stale terminology guard:** `php scripts/check_stale_user_terminology.php` — fails when `scripts/`, `docs/`, or `phpunit/tests/` still say `Users module` / `Users Management`, when `includes/database_sql_unique_audit.php` special-cases `employee_companies.user_id`, when `modules/` PHP uses `strtolower($_SESSION['role_name'])` for admin checks instead of `itm_is_admin()`, or when `cr_username_for_user_id` remains in module code. Catalog: `scripts/scripts.php`.
+**Stale terminology guard:** `php scripts/check_stale_user_terminology.php` — fails when `scripts/`, `docs/`, or `phpunit/tests/` still say `Users module` / `Users Management`, when `includes/database_sql_unique_audit.php` special-cases `employee_companies.user_id`, when `modules/` PHP uses `strtolower($_SESSION['role_name'])` for admin checks instead of `itm_is_admin()`, when `cr_username_for_user_id` remains in module code, or when CRUD `$hidden` arrays still list `'user_id'`. Catalog: `scripts/scripts.php`.
+
+**CRUD hidden-column alias:** `php scripts/apply_crud_hidden_employee_id_alias.php` — one-time/idempotent maintenance replacing dead `'user_id'` entries in flattened module `$hidden = [...]` arrays with `'employee_id'`. Re-run when new scaffolds copy the old template. Catalog: `scripts/scripts.php`.
 
 **PHPUnit:** `ItmScriptTestUserTest.php`, `ReproAuditDisclosureTest.php`; security repro tests in `VulnerabilityVerificationTest.php` use the same helper. All `phpunit/**/AGENT_NOTES.md` files document this contract.
 

@@ -109,7 +109,7 @@ function repro_auth_bypass_delete_company($conn, $companyId)
 echo colorText('Starting Authorization Bypass reproduction...', 'info') . $nl;
 
 $session = [
-    'user_id' => 2,
+    'employee_id' => 2,
     'username' => 'regular_user',
     'role_name' => 'User',
     'company_id' => 1,

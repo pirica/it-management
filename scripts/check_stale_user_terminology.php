@@ -1,7 +1,7 @@
 <?php
 /**
  * Static audit: fail on stale Users-module prose, employee_companies user_id helpers,
- * session role_name admin checks, and cr_username_for_user_id in modules/.
+ * session role_name admin checks, cr_username_for_user_id, and user_id in $hidden arrays.
  *
  * Why: After the employees merge, docs/scripts must say Employees module and employee_id.
  */
@@ -36,6 +36,7 @@ $patterns = [
 $modulePatterns = [
     'session_role_name_admin' => '/strtolower\s*\(\s*\$_SESSION\s*\[\s*[\'"]role_name[\'"]\s*\]/',
     'cr_username_for_user_id' => '/\bcr_username_for_user_id\b/',
+    'hidden_user_id_scaffold' => '/\$hidden\s*=\s*\[[^\]]*\'user_id\'/',
 ];
 
 $failures = [];
@@ -135,7 +136,7 @@ if (is_file($auditPath)) {
 }
 
 if (empty($failures)) {
-    echo "PASS: No stale Users-module prose, employee_companies user_id helpers, session role_name admin checks, or cr_username_for_user_id references.\n";
+    echo "PASS: No stale Users-module prose, employee_companies user_id helpers, session role_name admin checks, cr_username_for_user_id, or user_id in \$hidden scaffold arrays.\n";
     exit(0);
 }
 

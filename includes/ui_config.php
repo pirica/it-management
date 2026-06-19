@@ -979,7 +979,7 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
 
     // Add missing columns if they don't exist
     $columns = [
-        'user_id' => "ALTER TABLE `ui_configuration` ADD COLUMN `employee_id` INT NOT NULL DEFAULT 0 AFTER `company_id`",
+        'employee_id' => "ALTER TABLE `ui_configuration` ADD COLUMN `employee_id` INT NOT NULL DEFAULT 0 AFTER `company_id`",
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_audit_logs`",

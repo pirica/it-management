@@ -12,6 +12,7 @@
  */
 
 require '../../config/config.php';
+itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = (string)@file_get_contents('php://input');

@@ -177,11 +177,18 @@ function itm_api_lookup_configuration_by_user($conn, $companyId, $employeeId) {
 /**
  * Why: Free-tier users without a persisted row still default to unlimited access.
  */
+function itm_api_row_employee_id(array $row) {
+    return (int)($row['employee_id'] ?? 0);
+}
+
+/**
+ * Why: Free-tier users without a persisted row still default to unlimited access.
+ */
 function itm_api_default_free_configuration_row($companyId, $employeeId) {
     return [
         'id' => 0,
         'company_id' => (int)$companyId,
-        'user_id' => (int)$employeeId,
+        'employee_id' => (int)$employeeId,
         'api_key' => '',
         'api_key_is_active' => 1,
         'api_key_last_used_at' => null,
@@ -196,7 +203,7 @@ function itm_api_active_session_company_id() {
     return (int)($_SESSION['company_id'] ?? 0);
 }
 
-function itm_api_active_session_user_id() {
+function itm_api_active_session_employee_id() {
     return (int)($_SESSION['employee_id'] ?? 0);
 }
 
@@ -210,7 +217,7 @@ function itm_api_resolve_rate_limit_row($conn) {
     }
 
     $companyId = itm_api_active_session_company_id();
-    $employeeId = itm_api_active_session_user_id();
+    $employeeId = itm_api_active_session_employee_id();
     if ($companyId <= 0 || $employeeId <= 0) {
         return null;
     }
@@ -237,7 +244,7 @@ function itm_api_build_rate_limit_probe_payload(array $row) {
     return [
         'ok' => true,
         'company_id' => (int)($row['company_id'] ?? 0),
-        'user_id' => (int)($row['user_id'] ?? 0),
+        'employee_id' => itm_api_row_employee_id($row),
         'api_key_required' => itm_api_tier_requires_api_key($tier),
         'api_key_is_active' => (int)($row['api_key_is_active'] ?? 0),
         'api_key_last_used_at' => $row['api_key_last_used_at'] ?? null,
@@ -349,7 +356,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
 
     $configId = (int)($row['id'] ?? 0);
     $companyId = (int)($row['company_id'] ?? 0);
-    $employeeId = (int)($row['user_id'] ?? 0);
+    $employeeId = itm_api_row_employee_id($row);
     if ($companyId <= 0 || $employeeId <= 0) {
         return ['allowed' => false, 'error' => 'Invalid API configuration row.'];
     }

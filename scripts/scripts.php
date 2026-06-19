@@ -710,6 +710,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/apply_date_display_format.php</code> from repository root. Re-run when new flattened CRUD modules ship without the date display hook.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_crud_hidden_employee_id_alias.php">apply_crud_hidden_employee_id_alias.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>One-time/maintenance: replace dead <code>'user_id'</code> entries in flattened CRUD <code>$hidden</code> column arrays with <code>'employee_id'</code> under <code>modules/</code>.</td>
+                    <td><code>php scripts/apply_crud_hidden_employee_id_alias.php</code> from repository root. Idempotent; re-run when new scaffolds copy the old hide list.</td>
+                </tr>
+                <tr>
                     <td><a href="apply_display_field_columns_search_alias.php">apply_display_field_columns_search_alias.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable.</td>
@@ -748,7 +754,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="check_stale_user_terminology.php">check_stale_user_terminology.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose, <code>employee_companies</code> + <code>user_id</code> helper references, session <code>role_name</code> admin checks in <code>modules/</code>, and <code>cr_username_for_user_id</code> after the employees merge.</td>
+                    <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose, <code>employee_companies</code> + <code>user_id</code> helper references, session <code>role_name</code> admin checks in <code>modules/</code>, <code>cr_username_for_user_id</code>, and <code>'user_id'</code> inside CRUD <code>$hidden</code> arrays.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>

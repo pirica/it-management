@@ -82,7 +82,7 @@ class ApiRateLimitTest extends TestCase
         $row = [
             'id' => 1,
             'company_id' => 1,
-            'user_id' => 2,
+            'employee_id' => 2,
             'api_key' => '',
             'api_key_is_active' => 1,
             'tier' => 'Free',
@@ -93,6 +93,8 @@ class ApiRateLimitTest extends TestCase
 
         $payload = itm_api_build_rate_limit_probe_payload($row);
         $this->assertTrue($payload['ok']);
+        $this->assertSame(2, $payload['employee_id']);
+        $this->assertArrayNotHasKey('user_id', $payload);
         $this->assertFalse($payload['api_key_required']);
         $this->assertTrue($payload['unlimited']);
     }

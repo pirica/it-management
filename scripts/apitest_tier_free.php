@@ -78,6 +78,14 @@ $allPassed = itm_apitest_assert(
     'Probe payload marks api_key_required false on Free',
     is_array($probePayload) && empty($probePayload['api_key_required'])
 ) && $allPassed;
+$allPassed = itm_apitest_assert(
+    'Probe payload includes employee_id',
+    is_array($probePayload) && (int)($probePayload['employee_id'] ?? 0) === $employeeId
+) && $allPassed;
+$allPassed = itm_apitest_assert(
+    'Probe payload omits legacy user_id key',
+    is_array($probePayload) && !array_key_exists('user_id', $probePayload)
+) && $allPassed;
 
 $httpSessionId = itm_apitest_publish_http_session($companyId, $employeeId);
 $probe = itm_apitest_probe_rate_limit_http('', '', $httpSessionId);

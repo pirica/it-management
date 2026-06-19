@@ -118,7 +118,7 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iisiiiss',
+        'iisiiiis',
         $companyId,
         $employeeId,
         $apiKey,
@@ -144,7 +144,7 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
     return [
         'id' => $configId,
         'company_id' => $companyId,
-        'user_id' => $employeeId,
+        'employee_id' => $employeeId,
         'api_key' => $apiKey,
         'api_key_is_active' => $apiKeyIsActive,
         'rate_limit_window_start' => $windowStart,

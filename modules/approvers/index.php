@@ -363,7 +363,7 @@ function cr_humanize_field($field) {
  */
 function cr_is_hidden_employee_field($field) {
     if (($GLOBALS['crud_table'] ?? '') !== 'employees') { return false; }
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    $hidden = ['company_id', 'employee_id', 'location_id', 'phone', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 
