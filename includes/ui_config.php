@@ -928,6 +928,13 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
     if (!($conn instanceof mysqli)) {
         return false;
     }
+
+    // Why: Schema ensure issues 20+ SHOW TABLES/COLUMNS/INDEX queries; cache success for this request only.
+    static $itmUiConfigurationTableReady = false;
+    if ($report === null && $itmUiConfigurationTableReady) {
+        return true;
+    }
+
     $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'ui_configuration'");
     if (!$tableExistsRes) {
         return false;
@@ -1108,6 +1115,10 @@ function itm_ensure_ui_configuration_table($conn, &$report = null) {
                 }
             }
         }
+    }
+
+    if ($report === null) {
+        $itmUiConfigurationTableReady = true;
     }
 
     return true;
@@ -1516,6 +1527,13 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
     if (!($conn instanceof mysqli)) {
         return false;
     }
+
+    // Why: Called from ui_configuration ensure and sidebar preference reads; skip repeat metadata scans.
+    static $itmEmployeeSidebarPreferencesTableReady = false;
+    if ($report === null && $itmEmployeeSidebarPreferencesTableReady) {
+        return true;
+    }
+
     $tableExistsRes = mysqli_query($conn, "SHOW TABLES LIKE 'employee_sidebar_preferences'");
     if (!$tableExistsRes) {
         return false;
@@ -1612,6 +1630,10 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
         if (!in_array('employee_sidebar_preferences', $report[$bucketKey], true)) {
             $report[$bucketKey][] = 'employee_sidebar_preferences';
         }
+    }
+
+    if ($report === null) {
+        $itmEmployeeSidebarPreferencesTableReady = true;
     }
 
     return true;
