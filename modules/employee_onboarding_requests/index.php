@@ -489,7 +489,7 @@ function cr_onboarding_find_active_approver_contact_by_type($conn, $company_id, 
     ];
 }
 
-function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, $htmlBody, &$errorMessage) {
+function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, $htmlBody, &$errorMessage, $companyId = null) {
     $toEmail = trim((string)$toEmail);
     $toName = trim((string)$toName);
     $subject = trim((string)$subject);
@@ -500,54 +500,22 @@ function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, 
         return false;
     }
 
-    if (!defined('MAILERLITE_API_KEY') || !defined('MAILERLITE_URL') || trim((string)MAILERLITE_API_KEY) === '' || trim((string)MAILERLITE_API_KEY) === 'YOUR_MAILERLITE_API_KEY_HERE') {
-        $errorMessage = 'Email API is not configured in config/config.php.';
-        return false;
-    }
-    if (!function_exists('curl_init')) {
-        $errorMessage = 'Email API call failed: cURL extension is not available on this server.';
+    if (!function_exists('itm_send_email')) {
+        $errorMessage = 'Email helper is not available.';
         return false;
     }
 
-    $payload = json_encode([
-        'from' => 'verified@yourdomain.com',
-        'to' => $toName !== '' ? [$toEmail => $toName] : $toEmail,
-        'subject' => $subject,
-        'html' => $htmlBody,
-    ]);
-    if ($payload === false) {
-        $errorMessage = 'Unable to encode email request payload.';
-        return false;
+    $resolvedCompanyId = (int)$companyId;
+    if ($resolvedCompanyId <= 0 && isset($_SESSION['company_id'])) {
+        $resolvedCompanyId = (int)$_SESSION['company_id'];
     }
 
-    $ch = curl_init(MAILERLITE_URL);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Accept: application/json',
-        'Authorization: Bearer ' . MAILERLITE_API_KEY,
-    ]);
-    $responseBody = curl_exec($ch);
-    $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErrNo = (int)curl_errno($ch);
-    $curlErrText = curl_error($ch);
-    curl_close($ch);
-
-    if ($curlErrNo !== 0) {
-        $errorMessage = 'Email API call failed: ' . $curlErrText;
-        return false;
+    if ($toName !== '') {
+        $htmlBody = '<p>Hello ' . sanitize($toName) . ',</p>' . $htmlBody;
     }
-    if ($httpCode < 200 || $httpCode >= 300) {
-        $responseSnippet = trim((string)$responseBody);
-        if ($responseSnippet !== '') {
-            $responseSnippet = preg_replace('/\s+/', ' ', $responseSnippet);
-            $responseSnippet = substr($responseSnippet, 0, 240);
-            $errorMessage = 'Email API returned HTTP ' . $httpCode . ': ' . $responseSnippet;
-        } else {
-            $errorMessage = 'Email API returned HTTP ' . $httpCode . ' with an empty response body.';
-        }
+
+    if (!itm_send_email($toEmail, $subject, $htmlBody, $resolvedCompanyId > 0 ? $resolvedCompanyId : null)) {
+        $errorMessage = 'Email send failed. Configure a default SMTP profile in Email Management.';
         return false;
     }
 
@@ -876,7 +844,7 @@ function cr_format_onboarding_date($value) {
     return date('d/m/Y', $ts);
 }
 
-function cr_onboarding_display_value($value, $isDateField = false) {
+function cr_onboarding_display_value($value, $isDateField = false, $fieldName = '') {
     $text = trim((string)$value);
     if ($text === '' || $text === '0000-00-00') {
         return 'N/A';
@@ -885,8 +853,8 @@ function cr_onboarding_display_value($value, $isDateField = false) {
         $formatted = cr_format_onboarding_date($text);
         return $formatted === '' ? 'N/A' : $formatted;
     }
-    if (function_exists('itm_format_cell_scalar_display')) {
-        $text = itm_format_cell_scalar_display($field, $text);
+    if (function_exists('itm_format_cell_scalar_display') && $fieldName !== '') {
+        $text = itm_format_cell_scalar_display($fieldName, $text);
     }
 
     return sanitize($text);
@@ -1718,14 +1686,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     $approvalDeclineUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=decline&token=' . urlencode($approvalTokenDecline);
 
     $subject = 'Email request for ' . $employeeFullName;
-    $htmlBody = '<p>Hello ' . sanitize($approverName !== '' ? $approverName : 'Approver') . ',</p>'
-        . '<p>Please review and approve onboarding request <strong>#' . (int)$recordId . '</strong> for <strong>' . sanitize($employeeFullName) . '</strong>.</p>'
+    $htmlBody = '<p>Please review and approve onboarding request <strong>#' . (int)$recordId . '</strong> for <strong>' . sanitize($employeeFullName) . '</strong>.</p>'
         . '<p><a href="' . sanitize($approvalApproveUrl) . '">API Link: Approve</a></p>'
         . '<p><a href="' . sanitize($approvalDeclineUrl) . '">API Link: Decline</a></p>'
         . '<p><a href="' . sanitize(BASE_URL . 'modules/employee_onboarding_requests/view.php?id=' . $recordId) . '">Open request details</a></p>';
 
     $sendError = '';
-    if (!cr_onboarding_send_approval_email_via_api($approverEmail, $approverName, $subject, $htmlBody, $sendError)) {
+    if (!cr_onboarding_send_approval_email_via_api($approverEmail, $approverName, $subject, $htmlBody, $sendError, (int)$company_id)) {
         $_SESSION['crud_error'] = $sendError;
     } else {
         $emailSentField = '';
@@ -2257,7 +2224,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                                 echo sanitize($fkLabel !== '' ? $fkLabel : (string)$row[$f]);
                                             ?>
                                         <?php elseif (cr_is_employee_onboarding_module() && in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date', 'gm_approval_date', 'fin_approval_date'], true)): ?>
-                                            <?php echo sanitize(cr_onboarding_display_value($row[$f] ?? '', true)); ?>
+                                            <?php echo sanitize(cr_onboarding_display_value($row[$f] ?? '', true, $f)); ?>
                                         <?php elseif (cr_is_employee_onboarding_module() && isset($onboardingSystemAccessFields[$f])): ?>
                                             <?php echo cr_is_truthy_checkbox_value($row[$f] ?? '') ? '✅' : '❌'; ?>
                                         <?php elseif (cr_is_employee_onboarding_module() && isset($fieldColumnsByName[$f]) && preg_match('/^tinyint(\(\d+\))?/i', (string)($fieldColumnsByName[$f]['Type'] ?? ''))): ?>
@@ -2569,11 +2536,11 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         <?php elseif ($isViewTinyInt): ?>
                                             <?php echo ((int)($data[$f] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php elseif (in_array($f, ['request_date', 'termination_date', 'starting_date', 'requested_by_date', 'hod_approval_date', 'hrd_approval_date', 'ism_approval_date', 'gm_approval_date', 'fin_approval_date'], true)): ?>
-                                            <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true)); ?>
+                                            <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', true, $f)); ?>
                                         <?php elseif (isset($onboardingSystemAccessFields[$f])): ?>
                                             <?php echo cr_is_truthy_checkbox_value($data[$f] ?? '') ? '✅' : '❌'; ?>
                                         <?php else: ?>
-                                            <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '')); ?>
+                                            <?php echo sanitize(cr_onboarding_display_value($data[$f] ?? '', false, $f)); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
@@ -2581,7 +2548,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php endforeach; ?>
                         <tr>
                             <th><?php echo sanitize(cr_humanize_field('comments')); ?></th>
-                            <td colspan="3"><?php echo sanitize(cr_onboarding_display_value($data['comments'] ?? '')); ?></td>
+                            <td colspan="3"><?php echo sanitize(cr_onboarding_display_value($data['comments'] ?? '', false, 'comments')); ?></td>
                         </tr>
                         </tbody>
                     </table>

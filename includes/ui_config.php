@@ -101,6 +101,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'backup_tape_log', 'label' => '📼 Backup Tape Log', 'href' => 'modules/backup_tape_log/', 'match_dir' => 'backup_tape_log'],
                 ['id' => 'companies', 'label' => '🌍 Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
                 ['id' => 'company_module_access', 'label' => '🧩 Company Module Access', 'href' => 'modules/company_module_access/', 'match_dir' => 'company_module_access'],
+                ['id' => 'emails', 'label' => '📧 Email Management', 'href' => 'modules/emails/', 'match_dir' => 'emails'],
             ],
         ],
         [
@@ -181,6 +182,7 @@ function itm_sidebar_module_default_label($moduleName) {
         'warranty_types' => '🛡️ Warranty Types',
         'note_labels' => '🏷️ Note Labels',
         'modules_registry' => '🧩 Modules Registry',
+        'emails' => '📧 Email Management',
     ];
 
     return $labels[$moduleName] ?? null;
