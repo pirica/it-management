@@ -13,7 +13,7 @@ if ($company_id <= 0) {
 $format = isset($_GET['format']) ? $_GET['format'] : 'csv';
 $folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
 
-$where = "company_id = $company_id AND (user_id = $user_id OR shared = 1) AND active = 1";
+$where = "company_id = $company_id AND (employee_id = $user_id OR shared = 1) AND active = 1";
 if ($folder_id) {
     $where .= " AND folder_id = $folder_id";
 }

@@ -49,7 +49,7 @@ if (!function_exists('btl_format_datetime')) {
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 $is_it_staff = false;
 
-$stmt = mysqli_prepare($conn, "SELECT d.name FROM employees e JOIN departments d ON e.department_id = d.id WHERE e.user_id = ? AND e.company_id = ?");
+$stmt = mysqli_prepare($conn, "SELECT d.name FROM employees e JOIN departments d ON e.department_id = d.id WHERE e.id = ? AND e.company_id = ?");
 mysqli_stmt_bind_param($stmt, 'ii', $user_id, $company_id);
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);

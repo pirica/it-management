@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($bulkAction === 'clear_table') {
-        $sql = "UPDATE bookmarks SET active = 0 WHERE company_id = $company_id AND (user_id = $user_id OR shared = 1)";
+        $sql = "UPDATE bookmarks SET active = 0 WHERE company_id = $company_id AND (employee_id = $user_id OR shared = 1)";
         itm_run_query($conn, $sql);
     } elseif (!empty($ids)) {
         foreach ($ids as $id) {
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // regular user can only delete their own.
             $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmarks WHERE id = $id AND company_id = $company_id");
             $data = mysqli_fetch_assoc($check_res);
-            if ($data && ($is_admin || (int)$data['user_id'] === $user_id)) {
+            if ($data && ($is_admin || (int)$data['employee_id'] === $user_id)) {
                 $sql = "UPDATE bookmarks SET active = 0 WHERE id = $id";
                 itm_run_query($conn, $sql);
             }

@@ -5,6 +5,7 @@
 
 require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/todo_visibility.php";
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 
 if (!function_exists('todo_merge_assignee_users')) {
     /**
@@ -63,10 +64,13 @@ $resCat = mysqli_query($conn, "SELECT id, name FROM todo_categories WHERE compan
 if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id']] = $row; } }
 
 $users = [];
+$join = itm_employee_active_employment_status_join_sql('u', 'es');
+$predicate = itm_employee_active_employment_status_predicate_sql('es');
 $userSql = "SELECT u.id, u.username
-            FROM employees u
+            FROM employees u"
+            . $join . "
             LEFT JOIN employee_companies uc ON uc.employee_id = u.id AND uc.company_id = ?
-            WHERE u.active = 1 AND COALESCE(uc.active, 1) = 1 AND (u.company_id = ? OR uc.company_id = ?)
+            WHERE " . $predicate . " AND COALESCE(uc.active, 1) = 1 AND (u.company_id = ? OR uc.company_id = ?)
             GROUP BY u.id
             ORDER BY u.username";
 $stmtUser = mysqli_prepare($conn, $userSql);

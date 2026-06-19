@@ -22,7 +22,7 @@ function itm_notes_visibility_sql($alias = '')
     $prefix = itm_notes_normalize_sql_alias($alias);
     // Owner or shared with user.
     // Assuming shared_with_json is a JSON array of user IDs.
-    return '(' . $prefix . 'user_id = ? OR JSON_CONTAINS(' . $prefix . 'shared_with_json, CAST(? AS JSON), \'$\'))';
+    return '(' . $prefix . 'employee_id = ? OR JSON_CONTAINS(' . $prefix . 'shared_with_json, CAST(? AS JSON), \'$\'))';
 }
 
 function itm_notes_append_visibility_filter(&$conditions, &$types, &$params, $loggedUserId, $alias = '')

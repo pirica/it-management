@@ -429,7 +429,7 @@ $offset = ($page - 1) * $perPage;
 
 $countSql = 'SELECT COUNT(*) AS total '
           . 'FROM audit_logs al '
-          . 'LEFT JOIN employees u ON u.id = al.user_id '
+          . 'LEFT JOIN employees u ON u.id = al.employee_id '
           . 'WHERE ' . implode(' AND ', $where);
 $countStmt = mysqli_prepare($conn, $countSql);
 $totalRows = 0;
@@ -452,7 +452,7 @@ if ($page > $totalPages) {
 // Uses JOINs to resolve user details and Prepared Statements for security.
 $sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
-     . 'LEFT JOIN employees u ON u.id = al.user_id '
+     . 'LEFT JOIN employees u ON u.id = al.employee_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
      . 'ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 
@@ -702,7 +702,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                 $userName = trim((string)($row['username'] ?? ''));
                             }
                             if ($userName === '') {
-                                $userName = $row['user_id'] ? ('User #' . (int)$row['user_id']) : 'System';
+                                $userName = $row['employee_id'] ? ('User #' . (int)$row['employee_id']) : 'System';
                             }
 
                             // Styling based on action type

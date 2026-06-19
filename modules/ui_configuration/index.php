@@ -40,9 +40,9 @@ function cr_fk_map($conn, $table) {
         $map[$row['COLUMN_NAME']] = $row;
     }
 
-    if ($table === 'ui_configuration' && !isset($map['user_id'])) {
-        $map['user_id'] = [
-            'COLUMN_NAME' => 'user_id',
+    if ($table === 'ui_configuration' && !isset($map['employee_id'])) {
+        $map['employee_id'] = [
+            'COLUMN_NAME' => 'employee_id',
             'REFERENCED_TABLE_NAME' => 'employees',
             'REFERENCED_COLUMN_NAME' => 'id',
         ];
@@ -216,7 +216,7 @@ function cr_is_hidden_employee_field($field) {
         return false;
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    $hidden = ['company_id', 'employee_id', 'location_id', 'phone', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 
@@ -359,7 +359,7 @@ $hasCompany = false;
 $hasUser = false;
 foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; }
-    if ($c['Field'] === 'user_id') { $hasUser = true; }
+    if ($c['Field'] === 'employee_id') { $hasUser = true; }
 }
 $currentUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
@@ -532,7 +532,7 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
             if ($hasUser && $currentUserId > 0) {
-                $where .= ' AND user_id=' . (int)$currentUserId;
+                $where .= ' AND employee_id=' . (int)$currentUserId;
             }
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
@@ -562,7 +562,7 @@ if ($crud_action === 'delete') {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
             if ($hasUser && $currentUserId > 0) {
-                $where .= ' AND user_id=' . (int)$currentUserId;
+                $where .= ' AND employee_id=' . (int)$currentUserId;
             }
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -582,7 +582,7 @@ if ($crud_action === 'delete') {
             $where .= ' AND company_id=' . (int)$company_id;
         }
         if ($hasUser && $currentUserId > 0) {
-            $where .= ' AND user_id=' . (int)$currentUserId;
+            $where .= ' AND employee_id=' . (int)$currentUserId;
         }
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
@@ -611,7 +611,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
         $where .= ' AND company_id=' . (int)$company_id;
     }
     if ($hasUser && $currentUserId > 0) {
-        $where .= ' AND user_id=' . (int)$currentUserId;
+        $where .= ' AND employee_id=' . (int)$currentUserId;
     }
     $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
@@ -633,7 +633,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
     $where = ' WHERE company_id=' . (int)$company_id;
     if ($hasUser && $currentUserId > 0) {
-        $where .= ' AND user_id=' . (int)$currentUserId;
+        $where .= ' AND employee_id=' . (int)$currentUserId;
     }
     $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
@@ -674,7 +674,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             continue;
         }
 
-        if ($name === 'user_id' && $currentUserId > 0) {
+        if ($name === 'employee_id' && $currentUserId > 0) {
             $data[$name] = (int)$currentUserId;
             continue;
         }
@@ -769,7 +769,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $where .= ' AND company_id=' . (int)$company_id;
             }
             if ($hasUser && $currentUserId > 0) {
-                $where .= ' AND user_id=' . (int)$currentUserId;
+                $where .= ' AND employee_id=' . (int)$currentUserId;
             }
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
@@ -788,7 +788,7 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
     if ($hasUser && $currentUserId > 0) {
-        $where .= ' AND user_id=' . (int)$currentUserId;
+        $where .= ' AND employee_id=' . (int)$currentUserId;
     }
 }
 

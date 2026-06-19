@@ -10,7 +10,7 @@
 function bkm_get_folders($conn, $company_id, $user_id, $include_shared = true) {
     $company_id = (int)$company_id;
     $user_id = (int)$user_id;
-    $where = "company_id = $company_id AND (user_id = $user_id";
+    $where = "company_id = $company_id AND (employee_id = $user_id";
     if ($include_shared) {
         $where .= " OR shared = 1";
     }
@@ -86,7 +86,7 @@ function bkm_render_folder_options(array $tree, $selectedId = null, $depth = 0) 
  */
 function bkm_can_edit_bookmark($bookmark, $user_id, $is_admin) {
     if ($is_admin) return true;
-    return (int)($bookmark['user_id'] ?? 0) === (int)$user_id;
+    return (int)($bookmark['employee_id'] ?? 0) === (int)$user_id;
 }
 
 /**
@@ -94,7 +94,7 @@ function bkm_can_edit_bookmark($bookmark, $user_id, $is_admin) {
  */
 function bkm_can_edit_folder($folder, $user_id, $is_admin) {
     if ($is_admin) return true;
-    return (int)($folder['user_id'] ?? 0) === (int)$user_id;
+    return (int)($folder['employee_id'] ?? 0) === (int)$user_id;
 }
 
 /**

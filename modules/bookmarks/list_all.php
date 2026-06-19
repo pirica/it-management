@@ -59,7 +59,7 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = 25;
 $offset = ($page - 1) * $perPage;
 
-$where = "b.company_id = $company_id AND b.active = 1 AND (b.user_id = $user_id OR b.shared = 1)";
+$where = "b.company_id = $company_id AND b.active = 1 AND (b.employee_id = $user_id OR b.shared = 1)";
 if ($searchRaw !== '') {
     $s = mysqli_real_escape_string($conn, $searchRaw);
     $where .= " AND (b.title LIKE '%$s%' OR b.url LIKE '%$s%' OR b.notes LIKE '%$s%')";
