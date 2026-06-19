@@ -62,8 +62,9 @@ if ($companyId <= 0) {
 }
 
 $appName = function_exists('itm_ui_config_app_name') ? itm_ui_config_app_name() : 'IT Management';
+$loginUrl = BASE_URL . 'login.php';
 $subject = 'Welcome to ' . $appName . ' (Test)';
-$html = '<h1>Welcome!</h1><p>Thanks for creating an account with us. This is a test message.</p>';
+$html = '<p>Thanks for creating an account with us. This is a test welcome message.</p>';
 
 $nl = itm_script_output_nl();
 echo 'Company ID: ' . (int)$companyId . $nl;
@@ -74,7 +75,13 @@ if (!$defaultCfg) {
     echo '⚠️ No tenant SMTP profile for company ' . (int)$companyId . '; falling back to Resend when RESEND_API_KEY is set.' . $nl;
 }
 
-$result = itm_send_email($userEmail, $subject, $html, $companyId);
+$result = itm_send_email($userEmail, $subject, $html, $companyId, [
+    'email_template' => [
+        'subtitle' => 'Welcome — test message',
+        'button_text' => 'Sign in',
+        'button_url' => $loginUrl,
+    ],
+]);
 
 if ($result) {
     echo '✅ Email sent successfully.' . $nl;

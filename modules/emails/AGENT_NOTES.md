@@ -16,6 +16,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - Exactly one active profile per company should have `is_default = 1` (UI clears other defaults on save).
 - SMTP passwords stored encrypted via `itm_email_encrypt_password()` / `itm_decrypt()` with server key `itm_smtp_encryption_key()`.
 - `itm_send_email($to, $subject, $html, $companyId)` logs every attempt to **emails** when `company_id` resolves.
+- Fragment HTML bodies are auto-wrapped in the login-style transactional template (`itm_email_build_transactional_html()`). Pass `email_template` (array with `subtitle`, `button_text`, `button_url`, `footer_text`) or `email_template => false` to skip wrapping.
 - Fallback: if no SMTP profile exists, `itm_send_email()` tries Resend (`RESEND_API_KEY` env).
 - Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron). Company 1 seeds include warranty/license rows inside the default 30-day window; other tenants need enabled rules plus `notify_emails`. Use `--verbose` when dispatched count is 0.
 - Manual delivery tests: `php scripts/test_email_forgot.php email=… [--company=1]`, `php scripts/test_register_mail.php email=… [--company=1]`.
@@ -51,7 +52,13 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ### Send with tenant default SMTP
 ```php
-itm_send_email('user@example.com', 'Subject', '<p>Body</p>', $company_id);
+itm_send_email('user@example.com', 'Subject', '<p>Body</p>', $company_id, [
+    'email_template' => [
+        'subtitle' => 'Optional headline',
+        'button_text' => 'Open',
+        'button_url' => BASE_URL . 'login.php',
+    ],
+]);
 ```
 
 ### Load default SMTP

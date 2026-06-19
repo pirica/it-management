@@ -63,10 +63,7 @@ if ($companyId <= 0) {
 
 $resetLink = BASE_URL . 'reset-password.php?token=xyz123';
 $subject = 'Reset your password (Test)';
-$html = '<h3>Password Reset Request</h3>'
-    . '<p>Click the link below to reset your password:</p>'
-    . '<p><a href="' . htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8') . '">'
-    . htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8') . '</a></p>';
+$html = '<p>This is a test password-reset email. Use the button below to open the reset page.</p>';
 
 $nl = itm_script_output_nl();
 echo 'Company ID: ' . (int)$companyId . $nl;
@@ -77,7 +74,13 @@ if (!$defaultCfg) {
     echo '⚠️ No tenant SMTP profile for company ' . (int)$companyId . '; falling back to Resend when RESEND_API_KEY is set.' . $nl;
 }
 
-$result = itm_send_email($userEmail, $subject, $html, $companyId);
+$result = itm_send_email($userEmail, $subject, $html, $companyId, [
+    'email_template' => [
+        'subtitle' => 'Password reset test',
+        'button_text' => 'Reset password',
+        'button_url' => $resetLink,
+    ],
+]);
 
 if ($result) {
     echo '✅ Email sent successfully.' . $nl;

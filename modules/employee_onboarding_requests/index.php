@@ -489,7 +489,7 @@ function cr_onboarding_find_active_approver_contact_by_type($conn, $company_id, 
     ];
 }
 
-function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, $htmlBody, &$errorMessage, $companyId = null) {
+function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, $htmlBody, &$errorMessage, $companyId = null, array $emailOptions = []) {
     $toEmail = trim((string)$toEmail);
     $toName = trim((string)$toName);
     $subject = trim((string)$subject);
@@ -514,7 +514,7 @@ function cr_onboarding_send_approval_email_via_api($toEmail, $toName, $subject, 
         $htmlBody = '<p>Hello ' . sanitize($toName) . ',</p>' . $htmlBody;
     }
 
-    if (!itm_send_email($toEmail, $subject, $htmlBody, $resolvedCompanyId > 0 ? $resolvedCompanyId : null)) {
+    if (!itm_send_email($toEmail, $subject, $htmlBody, $resolvedCompanyId > 0 ? $resolvedCompanyId : null, $emailOptions)) {
         $errorMessage = 'Email send failed. Configure a default SMTP profile in Email Management.';
         return false;
     }
@@ -1685,14 +1685,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     $approvalApproveUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=approve&token=' . urlencode($approvalTokenApprove);
     $approvalDeclineUrl = BASE_URL . 'modules/employee_onboarding_requests/index.php?approval_api=1&id=' . $recordId . '&target=' . urlencode($approvalTarget) . '&decision=decline&token=' . urlencode($approvalTokenDecline);
 
+    $viewRequestUrl = BASE_URL . 'modules/employee_onboarding_requests/view.php?id=' . $recordId;
     $subject = 'Email request for ' . $employeeFullName;
     $htmlBody = '<p>Please review and approve onboarding request <strong>#' . (int)$recordId . '</strong> for <strong>' . sanitize($employeeFullName) . '</strong>.</p>'
-        . '<p><a href="' . sanitize($approvalApproveUrl) . '">API Link: Approve</a></p>'
-        . '<p><a href="' . sanitize($approvalDeclineUrl) . '">API Link: Decline</a></p>'
-        . '<p><a href="' . sanitize(BASE_URL . 'modules/employee_onboarding_requests/view.php?id=' . $recordId) . '">Open request details</a></p>';
+        . '<p><a href="' . sanitize($approvalApproveUrl) . '">Approve request</a> · '
+        . '<a href="' . sanitize($approvalDeclineUrl) . '">Decline request</a></p>';
 
     $sendError = '';
-    if (!cr_onboarding_send_approval_email_via_api($approverEmail, $approverName, $subject, $htmlBody, $sendError, (int)$company_id)) {
+    if (!cr_onboarding_send_approval_email_via_api($approverEmail, $approverName, $subject, $htmlBody, $sendError, (int)$company_id, [
+        'email_template' => [
+            'subtitle' => 'Onboarding approval required',
+            'button_text' => 'View request',
+            'button_url' => $viewRequestUrl,
+        ],
+    ])) {
         $_SESSION['crud_error'] = $sendError;
     } else {
         $emailSentField = '';

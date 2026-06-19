@@ -62,6 +62,17 @@ if (!function_exists('itm_send_email')) {
     emails_verify_pass('itm_send_email() helper loaded.');
 }
 
+if (!function_exists('itm_email_build_transactional_html')) {
+    emails_verify_fail('itm_email_build_transactional_html() helper missing.');
+} else {
+    $sampleHtml = itm_email_build_transactional_html('<p>Test</p>', ['subtitle' => 'Verify']);
+    if (!is_string($sampleHtml) || stripos($sampleHtml, '<!DOCTYPE') !== 0 || stripos($sampleHtml, '#667eea') === false) {
+        emails_verify_fail('Transactional email template did not produce expected HTML wrapper.');
+    } else {
+        emails_verify_pass('Transactional email template helper produces login-style wrapper.');
+    }
+}
+
 $registryStmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
 $slug = 'emails';
 if ($registryStmt) {
