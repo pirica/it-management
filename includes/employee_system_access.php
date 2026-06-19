@@ -10,6 +10,7 @@
 /**
  * Returns a map of standard access field codes to their human-readable labels
  */
+if (!function_exists("esa_ability_fields")) {
 function esa_ability_fields() {
     return [
         'network_access' => 'Network Access',
@@ -33,6 +34,7 @@ function esa_ability_fields() {
         'office_key_card' => 'Office Key Card',
     ];
 }
+}
 
 /**
  * Resolves the writable legacy access fields for a company.
@@ -41,6 +43,7 @@ function esa_ability_fields() {
  * employee_system_access columns; this keeps edit/save/view aligned so
  * all configured access flags persist correctly.
  */
+if (!function_exists("esa_resolve_ability_fields")) {
 function esa_resolve_ability_fields($conn, $companyId = null) {
     $companyId = $companyId === null ? esa_current_company_id() : (int)$companyId;
     $resolved = esa_ability_fields();
@@ -69,16 +72,19 @@ function esa_resolve_ability_fields($conn, $companyId = null) {
 
     return $resolved;
 }
+}
 
 /**
  * Normalizes text for stable legacy/code label comparisons.
  */
+if (!function_exists("esa_normalize_access_token")) {
 function esa_normalize_access_token($value) {
     $value = strtolower(trim((string)$value));
     if ($value === '') {
         return '';
     }
     return preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
+}
 }
 
 /**
@@ -87,6 +93,7 @@ function esa_normalize_access_token($value) {
  * Why: some environments have legacy system_access codes that differ from the
  * actual matrix column names; this fallback keeps load/save consistent.
  */
+if (!function_exists("esa_resolve_field_for_catalog_row")) {
 function esa_resolve_field_for_catalog_row($accessRow, $abilityFields) {
     $code = (string)($accessRow['code'] ?? '');
     if ($code !== '' && isset($abilityFields[$code])) {
@@ -119,24 +126,30 @@ function esa_resolve_field_for_catalog_row($accessRow, $abilityFields) {
 
     return '';
 }
+}
 
 /**
  * Safely escapes a database identifier (table or column name)
  */
+if (!function_exists("esa_escape_identifier")) {
 function esa_escape_identifier($name) {
     return '`' . str_replace('`', '``', (string)$name) . '`';
+}
 }
 
 /**
  * Helper to get the current company ID from the session
  */
+if (!function_exists("esa_current_company_id")) {
 function esa_current_company_id() {
     return isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+}
 }
 
 /**
  * Keeps access catalogs/data aligned without creating schema at runtime.
  */
+if (!function_exists("esa_ensure_table")) {
 function esa_ensure_table($conn) {
     if (!esa_ensure_legacy_matrix_columns($conn)) {
         return false;
@@ -152,6 +165,7 @@ function esa_ensure_table($conn) {
 
     return esa_sync_from_employees_legacy($conn);
 }
+}
 
 /**
  * Ensures every tenant catalog code has a matching legacy matrix column.
@@ -159,6 +173,7 @@ function esa_ensure_table($conn) {
  * Why: custom System Access items are company-specific; without a matching
  * employee_system_access column they cannot appear in the access matrix.
  */
+if (!function_exists("esa_ensure_catalog_matrix_columns")) {
 function esa_ensure_catalog_matrix_columns($conn) {
     $companyId = esa_current_company_id();
     if ($companyId <= 0) {
@@ -192,6 +207,7 @@ function esa_ensure_catalog_matrix_columns($conn) {
     mysqli_stmt_close($stmt);
     return true;
 }
+}
 
 /**
  * Ensures legacy employee_system_access columns exist for all standard abilities.
@@ -199,6 +215,7 @@ function esa_ensure_catalog_matrix_columns($conn) {
  * Why: older databases can miss newer permission flags, which makes checkboxes
  * appear unsaved even when selected in UI.
  */
+if (!function_exists("esa_ensure_legacy_matrix_columns")) {
 function esa_ensure_legacy_matrix_columns($conn) {
     $requiredFields = array_keys(esa_ability_fields());
     foreach ($requiredFields as $field) {
@@ -217,10 +234,12 @@ function esa_ensure_legacy_matrix_columns($conn) {
 
     return true;
 }
+}
 
 /**
  * Populates the system_access catalog with default entries for the current company
  */
+if (!function_exists("esa_seed_system_access")) {
 function esa_seed_system_access($conn) {
     $companyId = esa_current_company_id();
     if ($companyId <= 0) {
@@ -243,10 +262,12 @@ function esa_seed_system_access($conn) {
 
     return mysqli_query($conn, $sql) !== false;
 }
+}
 
 /**
  * Migrates permission data from the 'employees' table to 'employee_system_access'
  */
+if (!function_exists("esa_sync_from_employees_legacy")) {
 function esa_sync_from_employees_legacy($conn) {
     // Determine which columns actually exist in the employees table
     $employeeColumns = [];
@@ -275,10 +296,12 @@ function esa_sync_from_employees_legacy($conn) {
 
     return mysqli_query($conn, $sql) !== false;
 }
+}
 
 /**
  * Returns a mapping of system codes to their database IDs for the current company
  */
+if (!function_exists("esa_system_access_id_map")) {
 function esa_system_access_id_map($conn) {
     $companyId = esa_current_company_id();
     $map = [];
@@ -291,10 +314,12 @@ function esa_system_access_id_map($conn) {
     }
     return $map;
 }
+}
 
 /**
  * Retrieves the catalog of available systems for a specific company
  */
+if (!function_exists("esa_get_system_access_catalog")) {
 function esa_get_system_access_catalog($conn, $companyId, $includeInactive = false) {
     $companyId = (int)$companyId;
     $rows = [];
@@ -330,11 +355,13 @@ function esa_get_system_access_catalog($conn, $companyId, $includeInactive = fal
 
     return $rows;
 }
+}
 
 /**
  * Gets a list of system IDs that a specific employee has access to.
  * Reads from legacy employee_system_access columns and maps them to system_access IDs.
  */
+if (!function_exists("esa_get_employee_access_ids")) {
 function esa_get_employee_access_ids($conn, $companyId, $employeeId) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
@@ -366,11 +393,13 @@ function esa_get_employee_access_ids($conn, $companyId, $employeeId) {
 
     return array_values(array_unique($ids));
 }
+}
 
 /**
  * Saves employee access permissions using system IDs.
  * Persists to the legacy employee_system_access matrix only.
  */
+if (!function_exists("esa_save_employee_access_ids")) {
 function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAccessIds) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
@@ -423,12 +452,14 @@ function esa_save_employee_access_ids($conn, $companyId, $employeeId, $systemAcc
 
     return mysqli_query($conn, $legacySql) !== false;
 }
+}
 
 /**
  * Gets the system access map for an employee
  * 
  * Reads from the legacy flat table.
  */
+if (!function_exists("esa_get_employee_access")) {
 function esa_get_employee_access($conn, $companyId, $employeeId) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
@@ -451,12 +482,14 @@ function esa_get_employee_access($conn, $companyId, $employeeId) {
 
     return $defaults;
 }
+}
 
 /**
  * Saves employee access using a payload of system codes
  * 
  * Saves to legacy storage.
  */
+if (!function_exists("esa_save_employee_access")) {
 function esa_save_employee_access($conn, $companyId, $employeeId, $payload) {
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
@@ -485,4 +518,5 @@ function esa_save_employee_access($conn, $companyId, $employeeId, $payload) {
         . 'ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
 
     return mysqli_query($conn, $legacySql) !== false;
+}
 }

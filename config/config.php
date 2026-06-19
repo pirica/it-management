@@ -1763,12 +1763,14 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $rowValues[$fieldName] = 'NULL';
             }
             $rowValidationError = '';
+            $providedFields = [];
 
             // Employee module: Pre-resolve department if present
             if ($tableName === 'employees') {
                 $rowValues['department_id'] = (string)$geralDeptId;
                 $deptValue = ($deptIndex >= 0) ? trim((string)($sourceRow[$deptIndex] ?? '')) : '';
                 if ($deptValue !== '' && $deptValue !== '—' && strcasecmp($deptValue, 'null') !== 0) {
+                    $providedFields[] = 'department_id';
                     $depNameEsc = mysqli_real_escape_string($conn, $deptValue);
                     $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$companyId . " AND name='" . $depNameEsc . "' LIMIT 1";
                     $depRes = mysqli_query($conn, $depSql);
@@ -1811,6 +1813,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                     $domain = strtolower(substr(strrchr((string)$rawValue, "@"), 1));
                     if (in_array($domain, $personalDomains, true)) {
                         $rowValues['personal_email'] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
+                        $providedFields[] = 'personal_email';
                         continue;
                     }
                 }
@@ -1826,6 +1829,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                     } elseif ($rowValidationError === '') {
                         $rowValidationError = 'Invalid boolean value for ' . $fieldName;
                     }
+                    $providedFields[] = $fieldName;
                     continue;
                 }
 
@@ -1929,6 +1933,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                             $rowValues[$fieldName] = (string)mysqli_insert_id($conn);
                         }
                     }
+                    $providedFields[] = $fieldName;
                     continue;
                 }
 
@@ -1938,6 +1943,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                     } elseif ($rowValidationError === '') {
                         $rowValidationError = 'Invalid numeric value for ' . $fieldName;
                     }
+                    $providedFields[] = $fieldName;
                     continue;
                 }
 
@@ -1953,6 +1959,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                         }
                     } else {
                         $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $normalizedDate) . "'";
+                        $providedFields[] = $fieldName;
                     }
                     continue;
                 }
@@ -1968,6 +1975,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                             }
                         } else {
                             $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $enumText) . "'";
+                            $providedFields[] = $fieldName;
                         }
                     }
                     continue;
@@ -1976,6 +1984,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $normalizedDate = itm_normalize_sql_date_literal($rawValue, $columnType);
                 if ($normalizedDate !== null) {
                     $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $normalizedDate) . "'";
+                    $providedFields[] = $fieldName;
                     continue;
                 }
 
@@ -1987,6 +1996,7 @@ if (!function_exists('itm_handle_json_table_import')) {
                 }
 
                 $rowValues[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
+                $providedFields[] = $fieldName;
             }
 
             if ($rowValidationError !== '') {
@@ -2052,10 +2062,17 @@ if (!function_exists('itm_handle_json_table_import')) {
 
             if ($existingId > 0) {
                 $updateParts = [];
-                foreach ($targetFields as $fieldName) {
+                $finalUpdateFields = array_intersect($targetFields, $providedFields);
+                foreach ($finalUpdateFields as $fieldName) {
                     if ($fieldName === 'company_id') continue;
                     $updateParts[] = '`' . str_replace('`', '``', $fieldName) . '` = ' . ($rowValues[$fieldName] ?? 'NULL');
                 }
+
+                if (empty($updateParts)) {
+                    $updatedRows++;
+                    continue;
+                }
+
                 $updateSql = "UPDATE `" . str_replace('`', '``', $tableName) . "` SET " . implode(', ', $updateParts) . " WHERE id = " . $existingId;
                 $dbErrorCode = 0;
                 $dbErrorMessage = '';
