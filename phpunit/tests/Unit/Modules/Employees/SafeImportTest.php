@@ -3,6 +3,8 @@ use PHPUnit\Framework\TestCase;
 
 class SafeImportTest extends TestCase
 {
+    use ItmModuleIsolatedTestTrait;
+
     private $conn;
 
     protected function setUp(): void
@@ -31,29 +33,27 @@ class SafeImportTest extends TestCase
         mysqli_stmt_execute($stmt2);
         mysqli_stmt_close($stmt2);
 
-        // Import only 'Keep Me'
-        $_SESSION['employee_id'] = 1;
-        $_SESSION['company_id'] = $companyId;
-        global $company_id;
-        $company_id = $companyId;
-        $_SESSION['csrf_token'] = 'test_token';
-        $_POST['csrf_token'] = 'test_token';
-        $_POST['action'] = 'import_employees';
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-
         $importData = [
             ['First Name', 'Last Name', 'Work Email'],
             ['Keep', 'Me', 'keep@example.com']
         ];
-        $_POST['import_payload'] = json_encode($importData);
 
-        $oldDir = getcwd();
-        chdir(ROOT_PATH . 'modules/employees');
-        ob_start();
-        global $conn;
-        include 'index.php';
-        ob_end_clean();
-        chdir($oldDir);
+        $this->runIsolatedModule(
+            ROOT_PATH . 'modules/employees/index.php',
+            [
+                'employee_id' => 1,
+                'company_id' => $companyId,
+                'csrf_token' => 'test_token',
+            ],
+            [
+                'csrf_token' => 'test_token',
+                'action' => 'import_employees',
+                'import_payload' => json_encode($importData),
+            ],
+            [],
+            ['REQUEST_METHOD' => 'POST'],
+            ['company_id' => $companyId]
+        );
 
         $stmt3 = mysqli_prepare($this->conn, "SELECT COUNT(*) as c FROM employees WHERE company_id = ? AND work_email IN (?, ?)");
         mysqli_stmt_bind_param($stmt3, 'iss', $companyId, $keepEmail, $otherEmail);
