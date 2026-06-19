@@ -669,10 +669,11 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 |------|--------|
 | **Purpose** | Verify the per-request prefetch cache in `has_module_access()` and batch registry ensure reduce sidebar-related query volume. |
 | **Method** | Uses `SHOW SESSION STATUS LIKE 'Questions'` (same pattern as `verify_metadata_column_cache.php`). Optimized path mirrors `includes/sidebar.php`: fresh `itm_sidebar_structure($conn, true)`, `itm_sidebar_item_catalog()`, then one `has_module_access()` per sidebar module slug. Legacy path re-runs uncached per-slug registry, admin, and CMA queries plus a separate per-slug registry ensure simulation. |
-| **CLI** | `php scripts/benchmark_sidebar_module_access.php` · `--company=1 --employee=1 --iterations=3` |
-| **Browser** | `scripts/benchmark_sidebar_module_access.php` (optional query params `company`, `employee`, `iterations`) |
+| **CLI** | `php scripts/benchmark_sidebar_module_access.php` · `--company=1 --employee=1 --iterations=3 --checks=100` |
+| **Browser** | `scripts/benchmark_sidebar_module_access.php` (optional query params `company`, `employee`, `iterations`, `checks`) |
 | **Shared lib** | `scripts/lib/itm_benchmark_sidebar_access.php` |
-| **PASS** | Median optimized full-path queries ≤ `ITM_BSMA_MAX_FULL_QUERIES` (default 45) **and** reduction vs legacy combined estimate ≥ `ITM_BSMA_MIN_REDUCTION_PCT` (default 50). |
+| **PASS** | Median optimized full-path queries ≤ `ITM_BSMA_MAX_FULL_QUERIES` (default 45) **and** reduction vs legacy combined estimate ≥ `ITM_BSMA_MIN_REDUCTION_PCT` (default 50). Component checks (BOLT journal): optimized `has_module_access` ×100 ≤ `ITM_BSMA_JOURNAL_ACCESS_OPTIMIZED_MAX` (default 5), legacy ×100 ≥ `ITM_BSMA_JOURNAL_ACCESS_LEGACY_MIN` (default 150), optimized `itm_sidebar_structure` ≤ `ITM_BSMA_JOURNAL_STRUCTURE_OPTIMIZED_MAX` (default 15), access-only timing reduction ≥ `ITM_BSMA_JOURNAL_TIMING_MIN_PCT` (default 50). |
+| **BOLT journal** | Reference claims (19-06-2026): full sidebar ~417→~7; `has_module_access` ×100 ~200→~2; `itm_sidebar_structure` ~171→~6; ~75% faster on mocked 100 checks. The script prints `[MATCH]` / `[DIFFERS]` vs measured values with tolerance; see `docs/bolt.md`. |
 | **Notes** | Read-only; no CMA mutations. Without prefetch cache helpers the optimized path stays high and the script warns. Absolute query totals vary by registry row count and discovery — compare optimized vs legacy on the same database rather than hard-coding ~417 or ~7. |
 
 Catalog: `scripts/scripts.php`.

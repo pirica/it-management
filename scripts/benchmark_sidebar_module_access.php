@@ -31,18 +31,24 @@ if (!function_exists('has_module_access') || !function_exists('itm_sidebar_struc
     exit(1);
 }
 
-$options = $isCli ? getopt('', ['company:', 'employee:', 'iterations:']) : [];
+$options = $isCli ? getopt('', ['company:', 'employee:', 'iterations:', 'checks:']) : [];
 $companyId = isset($options['company']) ? (int)$options['company'] : (int)($_GET['company'] ?? 1);
 $employeeId = isset($options['employee']) ? (int)$options['employee'] : (int)($_GET['employee'] ?? 1);
 $iterations = isset($options['iterations']) ? max(1, (int)$options['iterations']) : (int)($_GET['iterations'] ?? 3);
+$journalChecks = isset($options['checks']) ? max(1, (int)$options['checks']) : (int)($_GET['checks'] ?? 100);
 
 $maxFullQueries = (int)(getenv('ITM_BSMA_MAX_FULL_QUERIES') ?: 45);
 $minReductionPct = (float)(getenv('ITM_BSMA_MIN_REDUCTION_PCT') ?: 50.0);
+$journalAccessOptimizedMax = (int)(getenv('ITM_BSMA_JOURNAL_ACCESS_OPTIMIZED_MAX') ?: 5);
+$journalAccessLegacyMin = (int)(getenv('ITM_BSMA_JOURNAL_ACCESS_LEGACY_MIN') ?: 150);
+$journalStructureOptimizedMax = (int)(getenv('ITM_BSMA_JOURNAL_STRUCTURE_OPTIMIZED_MAX') ?: 15);
+$journalTimingMinPct = (float)(getenv('ITM_BSMA_JOURNAL_TIMING_MIN_PCT') ?: 50.0);
 
 echo colorText('Sidebar module-access benchmark (MySQL Questions counter)', 'info') . $nl;
 echo 'company_id=' . $companyId . ', employee_id=' . $employeeId . ', iterations=' . $iterations . $nl;
 echo 'PASS thresholds: optimized full path <= ' . $maxFullQueries . ' queries; legacy vs optimized reduction >= '
-    . $minReductionPct . '% on combined legacy estimate.' . $nl . $nl;
+    . $minReductionPct . '% on combined legacy estimate.' . $nl;
+echo 'BOLT journal component checks use ' . $journalChecks . ' mocked has_module_access iterations.' . $nl . $nl;
 
 // Why: Warm catalog once outside timed legacy measurements so slug lists match production sidebar.
 itm_sidebar_structure($conn, true);
@@ -125,6 +131,146 @@ if ($legacyFilter['elapsed_ms'] > 0) {
 echo 'Timing note: optimized full path median ' . $optimizedMedianMs . ' ms vs legacy filter-only '
     . $legacyFilter['elapsed_ms'] . ' ms (~' . $speedupPct . '% faster on filter portion; structure included in optimized only).' . $nl . $nl;
 
+$structureOnly = itm_bsma_run_optimized_structure_only($conn);
+$accessOptimized = itm_bsma_run_optimized_access_only($conn, $companyId, $employeeId, $moduleSlugs, $journalChecks);
+$accessLegacy = itm_bsma_run_legacy_access_only($conn, $companyId, $employeeId, $moduleSlugs, $journalChecks);
+
+if ($structureOnly === null || $accessOptimized === null || $accessLegacy === null) {
+    echo colorText('[FAIL] Unable to read Questions counter during BOLT journal component checks.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+$legacyStructureLegacy = (int)$structureOnly['queries'] + max(0, $legacyEnsureQueries - 1);
+$legacyFullEstimate = $legacyFilterQueries + $legacyStructureLegacy;
+$accessTimingPct = 0.0;
+if ($accessLegacy['elapsed_ms'] > 0) {
+    $accessTimingPct = round((1 - ($accessOptimized['elapsed_ms'] / (float)$accessLegacy['elapsed_ms'])) * 100, 1);
+}
+
+echo colorText('--- BOLT journal claim verification ---', 'info') . $nl;
+echo 'Reference journal (19-06-2026): full sidebar ~417→~7 queries; has_module_access ×100 ~200→~2; '
+    . 'itm_sidebar_structure ~171→~6; timing ~0.057s→~0.014s (~75% faster).' . $nl . $nl;
+
+$journalRows = [
+    [
+        'label' => 'Full sidebar path (optimized median)',
+        'actual' => $optimizedMedianQueries,
+        'claimed' => 7,
+        'tolerance' => 18,
+    ],
+    [
+        'label' => 'Full sidebar legacy estimate (filter+ensure+structure)',
+        'actual' => $legacyFullEstimate,
+        'claimed' => 417,
+        'tolerance' => 150,
+    ],
+    [
+        'label' => 'has_module_access ×' . $journalChecks . ' (optimized)',
+        'actual' => (int)$accessOptimized['queries'],
+        'claimed' => 2,
+        'tolerance' => 3,
+    ],
+    [
+        'label' => 'has_module_access ×' . $journalChecks . ' (legacy uncached registry+admin)',
+        'actual' => (int)$accessLegacy['queries'],
+        'claimed' => 200,
+        'tolerance' => 80,
+    ],
+    [
+        'label' => 'itm_sidebar_structure only (optimized)',
+        'actual' => (int)$structureOnly['queries'],
+        'claimed' => 6,
+        'tolerance' => 9,
+    ],
+];
+
+foreach ($journalRows as $journalRow) {
+    $match = itm_bsma_journal_claim_match((int)$journalRow['actual'], (int)$journalRow['claimed'], (int)$journalRow['tolerance']);
+    $tag = $match ? 'MATCH' : 'DIFFERS';
+    $type = $match ? 'pass' : 'warn';
+    echo colorText(
+        sprintf(
+            '[%s] %s: measured=%d (journal ~%d, ±%d)',
+            $tag,
+            $journalRow['label'],
+            $journalRow['actual'],
+            $journalRow['claimed'],
+            $journalRow['tolerance']
+        ),
+        $type
+    ) . $nl;
+}
+
+echo sprintf(
+    '[INFO] Access-only timing (%d checks): optimized=%.3fs, legacy=%.3fs, reduction=%.1f%% (journal ~75%%)' . $nl,
+    $journalChecks,
+    $accessOptimized['elapsed_ms'] / 1000,
+    $accessLegacy['elapsed_ms'] / 1000,
+    $accessTimingPct
+) . $nl;
+
+if ((int)$accessOptimized['queries'] > $journalAccessOptimizedMax) {
+    echo colorText(
+        '[FAIL] Optimized has_module_access ×' . $journalChecks . ' used '
+        . $accessOptimized['queries'] . ' queries (expected <= ' . $journalAccessOptimizedMax . ').',
+        'fail'
+    ) . $nl;
+    $failures++;
+} else {
+    echo colorText(
+        '[PASS] Optimized has_module_access ×' . $journalChecks . ' used '
+        . $accessOptimized['queries'] . ' queries (<= ' . $journalAccessOptimizedMax . ').',
+        'pass'
+    ) . $nl;
+}
+
+if ((int)$accessLegacy['queries'] < $journalAccessLegacyMin) {
+    echo colorText(
+        '[FAIL] Legacy has_module_access ×' . $journalChecks . ' used '
+        . $accessLegacy['queries'] . ' queries (expected >= ' . $journalAccessLegacyMin . ').',
+        'fail'
+    ) . $nl;
+    $failures++;
+} else {
+    echo colorText(
+        '[PASS] Legacy has_module_access ×' . $journalChecks . ' used '
+        . $accessLegacy['queries'] . ' queries (>= ' . $journalAccessLegacyMin . ').',
+        'pass'
+    ) . $nl;
+}
+
+if ((int)$structureOnly['queries'] > $journalStructureOptimizedMax) {
+    echo colorText(
+        '[FAIL] Optimized itm_sidebar_structure used '
+        . $structureOnly['queries'] . ' queries (expected <= ' . $journalStructureOptimizedMax . ').',
+        'fail'
+    ) . $nl;
+    $failures++;
+} else {
+    echo colorText(
+        '[PASS] Optimized itm_sidebar_structure used '
+        . $structureOnly['queries'] . ' queries (<= ' . $journalStructureOptimizedMax . ').',
+        'pass'
+    ) . $nl;
+}
+
+if ($accessTimingPct + 0.001 < $journalTimingMinPct) {
+    echo colorText(
+        '[FAIL] Access-only timing reduction ' . $accessTimingPct . '% is below '
+        . $journalTimingMinPct . '% (journal ~75%).',
+        'fail'
+    ) . $nl;
+    $failures++;
+} else {
+    echo colorText(
+        '[PASS] Access-only timing reduction ' . $accessTimingPct . '% meets minimum '
+        . $journalTimingMinPct . '%.',
+        'pass'
+    ) . $nl;
+}
+
+echo $nl;
 if ($optimizedMedianQueries > $maxFullQueries) {
     echo colorText(
         '[FAIL] Optimized full path median ' . $optimizedMedianQueries

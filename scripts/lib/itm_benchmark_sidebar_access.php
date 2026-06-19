@@ -253,6 +253,159 @@ if (!function_exists('itm_bsma_simulate_legacy_registry_ensure')) {
     }
 }
 
+if (!function_exists('itm_bsma_repeat_slugs_for_checks')) {
+    /**
+     * @param array<int,string> $moduleSlugs
+     * @return array<int,string>
+     */
+    function itm_bsma_repeat_slugs_for_checks(array $moduleSlugs, int $checkCount): array
+    {
+        if ($checkCount <= 0 || !$moduleSlugs) {
+            return [];
+        }
+
+        $repeated = [];
+        $total = count($moduleSlugs);
+        for ($i = 0; $i < $checkCount; $i++) {
+            $repeated[] = (string)$moduleSlugs[$i % $total];
+        }
+
+        return $repeated;
+    }
+}
+
+if (!function_exists('itm_bsma_run_optimized_structure_only')) {
+    /**
+     * @return array{queries:int,elapsed_ms:float,sections:int}|null
+     */
+    function itm_bsma_run_optimized_structure_only(mysqli $conn): ?array
+    {
+        if (function_exists('itm_has_module_access_bust_cache')) {
+            itm_has_module_access_bust_cache();
+        }
+
+        $before = itm_bsma_session_questions($conn);
+        if ($before === null) {
+            return null;
+        }
+
+        $started = microtime(true);
+        $structure = itm_sidebar_structure($conn, true);
+        $elapsedMs = (microtime(true) - $started) * 1000;
+
+        $after = itm_bsma_session_questions($conn);
+        if ($after === null) {
+            return null;
+        }
+
+        return [
+            'queries' => $after - $before - 1,
+            'elapsed_ms' => round($elapsedMs, 2),
+            'sections' => count($structure),
+        ];
+    }
+}
+
+if (!function_exists('itm_bsma_run_optimized_access_only')) {
+    /**
+     * @param array<int,string> $moduleSlugs
+     * @return array{queries:int,checks:int,elapsed_ms:float}|null
+     */
+    function itm_bsma_run_optimized_access_only(mysqli $conn, int $companyId, int $employeeId, array $moduleSlugs, int $checkCount): ?array
+    {
+        $_SESSION['company_id'] = $companyId;
+        $_SESSION['employee_id'] = $employeeId;
+
+        if (function_exists('itm_has_module_access_bust_cache')) {
+            itm_has_module_access_bust_cache();
+        }
+
+        $checks = itm_bsma_repeat_slugs_for_checks($moduleSlugs, $checkCount);
+        if (!$checks) {
+            return null;
+        }
+
+        $before = itm_bsma_session_questions($conn);
+        if ($before === null) {
+            return null;
+        }
+
+        $started = microtime(true);
+        foreach ($checks as $moduleSlug) {
+            has_module_access($conn, $companyId, $moduleSlug);
+        }
+        $elapsedMs = (microtime(true) - $started) * 1000;
+
+        $after = itm_bsma_session_questions($conn);
+        if ($after === null) {
+            return null;
+        }
+
+        return [
+            'queries' => $after - $before - 1,
+            'checks' => count($checks),
+            'elapsed_ms' => round($elapsedMs, 2),
+        ];
+    }
+}
+
+if (!function_exists('itm_bsma_run_legacy_access_only')) {
+    /**
+     * @param array<int,string> $moduleSlugs
+     * @return array{queries:int,checks:int,elapsed_ms:float}|null
+     */
+    function itm_bsma_run_legacy_access_only(mysqli $conn, int $companyId, int $employeeId, array $moduleSlugs, int $checkCount): ?array
+    {
+        $checks = itm_bsma_repeat_slugs_for_checks($moduleSlugs, $checkCount);
+        if (!$checks) {
+            return null;
+        }
+
+        $before = itm_bsma_session_questions($conn);
+        if ($before === null) {
+            return null;
+        }
+
+        $started = microtime(true);
+        $alwaysAllowed = function_exists('itm_module_access_always_allowed_slugs')
+            ? itm_module_access_always_allowed_slugs()
+            : ['settings'];
+
+        foreach ($checks as $moduleSlug) {
+            if (in_array($moduleSlug, $alwaysAllowed, true)) {
+                continue;
+            }
+            if (!function_exists('itm_module_access_table_exists')
+                || !itm_module_access_table_exists($conn, 'modules_registry')
+                || !itm_module_access_table_exists($conn, 'company_module_access')) {
+                continue;
+            }
+
+            itm_module_access_registry_row($conn, $moduleSlug);
+            itm_bsma_legacy_admin_query($conn, $employeeId);
+        }
+
+        $elapsedMs = (microtime(true) - $started) * 1000;
+        $after = itm_bsma_session_questions($conn);
+        if ($after === null) {
+            return null;
+        }
+
+        return [
+            'queries' => $after - $before - 1,
+            'checks' => count($checks),
+            'elapsed_ms' => round($elapsedMs, 2),
+        ];
+    }
+}
+
+if (!function_exists('itm_bsma_journal_claim_match')) {
+    function itm_bsma_journal_claim_match(int $actual, int $claimed, int $tolerance): bool
+    {
+        return abs($actual - $claimed) <= $tolerance;
+    }
+}
+
 if (!function_exists('itm_bsma_median')) {
     /**
      * @param array<int,float|int> $values
