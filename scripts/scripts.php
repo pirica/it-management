@@ -728,6 +728,18 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/apply_itm_actions_cell_markers.php</code> from repository root (Windows Laragon: full PHP 7.4 path). Updates <code>modules/*/index.php</code> and <code>modules/*/includes/partials/render.php</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_ui_action_emoji.php">apply_ui_action_emoji.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>One-time/maintenance: bulk replace simple NO MIXED markup (disk emoji + Save word) → emoji-only + <code>title</code> on modules and shared UI files.</td>
+                    <td><code>php scripts/apply_ui_action_emoji.php</code> dry-run default; <code>--apply</code> writes. Skip PHP ternaries / JS templates — fix manually.</td>
+                </tr>
+                <tr>
+                    <td><a href="check_ui_action_emoji.php">check_ui_action_emoji.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: NO MIXED gate on <code>&lt;a&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;h1&gt;</code>–<code>&lt;h3&gt;</code> — seven emoji+word regex families, known compound literals, plain-text action outliers, header <code>intentRules</code> drift.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_ui_action_emoji.php</code> — exit <code>0</code> when <strong>0 violations incl. mixed emoji+word</strong>; exit <code>1</code> on any match. Run after UI label changes.</td>
+                </tr>
+                <tr>
                     <td><a href="check_display_field_columns_search.php">check_display_field_columns_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>

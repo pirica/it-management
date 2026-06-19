@@ -98,7 +98,7 @@ $csrfToken = itm_get_csrf_token();
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">📤 Import</button>
-                    <a href="index.php" class="btn">🔙 Back</a>
+                    <a href="index.php" class="btn" title="Back">🔙</a>
                 </div>
             </form>
         </div>

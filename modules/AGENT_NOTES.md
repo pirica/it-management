@@ -11,6 +11,7 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 - Every module folder **must** have its own `AGENT_NOTES.md` (template: `templates/AGENT_NOTES.md`).
 - **Protection Zone** modules (`equipment`, `employees`, `contacts`, `idfs*`, `audit_logs`, `settings`, `employee_companies`, `employee_system_access`, `cable_colors`, `ui_configuration`) — no logic changes unless explicitly requested.
 - Standard flattened CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
+- **UI action labels (NO MIXED):** View `🔎`, Edit `✏️`, Delete `🗑️`, Back/Cancel (forms/modals) `🔙`, Create/New/Add `➕`, Save `💾` — emoji-only visible text on `<a>`, `<button>`, `<input>`, and `<h1>`–`<h3>`; full phrases in `title`/`aria-label` only. Reference: `modules/manufacturers/`. Audit: `php scripts/check_ui_action_emoji.php`. See **`AGENTS.md` → UI action labels (NO MIXED)**.
 - **`is_*` façades** delegate to `modules/equipment/` — do not delete canonical wrappers.
 
 ## 7. File Structure

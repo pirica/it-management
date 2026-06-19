@@ -408,7 +408,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import**.
 
-Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
+Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
@@ -743,6 +743,32 @@ When adding or changing anything under `scripts/`:
 2. Open the script in the **browser** (if applicable) — **← Scripts index** visible; module names use `../modules/…`; table names link only when a matching module folder exists; no phpMyAdmin links outside `scripts/scripts.php`.
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
+
+**UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
+
+```bash
+php scripts/check_ui_action_emoji.php   # 0 violations incl. mixed emoji+word
+php -l includes/itm_ui_action_labels.php
+bash scripts/smoke_test.sh
+```
+
+**NO MIXED patterns** (hard fail — emoji immediately followed by action word on interactive controls/headings):
+
+| Pattern | Examples |
+|---------|----------|
+| `💾\s*Save` | `💾 Save`, `💾 Save Changes` |
+| `🔙\s*Back` | `🔙 Back` |
+| `🔙\s*Cancel` | `🔙 Cancel` |
+| `✏️\s*Edit` | `✏️ Edit`, `✏️ Edit Folder` |
+| `🗑️\s*Delete` | `🗑️ Delete` |
+| `➕\s*(Create\|New\|Add)` | `➕ New Task`, `➕ Add Bookmark` |
+| `🔎\s*View` | `🔎 View Ticket Details` |
+
+**Known literals:** View Ticket Details, Edit Ticket, New Equipment, Create IDF, Edit IDF, View Employee System Access.
+
+**Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; pagination Previous/Next; bulk Select to Delete / Clear Table; submit Search; descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment.
+
+**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default); `--apply` for simple mixed markup. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 
 ---
 

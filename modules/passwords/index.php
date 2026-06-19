@@ -178,7 +178,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                         <div class="card" style="margin-top: 20px;">
                             <h3>📁 Folders</h3>
                             <div id="folder-tree" class="folder-tree-container"><div class="text-muted">Loading...</div></div>
-                            <button class="btn btn-sm btn-primary" style="width: 100%;" onclick="openFolderModal(0)">➕ New Folder</button>
+                            <button class="btn btn-sm btn-primary" style="width: 100%;" onclick="openFolderModal(0)" title="New folder">➕</button>
                         </div>
                     </div>
                     <div class="main-panel">
@@ -248,7 +248,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group"><label>Website</label><input type="url" name="website" id="entry-website" class="form-control" placeholder="https://"></div>
                     <div class="form-group"><label>Comments</label><textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" title="Cancel">🔙</button><button type="submit" class="btn btn-primary" title="Save">💾</button></div>
             </form>
         </div>
     </div>
@@ -268,7 +268,7 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
                     <div class="form-group"><label>Folder Name</label><input type="text" name="name" id="folder-name" class="form-control" required></div>
                     <div class="form-group"><label>Parent Folder</label><select name="parent_id" id="folder-parent_id" class="form-control"><option value="0">-- Root --</option></select></div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="$(this).closest('.modal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');" title="Cancel">🔙</button><button type="submit" class="btn btn-primary" title="Save">💾</button></div>
             </form>
         </div>
     </div>

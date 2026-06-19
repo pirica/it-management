@@ -598,7 +598,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
             <?php if ($crud_action === 'index' || $crud_action === 'list_all'): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($moduleListHeading); ?></h1>
-                    <a href="create.php" class="btn btn-primary">➕ New Floor Plan</a>
+                    <a href="create.php" class="btn btn-primary" title="New floor plan">➕</a>
                 </div>
                 <div class="card">
                     <table data-itm-db-import-endpoint="index.php">
@@ -803,9 +803,9 @@ $moduleListHeading = '🧩 ' . $crud_title;
                         </div>
                     </div>
                     <div class="form-actions" style="margin-top:25px; border-top:1px solid #d0d7de; padding-top:15px; display:flex; justify-content: flex-end; gap:10px;">
-                        <button class="btn btn-primary" onclick="savePointData()">💾 Save Changes</button>
-                        <button class="btn btn-danger" id="btn-delete-point" onclick="deletePointData()">🗑️ Delete</button>
-                        <button class="btn" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="savePointData()" title="Save">💾</button>
+                        <button class="btn btn-danger" id="btn-delete-point" onclick="deletePointData()" title="Delete">🗑️</button>
+                        <button class="btn" onclick="closeModal()" title="Cancel">🔙</button>
                     </div>
                 </div>
 
@@ -1214,8 +1214,8 @@ $moduleListHeading = '🧩 ' . $crud_title;
                          <button class="btn btn-sm" onclick="saveToGallery('pdf')">📄 Save PDF to Gallery</button>
                          <button class="btn btn-sm" onclick="exportPNG()">🖼️ Export PNG</button>
                          <button class="btn btn-sm" onclick="exportPDF()">📄 Export PDF</button>
-                         <a class="btn btn-sm btn-primary" href="edit.php?id=<?php echo (int)$data['id']; ?>">✏️ Edit</a>
-                         <a href="index.php" class="btn btn-sm">🔙 Back</a>
+                         <a class="btn btn-sm btn-primary" href="edit.php?id=<?php echo (int)$data['id']; ?>" title="Edit">✏️</a>
+                         <a href="index.php" class="btn btn-sm" title="Back">🔙</a>
                     </div>
                 </div>
 

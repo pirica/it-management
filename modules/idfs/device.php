@@ -1739,7 +1739,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                             <td><?php echo sanitize(idf_normalize_port_notes_value($p['notes'] ?? '')); ?></td>
                             <td><?php echo $linkText ?: '<span style="opacity:.75;">-</span>'; ?></td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)">Edit</button>
+                                <button class="btn btn-sm" type="button" onclick="openPortModal(<?php echo (int)$p['id']; ?>)" title="Edit">✏️</button>
                                 <?php if ($canEditLinkedSwitch): ?>
                                     <a class="btn btn-sm" href="<?php echo $editLinkedUrl; ?>">Edit Linked</a>
                                 <?php endif; ?>
@@ -1885,8 +1885,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 <input class="input" name="notes">
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn" type="button" onclick="closePortModal()">Cancel</button>
-                <button class="btn" type="button" onclick="savePort()">Save</button>
+                <button class="btn" type="button" onclick="closePortModal()" title="Cancel">🔙</button>
+                <button class="btn" type="button" onclick="savePort()" title="Save">💾</button>
             </div>
         </form>
     </div>
@@ -2034,7 +2034,7 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
                 </div>
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn" type="button" onclick="closeLinkModal()">Cancel</button>
+                <button class="btn" type="button" onclick="closeLinkModal()" title="Cancel">🔙</button>
                 <button class="btn" type="button" onclick="createLink()">Create link</button>
             </div>
         </form>
@@ -2059,8 +2059,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
-            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)">Cancel</button>
-            <button class="btn btn-sm" type="button" onclick="saveCableColorFromModal()">Save</button>
+            <button class="btn btn-sm" type="button" onclick="closeCableColorModal(false)" title="Cancel">🔙</button>
+            <button class="btn btn-sm" type="button" onclick="saveCableColorFromModal()" title="Save">💾</button>
         </div>
     </div>
 </div>
@@ -2076,8 +2076,8 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
             <input class="input" id="statusModalInput" type="text" placeholder="Type new status">
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
-            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)">Cancel</button>
-            <button class="btn btn-sm" type="button" onclick="saveStatusFromModal()">Save</button>
+            <button class="btn btn-sm" type="button" onclick="closeStatusModal(false)" title="Cancel">🔙</button>
+            <button class="btn btn-sm" type="button" onclick="saveStatusFromModal()" title="Save">💾</button>
         </div>
     </div>
 </div>

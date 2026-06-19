@@ -47,7 +47,7 @@ $fpCreateUrl = $modulePath . '/create.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-sm">Create</button>
+                <button type="submit" class="btn btn-primary btn-sm" title="Create">➕</button>
             </form>
         </details>
         <?php if ($galleryFolderId > 0): ?>
@@ -88,7 +88,7 @@ $fpCreateUrl = $modulePath . '/create.php';
                         <label>Name</label>
                         <input type="text" name="folder_name" value="<?php echo sanitize($fpCurrentFolderName); ?>" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button type="submit" class="btn btn-primary btn-sm" title="Save">💾</button>
                 </form>
             </details>
             <form method="POST" onsubmit="return confirm('Delete this folder? It must be empty.');">

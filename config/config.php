@@ -258,6 +258,7 @@ require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/employee_dropdown_helpers.php';
+require_once ROOT_PATH . 'includes/itm_ui_action_labels.php';
 
 // Ensure required upload and backup directories exist (writable, non-executable over HTTP)
 itm_ensure_upload_directory(UPLOAD_PATH, 'upload');

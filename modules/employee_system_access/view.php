@@ -61,7 +61,7 @@ if ($employee) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Employee System Access</title>
+    <title>Employee system access</title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -70,7 +70,7 @@ if ($employee) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1>🔎 View Employee System Access</h1>
+            <h1 title="View employee system access">🔎</h1>
 
             <div class="card">
                 <?php if (!$employee): ?>

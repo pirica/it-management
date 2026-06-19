@@ -1038,8 +1038,8 @@ foreach ($equipmentOptions as $equipmentOption) {
                                         <button class="btn btn-sm idf-mini" type="button" onclick="idfMove(<?php echo $idf_id; ?>, <?php echo $i; ?>, 'down')">↓</button>
 
                                         <?php if ($pos): ?>
-                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>&amp;return_idf=<?php echo (int)$idf_id; ?>">View</a>
-                                            <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Edit</button>
+                                            <a class="btn btn-sm idf-mini" href="device.php?position_id=<?php echo (int)$pos['id']; ?>&amp;return_idf=<?php echo (int)$idf_id; ?>" title="View">🔎</a>
+                                            <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)" title="Edit">✏️</button>
                                             <?php
                                             $idfEquipmentIdRaw = isset($pos['equipment_id']) ? trim((string)$pos['equipment_id']) : '';
                                             $idfShowEditLinked = ($idfEquipmentIdRaw !== '' && strpos($idfEquipmentIdRaw, '-') === false);
@@ -1048,7 +1048,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                                                 <a class="btn btn-sm idf-mini" href="../equipment/index.php?switch_id=<?php echo (int)$idfEquipmentIdRaw; ?>&spm=1#switch-port-manager">Edit Linked</a>
                                             <?php endif; ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openCopyModal(<?php echo $i; ?>, <?php echo (int)$pos['id']; ?>)">Copy to…</button>
-                                            <button class="btn btn-sm idf-mini" type="button" data-device-name="<?php echo htmlspecialchars((string)($pos['device_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, this.dataset.deviceName)">Delete</button>
+                                            <button class="btn btn-sm idf-mini" type="button" data-device-name="<?php echo htmlspecialchars((string)($pos['device_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" onclick="idfDeleteDevice(<?php echo (int)$pos['id']; ?>, this.dataset.deviceName)" title="Delete">🗑️</button>
                                         <?php else: ?>
                                             <button class="btn btn-sm idf-mini" type="button" onclick="openDeviceModal(<?php echo $i; ?>, null)">Add device</button>
                                         <?php endif; ?>
@@ -1166,8 +1166,8 @@ foreach ($equipmentOptions as $equipmentOption) {
             </div>
 
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn" type="button" onclick="closeModal()">Cancel</button>
-                <button class="btn" type="button" onclick="saveDevice()">Save</button>
+                <button class="btn" type="button" onclick="closeModal()" title="Cancel">🔙</button>
+                <button class="btn" type="button" onclick="saveDevice()" title="Save">💾</button>
             </div>
         </form>
     </div>
@@ -1199,7 +1199,7 @@ foreach ($equipmentOptions as $equipmentOption) {
                 </select>
             </div>
             <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn" type="button" onclick="closeCopy()">Cancel</button>
+                <button class="btn" type="button" onclick="closeCopy()" title="Cancel">🔙</button>
                 <button class="btn" type="button" onclick="copyDevice()">Copy</button>
             </div>
         </form>

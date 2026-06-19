@@ -231,7 +231,7 @@ $messageStyle = ($message_type === 'info') ? 'background: #e8f1ff; border:1px so
                                 <label>Current System Password (required to save any changes)</label>
                                 <input type="password" name="current_password_verify" required>
                             </div>
-                            <button class="btn btn-primary" type="submit">💾 Save Changes</button>
+                            <button class="btn btn-primary" type="submit" title="Save">💾</button>
                         </div>
                     </form>
                 </div>

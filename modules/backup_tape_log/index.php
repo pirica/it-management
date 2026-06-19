@@ -672,8 +672,8 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                         <?php endif; ?>
 
                         <div class="form-actions">
-                            <button class="btn btn-primary" type="submit">💾 Save</button>
-                            <a href="index.php" class="btn">🔙 Cancel</a>
+                            <button class="btn btn-primary" type="submit" title="Save">💾</button>
+                            <a href="index.php" class="btn" title="Cancel">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -693,9 +693,9 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
                         <tr><th>ISM Review?</th><td><?= $data['ism_review'] ? '✅ Yes' : '❌ No' ?></td></tr>
                     </table>
                     <div style="margin-top:20px;">
-                        <a href="index.php" class="btn">🔙 Back</a>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
                         <?php if (btl_is_today($data['log_date'])): ?>
-                            <a href="edit.php?id=<?= $data['id'] ?>" class="btn btn-primary">✏️ Edit</a>
+                            <a href="edit.php?id=<?= $data['id'] ?>" class="btn btn-primary" title="Edit">✏️</a>
                         <?php endif; ?>
                     </div>
                 </div>

@@ -87,8 +87,8 @@ $csrfToken = itm_get_csrf_token();
                 </label>
             </div>
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">💾 Save</button>
-                <a href="index.php" class="btn">🔙 Back</a>
+                <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                <a href="index.php" class="btn" title="Back">🔙</a>
             </div>
         </form>
     </div>

@@ -431,7 +431,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                             </td>
                             <td>—</td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                <button type="submit" form="quick-add-form" class="btn btn-sm btn-primary">Save</button>
+                                <button type="submit" form="quick-add-form" class="btn btn-sm btn-primary" title="Save">💾</button>
                             </td>
                         </tr>
 

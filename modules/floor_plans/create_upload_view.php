@@ -33,7 +33,7 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
     </div>
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">Upload</button>
-        <a href="index.php" class="btn">Cancel</a>
+        <a href="index.php" class="btn" title="Cancel">🔙</a>
     </div>
 </form>
 

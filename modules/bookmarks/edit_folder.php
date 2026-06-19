@@ -110,8 +110,8 @@ $csrfToken = itm_get_csrf_token();
                     </label>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
-                    <a href="index.php" class="btn">🔙 Back</a>
+                    <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                    <a href="index.php" class="btn" title="Back">🔙</a>
                 </div>
             </form>
 
@@ -122,7 +122,7 @@ $csrfToken = itm_get_csrf_token();
                     <form method="POST" action="delete_folder.php" onsubmit="return confirm('Are you sure you want to delete this folder? Bookmarks will be moved to root.');">
                         <input type="hidden" name="id" value="<?php echo $id; ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button class="btn btn-danger" type="submit" style="width: 100%;">🗑️ Delete Folder</button>
+                        <button class="btn btn-danger" type="submit" style="width: 100%;" title="Delete">🗑️</button>
                     </form>
                 </div>
             <?php endif; ?>

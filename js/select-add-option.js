@@ -441,7 +441,7 @@
 
             const actions = document.createElement('div');
             actions.className = 'itm-add-option-actions';
-            actions.innerHTML = '<button type="button" data-cancel="1">Cancel</button><button type="submit">Save</button>';
+            actions.innerHTML = '<button type="button" data-cancel="1" title="Cancel">🔙</button><button type="submit" title="Save">💾</button>';
             form.appendChild(actions);
 
             function close(result) {

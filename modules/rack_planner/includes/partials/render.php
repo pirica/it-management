@@ -512,8 +512,8 @@
                     </div>
 
                     <div class="form-actions">
-                        <button class="btn btn-primary" type="submit">Save</button>
-                        <a href="index.php" class="btn">Cancel</a>
+                        <button class="btn btn-primary" type="submit" title="Save">💾</button>
+                        <a href="index.php" class="btn" title="Cancel">🔙</a>
                     </div>
                 </form>
 
@@ -645,7 +645,7 @@
                             </div>
                             <div class="rack-unit-modal-actions">
                                 <button type="button" class="btn btn-sm" id="rackEditPriceBtn" hidden>Edit Price</button>
-                                <button type="button" class="btn btn-sm btn-primary" id="rackSaveCatalogBtn" hidden>Save</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="rackSaveCatalogBtn" hidden title="Save">💾</button>
                             </div>
                             <div class="rack-unit-modal-row is-hidden" id="placeholderMessageRow">
                                 <label for="placeholderMessageInput">Message</label>
@@ -669,7 +669,7 @@
                             <p class="rack-unit-modal-note">Leave empty to skip. Empty component cannot have a price.</p>
                             <div class="rack-unit-modal-actions">
                                 <button type="button" class="btn btn-sm" id="rackPriceSkipBtn">Skip</button>
-                                <button type="button" class="btn btn-sm btn-primary" id="rackPriceSaveBtn">Save</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="rackPriceSaveBtn" title="Save">💾</button>
                             </div>
                         </div>
                     </div>
@@ -680,8 +680,8 @@
                 <div class="rack-planner-header">
                     <h1>View Rack Plan: <?php echo sanitize($data['name']); ?></h1>
                     <div>
-                        <a href="edit.php?id=<?php echo $data['id']; ?>" class="btn btn-primary">✏️ Edit</a>
-                        <a href="index.php" class="btn">🔙 Back</a>
+                        <a href="edit.php?id=<?php echo $data['id']; ?>" class="btn btn-primary" title="Edit">✏️</a>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
                     </div>
                 </div>
 

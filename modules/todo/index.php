@@ -450,7 +450,7 @@ if ($crud_action === "index") {
                         <div class="todo-header">
                             
                                 
-                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);">➕ New Task</a><br>
+                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);" title="New task">➕</a><br>
 							<h1>
                                 <?php
                                     if ($filter === "my_day") echo "☀️ My Day";
@@ -532,7 +532,7 @@ if ($crud_action === "index") {
                             <div style="display: flex; align-items: center; width: 100%;">
                                 <div class="quick-add-icon" onclick="quickAdd()" style="cursor: pointer; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">➕</div>
                                 <input type="text" id="quickAddInput" placeholder="Add a task" onkeypress="if(event.key==='Enter') quickAdd()" style="flex: 1; margin-right: 15px; border: 1px solid var(--border);">
-                                <button class="btn btn-primary" onclick="quickAdd()" style="padding: 6px 20px; font-weight: 500; border-radius: 6px;">Add</button>
+                                <button class="btn btn-primary" onclick="quickAdd()" style="padding: 6px 20px; font-weight: 500; border-radius: 6px;" title="Add">➕</button>
                             </div>
   <div class="quick-add-actions">
 
@@ -914,10 +914,10 @@ if ($crud_action === "index") {
                                 </label>
                             </div>
                             <div class="form-actions" style="margin-top: 30px;">
-                                <button class="btn btn-primary" type="submit">💾 Save</button>
-                                <a href="index.php" class="btn">🔙 Cancel</a>
+                                <button class="btn btn-primary" type="submit" title="Save">💾</button>
+                                <a href="index.php" class="btn" title="Cancel">🔙</a>
                                 <?php if ($crud_action === "edit"): ?>
-                                    <button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this task?')">🗑️ Delete</button>
+                                    <button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this task?')" title="Delete">🗑️</button>
                                 <?php endif; ?>
                             </div>
                         </form>
@@ -997,8 +997,8 @@ if ($crud_action === "index") {
                             </table>
 
                             <div class="form-actions" style="margin-top: 30px;">
-                                <a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary">✏️ Edit</a>
-                                <a href="index.php" class="btn">🔙 Back</a>
+                                <a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary" title="Edit">✏️</a>
+                                <a href="index.php" class="btn" title="Back">🔙</a>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -1324,7 +1324,7 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn" onclick="closeDatePickerModal()">Cancel</button>
+                <button type="button" class="btn" onclick="closeDatePickerModal()" title="Cancel">🔙</button>
                 <button type="button" class="btn btn-primary" onclick="saveQuickDate()">Set Date</button>
             </div>
         </div>
