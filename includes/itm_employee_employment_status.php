@@ -68,3 +68,38 @@ if (!function_exists('itm_employee_has_active_employment_status')) {
         return $found;
     }
 }
+
+if (!function_exists('itm_employee_resolve_active_status_id')) {
+    /**
+     * Tenant-scoped Active status id for new accounts (registration, scripts).
+     */
+    function itm_employee_resolve_active_status_id($conn, $companyId)
+    {
+        if (!($conn instanceof mysqli)) {
+            return 0;
+        }
+
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employee_statuses
+             WHERE company_id = ? AND LOWER(TRIM(name)) = "active"
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $statusId);
+        $found = mysqli_stmt_fetch($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $found ? (int)$statusId : 0;
+    }
+}

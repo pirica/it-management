@@ -91,7 +91,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report, human-readable results, <code>target="_blank"</code> relative links to <code>../modules/…</code> when a module folder exists, and table names linked only when <code>modules/&lt;table&gt;/</code> exists. <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin/</code>) is linked from this catalog page only—not inside other scripts.
         </p>
         <p class="scripts-muted">
-            <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>tickets_related_asset_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
+            <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_asset_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
         </p>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
@@ -1171,6 +1171,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable users via <code>itm_script_test_employee.php</code>.</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="auth_register_reset_human_test.php">auth_register_reset_human_test.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Human-style auth regression: invitation create, register INSERT with tenant Active employment status, login lookup + <code>password_verify</code>, reset-token password change, and <code>mysqli_stmt_bind_param</code> contracts on public auth pages. <strong>Mutates DB:</strong> disposable invitations and <code>script-*</code> employees (teardown on exit).</td>
+                    <td><code>php scripts/auth_register_reset_human_test.php</code> — default companies 1–2; <code>php scripts/auth_register_reset_human_test.php --company=2</code>. Run after <code>register.php</code>, <code>login.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_invitations_escalation.php">verify_invitations_escalation.php</a></td>
