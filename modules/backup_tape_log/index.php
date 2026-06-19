@@ -46,7 +46,7 @@ if (!function_exists('btl_format_datetime')) {
 }
 
 // Permission Check: Admin or IT Department
-$is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
+$is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
 $is_it_staff = false;
 
 $stmt = mysqli_prepare($conn, "SELECT d.name FROM employees e JOIN departments d ON e.department_id = d.id WHERE e.id = ? AND e.company_id = ?");

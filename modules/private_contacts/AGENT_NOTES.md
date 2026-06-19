@@ -7,11 +7,11 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - **private_contacts** — contact records scoped by `employee_id` and `company_id`.
 
 ## 3. Required Relationships
-- **private_contacts** → depends on **companies**, **users**.
-- Photos stored under `files/{company_id}/Private/{username}_{user_id}/private_contacts/`.
+- **private_contacts** → depends on **companies**, **employees**.
+- Photos stored under `files/{company_id}/Private/{username}_{employee_id}/private_contacts/`.
 
 ## 4. Business Rules (Critical for Agents)
-- **Strict user isolation:** all queries must include `user_id = logged-in user`. Never show another user's private contacts.
+- **Strict user isolation:** all queries must include `employee_id = logged-in employee`. Never show another user's private contacts.
 - Favourite toggle and delete are POST + CSRF (`index_logic.php`).
 - Distinct from `modules/contacts/` (company directory / Protection Zone).
 

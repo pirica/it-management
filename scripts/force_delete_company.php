@@ -92,7 +92,7 @@ if ($itmIsCli) {
 }
 
 // Browser Access Control: Admin only
-if (strtolower($_SESSION['role_name'] ?? '') !== 'admin') {
+if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
     header('HTTP/1.1 403 Forbidden');
     echo "<h1>403 Forbidden</h1><p>Only administrators can access this tool.</p>";
     die();

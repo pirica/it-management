@@ -281,16 +281,16 @@ Do not keep price edits only inside `rack_planner.layout_json`; source tables mu
 
 The explorer module (`modules/explorer/`) provides a secure, multi-tenant file system.
 
-1. **Storage:** Anchored at `files/{company_id}/` and subdivided into `Common/` (all company users), `Departments/{dept_id}/` (department members only), `Private/{username}_{user_id}/` (owner only), and `Trash/` (soft-delete paths mirroring live layout).
+1. **Storage:** Anchored at `files/{company_id}/` and subdivided into `Common/` (all company users), `Departments/{dept_id}/` (department members only), `Private/{username}_{employee_id}/` (owner only; legacy installs may still use `{username}_{linked_user_id}/`), and `Trash/` (soft-delete paths mirroring live layout).
 2. **Access control (API):**
     - Segment-boundary checks in `get_full_path()` — normalize backslashes to `/`, trim slashes, block `..`.
-    - Users may access `Common`, their `Departments/{dept_id}`, and their own `Private/{username}_{user_id}` only.
-    - **API blocks `Private` and `Departments` roots** (`get_full_path` returns null). Prevents ZIP/list leaks across users or departments. UI **must** use `resolveScopedFolderPath()` in `index.php` to open `Private/{username}_{user_id}` and `Departments/{dept_id}` (sidebar, double-click, favourites).
+    - Users may access `Common`, their `Departments/{dept_id}`, and their own `Private/{username}_{employee_id}` only.
+    - **API blocks `Private` and `Departments` roots** (`get_full_path` returns null). Prevents ZIP/list leaks across users or departments. UI **must** use `resolveScopedFolderPath()` in `index.php` to open `Private/{username}_{employee_id}` and `Departments/{dept_id}` (sidebar, double-click, favourites).
     - Creation or upload of items is blocked directly in `Home` (root), `Private` root, and `Departments` root.
     - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage.
-3. **Protected folders:** Top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. The user's primary private folder (`Private/{username}_{user_id}`) cannot be renamed, moved, or deleted.
+3. **Protected folders:** Top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. The user's primary private folder (`Private/{username}_{employee_id}`) cannot be renamed, moved, or deleted.
 4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
-5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{user_id}/`, `Trash/`, leaf folders, etc.):
+5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{employee_id}/`, `Trash/`, leaf folders, etc.):
     - **`.htaccess`** — canonical `deny_http` body from `itm_upload_directory_policy_body('deny_http')` (always overwritten). See **Upload directory hardening → Managed `.htaccess` policies** and **`docs/file_upload_modules.md`**.
     - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten; **required on every folder segment**, not only leaves).
     Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer — managed `.htaccess` is restored on every ensure. See `docs/file_upload_modules.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.

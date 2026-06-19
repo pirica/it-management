@@ -4,7 +4,7 @@ require './helpers.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
-$is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
+$is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
