@@ -324,7 +324,14 @@ $modulePathEsc = sanitize($modulePath);
                                 <tr data-cma-search="<?= sanitize($rowSearch) ?>">
                                     <td>
                                         <strong><?= sanitize($moduleName) ?></strong>
-                                        <div style="color:var(--text-secondary);font-size:12px;"><?= sanitize($moduleSlug) ?></div>
+                                        <div style="color:var(--text-secondary);font-size:12px;"><a 
+    href="<?= sanitize($moduleSlug) ?>" 
+    target="_blank" 
+    rel="noopener noreferrer nofollow"
+    style="color:var(--accent); text-decoration:none;"
+>
+    <?= sanitize($moduleSlug) ?>
+</a></div>
                                         <?php if ($isSystem): ?><span class="badge">System</span><?php endif; ?>
                                         <?php if (!$isActive): ?><span class="badge badge-danger">Inactive</span><?php endif; ?>
                                     </td>
