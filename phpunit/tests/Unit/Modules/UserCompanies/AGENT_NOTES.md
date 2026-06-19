@@ -8,7 +8,7 @@ Unit/regression tests for `modules/employee_companies/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `*Test.php` / `*.unittest.php` — test classes for this module.
+- `UserCompaniesTest.php` — CRUD on `employee_companies`; `getOrCreateUser()` uses `itm_script_test_employee_create()` when no unlinked employee exists (never `employees.email` / `employees.active`).
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.

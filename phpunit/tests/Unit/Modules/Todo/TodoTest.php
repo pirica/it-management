@@ -11,11 +11,12 @@ class TodoTest extends TestCase
     private $conn;
     private $companyId = 1;
     private $employeeIds = [];
-    private $seededUsernames = [];
+    private $seededEmployeeIds = [];
 
     protected function setUp(): void
     {
         require_once ROOT_PATH . 'includes/todo_visibility.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
         $this->conn = $GLOBALS['conn'];
         if (!$this->conn) {
@@ -24,39 +25,30 @@ class TodoTest extends TestCase
 
         mysqli_query($this->conn, "SET FOREIGN_KEY_CHECKS=0");
 
-        // Get existing users
         $res = mysqli_query($this->conn, "SELECT id FROM employees LIMIT 10");
         while ($row = mysqli_fetch_assoc($res)) {
-            $this->userIds[] = (int)$row['id'];
+            $this->employeeIds[] = (int)$row['id'];
         }
 
-        while (count($this->userIds) < 3) {
-            $seq = count($this->userIds) + 1;
-            $username = 'todo_test_user_' . $seq . '_' . substr(uniqid('', true), -6);
-            $email = $username . '@example.com';
-            $stmt = mysqli_prepare(
-                $this->conn,
-                "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active)
-                 VALUES (1, 'Todo', ?, ?, 'password', 1, 1, 1, 1)"
-            );
-            if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
-            $lastName = 'User ' . $seq;
-            mysqli_stmt_bind_param($stmt, 'sss', $username, $email, $lastName);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
-            $this->seededUsernames[] = $username;
-            $this->userIds[] = (int)mysqli_insert_id($this->conn);
+        while (count($this->employeeIds) < 3) {
+            $row = itm_script_test_employee_create($this->conn, $this->companyId, [
+                'script_slug' => 'phpunit-todo',
+                'first_name' => 'Todo',
+                'last_name' => 'User ' . (count($this->employeeIds) + 1),
+            ]);
+            if (!is_array($row)) {
+                $this->fail('Could not create disposable todo test employee.');
+            }
+            $this->seededEmployeeIds[] = (int)$row['id'];
+            $this->employeeIds[] = (int)$row['id'];
         }
     }
 
     protected function tearDown(): void
     {
         if ($this->conn) {
-            foreach ($this->seededUsernames as $username) {
-                $stmt = mysqli_prepare($this->conn, "DELETE FROM employees WHERE username = ?");
-                mysqli_stmt_bind_param($stmt, 's', $username);
-                mysqli_stmt_execute($stmt);
-                mysqli_stmt_close($stmt);
+            foreach ($this->seededEmployeeIds as $employeeId) {
+                itm_script_test_employee_delete($this->conn, (int)$employeeId);
             }
             mysqli_query($this->conn, "SET FOREIGN_KEY_CHECKS=1");
         }
@@ -64,9 +56,9 @@ class TodoTest extends TestCase
 
     public function testTodoVisibilityLogic(): void
     {
-        $u1 = $this->userIds[0];
-        $u2 = $this->userIds[1];
-        $u3 = $this->userIds[2];
+        $u1 = $this->employeeIds[0];
+        $u2 = $this->employeeIds[1];
+        $u3 = $this->employeeIds[2];
 
         // 1. Create - Public task (assigned to NULL, created by u1)
         $publicTitle = 'Test Public Task ' . uniqid();
@@ -159,7 +151,7 @@ class TodoTest extends TestCase
 
     public function testImportanceAndCompletionFields(): void
     {
-        $u1 = $this->userIds[0];
+        $u1 = $this->employeeIds[0];
         $title = 'Status Task ' . uniqid();
 
         $sql = "INSERT INTO todo (company_id, title, importance, completed, created_by_employee_id) VALUES (?, ?, 1, 1, ?)";
@@ -180,8 +172,8 @@ class TodoTest extends TestCase
 
     public function testTodoAuthorizationBypass(): void
     {
-        $u1 = $this->userIds[0]; // Owner
-        $u2 = $this->userIds[1]; // Attacker
+        $u1 = $this->employeeIds[0]; // Owner
+        $u2 = $this->employeeIds[1]; // Attacker
         $title = 'Private Task ' . uniqid();
 
         // Create a private task for u1
