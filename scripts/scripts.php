@@ -1250,6 +1250,30 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Reproduction script for cross-tenant admin access in Employees module.</td>
                     <td><code>php scripts/repro_cross_tenant_admin.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="repro_explorer_path_bypass_v4.php">repro_explorer_path_bypass_v4.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Explorer path validation bypass via <code>./</code> prefix.</td>
+                    <td><code>php scripts/repro_explorer_path_bypass_v4.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_attempts_data_leak_v2.php">repro_attempts_data_leak_v2.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for sensitive information disclosure (passwords) in the attempts table.</td>
+                    <td><code>php scripts/repro_attempts_data_leak_v2.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_explorer_zip_slip_v2.php">repro_explorer_zip_slip_v2.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Zip Slip (path traversal during extraction) in Explorer module.</td>
+                    <td><code>php scripts/repro_explorer_zip_slip_v2.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_select_options_unauthorized_v2.php">repro_select_options_unauthorized_v2.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for unauthorized entity creation via Select Options API.</td>
+                    <td><code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
