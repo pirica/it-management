@@ -474,8 +474,8 @@ $modulePathEsc = sanitize($modulePath);
                             <p>Registry row not found.</p>
                         <?php else: ?>
                             <p><strong>Module Name:</strong> <?= sanitize((string)$viewRow['module_name']) ?></p>
-                            <p><strong>Slug:</strong> <a href="../<?= sanitize((string)($registryRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
-                                                      <?= sanitize((string)($registryRow['module_slug'] ?? '')) ?></a></p>
+                            <p><strong>Slug:</strong> <a href="../<?= sanitize((string)($viewRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
+                                                      <?= sanitize((string)($viewRow['module_slug'] ?? '')) ?></a></p>
                             <p><strong>Global Icon:</strong> <?= sanitize((string)($viewRow['icon'] ?? '')) !== '' ? sanitize((string)$viewRow['icon']) : '—' ?></p>
                             <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
                             <p><strong>Active:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['active'] === 1) ? '✅' : '❌' ?></span></p>
