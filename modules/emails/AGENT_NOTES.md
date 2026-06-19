@@ -5,7 +5,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ## 2. Key Tables
 - **emails** — outbound send log (`to_email`, `subject`, `status`, `sent_at`, `details`).
-- **email_smtp_configurations** — SMTP host/port/credentials; `is_default = 1` selects the tenant transport.
+- **email_smtp_configurations** — SMTP host/port/credentials; `is_default = 1` selects the tenant transport. `database.sql` seeds one default **IT Manager** profile per company (`companies` id 1–5).
 - **email_alert_rules** — per-company toggles (`rule_slug`, `enabled`, `days_before`, `notify_emails`).
 
 ## 3. Required Relationships

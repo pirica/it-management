@@ -85,6 +85,16 @@ if (!$defaultCfg) {
     emails_verify_pass('Default SMTP configuration resolved for company 1.');
 }
 
+for ($seedCompanyId = 1; $seedCompanyId <= 5; $seedCompanyId++) {
+    $tenantCfg = itm_email_get_default_smtp_config($conn, $seedCompanyId);
+    if (!$tenantCfg) {
+        emails_verify_fail('No default SMTP configuration seed for company ' . $seedCompanyId . '.');
+    }
+}
+if ($failures === 0) {
+    emails_verify_pass('Default SMTP configuration seeds present for companies 1–5.');
+}
+
 $rules = itm_email_get_alert_rules($conn, $companyId);
 $catalog = itm_email_alert_rule_catalog();
 foreach (array_keys($catalog) as $slug) {
