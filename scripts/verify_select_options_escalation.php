@@ -53,7 +53,7 @@ $employeeId = (int)$testUser['id'];
 itm_script_test_employee_register_teardown($conn, $employeeId);
 
 $session = [
-    'user_id' => $employeeId,
+    'employee_id' => $employeeId,
     'username' => (string)$testUser['username'],
     'company_id' => 1,
     'csrf_token' => 'test_token'

@@ -1,10 +1,10 @@
 <?php
 /**
- * Verification script for Users list/view sensitive column disclosure.
+ * Verification script for Employees list/view sensitive column disclosure.
  *
  * Why: Ensures password and reset-token columns never appear on list/view HTML.
  *
- * Browser: open scripts/verify_users_sensitive_view.php (admin login required).
+ * Browser: open scripts/verify_employees_sensitive_view.php (admin login required).
  */
 
 if (!defined('ITM_CLI_SCRIPT')) {
@@ -16,15 +16,15 @@ require_once ROOT_PATH . 'includes/itm_employees_auth_sensitive_fields.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
-itm_script_output_begin('Users Sensitive View Verification');
+itm_script_output_begin('Employees Sensitive View Verification');
 
 $nl = itm_script_output_nl();
 $companyId = 1;
 $failed = false;
 
-$testUser = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-users-sensitive-view']);
+$testUser = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-employees-sensitive-view']);
 if (!is_array($testUser)) {
-    echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
+    echo colorText('[FAIL] Unable to create disposable test employee.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
@@ -56,7 +56,7 @@ foreach (itm_employees_auth_sensitive_field_names() as $sensitiveField) {
 }
 
 if (!$failed) {
-    echo colorText('[PASS] Sensitive fields removed from Users uiColumns filter.', 'pass') . $nl;
+    echo colorText('[PASS] Sensitive fields removed from Employees uiColumns filter.', 'pass') . $nl;
 }
 
 $adminId = 1;
@@ -67,12 +67,12 @@ $adminRow = $stmtAdmin->get_result()->fetch_assoc();
 $stmtAdmin->close();
 
 if (!is_array($adminRow)) {
-    echo colorText('[FAIL] Seed admin user not found for isolated view check.', 'fail') . $nl;
+    echo colorText('[FAIL] Seed admin employee not found for isolated view check.', 'fail') . $nl;
     $failed = true;
 } else {
     $session = [
         'company_id' => $companyId,
-        'user_id' => (int)$adminRow['id'],
+        'employee_id' => (int)$adminRow['id'],
         'username' => (string)$adminRow['username'],
     ];
     $get = ['id' => $employeeId];
@@ -87,14 +87,14 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 \$_SESSION['username'] = " . var_export((string)$adminRow['username'], true) . ";
 \$_GET['id'] = " . var_export($employeeId, true) . ";
 \$crud_table = 'employees';
-\$crud_title = 'Users';
+\$crud_title = 'Employees';
 \$crud_action = 'view';
 chdir(" . var_export(dirname($scriptPath), true) . ");
 ob_start();
 include " . var_export(basename($scriptPath), true) . ";
 echo ob_get_clean();
 ";
-    $tmpFile = tempnam(sys_get_temp_dir(), 'verify_users_view');
+    $tmpFile = tempnam(sys_get_temp_dir(), 'verify_employees_view');
     file_put_contents($tmpFile, $code);
     $output = [];
     exec(PHP_BINARY . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
@@ -102,10 +102,10 @@ echo ob_get_clean();
     $html = implode("\n", $output);
 
     if (strpos($html, $secretToken) !== false || stripos($html, 'reset token hash') !== false || stripos($html, '>Reset Token<') !== false) {
-        echo colorText('[FAIL] VULNERABLE: Users view HTML exposes reset-token fields.', 'fail') . $nl;
+        echo colorText('[FAIL] VULNERABLE: Employees view HTML exposes reset-token fields.', 'fail') . $nl;
         $failed = true;
     } else {
-        echo colorText('[PASS] Users view HTML omits reset-token columns.', 'pass') . $nl;
+        echo colorText('[PASS] Employees view HTML omits reset-token columns.', 'pass') . $nl;
     }
 }
 

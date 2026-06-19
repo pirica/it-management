@@ -114,7 +114,7 @@ Catalog: `scripts/scripts.php`.
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_select_options_escalation.php` | Regression — a non-admin session cannot create an Admin user via `modules/select_options_api.php` by POSTing `table=users` with `role_id` and `access_level_id` in `extra_fields`. Expects **PASS** (`[PASS] … blocked by table whitelist`) when `includes/itm_select_options_policy.php` rejects the target table before INSERT. |
+| `php scripts/verify_select_options_escalation.php` | Regression — a non-admin session cannot create an Admin employee via `modules/select_options_api.php` by POSTing `table=employees` with `role_id` and `access_level_id` in `extra_fields`. Expects **PASS** (`[PASS] … blocked by table whitelist`) when `includes/itm_select_options_policy.php` rejects the target table before INSERT. |
 
 Run after changes to `modules/select_options_api.php` or `includes/itm_select_options_policy.php`. Requires MySQL (`itmanagement` schema). The script creates disposable test users and removes them on exit. Catalog: `scripts/scripts.php`.
 
@@ -144,6 +144,8 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` |
 
 **Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_employees.unittest.php`.
+
+**Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 
 **PHPUnit:** `ItmScriptTestUserTest.php`, `ReproAuditDisclosureTest.php`; security repro tests in `VulnerabilityVerificationTest.php` use the same helper. All `phpunit/**/AGENT_NOTES.md` files document this contract.
 
@@ -651,7 +653,6 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | Script | Purpose |
 |--------|---------|
 | `php scripts/sync_modules_registry.php` | Upsert `modules_registry` from filesystem + sidebar-excluded slugs; bulk backfill when sidebar auto-register is not enough |
-| `php scripts/verify_employee_auth_merge.php` | Regression after merging `users` into `employees`: renamed junction tables, admin seed with Active employment status, `employee_companies` links, no legacy `users` table or `employees.user_id` / `employees.active` columns |
 | `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither); PHPUnit: `CompanyModuleAccessVerifyTest` |
 | `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
 
@@ -817,7 +818,7 @@ Empty `index.html` on every ensured folder (all policies):
 
 ### `/files/` chain example
 
-For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
+For `files/{company_id}/Private/{username}_{employee_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
 
 - `files/`
 - `files/{company_id}/`
@@ -825,8 +826,8 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 - `files/{company_id}/Private/`
 - `files/{company_id}/Departments/` (when created)
 - `files/{company_id}/Trash/` (when created)
-- `files/{company_id}/Private/{username}_{user_id}/`
-- `files/{company_id}/Private/{username}_{user_id}/private_contacts/`
+- `files/{company_id}/Private/{username}_{employee_id}/`
+- `files/{company_id}/Private/{username}_{employee_id}/private_contacts/`
 
 For **employee profile photos** (`files/{company_id}/Private/{username}_{employee_id}/profile/`), the same chain applies through `Private/{username}_{employee_id}/`, then:
 
@@ -922,7 +923,7 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 
 ### 10. Private Contacts
 - **Paths:** `modules/private_contacts/create.php`, `modules/private_contacts/edit.php`
-- **Storage:** `files/{company_id}/Private/{username}_{user_id}/private_contacts/` (`deny_http` chain)
+- **Storage:** `files/{company_id}/Private/{username}_{employee_id}/private_contacts/` (`deny_http` chain)
 - **Description:** PNG contact photos.
 - **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; UI serves images through `itm_files_serve_url()` → `modules/explorer/file.php`.
 
@@ -934,7 +935,7 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 
 ### 12. Notes
 - **Path:** `modules/notes/index.php`
-- **Storage:** `files/{company_id}/Private/{username}_{user_id}/notes/` (`deny_http` chain)
+- **Storage:** `files/{company_id}/Private/{username}_{employee_id}/notes/` (`deny_http` chain)
 - **Description:** Image attachments on notes.
 - **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; previews/downloads use `itm_files_serve_url()`.
 

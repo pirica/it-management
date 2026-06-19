@@ -35,6 +35,7 @@ $employeeIdOnePatterns = [
     "/['\"]user_id['\"]\s*=>\s*1\b/",
     '/SET\s+@app_employee_id\s*=\s*1\b/',
     '/\$_SESSION\s*\[\s*[\'"]user_id[\'"]\s*\]\s*=\s*1\b/',
+    '/\$_SESSION\s*\[\s*[\'"]user_id[\'"]\s*\]/',
 ];
 
 $iterator = new RecursiveIteratorIterator(
@@ -83,7 +84,7 @@ foreach ($iterator as $fileInfo) {
     }
 
     if ($hasSensitive) {
-        $failures[] = 'scripts/' . $relative . ' hardcodes user id 1 with users/reset_token/notes mutation — use scripts/lib/itm_script_test_employee.php';
+        $failures[] = 'scripts/' . $relative . ' hardcodes user id 1 with employees-table/reset_token/notes mutation — use scripts/lib/itm_script_test_employee.php';
     }
 }
 

@@ -53,7 +53,7 @@ itm_script_test_employee_register_teardown($conn, (int)$victim['id']);
 $session = [
     'company_id' => $company1,
     'company_name' => 'Company 1',
-    'user_id' => (int)$admin1['id'],
+    'employee_id' => (int)$admin1['id'],
     'username' => (string)$admin1['username'],
     'role_name' => 'Admin'
 ];

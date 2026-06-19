@@ -741,7 +741,7 @@ $selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
 
     <div class="card">
         <h2>API key authentication and rate limits</h2>
-        <p>Paid-tier users store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>, scoped to <code>company_id</code> + <code>user_id</code>). <strong>Free</strong> tier has no API key UI — identity comes from the signed-in session. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
+        <p>Paid-tier employees store an integration key on <strong>Settings → API Access</strong> (<code>ui_configuration.api_key</code>, scoped to <code>company_id</code> + <code>employee_id</code>). <strong>Free</strong> tier has no API key UI — identity comes from the signed-in session. Tier caps apply per rolling hour (<code>rate_limit_window_start</code> + <code>rate_limit_request_count</code>).</p>
         <table>
             <thead><tr><th>Tier</th><th>Hourly limit</th><th>API key</th><th>Session</th></tr></thead>
             <tbody>
@@ -755,7 +755,7 @@ $selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
             <?php endforeach; ?>
             </tbody>
         </table>
-        <p><strong>Free</strong> tier does not require an API key but <strong>does require an authenticated session</strong> (<code>PHPSESSID</code> with <code>company_id</code> + <code>user_id</code>). Keyless requests without a session return <code>401</code> — Free is not anonymous. <strong>Paid</strong> tiers must send <code>X-API-Key</code> or <code>api_key</code>.</p>
+        <p><strong>Free</strong> tier does not require an API key but <strong>does require an authenticated session</strong> (<code>PHPSESSID</code> with <code>company_id</code> + <code>employee_id</code>). Keyless requests without a session return <code>401</code> — Free is not anonymous. <strong>Paid</strong> tiers must send <code>X-API-Key</code> or <code>api_key</code>.</p>
         <p>Quota probe: <code>GET scripts/api.php?rate_limit=1</code> — Free while signed in (no <code>api_key</code>) or paid with <code>…&amp;api_key=&lt;key&gt;</code>. <code>ITM_API_RATE_LIMIT_PROBE</code> skips the <code>login.php</code> redirect only; it does not remove the Free-tier session requirement. Handler: <code>itm_api_handle_rate_limit_probe_request()</code>; enforcement in other endpoints: <code>itm_api_enforce_rate_limit_or_exit($conn)</code>.</p>
 <pre><code># Login first (required for Free-tier keyless probe)
 curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
@@ -817,7 +817,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/includes/update_port
 
     <div class="card">
         <h2>Explorer API (<code>modules/explorer/api.php</code>)</h2>
-        <p>Multi-tenant file manager for <code>files/{company_id}/</code>. ACL: <code>Common/</code> (all company users), <code>Departments/{dept_id}/</code> (department members), <code>Private/{username}_{user_id}/</code> (owner only), <code>Trash/</code> (soft-delete mirror). Protected roots cannot be listed via API for <code>Private</code> or <code>Departments</code> — UI uses scoped paths.</p>
+        <p>Multi-tenant file manager for <code>files/{company_id}/</code>. ACL: <code>Common/</code> (all company users), <code>Departments/{dept_id}/</code> (department members), <code>Private/{username}_{employee_id}/</code> (owner only), <code>Trash/</code> (soft-delete mirror). Protected roots cannot be listed via API for <code>Private</code> or <code>Departments</code> — UI uses scoped paths.</p>
         <p>All POST actions require <code>csrf_token</code>. Responses are JSON (<code>Content-Type: application/json; charset=utf-8</code>) unless noted.</p>
         <table>
             <thead><tr><th>Method</th><th>Action</th><th>Parameters</th><th>Response</th><th>Purpose</th></tr></thead>
@@ -910,7 +910,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>Select Options quick-add whitelist (<code>modules/select_options_api.php</code>)</h2>
-        <p>Only lookup tables listed in <code>includes/itm_select_options_policy.php</code> accept POST inserts from <code>js/select-add-option.js</code>. Blocked tables (for example <code>users</code>, <code>role_module_permissions</code>) return <code>{"ok":false,"error":"This list cannot be updated from quick-add."}</code>. Regression: <code>php scripts/verify_select_options_escalation.php</code>.</p>
+        <p>Only lookup tables listed in <code>includes/itm_select_options_policy.php</code> accept POST inserts from <code>js/select-add-option.js</code>. Blocked tables (for example <code>employees</code>, <code>role_module_permissions</code>) return <code>{"ok":false,"error":"This list cannot be updated from quick-add."}</code>. Regression: <code>php scripts/verify_select_options_escalation.php</code>.</p>
         <p><strong><?= (int)count($selectOptionsAllowedTables); ?></strong> allowed table(s). Notable entries: <code>license_types</code> (License Management Type dropdown), <code>departments</code>, <code>suppliers</code>, <code>warranty_types</code>.</p>
         <details>
             <summary>Full allowed table list</summary>
@@ -941,7 +941,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/select_optio
 
     <div class="card">
         <h2>Passwords vault (<code>modules/passwords/ajax_handler.php</code>)</h2>
-        <p>POST <code>action</code> + <code>csrf_token</code>. Data encrypted per <code>user_id</code>; requires unlocked vault (<code>$_SESSION['vault_key']</code>).</p>
+        <p>POST <code>action</code> + <code>csrf_token</code>. Data encrypted per <code>employee_id</code>; requires unlocked vault (<code>$_SESSION['vault_key']</code>).</p>
         <table>
             <thead><tr><th>Action</th><th>Parameters</th><th>Purpose</th></tr></thead>
             <tbody>
@@ -1094,7 +1094,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/license_mana
             <li><code>import_excel_rows</code> requires header row + at least one data row.</li>
             <li>Passwords writes require per-user vault key in session.</li>
             <li>IDF endpoints require JSON body and tenant-scoped <code>company_id</code>.</li>
-            <li><code>itm_api_enforce_rate_limit_or_exit($conn)</code> on programmatic endpoints: paid tiers require <code>api_key</code>; Free tier accepts authenticated session (<code>company_id</code> + <code>user_id</code> in <code>PHPSESSID</code>) when no key is sent.</li>
+            <li><code>itm_api_enforce_rate_limit_or_exit($conn)</code> on programmatic endpoints: paid tiers require <code>api_key</code>; Free tier accepts authenticated session (<code>company_id</code> + <code>employee_id</code> in <code>PHPSESSID</code>) when no key is sent.</li>
         </ul>
     </div>
 

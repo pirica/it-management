@@ -65,7 +65,7 @@ if (!is_dir($storage_root . '/Private/' . $user_private)) {
 
 $session = [
     'company_id' => $company_id,
-    'user_id' => (int)$testUser['id'],
+    'employee_id' => (int)$testUser['id'],
     'username' => (string)$testUser['username'],
 ];
 $get = [
