@@ -2118,14 +2118,23 @@ if (!function_exists('itm_handle_json_table_import')) {
 /**
  * Checks if a user has administrative privileges.
  *
+ * Why: Used frequently for access control (e.g. sidebar); uses static cache to minimize DB queries.
+ *
  * @param mysqli $conn
  * @param int $employeeId
  * @return bool
  */
 if (!function_exists('itm_is_admin')) {
     function itm_is_admin($conn, $employeeId) {
+        static $cache = [];
+        $employeeId = (int)$employeeId;
+
         if (!$conn || $employeeId <= 0) {
             return false;
+        }
+
+        if (isset($cache[$employeeId])) {
+            return $cache[$employeeId];
         }
 
         $sql = 'SELECT 1
@@ -2145,6 +2154,7 @@ if (!function_exists('itm_is_admin')) {
         $isAdmin = $res && mysqli_num_rows($res) > 0;
         mysqli_stmt_close($stmt);
 
+        $cache[$employeeId] = $isAdmin;
         return $isAdmin;
     }
 }

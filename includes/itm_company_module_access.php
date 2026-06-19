@@ -125,28 +125,59 @@ if (!function_exists('itm_module_access_registry_row')) {
 }
 
 if (!function_exists('has_module_access')) {
-  function has_module_access($conn, $company_id, $module_slug)
+    function has_module_access($conn, $company_id, $module_slug, $forceRefresh = false)
     {
+        static $access_cache = [];
+        static $registry_cache = [];
+        static $initialized_company = 0;
+
         $company_id = (int)$company_id;
         $module_slug = trim((string)$module_slug);
-        if ($module_slug === '' || !$conn instanceof mysqli || $company_id <= 0) {
+        if ($module_slug === '' || (!$conn instanceof mysqli && !$forceRefresh) || $company_id <= 0) {
             return false;
+        }
+
+        // Why: Pre-fetch all module access for the company in one query to avoid N+1 sidebar performance issues.
+        if ($initialized_company !== $company_id || $forceRefresh) {
+            $access_cache = [];
+            $registry_cache = [];
+            if (itm_module_access_table_exists($conn, 'modules_registry') && itm_module_access_table_exists($conn, 'company_module_access')) {
+                $sql = "SELECT mr.module_slug, mr.is_system_module, mr.active as registry_active,
+                               COALESCE(cma.enabled, 0) as enabled
+                        FROM modules_registry mr
+                        LEFT JOIN company_module_access cma ON cma.module_id = mr.id AND cma.company_id = ?";
+                $stmt = mysqli_prepare($conn, $sql);
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, 'i', $company_id);
+                    mysqli_stmt_execute($stmt);
+                    $res = mysqli_stmt_get_result($stmt);
+                    while ($res && ($row = mysqli_fetch_assoc($res))) {
+                        $slug = $row['module_slug'];
+                        $registry_cache[$slug] = [
+                            'is_system_module' => (int)$row['is_system_module'],
+                            'active' => (int)$row['registry_active']
+                        ];
+                        $access_cache[$slug] = (int)$row['enabled'];
+                    }
+                    mysqli_stmt_close($stmt);
+                    $initialized_company = $company_id;
+                }
+            }
         }
 
         if (in_array($module_slug, itm_module_access_always_allowed_slugs(), true)) {
             return true;
         }
 
-        if (!itm_module_access_table_exists($conn, 'modules_registry')
-            || !itm_module_access_table_exists($conn, 'company_module_access')) {
-            return true;
-        }
-
-        $registryRow = itm_module_access_registry_row($conn, $module_slug);
-        if ($registryRow === null) {
+        if (!isset($registry_cache[$module_slug])) {
+            // Fallback for discovery/registry-less checks
+            if (!itm_module_access_table_exists($conn, 'modules_registry')) {
+                return true;
+            }
             return false;
         }
 
+        $registryRow = $registry_cache[$module_slug];
         if ((int)($registryRow['active'] ?? 0) !== 1) {
             return false;
         }
@@ -166,27 +197,7 @@ if (!function_exists('has_module_access')) {
             return true;
         }
 
-        $stmt = mysqli_prepare(
-            $conn,
-            'SELECT 1
-             FROM company_module_access cma
-             INNER JOIN modules_registry mr ON mr.id = cma.module_id
-             WHERE cma.company_id = ?
-               AND mr.module_slug = ?
-               AND cma.enabled = 1
-               AND mr.active = 1
-             LIMIT 1'
-        );
-        if (!$stmt) {
-            return false;
-        }
-        mysqli_stmt_bind_param($stmt, 'is', $company_id, $module_slug);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
-        $allowed = mysqli_stmt_num_rows($stmt) > 0;
-        mysqli_stmt_close($stmt);
-
-        return $allowed;
+        return !empty($access_cache[$module_slug]);
     }
 }
 
@@ -572,18 +583,21 @@ if (!function_exists('itm_ensure_registry_rows_for_module_slugs')) {
 
         itm_ensure_module_access_icon_columns($conn);
 
+        $existing = [];
+        $res = mysqli_query($conn, "SELECT module_slug FROM modules_registry");
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $existing[$row['module_slug']] = true;
+        }
+
         $inserted = 0;
         $systemSlugs = itm_module_access_system_slugs();
 
         foreach ($slugs as $slug) {
             $slug = trim((string)$slug);
-            if ($slug === '') {
+            if ($slug === '' || isset($existing[$slug])) {
                 continue;
             }
             if (function_exists('itm_sidebar_module_is_hidden') && itm_sidebar_module_is_hidden($slug)) {
-                continue;
-            }
-            if (itm_module_access_registry_row($conn, $slug) !== null) {
                 continue;
             }
 
