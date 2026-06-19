@@ -29,7 +29,7 @@ function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, st
          ))"
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $email, $employeeId, $email);
+        mysqli_stmt_bind_param($stmt, 'sssis', $attemptType, $ipAddress, $email, $employeeId, $email);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
