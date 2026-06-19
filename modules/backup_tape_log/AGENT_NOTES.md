@@ -14,8 +14,8 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 - **Monthly grid:** one row per day of selected month/year/server; `log_date` and `tape_to_be_used` (day name) auto-derived.
 - **Sunday highlighting:** Sunday rows highlighted in yellow on the grid.
 - **Immutability:** records not from **today** locked for edit/delete.
-- **Restricted fields:** `tape_used_for_restore` and `ism_review` editable only by Admin or IT department staff.
-- **Role-Based Access:** Admin and IT staff full access; regular users may have restricted fields/dates.
+- **Restricted fields:** `tape_used_for_restore` and `ism_review` editable only by `itm_is_admin()` or IT department staff.
+- **Role-Based Access:** `itm_is_admin()` and IT staff full access; regular users may have restricted fields/dates.
 - **Date Logic:** `btl_format_datetime` treats `1970-01-01` as "—" for display.
 - **Exports:** XLSX and PDF must include custom header (Year, Month, Company, Server, Unit No) and grid layout.
 

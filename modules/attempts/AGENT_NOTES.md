@@ -7,7 +7,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 - **attempts** — logs individual success/failure events for login and reset requests.
 
 ## 3. Required Relationships
-- **attempts** → depends on **users** (via `employee_id`, nullable).
+- **attempts** → depends on **employees** (via `employee_id`, nullable).
 
 ## 4. Business Rules (Critical for Agents)
 - **Log Source/Type**: Must distinguish between 'login' and 'password_reset' sources and 'success', 'failure', 'request', or 'reset' types.
@@ -15,7 +15,8 @@ Tracks authentication-related attempts, including logins and password resets. It
 
 ## 5. UI Behavior Requirements
 - **Read-Only mostly**: UI typically allows viewing and deleting (for cleanup) but not manual "creation" or "editing" through a standard form.
-- **Filtering**: List view should support filtering by user, IP, or type.
+- **Filtering**: List view should support filtering by employee, IP, or type.
+- **FK labels**: list/view uses `cr_username_for_employee_id()` to render `employee_id` as username.
 
 ## 6. API Actions (If Applicable)
 - None.
@@ -46,7 +47,7 @@ $stmt->execute();
 
 ### Safe INSERT
 ```php
-$stmt = $conn->prepare("INSERT INTO attempts (user_id, email, attempt_source, attempt_type, ip_address) VALUES (?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO attempts (employee_id, email, attempt_source, attempt_type, ip_address) VALUES (?, ?, ?, ?, ?)");
 $stmt->bind_param("issss", $employeeId, $email, $source, $type, $ipAddress);
 $stmt->execute();
 ```

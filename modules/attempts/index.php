@@ -135,7 +135,7 @@ function cr_is_hidden_employee_field($field) {
 }
 
 
-function cr_username_for_user_id($employeeId) {
+function cr_username_for_employee_id($employeeId) {
     static $cache = [];
 
     $uid = (int)$employeeId;
@@ -262,7 +262,7 @@ function cr_render_cell_value($table, $field, $value) {
             return '—';
         }
 
-        $username = cr_username_for_user_id((int)$text);
+        $username = cr_username_for_employee_id((int)$text);
         return $username !== '' ? sanitize($username) : ('User #' . (int)$text);
     }
 

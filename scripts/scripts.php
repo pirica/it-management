@@ -748,7 +748,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="check_stale_user_terminology.php">check_stale_user_terminology.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose and <code>employee_companies</code> + <code>user_id</code> helper references after the employees merge.</td>
+                    <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose, <code>employee_companies</code> + <code>user_id</code> helper references, session <code>role_name</code> admin checks in <code>modules/</code>, and <code>cr_username_for_user_id</code> after the employees merge.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>

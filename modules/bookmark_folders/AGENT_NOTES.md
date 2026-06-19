@@ -7,8 +7,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 - **bookmark_folders** — stores folder metadata and hierarchy.
 
 ## 3. Required Relationships
-- **bookmark_folders** → depends on **companies**.
-- **bookmark_folders** → depends on **users**.
+- **bookmark_folders** → depends on **companies**, **employees**.
 - **bookmark_folders** → self-references via `parent_folder_id`.
 
 ## 4. Business Rules (Critical for Agents)
@@ -41,7 +40,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 ### Safe SELECT
 ```php
-$stmt = $conn->prepare("SELECT * FROM bookmark_folders WHERE company_id = ? AND (user_id = ? OR shared = 1)");
+$stmt = $conn->prepare("SELECT * FROM bookmark_folders WHERE company_id = ? AND (employee_id = ? OR shared = 1)");
 $stmt->bind_param("ii", $companyId, $employeeId);
 $stmt->execute();
 ```

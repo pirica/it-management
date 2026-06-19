@@ -13,7 +13,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 4. Business Rules (Critical for Agents)
 - **Privacy:** filter by `employee_id` for private bookmarks and `company_id` for shared ones.
 - **Visibility:** row visible when `(employee_id = logged employee OR shared = 1)` and `company_id` matches.
-- **Permissions:** shared bookmarks read-only for regular users; admins and creators retain full CRUD.
+- **Permissions:** shared bookmarks read-only for regular users; admins (`itm_is_admin()`) and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
 - **Drag-and-drop:** folders reordered/reparented via DnD interactions.
 - **Import/export:** browser HTML bookmark files, CSV, and XLSX.
@@ -30,7 +30,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
-- **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when admin or folder owner.
+- **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
 - **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmarks()`).
 - **export.php** / **export.js** — CSV, XLSX, and Netscape HTML export.
 
@@ -44,7 +44,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 
 ## 8. Multi-Tenant Rules
 - `company_id` on all rows; private rows also scoped by `employee_id`.
-- Shared bookmarks (`shared = 1`) visible to all company users but editable only by admin or creator.
+- Shared bookmarks (`shared = 1`) visible to all company users but editable only by `itm_is_admin()` or creator.
 
 ## 9. Audit Logging Requirements
 - No dedicated triggers on `bookmarks` / `bookmark_folders` in `database.sql`; rely on application logging if extended.

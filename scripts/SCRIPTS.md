@@ -147,7 +147,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 
 **Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 
-**Stale terminology guard:** `php scripts/check_stale_user_terminology.php` — fails when `scripts/`, `docs/`, or `phpunit/tests/` still say `Users module` / `Users Management`, or when `includes/database_sql_unique_audit.php` special-cases `employee_companies.user_id`. Catalog: `scripts/scripts.php`.
+**Stale terminology guard:** `php scripts/check_stale_user_terminology.php` — fails when `scripts/`, `docs/`, or `phpunit/tests/` still say `Users module` / `Users Management`, when `includes/database_sql_unique_audit.php` special-cases `employee_companies.user_id`, when `modules/` PHP uses `strtolower($_SESSION['role_name'])` for admin checks instead of `itm_is_admin()`, or when `cr_username_for_user_id` remains in module code. Catalog: `scripts/scripts.php`.
 
 **PHPUnit:** `ItmScriptTestUserTest.php`, `ReproAuditDisclosureTest.php`; security repro tests in `VulnerabilityVerificationTest.php` use the same helper. All `phpunit/**/AGENT_NOTES.md` files document this contract.
 
@@ -835,7 +835,7 @@ For **employee profile photos** (`files/{company_id}/Private/{username}_{employe
 
 - `files/{company_id}/Private/{username}_{employee_id}/profile/`
 
-Legacy installs may still have `Private/{username}_{linked_user_id}/profile/`; `emp_profile_photo_serve_path()` falls back to that path when `employees.user_id` is set.
+Legacy installs may still have `Private/{username}_{linked_user_id}/profile/`; `emp_profile_photo_serve_path()` falls back to that path when a legacy linked id is present on the employee row.
 
 `modules/explorer/file.php` allows any authenticated company user to read `Private/*/profile/` assets (employee profile thumbnails). Other `Private/` content remains owner-scoped.
 
