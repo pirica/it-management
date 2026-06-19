@@ -520,7 +520,7 @@ unset($_SESSION['calendar_success']);
                                     <?php endif; ?>
                                     <div style="margin-top: 8px;">
                                         <?php if ($ev['type'] === 'event'): ?>
-                                            <a href="../events/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">View</a>
+                                            <a href="../events/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm" title="View">🔎</a>
                                         <?php elseif ($ev['type'] === 'ticket'): ?>
                                             <a href="../tickets/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">Ticket</a>
                                         <?php elseif ($ev['type'] === 'equipment'): ?>

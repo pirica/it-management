@@ -157,7 +157,7 @@ $csrfToken = itm_get_csrf_token();
                 </div>
 
                 <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-                    <a href="create.php<?php echo $selected_folder_id ? "?folder_id=$selected_folder_id" : ""; ?>" class="btn btn-primary" style="flex: 1; text-align: center;">➕ Add Bookmark</a>
+                    <a href="create.php<?php echo $selected_folder_id ? "?folder_id=$selected_folder_id" : ""; ?>" class="btn btn-primary" style="flex: 1; text-align: center;" title="Add bookmark">➕</a>
                     <a href="create_folder.php" class="btn" title="Add Folder" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border);">➕📁</a>
                 </div>
                 <ul class="folder-tree">
@@ -185,7 +185,7 @@ $csrfToken = itm_get_csrf_token();
                         </h2>
                         <div style="display: flex; gap: 8px;">
                             <?php if ($selected_folder_id): ?>
-                                <a href="edit_folder.php?id=<?php echo $selected_folder_id; ?>" class="btn btn-sm">✏️ Edit Folder</a>
+                                <a href="edit_folder.php?id=<?php echo $selected_folder_id; ?>" class="btn btn-sm" title="Edit folder">✏️</a>
                             <?php endif; ?>
                             <div class="dropdown" style="position: relative;">
                                 <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="this.parentNode.querySelector('.dropdown-menu').classList.toggle('show'); event.stopPropagation();">Tools ⚙️</button>

@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1><?php echo $is_edit ? '✏️ Edit' : '➕ Add'; ?> Company</h1>
+            <h1 title="<?php echo $is_edit ? 'Edit company' : 'Add company'; ?>"><?php echo $is_edit ? '✏️' : '➕'; ?></h1>
             <?php echo itm_render_alert_errors($error ?? ''); ?>
             <div class="card">
                 <form method="POST">

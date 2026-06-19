@@ -639,7 +639,7 @@ $displayFieldColumns = $uiColumns;
                     <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
                     <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
 					<hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
-                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;">✏️ Edit tags</a>
+                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;" title="Edit">✏️</a>
                     <a href="list_all.php" class="notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
                     <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
                 </div>
@@ -930,8 +930,8 @@ $displayFieldColumns = $uiColumns;
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_archived" value="1" <?php echo !empty($data["is_archived"]) ? "checked" : ""; ?>><span>Archived 📥</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" id="reminder_checkbox" onchange="toggleReminderSection(this.checked)" <?php echo !empty($data['reminder_at']) ? 'checked' : ''; ?>><span>Reminder 🔔</span></label>
                             </div>
-                            <div class="form-actions" style="margin-top: 30px;"><button class="btn btn-primary" type="submit">💾 Save</button><a href="index.php" class="btn">🔙 Cancel</a>
-                                <?php if ($crud_action === "edit"): ?><button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this note?')">🗑️ Delete</button><?php endif; ?>
+                            <div class="form-actions" style="margin-top: 30px;"><button class="btn btn-primary" type="submit" title="Save">💾</button><a href="index.php" class="btn" title="Cancel">🔙</a>
+                                <?php if ($crud_action === "edit"): ?><button type="submit" name="bulk_action" value="single_delete" class="btn btn-danger" style="margin-left: auto;" onclick="return confirm('Delete this note?')" title="Delete">🗑️</button><?php endif; ?>
                             </div>
                         </form>
 
@@ -1176,7 +1176,7 @@ $displayFieldColumns = $uiColumns;
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn" onclick="closeDatePickerModal()">Cancel</button>
+                <button type="button" class="btn" onclick="closeDatePickerModal()" title="Cancel">🔙</button>
                 <button type="button" class="btn btn-primary" onclick="saveQuickDate()">Set Date</button>
             </div>
         </div>

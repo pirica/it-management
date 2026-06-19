@@ -462,8 +462,8 @@ $modulePathEsc = sanitize($modulePath);
                                     <span>Active <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$formValues['active'] === 1) ? '✅' : '❌' ?></span></span>
                                 </label>
                             </div>
-                            <button type="submit" class="btn btn-primary"><?= $crud_action === 'create' ? 'Create' : 'Save' ?></button>
-                            <a class="btn" href="list_all.php">Cancel</a>
+                            <button type="submit" class="btn btn-primary" title="<?php echo $crud_action === 'create' ? 'Create' : 'Save'; ?>"><?php echo $crud_action === 'create' ? '➕' : '💾'; ?></button>
+                            <a class="btn" href="list_all.php" title="Cancel">🔙</a>
                         </form>
                     </div>
                 </div>

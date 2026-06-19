@@ -81,7 +81,7 @@ $labels = [
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1>🔎 View Inventory Record</h1>
+            <h1 title="View inventory record">🔎</h1>
             <div class="card">
                 <?php if (!$item): ?>
                     <div class="alert alert-danger">Record not found.</div>

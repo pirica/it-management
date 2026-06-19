@@ -190,7 +190,7 @@ if ($selectedLastUserId > 0) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1><?php echo $is_edit ? '✏️ Edit' : '➕ Add'; ?> Inventory Item</h1>
+            <h1 title="<?php echo $is_edit ? 'Edit inventory item' : 'Add inventory item'; ?>"><?php echo $is_edit ? '✏️' : '➕'; ?></h1>
 
             <?php echo itm_render_alert_errors($error ?? ''); ?>
 

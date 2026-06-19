@@ -49,6 +49,7 @@ if (!empty($_SESSION['crud_success'])) {
 
 <!-- Load Theme Logic Early -->
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
+<script src="<?php echo BASE_URL; ?>js/itm-ui-action-labels.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-user-errors.js"></script>
 
 <script>
@@ -153,19 +154,23 @@ document.addEventListener('DOMContentLoaded', function () {
         { test: /^next$/i, emoji: '▶️', label: 'Next', source: 'visible' },
         { test: /(delete|remove|trash)/i, emoji: '🗑️', label: 'Delete item' },
         { test: /(edit|update|modify)/i, emoji: '✏️', label: 'Edit item' },
-        { test: /(view|details|open)/i, emoji: '👀', label: 'View details' },
+        { test: /(view|details|open)/i, emoji: '🔎', label: 'View details' },
         { test: /(create|add|new)/i, emoji: '➕', label: 'Add new item' },
         { test: /(save|submit|apply)/i, emoji: '💾', label: 'Save changes' },
         { test: /(logout|sign out)/i, emoji: '🚪', label: 'Log out' },
         { test: /(search|find)/i, emoji: '🔎', label: 'Search', source: 'label' },
         { test: /(export|download)/i, emoji: '📤', label: 'Export data' },
         { test: /(import|upload)/i, emoji: '📥', label: 'Import data' },
-        { test: /(back|return)/i, emoji: '↩️', label: 'Go back' },
+        { test: /(back|return)/i, emoji: '🔙', label: 'Go back' },
+        { test: /^cancel$/i, emoji: '🔙', label: 'Cancel', source: 'visible' },
     ];
 
     const nodes = document.querySelectorAll('a, button, input[type="submit"], input[type="button"]');
     nodes.forEach(function (node) {
         if (!node || node.hasAttribute('title') || node.dataset.itmAutoTooltip === 'off') {
+            return;
+        }
+        if (node.matches && node.matches('button[data-itm-bulk-cancel="1"]')) {
             return;
         }
 

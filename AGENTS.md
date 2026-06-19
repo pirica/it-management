@@ -537,6 +537,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * **Windows Laragon:** use the full PHP binary path from **Setup & Debugging** below; script catalog, smoke, MBQA, and CLI conventions: **`scripts/SCRIPTS.md`**.
   * Minimum required checks for CRUD changes: `php -l` on touched PHP files and `php scripts/check_sql_injection_coverage.php` (use full PHP path on Windows Laragon).
   * When changing flattened `index.php` list/search column variables: `php scripts/check_display_field_columns_search.php` (see **List/search visible columns** above).
+  * When changing UI action buttons, links, modals, or page headings: `php scripts/check_ui_action_emoji.php` (see **UI action labels (NO MIXED)** above).
   * **PHPUnit suite / HTML coverage:** `php scripts/run_tests.php` or browser `scripts/run_tests.php?run=1&mode=coverage` — report at `phpunit/coverage/html/coverage.html` (Xdebug or PCOV). Authoring rules and coverage guardrails: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
   * Optional broad QA, equipment/employees clear-table regression, and other script suites: **`scripts/SCRIPTS.md`**.
   * PR descriptions must list the exact commands that were run and their outcomes.
@@ -640,6 +641,80 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
 * **Color Fields:** Use color picker UI: `<input type="color" name="hex_color" id="cable-hex-color-picker" value="#008000">`.
 * **Date Fields:** Show date picker UI.
+
+#### UI action labels (NO MIXED — mandatory)
+
+Standard CRUD actions use **emoji-only visible text** on interactive controls and page headings. Full phrases belong in `title` and/or `aria-label` only — never on the visible label beside the emoji.
+
+**Scope (visible text):** `<a>`, `<button>`, `<input type="submit">`, `<input type="button">`, and `<h1>`–`<h3>`.
+
+**Emoji map:**
+
+| Action | Visible emoji |
+|--------|---------------|
+| View | 🔎 |
+| Edit | ✏️ |
+| Delete | 🗑️ |
+| Back / Cancel (forms and modals) | 🔙 |
+| Create / New / Add | ➕ |
+| Save | 💾 |
+
+**NO MIXED (zero tolerance):** do not ship visible labels that combine emoji + action word, for example `💾 Save`, `🔙 Back`, `🔎 View Ticket Details`, or `➕ New Equipment`. Compound headings use emoji-only visible text plus a descriptive `title` (see canonical markup below).
+
+**Canonical markup** (reference: `modules/manufacturers/index.php`):
+
+```html
+<a class="btn btn-sm" href="view.php?id=…" title="View">🔎</a>
+<a class="btn btn-sm" href="edit.php?id=…" title="Edit">✏️</a>
+<button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+<button class="btn btn-primary" type="submit" title="Save">💾</button>
+<a href="index.php" class="btn" title="Back">🔙</a>
+<a href="create.php" class="btn btn-primary" title="Create">➕</a>
+<h1 title="View ticket details">🔎</h1>
+<h1 title="<?php echo $is_edit ? 'Edit ticket' : 'New ticket'; ?>"><?php echo $is_edit ? '✏️' : '➕'; ?></h1>
+```
+
+**Header auto-tooltips (`includes/header.php` `intentRules`):** tooltips **may** use emoji + words (for example `🔎 View details`, `🔙 Go back`, `🔙 Cancel`). Visible node text must still follow NO MIXED. Bulk-selection cancel is skipped: `button[data-itm-bulk-cancel="1"]` keeps visible `Cancel`.
+
+**Helpers:** `includes/itm_ui_action_labels.php` (`itm_ui_action_emoji()`, `itm_ui_action_title()`), loaded from `config/config.php`; JS mirror `js/itm-ui-action-labels.js` (included from `header.php`) for modals built in JavaScript.
+
+**Audit script (`scripts/check_ui_action_emoji.php`):** scans `.php`, `.js`, `.html` (excludes `vendor/`, `phpunit/coverage/`, `qa-reports/`). Exit `0` only when **0 violations incl. mixed emoji+word**. Hard-fail patterns:
+
+| Pattern | Example violation |
+|---------|-------------------|
+| `💾\s*Save` | `💾 Save`, `💾 Save Changes` |
+| `🔙\s*Back` | `🔙 Back` |
+| `🔙\s*Cancel` | `🔙 Cancel` |
+| `✏️\s*Edit` | `✏️ Edit`, `✏️ Edit Folder` |
+| `🗑️\s*Delete` | `🗑️ Delete` |
+| `➕\s*(Create\|New\|Add)` | `➕ New Task`, `➕ Add Bookmark` |
+| `🔎\s*View` | `🔎 View Ticket Details` |
+
+Also fails on known compound literals (`View Ticket Details`, `Edit Ticket`, `New Equipment`, `Create IDF`, `Edit IDF`, `View Employee System Access`), plain-text standalone action words on interactive tags without emoji, and header `intentRules` drift (View must use 🔎, Back must use 🔙).
+
+**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default; `--apply` writes) for simple mixed markup. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
+
+**Exemptions (visible text only):**
+
+| Keep as-is | Reason |
+|------------|--------|
+| `button[data-itm-bulk-cancel="1"]` → `Cancel` | Bulk delete QA contract (`js/bulk-delete-selection.js`) |
+| Pagination `Previous` / `Next` | Word labels with emoji in `title` only |
+| Bulk `Select to Delete`, `Delete Selected`, `Clear Table` | Bulk toolbar contract |
+| Submit `Search` | Search row contract |
+| Descriptive non-actions | `View IP record`, `Reset View`, `Table View`, `Keep View`, etc. |
+| Same-line `itm-ui-action-exempt:` comment | Intentional escape hatch — use sparingly |
+
+**When to run:** after any UI label change touching buttons, links, form actions, modals, or page headings. Minimum completion gate for this deliverable:
+
+```bash
+php scripts/check_ui_action_emoji.php   # 0 violations incl. mixed emoji+word
+php -l includes/itm_ui_action_labels.php
+bash scripts/smoke_test.sh
+```
+
+Catalog and extended notes: **`scripts/SCRIPTS.md`** → Pre-merge verification (scripts).
+
 * **Switch Port Manager icon mapping (mandatory):** For `modules/equipment/index.php` generated switch port tiles, keep one centered icon with centered port number overlay. Map by port type + status (`Unknown` check is case-insensitive): RJ45 `Unknown` → `images/switch_port_icons/rj45_38x31_Unknown.png`, RJ45 non-`Unknown` → `images/switch_port_icons/rj45_38x31.png`, SFP `Unknown` → `images/switch_port_icons/sfp_38x38_Unknown.png`, SFP non-`Unknown` → `images/switch_port_icons/sfp_38x38.png`. When status is saved, refresh the icon immediately without page reload.
 
 ---

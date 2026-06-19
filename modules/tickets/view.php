@@ -88,7 +88,7 @@ if ($id > 0) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1>🔎 View Ticket Details</h1>
+            <h1 title="View ticket details">🔎</h1>
             <div class="card">
                 <?php if (!$item): ?>
                     <div class="alert alert-danger">Record not found.</div>

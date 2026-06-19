@@ -1002,7 +1002,7 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                 <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests.</p>
                             </div>
                             <div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <button class="btn btn-primary" type="submit">💾 Save API Key</button>
+                                <button class="btn btn-primary" type="submit" title="Save">💾</button>
                             </div>
                         </form>
                         <form method="post" style="margin-bottom:20px;display:inline;">

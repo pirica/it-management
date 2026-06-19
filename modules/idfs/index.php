@@ -636,7 +636,7 @@ function itm_idf_sort_indicator($column, $currentSort, $currentSortDir)
 
                 <div class="idf-layout-grid">
                     <section class="idf-panel">
-                        <h3>➕ Create IDF <span class="idf-badge">New closet profile</span></h3>
+                        <h3 title="Create closet profile">➕ <span class="idf-badge">New closet profile</span></h3>
                         <form method="post" class="idf-grid-2">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                     <input type="hidden" name="create_idf" value="1">
@@ -695,12 +695,12 @@ function itm_idf_sort_indicator($column, $currentSort, $currentSortDir)
                         </div>
                     </div>
                     <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
-                        <button class="btn btn-primary" type="submit">Create IDF</button>
+                        <button class="btn btn-primary" type="submit" title="Create closet">➕</button>
                     </div>
                 </form>
                         <?php if ($edit_idf): ?>
                             <hr style="margin:16px 0; border:0; border-top:1px solid var(--border);">
-                            <h3>✏️ Edit IDF <span class="idf-badge">Update closet profile</span></h3>
+                            <h3 title="Update closet profile">✏️ <span class="idf-badge">Update closet profile</span></h3>
                             <form method="post" class="idf-grid-2">
                                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                                 <input type="hidden" name="update_idf" value="1">
@@ -813,7 +813,7 @@ function itm_idf_sort_indicator($column, $currentSort, $currentSortDir)
                                 <td class="itm-actions-cell itm-actions-left" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$idf['id']; ?>" title="View IDF">🔎</a>
-                                        <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>" title="Edit IDF">✏️</a>
+                                        <a class="btn btn-sm" href="index.php?edit_idf=<?php echo (int)$idf['id']; ?>" title="Edit closet">✏️</a>
                                         <form method="post" action="delete.php" onsubmit="return confirm('Delete this IDF? This action cannot be undone.');" style="margin:0;">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">

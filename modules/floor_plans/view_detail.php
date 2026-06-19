@@ -90,6 +90,6 @@ if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDow
     <p class="itm-dropzone-hint" style="margin-top:12px;">To move this file between folders, open the <a href="index.php">Gallery</a> and drag the file card (⠿ handle) onto a folder row.</p>
     <p style="margin-top:16px;">
         <a href="index.php" class="btn">Gallery</a>
-        <a href="edit.php?id=<?php echo $fpPlanId; ?>" class="btn btn-primary">Edit</a>
+        <a href="edit.php?id=<?php echo $fpPlanId; ?>" class="btn btn-primary" title="Edit">✏️</a>
     </p>
 </div>

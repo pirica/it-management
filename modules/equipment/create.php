@@ -2342,7 +2342,7 @@ $data['equipment_id'] = (string)$assignmentEquipmentIdHidden;
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1><?php echo $isEdit ? '✏️ Edit' : '➕ New'; ?> Equipment</h1>
+            <h1 title="<?php echo $isEdit ? 'Edit equipment' : 'New equipment'; ?>"><?php echo $isEdit ? '✏️' : '➕'; ?></h1>
             <?php if ($success): ?>
                 <div class="alert alert-success">Equipment updated successfully.</div>
             <?php endif; ?>

@@ -53,7 +53,7 @@ $fpTagValue = implode(', ', $fpTagNames);
         <input type="text" name="tag_names" id="tag_names" value="<?php echo sanitize($fpTagValue); ?>">
     </div>
     <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a href="view.php?id=<?php echo $fpPlanId; ?>" class="btn">Cancel</a>
+        <button type="submit" class="btn btn-primary" title="Save">💾</button>
+        <a href="view.php?id=<?php echo $fpPlanId; ?>" class="btn" title="Cancel">🔙</a>
     </div>
 </form>
