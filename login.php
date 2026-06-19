@@ -32,7 +32,7 @@ function itm_record_login_attempt(mysqli $conn, string $attemptType, string $ipA
          ))"
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $identifier, $employeeId, $identifier);
+        mysqli_stmt_bind_param($stmt, 'sssis', $attemptType, $ipAddress, $identifier, $employeeId, $identifier);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
