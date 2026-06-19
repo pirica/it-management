@@ -29,7 +29,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
         $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $fid");
         $f_data = mysqli_fetch_assoc($check_res);
-        if ($f_data && (strtolower($_SESSION['role_name'] ?? '') === 'admin') || (int)$f_data['user_id'] === (int)($_SESSION['employee_id'] ?? 0)) {
+        if ($f_data && (strtolower($_SESSION['role_name'] ?? '') === 'admin') || (int)$f_data['employee_id'] === (int)($_SESSION['employee_id'] ?? 0)) {
             $stmt = mysqli_prepare($conn, "UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?");
             mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
             mysqli_stmt_execute($stmt);
@@ -55,7 +55,7 @@ $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
 
 // Fetch bookmarks for current context
-$where = "company_id = $company_id AND active = 1 AND (user_id = $user_id OR shared = 1)";
+$where = "company_id = $company_id AND active = 1 AND (employee_id = $user_id OR shared = 1)";
 if ($view_mode === 'private') $where .= " AND shared = 0";
 if ($view_mode === 'shared') $where .= " AND shared = 1";
 

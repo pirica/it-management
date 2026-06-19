@@ -21,7 +21,7 @@ $user_private_dir = "{$username}_{$user_id}";
 
 // Why: Fetch user department for access control.
 $dept_id = 0;
-$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE employee_id = $user_id AND company_id = $company_id LIMIT 1");
+$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE id = $user_id AND company_id = $company_id LIMIT 1");
 if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
     $dept_id = (int)$dept_row['department_id'];
 }

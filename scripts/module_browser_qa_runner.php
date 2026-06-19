@@ -2012,7 +2012,7 @@ function mbqa_index_is_empty(string $html): bool
  */
 function mbqa_is_admin_user_company_assignment_row(mysqli $conn, array $row): bool
 {
-    $employeeId = (int)($row['user_id'] ?? 0);
+    $employeeId = (int)($row['employee_id'] ?? 0);
     if ($employeeId <= 0) {
         return false;
     }
@@ -2182,15 +2182,15 @@ function mbqa_runner_module_step_exceptions(): array
         'idf_positions' => [
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
-        // Why: Users manages application, protected; avoid users profiles creations in QA.
+        // Why: Employees manages application auth; avoid employee profile creation in QA.
         'employees' => [
-            'clear' => 'N/A (users module is user creation)',
-            'sample_data' => 'N/A (users module is user creation)',
-            'add' => 'N/A (users module is user creation)',
-            'bulk_cancel' => 'N/A (users module is user creation)',
-            'bulk_delete' => 'N/A (users module is user creation)',
-            'clear_table' => 'N/A (users module is user creation)',
-            'single_delete' => 'N/A (users module is user creation)',
+            'clear' => 'N/A (employees module is employee creation)',
+            'sample_data' => 'N/A (employees module is employee creation)',
+            'add' => 'N/A (employees module is employee creation)',
+            'bulk_cancel' => 'N/A (employees module is employee creation)',
+            'bulk_delete' => 'N/A (employees module is employee creation)',
+            'clear_table' => 'N/A (employees module is employee creation)',
+            'single_delete' => 'N/A (employees module is employee creation)',
         ],
         // Why: User UI Configurarion, not standard tenant CRUD rows.
         'ui_configuration' => [

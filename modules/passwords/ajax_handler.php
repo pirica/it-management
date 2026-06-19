@@ -39,7 +39,7 @@ switch ($action) {
             $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'siii', $name, $parent_id, $id, $user_id);
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (user_id, name, parent_id) VALUES (?, ?, ?)");
+            $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (employee_id, name, parent_id) VALUES (?, ?, ?)");
             mysqli_stmt_bind_param($stmt, 'isi', $user_id, $name, $parent_id);
         }
         
@@ -135,7 +135,7 @@ switch ($action) {
             $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_name = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'isssssii', $folder_id, $account, $login_name, $password, $website, $comments, $id, $user_id);
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
             mysqli_stmt_bind_param($stmt, 'iisssss', $user_id, $folder_id, $account, $login_name, $password, $website, $comments);
         }
         
@@ -174,7 +174,7 @@ switch ($action) {
         $map = array_flip($headers);
 
         $imported = 0; $failed = 0;
-        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
@@ -226,7 +226,7 @@ switch ($action) {
         }
         
         $total = 0; $imported = 0; $failed = 0; $skipped = 0;
-        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (user_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
         while (($row = fgetcsv($handle)) !== FALSE) {
             $total++;

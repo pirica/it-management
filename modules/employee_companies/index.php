@@ -10,6 +10,7 @@ require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 
 require_once ROOT_PATH . 'includes/itm_mbqa_test_user.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -52,13 +53,16 @@ function cr_fk_options($conn, $fk, $company_id, $fieldName = '') {
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
     if (($GLOBALS['crud_table'] ?? '') === 'employee_companies' && $fieldName === 'granted_by_employee_id') {
-        $whereParts = ["u.active = 1", "ur.name IN ('Admin','IT Assistant','IT Manager')"];
+        $join = itm_employee_active_employment_status_join_sql('u', 'ues');
+        $predicate = itm_employee_active_employment_status_predicate_sql('ues');
+        $whereParts = [$predicate, "ur.name IN ('Admin','IT Assistant','IT Manager')"];
         if ($company_id > 0) {
             $whereParts[] = '(u.company_id=' . (int)$company_id . ' OR EXISTS (SELECT 1 FROM employee_companies uc WHERE uc.employee_id = u.id AND uc.company_id=' . (int)$company_id . '))';
         }
         $sql = 'SELECT u.id, u.username AS label
-                FROM employees u
-                LEFT JOIN employee_roles ur ON ur.id = u.role_id
+                FROM employees u'
+                . $join
+                . ' LEFT JOIN employee_roles ur ON ur.id = u.role_id
                 WHERE ' . implode(' AND ', $whereParts) . '
                 ORDER BY u.username';
         $rows = [];
@@ -158,7 +162,7 @@ function cr_is_hidden_employee_field($field) {
 /**
  * Resolves import employee_id without substituting a different user when the spreadsheet user is already linked.
  */
-function cr_resolve_employee_companies_import_user_id($conn, int $companyId, int $preferredUserId): int
+function cr_resolve_employee_companies_import_employee_id($conn, int $companyId, int $preferredUserId): int
 {
     if ($companyId <= 0) {
         return $preferredUserId > 0 ? $preferredUserId : 0;
@@ -172,9 +176,12 @@ function cr_resolve_employee_companies_import_user_id($conn, int $companyId, int
         return $preferredUserId;
     }
 
-    $pickSql = 'SELECT u.id FROM employees u
-        WHERE u.active = 1
-          AND NOT EXISTS (
+    $join = itm_employee_active_employment_status_join_sql('u', 'ues');
+    $predicate = itm_employee_active_employment_status_predicate_sql('ues');
+    $pickSql = 'SELECT u.id FROM employees u'
+        . $join
+        . ' WHERE ' . $predicate
+        . ' AND NOT EXISTS (
               SELECT 1 FROM employee_companies uc
               WHERE uc.company_id = ' . (int)$companyId . ' AND uc.employee_id = u.id
           )
@@ -608,7 +615,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             if (($GLOBALS['crud_table'] ?? '') === 'employee_companies') {
                 $scopeCompanyId = $hasCompany ? (int)$company_id : 0;
                 $preferredUserId = $effectiveUserId;
-                $resolvedUserId = cr_resolve_employee_companies_import_user_id($conn, $scopeCompanyId, $preferredUserId);
+                $resolvedUserId = cr_resolve_employee_companies_import_employee_id($conn, $scopeCompanyId, $preferredUserId);
 
                 if ($resolvedUserId <= 0) {
                     $failedRows++;

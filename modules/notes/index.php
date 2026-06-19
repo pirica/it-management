@@ -227,7 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $checklist_json = !empty($checklist_data) ? json_encode($checklist_data) : null;
 
         if ($crud_action === "edit" && $editId > 0) {
-            $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=? WHERE id=? AND company_id=? AND user_id=?");
+            $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=? WHERE id=? AND company_id=? AND employee_id=?");
             $stmt->bind_param("ssisiiissssiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $editId, $company_id, $logged_user_id);
         } else {
             $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");

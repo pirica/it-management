@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch Contacts
 $search = $_GET['search'] ?? '';
-$where = "user_id = ?";
+$where = "employee_id = ?";
 $params = [$employeeId];
 $types = "i";
 

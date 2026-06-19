@@ -72,7 +72,7 @@ if (!is_array($testUser)) {
 itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $session = [
-    'user_id' => (int)$testUser['id'],
+    'employee_id' => (int)$testUser['id'],
     'username' => (string)$testUser['username'],
     'role_name' => 'User',
     'company_id' => $company_id,

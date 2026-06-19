@@ -730,7 +730,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="check_script_disposable_employees.php">check_script_disposable_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>users</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_employee.php</code>.</td>
+                    <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>employees</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_employee.php</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_script_disposable_employees.php</code> — run after changing audit repro scripts; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
@@ -738,6 +738,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3 / AGENTS.md after PHP/SQL changes.</td>
+                </tr>
+                <tr>
+                    <td><a href="check_stale_user_id_sql.php">check_stale_user_id_sql.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: fail on stale <code>user_id</code> column SQL or legacy <code>users</code> table references in <code>modules/</code>, <code>includes/</code>, and <code>config/</code> after the employees merge.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_id_sql.php</code> — run after auth/session or schema merge changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
                     <td><a href="check_multi_tenant_leaks.php">check_multi_tenant_leaks.php</a></td>
@@ -875,12 +881,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
-                </tr>
-                <tr>
-                    <td><a href="verify_employee_auth_merge.php">verify_employee_auth_merge.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression after merging <code>users</code> into <code>employees</code>: renamed junction tables, admin seed login row (Active employment status), <code>employee_companies</code> links, and absence of legacy <code>users</code>, <code>employees.user_id</code>, and <code>employees.active</code>.</td>
-                    <td><code>php scripts/verify_employee_auth_merge.php</code>. Run after changing auth/session bootstrap, <code>database.sql</code> employee auth columns, or login/register/reset flows.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
@@ -1037,7 +1037,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="verify_select_options_escalation.php">verify_select_options_escalation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression check: Select Options API blocks admin user quick-add via <code>users</code> table (expects PASS).</td>
+                    <td>Regression check: Select Options API blocks admin employee quick-add via <code>employees</code> table (expects PASS).</td>
                     <td><code>php scripts/verify_select_options_escalation.php</code></td>
                 </tr>
                 <tr>
@@ -1047,10 +1047,10 @@ require_once __DIR__ . '/../config/config.php';
                     <td><code>php scripts/verify_user_idor.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_users_sensitive_view.php">verify_users_sensitive_view.php</a></td>
+                    <td><a href="verify_employees_sensitive_view.php">verify_employees_sensitive_view.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression check: Users list/view HTML omits password and reset-token columns (<code>itm_employees_auth_filter_ui_columns()</code>).</td>
-                    <td><code>php scripts/verify_users_sensitive_view.php</code></td>
+                    <td>Regression check: Employees list/view HTML omits password and reset-token columns (<code>itm_employees_auth_filter_ui_columns()</code>).</td>
+                    <td><code>php scripts/verify_employees_sensitive_view.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_reset_git_history_access.php">verify_reset_git_history_access.php</a></td>
@@ -1237,12 +1237,6 @@ require_once __DIR__ . '/../config/config.php';
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for cross-tenant admin access in Users module.</td>
                     <td><code>php scripts/repro_cross_tenant_admin.php</code></td>
-                </tr>
-                <tr>
-                    <td><a href="fix_users_audit_triggers.php">fix_users_audit_triggers.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Fix script to update Users audit triggers to exclude sensitive fields.</td>
-                    <td><code>php scripts/fix_users_audit_triggers.php</code></td>
                 </tr>
             </tbody>
         </table></div>

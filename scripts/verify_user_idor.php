@@ -56,7 +56,7 @@ itm_script_test_employee_register_teardown($conn, $victimId);
 
 // 2. Mock a regular user session
 $session = [
-    'user_id' => 999,
+    'employee_id' => 999,
     'username' => 'attacker',
     'company_id' => 1,
     'role_name' => 'User',

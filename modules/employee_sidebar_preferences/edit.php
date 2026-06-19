@@ -40,9 +40,9 @@ function cr_fk_map($conn, $table) {
         $map[$row['COLUMN_NAME']] = $row;
     }
 
-    if ($table === 'employee_sidebar_preferences' && !isset($map['user_id'])) {
-        $map['user_id'] = [
-            'COLUMN_NAME' => 'user_id',
+    if ($table === 'employee_sidebar_preferences' && !isset($map['employee_id'])) {
+        $map['employee_id'] = [
+            'COLUMN_NAME' => 'employee_id',
             'REFERENCED_TABLE_NAME' => 'employees',
             'REFERENCED_COLUMN_NAME' => 'id',
         ];
@@ -211,7 +211,7 @@ function cr_is_hidden_employee_field($field) {
         return false;
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    $hidden = ['company_id', 'employee_id', 'location_id', 'phone', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 

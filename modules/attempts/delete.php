@@ -130,7 +130,7 @@ function cr_is_hidden_employee_field($field) {
         return false;
     }
 
-    $hidden = ['company_id', 'user_id', 'location_id', 'phone', 'location', 'employee_code'];
+    $hidden = ['company_id', 'employee_id', 'location_id', 'phone', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 
@@ -257,7 +257,7 @@ function cr_render_cell_value($table, $field, $value) {
 
     $text = (string)($value ?? '');
 
-    if (in_array($table, ['attempts'], true) && $field === 'user_id') {
+    if (in_array($table, ['attempts'], true) && $field === 'employee_id') {
         if ((int)$text <= 0) {
             return '—';
         }

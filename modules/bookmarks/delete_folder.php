@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $id AND company_id = $company_id");
         $data = mysqli_fetch_assoc($check_res);
 
-        if ($data && ($is_admin || (int)$data['user_id'] === $user_id)) {
+        if ($data && ($is_admin || (int)$data['employee_id'] === $user_id)) {
             // Update bookmarks in this folder to be root
             itm_run_query($conn, "UPDATE bookmarks SET folder_id = NULL WHERE folder_id = $id");
             // Update subfolders to be root

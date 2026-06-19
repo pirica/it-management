@@ -19,7 +19,7 @@ echo "Verifying Sensitive Information Disclosure in Audit Logs..." . $nl;
 // 1. Mock a regular user session
 $companyId = 1;
 $session = [
-    'user_id' => 999,
+    'employee_id' => 999,
     'username' => 'attacker',
     'company_id' => $companyId,
     'role_name' => 'User'

@@ -25,20 +25,20 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **smoke_test.sh** — main shell script for linting and security coverage.
 - **verify_database_sql_import.sh** — full `database.sql` import + table-count assertion (derived from `CREATE TABLE` lines, currently 117); CI job **database-import** in `.github/workflows/smoke.yml`.
 - **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV; post-run link to `phpunit/coverage/html/coverage.html`. Browser coverage URL: `run_tests.php?run=1&mode=coverage`. Full docs: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
-- **check_csrf_coverage.php** / **check_sql_injection_coverage.php** — security audit tools.
+- **check_csrf_coverage.php** / **check_sql_injection_coverage.php** / **check_stale_user_id_sql.php** — security and merge audit tools.
 - **verify_select_options_escalation.php** — regression for Select Options API table whitelist (`includes/itm_select_options_policy.php`); see **`scripts/SCRIPTS.md` → Select Options API verification**.
 - **verify_notes_ajax_contract.php** — Notes AJAX blocked mutations return HTTP 404 with `ok:false` when `affected_rows === 0`.
 - **verify_metadata_column_cache.php** — table-level `information_schema` cache in `itm_table_has_column()` / `itm_table_column_is_nullable()`; cold schema Questions delta 1–2, warm repeat schema delta 0 (measurement excludes trailing `SHOW STATUS`).
 - **verify_json_import_validation.php** — JSON import rejects invalid numeric/date column values instead of silent NULL inserts.
 - **verify_maintenance_scripts_rbac.php** — browser Admin gate on MBQA runner, compare_database_sql_modules, and test_sql_injection.
 - **lib/script_cli_output.php** — browser `<pre>` wrapper, `colorText()`, `itm_script_shell_stderr_discard()` for cross-platform subprocess stderr suppression.
-- **lib/itm_script_test_employee.php** — disposable `employees` rows for repro/verify scripts and PHPUnit (`script-{slug}-{hex}` usernames, snapshot/restore, teardown delete). Static guard: `check_script_disposable_employees.php`.
+- **lib/itm_script_test_employee.php** — disposable `employees` rows for repro/verify scripts and PHPUnit (`script-{slug}-{hex}` usernames, snapshot/restore, teardown delete). Static guards: `check_script_disposable_employees.php` (hardcoded id `1` / stale `$_SESSION['user_id']`) and `check_stale_user_id_sql.php` (legacy `user_id` SQL / `users` table in app code).
 - **apitest_tier_free.php** / **apitest_tier_basic.php** — disposable `ui_configuration` tier rate-limit regressions; Free HTTP probe publishes CLI `PHPSESSID` via **`scripts/lib/itm_api_tier_test_helpers.php`** (`itm_apitest_publish_http_session()`).
 - **verify_company_module_access.php** — registry/CMA regression plus sidebar discovery probes (registry-only, new MySQL table, folder-only, both, neither); PHPUnit wrapper: `phpunit/tests/Unit/Scripts/CompanyModuleAccessVerifyTest.php`.
 - **verify_ops_report.php** — D-2 edit lock, `ops_report` CRUD, cascade delete, audit triggers on all `ops_report*` tables, registry row; browser or CLI via `lib/script_cli_output.php`; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest`.
 - **verify_system_status.php** — `modules/system_status/` layout, `modules_registry` row, native API payloads, storage tree + active DB table reports, `information_schema`; Windows also checks `shell_exec`, `is_readable()` on each `includes/*.ps1`, and `test_*.php` wrappers. Related: `system_status_api.php`, `system_status_phpinfo.php`, `take_screenshots_modules.py` (README `docs/readme/system_status.png`; cookie domain from base URL hostname). PHPUnit: `SystemStatusApiTest`.
 - **repro_audit_token_leak.php** / **repro_rbac_bypass.php** / **repro_vulnerabilities.php** / **repro_esa_vulnerability.php** / **repro_auth_bypass_v3.php** — security repro scripts; subprocess spawns use `escapeshellarg()` and inherit `mysqli.default_socket` when set; **repro_rbac_bypass.php** seeds via a free `cost_centers` slot and must not stub `cr_require_valid_csrf_token()`; audit token repro uses prepared statements for disposable test-user `reset_token` updates.
-- **verify_explorer_zip_leak.php** / **verify_explorer_rce_htaccess.php** / **verify_explorer_rce_marker.php** / **verify_user_idor.php** / **verify_company_deletion.php** / **verify_git_reset_csrf.php** / **verify_reset_git_history_access.php** / **verify_select_options_escalation.php** — isolated subprocess verify scripts; `escapeshellarg()` on PHP binary and temp file.
+- **verify_explorer_zip_leak.php** / **verify_explorer_rce_htaccess.php** / **verify_explorer_rce_marker.php** / **verify_user_idor.php** / **verify_company_deletion.php** / **verify_git_reset_csrf.php** / **verify_reset_git_history_access.php** / **verify_select_options_escalation.php** / **verify_employees_sensitive_view.php** — isolated subprocess verify scripts; session simulation uses `employee_id`; `escapeshellarg()` on PHP binary and temp file.
 - **verify_employee_type_resignations.php** — `employee_type` seed, `employees.start_date` / `employee_type_id`, registry slugs, weekly resignations SQL filter (`itm_iso_week_bounds()`, `MONTH(termination_date)`, `itm_sql_valid_date_predicate()`); browser or CLI via `lib/script_cli_output.php` (do not use `fwrite(STDERR)` on web SAPI).
 - **debug_resignations_termination_date.php** — read-only diagnostic for `modules/resignations/index.php` weekly filter. Default probe date `18/06/2026` (ISO week 25). Params: `date`, `company_id`, `employee_id`, `week`, `month`, `year`. Prints `[PASS]` / `[FAIL]` / `[WARN]` for week metadata, ISO bounds, legacy predicates, module SQL simulation, employee row, and today's verify-probe bounds. Catalog: `scripts/scripts.php`. Confirmed fix for empty report when MySQL 8 rejected `<> '0000-00-00'` in prepared statements.
 - **employee_fields_missing.php** — compares `employees` columns in `database.sql` and live MySQL with create/edit/view/index coverage in `modules/employees/`; fails on schema or critical UI gaps (including `termination_date`). View checks map FK columns to human labels in `view.php` (e.g. `department_id` → `Department` / `department_name`).
@@ -214,7 +214,7 @@ Empty `index.html` on every ensured folder (all policies):
 
 ### `/files/` chain example
 
-For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
+For `files/{company_id}/Private/{username}_{employee_id}/private_contacts/`, the system **force-creates** managed `.htaccess` and empty `index.html` on:
 
 - `files/`
 - `files/{company_id}/`
@@ -222,8 +222,8 @@ For `files/{company_id}/Private/{username}_{user_id}/private_contacts/`, the sys
 - `files/{company_id}/Private/`
 - `files/{company_id}/Departments/` (when created)
 - `files/{company_id}/Trash/` (when created)
-- `files/{company_id}/Private/{username}_{user_id}/`
-- `files/{company_id}/Private/{username}_{user_id}/private_contacts/`
+- `files/{company_id}/Private/{username}_{employee_id}/`
+- `files/{company_id}/Private/{username}_{employee_id}/private_contacts/`
 
 For **employee profile photos** (`files/{company_id}/Private/{username}_{employee_id}/profile/`), the same chain applies through `Private/{username}_{employee_id}/`, then:
 
@@ -319,7 +319,7 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 
 ### 10. Private Contacts
 - **Paths:** `modules/private_contacts/create.php`, `modules/private_contacts/edit.php`
-- **Storage:** `files/{company_id}/Private/{username}_{user_id}/private_contacts/` (`deny_http` chain)
+- **Storage:** `files/{company_id}/Private/{username}_{employee_id}/private_contacts/` (`deny_http` chain)
 - **Description:** PNG contact photos.
 - **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; UI serves images through `itm_files_serve_url()` → `modules/explorer/file.php`.
 
@@ -331,7 +331,7 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 
 ### 12. Notes
 - **Path:** `modules/notes/index.php`
-- **Storage:** `files/{company_id}/Private/{username}_{user_id}/notes/` (`deny_http` chain)
+- **Storage:** `files/{company_id}/Private/{username}_{employee_id}/notes/` (`deny_http` chain)
 - **Description:** Image attachments on notes.
 - **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; previews/downloads use `itm_files_serve_url()`.
 

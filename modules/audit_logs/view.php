@@ -32,7 +32,7 @@ if ($auditId > 0) {
         $conn,
         'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
         . 'FROM audit_logs al '
-        . 'LEFT JOIN employees u ON u.id = al.user_id '
+        . 'LEFT JOIN employees u ON u.id = al.employee_id '
         . 'WHERE al.id = ? AND al.company_id = ? '
         . 'LIMIT 1'
     );
@@ -64,7 +64,7 @@ if ($logRow) {
         $userName = trim((string)($logRow['username'] ?? ''));
     }
     if ($userName === '') {
-        $userName = $logRow['user_id'] ? ('User #' . (int)$logRow['user_id']) : 'System';
+        $userName = $logRow['employee_id'] ? ('User #' . (int)$logRow['employee_id']) : 'System';
     }
 }
 
