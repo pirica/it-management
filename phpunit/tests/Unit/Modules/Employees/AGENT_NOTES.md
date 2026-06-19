@@ -8,7 +8,8 @@ Unit/regression tests for `modules/employees/`.
 - Database fixtures: `database.sql`.
 
 ## 7. File Structure
-- `*Test.php` / `*.unittest.php` — test classes for this module.
+- `SafeImportTest.php` — asserts import does not delete rows missing from payload; counts only fixture `work_email` values (`keep@example.com`, `other@example.com`) so protected seed employees are excluded.
+- `*Test.php` / `*.unittest.php` — other test classes for this module.
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.

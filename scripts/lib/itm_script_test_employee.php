@@ -74,7 +74,7 @@ if (!function_exists('itm_script_test_employee_guard_mutable_id')) {
 
 if (!function_exists('itm_script_test_employee_create')) {
     /**
-     * @return array|null Keys: id, username, email, company_id, role_id, access_level_id
+     * @return array|null Keys: id, username, email, company_id, role_id, access_level_id, employment_status_id
      */
     function itm_script_test_employee_create($conn, $companyId, array $options = [])
     {
@@ -130,7 +130,7 @@ if (!function_exists('itm_script_test_employee_create')) {
             'company_id' => $companyId,
             'role_id' => $roleId,
             'access_level_id' => $accessLevelId,
-            'active' => $active,
+            'employment_status_id' => $employmentStatusId,
         ];
     }
 }

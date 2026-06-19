@@ -20,8 +20,9 @@ class CrossTenantScopingTest extends TestCase
 
         // Create user in company 2
         $leakUser = "test_leak_" . uniqid();
-        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (?, 'Test', 'User', ?, ?, 'pass', 2, 2, 1, 1)");
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id) VALUES (?, 'Test', 'User', ?, ?, 'pass', 2, 2, 1)");
         $email = $leakUser . '@example.com';
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'iss', $company2Id, $leakUser, $email);
         mysqli_stmt_execute($stmt);
         $leakId = mysqli_insert_id($this->conn);
@@ -56,16 +57,18 @@ class CrossTenantScopingTest extends TestCase
 
         // Create user in company 1
         $userCo1 = "test_co1_" . uniqid();
-        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (?, 'Test', 'User', ?, ?, 'pass', 2, 2, 1, 1)");
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id) VALUES (?, 'Test', 'User', ?, ?, 'pass', 2, 2, 1)");
         $email1 = $userCo1 . '@example.com';
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'iss', $company1Id, $userCo1, $email1);
         mysqli_stmt_execute($stmt);
         $userCo1Id = mysqli_insert_id($this->conn);
 
         // Create admin in company 2
         $adminCo2 = "test_admin_co2_" . uniqid();
-        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, active) VALUES (?, 'Test', 'User', ?, ?, 'pass', 1, 1, 1, 1)");
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id) VALUES (?, 'Test', 'User', ?, ?, 'pass', 1, 1, 1)");
         $email2 = $adminCo2 . '@example.com';
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'iss', $company2Id, $adminCo2, $email2);
         mysqli_stmt_execute($stmt);
         $adminCo2Id = mysqli_insert_id($this->conn);
