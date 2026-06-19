@@ -29,16 +29,15 @@ if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
 $path = $_GET['path'] ?? '';
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 
-// Why: Directory traversal protection.
-if (strpos($path, '..') !== false) {
+$relative_path = explorer_normalize_relative_path($path);
+if ($relative_path === null) {
     http_response_code(403);
     exit("Invalid path.");
 }
 
-$full_path = $storage_root . ($path ? "/" . trim($path, '/') : "");
+$full_path = $storage_root . ($relative_path !== '' ? '/' . $relative_path : '');
 
 // Why: Access control logic (mirroring api.php) with segment-boundary checks.
-$relative_path = trim(str_replace('\\', '/', (string)$path), '/');
 $isEmployeeProfilePhotoPath = (bool)preg_match('#^Private/[^/]+/profile/#', $relative_path);
 if (!$isEmployeeProfilePhotoPath && ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/'))) {
     // Forbidden to access the 'Private' root itself.
@@ -67,7 +66,7 @@ if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departm
     }
 }
 
-if (!$path || !file_exists($full_path) || is_dir($full_path)) {
+if (!$relative_path || !file_exists($full_path) || is_dir($full_path)) {
     http_response_code(404);
     exit("File not found.");
 }

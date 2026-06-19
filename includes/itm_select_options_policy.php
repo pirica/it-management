@@ -28,6 +28,7 @@ if (!function_exists('itm_select_options_blocked_tables')) {
             'employee_companies',
             'employee_roles',
             'employees',
+            'companies',
         ];
     }
 }
@@ -48,7 +49,6 @@ if (!function_exists('itm_select_options_allowed_tables')) {
             'bookmark_folders',
             'budget_categories',
             'cable_colors',
-            'companies',
             'cost_centers',
             'departments',
             'employee_positions',

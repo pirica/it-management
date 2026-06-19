@@ -118,6 +118,13 @@ Catalog: `scripts/scripts.php`.
 
 Run after changes to `modules/select_options_api.php` or `includes/itm_select_options_policy.php`. Requires MySQL (`itmanagement` schema). The script creates disposable test users and removes them on exit. Catalog: `scripts/scripts.php`.
 
+| Script | Purpose |
+|--------|---------|
+| `php scripts/repro_select_options_unauthorized_v2.php` | Regression — regular users cannot quick-add `companies` rows via Select Options API |
+| `php scripts/repro_attempts_data_leak_v2.php` | Regression — password-like login identifiers are redacted before `attempts.email` persistence |
+
+Run after login/forgot-password attempt logging changes or Select Options policy updates.
+
 **Departments quick-add (`__add_new__`):** whitelisted in `includes/itm_select_options_policy.php`. `select_options_api.php` auto-inserts `company_id` (when `data-add-company-scoped="1"`) and `active=1`. Only **`name`** is required in the modal (`new_value`); **`code`** is optional via `data-add-extra-fields` (`required: false`). Used on equipment create/edit (`modules/equipment/create.php`).
 
 ### Git history reset verification
@@ -186,9 +193,11 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/test_explorer_paths.php` | Pure-logic regression for `get_full_path` ACL (roots, traversal, backslashes) |
+| `php scripts/test_explorer_paths.php` | Pure-logic regression for `get_full_path` ACL (roots, traversal, backslashes, `./` prefix bypass) |
 | `php scripts/test_explorer_preview.php` | Pure-logic regression for Explorer preview routing (`image`, `pdf`, `text`, `unsupported`) |
 | `php scripts/verify_explorer_zip_leak.php` | Confirms `downloadZip` cannot zip `Private` / company root |
+| `php scripts/repro_explorer_path_bypass_v4.php` | Regression — `./Private` and `./Private/{other}` blocked after path normalization |
+| `php scripts/repro_explorer_zip_slip_v2.php` | Regression — malicious ZIP traversal entries blocked during `unzip` |
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
 | `php scripts/verify_explorer_rce_marker.php` | PoC — `.htaccess` with ITM marker cannot persist RCE directives |
 

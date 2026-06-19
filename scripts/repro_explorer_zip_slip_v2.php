@@ -1,84 +1,70 @@
 <?php
 /**
- * Repro: Explorer Zip Slip
- *
- * This script demonstrates a Zip Slip vulnerability in the Explorer module's unzip action.
- * It creates a malicious ZIP file and triggers an extraction that writes a file outside
- * the intended directory.
+ * Regression: Explorer Zip Slip blocked during unzip.
  */
 
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
+require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 
-// 1. Create a test employee
+itm_script_output_begin('Explorer Zip Slip Verification');
+
+$nl = itm_script_output_nl();
+
 $employee = itm_script_test_employee_create($conn, 1, [
-    'role_id' => 1, // Admin
-    'script_slug' => 'zip-slip'
+    'role_id' => 1,
+    'script_slug' => 'zip-slip',
 ]);
-
 if (!$employee) {
-    die("Failed to create test employee.\n");
+    echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
 }
+itm_script_test_employee_register_teardown($conn, (int)$employee['id']);
 
-// Set up session
-$_SESSION['employee_id'] = $employee['id'];
-$_SESSION['username'] = $employee['username'];
-$_SESSION['company_id'] = $employee['company_id'];
-$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+$_SESSION['employee_id'] = (int)$employee['id'];
+$_SESSION['username'] = (string)$employee['username'];
+$_SESSION['company_id'] = (int)$employee['company_id'];
+$_SESSION['csrf_token'] = itm_get_csrf_token();
 
-echo "Logged in as: " . $_SESSION['username'] . " (ID: " . $_SESSION['employee_id'] . ")\n";
-
-$company_id = $_SESSION['company_id'];
-$storage_root = ROOT_PATH . 'files/' . $company_id;
+$company_id = (int)$_SESSION['company_id'];
+$storage_root = itm_files_storage_root() . $company_id;
 $common_dir = $storage_root . '/Common';
+itm_ensure_files_storage_directory($common_dir);
 
-if (!is_dir($common_dir)) {
-    mkdir($common_dir, 0777, true);
-}
-
-// 2. Create a malicious ZIP file
 $zipPath = $common_dir . '/malicious.zip';
 $zip = new ZipArchive();
-if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
-    die("Failed to create ZIP file.\n");
+if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+    echo colorText('[FAIL] Unable to create malicious ZIP fixture.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
 }
-
-// Target: poc_zip_slip_explorer.txt in ROOT_PATH
-// Current extraction dir: files/1/Common/
-// Path to reach /app/: ../../../poc_zip_slip_explorer.txt
 $zip->addFromString('../../../poc_zip_slip_explorer.txt', 'Zip Slip Success');
 $zip->close();
 
-echo "Created malicious ZIP at: $zipPath\n";
-
-// 3. Trigger unzip via Explorer API
 $_SERVER['REQUEST_METHOD'] = 'POST';
 $_POST['action'] = 'unzip';
 $_POST['path'] = 'Common';
 $_POST['item'] = 'malicious.zip';
 $_POST['csrf_token'] = $_SESSION['csrf_token'];
 
-// Buffer output to avoid JSON interference
 ob_start();
 include __DIR__ . '/../modules/explorer/api.php';
 $output = ob_get_clean();
 
-echo "API Output: " . $output . "\n";
-
-// 4. Verify if Zip Slip worked
 $targetFile = ROOT_PATH . 'poc_zip_slip_explorer.txt';
+$exitCode = 0;
 if (file_exists($targetFile)) {
-    echo "[FAIL] VULNERABLE: File created at $targetFile\n";
-    unlink($targetFile); // Cleanup
+    echo colorText('[FAIL] Zip Slip wrote outside the extraction directory.', 'fail') . $nl;
+    unlink($targetFile);
+    $exitCode = 1;
 } else {
-    echo "[PASS] Not vulnerable or extraction failed.\n";
-    echo "Checking for the file in other locations...\n";
-    system("find " . ROOT_PATH . " -name poc_zip_slip_explorer.txt");
+    echo colorText('[PASS] Traversal entry blocked during unzip.', 'pass') . $nl;
+    echo 'API output: ' . trim((string)$output) . $nl;
 }
 
-// Cleanup
-// unlink($zipPath);
-itm_script_test_employee_delete($conn, $employee['id']);
+@unlink($zipPath);
+itm_script_output_end();
+exit($exitCode);

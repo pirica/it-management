@@ -1253,25 +1253,25 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_explorer_path_bypass_v4.php">repro_explorer_path_bypass_v4.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Explorer path validation bypass via <code>./</code> prefix.</td>
+                    <td>Regression — Explorer <code>./Private</code> path bypass blocked after normalization.</td>
                     <td><code>php scripts/repro_explorer_path_bypass_v4.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_attempts_data_leak_v2.php">repro_attempts_data_leak_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for sensitive information disclosure (passwords) in the attempts table.</td>
+                    <td>Regression — password-like login identifiers redacted in <code>attempts.email</code>.</td>
                     <td><code>php scripts/repro_attempts_data_leak_v2.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_explorer_zip_slip_v2.php">repro_explorer_zip_slip_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Zip Slip (path traversal during extraction) in Explorer module.</td>
+                    <td>Regression — Zip Slip traversal entries blocked during Explorer unzip.</td>
                     <td><code>php scripts/repro_explorer_zip_slip_v2.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_select_options_unauthorized_v2.php">repro_select_options_unauthorized_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for unauthorized entity creation via Select Options API.</td>
+                    <td>Regression — <code>companies</code> quick-add blocked for regular users.</td>
                     <td><code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
                 </tr>
             </tbody>

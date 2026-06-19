@@ -18,10 +18,10 @@ require_once dirname(dirname(__DIR__)) . '/config/config.php';
  */
 if (!function_exists('get_full_path')) {
 function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $username) {
-    $relative_path = trim(str_replace('\\', '/', (string)$relative_path), '/');
-
-    // Why: Block directory traversal attempts.
-    if (strpos($relative_path, '..') !== false) return null;
+    $relative_path = explorer_normalize_relative_path($relative_path);
+    if ($relative_path === null) {
+        return null;
+    }
 
     $full = $storage_root . ($relative_path ? "/$relative_path" : "");
 
@@ -555,8 +555,12 @@ case "unzip":
 
     $zip = new ZipArchive();
     if ($zip->open($src) === TRUE) {
-        $zip->extractTo($dir);
+        $extracted = explorer_extract_zip_safely($zip, $dir);
         $zip->close();
+        if (!$extracted) {
+            echo json_encode(["ok" => 0, "error" => "Unsafe archive entries blocked."]);
+            break;
+        }
         // Since we extracted multiple files, we'd need to sync all of them.
         // For simplicity, we can let the next 'list' operation handle the sync.
         echo json_encode(["ok" => 1]);

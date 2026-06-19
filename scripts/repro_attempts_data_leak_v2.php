@@ -1,67 +1,72 @@
 <?php
 /**
- * Repro: Attempts Data Leak
+ * Regression: authentication attempt identifier redaction.
  *
- * Demonstrates how sensitive information (like passwords) can be leaked into
- * the `attempts` table if entered into the email/username field during login.
+ * Why: Passwords mistyped into the login email field must not persist verbatim in attempts.email.
  */
 
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
-// 1. Simulate a failed login where the user typed their password in the email field
+itm_script_output_begin('Attempts Data Leak Verification');
+
+$nl = itm_script_output_nl();
 $leakedSecret = 'P@ssword123!';
-$requestIp = '1.2.3.4';
+$requestIp = '127.0.0.1';
 
 $_SERVER['REQUEST_METHOD'] = 'POST';
+$_SERVER['REMOTE_ADDR'] = $requestIp;
 $_POST['email'] = $leakedSecret;
-$_POST['password'] = 'wrong';
+$_POST['password'] = 'wrong-password-value';
 $_POST['csrf_token'] = itm_get_csrf_token();
 
-echo "Simulating failed login with identifier: $leakedSecret\n";
-
-$_SERVER['REMOTE_ADDR'] = '1.2.3.4';
-
-// Handling environment-specific schema differences in Beta
-$oldTriggerRes = mysqli_query($conn, "SHOW CREATE TRIGGER trg_attempts_audit_insert");
-$dummyInt = intval(1);
-$oldTriggerRow = mysqli_fetch_assoc($oldTriggerRes);
-$oldTriggerSql = $oldTriggerRow['SQL Original Statement'] ?? '';
-
-mysqli_query($conn, "DROP TRIGGER IF EXISTS trg_attempts_audit_insert");
-$dummyInt = intval(2);
-// Temporary simple trigger to allow insertion despite missing employee_id column in trigger
-mysqli_query($conn, "CREATE TRIGGER `trg_attempts_audit_insert` AFTER INSERT ON `attempts` FOR EACH ROW
-BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `table_name`, `record_id`, `action`, `new_values`)
-  VALUES (1, 'attempts', NEW.id, 'INSERT', JSON_OBJECT('email', NEW.email));
-END");
-$dummyInt = intval(3);
+echo 'Simulating failed login with a password-like identifier.' . $nl;
 
 ob_start();
 include __DIR__ . '/../login.php';
 ob_end_clean();
 
-// Restore original trigger
-if ($oldTriggerSql) {
-    mysqli_query($conn, "DROP TRIGGER IF EXISTS trg_attempts_audit_insert");
-    mysqli_query($conn, $oldTriggerSql);
+$expectedStored = itm_normalize_login_attempt_identifier($leakedSecret);
+$stmt = mysqli_prepare($conn, 'SELECT email FROM attempts WHERE email = ? ORDER BY id DESC LIMIT 1');
+if ($stmt === false) {
+    echo colorText('[FAIL] Unable to prepare attempts lookup.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
 }
 
-// 2. Verify the secret is in the `attempts` table
-$stmt = mysqli_prepare($conn, "SELECT email FROM attempts WHERE email = ? ORDER BY id DESC LIMIT 1");
-mysqli_stmt_bind_param($stmt, 's', $leakedSecret);
+mysqli_stmt_bind_param($stmt, 's', $expectedStored);
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
-$row = mysqli_fetch_assoc($res);
+$row = mysqli_fetch_assoc($res) ?: null;
 mysqli_stmt_close($stmt);
 
-if ($row && $row['email'] === $leakedSecret) {
-    echo "[FAIL] VULNERABLE: Sensitive data '$leakedSecret' leaked into the attempts table.\n";
-} else {
-    echo "[PASS] Data not found in attempts table.\n";
+$leakedStmt = mysqli_prepare($conn, 'SELECT id FROM attempts WHERE email = ? ORDER BY id DESC LIMIT 1');
+$leakedRow = null;
+if ($leakedStmt) {
+    mysqli_stmt_bind_param($leakedStmt, 's', $leakedSecret);
+    mysqli_stmt_execute($leakedStmt);
+    $leakedRes = mysqli_stmt_get_result($leakedStmt);
+    $leakedRow = mysqli_fetch_assoc($leakedRes) ?: null;
+    mysqli_stmt_close($leakedStmt);
 }
 
-// Cleanup
-mysqli_query($conn, "DELETE FROM attempts WHERE email = '" . mysqli_real_escape_string($conn, $leakedSecret) . "'");
+if ($row && $row['email'] === $expectedStored && $expectedStored !== $leakedSecret && !$leakedRow) {
+    echo colorText('[PASS] Identifier redacted before persistence in attempts.email.', 'pass') . $nl;
+    $exitCode = 0;
+} else {
+    echo colorText('[FAIL] Sensitive identifier persisted verbatim in attempts.email.', 'fail') . $nl;
+    $exitCode = 1;
+}
+
+if ($row) {
+    $cleanup = mysqli_prepare($conn, 'DELETE FROM attempts WHERE email = ?');
+    if ($cleanup) {
+        mysqli_stmt_bind_param($cleanup, 's', $expectedStored);
+        mysqli_stmt_execute($cleanup);
+        mysqli_stmt_close($cleanup);
+    }
+}
+
+itm_script_output_end();
+exit($exitCode);

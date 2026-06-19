@@ -9,11 +9,14 @@ if (!function_exists('str_starts_with')) {
     }
 }
 
-// Logic copied from api.php get_full_path
-function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_id, $username) {
-    $relative_path = trim(str_replace('\\', '/', (string)$relative_path), '/');
+// Logic copied from api.php get_full_path (via includes/itm_explorer_paths.php)
+require_once __DIR__ . '/../includes/itm_explorer_paths.php';
 
-    if (strpos($relative_path, '..') !== false) return null;
+function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_id, $username) {
+    $relative_path = explorer_normalize_relative_path($relative_path);
+    if ($relative_path === null) {
+        return null;
+    }
 
     $full = $storage_root . ($relative_path ? "/$relative_path" : "");
 
@@ -64,6 +67,9 @@ $test_cases = [
     ['Departments/10/sub', 10, true, 'Subfolder in own department'],
     ['..', 10, false, 'Traversal up'],
     ['Common/../Private', 10, false, 'Traversal attempt'],
+    ['./Private', 10, false, 'Private root (bypass ./ prefix)'],
+    ['./Private/other_456', 10, false, 'Other private folder (bypass ./ prefix)'],
+    ['./Departments', 10, false, 'Departments root (bypass ./ prefix)'],
 ];
 
 $failed = 0;

@@ -225,8 +225,8 @@ function itmDocCollectExplorerApiActions(string $rootPath): array
         'unzip' => [
             'method' => 'POST',
             'params' => 'action, path, item, csrf_token',
-            'response' => '{"ok":1} or {"ok":0}',
-            'purpose' => 'Extract a .zip archive into the current folder.',
+            'response' => '{"ok":1} or {"ok":0,"error":"Unsafe archive entries blocked."}',
+            'purpose' => 'Extract a .zip archive into the current folder; traversal entries are rejected by explorer_extract_zip_safely().',
         ],
         'upload' => [
             'method' => 'POST',
@@ -817,7 +817,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/includes/update_port
 
     <div class="card">
         <h2>Explorer API (<code>modules/explorer/api.php</code>)</h2>
-        <p>Multi-tenant file manager for <code>files/{company_id}/</code>. ACL: <code>Common/</code> (all company users), <code>Departments/{dept_id}/</code> (department members), <code>Private/{username}_{employee_id}/</code> (owner only), <code>Trash/</code> (soft-delete mirror). Protected roots cannot be listed via API for <code>Private</code> or <code>Departments</code> — UI uses scoped paths.</p>
+        <p>Multi-tenant file manager for <code>files/{company_id}/</code>. ACL: <code>Common/</code> (all company users), <code>Departments/{dept_id}/</code> (department members), <code>Private/{username}_{employee_id}/</code> (owner only), <code>Trash/</code> (soft-delete mirror). Paths are normalized with <code>explorer_normalize_relative_path()</code> before ACL checks so prefixes such as <code>./Private</code> cannot bypass segment rules. Protected roots cannot be listed via API for <code>Private</code> or <code>Departments</code> — UI uses scoped paths.</p>
         <p>All POST actions require <code>csrf_token</code>. Responses are JSON (<code>Content-Type: application/json; charset=utf-8</code>) unless noted.</p>
         <table>
             <thead><tr><th>Method</th><th>Action</th><th>Parameters</th><th>Response</th><th>Purpose</th></tr></thead>
@@ -910,7 +910,7 @@ curl -b cookies.txt -OJ "http://localhost/it-management/modules/explorer/api.php
 
     <div class="card">
         <h2>Select Options quick-add whitelist (<code>modules/select_options_api.php</code>)</h2>
-        <p>Only lookup tables listed in <code>includes/itm_select_options_policy.php</code> accept POST inserts from <code>js/select-add-option.js</code>. Blocked tables (for example <code>employees</code>, <code>role_module_permissions</code>) return <code>{"ok":false,"error":"This list cannot be updated from quick-add."}</code>. Regression: <code>php scripts/verify_select_options_escalation.php</code>.</p>
+        <p>Only lookup tables listed in <code>includes/itm_select_options_policy.php</code> accept POST inserts from <code>js/select-add-option.js</code>. Blocked tables (for example <code>employees</code>, <code>companies</code>, <code>role_module_permissions</code>) return <code>{"ok":false,"error":"This list cannot be updated from quick-add."}</code>. Regression: <code>php scripts/verify_select_options_escalation.php</code>, <code>php scripts/repro_select_options_unauthorized_v2.php</code>.</p>
         <p><strong><?= (int)count($selectOptionsAllowedTables); ?></strong> allowed table(s). Notable entries: <code>license_types</code> (License Management Type dropdown), <code>departments</code>, <code>suppliers</code>, <code>warranty_types</code>.</p>
         <details>
             <summary>Full allowed table list</summary>
