@@ -7,7 +7,7 @@
  */
 
 require '../../config/config.php';
-if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+if (!itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }
@@ -268,7 +268,7 @@ if (
     $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
 }
 
-$isAuditLogsAdmin = itm_is_admin($conn, (int)($_SESSION['user_id'] ?? 0));
+$isAuditLogsAdmin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_action'] ?? '') !== '') {
     itm_require_post_csrf();
@@ -403,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_save_re
         exit;
     }
     $configToSave['records_per_page'] = $postedRecordsPerPage;
-    $settingsUserId = (int)($_SESSION['user_id'] ?? 0);
+    $settingsUserId = (int)($_SESSION['employee_id'] ?? 0);
 
     if ($settingsUserId <= 0 || !itm_save_ui_configuration($conn, $companyId, $configToSave, $settingsUserId)) {
         $_SESSION['audit_logs_flash_error'] = ['Unable to save rows on screen setting.'];
@@ -429,7 +429,7 @@ $offset = ($page - 1) * $perPage;
 
 $countSql = 'SELECT COUNT(*) AS total '
           . 'FROM audit_logs al '
-          . 'LEFT JOIN users u ON u.id = al.user_id '
+          . 'LEFT JOIN employees u ON u.id = al.user_id '
           . 'WHERE ' . implode(' AND ', $where);
 $countStmt = mysqli_prepare($conn, $countSql);
 $totalRows = 0;
@@ -452,7 +452,7 @@ if ($page > $totalPages) {
 // Uses JOINs to resolve user details and Prepared Statements for security.
 $sql = 'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
      . 'FROM audit_logs al '
-     . 'LEFT JOIN users u ON u.id = al.user_id '
+     . 'LEFT JOIN employees u ON u.id = al.user_id '
      . 'WHERE ' . implode(' AND ', $where) . ' '
      . 'ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 

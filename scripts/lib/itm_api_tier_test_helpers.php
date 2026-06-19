@@ -8,7 +8,7 @@ if (!defined('ITM_APITEST_COMPANY_ID')) {
 }
 
 /**
- * Why: Each tier script uses a dedicated user_id slot so parallel runs do not collide.
+ * Why: Each tier script uses a dedicated employee_id slot so parallel runs do not collide.
  */
 function itm_apitest_disposable_user_id($slot) {
     $slot = (int)$slot;
@@ -49,23 +49,23 @@ function itm_apitest_assert($label, $condition, $detail = '') {
     return false;
 }
 
-function itm_apitest_cleanup_configuration($conn, $companyId, $userId) {
+function itm_apitest_cleanup_configuration($conn, $companyId, $employeeId) {
     if (!($conn instanceof mysqli)) {
         return false;
     }
 
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
         return false;
     }
 
-    $stmt = mysqli_prepare($conn, 'DELETE FROM ui_configuration WHERE company_id = ? AND user_id = ?');
+    $stmt = mysqli_prepare($conn, 'DELETE FROM ui_configuration WHERE company_id = ? AND employee_id = ?');
     if (!$stmt) {
         return false;
     }
 
-    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $userId);
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $employeeId);
     $ok = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
 
@@ -75,14 +75,14 @@ function itm_apitest_cleanup_configuration($conn, $companyId, $userId) {
 /**
  * Inserts a disposable ui_configuration row for tier testing.
  */
-function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array $overrides = []) {
+function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, array $overrides = []) {
     if (!($conn instanceof mysqli)) {
         return null;
     }
 
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
         return null;
     }
 
@@ -90,7 +90,7 @@ function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array
         return null;
     }
 
-    itm_apitest_cleanup_configuration($conn, $companyId, $userId);
+    itm_apitest_cleanup_configuration($conn, $companyId, $employeeId);
 
     $tier = function_exists('itm_api_normalize_tier')
         ? itm_api_normalize_tier($tier)
@@ -108,7 +108,7 @@ function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array
     $apiKeyIsActive = isset($overrides['api_key_is_active']) ? (int)$overrides['api_key_is_active'] : 1;
 
     $sql = 'INSERT INTO ui_configuration (
-                company_id, user_id, api_key, api_key_is_active,
+                company_id, employee_id, api_key, api_key_is_active,
                 rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
     $stmt = mysqli_prepare($conn, $sql);
@@ -120,7 +120,7 @@ function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array
         $stmt,
         'iisiiiss',
         $companyId,
-        $userId,
+        $employeeId,
         $apiKey,
         $apiKeyIsActive,
         $windowStart,
@@ -144,7 +144,7 @@ function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array
     return [
         'id' => $configId,
         'company_id' => $companyId,
-        'user_id' => $userId,
+        'user_id' => $employeeId,
         'api_key' => $apiKey,
         'api_key_is_active' => $apiKeyIsActive,
         'rate_limit_window_start' => $windowStart,
@@ -154,26 +154,26 @@ function itm_apitest_seed_configuration($conn, $companyId, $userId, $tier, array
     ];
 }
 
-function itm_apitest_reload_configuration($conn, $configId, $companyId, $userId) {
+function itm_apitest_reload_configuration($conn, $configId, $companyId, $employeeId) {
     if (!($conn instanceof mysqli)) {
         return null;
     }
 
     $configId = (int)$configId;
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
+    $employeeId = (int)$employeeId;
 
-    $sql = 'SELECT id, company_id, user_id, api_key, api_key_is_active, api_key_last_used_at,
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
                    rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             FROM ui_configuration
-            WHERE id = ? AND company_id = ? AND user_id = ?
+            WHERE id = ? AND company_id = ? AND employee_id = ?
             LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return null;
     }
 
-    mysqli_stmt_bind_param($stmt, 'iii', $configId, $companyId, $userId);
+    mysqli_stmt_bind_param($stmt, 'iii', $configId, $companyId, $employeeId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $row = $result ? mysqli_fetch_assoc($result) : null;
@@ -295,10 +295,10 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '', $phpSessionId
 /**
  * Persists the active CLI session so Apache can read it for keyless Free-tier HTTP probes.
  */
-function itm_apitest_publish_http_session($companyId, $userId) {
+function itm_apitest_publish_http_session($companyId, $employeeId) {
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
         return '';
     }
 
@@ -307,7 +307,7 @@ function itm_apitest_publish_http_session($companyId, $userId) {
     }
 
     $_SESSION['company_id'] = $companyId;
-    $_SESSION['user_id'] = $userId;
+    $_SESSION['employee_id'] = $employeeId;
     if (!isset($_SESSION['username']) || trim((string)$_SESSION['username']) === '') {
         $_SESSION['username'] = 'apitest-user';
     }

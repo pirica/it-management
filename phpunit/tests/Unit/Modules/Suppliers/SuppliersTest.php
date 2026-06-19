@@ -26,7 +26,7 @@ class SuppliersTest extends TestCase
         $data['name'] = 'Test name';
         $data['active'] = 1;
         // Find or fallback for status_id (supplier_statuses)
-        $resstatus_id = mysqli_query($this->conn, "SELECT id FROM `supplier_statuses` WHERE " . (strpos('supplier_statuses', 'companies') === false && strpos('supplier_statuses', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resstatus_id = mysqli_query($this->conn, "SELECT id FROM `supplier_statuses` WHERE " . (strpos('supplier_statuses', 'companies') === false && strpos('supplier_statuses', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowstatus_id = mysqli_fetch_assoc($resstatus_id)) {
             $data['status_id'] = $rowstatus_id['id'];
         } else {

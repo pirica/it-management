@@ -47,9 +47,9 @@ function tradt_assert($condition, $message)
     tradt_out('[PASS] ' . $message);
 }
 
-function tradt_set_audit_context(mysqli $conn, int $companyId, int $userId = 1): void
+function tradt_set_audit_context(mysqli $conn, int $companyId, int $employeeId = 1): void
 {
-    mysqli_query($conn, 'SET @app_user_id = ' . (int)$userId);
+    mysqli_query($conn, 'SET @app_employee_id = ' . (int)$employeeId);
     mysqli_query($conn, 'SET @app_company_id = ' . (int)$companyId);
     mysqli_query($conn, "SET @app_username = 'cli-test'");
     mysqli_query($conn, "SET @app_email = 'cli-test@example.com'");

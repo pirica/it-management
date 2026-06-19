@@ -10,7 +10,7 @@ require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once dirname(__DIR__, 2) . '/includes/itm_system_status_cache.php';
 
 // Authorization check - Admin only
-if (!isset($_SESSION['user_id']) || !itm_is_admin($conn, $_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id']) || !itm_is_admin($conn, $_SESSION['employee_id'])) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }

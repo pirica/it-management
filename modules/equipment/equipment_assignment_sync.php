@@ -229,13 +229,13 @@ if (!function_exists('equipment_sync_assigned_employee')) {
         $assignedByBind = ($assignedByUserId !== null && $assignedByUserId > 0) ? $assignedByUserId : null;
         $assetDescriptionTrimmed = substr(trim($assetDescription), 0, 255);
         $upsertSql = 'INSERT INTO employee_assignment_history
-            (company_id, employee_id, equipment_id, assigned_date, returned_date, assigned_by_user_id, asset_description, active)
+            (company_id, employee_id, equipment_id, assigned_date, returned_date, assigned_by_employee_id, asset_description, active)
             VALUES (?, ?, ?, ?, NULL, ?, ?, 1)
             ON DUPLICATE KEY UPDATE
                 equipment_id = VALUES(equipment_id),
                 assigned_date = VALUES(assigned_date),
                 returned_date = NULL,
-                assigned_by_user_id = VALUES(assigned_by_user_id),
+                assigned_by_employee_id = VALUES(assigned_by_employee_id),
                 asset_description = VALUES(asset_description),
                 updated_at = CURRENT_TIMESTAMP';
         $upsertStmt = mysqli_prepare($conn, $upsertSql);

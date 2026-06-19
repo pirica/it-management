@@ -65,7 +65,7 @@ $pageTitle = "Private Contacts";
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <?php if ($contact['photo']): ?>
-                                                <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['user_id'] . '/private_contacts/' . $contact['photo']) ?>" class="rounded-circle mr-2" width="30" height="30" alt="" style="object-fit: cover;">
+                                                <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['employee_id'] . '/private_contacts/' . $contact['photo']) ?>" class="rounded-circle mr-2" width="30" height="30" alt="" style="object-fit: cover;">
                                             <?php else: ?>
                                                 <div class="rounded-circle border mr-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
                                                     <i class="fas fa-user text-muted" style="font-size: 14px;"></i>

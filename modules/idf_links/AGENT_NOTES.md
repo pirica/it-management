@@ -52,7 +52,7 @@ Triggers in `database.sql` log all INSERT, UPDATE, and DELETE operations on `idf
 | `trg_idf_links_audit_update` | UPDATE | full old/new JSON for link and equipment metadata columns |
 | `trg_idf_links_audit_delete` | DELETE | deleted row JSON |
 
-Actor context uses `@app_user_id` and related session variables from `config.php`; do not overwrite them in handlers.
+Actor context uses `@app_employee_id` and related session variables from `config.php`; do not overwrite them in handlers.
 
 ## 10. Common Pitfalls
 - **Protection Zone:** no drive-by refactors or schema experiments without explicit approval.

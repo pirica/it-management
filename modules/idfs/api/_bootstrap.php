@@ -440,10 +440,10 @@ function idf_ensure_status_schema(mysqli $conn) {
         mysqli_query(
             $conn,
             "CREATE TRIGGER `trg_idf_links_audit_insert` AFTER INSERT ON `idf_links` FOR EACH ROW BEGIN
-               INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+               INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
                VALUES (
                  COALESCE(@app_company_id, NEW.`company_id`, 0),
-                 @app_user_id,
+                 @app_employee_id,
                  @app_username,
                  @app_email,
                  'idf_links',
@@ -485,10 +485,10 @@ function idf_ensure_status_schema(mysqli $conn) {
         mysqli_query(
             $conn,
             "CREATE TRIGGER `trg_idf_links_audit_update` AFTER UPDATE ON `idf_links` FOR EACH ROW BEGIN
-               INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+               INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
                VALUES (
                  COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0),
-                 @app_user_id,
+                 @app_employee_id,
                  @app_username,
                  @app_email,
                  'idf_links',
@@ -556,10 +556,10 @@ function idf_ensure_status_schema(mysqli $conn) {
         mysqli_query(
             $conn,
             "CREATE TRIGGER `trg_idf_links_audit_delete` AFTER DELETE ON `idf_links` FOR EACH ROW BEGIN
-               INSERT INTO `audit_logs` (`company_id`, `user_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+               INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
                VALUES (
                  COALESCE(@app_company_id, OLD.`company_id`, 0),
-                 @app_user_id,
+                 @app_employee_id,
                  @app_username,
                  @app_email,
                  'idf_links',

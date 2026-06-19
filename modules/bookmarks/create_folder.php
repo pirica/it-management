@@ -3,7 +3,7 @@ require '../../config/config.php';
 require './helpers.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($name === '') $errors[] = 'Folder name is required.';
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "INSERT INTO bookmark_folders (company_id, user_id, parent_folder_id, name, shared, active) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO bookmark_folders (company_id, employee_id, parent_folder_id, name, shared, active) VALUES (?, ?, ?, ?, ?, ?)");
         mysqli_stmt_bind_param($stmt, 'iiisii', $company_id, $user_id, $parent_folder_id, $name, $shared, $active);
 
         if (mysqli_stmt_execute($stmt)) {

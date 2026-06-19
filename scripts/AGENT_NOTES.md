@@ -32,7 +32,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **verify_json_import_validation.php** — JSON import rejects invalid numeric/date column values instead of silent NULL inserts.
 - **verify_maintenance_scripts_rbac.php** — browser Admin gate on MBQA runner, compare_database_sql_modules, and test_sql_injection.
 - **lib/script_cli_output.php** — browser `<pre>` wrapper, `colorText()`, `itm_script_shell_stderr_discard()` for cross-platform subprocess stderr suppression.
-- **lib/itm_script_test_user.php** — disposable `users` rows for repro/verify scripts and PHPUnit (`script-{slug}-{hex}` usernames, snapshot/restore, teardown delete). Static guard: `check_script_disposable_users.php`.
+- **lib/itm_script_test_employee.php** — disposable `employees` rows for repro/verify scripts and PHPUnit (`script-{slug}-{hex}` usernames, snapshot/restore, teardown delete). Static guard: `check_script_disposable_employees.php`.
 - **apitest_tier_free.php** / **apitest_tier_basic.php** — disposable `ui_configuration` tier rate-limit regressions; Free HTTP probe publishes CLI `PHPSESSID` via **`scripts/lib/itm_api_tier_test_helpers.php`** (`itm_apitest_publish_http_session()`).
 - **verify_company_module_access.php** — registry/CMA regression plus sidebar discovery probes (registry-only, new MySQL table, folder-only, both, neither); PHPUnit wrapper: `phpunit/tests/Unit/Scripts/CompanyModuleAccessVerifyTest.php`.
 - **verify_ops_report.php** — D-2 edit lock, `ops_report` CRUD, cascade delete, audit triggers on all `ops_report*` tables, registry row; browser or CLI via `lib/script_cli_output.php`; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest`.
@@ -57,7 +57,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 ## 10. Common Pitfalls
 - Running destructive scripts on the wrong environment.
 - Forgetting to define `ITM_CLI_SCRIPT` when running PHP scripts from the command line.
-- **Hardcoded seed user id 1:** repro/verify scripts must use `lib/itm_script_test_user.php` for `users` mutations — never UPDATE Admin reset tokens in place. Run `php scripts/check_script_disposable_users.php` after changing audit repro scripts.
+- **Hardcoded seed user id 1:** repro/verify scripts must use `lib/itm_script_test_employee.php` for `employees` mutations — never UPDATE Admin reset tokens in place. Run `php scripts/check_script_disposable_employees.php` after changing audit repro scripts.
 - **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=4` and `employee_id=432` — change params when debugging another tenant. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)` or the row is excluded. Calendar year vs ISO year (`date('o')`) diverges at year boundaries; the script warns when bounds differ.
 - **MySQL 8 `NO_ZERO_DATE`:** do not use `<> '0000-00-00'` in resignations or verify SQL — use `itm_sql_valid_date_predicate()` from `includes/itm_date_format.php`. Symptom: `Incorrect DATE value: '0000-00-00'` on `mysqli_prepare` and an empty weekly report despite valid `termination_date` rows.
 

@@ -12,9 +12,9 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
-require_once ROOT_PATH . 'includes/itm_users_sensitive_fields.php';
+require_once ROOT_PATH . 'includes/itm_employees_auth_sensitive_fields.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Users Sensitive View Verification');
 
@@ -22,33 +22,33 @@ $nl = itm_script_output_nl();
 $companyId = 1;
 $failed = false;
 
-$testUser = itm_script_test_user_create($conn, $companyId, ['script_slug' => 'verify-users-sensitive-view']);
+$testUser = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-users-sensitive-view']);
 if (!is_array($testUser)) {
     echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
 
-$userId = (int)$testUser['id'];
-itm_script_test_user_register_teardown($conn, $userId);
+$employeeId = (int)$testUser['id'];
+itm_script_test_employee_register_teardown($conn, $employeeId);
 
 $secretToken = 'VERIFY_RESET_' . bin2hex(random_bytes(8));
 $secretHash = hash('sha256', $secretToken);
 $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
-$stmt = $conn->prepare('UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?');
-$stmt->bind_param('sssi', $secretToken, $secretHash, $expiresAt, $userId);
+$stmt = $conn->prepare('UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?');
+$stmt->bind_param('sssi', $secretToken, $secretHash, $expiresAt, $employeeId);
 $stmt->execute();
 $stmt->close();
 
-$filtered = itm_users_filter_ui_columns(array_map(function ($name) {
+$filtered = itm_employees_auth_filter_ui_columns(array_map(function ($name) {
     return ['Field' => $name];
-}, array_merge(['username', 'email'], itm_users_sensitive_field_names())));
+}, array_merge(['username', 'email'], itm_employees_auth_sensitive_field_names())));
 
 $filteredNames = array_map(function ($col) {
     return $col['Field'] ?? '';
 }, $filtered);
 
-foreach (itm_users_sensitive_field_names() as $sensitiveField) {
+foreach (itm_employees_auth_sensitive_field_names() as $sensitiveField) {
     if (in_array($sensitiveField, $filteredNames, true)) {
         echo colorText("[FAIL] uiColumns filter still includes {$sensitiveField}.", 'fail') . $nl;
         $failed = true;
@@ -60,7 +60,7 @@ if (!$failed) {
 }
 
 $adminId = 1;
-$stmtAdmin = $conn->prepare('SELECT id, username FROM users WHERE id = ? LIMIT 1');
+$stmtAdmin = $conn->prepare('SELECT id, username FROM employees WHERE id = ? LIMIT 1');
 $stmtAdmin->bind_param('i', $adminId);
 $stmtAdmin->execute();
 $adminRow = $stmtAdmin->get_result()->fetch_assoc();
@@ -75,18 +75,18 @@ if (!is_array($adminRow)) {
         'user_id' => (int)$adminRow['id'],
         'username' => (string)$adminRow['username'],
     ];
-    $get = ['id' => $userId];
+    $get = ['id' => $employeeId];
     $extraGlobals = ['crud_action' => 'view'];
 
-    $scriptPath = ROOT_PATH . 'modules/users/index.php';
+    $scriptPath = ROOT_PATH . 'modules/employees/index.php';
     $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 if (session_status() === PHP_SESSION_NONE) session_start();
 \$_SESSION['company_id'] = " . var_export($companyId, true) . ";
-\$_SESSION['user_id'] = " . var_export((int)$adminRow['id'], true) . ";
+\$_SESSION['employee_id'] = " . var_export((int)$adminRow['id'], true) . ";
 \$_SESSION['username'] = " . var_export((string)$adminRow['username'], true) . ";
-\$_GET['id'] = " . var_export($userId, true) . ";
-\$crud_table = 'users';
+\$_GET['id'] = " . var_export($employeeId, true) . ";
+\$crud_table = 'employees';
 \$crud_title = 'Users';
 \$crud_action = 'view';
 chdir(" . var_export(dirname($scriptPath), true) . ");
@@ -109,8 +109,8 @@ echo ob_get_clean();
     }
 }
 
-$stmtCleanup = $conn->prepare('DELETE FROM users WHERE id = ?');
-$stmtCleanup->bind_param('i', $userId);
+$stmtCleanup = $conn->prepare('DELETE FROM employees WHERE id = ?');
+$stmtCleanup->bind_param('i', $employeeId);
 $stmtCleanup->execute();
 $stmtCleanup->close();
 

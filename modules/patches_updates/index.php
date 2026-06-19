@@ -87,7 +87,7 @@ function cr_fk_options($conn, $fk, $company_id) {
     }
 
     $labelSelect = cr_escape_identifier($labelCol);
-    if ($table === 'users') {
+    if ($table === 'employees') {
         $labelSelect = cr_user_label_select($col, $available);
     }
 
@@ -107,7 +107,7 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    if ($table === 'users' && in_array('last_name', $available, true)) {
+    if ($table === 'employees' && in_array('last_name', $available, true)) {
         return [
             'label_col' => 'last_name',
             'available' => $available,
@@ -144,7 +144,7 @@ function cr_fk_option_by_id($conn, $fk, $rawId, $company_id) {
     }
 
     $labelSelect = cr_escape_identifier($labelCol);
-    if ($table === 'users') {
+    if ($table === 'employees') {
         $labelSelect = cr_user_label_select($col, $available);
     }
 
@@ -533,7 +533,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'patches_updates', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'patches_updates', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -664,7 +664,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 $rowData['company_id'] = (string)(int)$company_id;
             }
             if (array_key_exists('created_by', $rowData) && $rowData['created_by'] === 'NULL') {
-                $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
+                $sessionUserId = (int)($_SESSION['employee_id'] ?? 0);
                 if ($sessionUserId > 0) {
                     $rowData['created_by'] = (string)$sessionUserId;
                 }
@@ -975,7 +975,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $value = $_POST[$name] ?? null;
         if ($name === 'created_by' && ($GLOBALS['crud_table'] ?? '') === 'patches_updates' && $crud_action === 'create' && ($value === '' || $value === null)) {
-            $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
+            $sessionUserId = (int)($_SESSION['employee_id'] ?? 0);
             $data[$name] = $sessionUserId > 0 ? (string)$sessionUserId : 'NULL';
             continue;
         }

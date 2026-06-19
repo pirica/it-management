@@ -16,20 +16,23 @@ $csrfToken = itm_get_csrf_token();
  * Why: Password reset completion is public, so we record attempts to enforce
  * per-IP/per-account throttles and reduce brute-force pressure.
  */
-function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAddress, ?int $userId = null, ?string $email = null): void
+function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAddress, ?int $employeeId = null, ?string $email = null): void
 {
     $stmt = mysqli_prepare(
         $conn,
-        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, user_id, email, active)
+        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, employee_id, email, active)
          VALUES ('password_reset', 'reset', ?, ?, ?, IF(
-            EXISTS(SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1)
-            OR EXISTS(SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1),
+            EXISTS(
+                SELECT 1 FROM employees
+                WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ''))) = LOWER(TRIM(COALESCE(?, '')))
+                LIMIT 1
+            ),
             1,
             0
          ))"
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sisss', $ipAddress, $userId, $email, $email, $email);
+        mysqli_stmt_bind_param($stmt, 'sisss', $ipAddress, $employeeId, $email, $email);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
@@ -39,7 +42,7 @@ function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAd
  * Why: Checking limits before password updates reduces token-guess attempts
  * and protects real user accounts from repeated automated resets.
  */
-function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipAddress, ?int $userId = null): bool
+function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipAddress, ?int $employeeId = null): bool
 {
     $maxIpAttempts = 20;
     $maxUserAttempts = 6;
@@ -59,13 +62,13 @@ function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipA
         }
     }
 
-    if ($userId !== null) {
+    if ($employeeId !== null) {
         $stmtUser = mysqli_prepare(
             $conn,
-            "SELECT COUNT(*) FROM attempts WHERE attempt_source = 'password_reset' AND attempt_type = 'reset' AND user_id = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)"
+            "SELECT COUNT(*) FROM attempts WHERE attempt_source = 'password_reset' AND attempt_type = 'reset' AND employee_id = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)"
         );
         if ($stmtUser) {
-            mysqli_stmt_bind_param($stmtUser, 'i', $userId);
+            mysqli_stmt_bind_param($stmtUser, 'i', $employeeId);
             mysqli_stmt_execute($stmtUser);
             mysqli_stmt_bind_result($stmtUser, $userAttempts);
             mysqli_stmt_fetch($stmtUser);
@@ -88,7 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
     $matchedUserEmail = null;
 
     // Look up a valid, unexpired token hash before attempting an update.
-    $findUserStmt = mysqli_prepare($conn, 'SELECT id, email FROM users WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1');
+    $findUserStmt = mysqli_prepare(
+        $conn,
+        'SELECT id, COALESCE(work_email, personal_email) AS email FROM employees
+         WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1'
+    );
     if ($findUserStmt) {
         mysqli_stmt_bind_param($findUserStmt, 's', $tokenHash);
         mysqli_stmt_execute($findUserStmt);
@@ -107,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token !== '') {
         // Update password only for valid unexpired token hash and clear reset state after one use.
         $stmt = mysqli_prepare(
             $conn,
-            'UPDATE users
+            'UPDATE employees
              SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
              WHERE id = ? AND reset_token_hash = ? AND reset_token_expires_at >= NOW()'
         );

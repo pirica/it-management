@@ -257,7 +257,7 @@ require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
-require_once ROOT_PATH . 'includes/user_dropdown_helpers.php';
+require_once ROOT_PATH . 'includes/employee_dropdown_helpers.php';
 
 // Ensure required upload and backup directories exist (writable, non-executable over HTTP)
 itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
@@ -320,7 +320,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // --- Audit Logging Setup ---
 // Capture user context for database-level audit triggers
-$itmAuditUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+$itmAuditUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null;
 $itmAuditCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : null;
 if ($itmAuditCompanyId !== null && $itmAuditCompanyId <= 0) {
     $itmAuditCompanyId = null;
@@ -332,7 +332,7 @@ $itmAuditUserAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255)
 
 // Set MySQL session variables for auditing
 if ($conn) {
-    mysqli_query($conn, 'SET @app_user_id = ' . ($itmAuditUserId === null ? 'NULL' : (string)$itmAuditUserId));
+    mysqli_query($conn, 'SET @app_employee_id = ' . ($itmAuditUserId === null ? 'NULL' : (string)$itmAuditUserId));
     mysqli_query($conn, 'SET @app_company_id = ' . ($itmAuditCompanyId === null ? 'NULL' : (string)$itmAuditCompanyId));
     mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $itmAuditUsername) . "'");
     mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $itmAuditEmail) . "'");
@@ -394,7 +394,7 @@ if (
 // Redirect to login if session is missing, excluding auth pages
 if (
     !$itmSkipWebAuth
-    && !isset($_SESSION['user_id'])
+    && !isset($_SESSION['employee_id'])
     && !in_array($current_file, ['login.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)
 ) {
     header('Location: ' . BASE_URL . 'login.php');
@@ -415,7 +415,7 @@ if (
 // Ensure a company is selected before accessing protected modules
 if (
     !$itmSkipWebAuth
-    && isset($_SESSION['user_id'])
+    && isset($_SESSION['employee_id'])
     && !isset($_SESSION['company_id'])
     && !$isReadOnlyUserConfig
     && !in_array($current_file, ['index.php', 'logout.php'], true)
@@ -1286,9 +1286,9 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         $parsedInserts = itm_parse_database_sql_inserts($sqlBody, $tableName);
         $tableRows = $parsedInserts[$tableName] ?? [];
         if (empty($tableRows)) {
-            if ($tableName === 'user_sidebar_preferences'
-                && function_exists('itm_seed_default_user_sidebar_preferences_for_company')) {
-                return itm_seed_default_user_sidebar_preferences_for_company($conn, $companyId, 1, $error);
+            if ($tableName === 'employee_sidebar_preferences'
+                && function_exists('itm_seed_default_employee_sidebar_preferences_for_company')) {
+                return itm_seed_default_employee_sidebar_preferences_for_company($conn, $companyId, 1, $error);
             }
             $error = 'No sample rows found in database.sql for this module.';
             return 0;
@@ -1619,9 +1619,9 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
 
         // Why: Sensitive tables must only be imported by administrators.
-        $sensitiveTables = ['companies', 'users', 'user_roles', 'access_levels', 'role_module_permissions'];
+        $sensitiveTables = ['companies', 'employees', 'employee_roles', 'access_levels', 'role_module_permissions'];
         if (in_array($tableName, $sensitiveTables, true)) {
-            if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+            if (!itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
                 http_response_code(403);
                 echo json_encode(['ok' => false, 'error' => 'Unauthorized: Only administrators can import data for this module.']);
                 exit;
@@ -2119,18 +2119,18 @@ if (!function_exists('itm_handle_json_table_import')) {
  * Checks if a user has administrative privileges.
  *
  * @param mysqli $conn
- * @param int $userId
+ * @param int $employeeId
  * @return bool
  */
 if (!function_exists('itm_is_admin')) {
-    function itm_is_admin($conn, $userId) {
-        if (!$conn || $userId <= 0) {
+    function itm_is_admin($conn, $employeeId) {
+        if (!$conn || $employeeId <= 0) {
             return false;
         }
 
         $sql = 'SELECT 1
-            FROM `users` u
-            LEFT JOIN `user_roles` ur ON ur.id = u.role_id
+            FROM `employees` u
+            LEFT JOIN `employee_roles` ur ON ur.id = u.role_id
             WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(COALESCE(u.username, "")) = "admin")
             LIMIT 1';
 
@@ -2139,7 +2139,7 @@ if (!function_exists('itm_is_admin')) {
             return false;
         }
 
-        mysqli_stmt_bind_param($stmt, 'i', $userId);
+        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $isAdmin = $res && mysqli_num_rows($res) > 0;
@@ -2164,12 +2164,12 @@ if (
  * Why: Sensitive modules must block non-admins on POST with 403, not rely on redirect alone.
  *
  * @param mysqli $conn
- * @param int $userId
+ * @param int $employeeId
  * @return void
  */
 if (!function_exists('itm_require_admin')) {
-    function itm_require_admin($conn, $userId) {
-        if (itm_is_admin($conn, (int)$userId)) {
+    function itm_require_admin($conn, $employeeId) {
+        if (itm_is_admin($conn, (int)$employeeId)) {
             return;
         }
 

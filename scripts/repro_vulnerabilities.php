@@ -6,7 +6,7 @@ if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 
@@ -17,15 +17,15 @@ if (PHP_SAPI !== 'cli') {
 function test_explorer_rce($conn, $nl) {
     echo "Testing Explorer RCE..." . $nl;
     $company_id = 1;
-    $testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'repro-vulnerabilities-explorer']);
+    $testUser = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'repro-vulnerabilities-explorer']);
     if (!is_array($testUser)) {
         echo colorText('[FAIL] Explorer RCE: unable to create disposable test user.', 'fail') . $nl;
         return;
     }
-    itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+    itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
     $_SESSION['company_id'] = $company_id;
-    $_SESSION['user_id'] = (int)$testUser['id'];
+    $_SESSION['employee_id'] = (int)$testUser['id'];
     $_SESSION['username'] = (string)$testUser['username'];
     $_SESSION['csrf_token'] = 'test_token';
 
@@ -86,7 +86,7 @@ echo ob_get_clean();
 
 function test_user_privilege_escalation($conn, $nl) {
     echo "Testing User Privilege Escalation..." . $nl;
-    $testUser = itm_script_test_user_create($conn, 1, [
+    $testUser = itm_script_test_employee_create($conn, 1, [
         'script_slug' => 'repro-vulnerabilities-victim',
         'role_id' => 5,
     ]);
@@ -95,7 +95,7 @@ function test_user_privilege_escalation($conn, $nl) {
         return;
     }
     $victim_id = (int)$testUser['id'];
-    itm_script_test_user_register_teardown($conn, $victim_id);
+    itm_script_test_employee_register_teardown($conn, $victim_id);
 
     $session = [
         'company_id' => 1,
@@ -115,9 +115,9 @@ function test_user_privilege_escalation($conn, $nl) {
     $get = ['id' => $victim_id];
     $globals = ['crud_action' => 'edit'];
 
-    run_isolated(__DIR__ . '/../modules/users/index.php', $session, $post, $get, $globals);
+    run_isolated(__DIR__ . '/../modules/employees/index.php', $session, $post, $get, $globals);
 
-    $res = mysqli_query($conn, "SELECT role_id FROM users WHERE id = $victim_id");
+    $res = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $victim_id");
     $row = mysqli_fetch_assoc($res);
     if ($row && $row['role_id'] == 1) {
         echo colorText("[FAIL] User Privilege Escalation: Non-admin user successfully updated their own role to Admin.", 'fail') . $nl;

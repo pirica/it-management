@@ -34,20 +34,20 @@ class ScriptBrowserNavTest extends TestCase
 
     public function testModulePathFromTable(): void
     {
-        $this->assertEquals('modules/users/', itm_script_module_path_from_table('users'));
+        $this->assertEquals('modules/employees/', itm_script_module_path_from_table('employees'));
         $this->assertEquals('', itm_script_module_path_from_table(''));
     }
 
     public function testTableHasModule(): void
     {
-        $this->assertTrue(itm_script_table_has_module('users'));
+        $this->assertTrue(itm_script_table_has_module('employees'));
         $this->assertFalse(itm_script_table_has_module('non_existent_table_xyz'));
     }
 
     public function testModuleRelativeHref(): void
     {
-        $this->assertEquals('../modules/users/index.php', itm_script_module_relative_href('users'));
-        $this->assertEquals('../modules/users/edit.php', itm_script_module_relative_href('users', 'edit.php'));
+        $this->assertEquals('../modules/employees/index.php', itm_script_module_relative_href('employees'));
+        $this->assertEquals('../modules/employees/edit.php', itm_script_module_relative_href('employees', 'edit.php'));
     }
 
     public function testExternalLinkHtml(): void

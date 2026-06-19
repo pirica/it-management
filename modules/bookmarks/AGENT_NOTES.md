@@ -4,14 +4,14 @@
 Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — URL records (`title`, `url`, `shared`, `user_id`, `folder_id`).
+- **bookmarks** — URL records (`title`, `url`, `shared`, `employee_id`, `folder_id`).
 - **bookmark_folders** — folder tree (emoji icons in sidebar).
 
 ## 3. Required Relationships
 - **bookmarks** → **companies**, **users**, **bookmark_folders**.
 
 ## 4. Business Rules (Critical for Agents)
-- **Privacy:** filter by `user_id` for private bookmarks and `company_id` for shared ones.
+- **Privacy:** filter by `employee_id` for private bookmarks and `company_id` for shared ones.
 - **Visibility:** row visible when `(user_id = logged user OR shared = 1)` and `company_id` matches.
 - **Permissions:** shared bookmarks read-only for regular users; admins and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
@@ -23,7 +23,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
 - View modes: `all`, `private`, `shared` via `?view=`; folder filter via `?folder_id=`.
 - Folder drag-and-drop reparenting posts `action=move_folder` (CSRF on form).
-- Shared bookmarks: edit/delete only for admin or owning `user_id` (`bkm_can_edit_bookmark()`).
+- Shared bookmarks: edit/delete only for admin or owning `employee_id` (`bkm_can_edit_bookmark()`).
 - **Responsive:** dual-pane stacks below 1200px; bookmark cards single column below 480px.
 - `list_all.php` provides flattened table view; bulk delete toolbar is always shown (`$showBulkActions = true`), not gated by `records_per_page`.
 - Excel import endpoint: `data-itm-db-import-endpoint="list_all.php"` on the flattened list table; dual-pane `index.php` handles JSON import but has no import table attribute.
@@ -43,7 +43,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - `import.php`, `export.php`, `export.js` — import/export flows.
 
 ## 8. Multi-Tenant Rules
-- `company_id` on all rows; private rows also scoped by `user_id`.
+- `company_id` on all rows; private rows also scoped by `employee_id`.
 - Shared bookmarks (`shared = 1`) visible to all company users but editable only by admin or creator.
 
 ## 9. Audit Logging Requirements
@@ -51,7 +51,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Folder/bookmark mutations should remain CSRF-protected POST handlers.
 
 ## 10. Common Pitfalls
-- SQL ambiguity when joining `bookmark_folders` — alias `active`, `user_id`.
+- SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`.
 - URLs missing scheme — prepend `http://` or `https://` when saving.
 - `delete.php` expects `bulk_action=single_delete` for inline index deletes.
 - Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently.
@@ -62,12 +62,12 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ```php
 $where = 'company_id = ? AND active = 1 AND (user_id = ? OR shared = 1)';
 $stmt = $conn->prepare("SELECT * FROM bookmarks WHERE $where AND folder_id IS NULL ORDER BY title ASC");
-$stmt->bind_param('ii', $companyId, $userId);
+$stmt->bind_param('ii', $companyId, $employeeId);
 ```
 
 ### Permission check before edit
 ```php
-if (!bkm_can_edit_bookmark($bookmark, $userId, $isAdmin)) {
+if (!bkm_can_edit_bookmark($bookmark, $employeeId, $isAdmin)) {
     header('Location: index.php');
     exit;
 }

@@ -8,12 +8,12 @@ if (!function_exists('pc_contact_photo_serve_url')) {
     {
         $filename = trim((string)($contact['photo'] ?? ''));
         $username = trim((string)($_SESSION['username'] ?? ''));
-        $userId = (int)($_SESSION['user_id'] ?? 0);
-        if ($filename === '' || $username === '' || $userId <= 0) {
+        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+        if ($filename === '' || $username === '' || $employeeId <= 0) {
             return '';
         }
 
-        return itm_files_serve_url('Private/' . $username . '_' . $userId . '/private_contacts/' . basename($filename));
+        return itm_files_serve_url('Private/' . $username . '_' . $employeeId . '/private_contacts/' . basename($filename));
     }
 }
 
@@ -53,7 +53,7 @@ if (!function_exists('pc_contact_photo_store_upload')) {
     /**
      * @return array{ok:bool,filename:string,error:string}
      */
-    function pc_contact_photo_store_upload(array $file, $contactId, $companyId, $username, $userId, $existingFilename = '', $confirmReplace = false)
+    function pc_contact_photo_store_upload(array $file, $contactId, $companyId, $username, $employeeId, $existingFilename = '', $confirmReplace = false)
     {
         $existingFilename = (string)$existingFilename;
         $uploadError = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
@@ -75,14 +75,14 @@ if (!function_exists('pc_contact_photo_store_upload')) {
 
         $contactId = (int)$contactId;
         $companyId = (int)$companyId;
-        $userId = (int)$userId;
+        $employeeId = (int)$employeeId;
         $username = (string)$username;
-        if ($contactId <= 0 || $companyId <= 0 || $userId <= 0 || $username === '') {
+        if ($contactId <= 0 || $companyId <= 0 || $employeeId <= 0 || $username === '') {
             return ['ok' => false, 'filename' => $existingFilename, 'error' => 'Could not prepare private contact photo folder.'];
         }
 
         $photoFilename = $contactId . '_photo.png';
-        $dir = ROOT_PATH . 'files/' . $companyId . '/Private/' . $username . '_' . $userId . '/private_contacts';
+        $dir = ROOT_PATH . 'files/' . $companyId . '/Private/' . $username . '_' . $employeeId . '/private_contacts';
         $targetPath = $dir . '/' . $photoFilename;
 
         if ($existingFilename !== '' && is_file($targetPath) && !$confirmReplace) {

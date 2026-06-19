@@ -3,7 +3,7 @@ require '../../config/config.php';
 require './helpers.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = (strtolower($_SESSION['role_name'] ?? '') === 'admin');
 
 if ($company_id <= 0) {

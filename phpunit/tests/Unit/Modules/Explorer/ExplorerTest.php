@@ -9,7 +9,7 @@ class ExplorerTest extends TestCase
     use \ItmExtractFunctionTestTrait;
 
     private $storageRoot;
-    private $userId = 123;
+    private $employeeId = 123;
     private $deptId = 456;
     private $username = 'testuser';
     private $safeUsername = 'testuser';

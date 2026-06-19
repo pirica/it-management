@@ -28,7 +28,7 @@ if (!function_exists('itm_form_failed_save_test_protected_modules')) {
             'audit_logs',
             'employees',
             'settings',
-            'user_companies',
+            'employee_companies',
             'employee_system_access',
             'cable_colors',
             'ui_configuration',

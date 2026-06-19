@@ -38,25 +38,25 @@ class AlertsVisibilityTest extends TestCase
     public function testVisibilitySqlWithoutAlias(): void
     {
         $sql = itm_alerts_visibility_sql();
-        $this->assertStringContainsString('assigned_to_user_id IS NULL', $sql);
-        $this->assertStringContainsString('assigned_to_user_id = ?', $sql);
-        $this->assertStringContainsString('created_by_user_id = ?', $sql);
+        $this->assertStringContainsString('assigned_to_employee_id IS NULL', $sql);
+        $this->assertStringContainsString('assigned_to_employee_id = ?', $sql);
+        $this->assertStringContainsString('created_by_employee_id = ?', $sql);
     }
 
     public function testVisibilitySqlWithAlias(): void
     {
         $sql = itm_alerts_visibility_sql('e');
-        $this->assertStringContainsString('e.assigned_to_user_id IS NULL', $sql);
-        $this->assertStringContainsString('e.assigned_to_user_id = ?', $sql);
-        $this->assertStringContainsString('e.created_by_user_id = ?', $sql);
+        $this->assertStringContainsString('e.assigned_to_employee_id IS NULL', $sql);
+        $this->assertStringContainsString('e.assigned_to_employee_id = ?', $sql);
+        $this->assertStringContainsString('e.created_by_employee_id = ?', $sql);
     }
 
     public function testVisibilitySqlLiteral(): void
     {
         $sql = itm_alerts_visibility_sql_literal(42, 'a');
-        $this->assertStringContainsString('a.assigned_to_user_id IS NULL', $sql);
-        $this->assertStringContainsString('a.assigned_to_user_id = 42', $sql);
-        $this->assertStringContainsString('a.created_by_user_id = 42', $sql);
+        $this->assertStringContainsString('a.assigned_to_employee_id IS NULL', $sql);
+        $this->assertStringContainsString('a.assigned_to_employee_id = 42', $sql);
+        $this->assertStringContainsString('a.created_by_employee_id = 42', $sql);
     }
 
     public function testAppendVisibilityFilter(): void
@@ -69,6 +69,6 @@ class AlertsVisibilityTest extends TestCase
         $this->assertCount(2, $conditions);
         $this->assertSame('iii', $types);
         $this->assertSame([1, 7, 7], $params);
-        $this->assertStringContainsString('e.assigned_to_user_id IS NULL', $conditions[1]);
+        $this->assertStringContainsString('e.assigned_to_employee_id IS NULL', $conditions[1]);
     }
 }

@@ -256,7 +256,7 @@ function tickets_build_user_add_extra_fields_json(mysqli $conn, int $companyId):
     $roleOptions = [];
     $roleRes = mysqli_query(
         $conn,
-        'SELECT id, name FROM user_roles WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
+        'SELECT id, name FROM employee_roles WHERE company_id = ' . (int)$companyId . ' ORDER BY name ASC'
     );
     while ($roleRes && ($row = mysqli_fetch_assoc($roleRes))) {
         $roleOptions[] = [
@@ -312,14 +312,14 @@ function tickets_user_select_options(mysqli $conn, int $companyId, $selectedId):
     return itm_user_append_selected_option($conn, $companyId, $options, $selectedId);
 }
 
-function tickets_resolve_created_by_user_id(mysqli $conn, int $companyId): int
+function tickets_resolve_created_by_employee_id(mysqli $conn, int $companyId): int
 {
-    $fromPost = (int)($_POST['created_by_user_id'] ?? 0);
+    $fromPost = (int)($_POST['created_by_employee_id'] ?? 0);
     if ($fromPost > 0) {
         return $fromPost;
     }
 
-    $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
+    $sessionUserId = (int)($_SESSION['employee_id'] ?? 0);
     if ($sessionUserId > 0) {
         return $sessionUserId;
     }
@@ -339,8 +339,8 @@ $ticketUploadPath = TICKET_UPLOAD_PATH;
 $data = [
     'ticket_external_code' => '', 'title' => '', 'description' => '',
     'category_id' => '', 'status_id' => '', 'priority_id' => '',
-    'created_by_user_id' => (int)($_SESSION['user_id'] ?? 0),
-    'assigned_to_user_id' => '', 'asset_id' => '', 'due_date' => '',
+    'created_by_employee_id' => (int)($_SESSION['employee_id'] ?? 0),
+    'assigned_to_employee_id' => '', 'asset_id' => '', 'due_date' => '',
     'tickets_photos' => '', 'created_at' => date('Y-m-d\TH:i')
 ];
 
@@ -373,8 +373,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_id = (int)($_POST['category_id'] ?? 0) ?: 'NULL';
     $status_id = (int)($_POST['status_id'] ?? 0) ?: 'NULL';
     $priority_id = (int)($_POST['priority_id'] ?? 0) ?: 'NULL';
-    $created_by_user_id = (int)($_POST['created_by_user_id'] ?? 0);
-    $assigned_to_user_id = (int)($_POST['assigned_to_user_id'] ?? 0) ?: 'NULL';
+    $created_by_employee_id = (int)($_POST['created_by_employee_id'] ?? 0);
+    $assigned_to_employee_id = (int)($_POST['assigned_to_employee_id'] ?? 0) ?: 'NULL';
     $asset_id = (int)($_POST['asset_id'] ?? 0) ?: 'NULL';
     $due_date = trim((string)($_POST['due_date'] ?? ''));
     $due_date_sql = ($due_date !== '') ? "'" . escape_sql($due_date, $conn) . "'" : 'NULL';
@@ -434,12 +434,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // --- DB COMMIT ---
-    if (!$is_edit && $created_by_user_id <= 0) {
-        $created_by_user_id = tickets_resolve_created_by_user_id($conn, (int)$company_id);
+    if (!$is_edit && $created_by_employee_id <= 0) {
+        $created_by_employee_id = tickets_resolve_created_by_employee_id($conn, (int)$company_id);
     }
 
     if (!$title) { $error = 'Ticket title is required.'; }
-    elseif ($created_by_user_id <= 0) { $error = 'Created by user is required.'; }
+    elseif ($created_by_employee_id <= 0) { $error = 'Created by user is required.'; }
     else {
         $photos_sql = empty($ticketPhotoFilenames) ? 'NULL' : "'" . escape_sql(json_encode($ticketPhotoFilenames, JSON_UNESCAPED_SLASHES), $conn) . "'";
         $created_at_val = isset($_POST['created_at']) ? "'" . escape_sql(str_replace('T', ' ', $_POST['created_at']) . ':00', $conn) . "'" : 'CURRENT_TIMESTAMP';
@@ -448,15 +448,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "UPDATE tickets SET
                         ticket_external_code='$ticket_external_code', title='$title', description='$description',
                         category_id=$category_id, status_id=$status_id, priority_id=$priority_id,
-                        created_by_user_id=$created_by_user_id, assigned_to_user_id=$assigned_to_user_id, asset_id=$asset_id,
+                        created_by_employee_id=$created_by_employee_id, assigned_to_employee_id=$assigned_to_employee_id, asset_id=$asset_id,
                         due_date=$due_date_sql,
                         tickets_photos=$photos_sql, created_at=$created_at_val
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO tickets
-                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_user_id, assigned_to_user_id, asset_id, due_date, tickets_photos, created_at)
+                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_employee_id, assigned_to_employee_id, asset_id, due_date, tickets_photos, created_at)
                     VALUES
-                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_user_id, $assigned_to_user_id, $asset_id, $due_date_sql, $photos_sql, $created_at_val)";
+                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_employee_id, $assigned_to_employee_id, $asset_id, $due_date_sql, $photos_sql, $created_at_val)";
         }
 
         if (!$error && itm_run_query($conn, $sql)) {
@@ -471,8 +471,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $categoryOptions = tickets_lookup_select_options($conn, 'ticket_categories', (int)$company_id, $data['category_id'] ?? 0, 'name');
 $statusOptions = tickets_lookup_select_options($conn, 'ticket_statuses', (int)$company_id, $data['status_id'] ?? 0, 'name');
 $priorityOptions = tickets_lookup_select_options($conn, 'ticket_priorities', (int)$company_id, $data['priority_id'] ?? 0, 'level');
-$createdByOptions = tickets_user_select_options($conn, (int)$company_id, $data['created_by_user_id'] ?? 0);
-$assignedToOptions = tickets_user_select_options($conn, (int)$company_id, $data['assigned_to_user_id'] ?? 0);
+$createdByOptions = tickets_user_select_options($conn, (int)$company_id, $data['created_by_employee_id'] ?? 0);
+$assignedToOptions = tickets_user_select_options($conn, (int)$company_id, $data['assigned_to_employee_id'] ?? 0);
 $assetOptions = tickets_equipment_select_options($conn, (int)$company_id, $data['asset_id'] ?? 0);
 $ticketEquipmentAddExtraFieldsJson = tickets_build_equipment_add_extra_fields_json($conn, (int)$company_id);
 $ticketUserAddExtraFieldsJson = tickets_build_user_add_extra_fields_json($conn, (int)$company_id);
@@ -593,20 +593,20 @@ foreach ($existingTicketPhotos as $existingTicketPhotoFilename) {
                     <div class="form-row">
                         <div class="form-group">
                             <label>Created By</label>
-                            <select name="created_by_user_id" required data-addable-select="1" data-add-table="users" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="user" data-add-value-label="Username" data-add-extra-fields="<?php echo sanitize($ticketUserAddExtraFieldsJson); ?>">
+                            <select name="created_by_employee_id" required data-addable-select="1" data-add-table="employees" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="user" data-add-value-label="Username" data-add-extra-fields="<?php echo sanitize($ticketUserAddExtraFieldsJson); ?>">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($createdByOptions as $userOption): ?>
-                                    <option value="<?php echo (int)$userOption['id']; ?>" <?php echo (string)$data['created_by_user_id'] === (string)$userOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($userOption['label']); ?></option>
+                                    <option value="<?php echo (int)$userOption['id']; ?>" <?php echo (string)$data['created_by_employee_id'] === (string)$userOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($userOption['label']); ?></option>
                                 <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Assigned To</label>
-                            <select name="assigned_to_user_id" data-addable-select="1" data-add-table="users" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="user" data-add-value-label="Username" data-add-extra-fields="<?php echo sanitize($ticketUserAddExtraFieldsJson); ?>">
+                            <select name="assigned_to_employee_id" data-addable-select="1" data-add-table="employees" data-add-id-col="id" data-add-label-col="username" data-add-company-scoped="1" data-add-friendly="user" data-add-value-label="Username" data-add-extra-fields="<?php echo sanitize($ticketUserAddExtraFieldsJson); ?>">
                                 <option value="">-- Select --</option>
                                 <?php foreach ($assignedToOptions as $userOption): ?>
-                                    <option value="<?php echo (int)$userOption['id']; ?>" <?php echo (string)$data['assigned_to_user_id'] === (string)$userOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($userOption['label']); ?></option>
+                                    <option value="<?php echo (int)$userOption['id']; ?>" <?php echo (string)$data['assigned_to_employee_id'] === (string)$userOption['id'] ? 'selected' : ''; ?>><?php echo sanitize($userOption['label']); ?></option>
                                 <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>

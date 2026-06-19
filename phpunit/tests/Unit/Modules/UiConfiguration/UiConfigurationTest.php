@@ -23,7 +23,7 @@ class UiConfigurationTest extends TestCase
 
     private function getOrCreateUser() {
         // Find a user and company that don't have a UI configuration yet to avoid unique constraint violations.
-        $res = mysqli_query($this->conn, "SELECT u.id, u.company_id FROM `users` u LEFT JOIN `ui_configuration` uc ON u.id = uc.user_id AND u.company_id = uc.company_id WHERE uc.id IS NULL LIMIT 1");
+        $res = mysqli_query($this->conn, "SELECT u.id, u.company_id FROM `employees` u LEFT JOIN `ui_configuration` uc ON u.id = uc.employee_id AND u.company_id = uc.company_id WHERE uc.id IS NULL LIMIT 1");
         if ($row = mysqli_fetch_assoc($res)) {
             return $row;
         }
@@ -31,7 +31,7 @@ class UiConfigurationTest extends TestCase
         // Create new user
         $username = 'user_' . uniqid();
         $email = $username . '@example.com';
-        mysqli_query($this->conn, "INSERT INTO `users` (company_id, username, email, active) VALUES ({$this->companyId}, '$username', '$email', 1)");
+        mysqli_query($this->conn, "INSERT INTO `employees` (company_id, username, email, active) VALUES ({$this->companyId}, '$username', '$email', 1)");
         return ['id' => mysqli_insert_id($this->conn), 'company_id' => $this->companyId];
     }
 
@@ -53,7 +53,7 @@ class UiConfigurationTest extends TestCase
         $data['app_name'] = 'Test app_name';
         $data['favicon_path'] = 'Test favicon_path';
 
-        $sql = "INSERT INTO `ui_configuration` (company_id, `user_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `ui_configuration` (company_id, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, 'Prepare failed: ' . mysqli_error($this->conn));
         

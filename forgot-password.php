@@ -13,20 +13,23 @@ $csrfToken = itm_get_csrf_token();
  * Why: Reset endpoints are public and are attractive for scripted abuse.
  * Keeping a compact audit trail enables cheap per-IP and per-account throttling.
  */
-function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $email = null, ?int $userId = null): void
+function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, string $ipAddress, ?string $email = null, ?int $employeeId = null): void
 {
     $stmt = mysqli_prepare(
         $conn,
-        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, user_id, active)
+        "INSERT INTO attempts (attempt_source, attempt_type, ip_address, email, employee_id, active)
          VALUES ('password_reset', ?, ?, ?, ?, IF(
-            EXISTS(SELECT 1 FROM users WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1)
-            OR EXISTS(SELECT 1 FROM employees WHERE LOWER(TRIM(COALESCE(email, ''))) = LOWER(TRIM(COALESCE(?, ''))) LIMIT 1),
+            EXISTS(
+                SELECT 1 FROM employees
+                WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ''))) = LOWER(TRIM(COALESCE(?, '')))
+                LIMIT 1
+            ),
             1,
             0
          ))"
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $email, $userId, $email, $email);
+        mysqli_stmt_bind_param($stmt, 'sssiss', $attemptType, $ipAddress, $email, $employeeId, $email);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
@@ -48,7 +51,12 @@ function itm_find_password_reset_user(mysqli $conn, string $email): array
         return $user;
     }
 
-    $stmt = mysqli_prepare($conn, 'SELECT id, username, company_id FROM users WHERE email = ? LIMIT 1');
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, username, company_id FROM employees
+         WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = LOWER(TRIM(?))
+         LIMIT 1'
+    );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 's', $email);
         mysqli_stmt_execute($stmt);
@@ -140,7 +148,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tokenExpiresAt = date('Y-m-d H:i:s', time() + (60 * 60));
 
         // Store both token forms and expiry if the email exists.
-        $stmt = mysqli_prepare($conn, 'UPDATE users SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE email = ?');
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ?
+             WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = LOWER(TRIM(?))'
+        );
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'ssss', $token, $tokenHash, $tokenExpiresAt, $email);
             mysqli_stmt_execute($stmt);

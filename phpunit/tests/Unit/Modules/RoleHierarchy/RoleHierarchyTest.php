@@ -23,14 +23,14 @@ class RoleHierarchyTest extends TestCase
 
     private function getAvailableRoleId() {
         // Find a role that is NOT in role_hierarchy for this company
-        $res = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE company_id = {$this->companyId} AND id NOT IN (SELECT role_id FROM role_hierarchy WHERE company_id = {$this->companyId}) LIMIT 1");
+        $res = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE company_id = {$this->companyId} AND id NOT IN (SELECT role_id FROM role_hierarchy WHERE company_id = {$this->companyId}) LIMIT 1");
         if ($row = mysqli_fetch_assoc($res)) {
             return $row['id'];
         }
 
         // If all roles are used, create a new one
         $uniqueName = 'Test Role ' . uniqid();
-        $res = mysqli_query($this->conn, "INSERT INTO `user_roles` (company_id, name, active) VALUES ({$this->companyId}, '$uniqueName', 1)");
+        $res = mysqli_query($this->conn, "INSERT INTO `employee_roles` (company_id, name, active) VALUES ({$this->companyId}, '$uniqueName', 1)");
         if (!$res) {
             throw new \Exception("Failed to insert user_role: " . mysqli_error($this->conn));
         }

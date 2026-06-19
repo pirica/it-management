@@ -14,7 +14,7 @@ $crud_action = 'create';
 ?>
 <?php
 require_once '../../config/config.php';
-itm_require_admin($conn, $_SESSION['user_id'] ?? 0);
+itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 
 // Ensure the module is configured correctly
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -91,7 +91,7 @@ function cr_fk_options($conn, $fk, $company_id, $currentUserId = 0, $currentUser
     $idEscaped = cr_escape_identifier($col);
     $labelEscaped = cr_escape_identifier($labelCol);
     $sql = 'SELECT ' . $idEscaped . ' AS id, ' . $labelEscaped . ' AS label';
-    if ($table === 'users') {
+    if ($table === 'employees') {
         if ($currentUserId > 0) {
             $preferredLabelExpr = $currentUserIsAdmin
                 ? "NULLIF(TRIM(COALESCE(u.last_name, '')), '')"
@@ -107,8 +107,8 @@ function cr_fk_options($conn, $fk, $company_id, $currentUserId = 0, $currentUser
         $sql .= ' FROM ' . $tableEscaped . ' u';
         if ($company_id > 0) {
             $companyFilters = ['u.company_id=' . (int)$company_id];
-            if (cr_table_exists($conn, 'user_companies')) {
-                $sql .= ' LEFT JOIN `user_companies` uc ON uc.user_id = u.id';
+            if (cr_table_exists($conn, 'employee_companies')) {
+                $sql .= ' LEFT JOIN `employee_companies` uc ON uc.employee_id = u.id';
                 $companyFilters[] = 'uc.company_id=' . (int)$company_id;
             }
             $sql .= " WHERE (" . implode(' OR ', $companyFilters) . " OR LOWER(COALESCE(u.username, ''))='admin')";
@@ -116,7 +116,7 @@ function cr_fk_options($conn, $fk, $company_id, $currentUserId = 0, $currentUser
     } else {
         $sql .= ' FROM ' . $tableEscaped . $where;
     }
-    if ($table === 'users') {
+    if ($table === 'employees') {
         $sql .= ' GROUP BY u.id, label, inviter_role_id';
     }
     $sql .= ' ORDER BY label';
@@ -197,14 +197,14 @@ function cr_current_user_inviter_defaults($conn) {
         'preferred_label' => '',
     ];
 
-    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    $sessionUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
     if ($sessionUserId <= 0) {
         return $defaults;
     }
 
     $sql = 'SELECT u.id, u.email, u.last_name, u.username, ur.name AS role_name
-            FROM users u
-            LEFT JOIN user_roles ur ON ur.id = u.role_id
+            FROM employees u
+            LEFT JOIN employee_roles ur ON ur.id = u.role_id
             WHERE u.id = ?
             LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
@@ -253,14 +253,14 @@ function cr_current_user_permission_profile($conn) {
         'is_admin' => false,
     ];
 
-    $sessionUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    $sessionUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
     if ($sessionUserId <= 0) {
         return $profile;
     }
 
     $sql = 'SELECT u.id, u.role_id, u.access_level_id, ur.name AS role_name, al.name AS access_level_name
-            FROM users u
-            LEFT JOIN user_roles ur ON ur.id = u.role_id
+            FROM employees u
+            LEFT JOIN employee_roles ur ON ur.id = u.role_id
             LEFT JOIN access_levels al ON al.id = u.access_level_id
             WHERE u.id = ?
             LIMIT 1';
@@ -556,7 +556,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'registration_invitations', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'registration_invitations', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -611,9 +611,9 @@ foreach ($fieldColumns as $col) {
 $inviterDefaults = cr_current_user_inviter_defaults($conn);
 $permissionProfile = cr_current_user_permission_profile($conn);
 
-if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($data['invited_by_user_id'])) {
+if ($crud_action === 'create' && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($data['invited_by_employee_id'])) {
     if ($inviterDefaults['id'] > 0) {
-        $data['invited_by_user_id'] = (string)$inviterDefaults['id'];
+        $data['invited_by_employee_id'] = (string)$inviterDefaults['id'];
     }
 }
 
@@ -910,7 +910,7 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                                         }
                                     }
                                     if (
-                                        $name === 'invited_by_user_id'
+                                        $name === 'invited_by_employee_id'
                                         && $crud_action === 'create'
                                         && (string)$displayVal === (string)($inviterDefaults['id'] ?? '')
                                         && trim((string)($inviterDefaults['preferred_label'] ?? '')) !== ''
@@ -1009,7 +1009,7 @@ document.addEventListener('change', function (event) {
  */
 function crSyncAdminInviterVisibility() {
     const roleSelect = document.querySelector('select[name="role_id"]');
-    const inviterSelect = document.querySelector('select[name="invited_by_user_id"]');
+    const inviterSelect = document.querySelector('select[name="invited_by_employee_id"]');
     if (!roleSelect || !inviterSelect) return;
 
     let adminRoleId = '';

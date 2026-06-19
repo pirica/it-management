@@ -8,7 +8,7 @@ Defines the hierarchical relationship between different user roles for inheritan
 
 ## 3. Required Relationships
 - **role_hierarchy** → depends on **companies**.
-- **role_hierarchy** → depends on **user_roles**.
+- **role_hierarchy** → depends on **employee_roles**.
 
 ## 4. Business Rules (Critical for Agents)
 - **Tenant scope:** all queries and writes filter by `company_id`.
@@ -36,7 +36,7 @@ Defines the hierarchical relationship between different user roles for inheritan
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
-- Defines role ordering — tied to **user_roles** (`role_id`).
+- Defines role ordering — tied to **employee_roles** (`role_id`).
 - Respect tenant unique constraints; duplicates fail at the database layer.
 - Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
 

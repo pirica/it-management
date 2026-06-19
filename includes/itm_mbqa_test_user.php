@@ -2,7 +2,7 @@
 /**
  * Canonical signatures for rows created by module_browser_qa_runner (and reserved import markers).
  *
- * Why: user_companies must not treat every username starting with "mbqa-" as disposable test data;
+ * Why: employee_companies must not treat every username starting with "mbqa-" as disposable test data;
  * only values matching the runner's MBQA-{table}-{company}-{seq}-{hash} tag bypass Admin delete guards.
  */
 

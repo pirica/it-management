@@ -26,16 +26,16 @@ class RegistrationInvitationsTest extends TestCase
         $data['email'] = 'Test email';
         $data['invitation_code'] = 'Test invitation_code';
         $data['active'] = 1;
-        // Find or fallback for invited_by_user_id (users)
-        $resinvited_by_user_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
-        if ($rowinvited_by_user_id = mysqli_fetch_assoc($resinvited_by_user_id)) {
-            $data['invited_by_user_id'] = $rowinvited_by_user_id['id'];
+        // Find or fallback for invited_by_employee_id (users)
+        $resinvited_by_employee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        if ($rowinvited_by_employee_id = mysqli_fetch_assoc($resinvited_by_employee_id)) {
+            $data['invited_by_employee_id'] = $rowinvited_by_employee_id['id'];
         } else {
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $data['invited_by_user_id'] = null;
+            $data['invited_by_employee_id'] = null;
         }
-        // Find or fallback for role_id (user_roles)
-        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE " . (strpos('user_roles', 'companies') === false && strpos('user_roles', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        // Find or fallback for role_id (employee_roles)
+        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE " . (strpos('employee_roles', 'companies') === false && strpos('employee_roles', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowrole_id = mysqli_fetch_assoc($resrole_id)) {
             $data['role_id'] = $rowrole_id['id'];
         } else {
@@ -43,7 +43,7 @@ class RegistrationInvitationsTest extends TestCase
             $data['role_id'] = null;
         }
         // Find or fallback for access_level_id (access_levels)
-        $resaccess_level_id = mysqli_query($this->conn, "SELECT id FROM `access_levels` WHERE " . (strpos('access_levels', 'companies') === false && strpos('access_levels', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resaccess_level_id = mysqli_query($this->conn, "SELECT id FROM `access_levels` WHERE " . (strpos('access_levels', 'companies') === false && strpos('access_levels', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowaccess_level_id = mysqli_fetch_assoc($resaccess_level_id)) {
             $data['access_level_id'] = $rowaccess_level_id['id'];
         } else {

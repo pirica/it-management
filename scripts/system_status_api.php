@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_system_status_native.php';
 require_once ROOT_PATH . 'includes/itm_system_status_powershell.php';
 
-if (!isset($_SESSION['user_id']) || !itm_is_admin($conn, $_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id']) || !itm_is_admin($conn, $_SESSION['employee_id'])) {
     header('Content-Type: application/json; charset=utf-8');
     http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access. Admin role required.']);

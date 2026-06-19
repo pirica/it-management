@@ -31,8 +31,8 @@ if (!empty($data['it_location_id'])) {
     }
 }
 $fpCreatedByLabel = '';
-if (!empty($data['created_by_user_id'])) {
-    $fpCreatedByLabel = cr_user_label_by_id($conn, (int)$company_id, $data['created_by_user_id']);
+if (!empty($data['created_by_employee_id'])) {
+    $fpCreatedByLabel = cr_user_label_by_id($conn, (int)$company_id, $data['created_by_employee_id']);
 }
 ?>
 <h1><?php echo sanitize((string)($data['display_name'] ?? 'Floor Plan')); ?></h1>

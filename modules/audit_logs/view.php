@@ -7,7 +7,7 @@
  */
 
 require '../../config/config.php';
-if (!itm_is_admin($conn, $_SESSION['user_id'] ?? 0)) {
+if (!itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }
@@ -32,7 +32,7 @@ if ($auditId > 0) {
         $conn,
         'SELECT al.*, u.username, u.email, u.first_name, u.last_name '
         . 'FROM audit_logs al '
-        . 'LEFT JOIN users u ON u.id = al.user_id '
+        . 'LEFT JOIN employees u ON u.id = al.user_id '
         . 'WHERE al.id = ? AND al.company_id = ? '
         . 'LIMIT 1'
     );

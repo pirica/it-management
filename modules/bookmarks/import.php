@@ -3,7 +3,7 @@ require '../../config/config.php';
 require './helpers.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!empty($bookmarks_to_import)) {
-            $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, user_id, title, url, notes) VALUES (?, ?, ?, ?, ?)");
+            $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, employee_id, title, url, notes) VALUES (?, ?, ?, ?, ?)");
             $count = 0;
             foreach ($bookmarks_to_import as $b) {
                 // Validation: Only http/https

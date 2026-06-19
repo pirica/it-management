@@ -108,7 +108,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
-        'cat_from_user_id' => 'Category from User',
+        'cat_from_employee_id' => 'Category from User',
     ];
 
     if (isset($map[$label])) {
@@ -134,10 +134,10 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === 'cat_from_user_id' && $value > 0) {
+    if ($field === 'cat_from_employee_id' && $value > 0) {
         $conn = $GLOBALS['conn'] ?? null;
         if ($conn) {
-            $stmt = mysqli_prepare($conn, 'SELECT username FROM users WHERE id = ?');
+            $stmt = mysqli_prepare($conn, 'SELECT username FROM employees WHERE id = ?');
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'i', $value);
                 mysqli_stmt_execute($stmt);
@@ -269,7 +269,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'todo_categories', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'todo_categories', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -605,12 +605,12 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
-                        if ($name === 'cat_from_user_id') {
+                        if ($name === 'cat_from_employee_id') {
                             $val = (string)($data[$name] ?? '');
                             if ($crud_action === 'create') {
-                                $val = (string)($_SESSION['user_id'] ?? '');
+                                $val = (string)($_SESSION['employee_id'] ?? '');
                             }
-                            echo '<input type="hidden" name="cat_from_user_id" value="' . sanitize($val) . '">';
+                            echo '<input type="hidden" name="cat_from_employee_id" value="' . sanitize($val) . '">';
                             continue;
                         }
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');

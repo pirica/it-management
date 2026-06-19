@@ -78,12 +78,12 @@ function cr_fk_options($conn, $fk, $company_id) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
 
-    if ($table === 'users' || $table === 'employees') {
+    if ($table === 'employees' || $table === 'employees') {
         $userWhere = $where;
-        if ($table === 'users' && in_array('company_id', $available, true) && $company_id > 0) {
+        if ($table === 'employees' && in_array('company_id', $available, true) && $company_id > 0) {
             $userWhere = ' WHERE (company_id=' . (int)$company_id
                 . " OR LOWER(COALESCE(username, ''))='admin'"
-                . " OR COALESCE((SELECT LOWER(COALESCE(ur.name, '')) FROM `user_roles` ur WHERE ur.id=`users`.role_id LIMIT 1), '')='admin')";
+                . " OR COALESCE((SELECT LOWER(COALESCE(ur.name, '')) FROM `employee_roles` ur WHERE ur.id=`employees`.role_id LIMIT 1), '')='admin')";
         }
 
         $sql = 'SELECT '
@@ -170,7 +170,7 @@ function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
     $meta = cr_fk_metadata($conn, $table);
     $available = $meta['available'];
 
-    if ($table === 'users' || $table === 'employees') {
+    if ($table === 'employees' || $table === 'employees') {
         $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
         if (in_array('company_id', $available, true) && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
@@ -415,7 +415,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'employee_assignment_history', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'employee_assignment_history', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;

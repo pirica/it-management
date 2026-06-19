@@ -8,7 +8,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 
 ## 3. Required Relationships
 - **audit_logs** → depends on **companies**.
-- **audit_logs** → depends on **users** (via `user_id`).
+- **audit_logs** → depends on **users** (via `employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
@@ -54,8 +54,8 @@ $stmt->execute();
 
 ### Safe INSERT (Manual)
 ```php
-$stmt = $conn->prepare("INSERT INTO audit_logs (company_id, user_id, table_name, record_id, action, new_values) VALUES (?, ?, ?, ?, 'INSERT', ?)");
-$stmt->bind_param("iiiss", $companyId, $userId, $tableName, $recordId, $jsonValues);
+$stmt = $conn->prepare("INSERT INTO audit_logs (company_id, employee_id, table_name, record_id, action, new_values) VALUES (?, ?, ?, ?, 'INSERT', ?)");
+$stmt->bind_param("iiiss", $companyId, $employeeId, $tableName, $recordId, $jsonValues);
 $stmt->execute();
 ```
 

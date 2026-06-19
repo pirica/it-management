@@ -12,7 +12,7 @@ $crud_title = 'Backup Tape Log';
 $crud_action = $crud_action ?? 'index';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
-$user_id = (int)($_SESSION['user_id'] ?? 0);
+$user_id = (int)($_SESSION['employee_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 
 /**

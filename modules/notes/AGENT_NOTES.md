@@ -4,11 +4,11 @@
 Google Keep–style personal and shared notes for the active company. Supports pinning, importance, image attachments (`images_json`), colour, labels, and sharing via `shared_with_json`.
 
 ## 2. Key Tables
-- **notes** — main note records (`title`, `content`, `is_pinned`, `is_important`, `images_json`, `shared_with_json`, `color`, `user_id`).
+- **notes** — main note records (`title`, `content`, `is_pinned`, `is_important`, `images_json`, `shared_with_json`, `color`, `employee_id`).
 - **note_labels** — per-user label/tag names used when filtering and importing.
 
 ## 3. Required Relationships
-- **notes** → depends on **companies** (`company_id`), **users** (`user_id`, share targets).
+- **notes** → depends on **companies** (`company_id`), **users** (`employee_id`, share targets).
 - **notes** → uses **note_labels** for tag metadata.
 - Visibility helpers live in `includes/notes_visibility.php`.
 
@@ -35,7 +35,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — standard entry wrappers.
 
 ## 8. Multi-Tenant Rules
-- All queries filter by `company_id` and visibility (`user_id` / `shared_with_json`).
+- All queries filter by `company_id` and visibility (`employee_id` / `shared_with_json`).
 - Notes cannot be moved between companies.
 
 ## 9. Audit Logging Requirements

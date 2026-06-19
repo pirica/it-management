@@ -2,7 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Multi-Tenant Data Leak PoC');
 
@@ -33,22 +33,22 @@ echo ob_get_clean();
     return $output;
 }
 
-echo "Verifying Multi-Tenant Data Leak in Users/User Companies...\n";
+echo "Verifying Multi-Tenant Data Leak in Users/Employee Companies...\n";
 
 // 1. Create a tenant Admin for Company 1
 $company1 = 1;
-$admin1 = itm_script_test_user_create($conn, $company1, [
+$admin1 = itm_script_test_employee_create($conn, $company1, [
     'script_slug' => 'repro-leak-admin',
     'role_id' => 1 // Admin
 ]);
-itm_script_test_user_register_teardown($conn, (int)$admin1['id']);
+itm_script_test_employee_register_teardown($conn, (int)$admin1['id']);
 
 // 2. Create a victim user in Company 2
 $company2 = 2;
-$victim = itm_script_test_user_create($conn, $company2, [
+$victim = itm_script_test_employee_create($conn, $company2, [
     'script_slug' => 'repro-leak-victim'
 ]);
-itm_script_test_user_register_teardown($conn, (int)$victim['id']);
+itm_script_test_employee_register_teardown($conn, (int)$victim['id']);
 
 $session = [
     'company_id' => $company1,
@@ -59,7 +59,7 @@ $session = [
 ];
 
 echo "Admin 1 (Company 1) attempting to see Victim (Company 2) in Users list...\n";
-$output = run_request(realpath(__DIR__ . '/../modules/users/index.php'), $session);
+$output = run_request(realpath(__DIR__ . '/../modules/employees/index.php'), $session);
 
 if (strpos($output, $victim['username']) !== false) {
     echo colorText("[FAIL] Multi-Tenant Leak: Admin of Company 1 can see users of Company 2!", 'fail') . itm_script_output_nl();
@@ -67,8 +67,8 @@ if (strpos($output, $victim['username']) !== false) {
     echo colorText("[PASS] Admin of Company 1 cannot see users of Company 2.", 'pass') . itm_script_output_nl();
 }
 
-echo "Admin 1 (Company 1) attempting to see User Companies mappings of Victim...\n";
-$output = run_request(realpath(__DIR__ . '/../modules/user_companies/index.php'), $session);
+echo "Admin 1 (Company 1) attempting to see Employee Companies mappings of Victim...\n";
+$output = run_request(realpath(__DIR__ . '/../modules/employee_companies/index.php'), $session);
 
 if (strpos($output, $victim['username']) !== false) {
     echo colorText("[FAIL] Multi-Tenant Leak: Admin of Company 1 can see User-Company mappings of Company 2!", 'fail') . itm_script_output_nl();

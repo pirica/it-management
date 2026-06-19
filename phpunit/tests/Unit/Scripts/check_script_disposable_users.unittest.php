@@ -6,7 +6,7 @@ class CheckScriptDisposableUsersUnittest extends ItmScriptCliTestCase
 {
     public function testCheckScriptDisposableUsersPasses(): void
     {
-        $result = $this->runRepoScript('scripts/check_script_disposable_users.php');
+        $result = $this->runRepoScript('scripts/check_script_disposable_employees.php');
         $this->assertSame(0, $result['exit'], $result['output']);
         $this->assertStringContainsString('PASS:', $result['output']);
     }

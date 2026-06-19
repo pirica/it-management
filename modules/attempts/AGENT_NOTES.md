@@ -7,7 +7,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 - **attempts** — logs individual success/failure events for login and reset requests.
 
 ## 3. Required Relationships
-- **attempts** → depends on **users** (via `user_id`, nullable).
+- **attempts** → depends on **users** (via `employee_id`, nullable).
 
 ## 4. Business Rules (Critical for Agents)
 - **Log Source/Type**: Must distinguish between 'login' and 'password_reset' sources and 'success', 'failure', 'request', or 'reset' types.
@@ -26,7 +26,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 - **view.php** — detailed view of an attempt.
 
 ## 8. Multi-Tenant Rules
-- **Cross-Tenant Nature**: Since login attempts happen before a company is selected, some records may have NULL `user_id` or relate to users across different companies. However, once logged in, a user should only see attempts related to their scope if applicable.
+- **Cross-Tenant Nature**: Since login attempts happen before a company is selected, some records may have NULL `employee_id` or relate to users across different companies. However, once logged in, a user should only see attempts related to their scope if applicable.
 
 ## 9. Audit Logging Requirements
 - This module *is* a form of logging. It does not typically have its own audit triggers to avoid circularity.
@@ -47,7 +47,7 @@ $stmt->execute();
 ### Safe INSERT
 ```php
 $stmt = $conn->prepare("INSERT INTO attempts (user_id, email, attempt_source, attempt_type, ip_address) VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("issss", $userId, $email, $source, $type, $ipAddress);
+$stmt->bind_param("issss", $employeeId, $email, $source, $type, $ipAddress);
 $stmt->execute();
 ```
 

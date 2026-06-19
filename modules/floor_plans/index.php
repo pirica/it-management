@@ -144,11 +144,11 @@ function cr_user_label_by_id($conn, $company_id, $rawId) {
     $whereCompany = ($company_id > 0)
         ? ' WHERE id=' . $id . ' AND company_id=' . (int)$company_id
         : ' WHERE id=' . $id;
-    $sql = 'SELECT username, first_name, last_name FROM `users`' . $whereCompany . ' LIMIT 1';
+    $sql = 'SELECT username, first_name, last_name FROM `employees`' . $whereCompany . ' LIMIT 1';
     $res = mysqli_query($conn, $sql);
 
     if ((!$res || mysqli_num_rows($res) === 0) && $company_id > 0) {
-        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `users` WHERE id=' . $id . ' LIMIT 1');
+        $res = mysqli_query($conn, 'SELECT username, first_name, last_name FROM `employees` WHERE id=' . $id . ' LIMIT 1');
     }
 
     if ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -174,7 +174,7 @@ function cr_user_options($conn, $company_id) {
     $where = ($company_id > 0)
         ? ' WHERE company_id=' . (int)$company_id
         : '';
-    $sql = 'SELECT id, username, first_name, last_name FROM `users`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
+    $sql = 'SELECT id, username, first_name, last_name FROM `employees`' . $where . ' ORDER BY first_name ASC, last_name ASC, username ASC';
     $res = mysqli_query($conn, $sql);
     $options = [];
     while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -270,7 +270,7 @@ function cr_humanize_field($field) {
         'mime_type' => 'MIME Type',
         'file_ext' => 'Type',
         'file_size' => 'Size',
-        'created_by_user_id' => 'Uploaded By',
+        'created_by_employee_id' => 'Uploaded By',
     ];
 
     if (isset($map[$label])) { return $map[$label]; }
@@ -479,7 +479,7 @@ $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
 }));
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'user_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'budget_categories', 'floor_plans', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'users', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'budget_categories', 'floor_plans', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -681,16 +681,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
             $mime = fp_detect_upload_mime_type((string)$file['tmp_name']);
             $placeholder = 'pending';
             $size = (int)$file['size'];
-            $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
-            if ($folderParam === null && $userId > 0) {
-                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_user_id, active) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 1)');
-                mysqli_stmt_bind_param($stmt, 'issssii', $company_id, $displayName, $placeholder, $mime, $ext, $size, $userId);
+            $employeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
+            if ($folderParam === null && $employeeId > 0) {
+                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_employee_id, active) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 1)');
+                mysqli_stmt_bind_param($stmt, 'issssii', $company_id, $displayName, $placeholder, $mime, $ext, $size, $employeeId);
             } elseif ($folderParam === null) {
                 $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, active) VALUES (?, NULL, ?, ?, ?, ?, ?, 1)');
                 mysqli_stmt_bind_param($stmt, 'issssi', $company_id, $displayName, $placeholder, $mime, $ext, $size);
-            } elseif ($userId > 0) {
-                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_user_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
-                mysqli_stmt_bind_param($stmt, 'iissssii', $company_id, $folderParam, $displayName, $placeholder, $mime, $ext, $size, $userId);
+            } elseif ($employeeId > 0) {
+                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_employee_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
+                mysqli_stmt_bind_param($stmt, 'iissssii', $company_id, $folderParam, $displayName, $placeholder, $mime, $ext, $size, $employeeId);
             } else {
                 $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)');
                 mysqli_stmt_bind_param($stmt, 'iissssi', $company_id, $folderParam, $displayName, $placeholder, $mime, $ext, $size);

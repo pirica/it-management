@@ -9,10 +9,10 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 - **coverage/html/** — generated HTML coverage (gitignored). Entry file **`coverage.html`** after `run_tests.php` renames PHPUnit’s `index.html`.
 - **tests/** — suite root (`bootstrap.php`, `Unit/`, `PREFERENCES.md`, `AGENT_NOTES.md`).
 - **tests/Unit/Includes/** — helper coverage tests mapped to `includes/*.php` (see `tests/Unit/Includes/AGENT_NOTES.md`).
-- **tests/Unit/Scripts/** — CLI audit script tests; disposable user helper coverage (`ItmScriptTestUserTest`, `ReproAuditDisclosureTest`, `check_script_disposable_users.unittest.php`).
+- **tests/Unit/Scripts/** — CLI audit script tests; disposable user helper coverage (`ItmScriptTestUserTest`, `ReproAuditDisclosureTest`, `check_script_disposable_employees.unittest.php`).
 
 ## 10. Common Pitfalls
-- **Disposable script test users:** when tests INSERT/UPDATE `users` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_user.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
+- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
 - Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu).
 - **Coverage paths in docs** must say `phpunit/coverage/html/coverage.html`, not `index.html`.
 - **Interpreting low totals (~0.4% lines)** — expected with wide `<coverage><include>` and DB-only module tests; see **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**.

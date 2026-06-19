@@ -7,7 +7,7 @@ Granular RBAC: view/create/edit/delete/import/export per module and role.
 - **role_module_permissions** — permission flags per role and module name.
 
 ## 3. Required Relationships
-- **role_module_permissions** → **companies**, **user_roles**.
+- **role_module_permissions** → **companies**, **employee_roles**.
 
 ## 4. Business Rules (Critical for Agents)
 - **Unique constraint:** one permission set per company + role + module name.

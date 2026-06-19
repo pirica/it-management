@@ -16,7 +16,7 @@ ini_set('error_log', __DIR__ . '/error_log.txt');
 require 'config/config.php';
 
 // Redirect to login if the user is not authenticated
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     header('Location: login.php');
     exit();
 }
@@ -28,7 +28,7 @@ if (!$conn) {
     ini_set('display_errors', '1');
 }
 
-$userId = (int)$_SESSION['user_id'];
+$employeeId = (int)$_SESSION['employee_id'];
 $csrfToken = itm_get_csrf_token();
 $isAdmin = false;
 
@@ -37,13 +37,13 @@ $isAdmin = false;
 $adminStmt = mysqli_prepare(
     $conn,
     'SELECT 1
-     FROM users u
-     LEFT JOIN user_roles ur ON ur.id = u.role_id
+     FROM employees u
+     LEFT JOIN employee_roles ur ON ur.id = u.role_id
      WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
      LIMIT 1'
 );
 if ($adminStmt) {
-    mysqli_stmt_bind_param($adminStmt, 'i', $userId);
+    mysqli_stmt_bind_param($adminStmt, 'i', $employeeId);
     mysqli_stmt_execute($adminStmt);
     $adminRes = mysqli_stmt_get_result($adminStmt);
     $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
@@ -71,9 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } else {
         // Regular users must be assigned to the company
-        $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.user_id = ? AND c.active = 1 LIMIT 1');
+        $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN employee_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.employee_id = ? AND c.active = 1 LIMIT 1');
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ii', $company_id, $userId);
+            mysqli_stmt_bind_param($stmt, 'ii', $company_id, $employeeId);
             if (mysqli_stmt_execute($stmt)) {
                 $res = mysqli_stmt_get_result($stmt);
                 $company = $res ? mysqli_fetch_assoc($res) : null;
@@ -95,10 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 if ($isAdmin) {
     $companies = mysqli_query($conn, 'SELECT c.* FROM companies c WHERE c.active = 1 ORDER BY c.company');
 } else {
-    $stmtCompanies = mysqli_prepare($conn, 'SELECT c.* FROM companies c INNER JOIN user_companies uc ON uc.company_id = c.id WHERE c.active = 1 AND uc.user_id = ? ORDER BY c.company');
+    $stmtCompanies = mysqli_prepare($conn, 'SELECT c.* FROM companies c INNER JOIN employee_companies uc ON uc.company_id = c.id WHERE c.active = 1 AND uc.employee_id = ? ORDER BY c.company');
     $companies = false;
     if ($stmtCompanies) {
-        mysqli_stmt_bind_param($stmtCompanies, 'i', $userId);
+        mysqli_stmt_bind_param($stmtCompanies, 'i', $employeeId);
         mysqli_stmt_execute($stmtCompanies);
         $companies = mysqli_stmt_get_result($stmtCompanies);
     }

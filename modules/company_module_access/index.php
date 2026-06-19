@@ -12,7 +12,7 @@ if (!isset($crud_action)) {
 require '../../config/config.php';
 
 // Why: Only administrators manage company-level module visibility.
-if (!itm_is_admin($conn, (int)($_SESSION['user_id'] ?? 0))) {
+if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }

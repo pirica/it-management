@@ -73,7 +73,7 @@ if (!function_exists('itm_detect_fk_business_key_columns')) {
             'gl_accounts' => ['account_code'],
             'location_types' => ['name'],
             'access_levels' => ['name'],
-            'user_roles' => ['name'],
+            'employee_roles' => ['name'],
             'approvals_stage' => ['stage'],
             'forecast_revisions_status' => ['status'],
             'employee_positions' => ['name'],

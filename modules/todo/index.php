@@ -27,8 +27,8 @@ if (!function_exists('todo_merge_assignee_users')) {
 
         $ids = array_values($missing);
         $sql = 'SELECT u.id, u.username
-                FROM users u
-                LEFT JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+                FROM employees u
+                LEFT JOIN employee_companies uc ON uc.employee_id = u.id AND uc.company_id = ?
                 WHERE u.id = ? AND (u.company_id = ? OR uc.company_id = ?)
                 LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);
@@ -54,7 +54,7 @@ if (!function_exists('todo_merge_assignee_users')) {
 $crud_table = "todo";
 $crud_title = "Todo";
 $crud_action = $crud_action ?? "index";
-$logged_user_id = isset($_SESSION["user_id"]) ? (int)$_SESSION["user_id"] : 0;
+$logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
 $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 
 // Metadata
@@ -64,8 +64,8 @@ if ($resCat) { while ($row = mysqli_fetch_assoc($resCat)) { $categories[$row['id
 
 $users = [];
 $userSql = "SELECT u.id, u.username
-            FROM users u
-            LEFT JOIN user_companies uc ON uc.user_id = u.id AND uc.company_id = ?
+            FROM employees u
+            LEFT JOIN employee_companies uc ON uc.employee_id = u.id AND uc.company_id = ?
             WHERE u.active = 1 AND COALESCE(uc.active, 1) = 1 AND (u.company_id = ? OR uc.company_id = ?)
             GROUP BY u.id
             ORDER BY u.username";
@@ -99,7 +99,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $header_row = array_map('strtolower', $rows[0]);
             $catIdx = array_search('category', $header_row);
             $deptIdx = array_search('department', $header_row);
-            $userIdx = array_search('assigned to user', $header_row);
+            $employeeIdx = array_search('assigned to user', $header_row);
             $compIdx = array_search('completed', $header_row);
             $impIdx = array_search('importance', $header_row);
 
@@ -122,14 +122,14 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     }
                     $rows[$i][$deptIdx] = implode(',', $ids);
                 }
-                if ($userIdx !== false && !empty($rows[$i][$userIdx])) {
+                if ($employeeIdx !== false && !empty($rows[$i][$employeeIdx])) {
                     $ids = [];
-                    foreach (explode(',', $rows[$i][$userIdx]) as $val) {
+                    foreach (explode(',', $rows[$i][$employeeIdx]) as $val) {
                         $val = strtolower(trim($val));
                         if (isset($userMap[$val])) $ids[] = $userMap[$val];
                         elseif (ctype_digit($val)) $ids[] = $val;
                     }
-                    $rows[$i][$userIdx] = implode(',', $ids);
+                    $rows[$i][$employeeIdx] = implode(',', $ids);
                 }
                 if ($compIdx !== false) {
                     $v = strtolower(trim($rows[$i][$compIdx]));
@@ -189,19 +189,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $department_ids = $_POST["department_id"] ?? [];
         $department_id = is_array($department_ids) ? implode(",", array_filter(array_map("intval", $department_ids))) : null;
 
-        $assigned_to_user_ids = $_POST["assigned_to_user_id"] ?? [];
-        $assigned_to_user_id = is_array($assigned_to_user_ids) ? implode(",", array_filter(array_map("intval", $assigned_to_user_ids))) : null;
+        $assigned_to_employee_ids = $_POST["assigned_to_employee_id"] ?? [];
+        $assigned_to_employee_id = is_array($assigned_to_employee_ids) ? implode(",", array_filter(array_map("intval", $assigned_to_employee_ids))) : null;
 
         $importance = isset($_POST["importance"]) ? 1 : 0;
         $completed = isset($_POST["completed"]) ? 1 : 0;
 
         if ($crud_action === "edit" && $editId > 0) {
             $visSql = itm_todo_visibility_sql();
-            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_user_id=?, importance=?, completed=? WHERE id=? AND company_id=? AND ($visSql)");
-            $stmt->bind_param("ssssssssiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $importance, $completed, $editId, $company_id, $logged_user_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_employee_id=?, importance=?, completed=? WHERE id=? AND company_id=? AND ($visSql)");
+            $stmt->bind_param("ssssssssiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $importance, $completed, $editId, $company_id, $logged_user_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("issssssssiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance, $completed);
+            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by_employee_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("issssssssiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance, $completed);
         }
 
         if ($stmt->execute()) {
@@ -230,11 +230,11 @@ if (isset($_GET["ajax_action"])) {
 
         $category_id = isset($_POST["category_id"]) ? implode(",", array_filter(array_map("intval", $_POST["category_id"]))) : null;
         $department_id = isset($_POST["department_id"]) ? implode(",", array_filter(array_map("intval", $_POST["department_id"]))) : null;
-        $assigned_to_user_id = isset($_POST["assigned_to_user_id"]) ? implode(",", array_filter(array_map("intval", $_POST["assigned_to_user_id"]))) : null;
+        $assigned_to_employee_id = isset($_POST["assigned_to_employee_id"]) ? implode(",", array_filter(array_map("intval", $_POST["assigned_to_employee_id"]))) : null;
         $importance = (int)($_POST["importance"] ?? 0);
 
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_user_id, created_by_user_id, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssssssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_user_id, $logged_user_id, $importance);
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by_employee_id, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssssssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance);
 
         if ($stmt->execute()) {
             echo json_encode(["ok" => true]);
@@ -294,7 +294,7 @@ if ($crud_action === "index") {
     } elseif ($filter === "planned") {
         $sql .= " AND t.due_date IS NOT NULL";
     } elseif ($filter === "assigned") {
-        $sql .= " AND FIND_IN_SET(?, t.assigned_to_user_id)";
+        $sql .= " AND FIND_IN_SET(?, t.assigned_to_employee_id)";
         $types .= "i";
         $params[] = $logged_user_id;
     }
@@ -313,7 +313,7 @@ if ($crud_action === "index") {
     $stmt->execute();
     $res = $stmt->get_result();
     $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-    $assigneeCsv = array_column($tasks, 'assigned_to_user_id');
+    $assigneeCsv = array_column($tasks, 'assigned_to_employee_id');
     todo_merge_assignee_users($conn, $company_id, $users, $assigneeCsv);
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     $visSql = itm_todo_visibility_sql();
@@ -325,7 +325,7 @@ if ($crud_action === "index") {
         header("Location: index.php");
         die();
     }
-    todo_merge_assignee_users($conn, $company_id, $users, [(string)($data['assigned_to_user_id'] ?? '')]);
+    todo_merge_assignee_users($conn, $company_id, $users, [(string)($data['assigned_to_employee_id'] ?? '')]);
 } elseif ($crud_action === "create") {
     $data = [];
     if ($filter === "my_day") {
@@ -513,7 +513,7 @@ if ($crud_action === "index") {
                                             echo sanitize(implode(', ', $dNames));
                                         ?></td>
                                         <td><?php
-                                            $uIds = explode(',', (string)$t['assigned_to_user_id']);
+                                            $uIds = explode(',', (string)$t['assigned_to_employee_id']);
                                             $uNames = [];
                                             foreach ($uIds as $uid) { if (isset($users[$uid])) $uNames[] = $users[$uid]['username']; }
                                             echo sanitize(implode(', ', $uNames));
@@ -765,7 +765,7 @@ if ($crud_action === "index") {
                                                 <?php endif; ?>
 
                                                 <?php
-                                                $assignedIds = array_filter(explode(',', (string)($task['assigned_to_user_id'] ?? '')));
+                                                $assignedIds = array_filter(explode(',', (string)($task['assigned_to_employee_id'] ?? '')));
                                                 if (!empty($assignedIds)):
                                                     $userNames = [];
                                                     foreach ($assignedIds as $uid) { if (isset($users[$uid])) $userNames[] = $users[$uid]['username']; }
@@ -886,12 +886,12 @@ if ($crud_action === "index") {
                             </div>
                             <div class="form-group">
                                 <label>Assign To</label>
-                                <select name="assigned_to_user_id[]" multiple size="5" data-addable-select="1" data-add-table="users" data-add-friendly="user">
+                                <select name="assigned_to_employee_id[]" multiple size="5" data-addable-select="1" data-add-table="employees" data-add-friendly="user">
                                     <option value="">-- Unassigned --</option>
                                     <option value="__add_new__">➕</option>
                                     <?php 
-                                    $selectedUsers = explode(',', (string)($data['assigned_to_user_id'] ?? ''));
-                                    if ($crud_action === 'create' && empty($selectedUsers) && !isset($data['assigned_to_user_id'])) {
+                                    $selectedUsers = explode(',', (string)($data['assigned_to_employee_id'] ?? ''));
+                                    if ($crud_action === 'create' && empty($selectedUsers) && !isset($data['assigned_to_employee_id'])) {
                                         $selectedUsers = [(string)$logged_user_id];
                                     }
                                     foreach ($users as $user): ?>
@@ -980,7 +980,7 @@ if ($crud_action === "index") {
                                 <tr>
                                     <th style="text-align: left; padding-right: 20px;">Assigned To</th>
                                     <td><?php
-                                        $uIds = array_filter(explode(',', (string)($data['assigned_to_user_id'] ?? '')));
+                                        $uIds = array_filter(explode(',', (string)($data['assigned_to_employee_id'] ?? '')));
                                         if (empty($uIds)) {
                                             echo "Unassigned";
                                         } else {
@@ -1220,7 +1220,7 @@ if ($crud_action === "index") {
         catIds.forEach(id => formData.append("category_id[]", id));
 
         const userIds = document.getElementById("quickAddUser").value.split(',').filter(x => x);
-        userIds.forEach(id => formData.append("assigned_to_user_id[]", id));
+        userIds.forEach(id => formData.append("assigned_to_employee_id[]", id));
         formData.append("importance", document.getElementById("quickAddImportance").value);
 
         fetch("index.php?ajax_action=quick_add", {

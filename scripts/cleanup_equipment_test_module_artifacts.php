@@ -7,7 +7,7 @@
  *   - modules/is_mbqa_equipment_types_{company}_{hash} orphan folders (QA runner on equipment_types)
  *   - equipment_types rows with itm_eqdct / itm_edct in the name, or MBQA-equipment_types-… runner tags
  *   - ITM test companies
- *   - matching user_sidebar_preferences rows (itm_eqdct / itm_edct / is_mbqa_equipment_types_*)
+ *   - matching employee_sidebar_preferences rows (itm_eqdct / itm_edct / is_mbqa_equipment_types_*)
  *
  * Also invoked automatically at the end of module_browser_qa_runner.php.
  *
@@ -53,7 +53,7 @@ if ($cleanup['types_deleted'] > 0) {
 }
 
 if ($cleanup['sidebar_deleted'] > 0) {
-    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)", 'pass') . "\n");
+    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} employee_sidebar_preferences test row(s)", 'pass') . "\n");
 }
 
 fwrite(STDOUT, colorText("[OK] Verified canonical modules/is_* façades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . "\n");

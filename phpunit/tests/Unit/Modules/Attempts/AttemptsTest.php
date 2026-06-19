@@ -26,8 +26,8 @@ class AttemptsTest extends TestCase
         $data['attempt_source'] = 'login';
         $data['attempt_type'] = 'success';
         $data['ip_address'] = 'Test ip_address';
-        // Find or fallback for user_id (users)
-        $resuser_id = mysqli_query($this->conn, "SELECT id FROM `users` WHERE " . (strpos('users', 'companies') === false && strpos('users', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        // Find or fallback for employee_id (users)
+        $resuser_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowuser_id = mysqli_fetch_assoc($resuser_id)) {
             $data['user_id'] = $rowuser_id['id'];
         } else {

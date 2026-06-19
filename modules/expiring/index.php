@@ -77,7 +77,7 @@ if (!function_exists('expiring_display_date')) {
 }
 
 $company_id = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
-$uiConfig = function_exists('itm_get_ui_configuration') ? itm_get_ui_configuration($conn, $company_id, isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null) : [];
+$uiConfig = function_exists('itm_get_ui_configuration') ? itm_get_ui_configuration($conn, $company_id, isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null) : [];
 
 if (($uiConfig['enable_all_error_reporting'] ?? 0) == 1) {
     error_reporting(E_ALL);
@@ -88,7 +88,7 @@ if (($uiConfig['enable_all_error_reporting'] ?? 0) == 1) {
 }
 
 $recordsPerPage = max(5, (int)($uiConfig['records_per_page'] ?? 10));
-$logged_user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
 
 // Handle JSON import requests from table-tools.js so this dashboard does not fall through to HTML rendering.
@@ -190,8 +190,8 @@ if ($company_id > 0) {
                 SELECT
                     a.id,
                     a.title AS name,
-                    a.assigned_to_user_id,
-                    a.created_by_user_id,
+                    a.assigned_to_employee_id,
+                    a.created_by_employee_id,
                     '' AS hostname,
                     '' AS model,
                     '' AS serial_number,
@@ -204,7 +204,7 @@ if ($company_id > 0) {
                 WHERE a.company_id = ?
                   AND a.end_datetime IS NOT NULL
                   AND a.end_datetime >= '1000-01-01'
-                  AND (a.assigned_to_user_id IS NULL OR a.assigned_to_user_id = $logged_user_id OR a.created_by_user_id = $logged_user_id)
+                  AND (a.assigned_to_employee_id IS NULL OR a.assigned_to_employee_id = $logged_user_id OR a.created_by_employee_id = $logged_user_id)
                   AND a.active = 1
                 ORDER BY a.end_datetime ASC, a.title ASC
             ";
@@ -275,8 +275,8 @@ if ($company_id > 0) {
 
                 $targetRows[] = [
                     'id' => (int)($row['id'] ?? 0),
-                    'assigned_to_user_id' => $row['assigned_to_user_id'] ?? null,
-                    'created_by_user_id' => $row['created_by_user_id'] ?? null,
+                    'assigned_to_employee_id' => $row['assigned_to_employee_id'] ?? null,
+                    'created_by_employee_id' => $row['created_by_employee_id'] ?? null,
                     'equipment_title' => $equipmentTitle,
                     'hostname' => (string)($row['hostname'] ?? ''),
                     'equipment_type' => (string)($row['equipment_type'] ?? ''),
@@ -303,7 +303,7 @@ if ($company_id > 0) {
         }
 
         if ($field === 'alerts_expiry') {
-            $unknownSql = "SELECT COUNT(*) AS unknown_count FROM alerts WHERE company_id = ? AND (end_datetime IS NULL OR TRIM(end_datetime) = '' OR end_datetime IN ('0000-00-00', '0000-00-00 00:00:00')) AND (assigned_to_user_id IS NULL OR assigned_to_user_id = $logged_user_id OR created_by_user_id = $logged_user_id) AND active = 1";
+            $unknownSql = "SELECT COUNT(*) AS unknown_count FROM alerts WHERE company_id = ? AND (end_datetime IS NULL OR TRIM(end_datetime) = '' OR end_datetime IN ('0000-00-00', '0000-00-00 00:00:00')) AND (assigned_to_employee_id IS NULL OR assigned_to_employee_id = $logged_user_id OR created_by_employee_id = $logged_user_id) AND active = 1";
         } else {
             $unknownSql = sprintf(
                 "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
@@ -481,8 +481,8 @@ if ($moduleTitle === '') {
                                                 <a class="btn-link" style="text-decoration: none;" href="../alerts/view.php?id=<?php echo (int)$row['id']; ?>">
                                                     <?php
                                                         $title = (string)$row['equipment_title'];
-                                                        if (!empty($row['assigned_to_user_id'])) {
-                                                            if ((int)$row['assigned_to_user_id'] === (int)$logged_user_id && (int)$row['created_by_user_id'] === (int)$logged_user_id) {
+                                                        if (!empty($row['assigned_to_employee_id'])) {
+                                                            if ((int)$row['assigned_to_employee_id'] === (int)$logged_user_id && (int)$row['created_by_employee_id'] === (int)$logged_user_id) {
                                                                 echo sanitize($title) . " ⚠️";
                                                             } else {
                                                                 echo sanitize($title);

@@ -263,8 +263,8 @@ function mbqa_pick_free_values_for_unique_scope(mysqli $conn, string $table, int
 
     if ($table === 'role_assignment_rights') {
         $pickSql = 'SELECT r1.id AS role_id, r2.id AS can_assign_role_id
-            FROM user_roles r1
-            INNER JOIN user_roles r2 ON r2.company_id = r1.company_id AND r2.id <> r1.id
+            FROM employee_roles r1
+            INNER JOIN employee_roles r2 ON r2.company_id = r1.company_id AND r2.id <> r1.id
             LEFT JOIN role_assignment_rights rar ON rar.company_id = ' . $companyIdSql
             . ' AND rar.role_id = r1.id AND rar.can_assign_role_id = r2.id
             WHERE r1.company_id = ' . $companyIdSql . ' AND rar.id IS NULL
@@ -283,7 +283,7 @@ function mbqa_pick_free_values_for_unique_scope(mysqli $conn, string $table, int
     }
 
     if ($table === 'role_module_permissions') {
-        $pickRes = mysqli_query($conn, 'SELECT id FROM user_roles WHERE company_id=' . $companyIdSql . ' ORDER BY id ASC LIMIT 1');
+        $pickRes = mysqli_query($conn, 'SELECT id FROM employee_roles WHERE company_id=' . $companyIdSql . ' ORDER BY id ASC LIMIT 1');
         $pick = $pickRes ? mysqli_fetch_assoc($pickRes) : null;
         if ($pick) {
             return [

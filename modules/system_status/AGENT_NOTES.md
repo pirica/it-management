@@ -23,7 +23,7 @@ Canonical overview: `docs/system_status.md`.
 Read-only queries (during Refresh collection only):
 
 - **information_schema.TABLES** — per-table row counts and sizes for **active** `DB_NAME` on the Database tab.
-- **companies**, **departments**, **users**, **user_companies** — Explorer storage tree labels.
+- **companies**, **departments**, **users**, **employee_companies** — Explorer storage tree labels.
 
 Registry: `modules_registry.module_slug = system_status` (system module, active).
 
@@ -171,7 +171,7 @@ $refreshResult = itm_system_status_refresh_all($conn, $cacheCompanyId);
 ### Admin gate (index)
 
 ```php
-if (!isset($_SESSION['user_id']) || !itm_is_admin($conn, $_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id']) || !itm_is_admin($conn, $_SESSION['employee_id'])) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }

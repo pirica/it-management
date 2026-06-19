@@ -23,21 +23,21 @@ class RoleAssignmentRightsTest extends TestCase
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
-        // Find or fallback for role_id (user_roles)
-        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE " . (strpos('user_roles', 'companies') === false && strpos('user_roles', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        // Find or fallback for role_id (employee_roles)
+        $resrole_id = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE " . (strpos('employee_roles', 'companies') === false && strpos('employee_roles', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowrole_id = mysqli_fetch_assoc($resrole_id)) {
             $data['role_id'] = $rowrole_id['id'];
         } else {
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $this->markTestSkipped('Required dependency user_roles not found in database.');
+            $this->markTestSkipped('Required dependency employee_roles not found in database.');
         }
-        // Find or fallback for can_assign_role_id (user_roles)
-        $rescan_assign_role_id = mysqli_query($this->conn, "SELECT id FROM `user_roles` WHERE " . (strpos('user_roles', 'companies') === false && strpos('user_roles', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        // Find or fallback for can_assign_role_id (employee_roles)
+        $rescan_assign_role_id = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE " . (strpos('employee_roles', 'companies') === false && strpos('employee_roles', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcan_assign_role_id = mysqli_fetch_assoc($rescan_assign_role_id)) {
             $data['can_assign_role_id'] = $rowcan_assign_role_id['id'];
         } else {
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
-            $this->markTestSkipped('Required dependency user_roles not found in database.');
+            $this->markTestSkipped('Required dependency employee_roles not found in database.');
         }
 
         $sql = "INSERT INTO `role_assignment_rights` (company_id, `role_id`, `can_assign_role_id`) VALUES (?, ?, ?)";

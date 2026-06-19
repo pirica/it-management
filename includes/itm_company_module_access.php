@@ -9,9 +9,9 @@ if (!function_exists('itm_module_access_system_slugs')) {
         return [
             'settings',
             'companies',
-            'users',
-            'user_companies',
-            'user_roles',
+            'employees',
+            'employee_companies',
+            'employee_roles',
             'company_module_access',
             'audit_logs',
             'role_module_permissions',
@@ -37,9 +37,9 @@ if (!function_exists('itm_module_access_admin_only_slugs')) {
     {
         return [
             'companies',
-            'users',
-            'user_companies',
-            'user_roles',
+            'employees',
+            'employee_companies',
+            'employee_roles',
             'company_module_access',
             'audit_logs',
             'role_module_permissions',
@@ -151,8 +151,8 @@ if (!function_exists('has_module_access')) {
             return false;
         }
 
-        $userId = (int)($_SESSION['user_id'] ?? 0);
-        $isAdmin = function_exists('itm_is_admin') && itm_is_admin($conn, $userId);
+        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+        $isAdmin = function_exists('itm_is_admin') && itm_is_admin($conn, $employeeId);
         if ((int)($registryRow['is_system_module'] ?? 0) === 1) {
             if ($isAdmin) {
                 return true;

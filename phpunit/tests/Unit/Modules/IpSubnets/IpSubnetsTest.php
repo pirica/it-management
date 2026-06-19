@@ -28,7 +28,7 @@ class IpSubnetsTest extends TestCase
         $data['prefix_length'] = 1;
         $data['active'] = 1;
         // Find or fallback for vlan_id (vlans)
-        $resvlan_id = mysqli_query($this->conn, "SELECT id FROM `vlans` WHERE " . (strpos('vlans', 'companies') === false && strpos('vlans', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resvlan_id = mysqli_query($this->conn, "SELECT id FROM `vlans` WHERE " . (strpos('vlans', 'companies') === false && strpos('vlans', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowvlan_id = mysqli_fetch_assoc($resvlan_id)) {
             $data['vlan_id'] = $rowvlan_id['id'];
         } else {

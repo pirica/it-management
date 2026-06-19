@@ -7,11 +7,11 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Git History Reset CSRF/POST Verification');
 
-$testUser = itm_script_test_user_create($conn, 1, [
+$testUser = itm_script_test_employee_create($conn, 1, [
     'script_slug' => 'verify-git-reset-csrf',
     'role_id' => 1,
     'access_level_id' => 1,
@@ -21,7 +21,7 @@ if (!is_array($testUser)) {
     itm_script_output_end();
     exit(1);
 }
-itm_script_test_user_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 function run_git_reset_with_method($method, $sessionUserId, $sessionUsername, $post_data = []) {
     $post_init = "";
@@ -29,7 +29,7 @@ function run_git_reset_with_method($method, $sessionUserId, $sessionUsername, $p
         $post_init .= "\$_POST['$k'] = " . var_export($v, true) . ";\n";
     }
 
-    $userId = (int)$sessionUserId;
+    $employeeId = (int)$sessionUserId;
     $username = var_export((string)$sessionUsername, true);
 
     $code = "<?php
@@ -39,7 +39,7 @@ define('ITM_CLI_SCRIPT', true);
 \$_SERVER['HTTP_HOST'] = 'localhost';
 
 require '" . realpath(__DIR__ . "/../config/config.php") . "';
-\$_SESSION['user_id'] = $userId;
+\$_SESSION['employee_id'] = $employeeId;
 \$_SESSION['username'] = $username;
 \$_SESSION['company_id'] = 1;
 

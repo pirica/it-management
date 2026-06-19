@@ -13,7 +13,7 @@ Secure private password manager with vault encryption. It allows users to store 
 
 ## 4. Business Rules (Critical for Agents)
 - **Vault Security**: Data is encrypted at rest using `itm_encrypt` and a session-based `vault_key`.
-- **Strict Ownership**: Passwords are private to the `user_id` and are NOT shared across the company unless explicitly moved to a shared module (though not supported in the core table).
+- **Strict Ownership**: Passwords are private to the `employee_id` and are NOT shared across the company unless explicitly moved to a shared module (though not supported in the core table).
 - **Session Key**: Decryption requires `$_SESSION['vault_key']` to be populated during login.
 
 ## 5. UI Behavior Requirements
@@ -21,7 +21,7 @@ Secure private password manager with vault encryption. It allows users to store 
 - **Folder Tree**: Navigation via a sidebar folder structure.
 
 ## 6. API Actions (If Applicable)
-All POST to `ajax_handler.php` with `action` (JSON responses, `user_id` scoped):
+All POST to `ajax_handler.php` with `action` (JSON responses, `employee_id` scoped):
 
 | Action | Purpose |
 |--------|---------|
@@ -42,7 +42,7 @@ All POST to `ajax_handler.php` with `action` (JSON responses, `user_id` scoped):
 - **export_handler.php** — secure export formats.
 
 ## 8. Multi-Tenant Rules
-- Scoped by `user_id` for privacy.
+- Scoped by `employee_id` for privacy.
 
 ## 9. Audit Logging Requirements
 - Database triggers on **password_entries** / **password_folders** when present in schema; never log decrypted values.
@@ -57,7 +57,7 @@ All POST to `ajax_handler.php` with `action` (JSON responses, `user_id` scoped):
 ```php
 $encrypted = itm_encrypt($plainText, $_SESSION['vault_key']);
 $stmt = $conn->prepare("INSERT INTO password_entries (user_id, account, login_name, password) VALUES (?, ?, ?, ?)");
-$stmt->bind_param("isss", $userId, $account, $login, $encrypted);
+$stmt->bind_param("isss", $employeeId, $account, $login, $encrypted);
 $stmt->execute();
 ```
 

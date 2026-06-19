@@ -97,7 +97,7 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>database.sql</code> provisions <strong>115 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>user_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>database.sql</code> provisions <strong>115 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
@@ -117,11 +117,11 @@
 
 #### Core system and access control
 
-`companies`, `users`, `user_companies`, `user_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `user_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `ui_configuration`, `settings`, `access_levels`
+`companies`, `employees`, `employee_companies`, `employee_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `employee_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `ui_configuration`, `settings`, `access_levels`
 
 **Purpose:** Identity, RBAC, multi-tenant isolation, per-company module toggles, sidebar layout, audit trail, and system-wide UI configuration.
 
-**Modules:** `companies`, `users`, `user_companies`, `user_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `user_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `settings`, `ui_configuration`, `access_levels`
+**Modules:** `companies`, `employees`, `employee_companies`, `employee_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `employee_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `settings`, `ui_configuration`, `access_levels`
 
 #### Tickets and support workflow
 
@@ -274,9 +274,9 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Module | Path | Summary |
 | --- | --- | --- |
 | Companies | `modules/companies/` | Multi-company tenant management |
-| Users | `modules/users/` | User accounts and authentication |
-| User Companies | `modules/user_companies/` | User-to-company membership |
-| User Roles | `modules/user_roles/` | Role definitions per company |
+| Users | `modules/employees/` | User accounts and authentication |
+| Employee Companies | `modules/employee_companies/` | User-to-company membership |
+| Employee Roles | `modules/employee_roles/` | Role definitions per company |
 | Role Hierarchy | `modules/role_hierarchy/` | Role ordering and inheritance |
 | Role Module Permissions | `modules/role_module_permissions/` | Per-role module CRUD rights |
 | Role Assignment Rights | `modules/role_assignment_rights/` | Who may assign which roles |
@@ -288,7 +288,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Modules Registry | `modules/modules_registry/` | Global module catalogue |
 | Audit Logs | `modules/audit_logs/` | Compliance and change-history centre |
 | Registration Invitations | `modules/registration_invitations/` | Self-service registration invites |
-| User Sidebar Preferences | `modules/user_sidebar_preferences/` | Per-user sidebar layout overrides |
+| Employee Sidebar Preferences | `modules/employee_sidebar_preferences/` | Per-user sidebar layout overrides |
 
 <h3 align="center">Assets, equipment, and inventory</h3>
 

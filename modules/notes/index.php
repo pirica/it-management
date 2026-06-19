@@ -9,20 +9,20 @@ require_once ROOT_PATH . "includes/notes_visibility.php";
 $crud_table = "notes";
 $crud_title = "Notes";
 $crud_action = $crud_action ?? "index";
-$logged_user_id = isset($_SESSION["user_id"]) ? (int)$_SESSION["user_id"] : 0;
+$logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
 $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 $data = [];
 
 // Metadata
 $user_tags = [];
-$stmtUL = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND user_id = ? AND active = 1 ORDER BY label ASC");
+$stmtUL = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND employee_id = ? AND active = 1 ORDER BY label ASC");
 $stmtUL->bind_param("ii", $company_id, $logged_user_id);
 $stmtUL->execute();
 $resUserLabels = $stmtUL->get_result();
 if ($resUserLabels) { while ($row = mysqli_fetch_assoc($resUserLabels)) { $user_tags[] = $row["label"]; } }
 
 $users = [];
-$stmtUsers = $conn->prepare("SELECT id, username FROM users WHERE company_id = ? AND active = 1");
+$stmtUsers = $conn->prepare("SELECT id, username FROM employees WHERE company_id = ? AND active = 1");
 $stmtUsers->bind_param("i", $company_id);
 $stmtUsers->execute();
 $resUser = $stmtUsers->get_result();
@@ -30,19 +30,19 @@ if ($resUser) { while ($row = mysqli_fetch_assoc($resUser)) { $users[$row['id']]
 
 // Check for existing data to show/hide sidebar items
 $hasPinned = false;
-$stmtP = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND user_id = ? AND is_pinned = 1 AND active = 1 LIMIT 1");
+$stmtP = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND employee_id = ? AND is_pinned = 1 AND active = 1 LIMIT 1");
 $stmtP->bind_param("ii", $company_id, $logged_user_id);
 $stmtP->execute();
 if ($stmtP->get_result()->fetch_assoc()) $hasPinned = true;
 
 $hasImages = false;
-$stmtI = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND user_id = ? AND images_json IS NOT NULL AND active = 1 LIMIT 1");
+$stmtI = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND employee_id = ? AND images_json IS NOT NULL AND active = 1 LIMIT 1");
 $stmtI->bind_param("ii", $company_id, $logged_user_id);
 $stmtI->execute();
 if ($stmtI->get_result()->fetch_assoc()) $hasImages = true;
 
 $hasImportant = false;
-$stmtImp = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND user_id = ? AND is_important = 1 AND active = 1 LIMIT 1");
+$stmtImp = $conn->prepare("SELECT 1 FROM notes WHERE company_id = ? AND employee_id = ? AND is_important = 1 AND active = 1 LIMIT 1");
 $stmtImp->bind_param("ii", $company_id, $logged_user_id);
 $stmtImp->execute();
 if ($stmtImp->get_result()->fetch_assoc()) $hasImportant = true;
@@ -69,14 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
         // Map Tag names to labels and Usernames to IDs for this company
         $tagMap = [];
-        $stmtT = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND user_id = ?");
+        $stmtT = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND employee_id = ?");
         $stmtT->bind_param("ii", $company_id, $logged_user_id);
         $stmtT->execute();
         $resTags = $stmtT->get_result();
         while ($row = mysqli_fetch_assoc($resTags)) { $tagMap[strtolower($row['label'])] = $row['label']; }
 
         $userMap = [];
-        $stmtU = $conn->prepare("SELECT id, username FROM users WHERE company_id = ?");
+        $stmtU = $conn->prepare("SELECT id, username FROM employees WHERE company_id = ?");
         $stmtU->bind_param("i", $company_id);
         $stmtU->execute();
         $resU = $stmtU->get_result();
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
             $existingId = 0;
             if ($id > 0) {
-                $stmtCheckNote = $conn->prepare("SELECT id FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+                $stmtCheckNote = $conn->prepare("SELECT id FROM notes WHERE id = ? AND company_id = ? AND employee_id = ?");
                 $stmtCheckNote->bind_param("iii", $id, $company_id, $logged_user_id);
                 $stmtCheckNote->execute();
                 if ($stmtCheckNote->get_result()->fetch_assoc()) $existingId = $id;
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 $stmt->bind_param("sssiiisi", $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $existingId);
                 if ($stmt->execute()) { $updated++; $noteId = $existingId; }
             } else {
-                $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->bind_param("iisssiiis", $company_id, $logged_user_id, $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson);
                 if ($stmt->execute()) { $inserted++; $noteId = mysqli_insert_id($conn); }
             }
@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 foreach (explode(',', $row[$tagIdx]) as $tagName) {
                     $tagName = trim($tagName);
                     if ($tagName === '') continue;
-                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, user_id, note_id, label) VALUES (?, ?, ?, ?)");
+                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, employee_id, note_id, label) VALUES (?, ?, ?, ?)");
                     $stmtL->bind_param("iiis", $company_id, $logged_user_id, $noteId, $tagName);
                     $stmtL->execute();
                 }
@@ -162,7 +162,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     if ($action === "delete" && !empty($_POST["ids"])) {
         $ids = array_map("intval", $_POST["ids"]);
         foreach ($ids as $id) {
-            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND user_id = ?");
+            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND employee_id = ?");
             $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
             $stmt->execute();
         }
@@ -229,7 +229,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
             $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=? WHERE id=? AND company_id=? AND user_id=?");
             $stmt->bind_param("ssisiiissssiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $editId, $company_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("iissisiiissss", $company_id, $logged_user_id, $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json);
         }
 
@@ -246,7 +246,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
                     if ($rowL = mysqli_fetch_assoc($resL)) $label_name = $rowL['label'];
                 }
                 if (!empty($label_name)) {
-                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, user_id, note_id, label) VALUES (?, ?, ?, ?)");
+                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, employee_id, note_id, label) VALUES (?, ?, ?, ?)");
                     $stmtL->bind_param("iiis", $company_id, $logged_user_id, $noteId, $label_name);
                     $stmtL->execute();
                 }
@@ -295,7 +295,7 @@ if (isset($_GET["ajax_action"])) {
             }
         }
         $images_json = !empty($image_files) ? json_encode($image_files) : null;
-        $stmt = $conn->prepare("INSERT INTO notes (company_id, user_id, title, content, is_checklist, images_json, reminder_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, images_json, reminder_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
             $stmt->bind_param("iississ", $company_id, $logged_user_id, $title, $content, $is_checklist, $images_json, $reminder_at);
             if ($stmt->execute()) echo json_encode(["ok" => true]);
@@ -308,14 +308,14 @@ if (isset($_GET["ajax_action"])) {
     if ($action === "toggle_pinned") {
         $id = (int)($_POST["id"] ?? 0);
         $is_pinned = (int)($_POST["is_pinned"] ?? 0);
-        $stmt = $conn->prepare("UPDATE notes SET is_pinned = ? WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt = $conn->prepare("UPDATE notes SET is_pinned = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
         $stmt->bind_param("iiii", $is_pinned, $id, $company_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "toggle_archived") {
         $id = (int)($_POST["id"] ?? 0);
         $is_archived = (int)($_POST["is_archived"] ?? 0);
-        $stmt = $conn->prepare("UPDATE notes SET is_archived = ? WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt = $conn->prepare("UPDATE notes SET is_archived = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
         $stmt->bind_param("iiii", $is_archived, $id, $company_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
@@ -344,7 +344,7 @@ if (isset($_GET["ajax_action"])) {
     if ($action === "toggle_important") {
         $id = (int)($_POST["id"] ?? 0);
         $is_important = (int)($_POST["is_important"] ?? 0);
-        $stmt = $conn->prepare("UPDATE notes SET is_important = ? WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt = $conn->prepare("UPDATE notes SET is_important = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
         $stmt->bind_param("iiii", $is_important, $id, $company_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
@@ -356,7 +356,7 @@ if (isset($_GET["ajax_action"])) {
             echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]);
             die();
         }
-        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE user_id = ? AND label = ? AND company_id = ? LIMIT 1");
+        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE employee_id = ? AND label = ? AND company_id = ? LIMIT 1");
         $stmtC->bind_param("isi", $logged_user_id, $new, $company_id);
         $stmtC->execute();
         if ($stmtC->get_result()->fetch_assoc()) {
@@ -364,13 +364,13 @@ if (isset($_GET["ajax_action"])) {
             echo json_encode(["ok" => false, "error" => "Tag already exists"]);
             die();
         }
-        $stmt = $conn->prepare("UPDATE note_labels SET label = ? WHERE label = ? AND user_id = ? AND company_id = ?");
+        $stmt = $conn->prepare("UPDATE note_labels SET label = ? WHERE label = ? AND employee_id = ? AND company_id = ?");
         $stmt->bind_param("ssii", $new, $old, $logged_user_id, $company_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "delete_tag") {
         $name = $_POST["name"] ?? "";
-        $stmt = $conn->prepare("DELETE FROM note_labels WHERE label = ? AND user_id = ? AND company_id = ?");
+        $stmt = $conn->prepare("DELETE FROM note_labels WHERE label = ? AND employee_id = ? AND company_id = ?");
         $stmt->bind_param("sii", $name, $logged_user_id, $company_id);
         itm_notes_json_mutation_response($stmt);
     }
@@ -381,7 +381,7 @@ if (isset($_GET["ajax_action"])) {
             echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]);
             die();
         }
-        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE user_id = ? AND label = ? AND company_id = ? LIMIT 1");
+        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE employee_id = ? AND label = ? AND company_id = ? LIMIT 1");
         $stmtC->bind_param("isi", $logged_user_id, $name, $company_id);
         $stmtC->execute();
         if ($stmtC->get_result()->fetch_assoc()) {
@@ -389,13 +389,13 @@ if (isset($_GET["ajax_action"])) {
             echo json_encode(["ok" => false, "error" => "Tag already exists"]);
             die();
         }
-        $stmt = $conn->prepare("INSERT INTO note_labels (company_id, user_id, label) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO note_labels (company_id, employee_id, label) VALUES (?, ?, ?)");
         $stmt->bind_param("iis", $company_id, $logged_user_id, $name);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "download_all_images") {
         $id = (int)($_POST["id"] ?? 0);
-        $stmt = $conn->prepare("SELECT title, images_json FROM notes WHERE id = ? AND company_id = ? AND user_id = ?");
+        $stmt = $conn->prepare("SELECT title, images_json FROM notes WHERE id = ? AND company_id = ? AND employee_id = ?");
         $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
         $stmt->execute();
         $resD = $stmt->get_result()->fetch_assoc();
@@ -904,12 +904,12 @@ $displayFieldColumns = $uiColumns;
                                 <?php endforeach; ?>
                             </div></div>
                             <div class="form-group"><label>Shared With</label>
-                                <select name="shared_with_json[]" multiple size="5" data-addable-select="1" data-add-table="users" data-add-label-col="username" data-add-company-scoped="1">
+                                <select name="shared_with_json[]" multiple size="5" data-addable-select="1" data-add-table="employees" data-add-label-col="username" data-add-company-scoped="1">
                                     <option value="">-- None --</option><option value="__add_new__">➕</option>
                                 <?php
                                 // Ensure users are always loaded for this dropdown
                                 if (empty($users)) {
-                                    $stmtULoad = $conn->prepare("SELECT id, username FROM users WHERE active = 1 AND company_id = ?");
+                                    $stmtULoad = $conn->prepare("SELECT id, username FROM employees WHERE active = 1 AND company_id = ?");
                                     $stmtULoad->bind_param("i", $company_id);
                                     $stmtULoad->execute();
                                     $resULoad = $stmtULoad->get_result();

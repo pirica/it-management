@@ -96,12 +96,12 @@ function explorer_resolve_preview_mode($filename) {
 if (isset($_GET['downloadZip'])) {
     if (!isset($_SESSION['company_id'])) exit("Access denied.");
     $company_id = (int)$_SESSION['company_id'];
-    $user_id = (int)$_SESSION['user_id'];
+    $user_id = (int)$_SESSION['employee_id'];
     $username = $_SESSION['username'] ?? 'unknown';
 
     // Fetch department for user
     $dept_id = 0;
-    $dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE user_id = $user_id AND company_id = $company_id LIMIT 1");
+    $dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE employee_id = $user_id AND company_id = $company_id LIMIT 1");
     if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
         $dept_id = (int)$dept_row['department_id'];
     }
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $company_id = (int)$_SESSION['company_id'];
-$user_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['employee_id'];
 $username = $_SESSION['username'] ?? 'unknown';
 // Why: Sanitise username for filesystem safety to prevent path traversal or separator issues.
 $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
@@ -164,7 +164,7 @@ $user_private_dir = "{$safe_username}_{$user_id}";
 
 // Why: Fetch user department for access control.
 $dept_id = 0;
-$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE user_id = $user_id AND company_id = $company_id LIMIT 1");
+$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE employee_id = $user_id AND company_id = $company_id LIMIT 1");
 if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
     $dept_id = (int)$dept_row['department_id'];
 }
@@ -194,7 +194,7 @@ function sync_db($conn, $company_id, $user_id, $dept_id, $path, $name, $type, $a
     if ($action === 'add') {
         $is_private = (str_starts_with($path, 'Private') || $path === 'Private') ? 1 : 0;
         $db_dept_id = ($dept_id > 0) ? $dept_id : null;
-        $stmt = mysqli_prepare($conn, "INSERT INTO explorer (company_id, user_id, department_id, folder_path, file_name, file_type, is_private) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP");
+        $stmt = mysqli_prepare($conn, "INSERT INTO explorer (company_id, employee_id, department_id, folder_path, file_name, file_type, is_private) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP");
         mysqli_stmt_bind_param($stmt, "iiisssi", $company_id, $user_id, $db_dept_id, $path, $name, $type, $is_private);
         mysqli_stmt_execute($stmt);
     } elseif ($action === 'delete') {

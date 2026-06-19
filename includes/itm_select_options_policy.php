@@ -25,9 +25,9 @@ if (!function_exists('itm_select_options_blocked_tables')) {
             'role_module_permissions',
             'settings',
             'ui_configuration',
-            'user_companies',
-            'user_roles',
-            'users',
+            'employee_companies',
+            'employee_roles',
+            'employees',
         ];
     }
 }

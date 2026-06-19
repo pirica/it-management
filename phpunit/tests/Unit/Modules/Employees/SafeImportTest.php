@@ -28,7 +28,7 @@ class SafeImportTest extends TestCase
         mysqli_stmt_execute($stmt2);
 
         // Import only 'Keep Me'
-        $_SESSION['user_id'] = 1;
+        $_SESSION['employee_id'] = 1;
         $_SESSION['company_id'] = $companyId;
         global $company_id;
         $company_id = $companyId;

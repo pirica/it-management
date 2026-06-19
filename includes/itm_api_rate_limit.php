@@ -118,7 +118,7 @@ function itm_api_lookup_configuration_by_key($conn, $apiKey) {
         return null;
     }
 
-    $sql = 'SELECT id, company_id, user_id, api_key, api_key_is_active, api_key_last_used_at,
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
                    rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             FROM ui_configuration
             WHERE api_key = ?
@@ -140,14 +140,14 @@ function itm_api_lookup_configuration_by_key($conn, $apiKey) {
 /**
  * Loads ui_configuration for the active company/user pair (session or explicit ids).
  */
-function itm_api_lookup_configuration_by_user($conn, $companyId, $userId) {
+function itm_api_lookup_configuration_by_user($conn, $companyId, $employeeId) {
     if (!($conn instanceof mysqli)) {
         return null;
     }
 
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
         return null;
     }
 
@@ -155,17 +155,17 @@ function itm_api_lookup_configuration_by_user($conn, $companyId, $userId) {
         return null;
     }
 
-    $sql = 'SELECT id, company_id, user_id, api_key, api_key_is_active, api_key_last_used_at,
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
                    rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
             FROM ui_configuration
-            WHERE company_id = ? AND user_id = ?
+            WHERE company_id = ? AND employee_id = ?
             LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return null;
     }
 
-    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $userId);
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $employeeId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $row = $result ? mysqli_fetch_assoc($result) : null;
@@ -177,11 +177,11 @@ function itm_api_lookup_configuration_by_user($conn, $companyId, $userId) {
 /**
  * Why: Free-tier users without a persisted row still default to unlimited access.
  */
-function itm_api_default_free_configuration_row($companyId, $userId) {
+function itm_api_default_free_configuration_row($companyId, $employeeId) {
     return [
         'id' => 0,
         'company_id' => (int)$companyId,
-        'user_id' => (int)$userId,
+        'user_id' => (int)$employeeId,
         'api_key' => '',
         'api_key_is_active' => 1,
         'api_key_last_used_at' => null,
@@ -197,7 +197,7 @@ function itm_api_active_session_company_id() {
 }
 
 function itm_api_active_session_user_id() {
-    return (int)($_SESSION['user_id'] ?? 0);
+    return (int)($_SESSION['employee_id'] ?? 0);
 }
 
 /**
@@ -210,14 +210,14 @@ function itm_api_resolve_rate_limit_row($conn) {
     }
 
     $companyId = itm_api_active_session_company_id();
-    $userId = itm_api_active_session_user_id();
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = itm_api_active_session_user_id();
+    if ($companyId <= 0 || $employeeId <= 0) {
         return null;
     }
 
-    $row = itm_api_lookup_configuration_by_user($conn, $companyId, $userId);
+    $row = itm_api_lookup_configuration_by_user($conn, $companyId, $employeeId);
     if ($row === null) {
-        return itm_api_default_free_configuration_row($companyId, $userId);
+        return itm_api_default_free_configuration_row($companyId, $employeeId);
     }
 
     if (itm_api_tier_requires_api_key($row['tier'] ?? 'Free')) {
@@ -256,12 +256,12 @@ function itm_api_build_rate_limit_probe_payload(array $row) {
 /**
  * Persists api_key for the active company/user row (creates row when missing).
  */
-function itm_api_save_user_api_key($conn, $companyId, $userId, $apiKey) {
+function itm_api_save_user_api_key($conn, $companyId, $employeeId, $apiKey) {
     $companyId = (int)$companyId;
-    $userId = (int)$userId;
+    $employeeId = (int)$employeeId;
     $apiKey = trim((string)$apiKey);
 
-    if ($companyId <= 0 || $userId <= 0 || !($conn instanceof mysqli)) {
+    if ($companyId <= 0 || $employeeId <= 0 || !($conn instanceof mysqli)) {
         return false;
     }
     if ($apiKey !== '' && strlen($apiKey) > 191) {
@@ -271,13 +271,13 @@ function itm_api_save_user_api_key($conn, $companyId, $userId, $apiKey) {
         return false;
     }
 
-    $existingRow = itm_api_lookup_configuration_by_user($conn, $companyId, $userId);
+    $existingRow = itm_api_lookup_configuration_by_user($conn, $companyId, $employeeId);
     $existingTier = itm_api_normalize_tier($existingRow['tier'] ?? 'Free');
     if (!itm_api_tier_requires_api_key($existingTier) && $apiKey !== '') {
         return false;
     }
 
-    $sql = 'INSERT INTO ui_configuration (company_id, user_id, api_key)
+    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, api_key)
             VALUES (?, ?, ?)
             ON DUPLICATE KEY UPDATE api_key = VALUES(api_key)';
     $stmt = mysqli_prepare($conn, $sql);
@@ -285,7 +285,7 @@ function itm_api_save_user_api_key($conn, $companyId, $userId, $apiKey) {
         return false;
     }
 
-    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $userId, $apiKey);
+    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $employeeId, $apiKey);
     $ok = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
 
@@ -349,8 +349,8 @@ function itm_api_consume_rate_limit($conn, array $row) {
 
     $configId = (int)($row['id'] ?? 0);
     $companyId = (int)($row['company_id'] ?? 0);
-    $userId = (int)($row['user_id'] ?? 0);
-    if ($companyId <= 0 || $userId <= 0) {
+    $employeeId = (int)($row['user_id'] ?? 0);
+    if ($companyId <= 0 || $employeeId <= 0) {
         return ['allowed' => false, 'error' => 'Invalid API configuration row.'];
     }
 
@@ -365,11 +365,11 @@ function itm_api_consume_rate_limit($conn, array $row) {
         if ($configId > 0) {
             $touchSql = 'UPDATE ui_configuration
                          SET api_key_last_used_at = CURRENT_TIMESTAMP
-                         WHERE id = ? AND company_id = ? AND user_id = ?
+                         WHERE id = ? AND company_id = ? AND employee_id = ?
                          LIMIT 1';
             $touchStmt = mysqli_prepare($conn, $touchSql);
             if ($touchStmt) {
-                mysqli_stmt_bind_param($touchStmt, 'iii', $configId, $companyId, $userId);
+                mysqli_stmt_bind_param($touchStmt, 'iii', $configId, $companyId, $employeeId);
                 mysqli_stmt_execute($touchStmt);
                 mysqli_stmt_close($touchStmt);
             }
@@ -394,7 +394,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
 
     $selectSql = 'SELECT rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
                   FROM ui_configuration
-                  WHERE id = ? AND company_id = ? AND user_id = ?
+                  WHERE id = ? AND company_id = ? AND employee_id = ?
                   FOR UPDATE';
     $selectStmt = mysqli_prepare($conn, $selectSql);
     if (!$selectStmt) {
@@ -402,7 +402,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
         return ['allowed' => false, 'error' => 'Unable to evaluate rate limit.'];
     }
 
-    mysqli_stmt_bind_param($selectStmt, 'iii', $configId, $companyId, $userId);
+    mysqli_stmt_bind_param($selectStmt, 'iii', $configId, $companyId, $employeeId);
     mysqli_stmt_execute($selectStmt);
     $selectResult = mysqli_stmt_get_result($selectStmt);
     $lockedRow = $selectResult ? mysqli_fetch_assoc($selectResult) : null;
@@ -441,7 +441,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
                   SET rate_limit_window_start = ?,
                       rate_limit_request_count = ?,
                       api_key_last_used_at = CURRENT_TIMESTAMP
-                  WHERE id = ? AND company_id = ? AND user_id = ?
+                  WHERE id = ? AND company_id = ? AND employee_id = ?
                   LIMIT 1';
     $updateStmt = mysqli_prepare($conn, $updateSql);
     if (!$updateStmt) {
@@ -449,7 +449,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
         return ['allowed' => false, 'error' => 'Unable to persist rate limit counters.'];
     }
 
-    mysqli_stmt_bind_param($updateStmt, 'iiiii', $windowStart, $nextCount, $configId, $companyId, $userId);
+    mysqli_stmt_bind_param($updateStmt, 'iiiii', $windowStart, $nextCount, $configId, $companyId, $employeeId);
     $updateOk = mysqli_stmt_execute($updateStmt);
     mysqli_stmt_close($updateStmt);
 

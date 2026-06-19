@@ -33,7 +33,7 @@ function mbqa_runner_skip_clear_modules(): array
 {
     return [
         'companies',
-        'users',
+        'employees',
     ];
 }
 

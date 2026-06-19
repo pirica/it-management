@@ -26,7 +26,7 @@ class CatalogsTest extends TestCase
         $data['model'] = 'Test model';
         $data['active'] = 1;
         // Find or fallback for equipment_type_id (equipment_types)
-        $resequipment_type_id = mysqli_query($this->conn, "SELECT id FROM `equipment_types` WHERE " . (strpos('equipment_types', 'companies') === false && strpos('equipment_types', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resequipment_type_id = mysqli_query($this->conn, "SELECT id FROM `equipment_types` WHERE " . (strpos('equipment_types', 'companies') === false && strpos('equipment_types', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowequipment_type_id = mysqli_fetch_assoc($resequipment_type_id)) {
             $data['equipment_type_id'] = $rowequipment_type_id['id'];
         } else {
@@ -34,7 +34,7 @@ class CatalogsTest extends TestCase
             $data['equipment_type_id'] = null;
         }
         // Find or fallback for supplier_id (suppliers)
-        $ressupplier_id = mysqli_query($this->conn, "SELECT id FROM `suppliers` WHERE " . (strpos('suppliers', 'companies') === false && strpos('suppliers', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $ressupplier_id = mysqli_query($this->conn, "SELECT id FROM `suppliers` WHERE " . (strpos('suppliers', 'companies') === false && strpos('suppliers', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowsupplier_id = mysqli_fetch_assoc($ressupplier_id)) {
             $data['supplier_id'] = $rowsupplier_id['id'];
         } else {
@@ -42,7 +42,7 @@ class CatalogsTest extends TestCase
             $data['supplier_id'] = null;
         }
         // Find or fallback for manufacturer_id (manufacturers)
-        $resmanufacturer_id = mysqli_query($this->conn, "SELECT id FROM `manufacturers` WHERE " . (strpos('manufacturers', 'companies') === false && strpos('manufacturers', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resmanufacturer_id = mysqli_query($this->conn, "SELECT id FROM `manufacturers` WHERE " . (strpos('manufacturers', 'companies') === false && strpos('manufacturers', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowmanufacturer_id = mysqli_fetch_assoc($resmanufacturer_id)) {
             $data['manufacturer_id'] = $rowmanufacturer_id['id'];
         } else {

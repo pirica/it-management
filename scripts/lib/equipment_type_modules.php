@@ -211,15 +211,15 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
         return $result;
     }
 
-    require_once __DIR__ . '/itm_script_test_user.php';
+    require_once __DIR__ . '/itm_script_test_employee.php';
 
     mysqli_query($conn, 'SET @app_company_id = 1');
-    $auditUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'equipment-type-modules-cleanup']);
+    $auditUser = itm_script_test_employee_create($conn, 1, ['script_slug' => 'equipment-type-modules-cleanup']);
     if (is_array($auditUser)) {
-        itm_script_test_user_set_audit_context($conn, (int)$auditUser['id'], (string)$auditUser['username'], 1);
-        itm_script_test_user_register_teardown($conn, (int)$auditUser['id']);
+        itm_script_test_employee_set_audit_context($conn, (int)$auditUser['id'], (string)$auditUser['username'], 1);
+        itm_script_test_employee_register_teardown($conn, (int)$auditUser['id']);
     } else {
-        mysqli_query($conn, 'SET @app_user_id = NULL');
+        mysqli_query($conn, 'SET @app_employee_id = NULL');
         mysqli_query($conn, "SET @app_username = 'cli-cleanup'");
     }
     mysqli_query($conn, "SET @app_email = 'cli-cleanup@example.com'");
@@ -256,7 +256,7 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
 
     $sidebarRes = mysqli_query(
         $conn,
-        'DELETE FROM user_sidebar_preferences WHERE entry_id LIKE \'%itm_eqdct%\' OR entry_id LIKE \'%itm_edct%\'
+        'DELETE FROM employee_sidebar_preferences WHERE entry_id LIKE \'%itm_eqdct%\' OR entry_id LIKE \'%itm_edct%\'
             OR ' . itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql() . '
             OR ' . itm_qa_import_equipment_type_scaffold_entry_id_pattern_sql()
     );
@@ -264,7 +264,7 @@ function itm_run_equipment_test_module_artifacts_cleanup(mysqli $conn, string $m
         $result['sidebar_deleted'] = (int)mysqli_affected_rows($conn);
     } else {
         $result['ok'] = false;
-        $result['errors'][] = 'user_sidebar_preferences cleanup: ' . mysqli_error($conn);
+        $result['errors'][] = 'employee_sidebar_preferences cleanup: ' . mysqli_error($conn);
     }
 
     $result['canonical_ensured'] = itm_ensure_canonical_equipment_type_modules($conn);

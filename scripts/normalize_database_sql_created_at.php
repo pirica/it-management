@@ -198,7 +198,7 @@ function itm_sql_is_seed_insert_statement($statement)
         return false;
     }
 
-    if (strpos($statement, '@app_user_id') !== false || strpos($statement, 'JSON_OBJECT') !== false) {
+    if (strpos($statement, '@app_employee_id') !== false || strpos($statement, 'JSON_OBJECT') !== false) {
         return false;
     }
 

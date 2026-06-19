@@ -37,7 +37,7 @@ class EmployeeOnboardingRequestsTest extends TestCase
         $data['email_sent_fin'] = 1;
         $data['active'] = 1;
         // Find or fallback for employee_id (employees)
-        $resemployee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resemployee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowemployee_id = mysqli_fetch_assoc($resemployee_id)) {
             $data['employee_id'] = $rowemployee_id['id'];
         } else {
@@ -45,7 +45,7 @@ class EmployeeOnboardingRequestsTest extends TestCase
             $data['employee_id'] = null;
         }
         // Find or fallback for employee_position_id (employee_positions)
-        $resemployee_position_id = mysqli_query($this->conn, "SELECT id FROM `employee_positions` WHERE " . (strpos('employee_positions', 'companies') === false && strpos('employee_positions', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resemployee_position_id = mysqli_query($this->conn, "SELECT id FROM `employee_positions` WHERE " . (strpos('employee_positions', 'companies') === false && strpos('employee_positions', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowemployee_position_id = mysqli_fetch_assoc($resemployee_position_id)) {
             $data['employee_position_id'] = $rowemployee_position_id['id'];
         } else {
@@ -53,7 +53,7 @@ class EmployeeOnboardingRequestsTest extends TestCase
             $data['employee_position_id'] = null;
         }
         // Find or fallback for office_key_card_dep (departments)
-        $resoffice_key_card_dep = mysqli_query($this->conn, "SELECT id FROM `departments` WHERE " . (strpos('departments', 'companies') === false && strpos('departments', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resoffice_key_card_dep = mysqli_query($this->conn, "SELECT id FROM `departments` WHERE " . (strpos('departments', 'companies') === false && strpos('departments', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowoffice_key_card_dep = mysqli_fetch_assoc($resoffice_key_card_dep)) {
             $data['office_key_card_dep'] = $rowoffice_key_card_dep['id'];
         } else {

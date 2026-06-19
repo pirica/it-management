@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 class PasswordsTest extends TestCase
 {
     private $conn;
-    private $userId = 1;
+    private $employeeId = 1;
 
     protected function setUp(): void
     {

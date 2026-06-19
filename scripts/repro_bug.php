@@ -24,7 +24,7 @@ function verify_multi_assign_visibility($conn, $nl) {
     // Task assigned to multiple users including $user_id
     $title = "Multi-assign task " . uniqid();
     $assigned_to = "99999," . $user_id;
-    $stmt = $conn->prepare("INSERT INTO todo (company_id, title, assigned_to_user_id, created_by_user_id) VALUES (?, ?, ?, 1)");
+    $stmt = $conn->prepare("INSERT INTO todo (company_id, title, assigned_to_employee_id, created_by_employee_id) VALUES (?, ?, ?, 1)");
     if (!$stmt) die("ERROR: " . $conn->error . $nl);
     $stmt->bind_param("iss", $company_id, $title, $assigned_to);
     $stmt->execute();
@@ -59,7 +59,7 @@ function verify_action_permission_enforcement($conn, $nl) {
 
     // Create a private task for owner
     $title = "Private task " . uniqid();
-    $stmt = $conn->prepare("INSERT INTO todo (company_id, title, assigned_to_user_id, created_by_user_id) VALUES (?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO todo (company_id, title, assigned_to_employee_id, created_by_employee_id) VALUES (?, ?, ?, ?)");
     if (!$stmt) die("ERROR: " . $conn->error . $nl);
     $assigned_to = (string)$owner_id;
     $stmt->bind_param("issi", $company_id, $title, $assigned_to, $owner_id);

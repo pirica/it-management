@@ -25,7 +25,7 @@ class SwitchStatusTest extends TestCase
         $data['company_id'] = $this->companyId;
         $data['status'] = 'Test status';
         // Find or fallback for color_id (cable_colors)
-        $rescolor_id = mysqli_query($this->conn, "SELECT id FROM `cable_colors` WHERE " . (strpos('cable_colors', 'companies') === false && strpos('cable_colors', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $rescolor_id = mysqli_query($this->conn, "SELECT id FROM `cable_colors` WHERE " . (strpos('cable_colors', 'companies') === false && strpos('cable_colors', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcolor_id = mysqli_fetch_assoc($rescolor_id)) {
             $data['color_id'] = $rowcolor_id['id'];
         } else {

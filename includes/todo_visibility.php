@@ -20,25 +20,25 @@ function itm_todo_normalize_sql_alias($alias)
 function itm_todo_visibility_sql($alias = '')
 {
     $prefix = itm_todo_normalize_sql_alias($alias);
-    return '(' . $prefix . 'assigned_to_user_id IS NULL OR '
-        . 'FIND_IN_SET(?, ' . $prefix . 'assigned_to_user_id) OR '
-        . $prefix . 'created_by_user_id = ?)';
+    return '(' . $prefix . 'assigned_to_employee_id IS NULL OR '
+        . 'FIND_IN_SET(?, ' . $prefix . 'assigned_to_employee_id) OR '
+        . $prefix . 'created_by_employee_id = ?)';
 }
 
 function itm_todo_visibility_sql_literal($loggedUserId, $alias = '')
 {
-    $userId = (int)$loggedUserId;
+    $employeeId = (int)$loggedUserId;
     $prefix = itm_todo_normalize_sql_alias($alias);
-    return '(' . $prefix . 'assigned_to_user_id IS NULL OR '
-        . 'FIND_IN_SET(' . $userId . ', ' . $prefix . 'assigned_to_user_id) OR '
-        . $prefix . 'created_by_user_id = ' . $userId . ')';
+    return '(' . $prefix . 'assigned_to_employee_id IS NULL OR '
+        . 'FIND_IN_SET(' . $employeeId . ', ' . $prefix . 'assigned_to_employee_id) OR '
+        . $prefix . 'created_by_employee_id = ' . $employeeId . ')';
 }
 
 function itm_todo_append_visibility_filter(&$conditions, &$types, &$params, $loggedUserId, $alias = '')
 {
     $conditions[] = itm_todo_visibility_sql($alias);
     $types .= 'ii';
-    $userId = (int)$loggedUserId;
-    $params[] = $userId;
-    $params[] = $userId;
+    $employeeId = (int)$loggedUserId;
+    $params[] = $employeeId;
+    $params[] = $employeeId;
 }

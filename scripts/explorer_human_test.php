@@ -17,7 +17,7 @@ itm_script_output_begin('Explorer Human Test');
 
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 if (PHP_SAPI !== 'cli') {
     die("This script must be run from the CLI.\n");
@@ -54,23 +54,23 @@ if (!mysqli_stmt_execute($stmt_company)) {
 $company_id = (int)mysqli_insert_id($conn);
 mysqli_stmt_close($stmt_company);
 
-$testUser = itm_script_test_user_create($conn, $company_id, ['script_slug' => 'explorer-human-test']);
+$testUser = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'explorer-human-test']);
 if (!is_array($testUser)) {
     die("Unable to create disposable test user: " . mysqli_error($conn) . "\n");
 }
 $user_id = (int)$testUser['id'];
 $username = (string)$testUser['username'];
-itm_script_test_user_register_teardown($conn, $user_id);
-itm_script_test_user_set_audit_context($conn, $user_id, $username, $company_id);
+itm_script_test_employee_register_teardown($conn, $user_id);
+itm_script_test_employee_set_audit_context($conn, $user_id, $username, $company_id);
 
 $user_private_dir = "{$username}_{$user_id}";
 $_SESSION['company_id'] = $company_id;
-$_SESSION['user_id'] = $user_id;
+$_SESSION['employee_id'] = $user_id;
 $_SESSION['username'] = $username;
 
 // Fetch any department scoped to the temporary tenant.
 $dept_id = 0;
-$stmt_dept = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE user_id = ? AND company_id = ? LIMIT 1");
+$stmt_dept = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE id = ? AND company_id = ? LIMIT 1");
 mysqli_stmt_bind_param($stmt_dept, "ii", $user_id, $company_id);
 mysqli_stmt_execute($stmt_dept);
 $res = mysqli_stmt_get_result($stmt_dept);

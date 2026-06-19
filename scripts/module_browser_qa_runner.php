@@ -2008,18 +2008,18 @@ function mbqa_index_is_empty(string $html): bool
 }
 
 /**
- * Mirrors modules/user_companies cr_is_admin_user_company_row(): Admin role, not username label.
+ * Mirrors modules/employee_companies cr_is_admin_user_company_row(): Admin role, not username label.
  */
 function mbqa_is_admin_user_company_assignment_row(mysqli $conn, array $row): bool
 {
-    $userId = (int)($row['user_id'] ?? 0);
-    if ($userId <= 0) {
+    $employeeId = (int)($row['user_id'] ?? 0);
+    if ($employeeId <= 0) {
         return false;
     }
 
-    $sql = 'SELECT u.username, ur.name AS role_name FROM users u'
-        . ' LEFT JOIN user_roles ur ON ur.id = u.role_id'
-        . ' WHERE u.id=' . $userId . ' LIMIT 1';
+    $sql = 'SELECT u.username, ur.name AS role_name FROM employees u'
+        . ' LEFT JOIN employee_roles ur ON ur.id = u.role_id'
+        . ' WHERE u.id=' . $employeeId . ' LIMIT 1';
     $res = mysqli_query($conn, $sql);
     $userRow = $res ? mysqli_fetch_assoc($res) : null;
     if (!is_array($userRow)) {
@@ -2035,16 +2035,16 @@ function mbqa_is_admin_user_company_assignment_row(mysqli $conn, array $row): bo
 }
 
 /**
- * Count tenant user_companies rows that clear_table should delete (non-Admin assignments).
+ * Count tenant employee_companies rows that clear_table should delete (non-Admin assignments).
  */
-function mbqa_user_companies_non_admin_row_count(mysqli $conn, int $companyId): int
+function mbqa_employee_companies_non_admin_row_count(mysqli $conn, int $companyId): int
 {
     if ($companyId <= 0) {
         return -1;
     }
 
     $count = 0;
-    $res = mysqli_query($conn, 'SELECT id, user_id FROM user_companies WHERE company_id=' . (int)$companyId);
+    $res = mysqli_query($conn, 'SELECT id, employee_id FROM employee_companies WHERE company_id=' . (int)$companyId);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         if (!mbqa_is_admin_user_company_assignment_row($conn, $row)) {
             $count++;
@@ -2056,8 +2056,8 @@ function mbqa_user_companies_non_admin_row_count(mysqli $conn, int $companyId): 
 
 function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $conn = null, int $companyId = 0): bool
 {
-    if ($moduleSlug === 'user_companies' && $conn instanceof mysqli && $companyId > 0) {
-        return mbqa_user_companies_non_admin_row_count($conn, $companyId) === 0;
+    if ($moduleSlug === 'employee_companies' && $conn instanceof mysqli && $companyId > 0) {
+        return mbqa_employee_companies_non_admin_row_count($conn, $companyId) === 0;
     }
 
     if (mbqa_index_is_empty($html)) {
@@ -2069,7 +2069,7 @@ function mbqa_clear_table_index_ok(string $moduleSlug, string $html, ?mysqli $co
 
 /**
  * Per-module Tier A steps that are not executed (slug => step => Pass/N/A note in report only).
- * All other steps run normally (e.g. user_companies still runs sample_data).
+ * All other steps run normally (e.g. employee_companies still runs sample_data).
  *
  * @return array<string, string>
  */
@@ -2110,7 +2110,7 @@ function mbqa_is_facade_routing_module(string $slug): bool
 function mbqa_runner_module_step_exceptions(): array
 {
     $map = [
-        'user_companies' => [
+        'employee_companies' => [
             'create' => 'N/A (module has no create screen)',
             'add' => 'N/A (no random bulk rows for junction assignments)',
             'import_db' => 'N/A (no Excel import round-trip)',
@@ -2183,7 +2183,7 @@ function mbqa_runner_module_step_exceptions(): array
             'sample_data' => 'No sample rows found in database.sql for this module.',
         ],
         // Why: Users manages application, protected; avoid users profiles creations in QA.
-        'users' => [
+        'employees' => [
             'clear' => 'N/A (users module is user creation)',
             'sample_data' => 'N/A (users module is user creation)',
             'add' => 'N/A (users module is user creation)',
@@ -2255,7 +2255,7 @@ function mbqa_runner_module_step_exceptions(): array
             'single_delete' => 'N/A (global audit table)',
         ],
         // Why: sidebar layout rows are seeded from default ui_config layout, not standard CRUD/sample/add/import QA.
-        'user_sidebar_preferences' => [
+        'employee_sidebar_preferences' => [
             'sample_data' => 'N/A (seeds default sidebar layout)',
             'add' => 'N/A (seeds default sidebar layout)',
             'pagination' => 'N/A (seeds default sidebar layout)',
@@ -3385,7 +3385,7 @@ function mbqa_import_rows_for_round_trip(mysqli $conn, string $table, int $compa
 /** Tables the runner must never wipe during FK prep or delete-retry clears (shared auth only). */
 function mbqa_tables_never_clear(): array
 {
-    return ['companies', 'users'];
+    return ['companies', 'employees'];
 }
 
 function mbqa_fk_restore_label_column(mysqli $conn, string $table): string
@@ -3474,7 +3474,7 @@ function mbqa_detached_ref_is_disposable_users_seed(mysqli $conn, array $ref): b
 {
     $childTable = (string)($ref['child_table'] ?? '');
     $childId = (int)($ref['child_id'] ?? 0);
-    if ($childTable !== 'users' || $childId <= 0) {
+    if ($childTable !== 'employees' || $childId <= 0) {
         return false;
     }
 
@@ -3482,7 +3482,7 @@ function mbqa_detached_ref_is_disposable_users_seed(mysqli $conn, array $ref): b
         return false;
     }
 
-    $res = mysqli_query($conn, 'SELECT `username` FROM `users` WHERE `id`=' . $childId . ' LIMIT 1');
+    $res = mysqli_query($conn, 'SELECT `username` FROM `employees` WHERE `id`=' . $childId . ' LIMIT 1');
     $row = $res ? mysqli_fetch_assoc($res) : null;
     $username = is_array($row) ? (string)($row['username'] ?? '') : '';
     if ($username === '') {
@@ -3707,30 +3707,30 @@ function mbqa_unique_scope_limiting_parent_tables(mysqli $conn, string $table, i
 }
 
 /**
- * users is never cleared during QA, but junction tables (user_companies) need enough distinct user_id values.
+ * users is never cleared during QA, but junction tables (employee_companies) need enough distinct employee_id values.
  */
 function mbqa_ensure_tenant_users_for_bulk(mysqli $conn, int $companyId, int $goalCount): int
 {
-    if ($companyId <= 0 || !itm_is_safe_identifier('users') || !itm_table_has_column($conn, 'users', 'company_id')) {
+    if ($companyId <= 0 || !itm_is_safe_identifier('employees') || !itm_table_has_column($conn, 'employees', 'company_id')) {
         return 0;
     }
 
     $goalCount = max(1, $goalCount);
-    $current = mbqa_tenant_row_count($conn, 'users', $companyId);
+    $current = mbqa_tenant_row_count($conn, 'employees', $companyId);
     if ($current >= $goalCount) {
         return $current;
     }
 
-    mbqa_insert_random_rows($conn, 'users', $companyId, $goalCount - $current, 0);
+    mbqa_insert_random_rows($conn, 'employees', $companyId, $goalCount - $current, 0);
 
-    return mbqa_tenant_row_count($conn, 'users', $companyId);
+    return mbqa_tenant_row_count($conn, 'employees', $companyId);
 }
 
 function mbqa_grow_unique_scope_parents(mysqli $conn, string $table, int $companyId, int $goalCount): void
 {
     $goalCount = max(1, $goalCount);
     foreach (mbqa_unique_scope_limiting_parent_tables($conn, $table, $companyId) as $parentTable) {
-        if ($parentTable === 'users') {
+        if ($parentTable === 'employees') {
             mbqa_ensure_tenant_users_for_bulk($conn, $companyId, $goalCount);
             continue;
         }
@@ -3757,7 +3757,7 @@ function mbqa_qa_login_identifier(): string
 }
 
 /**
- * Resolve the users.id row the HTTP QA login uses (email or username, case-insensitive).
+ * Resolve the employees.id row the HTTP QA login uses (email or username, case-insensitive).
  */
 function mbqa_qa_admin_user_id(mysqli $conn): int
 {
@@ -3769,14 +3769,18 @@ function mbqa_qa_admin_user_id(mysqli $conn): int
     $loginId = mbqa_qa_login_identifier();
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT id FROM users WHERE active = 1 AND (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) LIMIT 1'
+        'SELECT id FROM employees WHERE active = 1 AND password IS NOT NULL AND (
+            LOWER(COALESCE(work_email, "")) = LOWER(?)
+            OR LOWER(COALESCE(personal_email, "")) = LOWER(?)
+            OR LOWER(COALESCE(username, "")) = LOWER(?)
+        ) LIMIT 1'
     );
     if (!$stmt) {
         $cachedId = 0;
         return 0;
     }
 
-    mysqli_stmt_bind_param($stmt, 'ss', $loginId, $loginId);
+    mysqli_stmt_bind_param($stmt, 'sss', $loginId, $loginId, $loginId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $row = $result ? mysqli_fetch_assoc($result) : null;
@@ -3790,22 +3794,22 @@ function mbqa_qa_admin_user_id(mysqli $conn): int
 /**
  * Restore MySQL audit trigger session vars after cleanup helpers overwrite @app_* values.
  */
-function mbqa_sync_mysql_audit_session(mysqli $conn, ?int $companyId = null, ?int $userId = null): void
+function mbqa_sync_mysql_audit_session(mysqli $conn, ?int $companyId = null, ?int $employeeId = null): void
 {
     if ($companyId === null) {
         $companyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
     }
-    if ($userId === null) {
-        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    if ($employeeId === null) {
+        $employeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
     }
 
     $auditCompanyId = $companyId > 0 ? (int)$companyId : null;
-    $auditUserId = $userId > 0 ? (int)$userId : null;
+    $auditUserId = $employeeId > 0 ? (int)$employeeId : null;
 
     $username = mbqa_qa_login_identifier();
     $email = '';
     if ($auditUserId !== null) {
-        $stmt = mysqli_prepare($conn, 'SELECT username, email FROM users WHERE id = ? LIMIT 1');
+        $stmt = mysqli_prepare($conn, 'SELECT username, email FROM employees WHERE id = ? LIMIT 1');
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'i', $auditUserId);
             mysqli_stmt_execute($stmt);
@@ -3822,7 +3826,7 @@ function mbqa_sync_mysql_audit_session(mysqli $conn, ?int $companyId = null, ?in
     $ip = function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
     $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? 'module_browser_qa_runner'), 0, 255);
 
-    mysqli_query($conn, 'SET @app_user_id = ' . ($auditUserId === null ? 'NULL' : (string)$auditUserId));
+    mysqli_query($conn, 'SET @app_employee_id = ' . ($auditUserId === null ? 'NULL' : (string)$auditUserId));
     mysqli_query($conn, 'SET @app_company_id = ' . ($auditCompanyId === null ? 'NULL' : (string)$auditCompanyId));
     mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $username) . "'");
     mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $email) . "'");
@@ -3840,16 +3844,16 @@ function mbqa_records_per_page(mysqli $conn, ?int $companyId = null): int
         $companyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
     }
 
-    $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
-    if ($userId <= 0) {
-        $userId = mbqa_qa_admin_user_id($conn);
+    $employeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
+    if ($employeeId <= 0) {
+        $employeeId = mbqa_qa_admin_user_id($conn);
     }
 
     if ($companyId <= 0) {
         return itm_resolve_records_per_page(itm_ui_config_defaults());
     }
 
-    $uiConfig = itm_get_ui_configuration($conn, $companyId, $userId);
+    $uiConfig = itm_get_ui_configuration($conn, $companyId, $employeeId);
 
     return itm_resolve_records_per_page($uiConfig);
 }
@@ -4000,7 +4004,7 @@ function mbqa_fk_reference_table(string $column, array $fkMap): string
     }
 
     if (preg_match('/_by$/', $column)) {
-        return 'users';
+        return 'employees';
     }
 
     if (preg_match('/_id$/', $column) && $column !== 'company_id' && preg_match('/^(.+)_id$/', $column, $idMatch)) {
@@ -4045,9 +4049,9 @@ function mbqa_ensure_parent_rows_for_inserts(mysqli $conn, string $table, int $c
             continue;
         }
 
-        if ($parentTable === 'users' && mbqa_query_first_id($conn, 'users', $companyId) <= 0 && function_exists('itm_seed_table_from_database_sql')) {
+        if ($parentTable === 'employees' && mbqa_query_first_id($conn, 'employees', $companyId) <= 0 && function_exists('itm_seed_table_from_database_sql')) {
             $seedErr = '';
-            itm_seed_table_from_database_sql($conn, 'users', $companyId, $seedErr);
+            itm_seed_table_from_database_sql($conn, 'employees', $companyId, $seedErr);
         }
     }
 }
@@ -4236,7 +4240,7 @@ function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool
     }
 
     if (in_array($refTable, mbqa_tables_never_clear(), true)) {
-        if ($refTable === 'users') {
+        if ($refTable === 'employees') {
             mbqa_ensure_tenant_users_for_bulk($conn, $companyId, max($sequence, mbqa_bulk_row_target_ideal($conn, $companyId)));
             $ids = mbqa_query_fk_ids_for_tenant($conn, $refTable, $companyId);
             if (!empty($ids)) {
@@ -4537,7 +4541,7 @@ function mbqa_index_shows_bulk_actions(string $html): bool
         return true;
     }
 
-    // Row checkboxes already on index (e.g. user_companies when gated on).
+    // Row checkboxes already on index (e.g. employee_companies when gated on).
     return stripos($html, 'name="ids[]"') !== false
         && (stripos($html, 'bulk_action') !== false || $hasBulkForm);
 }
@@ -5318,8 +5322,8 @@ function mbqa_run_clear_table(
         return ['ok' => false, 'note' => 'rows still present after clear_table'];
     }
 
-    if ($moduleSlug === 'user_companies' && $conn instanceof mysqli && $companyId > 0
-        && mbqa_user_companies_non_admin_row_count($conn, $companyId) === 0) {
+    if ($moduleSlug === 'employee_companies' && $conn instanceof mysqli && $companyId > 0
+        && mbqa_employee_companies_non_admin_row_count($conn, $companyId) === 0) {
         return ['ok' => true, 'note' => 'cleared; Admin assignment(s) retained by policy'];
     }
 
@@ -5644,10 +5648,10 @@ if ($loginPost['status'] < 200 || $loginPost['status'] >= 400 || mbqa_has_fatal(
 
 $mbqaAdminUserId = mbqa_qa_admin_user_id($conn);
 if ($mbqaAdminUserId <= 0) {
-    mbqa_err('QA login identifier ' . mbqa_qa_login_identifier() . ' not found in users table (active row required).' . "\n");
+    mbqa_err('QA login identifier ' . mbqa_qa_login_identifier() . ' not found in employees table (active row required).' . "\n");
     exit(1);
 }
-$_SESSION['user_id'] = $mbqaAdminUserId;
+$_SESSION['employee_id'] = $mbqaAdminUserId;
 
 // Why: browser Run QA should execute the same cleanup as "Run Clean Tests" silently before module steps.
 $mbqaEquipmentPrecleanup = $browserRunViaQaButton
@@ -5709,7 +5713,7 @@ foreach ($companiesToRun as $companyId) {
 
     // Why: list/pagination gates resolve records_per_page from ui_configuration for the active QA tenant, not a stale CLI session company.
     $_SESSION['company_id'] = $companyId;
-    $_SESSION['user_id'] = $mbqaAdminUserId;
+    $_SESSION['employee_id'] = $mbqaAdminUserId;
     mbqa_sync_mysql_audit_session($conn, $companyId, $mbqaAdminUserId);
 
     foreach ($orderedModules as $slug) {

@@ -2,7 +2,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once __DIR__ . '/lib/itm_script_test_user.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Select Options Escalation Verification');
 
@@ -43,17 +43,17 @@ require basename('$script_path');
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "Verifying Select Options API Escalation..." . $nl;
 
-$testUser = itm_script_test_user_create($conn, 1, ['script_slug' => 'verify-select-options']);
+$testUser = itm_script_test_employee_create($conn, 1, ['script_slug' => 'verify-select-options']);
 if (!is_array($testUser)) {
     echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
-$userId = (int)$testUser['id'];
-itm_script_test_user_register_teardown($conn, $userId);
+$employeeId = (int)$testUser['id'];
+itm_script_test_employee_register_teardown($conn, $employeeId);
 
 $session = [
-    'user_id' => $userId,
+    'user_id' => $employeeId,
     'username' => (string)$testUser['username'],
     'company_id' => 1,
     'csrf_token' => 'test_token'
@@ -62,7 +62,7 @@ $session = [
 $evilUsername = 'eviladmin_' . uniqid();
 $post = [
     'csrf_token' => 'test_token',
-    'table' => 'users',
+    'table' => 'employees',
     'id_col' => 'id',
     'label_col' => 'username',
     'new_value' => $evilUsername,
@@ -82,12 +82,12 @@ $blockedByPolicy = is_array($decoded)
     && empty($decoded['ok'])
     && stripos((string)($decoded['error'] ?? ''), 'quick-add') !== false;
 
-$res = mysqli_query($conn, "SELECT id, role_id FROM users WHERE username = '$evilUsername'");
+$res = mysqli_query($conn, "SELECT id, role_id FROM employees WHERE username = '$evilUsername'");
 $row = mysqli_fetch_assoc($res);
 
 if ($row && (int)$row['role_id'] === 1) {
     echo colorText("[FAIL] Select Options API: Regular user successfully created an Admin user!", 'fail') . $nl;
-    mysqli_query($conn, "DELETE FROM users WHERE id = " . (int)$row['id']);
+    mysqli_query($conn, "DELETE FROM employees WHERE id = " . (int)$row['id']);
 } elseif ($blockedByPolicy) {
     echo colorText('[PASS] Select Options API: Admin creation blocked by table whitelist.', 'pass') . $nl;
 } else {

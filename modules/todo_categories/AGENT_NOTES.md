@@ -4,10 +4,10 @@
 Lookup table for todo list categories (personal/company-scoped names used by the Todo module).
 
 ## 2. Key Tables
-- **todo_categories** — category name, `cat_from_user_id`, `company_id`.
+- **todo_categories** — category name, `cat_from_employee_id`, `company_id`.
 
 ## 3. Required Relationships
-- **todo_categories** → depends on **companies**, **users** (`cat_from_user_id`).
+- **todo_categories** → depends on **companies**, **users** (`cat_from_employee_id`).
 - **todo_categories** → referenced by **todo** (category FK / import mapping).
 
 ## 4. Business Rules (Critical for Agents)
@@ -26,7 +26,7 @@ Lookup table for todo list categories (personal/company-scoped names used by the
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — wrappers.
 
 ## 8. Multi-Tenant Rules
-- Scoped by `company_id`; `cat_from_user_id` ties categories to creating user when set.
+- Scoped by `company_id`; `cat_from_employee_id` ties categories to creating user when set.
 
 ## 9. Audit Logging Requirements
 - `trg_todo_categories_audit_insert|update|delete` in `database.sql`.

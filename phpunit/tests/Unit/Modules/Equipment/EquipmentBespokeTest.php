@@ -59,13 +59,13 @@ class EquipmentBespokeTest extends TestCase
     }
 
     private function getOrCreateUser() {
-        $res = mysqli_query($this->conn, "SELECT id FROM users WHERE company_id = {$this->companyId} LIMIT 1");
+        $res = mysqli_query($this->conn, "SELECT id FROM employees WHERE company_id = {$this->companyId} LIMIT 1");
         if ($row = mysqli_fetch_assoc($res)) {
             return $row['id'];
         }
-        $res = mysqli_query($this->conn, "SELECT id FROM user_roles WHERE company_id = {$this->companyId} LIMIT 1");
+        $res = mysqli_query($this->conn, "SELECT id FROM employee_roles WHERE company_id = {$this->companyId} LIMIT 1");
         $roleId = ($row = mysqli_fetch_assoc($res)) ? $row['id'] : 1;
-        mysqli_query($this->conn, "INSERT INTO users (company_id, username, password, email, role_id, active) VALUES ({$this->companyId}, 'testuser', 'pass', 'test@example.com', $roleId, 1)");
+        mysqli_query($this->conn, "INSERT INTO employees (company_id, username, password, email, role_id, active) VALUES ({$this->companyId}, 'testuser', 'pass', 'test@example.com', $roleId, 1)");
         return mysqli_insert_id($this->conn);
     }
 
@@ -107,7 +107,7 @@ class EquipmentBespokeTest extends TestCase
         // 1. Seed
         $typeId = $this->getOrCreateEquipmentType('Server');
         $statusId = $this->getOrCreateEquipmentStatus('Active');
-        $userId = $this->getOrCreateUser();
+        $employeeId = $this->getOrCreateUser();
 
         $res = mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, status_id, name) VALUES ({$this->companyId}, $typeId, $statusId, '$name')");
         $this->assertTrue($res, "Failed to insert equipment: " . mysqli_error($this->conn));
@@ -138,7 +138,7 @@ class EquipmentBespokeTest extends TestCase
             $prioId = mysqli_insert_id($this->conn);
         }
 
-        $res = mysqli_query($this->conn, "INSERT INTO tickets (company_id, title, category_id, status_id, priority_id, asset_id, created_by_user_id) VALUES ({$this->companyId}, 'Broken Server Test', $catId, $statId, $prioId, $equipmentId, $userId)");
+        $res = mysqli_query($this->conn, "INSERT INTO tickets (company_id, title, category_id, status_id, priority_id, asset_id, created_by_employee_id) VALUES ({$this->companyId}, 'Broken Server Test', $catId, $statId, $prioId, $equipmentId, $employeeId)");
         $this->assertTrue($res, "Failed to insert ticket: " . mysqli_error($this->conn));
         $ticketId = mysqli_insert_id($this->conn);
 

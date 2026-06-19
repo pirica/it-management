@@ -32,7 +32,7 @@ function tickets_seed_database_sql_parents_for_table(mysqli $conn, string $table
         if ($parentTable === '' || !itm_is_safe_identifier($parentTable)) {
             continue;
         }
-        if (in_array($parentTable, ['companies', 'users'], true)) {
+        if (in_array($parentTable, ['companies', 'employees'], true)) {
             continue;
         }
 

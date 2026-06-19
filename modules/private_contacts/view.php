@@ -1,16 +1,16 @@
 <?php
 require_once '../../config/config.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['employee_id'])) {
     header("Location: ../../login.php");
     exit();
 }
 
 $id = (int)($_GET['id'] ?? 0);
-$userId = $_SESSION['user_id'];
+$employeeId = $_SESSION['employee_id'];
 
-$stmt = $conn->prepare("SELECT * FROM private_contacts WHERE id = ? AND user_id = ?");
-$stmt->bind_param("ii", $id, $userId);
+$stmt = $conn->prepare("SELECT * FROM private_contacts WHERE id = ? AND employee_id = ?");
+$stmt->bind_param("ii", $id, $employeeId);
 $stmt->execute();
 $contact = $stmt->get_result()->fetch_assoc();
 
@@ -56,7 +56,7 @@ $pageTitle = "View Contact - " . $contact['first_name'] . ' ' . $contact['last_n
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <?php if ($contact['photo']): ?>
-                            <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['user_id'] . '/private_contacts/' . $contact['photo']) ?>" class="rounded-circle border" width="120" height="120" style="object-fit: cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
+                            <img src="<?= itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $_SESSION['employee_id'] . '/private_contacts/' . $contact['photo']) ?>" class="rounded-circle border" width="120" height="120" style="object-fit: cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
                         <?php else: ?>
                             <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
                                 <i class="fas fa-user text-muted fa-4x"></i>

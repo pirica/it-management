@@ -186,7 +186,7 @@ Every **project folder that contains source code or agent-relevant assets** must
 
 #### Disposable script test users (mandatory)
 
-Repro/verify CLI scripts and PHPUnit tests that INSERT or UPDATE `users`, touch `reset_token` / password / vault fields, or simulate tenant-scoped sessions for file paths must use **`scripts/lib/itm_script_test_user.php`** — never hardcode seed user id `1`. Snapshot sensitive columns before mutation; register teardown restore + delete. Static audit: `php scripts/check_script_disposable_users.php`. Full API and migration list: **`scripts/SCRIPTS.md` → Disposable script test users**.
+Repro/verify CLI scripts and PHPUnit tests that INSERT or UPDATE `employees`, touch `reset_token` / password / vault fields, or simulate tenant-scoped sessions for file paths must use **`scripts/lib/itm_script_test_employee.php`** — never hardcode seed user id `1`. Snapshot sensitive columns before mutation; register teardown restore + delete. Static audit: `php scripts/check_script_disposable_employees.php`. Full API and migration list: **`scripts/SCRIPTS.md` → Disposable script test users**.
 
 ---
 
@@ -205,7 +205,7 @@ Each module must maintain a flat structure with these specific files:
     * **Hide** `company_id` from all UI views.
     * Add safe inline FK creation logic to create referenced rows automatically.
     * Scope all queries and inserts by `company_id`.
-* **Audit Logging:** The system sets MySQL session variables (`@app_user_id`) in `config.php`. Do not overwrite these.
+* **Audit Logging:** The system sets MySQL session variables (`@app_employee_id`) in `config.php`. Do not overwrite these.
 * **Standard Fields:** Every new table in `database.sql` must include:
     * `company_id` INT NOT NULL
     * `active` TINYINT DEFAULT '1'
@@ -214,7 +214,7 @@ Each module must maintain a flat structure with these specific files:
 
 ### 3. Protection Zone (STRICT: No Auto-Changes)
 Do **not** modify logic or structure unless explicitly requested:
-`/modules/equipment/`, `/modules/idfs/`, `/modules/idf_links/`, `/modules/idf_positions/`, `/modules/idf_ports/`, `/modules/audit_logs/`, `/modules/employees/, /modules/contacts/`, `/modules/settings/`, `/modules/user_companies/`, `modules/employee_system_access/`, `modules/cable_colors/`, `ui_configuration`.
+`/modules/equipment/`, `/modules/idfs/`, `/modules/idf_links/`, `/modules/idf_positions/`, `/modules/idf_ports/`, `/modules/audit_logs/`, `/modules/employees/, /modules/contacts/`, `/modules/settings/`, `/modules/employee_companies/`, `modules/employee_system_access/`, `modules/cable_colors/`, `ui_configuration`.
 
 ### 4. Dynamic UI Configuration (Settings)
 Modules must read/validate settings via `itm_get_ui_configuration()`:
@@ -245,7 +245,7 @@ Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logi
 
 | Tier | Hourly limit | API key | Session (`PHPSESSID`) |
 |------|----------------|---------|------------------------|
-| Free | No limit | **Not required** | **Required** — `$_SESSION['company_id']` + `$_SESSION['user_id']` via `itm_api_resolve_rate_limit_row()` |
+| Free | No limit | **Not required** | **Required** — `$_SESSION['company_id']` + `$_SESSION['employee_id']` via `itm_api_resolve_rate_limit_row()` |
 | Basic | 300 | Required (`X-API-Key` or `api_key`) | Optional when API key present |
 | Pro | 1000 | Required | Optional when API key present |
 | Enterprise | 10000 | Required | Optional when API key present |
@@ -256,7 +256,7 @@ Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logi
 
 3. **Enforcement:** `itm_api_enforce_rate_limit_or_exit($conn)` resolves via API key **or** (Free only) authenticated session. Paid tiers without a key return `401`. Helpers: `itm_api_tier_requires_api_key()`, `itm_api_lookup_configuration_by_user()`, `itm_api_build_rate_limit_probe_payload()`.
 
-4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `user_id`; paid tiers must send a key. Response includes `api_key_required` (boolean).
+4. **Quota probe (does not consume a request):** `GET scripts/api.php?rate_limit=1` returns JSON. `ITM_API_RATE_LIMIT_PROBE` skips the **login.php redirect** only — it does **not** remove the Free-tier session requirement. Free may omit `api_key` when `PHPSESSID` carries `company_id` + `employee_id`; paid tiers must send a key. Response includes `api_key_required` (boolean).
 
 5. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`):
 
@@ -365,19 +365,19 @@ The calendar module (`modules/calendar/`) provides a centralized view of time-se
 
 #### Alerts module (mandatory)
 
-The Alerts module (`modules/alerts/`) handles global alerts when `assigned_to_user_id` is NULL and private alerts visible only to the assigned user and the creator.
+The Alerts module (`modules/alerts/`) handles global alerts when `assigned_to_employee_id` is NULL and private alerts visible only to the assigned user and the creator.
 
 1. **Visibility Logic:**
-    - **Global Alerts:** `assigned_to_user_id IS NULL`. These are visible to all users within the same company.
-    - **Private Alerts:** `assigned_to_user_id = $logged_user_id`. These are visible only to the assigned user and the creator.
-    - `$assigned_to_user_id = $logged_user_id AND $created_by_user_id = $logged_user_id`
+    - **Global Alerts:** `assigned_to_employee_id IS NULL`. These are visible to all users within the same company.
+    - **Private Alerts:** `assigned_to_employee_id = $logged_user_id`. These are visible only to the assigned user and the creator.
+    - `$assigned_to_employee_id = $logged_user_id AND $created_by_employee_id = $logged_user_id`
 2. **ICS Import:** Supports importing events from ICS files.
 3. **Multi-tenancy:** Strictly scoped by `company_id`.
 
 #### Bookmarks module (mandatory)
 
 The Bookmarks module provides a hierarchical management system for links, featuring:
-- **Privacy Scoping:** Data is filtered by `user_id` for private bookmarks and `company_id` for shared ones.
+- **Privacy Scoping:** Data is filtered by `employee_id` for private bookmarks and `company_id` for shared ones.
 - **Dual-Pane UI:** A left sidebar with an emoji-enhanced folder tree (📁/📂) and a main list view.
 - **Drag-and-Drop:** Folders can be reordered or reparented via drag-and-drop interactions.
 - **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
@@ -599,7 +599,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. Full module map: `docs/file_upload_modules.md`.
 
 ## 🛡️ Safety & Side Effects
-* **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `user_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
+* **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `employee_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
 * **UI Redundancy:** Modules with custom export layouts should disable the default `table-tools.js` buttons using the `data-itm-no-export-*` attributes.
 
 ---
@@ -677,7 +677,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
     "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
     ```
-    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **117**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`user_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
+    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **117**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`employee_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
   * **PowerShell piping:** `database.sql` in git is **LF**; `-split "`r`n"` can yield a single “line” and skip the strip branch — still import the **complete** file. Prefer `cmd /c "\"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe\" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql"` from the repo directory over stdin `Process` piping when imports truncate.
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
@@ -775,7 +775,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * **`Not Fixed`:** intentional deferral, out of scope, or blocked; state why and cite a follow-up issue/PR if planned.
 * **Do not leave actionable review threads silent:** if a comment asked for a change, respond with **`Fixed`** or **`Not Fixed`**—never only push code without a labeled GitHub reply.
 * **Merged PRs still need replies:** if a PR merged with silent bot/human threads, post retroactive **`Fixed`** / **`Not Fixed`** replies on each thread after verifying `master` (or cite the PR that already fixed it).
-* **Passwords Module Security:** All password-related data must be strictly scoped to `user_id` and encrypted at rest using `itm_encrypt` with the user's master key stored in `$_SESSION['vault_key']`.
+* **Passwords Module Security:** All password-related data must be strictly scoped to `employee_id` and encrypted at rest using `itm_encrypt` with the user's master key stored in `$_SESSION['vault_key']`.
 * **Doc updates for process rules:** agent-workflow and repo-wide rules → **`AGENTS.md`**; scripts directory standards → **`scripts/SCRIPTS.md`**. Ship each on a fresh branch + new PR (do not fold into an unrelated feature PR).
 
 #### Triage workflow (`gh` CLI)

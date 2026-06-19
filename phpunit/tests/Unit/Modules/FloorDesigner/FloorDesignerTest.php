@@ -27,7 +27,7 @@ class FloorDesignerTest extends TestCase
         $data['shape_type'] = 'Square';
         $data['active'] = 1;
         // Find or fallback for it_location_id (it_locations)
-        $resit_location_id = mysqli_query($this->conn, "SELECT id FROM `it_locations` WHERE " . (strpos('it_locations', 'companies') === false && strpos('it_locations', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resit_location_id = mysqli_query($this->conn, "SELECT id FROM `it_locations` WHERE " . (strpos('it_locations', 'companies') === false && strpos('it_locations', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowit_location_id = mysqli_fetch_assoc($resit_location_id)) {
             $data['it_location_id'] = $rowit_location_id['id'];
         } else {
@@ -35,7 +35,7 @@ class FloorDesignerTest extends TestCase
             $data['it_location_id'] = null;
         }
         // Find or fallback for floor_plan_id (floor_plans)
-        $resfloor_plan_id = mysqli_query($this->conn, "SELECT id FROM `floor_plans` WHERE " . (strpos('floor_plans', 'companies') === false && strpos('floor_plans', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $resfloor_plan_id = mysqli_query($this->conn, "SELECT id FROM `floor_plans` WHERE " . (strpos('floor_plans', 'companies') === false && strpos('floor_plans', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowfloor_plan_id = mysqli_fetch_assoc($resfloor_plan_id)) {
             $data['floor_plan_id'] = $rowfloor_plan_id['id'];
         } else {

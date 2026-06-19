@@ -267,7 +267,7 @@ function mbqa_clean_tests_delete_runner_seed_rows(mysqli $conn): array
         }
     }
 
-    $protectedTables = ['companies', 'users'];
+    $protectedTables = ['companies', 'employees'];
     $fkBlockedTables = [];
     for ($pass = 1; $pass <= 8; $pass++) {
         $passDeleted = 0;
@@ -576,7 +576,7 @@ if (mbqa_clean_tests_is_cli()) {
     }
 
     if ($cleanup['sidebar_deleted'] > 0) {
-        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} user_sidebar_preferences test row(s)", 'pass') . "\n");
+        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} employee_sidebar_preferences test row(s)", 'pass') . "\n");
     }
 
     if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {

@@ -86,7 +86,7 @@ protected function setUp(): void {
 }
 public function testVisibilitySqlWithAlias(): void {
     $sql = itm_alerts_visibility_sql('e');
-    $this->assertStringContainsString('e.assigned_to_user_id IS NULL', $sql);
+    $this->assertStringContainsString('e.assigned_to_employee_id IS NULL', $sql);
 }
 ```
 

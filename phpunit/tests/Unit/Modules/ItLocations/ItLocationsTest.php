@@ -26,7 +26,7 @@ class ItLocationsTest extends TestCase
         $data['name'] = 'Test name';
         $data['active'] = 1;
         // Find or fallback for type_id (location_types)
-        $restype_id = mysqli_query($this->conn, "SELECT id FROM `location_types` WHERE " . (strpos('location_types', 'companies') === false && strpos('location_types', 'users') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        $restype_id = mysqli_query($this->conn, "SELECT id FROM `location_types` WHERE " . (strpos('location_types', 'companies') === false && strpos('location_types', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowtype_id = mysqli_fetch_assoc($restype_id)) {
             $data['type_id'] = $rowtype_id['id'];
         } else {
