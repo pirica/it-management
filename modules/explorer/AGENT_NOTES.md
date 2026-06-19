@@ -20,7 +20,8 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Blocked creation/upload** at Home root, `Private` root, and `Departments` root.
 - **Protected folders:** top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. User primary private folder cannot be renamed, moved, or deleted.
 - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage (users only see/restore/empty their permitted items).
-- **Path validation:** normalize backslashes to `/`, trim slashes, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_id}`.
+- **Path validation:** normalize backslashes to `/`, trim slashes, collapse `.` segments via `explorer_normalize_relative_path()`, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_id}` (blocks `./Private` bypass).
+- **Zip extraction:** `unzip` uses `explorer_extract_zip_safely()` — rejects archive entries whose resolved path escapes the target folder.
 - **Localisation:** UK English (en-GB) UI labels (Favourites, Trash, etc.).
 - **Upload hardening (`deny_http`):** never bare `mkdir()` under `files/` — use `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Every segment gets force-written `deny_http` `.htaccess` + `index.html`. Serve UI via `itm_files_serve_url()` → `file.php`. See **`docs/file_upload_modules.md`**.
 
@@ -94,4 +95,4 @@ explorer_ensure_dir($dir . '/' . $name); // wraps itm_ensure_files_storage_direc
 ```
 
 ## 12. Module Owner Notes (Optional)
-Regression: `php scripts/test_explorer_paths.php`; ZIP root leak: `php scripts/verify_explorer_zip_leak.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`.
+Regression: `php scripts/test_explorer_paths.php`; ZIP root leak: `php scripts/verify_explorer_zip_leak.php`; path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.

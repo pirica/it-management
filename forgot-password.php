@@ -122,14 +122,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     // Why: Keep auth attempt IP selection consistent with login and reset flows.
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
-    $isRateLimited = itm_is_password_reset_rate_limited($conn, 'request', $requestIp, $email);
+    $storedAttemptIdentifier = itm_normalize_login_attempt_identifier($email);
+    $isRateLimited = itm_is_password_reset_rate_limited($conn, 'request', $requestIp, $storedAttemptIdentifier);
     $requestUser = itm_find_password_reset_user($conn, $email);
 
     itm_record_password_reset_attempt(
         $conn,
         'request',
         $requestIp,
-        $email === '' ? null : $email,
+        $storedAttemptIdentifier,
         $requestUser['id']
     );
 

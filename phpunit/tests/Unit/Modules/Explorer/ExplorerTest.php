@@ -68,6 +68,11 @@ class ExplorerTest extends TestCase
 
         // Directory Traversal (blocked)
         $this->assertNull(get_full_path($this->storageRoot, '../secrets', $this->employeeId, $this->deptId, $this->username));
+
+        // ./ prefix bypass attempts (blocked after normalization)
+        $this->assertNull(get_full_path($this->storageRoot, './Private', $this->employeeId, $this->deptId, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, './Private/otheruser_999', $this->employeeId, $this->deptId, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, './Departments', $this->employeeId, $this->deptId, $this->username));
     }
 
     public function testHiddenSystemEntries()

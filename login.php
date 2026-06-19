@@ -88,10 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
-    $isRateLimited = itm_is_login_rate_limited($conn, $requestIp, $loginIdentifier);
+    $storedAttemptIdentifier = itm_normalize_login_attempt_identifier($loginIdentifier);
+    $isRateLimited = itm_is_login_rate_limited($conn, $requestIp, $storedAttemptIdentifier);
 
     if ($isRateLimited) {
-        itm_record_login_attempt($conn, 'failure', $requestIp, $loginIdentifier === '' ? null : $loginIdentifier, null);
+        itm_record_login_attempt($conn, 'failure', $requestIp, $storedAttemptIdentifier, null);
         $error = 'Too many login attempts. Please wait a few minutes and try again.';
     } else {
         $join = itm_employee_active_employment_status_join_sql('e', 'es');
@@ -164,11 +165,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($passwordMatches && $employeeId > 0) {
+            $successIdentifier = $resolvedEmail !== ''
+                ? itm_normalize_login_attempt_identifier($resolvedEmail)
+                : $storedAttemptIdentifier;
             itm_record_login_attempt(
                 $conn,
                 'success',
                 $requestIp,
-                $resolvedEmail !== '' ? $resolvedEmail : ($loginIdentifier === '' ? null : $loginIdentifier),
+                $successIdentifier,
                 $employeeId
             );
 
@@ -212,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn,
             'failure',
             $requestIp,
-            $loginIdentifier === '' ? null : $loginIdentifier,
+            $storedAttemptIdentifier,
             $employeeId > 0 ? $employeeId : null
         );
         $error = 'Invalid credentials.';
