@@ -7,6 +7,7 @@
  */
 
 include('config/config.php');
+require_once __DIR__ . '/includes/itm_employee_employment_status.php';
 $csrfToken = itm_get_csrf_token();
 
 $prefilledEmail = trim((string)($_GET['email'] ?? ''));
@@ -94,11 +95,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_rollback($conn);
                 $error = 'Registration cannot continue because default role/access settings are missing for this company.';
             } else {
+                $employmentStatusId = itm_employee_resolve_active_status_id($conn, $companyId);
+                if ($employmentStatusId <= 0) {
+                    mysqli_rollback($conn);
+                    $error = 'Registration cannot continue because Active employment status is missing for this company.';
+                } else {
                 $password = password_hash($rawPassword, PASSWORD_DEFAULT);
                 $emailLocal = strstr($email, '@', true);
                 $firstName = $emailLocal !== false && $emailLocal !== '' ? ucfirst($emailLocal) : ucfirst($username);
                 $lastName = 'User';
-                $employmentStatusId = 1;
 
                 $userStmt = mysqli_prepare(
                     $conn,
@@ -166,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     mysqli_rollback($conn);
                     $error = 'Registration failed. Please try again.';
+                }
                 }
             }
         }

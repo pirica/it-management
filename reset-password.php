@@ -32,7 +32,7 @@ function itm_record_password_reset_completion_attempt(mysqli $conn, string $ipAd
          ))"
     );
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'sisss', $ipAddress, $employeeId, $email, $email);
+        mysqli_stmt_bind_param($stmt, 'siss', $ipAddress, $employeeId, $email, $email);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
