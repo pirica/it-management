@@ -1721,6 +1721,7 @@ if (!function_exists('itm_handle_json_table_import')) {
         $targetFields = array_keys($columns);
         $insertedRows = 0;
         $updatedRows = 0;
+        $skippedRows = 0;
         $failedRows = 0;
         $importErrors = [];
 
@@ -1784,6 +1785,9 @@ if (!function_exists('itm_handle_json_table_import')) {
                         if (mysqli_query($conn, "INSERT INTO departments (company_id, name, active) VALUES (" . (int)$companyId . ", '" . $depNameEsc . "', 1)")) {
                             $rowValues['department_id'] = (string)mysqli_insert_id($conn);
                         }
+                    }
+                    if (($rowValues['department_id'] ?? 'NULL') !== 'NULL') {
+                        $providedFields[] = 'department_id';
                     }
                 }
             }
@@ -2003,6 +2007,14 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $providedFields[] = $fieldName;
             }
 
+            // Why: UPDATE only touches import columns with resolved non-NULL SQL literals; dedupe tracking list.
+            $providedFields = array_values(array_unique(array_filter(
+                $providedFields,
+                static function ($fieldName) use ($rowValues) {
+                    return isset($rowValues[$fieldName]) && $rowValues[$fieldName] !== 'NULL';
+                }
+            )));
+
             if ($rowValidationError !== '') {
                 $failedRows++;
                 if (count($importErrors) < 5) {
@@ -2065,19 +2077,31 @@ if (!function_exists('itm_handle_json_table_import')) {
             }
 
             if ($existingId > 0) {
-                $updateParts = [];
-                $finalUpdateFields = array_intersect($targetFields, $providedFields);
-                foreach ($finalUpdateFields as $fieldName) {
-                    if ($fieldName === 'company_id') continue;
-                    $updateParts[] = '`' . str_replace('`', '``', $fieldName) . '` = ' . ($rowValues[$fieldName] ?? 'NULL');
-                }
+                $finalUpdateFields = array_values(array_filter(
+                    $targetFields,
+                    static function ($fieldName) use ($providedFields, $rowValues) {
+                        if ($fieldName === 'company_id') {
+                            return false;
+                        }
+                        return in_array($fieldName, $providedFields, true)
+                            && isset($rowValues[$fieldName])
+                            && $rowValues[$fieldName] !== 'NULL';
+                    }
+                ));
 
-                if (empty($updateParts)) {
-                    $updatedRows++;
+                if (empty($finalUpdateFields)) {
+                    $skippedRows++;
                     continue;
                 }
 
-                $updateSql = "UPDATE `" . str_replace('`', '``', $tableName) . "` SET " . implode(', ', $updateParts) . " WHERE id = " . $existingId;
+                $updateParts = [];
+                foreach ($finalUpdateFields as $fieldName) {
+                    $updateParts[] = '`' . str_replace('`', '``', $fieldName) . '` = ' . ($rowValues[$fieldName] ?? 'NULL');
+                }
+
+                $updateSql = "UPDATE `" . str_replace('`', '``', $tableName) . "` SET " . implode(', ', $updateParts)
+                    . " WHERE id = " . (int)$existingId
+                    . ($hasCompanyColumn ? " AND company_id = " . (int)$companyId : '');
                 $dbErrorCode = 0;
                 $dbErrorMessage = '';
                 if (itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage) !== false) {
@@ -2111,9 +2135,10 @@ if (!function_exists('itm_handle_json_table_import')) {
         }
 
         $response = [
-            'ok' => ($failedRows === 0 || $insertedRows > 0 || $updatedRows > 0),
+            'ok' => ($failedRows === 0 && ($insertedRows > 0 || $updatedRows > 0 || $skippedRows > 0)),
             'inserted' => $insertedRows,
             'updated' => $updatedRows,
+            'skipped' => $skippedRows,
             'failed' => $failedRows,
         ];
         if (!empty($importErrors)) {

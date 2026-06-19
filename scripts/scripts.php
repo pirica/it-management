@@ -1,6 +1,12 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+
+// Why: Script catalog lists destructive CLI repro tools; browser view is admin-only (no web runner links).
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -1335,15 +1341,15 @@ require_once __DIR__ . '/../config/config.php';
                     <td><strong>Verify Employee Import Data Loss</strong></td>
                     <td><code>repro_employee_dataloss.php</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
-                    <td>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code></td>
+                    <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. <strong>CLI-only</strong> — catalog listing only; no browser runner link.</td>
+                    <td>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
                 <tr>
                     <td><strong>Verify Generic Import Data Loss</strong></td>
                     <td><code>repro_generic_dataloss.php</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
-                    <td>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code></td>
+                    <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. <strong>CLI-only</strong> — catalog listing only; no browser runner link.</td>
+                    <td>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
             </tbody>
         </table></div>

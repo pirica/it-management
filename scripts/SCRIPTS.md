@@ -175,6 +175,8 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, and role-module permission access. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_employee.php`; prepared `UPDATE employees` for token fields. |
+| `php scripts/repro_employee_dataloss.php` | Regression — generic `itm_handle_json_table_import()` UPDATE must not NULL-out omitted columns on `employees` (expects exit `0`; seeds/disposable row in transaction). |
+| `php scripts/repro_generic_dataloss.php` | Regression — generic JSON import UPDATE must not NULL-out omitted columns (e.g. `departments.code`; expects exit `0`; seeds/disposable row in transaction). |
 
 Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
@@ -253,6 +255,29 @@ php scripts/run_tests.php --filter ApiFunctionsTest
 ```
 
 Open `scripts/api.php` in the browser and confirm Explorer, IDF, and import tables render.
+
+#### JSON import UPDATE semantics (`itm_handle_json_table_import()`)
+
+Shared handler in `config/config.php` (and module-specific paths such as `modules/employees/index.php` for the dedicated employee import UI).
+
+| Topic | Behaviour |
+|-------|-----------|
+| **UPDATE scope** | Only columns present in the import header row (or auto-derived during normalization with a resolved non-`NULL` value) are written on existing rows. Omitted columns keep their stored values. |
+| **INSERT scope** | Unchanged — missing columns still receive defaults/auto-derived values as before. |
+| **Auto-derived fields** | Examples: resolved FK IDs, auto-created department/position rows, employees `personal_email` reclassification from a work-email column, derived `display_name`. |
+| **Empty rows** | Rows with no non-blank, non-`null` cells after trim are skipped with no DB mutation. |
+| **No-op UPDATE** | Existing row matched by `id` but no writable import columns → increments **`skipped`**, not **`updated`**. |
+| **Response JSON** | `{"ok":true,"inserted":N,"updated":N,"skipped":N,"failed":N}` — `ok` is false when `failed > 0` and no rows were inserted/updated/skipped. |
+
+**Regression (CLI-only, exit non-zero on failure):**
+
+```bash
+php scripts/repro_generic_dataloss.php
+php scripts/repro_employee_dataloss.php
+php scripts/verify_json_import_validation.php
+```
+
+Catalog rows in `scripts/scripts.php` are **CLI-only** (no browser runner links). The scripts index requires administrator login in the browser.
 
 #### Switch Port Manager AJAX (`includes/get_ports.php`, `includes/update_port.php`)
 
