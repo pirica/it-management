@@ -17,7 +17,8 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - SMTP passwords stored encrypted via `itm_email_encrypt_password()` / `itm_decrypt()` with server key `itm_smtp_encryption_key()`.
 - `itm_send_email($to, $subject, $html, $companyId)` logs every attempt to **emails** when `company_id` resolves.
 - Fallback: if no SMTP profile exists, `itm_send_email()` tries Resend (`RESEND_API_KEY` env).
-- Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron).
+- Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron). Company 1 seeds include warranty/license rows inside the default 30-day window; other tenants need enabled rules plus `notify_emails`. Use `--verbose` when dispatched count is 0.
+- Manual delivery tests: `php scripts/test_email_forgot.php email=… [--company=1]`, `php scripts/test_register_mail.php email=… [--company=1]`.
 
 ## 5. UI Behavior Requirements
 - Tabs: **Send Logs** | **SMTP Configurations** | **Alert Rules**.
