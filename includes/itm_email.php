@@ -67,7 +67,8 @@ if (!function_exists('itm_email_get_default_smtp_config')) {
         $stmt = mysqli_prepare(
             $conn,
             'SELECT id, company_id, config_name, smtp_host, smtp_port, username, password_encrypted,
-                    from_email, from_name, is_default, active
+                    from_email, from_name, imap_port, pop3_port, pop3_tls_mode, pop3_require_secure_connection,
+                    is_default, active
              FROM email_smtp_configurations
              WHERE company_id = ? AND active = 1 AND is_default = 1
              ORDER BY id ASC
@@ -89,7 +90,8 @@ if (!function_exists('itm_email_get_default_smtp_config')) {
         $fallbackStmt = mysqli_prepare(
             $conn,
             'SELECT id, company_id, config_name, smtp_host, smtp_port, username, password_encrypted,
-                    from_email, from_name, is_default, active
+                    from_email, from_name, imap_port, pop3_port, pop3_tls_mode, pop3_require_secure_connection,
+                    is_default, active
              FROM email_smtp_configurations
              WHERE company_id = ? AND active = 1
              ORDER BY id ASC
@@ -120,7 +122,8 @@ if (!function_exists('itm_email_get_smtp_config_by_id')) {
         $stmt = mysqli_prepare(
             $conn,
             'SELECT id, company_id, config_name, smtp_host, smtp_port, username, password_encrypted,
-                    from_email, from_name, is_default, active
+                    from_email, from_name, imap_port, pop3_port, pop3_tls_mode, pop3_require_secure_connection,
+                    is_default, active
              FROM email_smtp_configurations
              WHERE id = ? AND company_id = ? AND active = 1
              LIMIT 1'

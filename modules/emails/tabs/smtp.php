@@ -10,6 +10,7 @@
                             <span class="badge badge-success">Default</span>
                         <?php endif; ?>
                         <div><?php echo sanitize((string)$cfg['smtp_host']); ?>:<?php echo sanitize((string)$cfg['smtp_port']); ?></div>
+                        <div>IMAP <?php echo sanitize((string)($cfg['imap_port'] ?? '143')); ?> · POP3 <?php echo sanitize((string)($cfg['pop3_port'] ?? '110')); ?><?php if (!empty($cfg['pop3_tls_mode'])): ?> (<?php echo sanitize((string)$cfg['pop3_tls_mode']); ?>)<?php endif; ?></div>
                         <div><?php echo sanitize((string)$cfg['from_email']); ?><?php if (!empty($cfg['from_name'])): ?> (<?php echo sanitize((string)$cfg['from_name']); ?>)<?php endif; ?></div>
                     </div>
                     <div class="itm-actions-wrap">
@@ -66,6 +67,34 @@
                 <input type="text" id="from_name" name="from_name" value="<?php echo sanitize((string)($editSmtp['from_name'] ?? 'Mail Manager')); ?>">
             </div>
         </div>
+
+        <h3 style="margin-top:20px;">IMAP</h3>
+        <div class="email-form-grid">
+            <div class="form-group">
+                <label for="imap_port">Port</label>
+                <input type="number" id="imap_port" name="imap_port" min="1" max="65535" value="<?php echo sanitize((string)($editSmtp['imap_port'] ?? '143')); ?>">
+            </div>
+        </div>
+
+        <h3 style="margin-top:20px;">POP3</h3>
+        <div class="email-form-grid">
+            <div class="form-group">
+                <label for="pop3_port">Port</label>
+                <input type="number" id="pop3_port" name="pop3_port" min="1" max="65535" value="<?php echo sanitize((string)($editSmtp['pop3_port'] ?? '110')); ?>">
+            </div>
+            <div class="form-group">
+                <label for="pop3_tls_mode">TLS mode</label>
+                <input type="text" id="pop3_tls_mode" name="pop3_tls_mode" value="<?php echo sanitize((string)($editSmtp['pop3_tls_mode'] ?? 'None')); ?>">
+            </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+            <label class="itm-toggle">
+                <input type="checkbox" name="pop3_require_secure_connection" value="1" <?php echo ((int)($editSmtp['pop3_require_secure_connection'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                <span class="itm-toggle-track" aria-hidden="true"></span>
+                <span>Require secure connection</span>
+            </label>
+        </div>
+
         <div class="form-group" style="margin-top:12px;">
             <label class="itm-toggle">
                 <input type="checkbox" name="is_default" value="1" <?php echo ((int)($editSmtp['is_default'] ?? 0) === 1 || !$editSmtp) ? 'checked' : ''; ?>>

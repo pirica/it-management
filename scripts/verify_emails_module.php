@@ -95,6 +95,46 @@ if ($failures === 0) {
     emails_verify_pass('Default SMTP configuration seeds present for companies 1–5.');
 }
 
+$imapColumnStmt = mysqli_prepare(
+    $conn,
+    'SELECT COUNT(*) FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?'
+);
+$imapPop3Columns = [
+    'imap_port' => '143',
+    'pop3_port' => '110',
+    'pop3_tls_mode' => 'None',
+    'pop3_require_secure_connection' => '0',
+];
+foreach ($imapPop3Columns as $columnName => $expectedDefault) {
+    if ($imapColumnStmt) {
+        $tableName = 'email_smtp_configurations';
+        mysqli_stmt_bind_param($imapColumnStmt, 'ss', $tableName, $columnName);
+        mysqli_stmt_execute($imapColumnStmt);
+        mysqli_stmt_bind_result($imapColumnStmt, $columnCount);
+        mysqli_stmt_fetch($imapColumnStmt);
+        if ((int)$columnCount !== 1) {
+            emails_verify_fail('Missing column email_smtp_configurations.' . $columnName);
+        }
+    }
+}
+if ($imapColumnStmt) {
+    mysqli_stmt_close($imapColumnStmt);
+}
+if ($defaultCfg) {
+    if ((int)($defaultCfg['imap_port'] ?? 0) !== 143) {
+        emails_verify_fail('Default IMAP port seed for company 1 is not 143.');
+    } elseif ((int)($defaultCfg['pop3_port'] ?? 0) !== 110) {
+        emails_verify_fail('Default POP3 port seed for company 1 is not 110.');
+    } elseif ((string)($defaultCfg['pop3_tls_mode'] ?? '') !== 'None') {
+        emails_verify_fail('Default POP3 TLS mode seed for company 1 is not None.');
+    } elseif ((int)($defaultCfg['pop3_require_secure_connection'] ?? 1) !== 0) {
+        emails_verify_fail('Default POP3 require-secure seed for company 1 is not off.');
+    } else {
+        emails_verify_pass('IMAP/POP3 defaults present on company 1 SMTP profile.');
+    }
+}
+
 $rules = itm_email_get_alert_rules($conn, $companyId);
 $catalog = itm_email_alert_rule_catalog();
 foreach (array_keys($catalog) as $slug) {
