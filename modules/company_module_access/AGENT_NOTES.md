@@ -22,7 +22,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 - Sidebar emoji precedence (rendered in `includes/sidebar.php` via `itm_resolve_module_sidebar_label()`): **Settings per-user override** → **company_module_access.icon** → **modules_registry.icon** → **ui_config catalog** fallback. Icons are stored separately from `module_name` for stable sorting.
 - System modules appear in the matrix; `settings` stays always available to all users.
 - Inactive registry rows (`active = 0`) are listed but toggles are disabled.
-- AJAX toggles must use CSRF and write through `itm_set_company_module_access()`.
+- AJAX toggles must use CSRF and write through `itm_set_company_module_access()` (which busts the per-request `has_module_access()` cache after each write).
 
 ## 5. UI Behavior Requirements
 
