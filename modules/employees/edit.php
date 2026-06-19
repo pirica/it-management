@@ -10,6 +10,7 @@ require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
+require_once '../../includes/itm_employees_hidden_accounts.php';
 
 /**
  * Ensures unique constraints don't block manual updates when duplicates are allowed in the UI
@@ -41,6 +42,10 @@ $employeeSql = 'SELECT * FROM employees WHERE id=' . $id . ' AND company_id=' . 
 $employeeRes = mysqli_query($conn, $employeeSql);
 $employee = ($employeeRes && mysqli_num_rows($employeeRes) === 1) ? mysqli_fetch_assoc($employeeRes) : null;
 if (!$employee) {
+    header('Location: index.php');
+    exit;
+}
+if (itm_employees_is_hidden_account($employee)) {
     header('Location: index.php');
     exit;
 }
@@ -114,6 +119,8 @@ $form = [
     'birthday' => (string)($employee['birthday'] ?? ''),
     'hide_year' => (string)($employee['hide_year'] ?? '0'),
     'photo' => (string)($employee['photo'] ?? ''),
+    'role_id' => (string)($employee['role_id'] ?? ''),
+    'access_level_id' => (string)($employee['access_level_id'] ?? ''),
 ];
 
 // Load current permission IDs
@@ -171,6 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $onOrgchart = (int)$form['on_orgchart'];
         $birthday = itm_sql_date_fragment($conn, $form['birthday']);
         $hideYear = (int)$form['hide_year'];
+        $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
+        $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
         $photoValue = mysqli_real_escape_string($conn, (string)($employee['photo'] ?? ''));
         if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
             $photoEmployee = [
@@ -198,8 +207,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             office_key_card_department_id={$officeDeptId}{$workstationModesSql}{$assignmentTypesSql},
             request_date={$requestDate}, requested_by={$requestedBy}, termination_requested_by={$terminationRequestedBy},
             start_date={$startDate}, employee_type_id={$employeeTypeId}, termination_date={$terminationDate},
-            comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}'
-            WHERE id={$id} AND company_id=" . (int)$company_id . " LIMIT 1";
+            comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}',
+            role_id={$roleId}, access_level_id={$accessLevelId}
+            WHERE id={$id} AND company_id=" . (int)$company_id . " AND is_hidden=0 LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
             // Update permissions in modern normalized table
@@ -272,6 +282,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <?php include __DIR__ . '/includes/profile_employee_code_field.php'; ?>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
+                        <?php include __DIR__ . '/includes/profile_role_access_fields.php'; ?>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Position Title</label>
                             <select name="employee_position_id" data-addable-select="1" data-add-table="employee_positions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="position title">
@@ -288,7 +299,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                             <select name="reports_to">
                                 <option value="">-- None --</option>
                                 <?php
-                                $mgrs = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE company_id=" . (int)$company_id . " AND id != " . $id . " ORDER BY display_name");
+                                $mgrs = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE company_id=" . (int)$company_id . " AND id != " . $id . " AND is_hidden=0 ORDER BY display_name");
                                 if ($mgrs): while ($m = mysqli_fetch_assoc($mgrs)): ?>
                                     <option value="<?php echo (int)$m['id']; ?>" <?php echo ((string)$m['id'] === (string)$form['reports_to']) ? 'selected' : ''; ?>><?php echo sanitize((string)$m['display_name']); ?></option>
                                 <?php endwhile; endif; ?>

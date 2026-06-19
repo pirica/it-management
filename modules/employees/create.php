@@ -14,6 +14,7 @@ require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
+require_once '../../includes/itm_employees_hidden_accounts.php';
 
 /**
  * Cleanup unique constraints for email if they exist, facilitating manual handling
@@ -66,6 +67,7 @@ $form = [
     'employee_code' => '', 'location_id' => '',
     'request_date' => '', 'requested_by' => '', 'termination_requested_by' => '',
     'birthday' => '', 'hide_year' => '0', 'photo' => '',
+    'role_id' => '', 'access_level_id' => '',
 ];
 
 $selectedSystemAccessIds = [];
@@ -126,18 +128,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $onOrgchart = (int)$form['on_orgchart'];
     $birthday = itm_sql_date_fragment($conn, $form['birthday']);
     $hideYear = (int)$form['hide_year'];
+    $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
+    $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, work_email, personal_email, external_id, username, employee_code,
             department_id, location_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
             employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id,
             request_date, requested_by, termination_requested_by,
-            start_date, employee_type_id, termination_date, birthday, hide_year
+            start_date, employee_type_id, termination_date, birthday, hide_year, role_id, access_level_id
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$workEmail}, {$personalEmail}, {$externalId}, {$username}, {$employeeCode},
             {$departmentId}, {$locationId}, {$jobCode}, {$comments}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$onOrgchart}, {$rawStatusCode}, {$employmentStatusId},
             {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId},
             {$requestDate}, {$requestedBy}, {$terminationRequestedBy},
-            {$startDate}, {$employeeTypeId}, {$terminationDate}, {$birthday}, {$hideYear}
+            {$startDate}, {$employeeTypeId}, {$terminationDate}, {$birthday}, {$hideYear}, {$roleId}, {$accessLevelId}
         )";
 
         if (mysqli_query($conn, $sql)) {
@@ -225,6 +229,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
                         <?php include __DIR__ . '/includes/profile_employee_code_field.php'; ?>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
+                        <?php include __DIR__ . '/includes/profile_role_access_fields.php'; ?>
                         <div class="form-group"><label>Job Code</label><input type="text" name="job_code" value="<?php echo sanitize($form['job_code']); ?>"></div>
                         <div class="form-group"><label>Position Title</label>
                             <select name="employee_position_id" data-addable-select="1" data-add-table="employee_positions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="position title">
@@ -241,7 +246,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                             <select name="reports_to">
                                 <option value="">-- None --</option>
                                 <?php
-                                $mgrs = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE company_id=" . (int)$company_id . " ORDER BY display_name");
+                                $mgrs = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE company_id=" . (int)$company_id . " AND is_hidden=0 ORDER BY display_name");
                                 if ($mgrs): while ($m = mysqli_fetch_assoc($mgrs)): ?>
                                     <option value="<?php echo (int)$m['id']; ?>" <?php echo ((string)$m['id'] === (string)$form['reports_to']) ? 'selected' : ''; ?>><?php echo sanitize((string)$m['display_name']); ?></option>
                                 <?php endwhile; endif; ?>

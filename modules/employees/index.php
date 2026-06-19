@@ -25,6 +25,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_auth_sensitive_fields.php';
+require_once '../../includes/itm_employees_hidden_accounts.php';
 
 // Lazy-initialize required tables if missing
 esa_ensure_table($conn);
@@ -111,6 +112,11 @@ function emp_canonical_header($header) {
         'employment status' => 'employment_status_id',
         'workstation mode' => 'workstation_mode_id',
         'assignment type' => 'assignment_type_id',
+        'role' => 'role_id',
+        'role name' => 'role_id',
+        'employee role' => 'role_id',
+        'access level' => 'access_level_id',
+        'access level name' => 'access_level_id',
         'office key card department id' => 'office_key_card_department_id',
         'id' => 'id',
         'id▼' => 'id'
@@ -163,6 +169,10 @@ function emp_drop_email_unique_if_exists($conn) {
             mysqli_query($conn, 'ALTER TABLE employees DROP INDEX ' . emp_escape_identifier($indexName));
         }
     }
+}
+
+function emp_ensure_is_hidden_column($conn) {
+    return itm_employees_ensure_is_hidden_column($conn);
 }
 
 /**
@@ -427,6 +437,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'employee_type_id' => ['table' => 'employee_type', 'col' => 'name_type'],
                     'location_id' => ['table' => 'it_locations', 'col' => 'name'],
                     'office_key_card_department_id' => ['table' => 'departments', 'col' => 'name'],
+                    'role_id' => ['table' => 'employee_roles', 'col' => 'name'],
+                    'access_level_id' => ['table' => 'access_levels', 'col' => 'name'],
                 ];
                 foreach ($lookupMaps as $targetField => $info) {
                     if (!empty($mapped[$targetField]) && !is_numeric($mapped[$targetField])) {
@@ -508,7 +520,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id', 'role_id', 'access_level_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
@@ -522,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         } else {
                             $values[$col] = '0';
                         }
-                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'location_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'employee_type_id', 'office_key_card_department_id'], true)) {
+                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'location_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'employee_type_id', 'office_key_card_department_id', 'role_id', 'access_level_id'], true)) {
                         $values[$col] = (string)(int)$value;
                     } else {
                         $values[$col] = "'" . mysqli_real_escape_string($conn, $value) . "'";
@@ -530,6 +542,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 if ($existingId > 0) {
+                    if (itm_employees_is_hidden_account($existingRowMap[$existingId] ?? null)) {
+                        $skipped += 1;
+                        $skippedDetails[] = ['row' => $sourceRowNumber, 'reason' => 'Protected hidden account cannot be updated via import.', 'identity' => emp_import_identity_label($mapped)];
+                        continue;
+                    }
                     // Update if record changed
                     $hasChanges = false;
                     $existingCurrent = $existingRowMap[$existingId] ?? [];
@@ -577,7 +594,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 
 // --- DATA PREPARATION FOR UI ---
 emp_ensure_duplicate_column($conn);
-$where = ' WHERE e.company_id=' . (int)$company_id;
+emp_ensure_is_hidden_column($conn);
+$where = ' WHERE e.company_id=' . (int)$company_id . itm_employees_sql_visible_only_predicate('e');
 $showDuplicatesOnly = (($_GET['show'] ?? '') === 'duplicates');
 if ($showDuplicatesOnly) { $where .= ' AND e.duplicate=1'; }
 
@@ -593,8 +611,8 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','employee_code','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
-$hiddenColumns = ['company_id', 'location'];
+$preferredOrder = ['id','duplicate','external_id','employee_code','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','role_id','access_level_id','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
+$hiddenColumns = array_merge(['company_id', 'location'], itm_employees_hidden_account_column_names());
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()), itm_employees_auth_sensitive_field_names());
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
 
@@ -633,7 +651,9 @@ $countSql = 'SELECT COUNT(*) AS total
              LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id
              LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id
              LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id
-             LEFT JOIN employees m ON m.id = e.reports_to'
+             LEFT JOIN employees m ON m.id = e.reports_to
+             LEFT JOIN employee_roles er ON er.id = e.role_id AND er.company_id = e.company_id
+             LEFT JOIN access_levels al ON al.id = e.access_level_id AND al.company_id = e.company_id'
              . $where;
 $countResult = mysqli_query($conn, $countSql);
 $countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
@@ -648,7 +668,7 @@ if ($page > $totalPages) {
 $rows = mysqli_query(
     $conn,
     'SELECT e.*, d.name AS department_name, es.name AS employment_status_name, et.name_type AS employee_type_name, il.name AS location_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
-            ep.name AS position_name, m.display_name AS manager_name,
+            ep.name AS position_name, m.display_name AS manager_name, er.name AS role_name, al.name AS access_level_name,
             esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
             esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
             esa.digital_rev, esa.office_key_card
@@ -661,7 +681,9 @@ $rows = mysqli_query(
      LEFT JOIN assignment_types at ON at.id = e.assignment_type_id AND at.company_id = e.company_id
      LEFT JOIN employee_system_access esa ON esa.company_id = e.company_id AND esa.employee_id = e.id
      LEFT JOIN employee_positions ep ON ep.id = e.employee_position_id
-     LEFT JOIN employees m ON m.id = e.reports_to'
+     LEFT JOIN employees m ON m.id = e.reports_to
+     LEFT JOIN employee_roles er ON er.id = e.role_id AND er.company_id = e.company_id
+     LEFT JOIN access_levels al ON al.id = e.access_level_id AND al.company_id = e.company_id'
     . $where .
     ' ORDER BY ' . $sortSql . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset
 );
@@ -682,6 +704,8 @@ function emp_label($field) {
     if ($field === 'assignment_type_id') return 'Assignment Type';
     if ($field === 'external_id') return 'External ID';
     if ($field === 'employee_code') return 'Employee Code';
+    if ($field === 'role_id') return 'Role';
+    if ($field === 'access_level_id') return 'Access Level';
     if ($field === 'location_id') return 'IT Location';
     if ($field === 'on_contacts') return 'On Contacts';
     if ($field === 'on_orgchart') return 'On Org Chart';
@@ -817,6 +841,8 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                     <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($row['manager_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employment_status_id'): ?><?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employee_type_id'): ?><?php echo sanitize((string)($row['employee_type_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'role_id'): ?><?php echo sanitize((string)($row['role_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'access_level_id'): ?><?php echo sanitize((string)($row['access_level_name'] ?? '')); ?>
                                     <?php elseif ($col === 'birthday'): ?><?php echo sanitize(emp_format_birthday_display($row['birthday'] ?? null, $row['hide_year'] ?? 0)); ?>
                                     <?php elseif ($col === 'photo'): ?>
                                         <?php $empListPhotoUrl = emp_profile_photo_url($row); ?>

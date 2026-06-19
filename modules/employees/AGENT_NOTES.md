@@ -4,7 +4,7 @@
 The central module for managing employee records, including contact info, hierarchy, employment details, and **login accounts** (auth columns live on `employees` after the users-table merge).
 
 ## 2. Key Tables
-- **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id`, `termination_date` among profile fields).
+- **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id`, `termination_date`, `role_id`, `access_level_id`, `is_hidden` among profile fields).
 - **employee_type** — lookup for `employees.employee_type_id` (`name_type` labels such as Team member / Internship).
 
 ## 3. Required Relationships
@@ -24,7 +24,7 @@ The central module for managing employee records, including contact info, hierar
 - **Org Chart Visibility:** Only employees with `on_orgchart = 1` and an active employment status are shown on the Org Chart.
 - **Contact Visibility:** Only employees with `on_contacts = 1` and an active employment status are shown in the Contacts module.
 - **Login eligibility (mandatory):** use `employment_status_id` → `employee_statuses.name` = **Active** (case-insensitive) via `includes/itm_employee_employment_status.php`. Do **not** use a deprecated `employees.active` column — `emp_drop_active_column_if_exists()` removes it on index load.
-- **List scope:** administrator-only module — all entry files call `itm_require_admin()`; non-admins are redirected to the dashboard (same as companies / employee_companies). Index lists every employee row for the active session `company_id` only (`WHERE e.company_id = ?`). The seed admin row (`id=1`, `company_id=1`) appears like any other employee; with default sort `id DESC` and many rows, it may sit on the **last** pagination page.
+- **List scope:** administrator-only module — all entry files call `itm_require_admin()`; non-admins are redirected to the dashboard (same as companies / employee_companies). Index lists every employee row for the active session `company_id` only (`WHERE e.company_id = ?`) **excluding** `is_hidden = 1` rows (`includes/itm_employees_hidden_accounts.php`). `company_id` and `is_hidden` never render on the index table. The seed admin row (`id=1`, `company_id=1`, `is_hidden=1`) is DB-protected and omitted from list/view/edit/delete/clear-table UI flows.
 - **Sidebar label:** sidebar catalog entry id `employees` must appear **once** in `itm_sidebar_base_structure()` (Employee section → `👤 Employees`). A duplicate Admin-section item with the same id previously overwrote the label as `👥 Users`.
 - **Unique Code:** `employee_code` should be unique per company if provided.
 - **Import (mandatory):**
@@ -39,6 +39,8 @@ The central module for managing employee records, including contact info, hierar
   - **Employee code / IT location / request fields:** optional nullable columns (`employee_code`, `location_id` → `it_locations`, `request_date`, `requested_by`, `termination_requested_by`) on create/edit/view/list; import accepts `employee code`, `it location`, `location`, `request date`, `requested by`, `termination requested by`.
 - **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id`. Pre-merge installs may still have files under `{username}_{legacy_id}/profile/`; `emp_profile_photo_serve_path()` checks the canonical path first. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
 - **Auth-sensitive columns:** list and view hide `password`, `vault_key_hash`, and reset-token fields via `includes/itm_employees_auth_sensitive_fields.php` (`itm_employees_auth_sensitive_field_names()` merged into index list `$hiddenColumns`; `view.php` uses an explicit field whitelist).
+- **Hidden accounts (`is_hidden`):** DB-only flag (`TINYINT`, default `0`) on `employees`; set to `1` directly in MySQL to protect admin/service accounts. Never on create/edit/view forms or index columns. Helpers: `includes/itm_employees_hidden_accounts.php` (`itm_employees_sql_visible_only_predicate()`, `itm_employees_is_hidden_account()`). Import skips updates to hidden rows; delete/clear-table skip hidden rows.
+- **Role / access level:** `role_id` → `employee_roles.name`, `access_level_id` → `access_levels.name` on create/edit/view/index via `includes/profile_role_access_fields.php` and list FK label joins.
 - **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
 ## 5. UI Behavior Requirements
@@ -61,7 +63,9 @@ The central module for managing employee records, including contact info, hierar
 - **includes/profile_employee_type_fields.php** — employee type select before termination/birthday fields.
 - **includes/profile_termination_date_field.php** — termination date field after employee type.
 - **includes/profile_birthday_fields.php** — birthday and hide_year fields.
+- **includes/profile_role_access_fields.php** — role and access level FK selects.
 - **includes/employee_profile_photo.php** (repo `includes/`) — path, upload, URL, and birthday display helpers.
+- **includes/itm_employees_hidden_accounts.php** (repo `includes/`) — DB-only `is_hidden` column ensure + UI exclusion predicate.
 
 ## 8. Multi-Tenant Rules
 - Strictly scoped by `company_id`.
