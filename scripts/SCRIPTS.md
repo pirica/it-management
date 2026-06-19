@@ -147,6 +147,8 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 
 **Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 
+**Stale terminology guard:** `php scripts/check_stale_user_terminology.php` — fails when `scripts/`, `docs/`, or `phpunit/tests/` still say `Users module` / `Users Management`, or when `includes/database_sql_unique_audit.php` special-cases `employee_companies.user_id`. Catalog: `scripts/scripts.php`.
+
 **PHPUnit:** `ItmScriptTestUserTest.php`, `ReproAuditDisclosureTest.php`; security repro tests in `VulnerabilityVerificationTest.php` use the same helper. All `phpunit/**/AGENT_NOTES.md` files document this contract.
 
 **Related:** `scripts/lib/itm_api_tier_test_helpers.php` (disposable `ui_configuration` slots only); `includes/itm_mbqa_test_user.php` (MBQA runner row tags).
@@ -157,7 +159,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 |--------|---------|
 | `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS: HTTP 403 message + row retained). Seeds via a free `cost_centers` slot (`uq_expenses_company_scope` is one row per company + cost center). Do not stub `cr_require_valid_csrf_token()` in subprocess harnesses (fatal redeclare). |
 | `php scripts/repro_employee_companies_bac.php` | PoC — non-admin must not access `employee_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
-| `php scripts/repro_employee_companies_leak.php` | PoC — multi-tenant leak checks for Users module. |
+| `php scripts/repro_employee_companies_leak.php` | PoC — multi-tenant leak checks for Employees module. |
 | `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
 | `php scripts/apply_crud_rbac_guards.php` | CLI repair — bulk-insert CRUD RBAC guards on flattened index handlers (idempotent; skips exempt modules and files that already have guards). |
 | `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |

@@ -125,7 +125,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
             Parses <code>database.sql</code> for every table with <code>company_id</code>.
             <strong>Scope column:</strong> <code>name</code> when present, otherwise the <strong>3rd column</strong> after
             <code>id</code> and <code>company_id</code> (e.g. <code>annual_budget_id</code> on <code>monthly_budgets</code>,
-            <code>display_name</code> on <code>floor_plans</code>). <code>employee_companies</code> uses <code>user_id</code>.
+            <code>display_name</code> on <code>floor_plans</code>). <code>employee_companies</code> uses <code>employee_id</code>.
         </p>
         <p class="itm-dsu-muted">
             <strong>Pass:</strong> exactly <strong>2</strong> uniques — <code>PRIMARY KEY</code> (<code>id</code>) plus one business

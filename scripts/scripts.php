@@ -746,6 +746,12 @@ require_once __DIR__ . '/../config/config.php';
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_id_sql.php</code> — run after auth/session or schema merge changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
+                    <td><a href="check_stale_user_terminology.php">check_stale_user_terminology.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose and <code>employee_companies</code> + <code>user_id</code> helper references after the employees merge.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.</td>
+                </tr>
+                <tr>
                     <td><a href="check_multi_tenant_leaks.php">check_multi_tenant_leaks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: SQL queries and INSERTs on scoped tables missing <code>company_id</code> filters, and improper UI exposure of company identifiers.</td>
@@ -1205,7 +1211,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_employee_companies_leak.php">repro_employee_companies_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Multi-Tenant Data Leak in Users module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td>PoC for Multi-Tenant Data Leak in Employees module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_employee_companies_leak.php</code></td>
                 </tr>
                 <tr>
@@ -1235,7 +1241,7 @@ require_once __DIR__ . '/../config/config.php';
                 <tr>
                     <td><a href="repro_cross_tenant_admin.php">repro_cross_tenant_admin.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction script for cross-tenant admin access in Users module.</td>
+                    <td>Reproduction script for cross-tenant admin access in Employees module.</td>
                     <td><code>php scripts/repro_cross_tenant_admin.php</code></td>
                 </tr>
             </tbody>

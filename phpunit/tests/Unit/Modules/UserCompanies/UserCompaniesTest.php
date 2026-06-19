@@ -41,7 +41,7 @@ class UserCompaniesTest extends TestCase
         $data = [];
         $data['company_id'] = $this->companyId;
         $data['active'] = 1;
-        $data['user_id'] = $this->getOrCreateUser();
+        $data['employee_id'] = $this->getOrCreateUser();
 
         $sql = "INSERT INTO `employee_companies` (company_id, `employee_id`, `active`) VALUES (?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
@@ -49,7 +49,7 @@ class UserCompaniesTest extends TestCase
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
-        $bindValues[] = $data['user_id'];
+        $bindValues[] = $data['employee_id'];
         $bindValues[] = $data['active'];
         $bindTypes = 'iii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);

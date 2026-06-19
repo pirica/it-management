@@ -30,8 +30,8 @@ if (!function_exists('itm_database_sql_unique_audit_resolve_scope_column')) {
      */
     function itm_database_sql_unique_audit_resolve_scope_column(array $columns, string $table = ''): string
     {
-        if ($table === 'employee_companies' && in_array('user_id', $columns, true)) {
-            return 'user_id';
+        if ($table === 'employee_companies' && in_array('employee_id', $columns, true)) {
+            return 'employee_id';
         }
 
         if ($table === 'floor_plans' && in_array('display_name', $columns, true)) {

@@ -23,7 +23,7 @@ class UserSidebarPreferencesTest extends TestCase
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
-        $data['user_id'] = 1;
+        $data['employee_id'] = 1;
         $data['entry_type'] = 'section';
         $data['entry_id'] = 'Test entry_id';
         $data['display_order'] = 1;
@@ -36,7 +36,7 @@ class UserSidebarPreferencesTest extends TestCase
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
-        $bindValues[] = $data['user_id'];
+        $bindValues[] = $data['employee_id'];
         $bindValues[] = $data['entry_type'];
         $bindValues[] = $data['entry_id'];
         $bindValues[] = $data['display_order'];

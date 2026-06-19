@@ -43,14 +43,14 @@ $adminCo2Id = mysqli_insert_id($conn);
 echo "Created User '$userCo1' in Company $company1Id.\n";
 echo "Created Admin '$adminCo2' in Company $company2Id.\n";
 
-// 2. Access Users module as Admin 2
+// 2. Access Employees module as Admin 2
 $_SESSION['employee_id'] = $adminCo2Id;
 $_SESSION['company_id'] = $company2Id;
 $GLOBALS['company_id'] = $company2Id;
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['PHP_SELF'] = '/modules/employees/index.php';
 
-echo "Accessing Users module as Admin of Company 2...\n";
+echo "Accessing Employees module as Admin of Company 2...\n";
 chdir($root . '/modules/employees');
 ob_start();
 include 'index.php';

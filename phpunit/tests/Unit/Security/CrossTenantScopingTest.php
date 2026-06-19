@@ -70,7 +70,7 @@ class CrossTenantScopingTest extends TestCase
         mysqli_stmt_execute($stmt);
         $adminCo2Id = mysqli_insert_id($this->conn);
 
-        // Access Users module as Admin 2
+        // Access Employees module as Admin 2
         $_SESSION['employee_id'] = $adminCo2Id;
         $_SESSION['company_id'] = $company2Id;
         global $company_id;
