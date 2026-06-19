@@ -325,7 +325,7 @@ $modulePathEsc = sanitize($modulePath);
                                     <td>
                                         <strong><?= sanitize($moduleName) ?></strong>
                                         <div style="color:var(--text-secondary);font-size:12px;"><a 
-    href="<?= sanitize($moduleSlug) ?>" 
+    href="../<?= sanitize($moduleSlug) ?>" 
     target="_blank" 
     rel="noopener noreferrer nofollow"
     style="color:var(--accent); text-decoration:none;"
