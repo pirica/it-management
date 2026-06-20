@@ -202,6 +202,40 @@ if (count($importExportCols) !== 2) {
     rp_verify_pass('role_module_permissions includes Import/Export columns.');
 }
 
+$rolesIndexPath = ROOT_PATH . 'modules/roles_permissions/index.php';
+$rolesIndexSource = is_file($rolesIndexPath) ? (string)file_get_contents($rolesIndexPath) : '';
+if ($rolesIndexSource === '' || strpos($rolesIndexSource, "['active_count']") === false) {
+    rp_verify_fail('roles_permissions/index.php must read active_count for role sidebar cards.');
+} elseif (strpos($rolesIndexSource, 'itm_employee_active_employment_status_join_sql') === false) {
+    rp_verify_fail('roles_permissions/index.php must filter sidebar counts by HR Active employment status.');
+} else {
+    rp_verify_pass('roles_permissions/index.php reads active_count with employment status helpers.');
+}
+
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+$adminActiveCount = 0;
+$empJoin = itm_employee_active_employment_status_join_sql('e', 'es');
+$empActive = itm_employee_active_employment_status_predicate_sql('es');
+$adminCountSql = 'SELECT COUNT(*) AS c
+     FROM employee_roles er
+     INNER JOIN employees e
+       ON e.role_id = er.id AND e.company_id = er.company_id' . $empJoin . '
+     WHERE er.company_id = ? AND LOWER(er.name) = "admin"
+       AND ' . $empActive;
+$adminCountStmt = mysqli_prepare($conn, $adminCountSql);
+if ($adminCountStmt) {
+    mysqli_stmt_bind_param($adminCountStmt, 'i', $companyId);
+    mysqli_stmt_execute($adminCountStmt);
+    mysqli_stmt_bind_result($adminCountStmt, $adminActiveCount);
+    mysqli_stmt_fetch($adminCountStmt);
+    mysqli_stmt_close($adminCountStmt);
+}
+if ((int)$adminActiveCount < 1) {
+    rp_verify_fail('Admin role active_count for company 1 expected at least 1 Active employee.');
+} else {
+    rp_verify_pass('Admin role active_count for company 1 includes Active employees (' . (int)$adminActiveCount . ').');
+}
+
 $crossCompanyAdminCount = 0;
 $crossStmt = mysqli_prepare(
     $conn,

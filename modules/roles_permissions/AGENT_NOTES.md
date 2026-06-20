@@ -29,13 +29,13 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Effective flags: per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
 - Saving permissions upserts `(company_id, role_id, module_name)` rows; never overwrites the `ALL` wildcard via the matrix save path.
 - New roles insert into `employee_roles` and append `role_hierarchy` with the next order value.
-- **User counts** on role cards count distinct employees whose home role **name** matches the card role and who either belong to the active company (`employees.company_id` + `role_id`) or have an active `employee_companies` row for that company. Does **not** filter on `employment_status_id`.
+- **User counts** on role cards show **N active** (SQL alias `active_count`): employees where `employees.company_id = er.company_id`, `employees.role_id = er.id`, and HR employment status **Active** via `includes/itm_employee_employment_status.php`. Not session presence (dashboard **Online now**) and not all assigned employees regardless of HR status.
 - Company module access remains the first visibility gate; this module configures the second RBAC layer.
 
 ## 5. UI Behavior Requirements
 
 - Dual-pane layout patterned after `company_module_access`: page title header, toolbar card (`margin-bottom:16px`), matrix card (`overflow:auto`), `Modules` column header, accent slug links, centred checkbox cells, and `badge` / `badge-danger` for system/inactive rows.
-- Role cards show name, **active employee count** (`N active`), and **System** badge for Admin.
+- Role cards show name, **active employee count** (`N active`, SQL alias `active_count`), and **System** badge for Admin.
 - Toolbar: Check All, Uncheck All, Save (💾, admins only), module filter.
 - Add role (➕) and edit role (✏️) modals update `employee_roles.name` via AJAX (admins only).
 - Matrix table disables exports (`data-itm-no-export-excel="1"`).

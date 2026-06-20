@@ -24,18 +24,39 @@ if (!function_exists('itm_employee_active_employment_status_join_sql')) {
     }
 }
 
+if (!function_exists('itm_employee_employment_status_predicate_by_name_sql')) {
+    /**
+     * WHERE fragment: employment status name match (case-insensitive).
+     */
+    function itm_employee_employment_status_predicate_by_name_sql($statusAlias, $statusName)
+    {
+        $statusAlias = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$statusAlias);
+        $statusName = strtolower(trim((string)$statusName));
+        if ($statusAlias === '' || $statusName === '') {
+            return '1=0';
+        }
+
+        return 'LOWER(TRIM(COALESCE(' . $statusAlias . '.name, ""))) = "' . $statusName . '"';
+    }
+}
+
 if (!function_exists('itm_employee_active_employment_status_predicate_sql')) {
     /**
      * WHERE fragment: status name Active (case-insensitive).
      */
     function itm_employee_active_employment_status_predicate_sql($statusAlias = 'es')
     {
-        $statusAlias = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$statusAlias);
-        if ($statusAlias === '') {
-            return '1=0';
-        }
+        return itm_employee_employment_status_predicate_by_name_sql($statusAlias, 'Active');
+    }
+}
 
-        return 'LOWER(TRIM(COALESCE(' . $statusAlias . '.name, ""))) = "active"';
+if (!function_exists('itm_employee_on_leave_employment_status_predicate_sql')) {
+    /**
+     * WHERE fragment: status name On Leave (case-insensitive).
+     */
+    function itm_employee_on_leave_employment_status_predicate_sql($statusAlias = 'es')
+    {
+        return itm_employee_employment_status_predicate_by_name_sql($statusAlias, 'On Leave');
     }
 }
 

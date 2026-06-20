@@ -432,12 +432,12 @@ The `company_module_access` module lets administrators (`itm_is_admin()`) enable
 
 The `roles_permissions` module (`modules/roles_permissions/`) provides a unified dashboard for tenant role management and the RBAC permission matrix.
 
-1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** + **`employee_statuses`** (sidebar active-employee counts).
+1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** + **`employee_statuses`** (sidebar active counts by role + HR Active).
 2. **Access:** Signed-in tenant users may browse roles and the matrix read-only; only `itm_is_admin()` may create/edit roles or save matrix changes (AJAX returns HTTP 403 for non-admins).
 3. **Admin role:** Seeded **Admin** role (name match, case-insensitive) uses the `ALL` wildcard row; matrix and rename are read-only for that role.
 4. **Effective flags:** Per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
 5. **Matrix columns:** View, Add (`can_create`), Edit, Delete, Import, Export — aligned with `includes/itm_role_module_permissions.php` enforcement.
-6. **Role sidebar user counts:** Count distinct employees whose home `employee_roles.name` matches the card role and who can access the active company (`employees.company_id` + matching `role_id`, **or** active `employee_companies` for that tenant). Uses `employees.role_id` only — not `employment_status_id` (login/active-session rules stay in `includes/itm_employee_employment_status.php`).
+6. **Role sidebar active counts:** Count employees where `employees.company_id = er.company_id`, `employees.role_id = er.id`, and HR employment status **Active** (via `itm_employee_active_employment_status_join_sql()` + predicate — not hardcoded `employment_status_id`). Distinct from dashboard **Online now** (session presence) and dashboard **On Leave** (HR status).
 7. **Company gate first:** `company_module_access` remains the first visibility gate; this module configures the second RBAC layer.
 8. **RBAC exempt:** Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations.
 9. **UI:** Dual-pane layout patterned after Company Module Access — role sidebar, toolbar card, permission matrix (`js/roles-permissions-matrix.js`).
