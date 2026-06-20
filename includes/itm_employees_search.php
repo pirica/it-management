@@ -34,6 +34,10 @@ if (!function_exists('itm_employees_build_search_conditions')) {
             $conditions[] = "CAST(e.`" . str_replace('`', '``', $col) . "` AS CHAR) LIKE '" . $searchValue . "'";
         }
 
+        if (in_array('first_name', $columns, true) && in_array('last_name', $columns, true)) {
+            $conditions[] = "CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')) LIKE '" . $searchValue . "'";
+        }
+
         $fkLabelExprsByColumn = [
             'department_id' => [
                 "COALESCE(d.name, '')",
@@ -87,6 +91,9 @@ if (!function_exists('itm_employees_build_search_conditions')) {
             $conditions[] = "COALESCE(m.username, '') LIKE '" . $searchValue . "'";
             $conditions[] = "CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, '')) LIKE '" . $searchValue . "'";
         }
+
+        // Why: mobile_phone is stored on employees but hidden from list columns (ESA matrix); still searchable.
+        $conditions[] = "COALESCE(e.mobile_phone, '') LIKE '" . $searchValue . "'";
 
         return $conditions;
     }

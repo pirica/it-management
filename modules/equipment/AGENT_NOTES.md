@@ -32,7 +32,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
 - **Photo Upload**: Supports uploading photos of the equipment.
-- **Search & Filter**: Index list search uses `includes/itm_equipment_search.php` (`itm_equipment_search_join_sql()`, `itm_equipment_build_search_where_sql()`) to match scalar fields plus all create/edit FK labels (department code, supplier code, location code, rack code, assignee username, warranty/workstation/switch lookup names, etc.). Supplier and assignee columns are not shown on the index table.
+- **Search & Filter**: Index list search uses `includes/itm_equipment_search.php` (`itm_equipment_search_join_sql()`, `itm_equipment_build_search_where_sql()`) to match scalar fields (including dates, purchase cost, workstation/switch/printer columns, `active`, `photo_filename`) plus all create/edit FK labels (department code, supplier code, location code, rack code, assignee username, type/manufacturer/status/warranty/workstation/switch lookup names, etc.). Supplier and assignee columns are not shown on the index table. Regression: `php scripts/verify_employees_equipment_search_coverage.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.

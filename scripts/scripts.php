@@ -1131,6 +1131,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/verify_crud_fk_label_search.php</code> — run after changing list search or FK label helpers.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_employees_equipment_search_coverage.php">verify_employees_equipment_search_coverage.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression: dedicated employees + equipment index search probes — <code>first_name</code>, <code>last_name</code>, <code>username</code>, full name, FK codes (<code>FNB</code>, <code>LOC-NY-01</code>, <code>SUP-001</code>, <code>RACK-A</code>), position description, manager username, assignee identity on equipment. Disposable employee + equipment rows; optional <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
+                    <td><code>php scripts/verify_employees_equipment_search_coverage.php</code> — run after changing <code>itm_employees_search.php</code>, <code>itm_equipment_search.php</code>, or employees/equipment index search. Covers 34 runtime probes (scalar identity, FK labels, equipment scalars).</td>
+                </tr>
+                <tr>
                     <td><a href="verify_employees_sensitive_view.php">verify_employees_sensitive_view.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression check: Employees list/view HTML omits password and reset-token columns (<code>itm_employees_auth_filter_ui_columns()</code>).</td>
