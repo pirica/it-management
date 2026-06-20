@@ -29,7 +29,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Effective flags: per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
 - Saving permissions upserts `(company_id, role_id, module_name)` rows; never overwrites the `ALL` wildcard via the matrix save path.
 - New roles insert into `employee_roles` and append `role_hierarchy` with the next order value.
-- **Active employee counts** on role cards use `employment_status_id` → Active (`itm_employee_active_employment_status_*` helpers). Not a logged-in user count. Cross-company members with matching role name and `employee_companies` access are included.
+- **User counts** on role cards count distinct employees whose home role **name** matches the card role and who either belong to the active company (`employees.company_id` + `role_id`) or have an active `employee_companies` row for that company. Does **not** filter on `employment_status_id`.
 - Company module access remains the first visibility gate; this module configures the second RBAC layer.
 
 ## 5. UI Behavior Requirements

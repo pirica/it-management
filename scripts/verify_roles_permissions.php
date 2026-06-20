@@ -202,21 +202,18 @@ if (count($importExportCols) !== 2) {
     rp_verify_pass('role_module_permissions includes Import/Export columns.');
 }
 
-require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
-$empStatusJoin = itm_employee_active_employment_status_join_sql('e', 'es');
-$empStatusPredicate = itm_employee_active_employment_status_predicate_sql('es');
 $crossCompanyAdminCount = 0;
-$crossSql = 'SELECT COUNT(DISTINCT e.id) AS c
+$crossStmt = mysqli_prepare(
+    $conn,
+    'SELECT COUNT(DISTINCT e.id) AS c
      FROM employees e
      INNER JOIN employee_roles er_assign
-       ON er_assign.id = e.role_id AND er_assign.company_id = e.company_id'
-    . $empStatusJoin .
-    ' INNER JOIN employee_companies ec
+       ON er_assign.id = e.role_id AND er_assign.company_id = e.company_id
+     INNER JOIN employee_companies ec
        ON ec.employee_id = e.id AND ec.company_id = ? AND ec.active = 1
-     WHERE ' . $empStatusPredicate . '
-       AND er_assign.name = ?
-       AND e.company_id <> ?';
-$crossStmt = mysqli_prepare($conn, $crossSql);
+     WHERE er_assign.name = ?
+       AND e.company_id <> ?'
+);
 $targetCompanyId = 2;
 $adminRoleName = 'Admin';
 if ($crossStmt) {
@@ -233,9 +230,9 @@ if ($crossStmt) {
     mysqli_stmt_close($crossStmt);
 }
 if ($crossCompanyAdminCount < 1) {
-    rp_verify_fail('Cross-company Active Admin count for company 2 expected at least 1.');
+    rp_verify_fail('Cross-company Admin user count for company 2 expected at least 1 (seed Admin + employee_companies).');
 } else {
-    rp_verify_pass('Cross-company Active Admin count for company 2 includes home-company Admin (' . (int)$crossCompanyAdminCount . ').');
+    rp_verify_pass('Cross-company Admin user count for company 2 includes home-company Admin (' . (int)$crossCompanyAdminCount . ').');
 }
 
 if ($failures > 0) {
