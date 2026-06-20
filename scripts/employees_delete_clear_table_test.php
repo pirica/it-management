@@ -20,7 +20,9 @@ define('ITM_CLI_SCRIPT', true);
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require $projectRoot . '/modules/employees/delete_clear_table.php';
+require $projectRoot . '/modules/employees/delete_functions.php';
 
 function edct_is_cli(): bool
 {
@@ -212,6 +214,61 @@ function edct_insert_access(mysqli $conn, int $companyId, int $employeeId): bool
     return (bool)$ok;
 }
 
+function edct_insert_employee_company(mysqli $conn, int $companyId, int $employeeId): bool
+{
+    $stmt = mysqli_prepare($conn, 'INSERT INTO employee_companies (employee_id, company_id, active) VALUES (?, ?, 1)');
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $employeeId, $companyId);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return (bool)$ok;
+}
+
+function edct_insert_attempt(mysqli $conn, int $employeeId, string $email): bool
+{
+    $source = 'login';
+    $type = 'success';
+    $ip = '127.0.0.1';
+    $stmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO attempts (employee_id, email, attempt_source, attempt_type, ip_address) VALUES (?, ?, ?, ?, ?)'
+    );
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'issss', $employeeId, $email, $source, $type, $ip);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return (bool)$ok;
+}
+
+function edct_insert_audit_log(mysqli $conn, int $companyId, int $employeeId): bool
+{
+    $tableName = 'employees';
+    $recordId = $employeeId;
+    $action = 'UPDATE';
+    $stmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO audit_logs (company_id, employee_id, table_name, record_id, action) VALUES (?, ?, ?, ?, ?)'
+    );
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'iisis', $companyId, $employeeId, $tableName, $recordId, $action);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return (bool)$ok;
+}
+
+function edct_count_attempts_for_employee(mysqli $conn, int $employeeId): int
+{
+    $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM attempts WHERE employee_id=' . (int)$employeeId);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    return (int)($row['c'] ?? 0);
+}
+
 function edct_insert_approver(
     mysqli $conn,
     int $companyId,
@@ -237,19 +294,29 @@ function edct_run_static_checks()
 {
     $deletePath = dirname(__DIR__) . '/modules/employees/delete.php';
     $helperPath = dirname(__DIR__) . '/modules/employees/delete_clear_table.php';
+    $functionsPath = dirname(__DIR__) . '/modules/employees/delete_functions.php';
+    $dependenciesPath = dirname(__DIR__) . '/includes/itm_employees_delete_dependencies.php';
     edct_assert(is_file($deletePath), 'delete.php exists');
     edct_assert(is_file($helperPath), 'delete_clear_table.php exists');
+    edct_assert(is_file($functionsPath), 'delete_functions.php exists');
+    edct_assert(is_file($dependenciesPath), 'itm_employees_delete_dependencies.php exists');
 
     $deleteSource = (string)file_get_contents($deletePath);
     $helperSource = (string)file_get_contents($helperPath);
+    $functionsSource = (string)file_get_contents($functionsPath);
+    $dependenciesSource = (string)file_get_contents($dependenciesPath);
 
     edct_assert(stripos($deleteSource, 'delete_clear_table.php') !== false, 'delete.php loads clear-table helper');
+    edct_assert(stripos($deleteSource, 'delete_functions.php') !== false, 'delete.php loads delete_functions.php');
     edct_assert(stripos($deleteSource, 'employees_clear_table_for_company') !== false, 'delete.php calls employees_clear_table_for_company');
+    edct_assert(stripos($functionsSource, 'itm_employees_detach_delete_dependencies') !== false, 'delete_functions.php detaches dependencies before usage check');
+    edct_assert(stripos($dependenciesSource, 'DELETE FROM attempts WHERE employee_id = ?') !== false, 'dependency helper clears attempts rows');
+    edct_assert(stripos($dependenciesSource, 'DELETE FROM employee_companies WHERE employee_id = ?') !== false, 'dependency helper clears employee_companies rows');
     edct_assert(stripos($helperSource, 'mysqli_begin_transaction') !== false, 'helper uses mysqli_begin_transaction');
     edct_assert(stripos($helperSource, 'mysqli_rollback') !== false, 'helper uses mysqli_rollback on failure');
     edct_assert(stripos($helperSource, 'mysqli_commit') !== false, 'helper commits on success');
 
-    $accessPos = stripos($helperSource, 'DELETE FROM employee_system_access');
+    $accessPos = stripos($helperSource, 'employee_system_access');
     $employeesPos = stripos($helperSource, 'DELETE FROM employees WHERE company_id');
     edct_assert($accessPos !== false && $employeesPos !== false, 'helper deletes access then employees');
     edct_assert($accessPos < $employeesPos, 'access DELETE runs before employees DELETE');
@@ -304,6 +371,28 @@ function edct_run_db_integration(mysqli $conn)
         $finalError = employees_clear_table_for_company($conn, $companyId);
         edct_assert($finalError === null, 'clear_table succeeds after removing approver blocker');
         edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 0, 'employees cleared after cleanup');
+
+        $statusId2 = edct_insert_status($conn, $companyId, 'Active single ' . $suffix);
+        edct_assert($statusId2 > 0, 'seeded status for single-delete test');
+        $disposable = itm_script_test_employee_create($conn, $companyId, [
+            'employment_status_id' => $statusId2,
+            'first_name' => 'Delete',
+            'last_name' => 'DepsTest',
+        ]);
+        edct_assert(is_array($disposable) && (int)($disposable['id'] ?? 0) > 0, 'created disposable employee for single delete');
+        $singleEmployeeId = (int)$disposable['id'];
+        $singleEmail = (string)($disposable['email'] ?? 'deps-test@example.com');
+
+        edct_assert(edct_insert_access($conn, $companyId, $singleEmployeeId), 'inserted access row for single delete');
+        edct_assert(edct_insert_employee_company($conn, $companyId, $singleEmployeeId), 'inserted employee_companies row for single delete');
+        edct_assert(edct_insert_attempt($conn, $singleEmployeeId, $singleEmail), 'inserted attempts row for single delete');
+        edct_assert(edct_insert_audit_log($conn, $companyId, $singleEmployeeId), 'inserted audit_logs row for single delete');
+        edct_assert(edct_count_attempts_for_employee($conn, $singleEmployeeId) >= 1, 'attempts row present before single delete');
+
+        $singleDeleteError = employees_delete_record($conn, $companyId, $singleEmployeeId);
+        edct_assert($singleDeleteError === null, 'single delete succeeds with dependency rows: ' . (string)$singleDeleteError);
+        edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 0, 'employee removed after single delete');
+        edct_assert(edct_count_attempts_for_employee($conn, $singleEmployeeId) === 0, 'attempts detached during single delete');
     } finally {
         edct_delete_company($conn, $companyId);
         edct_pass('removed temporary test company');
