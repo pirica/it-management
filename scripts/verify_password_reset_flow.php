@@ -44,25 +44,25 @@ if (!is_array($testUser) || (int)($testUser['id'] ?? 0) <= 0) {
 }
 
 $employeeId = (int)$testUser['id'];
-$rawToken = '3a8a3e26179714a8a8009fc8ea5cb83c257fa4677c8b6aceaa0505fcdd544e22';
+$rawToken = bin2hex(random_bytes(32));
 
 if (!itm_password_reset_store_token_for_employee($conn, $employeeId, $rawToken)) {
     pr_verify_fail('itm_password_reset_store_token_for_employee() failed.');
 } else {
-    pr_verify_pass('Stored reset token with DATE_ADD(NOW(), INTERVAL 1 HOUR).');
+    pr_verify_pass('Stored reset token with DATE_ADD(NOW(), INTERVAL ' . itm_password_reset_token_ttl_hours() . ' HOUR).');
 }
 
 $lookup = itm_password_reset_lookup_employee_by_token($conn, $rawToken);
 if ((int)($lookup['id'] ?? 0) !== $employeeId) {
     pr_verify_fail('Lookup by hash did not return the test employee.');
 } else {
-    pr_verify_pass('Lookup by token hash succeeded for sample 64-char token.');
+    pr_verify_pass('Lookup by token hash succeeded for 64-char hex token.');
 }
 
 $legacyToken = bin2hex(random_bytes(16));
 $legacyStmt = mysqli_prepare(
     $conn,
-    'UPDATE employees SET reset_token = ?, reset_token_hash = NULL, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id = ? LIMIT 1'
+    'UPDATE employees SET reset_token = ?, reset_token_hash = NULL, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL ' . (int)itm_password_reset_token_ttl_hours() . ' HOUR) WHERE id = ? LIMIT 1'
 );
 if ($legacyStmt) {
     mysqli_stmt_bind_param($legacyStmt, 'si', $legacyToken, $employeeId);

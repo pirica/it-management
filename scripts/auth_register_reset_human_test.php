@@ -269,33 +269,13 @@ foreach ($companyIds as $companyId) {
     }
 
     $resetToken = bin2hex(random_bytes(32));
-    $resetTokenHash = hash('sha256', $resetToken);
-    $resetExpires = date('Y-m-d H:i:s', time() + 3600);
-    $tokenStmt = mysqli_prepare(
-        $conn,
-        'UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?'
-    );
-    if ($tokenStmt) {
-        mysqli_stmt_bind_param($tokenStmt, 'sssi', $resetToken, $resetTokenHash, $resetExpires, $employeeId);
-        mysqli_stmt_execute($tokenStmt);
-        mysqli_stmt_close($tokenStmt);
+    if (!itm_password_reset_store_token_for_employee($conn, $employeeId, $resetToken)) {
+        auth_human_fail('Company ' . $companyId . ' reset token store failed.');
     }
 
     $newPasswordPlain = 'ResetHuman!' . $companyId;
     $newPasswordHash = password_hash($newPasswordPlain, PASSWORD_DEFAULT);
-    $resetStmt = mysqli_prepare(
-        $conn,
-        'UPDATE employees
-         SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
-         WHERE id = ? AND reset_token_hash = ? AND reset_token_expires_at >= NOW()'
-    );
-    $resetOk = false;
-    if ($resetStmt) {
-        mysqli_stmt_bind_param($resetStmt, 'sis', $newPasswordHash, $employeeId, $resetTokenHash);
-        mysqli_stmt_execute($resetStmt);
-        $resetOk = mysqli_stmt_affected_rows($resetStmt) > 0;
-        mysqli_stmt_close($resetStmt);
-    }
+    $resetOk = itm_password_reset_complete_for_employee($conn, $employeeId, $resetToken, $newPasswordHash);
 
     if (!$resetOk) {
         auth_human_fail('Company ' . $companyId . ' reset-password UPDATE did not apply.');

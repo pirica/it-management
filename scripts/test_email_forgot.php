@@ -99,7 +99,7 @@ $html = '<p>This is a test password-reset email. Use the button below to open th
 
 $nl = itm_script_output_nl();
 echo 'Company ID: ' . (int)$companyId . $nl;
-echo 'Test reset token created for employee id ' . (int)$employeeId . ' (valid for 1 hour).' . $nl;
+echo 'Test reset token created for employee id ' . (int)$employeeId . ' (valid for ' . (int)itm_password_reset_token_ttl_hours() . ' hours).' . $nl;
 echo 'Attempting to send test forgot-password email to: ' . sanitize($userEmail) . $nl;
 
 $defaultCfg = itm_email_get_default_smtp_config($conn, $companyId);
