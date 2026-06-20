@@ -155,6 +155,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .links { margin-top: 14px; text-align: center; }
         .links a { color: var(--accent); text-decoration: none; }
+        .form-hint { font-size: 13px; color: var(--muted); margin: -8px 0 16px; }
+        .client-error { color: #d93025; margin-bottom: 14px; font-size: 14px; }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         @media (max-width: 480px) {
             body { padding: 12px; }
@@ -170,22 +172,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="logo">
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Create a new password</p>
+            <?php if (!$success && $tokenIsValid): ?>
+                <p class="form-hint" style="margin-top:8px;">Password must be at least <?php echo (int)$minPasswordLength; ?> characters.</p>
+            <?php endif; ?>
         </div>
 
         <?php if ($success): ?>
             <p style="color:#2f855a; margin-bottom:14px;">Password updated successfully. <a href="login.php">Sign in</a></p>
         <?php elseif ($error !== ''): ?>
-            <p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="client-error" role="alert"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
 
         <?php if (!$success && $tokenIsValid): ?>
-        <form method="POST">
+        <form id="reset-password-form" method="POST" novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <input type="hidden" name="token" value="<?php echo htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
+            <div id="reset-client-error" class="client-error" role="alert" aria-live="polite" style="display:none;"></div>
             <label for="password">New Password</label>
-            <input id="password" type="password" name="password" placeholder="New password" required minlength="<?php echo (int)$minPasswordLength; ?>" autocomplete="new-password">
+            <input id="password" type="password" name="password" placeholder="New password (8+ characters)" required autocomplete="new-password">
             <label for="password_confirm">Confirm New Password</label>
-            <input id="password_confirm" type="password" name="password_confirm" placeholder="Confirm new password" required minlength="<?php echo (int)$minPasswordLength; ?>" autocomplete="new-password">
+            <input id="password_confirm" type="password" name="password_confirm" placeholder="Confirm new password" required autocomplete="new-password">
             <button type="submit" title="Update password">Update</button>
         </form>
         <?php endif; ?>
@@ -204,6 +210,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
         }
         document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+
+        (function () {
+            const form = document.getElementById('reset-password-form');
+            if (!form) {
+                return;
+            }
+            const minLen = <?php echo (int)$minPasswordLength; ?>;
+            const clientError = document.getElementById('reset-client-error');
+
+            function showClientError(message) {
+                if (!clientError) {
+                    return;
+                }
+                clientError.textContent = message;
+                clientError.style.display = 'block';
+            }
+
+            form.addEventListener('submit', function (event) {
+                if (clientError) {
+                    clientError.textContent = '';
+                    clientError.style.display = 'none';
+                }
+
+                const password = (document.getElementById('password')?.value || '').trim();
+                const passwordConfirm = (document.getElementById('password_confirm')?.value || '').trim();
+
+                if (password === '') {
+                    event.preventDefault();
+                    showClientError('Enter a new password.');
+                    return;
+                }
+                if (password.length < minLen) {
+                    event.preventDefault();
+                    showClientError('Password must be at least ' + minLen + ' characters.');
+                    return;
+                }
+                if (password !== passwordConfirm) {
+                    event.preventDefault();
+                    showClientError('Passwords do not match.');
+                }
+            });
+        })();
     </script>
 </body>
 </html>
