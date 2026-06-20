@@ -734,6 +734,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/apply_crud_hidden_employee_id_alias.php</code> from repository root. Idempotent; re-run when new scaffolds copy the old hide list.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_crud_fk_label_search.php">apply_crud_fk_label_search.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>One-time/maintenance: extend flattened CRUD <code>index.php</code> search blocks with <code>itm_crud_fk_label_search_conditions()</code> so Search (all fields) matches FK label tables, not only raw IDs.</td>
+                    <td><code>php scripts/apply_crud_fk_label_search.php</code> from repository root. Idempotent; re-run when new flattened modules ship without the FK label search hook. Employees uses <code>includes/itm_employees_search.php</code> instead.</td>
+                </tr>
+                <tr>
                     <td><a href="apply_display_field_columns_search_alias.php">apply_display_field_columns_search_alias.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable.</td>
@@ -1111,6 +1117,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for unauthorized user account deletion via IDOR.</td>
                     <td><code>php scripts/verify_user_idor.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_crud_fk_label_search.php">verify_crud_fk_label_search.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression: Employees <code>?search=Active</code> matches <code>employee_statuses.name</code>; license_management search matches <code>license_types.name</code>; shared FK EXISTS helper emits predicates.</td>
+                    <td><code>php scripts/verify_crud_fk_label_search.php</code> — run after changing list search or FK label helpers.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_employees_sensitive_view.php">verify_employees_sensitive_view.php</a></td>

@@ -815,6 +815,14 @@ When adding or changing anything under `scripts/`:
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
 
+**List search FK labels:** after changing flattened CRUD list search or FK display, run:
+
+```bash
+php scripts/verify_crud_fk_label_search.php
+```
+
+When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`.
+
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 
 ```bash

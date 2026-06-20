@@ -15,6 +15,7 @@ $crud_action = 'index';
 ?>
 <?php
 require_once '../../config/config.php';
+require_once '../../includes/itm_crud_fk_label_search.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 
 // Validate table configuration to prevent unauthorized access to other tables
@@ -821,7 +822,22 @@ if ($searchRaw !== '') {
         $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
     }
 
-    if (!empty($searchConditions)) {
+    
+    $itmFkSearchFields = [];
+    foreach ($fieldColumns as $col) {
+        $itmFkFieldName = (string)($col['Field'] ?? '');
+        if ($itmFkFieldName !== '') {
+            $itmFkSearchFields[] = $itmFkFieldName;
+        }
+    }
+    if (!empty($fkMap)) {
+        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, '', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
+        if (!empty($itmFkLabelSearch)) {
+            $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
+        }
+    }
+
+if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
 }
