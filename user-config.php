@@ -87,31 +87,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if ($can_proceed) {
                     // If not first time, we need to re-encrypt existing entries
+                    $transaction_started = false;
+                    $re_encryption_failed = false;
+
                     if (!$is_first_time) {
                         $old_key_session = hash('sha256', $old_master_key_verify);
                         $new_key_session = hash('sha256', $new_master_key);
                         
+                        mysqli_begin_transaction($conn);
+                        $transaction_started = true;
+
                         // Decrypt and Re-encrypt
                         $res = mysqli_query($conn, "SELECT id, password FROM password_entries WHERE employee_id = $user_id");
-                        while ($row = mysqli_fetch_assoc($res)) {
-                            $decrypted = itm_decrypt($row['password'], $old_key_session);
-                            if ($decrypted !== false) {
-                                $re_encrypted = itm_encrypt($decrypted, $new_key_session);
-                                $upd_stmt = mysqli_prepare($conn, "UPDATE password_entries SET password = ? WHERE id = ?");
-                                mysqli_stmt_bind_param($upd_stmt, 'si', $re_encrypted, $row['id']);
-                                mysqli_stmt_execute($upd_stmt);
-                                mysqli_stmt_close($upd_stmt);
+                        $upd_stmt = mysqli_prepare($conn, "UPDATE password_entries SET password = ? WHERE id = ? AND employee_id = ?");
+                        if ($upd_stmt) {
+                            while ($row = mysqli_fetch_assoc($res)) {
+                                $decrypted = itm_decrypt($row['password'], $old_key_session);
+                                if ($decrypted !== false) {
+                                    $re_encrypted = itm_encrypt($decrypted, $new_key_session);
+                                    mysqli_stmt_bind_param($upd_stmt, 'sii', $re_encrypted, $row['id'], $user_id);
+                                    if (!mysqli_stmt_execute($upd_stmt)) {
+                                        $re_encryption_failed = true;
+                                        break;
+                                    }
+                                } else {
+                                    $re_encryption_failed = true;
+                                    break;
+                                }
                             }
+                            mysqli_stmt_close($upd_stmt);
+                        } else {
+                            $re_encryption_failed = true;
+                        }
+
+                        if ($re_encryption_failed) {
+                            mysqli_rollback($conn);
+                            $transaction_started = false;
+                            $message = 'Error: Failed to re-encrypt vault entries. Please try again.';
+                            $message_type = 'error';
                         }
                     }
                     
-                    $update_fields[] = 'vault_key_hash = ?';
-                    $params[] = password_hash($new_master_key, PASSWORD_DEFAULT);
-                    $types .= 's';
-                    
-                    // Update session if they are currently logged into the vault
-                    if (isset($_SESSION['vault_key'])) {
-                        $_SESSION['vault_key'] = hash('sha256', $new_master_key);
+                    if (!$re_encryption_failed) {
+                        $update_fields[] = 'vault_key_hash = ?';
+                        $params[] = password_hash($new_master_key, PASSWORD_DEFAULT);
+                        $types .= 's';
+
+                        // Update session if they are currently logged into the vault
+                        if (isset($_SESSION['vault_key'])) {
+                            $_SESSION['vault_key'] = hash('sha256', $new_master_key);
+                        }
                     }
                 }
             }
@@ -127,6 +152,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt_final) {
                 mysqli_stmt_bind_param($stmt_final, $types, ...$params);
                 if (mysqli_stmt_execute($stmt_final)) {
+                    if (isset($transaction_started) && $transaction_started) {
+                        mysqli_commit($conn);
+                    }
                     $message = 'Profile updated successfully!';
                     $message_type = 'success';
                     // Fetch updated data for display
@@ -136,10 +164,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $current_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_ref));
                     mysqli_stmt_close($stmt_ref);
                 } else {
+                    if (isset($transaction_started) && $transaction_started) {
+                        mysqli_rollback($conn);
+                    }
                     $message = 'Database error. Please try again.';
                     $message_type = 'error';
                 }
                 mysqli_stmt_close($stmt_final);
+            } else {
+                if (isset($transaction_started) && $transaction_started) {
+                    mysqli_rollback($conn);
+                }
+                $message = 'Database error. Please try again.';
+                $message_type = 'error';
             }
         } elseif ($message === '' && empty($update_fields)) {
             $message = 'No changes were made.';

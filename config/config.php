@@ -320,7 +320,11 @@ if ($conn) {
 
 // Initialize Session
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    if (PHP_SAPI === 'cli') {
+        @session_start();
+    } else {
+        session_start();
+    }
 }
 
 // --- Audit Logging Setup ---

@@ -1364,6 +1364,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Regression — <code>companies</code> quick-add blocked for regular users.</td>
                     <td><code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="repro_vault_corruption.php">repro_vault_corruption.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction — Vault corruption during master key change.</td>
+                    <td><code>php scripts/repro_vault_corruption.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
