@@ -332,6 +332,7 @@ if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
             'role_assignment_rights',
             'role_hierarchy',
             'role_module_permissions',
+            'roles_permissions',
             'settings',
             'switch_ports',
             'ui_configuration',

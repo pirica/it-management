@@ -101,6 +101,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'backup_tape_log', 'label' => '📼 Backup Tape Log', 'href' => 'modules/backup_tape_log/', 'match_dir' => 'backup_tape_log'],
                 ['id' => 'companies', 'label' => '🌍 Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
                 ['id' => 'company_module_access', 'label' => '🧩 Company Module Access', 'href' => 'modules/company_module_access/', 'match_dir' => 'company_module_access'],
+                ['id' => 'roles_permissions', 'label' => '🛡️ Roles & Permissions', 'href' => 'modules/roles_permissions/', 'match_dir' => 'roles_permissions'],
                 ['id' => 'emails', 'label' => '📧 Email Management', 'href' => 'modules/emails/', 'match_dir' => 'emails'],
             ],
         ],
