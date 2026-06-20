@@ -1137,6 +1137,13 @@ CREATE TABLE `employees` (
   `display_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `work_email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `personal_email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+
+  `theme` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'light',
+  `emergency_contact_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_contact_relationship` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_contact_phone` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  
+  
   `mobile_phone` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `external_number` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `dect` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1226,7 +1233,8 @@ CREATE TABLE `employees` (
 ) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data for `employees` (admin login identity merged from former users row id=1)
-INSERT INTO `employees` (`id`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `username`, `password`, `role_id`, `access_level_id`, `employment_status_id`, `is_hidden`, `created_at`) VALUES ('1', '1', 'System', 'Admin', 'System Admin', 'admin@techcorp.example', 'admin', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', '1', '1', '1', '1', '2026-01-01 00:00:01');
+INSERT INTO `employees` (`id`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `username`, `password`, `role_id`, `access_level_id`, `employment_status_id`, `is_hidden`, `created_at`) 
+  VALUES ('1', '1', 'System', 'Admin', 'System Admin', 'admin@techcorp.example', 'admin', '$2y$12$r6nU8WO3jAsWGvJYIFdIAOOAPDRmBQfEpltxD5UoIwTx3k.K2KPIO', '1', '1', '1', '1', '2026-01-01 00:00:01');
 -- Table structure for `equipment`
 DROP TABLE IF EXISTS `equipment`;
 CREATE TABLE `equipment` (
