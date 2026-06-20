@@ -361,43 +361,21 @@ $permissionColumns = [
 ];
 
 $pageTitle = 'Roles & Permissions';
+$crud_title = $pageTitle;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= sanitize($pageTitle) ?> - <?= sanitize($app_name ?? itm_ui_config_app_name()) ?></title>
+    <title><?= sanitize($crud_title) ?> - <?= sanitize($app_name ?? itm_ui_config_app_name()) ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .rp-layout { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
-        .rp-role-list { flex:0 0 280px; max-width:100%; }
-        .rp-matrix-panel { flex:1 1 520px; min-width:0; }
-        .rp-role-card {
-            display:block;
-            border:1px solid var(--border-color, #ddd);
-            border-radius:8px;
-            padding:12px 14px;
-            margin-bottom:10px;
-            text-decoration:none;
-            color:inherit;
-            background:var(--card-bg, #fff);
-        }
-        .rp-role-card.is-selected { border-color:var(--accent, #0366d6); box-shadow:0 0 0 1px var(--accent, #0366d6); }
-        .rp-role-card:hover { border-color:var(--accent, #0366d6); }
-        .rp-role-meta { color:var(--text-secondary, #666); font-size:12px; margin-top:4px; }
-        .rp-role-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-        .rp-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-        .rp-matrix-panel table th { text-align:center; white-space:nowrap; }
-        .rp-matrix-panel table td { text-align:center; vertical-align:middle; }
-        .rp-matrix-panel table td:first-child,
-        .rp-matrix-panel table th:first-child { text-align:left; }
         .rp-modal-backdrop {
             position:fixed; inset:0; background:rgba(0,0,0,.35); display:none;
             align-items:center; justify-content:center; z-index:1000; padding:16px;
         }
         .rp-modal-backdrop.is-open { display:flex; }
-        .rp-modal { background:var(--card-bg, #fff); border-radius:8px; padding:20px; width:100%; max-width:420px; }
     </style>
 </head>
 <body>
@@ -407,17 +385,22 @@ $pageTitle = 'Roles & Permissions';
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
-                <h1 style="margin:0;" title="Roles and permissions">🛡️</h1>
-                <?php if ($rpCanManage): ?>
-                    <button type="button" class="btn btn-sm btn-primary" id="rp-open-add-role" title="Add role">➕</button>
-                <?php endif; ?>
+                <h1 style="margin:0;"><?= sanitize($crud_title) ?></h1>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <?php if ($rpCanManage && is_array($selectedRole) && !$selectedIsSystem): ?>
+                        <button type="button" class="btn btn-sm" id="rp-open-edit-role" title="Edit role">✏️</button>
+                    <?php endif; ?>
+                    <?php if ($rpCanManage): ?>
+                        <button type="button" class="btn btn-sm btn-primary" id="rp-open-add-role" title="Add role">➕</button>
+                    <?php endif; ?>
+                </div>
             </div>
 
-            <div class="rp-layout">
-                <div class="rp-role-list">
+            <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+                <div style="flex:0 0 280px;max-width:100%;">
                     <div class="card">
                         <div class="card-body">
-                            <h3 style="margin-top:0;">Roles</h3>
+                            <p style="margin-top:0;">Select a role to load its permission matrix. Roles are ordered by hierarchy.</p>
                             <?php if ($roles === []): ?>
                                 <p>No roles found for this company.</p>
                             <?php else: ?>
@@ -429,17 +412,17 @@ $pageTitle = 'Roles & Permissions';
                                     $userCount = (int)($roleRow['user_count'] ?? 0);
                                     ?>
                                     <a
-                                        class="rp-role-card<?= $isSelected ? ' is-selected' : '' ?>"
                                         href="<?= $modulePathEsc ?>/index.php?role_id=<?= $roleId ?>"
                                         title="Select role"
+                                        style="display:block;border:1px solid var(--border-color,#ddd);border-radius:8px;padding:12px 14px;margin-bottom:10px;text-decoration:none;color:inherit;<?= $isSelected ? 'border-color:var(--accent,#0366d6);box-shadow:0 0 0 1px var(--accent,#0366d6);' : '' ?>"
                                     >
-                                        <div class="rp-role-head">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
                                             <strong><?= sanitize((string)($roleRow['name'] ?? '')) ?></strong>
                                             <span aria-hidden="true">›</span>
                                         </div>
-                                        <div class="rp-role-meta"><?= (int)$userCount ?> user<?= $userCount === 1 ? '' : 's' ?></div>
+                                        <div style="color:var(--text-secondary,#666);font-size:12px;margin-top:4px;"><?= (int)$userCount ?> user<?= $userCount === 1 ? '' : 's' ?></div>
                                         <?php if ($isSystem): ?>
-                                            <div style="margin-top:6px;"><span class="badge badge-danger">System</span></div>
+                                            <div style="margin-top:6px;"><span class="badge">System</span></div>
                                         <?php endif; ?>
                                     </a>
                                 <?php endforeach; ?>
@@ -448,102 +431,106 @@ $pageTitle = 'Roles & Permissions';
                     </div>
                 </div>
 
-                <div class="rp-matrix-panel">
-                    <div class="card">
-                        <div class="card-body">
-                            <?php if (!is_array($selectedRole)): ?>
-                                <p>Select a role to manage permissions.</p>
-                            <?php else: ?>
-                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-                                    <div>
-                                        <h3 style="margin:0;">Permission matrix</h3>
-                                        <p style="margin:8px 0 0;color:var(--text-secondary,#666);">
-                                            <?= sanitize((string)$selectedRole['name']) ?>
-                                            <?php if (!$rpCanManage): ?>
-                                                — read-only (administrators can edit permissions).
-                                            <?php elseif ($selectedIsSystem): ?>
-                                                — system role with ALL wildcard (read-only matrix).
-                                            <?php endif; ?>
-                                        </p>
-                                    </div>
-                                    <?php if ($rpCanManage && !$selectedIsSystem): ?>
-                                        <button type="button" class="btn btn-sm" id="rp-open-edit-role" title="Edit role">✏️</button>
+                <div style="flex:1 1 520px;min-width:0;">
+                    <?php if (!is_array($selectedRole)): ?>
+                        <div class="card">
+                            <div class="card-body">
+                                <p style="margin:0;">Select a role to manage permissions.</p>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="card" style="margin-bottom:16px;">
+                            <div class="card-body">
+                                <p style="margin-top:0;">
+                                    Configure module permissions for <strong><?= sanitize((string)$selectedRole['name']) ?></strong>.
+                                    <?php if (!$rpCanManage): ?>
+                                        Administrators can edit permissions; your view is read-only.
+                                    <?php elseif ($selectedIsSystem): ?>
+                                        The Admin role uses the ALL wildcard row and cannot be edited here.
+                                    <?php else: ?>
+                                        Use Check All / Uncheck All, then save. All registry modules are listed below, including inactive and system modules.
                                     <?php endif; ?>
-                                </div>
-
-                                <div class="rp-toolbar">
+                                </p>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                                     <button type="button" class="btn btn-sm" id="rp-check-all"<?= $matrixReadOnly ? ' disabled' : '' ?>>Check All</button>
                                     <button type="button" class="btn btn-sm" id="rp-uncheck-all"<?= $matrixReadOnly ? ' disabled' : '' ?>>Uncheck All</button>
                                     <?php if ($rpCanManage && !$matrixReadOnly): ?>
                                         <button type="button" class="btn btn-sm btn-primary" id="rp-save-permissions" data-role-id="<?= (int)$selectedRoleId ?>" title="Save permissions">💾</button>
                                     <?php endif; ?>
-                                    <input type="text" id="rp-matrix-filter" class="form-control" style="max-width:240px;margin-left:auto;" placeholder="Filter modules...">
+                                    <input type="text" id="rp-matrix-filter" class="form-control" style="max-width:280px;margin-left:auto;" placeholder="Filter modules...">
                                 </div>
-                                <div id="rp-save-status" style="min-height:18px;font-size:13px;margin-bottom:8px;"></div>
+                                <div id="rp-save-status" style="min-height:18px;font-size:13px;margin-top:8px;color:var(--text-secondary,#666);"></div>
+                            </div>
+                        </div>
 
-                                <div style="overflow:auto;">
-                                    <table
-                                        class="table"
-                                        id="rp-permission-matrix"
-                                        data-rp-readonly="<?= $matrixReadOnly ? '1' : '0' ?>"
-                                        data-itm-no-export-excel="1"
-                                        data-itm-no-export-pdf="1"
-                                    >
-                                        <thead>
-                                        <tr>
-                                            <th>Module</th>
+                        <div class="card">
+                            <div class="card-body" style="overflow:auto;">
+                                <table
+                                    class="table"
+                                    id="rp-permission-matrix"
+                                    data-rp-readonly="<?= $matrixReadOnly ? '1' : '0' ?>"
+                                    data-itm-no-export-excel="1"
+                                    data-itm-no-export-pdf="1"
+                                >
+                                    <thead>
+                                    <tr>
+                                        <th>Modules</th>
+                                        <?php foreach ($permissionColumns as $columnKey => $columnLabel): ?>
+                                            <th style="text-align:center;min-width:90px;"><?= sanitize($columnLabel) ?></th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($registryModules as $registryRow): ?>
+                                        <?php
+                                        $moduleSlug = (string)($registryRow['module_slug'] ?? '');
+                                        $moduleName = trim((string)($registryRow['module_name'] ?? $moduleSlug));
+                                        if ($moduleName === '') {
+                                            continue;
+                                        }
+                                        $isRegistryActive = (int)($registryRow['active'] ?? 0) === 1;
+                                        $flags = rp_effective_flags($permissionMap, $moduleName, $allPermissionRow);
+                                        $rowSearch = strtolower($moduleSlug . ' ' . $moduleName);
+                                        ?>
+                                        <tr data-rp-search="<?= sanitize($rowSearch) ?>">
+                                            <td>
+                                                <strong><?= sanitize($moduleName) ?></strong>
+                                                <div style="color:var(--text-secondary);font-size:12px;"><a
+                                                    href="../<?= sanitize($moduleSlug) ?>"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer nofollow"
+                                                    style="color:var(--accent); text-decoration:none;"
+                                                ><?= sanitize($moduleSlug) ?></a></div>
+                                                <?php if ((int)($registryRow['is_system_module'] ?? 0) === 1): ?>
+                                                    <span class="badge">System</span>
+                                                <?php endif; ?>
+                                                <?php if (!$isRegistryActive): ?>
+                                                    <span class="badge badge-danger">Inactive</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <?php foreach ($permissionColumns as $columnKey => $columnLabel): ?>
-                                                <th><?= sanitize($columnLabel) ?></th>
+                                                <?php $checked = (int)($flags[$columnKey] ?? 0) === 1; ?>
+                                                <td style="text-align:center;">
+                                                    <label class="itm-checkbox-control" title="<?= sanitize($columnLabel) ?>">
+                                                        <input
+                                                            type="checkbox"
+                                                            class="rp-perm-toggle"
+                                                            data-module-name="<?= sanitize($moduleName) ?>"
+                                                            data-perm="<?= sanitize($columnKey) ?>"
+                                                            <?= $checked ? 'checked' : '' ?>
+                                                            <?= $matrixReadOnly ? 'disabled' : '' ?>
+                                                        >
+                                                        <span class="itm-check-indicator" aria-hidden="true"><?= $checked ? '✅' : '❌' ?></span>
+                                                    </label>
+                                                </td>
                                             <?php endforeach; ?>
                                         </tr>
-                                        </thead>
-                                        <tbody>
-                                        <?php foreach ($registryModules as $registryRow): ?>
-                                            <?php
-                                            $moduleSlug = (string)($registryRow['module_slug'] ?? '');
-                                            $moduleName = trim((string)($registryRow['module_name'] ?? $moduleSlug));
-                                            if ($moduleName === '') {
-                                                continue;
-                                            }
-                                            $isRegistryActive = (int)($registryRow['active'] ?? 0) === 1;
-                                            $flags = rp_effective_flags($permissionMap, $moduleName, $allPermissionRow);
-                                            $rowSearch = strtolower($moduleSlug . ' ' . $moduleName);
-                                            ?>
-                                            <tr data-rp-search="<?= sanitize($rowSearch) ?>">
-                                                <td>
-                                                    <strong><?= sanitize($moduleName) ?></strong>
-                                                    <div style="color:var(--text-secondary);font-size:12px;"><?= sanitize($moduleSlug) ?></div>
-                                                    <?php if ((int)($registryRow['is_system_module'] ?? 0) === 1): ?>
-                                                        <span class="badge">System</span>
-                                                    <?php endif; ?>
-                                                    <?php if (!$isRegistryActive): ?>
-                                                        <span class="badge badge-danger">Inactive</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <?php foreach ($permissionColumns as $columnKey => $columnLabel): ?>
-                                                    <?php $checked = (int)($flags[$columnKey] ?? 0) === 1; ?>
-                                                    <td>
-                                                        <label class="itm-checkbox-control" title="<?= sanitize($columnLabel) ?>">
-                                                            <input
-                                                                type="checkbox"
-                                                                class="rp-perm-toggle"
-                                                                data-module-name="<?= sanitize($moduleName) ?>"
-                                                                data-perm="<?= sanitize($columnKey) ?>"
-                                                                <?= $checked ? 'checked' : '' ?>
-                                                                <?= $matrixReadOnly ? 'disabled' : '' ?>
-                                                            >
-                                                            <span class="itm-check-indicator" aria-hidden="true"><?= $checked ? '✅' : '❌' ?></span>
-                                                        </label>
-                                                    </td>
-                                                <?php endforeach; ?>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -552,33 +539,37 @@ $pageTitle = 'Roles & Permissions';
 
 <?php if ($rpCanManage): ?>
 <div class="rp-modal-backdrop" id="rp-add-role-modal" aria-hidden="true">
-    <div class="rp-modal">
-        <h3 style="margin-top:0;" title="Add role">➕</h3>
-        <form id="rp-add-role-form">
-            <div class="form-group">
-                <label for="rp-add-role-name">Name</label>
-                <input type="text" id="rp-add-role-name" name="role_name" required maxlength="50">
-            </div>
-            <button type="submit" class="btn btn-primary" title="Create">➕</button>
-            <button type="button" class="btn" id="rp-close-add-role" title="Cancel">🔙</button>
-        </form>
+    <div class="card" style="width:100%;max-width:420px;">
+        <div class="card-body">
+            <h1 style="margin-top:0;font-size:1.25rem;" title="Add role">➕</h1>
+            <form id="rp-add-role-form">
+                <div class="form-group">
+                    <label for="rp-add-role-name">Name</label>
+                    <input type="text" id="rp-add-role-name" name="role_name" required maxlength="50">
+                </div>
+                <button type="submit" class="btn btn-primary" title="Create">➕</button>
+                <button type="button" class="btn" id="rp-close-add-role" title="Cancel">🔙</button>
+            </form>
+        </div>
     </div>
 </div>
 <?php endif; ?>
 
 <?php if ($rpCanManage && is_array($selectedRole) && !$selectedIsSystem): ?>
 <div class="rp-modal-backdrop" id="rp-edit-role-modal" aria-hidden="true">
-    <div class="rp-modal">
-        <h3 style="margin-top:0;" title="Edit role">✏️</h3>
-        <form id="rp-edit-role-form">
-            <input type="hidden" name="role_id" value="<?= (int)$selectedRoleId ?>">
-            <div class="form-group">
-                <label for="rp-edit-role-name">Name</label>
-                <input type="text" id="rp-edit-role-name" name="role_name" required maxlength="50" value="<?= sanitize((string)$selectedRole['name']) ?>">
-            </div>
-            <button type="submit" class="btn btn-primary" title="Save">💾</button>
-            <button type="button" class="btn" id="rp-close-edit-role" title="Cancel">🔙</button>
-        </form>
+    <div class="card" style="width:100%;max-width:420px;">
+        <div class="card-body">
+            <h1 style="margin-top:0;font-size:1.25rem;" title="Edit role">✏️</h1>
+            <form id="rp-edit-role-form">
+                <input type="hidden" name="role_id" value="<?= (int)$selectedRoleId ?>">
+                <div class="form-group">
+                    <label for="rp-edit-role-name">Name</label>
+                    <input type="text" id="rp-edit-role-name" name="role_name" required maxlength="50" value="<?= sanitize((string)$selectedRole['name']) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                <button type="button" class="btn" id="rp-close-edit-role" title="Cancel">🔙</button>
+            </form>
+        </div>
     </div>
 </div>
 <?php endif; ?>
