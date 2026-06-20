@@ -1,0 +1,101 @@
+<?php
+use PHPUnit\Framework\TestCase;
+
+class CrossTenantScopingTest extends TestCase
+{
+    use ItmModuleIsolatedTestTrait;
+
+    private $conn;
+
+    protected function setUp(): void
+    {
+        global $conn;
+        $this->conn = $conn;
+
+        if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
+    }
+
+    public function testTodoUserListIsScoped()
+    {
+        $company1Id = 1;
+        $company2Id = 2;
+
+        // Create user in company 2
+        $leakUser = "test_leak_" . uniqid();
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id) VALUES (?, 'Test', 'User', ?, ?, 'pass', 2, 2, 1)");
+        $email = $leakUser . '@example.com';
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+        mysqli_stmt_bind_param($stmt, 'iss', $company2Id, $leakUser, $email);
+        mysqli_stmt_execute($stmt);
+        $leakId = mysqli_insert_id($this->conn);
+
+        // Access Todo as Company 1
+        $_SESSION['employee_id'] = 1;
+        $_SESSION['company_id'] = $company1Id;
+        global $company_id;
+        $company_id = $company1Id;
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+
+        $oldDir = getcwd();
+        chdir(ROOT_PATH . 'modules/todo');
+        ob_start();
+        global $conn, $users;
+        include 'index.php';
+        ob_end_clean();
+        chdir($oldDir);
+
+        $this->assertArrayNotHasKey($leakId, $users, "User from company 2 should not be visible in company 1 todo context");
+
+        // Cleanup
+        $stmt = mysqli_prepare($this->conn, "DELETE FROM employees WHERE id = ?");
+        mysqli_stmt_bind_param($stmt, 'i', $leakId);
+        mysqli_stmt_execute($stmt);
+    }
+
+    public function testUsersModuleIsScopedForAdmin()
+    {
+        $company1Id = 1;
+        $company2Id = 2;
+
+        // Create user in company 1
+        $userCo1 = "test_co1_" . uniqid();
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id) VALUES (?, 'Test', 'User', ?, ?, 'pass', 2, 2, 1)");
+        $email1 = $userCo1 . '@example.com';
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+        mysqli_stmt_bind_param($stmt, 'iss', $company1Id, $userCo1, $email1);
+        mysqli_stmt_execute($stmt);
+        $userCo1Id = mysqli_insert_id($this->conn);
+
+        // Create admin in company 2
+        $adminCo2 = "test_admin_co2_" . uniqid();
+        $stmt = mysqli_prepare($this->conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id) VALUES (?, 'Test', 'User', ?, ?, 'pass', 1, 1, 1)");
+        $email2 = $adminCo2 . '@example.com';
+        if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
+        mysqli_stmt_bind_param($stmt, 'iss', $company2Id, $adminCo2, $email2);
+        mysqli_stmt_execute($stmt);
+        $adminCo2Id = mysqli_insert_id($this->conn);
+
+        $output = $this->runIsolatedModule(
+            ROOT_PATH . 'modules/employees/index.php',
+            [
+                'employee_id' => $adminCo2Id,
+                'company_id' => $company2Id,
+            ],
+            [],
+            [],
+            [
+                'REQUEST_METHOD' => 'GET',
+                'PHP_SELF' => '/modules/employees/index.php',
+            ],
+            ['company_id' => $company2Id]
+        );
+
+        $this->assertStringNotContainsString($userCo1, $output, "Admin of company 2 should not see users from company 1");
+        $this->assertStringNotContainsString($email1, $output, "Admin of company 2 should not see company 1 user email");
+
+        // Cleanup
+        $stmt = mysqli_prepare($this->conn, "DELETE FROM employees WHERE id IN (?, ?)");
+        mysqli_stmt_bind_param($stmt, 'ii', $userCo1Id, $adminCo2Id);
+        mysqli_stmt_execute($stmt);
+    }
+}
