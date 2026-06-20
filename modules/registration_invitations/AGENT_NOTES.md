@@ -18,12 +18,14 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 - **Accepted invitations:** set `accepted_at` when used; do not reuse consumed codes for new accounts.
 - **Expiry:** honour `expires_at` when registration flow validates tokens.
 - **Registration consumer:** `register.php` resolves tenant **Active** `employment_status_id` via `itm_employee_resolve_active_status_id()` — do not hardcode status id `1` (breaks login for companies 2+). Registration form requires **Confirm Username** (`confirm_username`) with the same client/server mismatch alerts as password confirmation.
+- **Invitation email on save:** `create.php` and `edit.php` call `itm_registration_invitation_notify_after_save()` after a successful INSERT/UPDATE when `active = 1`, the invitee email is valid, `invitation_code` is set, and `accepted_at` is empty. Email includes the code and a pre-filled `register.php` link via `includes/itm_registration_invitation_email.php` + `itm_send_email()`. Flash success/error appears on redirect to `index.php` through `includes/header.php`.
+- **Invited by (hidden):** create/edit forms hide `invited_by_employee_id`; POST always stamps `$_SESSION['employee_id']` (hidden input + server-side override).
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD (`index.php` procedural template).
 - `invitation_code` kept visible in list/export columns so import payloads always carry the required field.
 - Bulk delete / clear table when row count ≥ `records_per_page`.
-- FK dropdowns for `role_id`, `access_level_id`, `invited_by_employee_id` render labels, not raw IDs.
+- FK dropdowns for `role_id`, `access_level_id` render labels, not raw IDs. `invited_by_employee_id` is hidden on create/edit (logged-in admin only).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — bulk import; auto-generates `invitation_code` when missing from row data.

@@ -14,6 +14,7 @@ $crud_action = 'create';
 ?>
 <?php
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_registration_invitation_email.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 
 // Ensure the module is configured correctly
@@ -636,6 +637,12 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     cr_require_valid_csrf_token();
 
+    // Why: Inviter is always the signed-in admin; keep it out of the visible form.
+    $sessionInviterId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
+    if ($sessionInviterId > 0) {
+        $_POST['invited_by_employee_id'] = (string)$sessionInviterId;
+    }
+
     $allowedRoleOptions = isset($fkMap['role_id'])
         ? cr_filter_invitation_hierarchy_options('role_id', cr_fk_options($conn, $fkMap['role_id'], (int)$company_id), $permissionProfile)
         : [];
@@ -771,6 +778,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            $notifyMessage = itm_registration_invitation_notify_after_save(
+                $conn,
+                (int)$company_id,
+                $data,
+                $app_name ?? null
+            );
+            if ($notifyMessage !== null) {
+                if (strpos($notifyMessage, 'could not be sent') !== false) {
+                    $_SESSION['crud_error'] = $notifyMessage;
+                } else {
+                    $_SESSION['crud_success'] = $notifyMessage;
+                }
+            }
             header('Location: ' . $listUrl);
             exit;
         }
@@ -868,6 +888,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ((int)($inviterDefaults['id'] ?? 0) > 0): ?>
+                        <input type="hidden" name="invited_by_employee_id" value="<?php echo (int)$inviterDefaults['id']; ?>">
+                    <?php endif; ?>
                     <?php foreach ($fieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with((string)$col['Type'], 'tinyint(1)') || ($name === 'active' && str_starts_with((string)$col['Type'], 'tinyint'));
                         $isDate = str_starts_with($col['Type'], 'date');
@@ -877,6 +900,9 @@ $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table)
                     ?>
                         <?php if ($name === 'company_id'): ?>
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
+                        <?php if ($name === 'invited_by_employee_id'): ?>
                             <?php continue; ?>
                         <?php endif; ?>
                         <div class="form-group">
@@ -1004,52 +1030,6 @@ document.addEventListener('change', function (event) {
     }
 });
 
-/**
- * Why: Admin inviter account should only be available when the invited role is Admin.
- */
-function crSyncAdminInviterVisibility() {
-    const roleSelect = document.querySelector('select[name="role_id"]');
-    const inviterSelect = document.querySelector('select[name="invited_by_employee_id"]');
-    if (!roleSelect || !inviterSelect) return;
-
-    let adminRoleId = '';
-    Array.prototype.forEach.call(roleSelect.options, function (option) {
-        if (adminRoleId !== '') {
-            return;
-        }
-        if ((option.text || '').trim().toLowerCase().indexOf('admin') !== -1) {
-            adminRoleId = option.value;
-        }
-    });
-
-    if (adminRoleId === '') {
-        return;
-    }
-
-    const isAdminRoleSelected = roleSelect.value === adminRoleId;
-    const inviterOptions = inviterSelect.querySelectorAll('option[data-inviter-role-id]');
-
-    inviterOptions.forEach(function (option) {
-        const isAdminUser = option.getAttribute('data-inviter-role-id') === adminRoleId;
-        if (!isAdminUser) {
-            option.hidden = false;
-            return;
-        }
-
-        option.hidden = !isAdminRoleSelected;
-        if (option.hidden && option.selected) {
-            inviterSelect.value = '';
-        }
-    });
-}
-
-document.addEventListener('change', function (event) {
-    if (event.target.matches('select[name="role_id"]')) {
-        crSyncAdminInviterVisibility();
-    }
-});
-
-crSyncAdminInviterVisibility();
 </script>
 
 </body>
