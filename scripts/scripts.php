@@ -1179,6 +1179,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/auth_register_reset_human_test.php</code> — default companies 1–2; <code>php scripts/auth_register_reset_human_test.php --company=2</code>. Run after <code>register.php</code>, <code>login.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_password_reset_flow.php">verify_password_reset_flow.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Password reset token regression: store with MySQL <code>DATE_ADD</code> expiry, hash lookup, legacy plain <code>reset_token</code> fallback, and completion UPDATE. <strong>Mutates DB:</strong> disposable script-test employee (teardown on exit).</td>
+                    <td><code>php scripts/verify_password_reset_flow.php</code> — run after <code>includes/itm_password_reset.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_invitations_escalation.php">verify_invitations_escalation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for authorization bypass and privilege escalation in registration invitations.</td>

@@ -314,6 +314,8 @@ php scripts/auth_register_reset_human_test.php
 
 **`auth_register_reset_human_test.php`:** invite → register → login → reset-password human-style regression without a browser. Asserts `mysqli_stmt_bind_param` contracts on `login.php`, `forgot-password.php`, and `reset-password.php`; verifies tenant-scoped **Active** `employment_status_id` on registration (companies 1–2 by default). **Mutates DB:** disposable invitations and `script-*` employees; teardown via `itm_script_test_employee_register_teardown()`. Optional: `--company=2`. Browser: `scripts/auth_register_reset_human_test.php?company=2` (uses `$_GET['company']` when `$argv` is unavailable).
 
+**`verify_password_reset_flow.php`:** store/lookup/complete reset tokens using `includes/itm_password_reset.php` (MySQL `DATE_ADD` expiry, legacy plain-token fallback). Uses a disposable script-test employee.
+
 #### API tier rate-limit regression (`apitest_tier_*.php`)
 
 | Script | Purpose |
