@@ -23,6 +23,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - **Responsive:** sidebar stacks above task list below 768px; task titles wrap on narrow viewports (`index.php` inline CSS).
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
+- **Search:** index search matches title/description plus category, department, and assignee labels via `includes/itm_todo_search.php` (`FIND_IN_SET` on CSV `*_id` columns).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — bulk task import with category/department/username resolution.

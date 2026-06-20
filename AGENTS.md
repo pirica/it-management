@@ -531,6 +531,33 @@ $displayFieldColumns = $uiColumns;
 
 Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias repair: `php scripts/apply_display_field_columns_search_alias.php`.
 
+#### List search FK label tables (mandatory)
+
+**Search (all fields)** must match human-readable FK labels shown in list/detail views — not only raw numeric `*_id` values on the main table row. Example: `?search=Active` on Employees must return rows whose `employment_status_id` resolves to `employee_statuses.name = Active`.
+
+| Layer | Helper | Modules |
+|-------|--------|---------|
+| Employees (custom JOINs) | `includes/itm_employees_search.php` — `itm_employees_build_search_conditions()` | `modules/employees/` |
+| Flattened CRUD (scaffold) | `includes/itm_crud_fk_label_search.php` — `itm_crud_fk_label_search_conditions()` | Scaffold `modules/*/index.php` with `cr_fk_map()` + standard search block |
+| Todo (CSV FK columns) | `includes/itm_todo_search.php` — `itm_todo_build_search_clause()` | `modules/todo/` (`category_id`, `department_id`, `assigned_to_employee_id` via `FIND_IN_SET`) |
+| Bespoke (module-specific) | Inline prepared `EXISTS` / JOIN, or shared CRUD helper where applicable | `modules/switch_ports/` (shared CRUD helper), `modules/notes/` (`shared_with_json` employee names), `modules/private_contacts/` (phone, labels) |
+
+Modules that already search FK labels via custom SQL (no change required unless search regresses): `equipment`, `tickets`, `idfs`, `inventory_items`, `birthdays`, `resignations`, `audit_logs`.
+
+**Hard rules:**
+
+1. When list/detail renders a related name (status, department, assignee, supplier, etc.), search must query that label table — do not rely on `CAST(column AS CHAR) LIKE` against raw FK IDs alone.
+2. Scaffold modules: merge `itm_crud_fk_label_search_conditions()` into the existing `$searchParts` / `$searchConditions` block after raw column LIKEs; use tenant-scoped `EXISTS` (helper default).
+3. CSV `*_id` columns (Todo): use module-specific `FIND_IN_SET` + `EXISTS` — do not extend the shared CRUD helper unless the pattern is proven safe across modules.
+4. JSON share targets (Notes `shared_with_json`): search assignee/share-target employee name fields with `JSON_CONTAINS` + `EXISTS`.
+
+**Maintenance / regression** (see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`**):
+
+| Script | When |
+|--------|------|
+| `php scripts/apply_crud_fk_label_search.php` | Bulk-patch scaffold `index.php` files missing the shared FK label search helper |
+| `php scripts/verify_crud_fk_label_search.php` | After changing list search, FK label helpers, or bespoke module search (`employees`, `license_management`, `switch_ports`, `todo`, `notes`, `private_contacts`) |
+
 ### 6. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.
 * **Handler:** Implement a `POST` handler for `add_sample_data` in `index.php` that:

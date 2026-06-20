@@ -815,7 +815,7 @@ When adding or changing anything under `scripts/`:
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
 
-**List search FK labels:** after changing flattened CRUD list search or FK display, run:
+**List search FK labels:** after changing flattened CRUD list search, FK display, or bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`), run:
 
 ```bash
 php scripts/verify_crud_fk_label_search.php
