@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_equipment_search.php';
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');
@@ -53,34 +54,8 @@ $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     : "''";
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
-$searchSql = '';
-if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchSql = " AND (
-        CAST(e.id AS CHAR) LIKE '{$searchEsc}'
-        OR e.name LIKE '{$searchEsc}'
-        OR e.serial_number LIKE '{$searchEsc}'
-        OR e.model LIKE '{$searchEsc}'
-        OR e.hostname LIKE '{$searchEsc}'
-        OR e.ip_address LIKE '{$searchEsc}'
-        OR e.mac_address LIKE '{$searchEsc}'
-        OR COALESCE(d.code, '') LIKE '{$searchEsc}'
-        OR COALESCE(d.name, '') LIKE '{$searchEsc}'
-        OR COALESCE(s.name, '') LIKE '{$searchEsc}'
-        OR COALESCE(s.supplier_code, '') LIKE '{$searchEsc}'
-        OR COALESCE(emp.first_name, '') LIKE '{$searchEsc}'
-        OR COALESCE(emp.last_name, '') LIKE '{$searchEsc}'
-        OR COALESCE(emp.display_name, '') LIKE '{$searchEsc}'
-        OR c.company LIKE '{$searchEsc}'
-        OR et.name LIKE '{$searchEsc}'
-        OR m.name LIKE '{$searchEsc}'
-        OR l.name LIKE '{$searchEsc}'
-        OR r.name LIKE '{$searchEsc}'
-        OR idf.name LIKE '{$searchEsc}'
-        OR es.name LIKE '{$searchEsc}'
-    )";
-}
+$searchSql = itm_equipment_build_search_where_sql($conn, $searchRaw);
+$equipmentSearchJoinSql = itm_equipment_search_join_sql();
 
 $equipmentTypeNameFilter = isset($equipmentTypeNameFilter) ? trim((string)$equipmentTypeNameFilter) : '';
 $moduleFilterSql = '';
@@ -103,16 +78,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
                COALESCE(e.idf_id, 0) AS idf_id,
                es.name AS status_name
         FROM equipment e
-        LEFT JOIN companies c ON c.id = e.company_id
-        LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
-        LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
-        LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
-        LEFT JOIN suppliers s ON s.id = e.supplier_id AND s.company_id = e.company_id
-        LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id AND emp.company_id = e.company_id
-        LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
-        LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
-        LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
-        LEFT JOIN equipment_statuses es ON es.id = e.status_id
+        {$equipmentSearchJoinSql}
         WHERE e.company_id = $company_id
         {$moduleFilterSql}
         {$searchSql}";
@@ -141,16 +107,7 @@ $orderByMap = [
 ];
 $countSql = "SELECT COUNT(*) AS total
              FROM equipment e
-             LEFT JOIN companies c ON c.id = e.company_id
-             LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
-             LEFT JOIN manufacturers m ON m.id = e.manufacturer_id
-             LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
-             LEFT JOIN suppliers s ON s.id = e.supplier_id AND s.company_id = e.company_id
-             LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id AND emp.company_id = e.company_id
-             LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
-             LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
-             LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
-             LEFT JOIN equipment_statuses es ON es.id = e.status_id
+             {$equipmentSearchJoinSql}
              WHERE e.company_id = $company_id
              {$moduleFilterSql}
              {$searchSql}";

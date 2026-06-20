@@ -1127,7 +1127,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_crud_fk_label_search.php">verify_crud_fk_label_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression: Employees <code>?search=Active</code> matches <code>employee_statuses.name</code>; <code>?search=FNB</code> matches <code>departments.code</code>; license_management search matches <code>license_types.name</code>; shared FK EXISTS helper; bespoke modules (switch_ports, todo, notes, private_contacts, ip_subnets, bookmarks, passwords) label search.</td>
+                    <td>Regression: Employees <code>?search=Active</code> matches <code>employee_statuses.name</code>; <code>?search=FNB</code> matches <code>departments.code</code>; equipment <code>?search=FNB</code> matches linked <code>departments.code</code>; license_management search matches <code>license_types.name</code>; shared FK EXISTS helper; bespoke modules (switch_ports, todo, notes, private_contacts, ip_subnets, bookmarks, passwords) label search.</td>
                     <td><code>php scripts/verify_crud_fk_label_search.php</code> — run after changing list search or FK label helpers.</td>
                 </tr>
                 <tr>

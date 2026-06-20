@@ -1,6 +1,7 @@
 <?php
 require '../../config/config.php';
 require_once __DIR__ . '/equipment_assignment_sync.php';
+require_once ROOT_PATH . 'includes/itm_fk_option_labels.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $isEdit = $id > 0;
@@ -8,6 +9,52 @@ $error = '';
 $success = isset($_GET['saved']) && $_GET['saved'] === '1';
 $originalData = null;
 $csrfToken = itm_get_csrf_token();
+
+function equipment_build_select_options(array $rows, callable $labelBuilder): array
+{
+    $items = [];
+    foreach ($rows as $row) {
+        $id = (int)($row['id'] ?? 0);
+        if ($id <= 0) {
+            continue;
+        }
+        $items[] = ['id' => $id, 'label' => (string)$labelBuilder($row)];
+    }
+
+    return $items;
+}
+
+function equipment_fetch_department_select_options(mysqli $conn, int $companyId): array
+{
+    return equipment_build_select_options(
+        itm_department_select_rows_for_company($conn, $companyId),
+        'itm_department_option_label'
+    );
+}
+
+function equipment_fetch_supplier_select_options(mysqli $conn, int $companyId): array
+{
+    return equipment_build_select_options(
+        itm_supplier_select_rows_for_company($conn, $companyId),
+        'itm_supplier_option_label'
+    );
+}
+
+function equipment_fetch_location_select_options(mysqli $conn, int $companyId): array
+{
+    return equipment_build_select_options(
+        itm_location_select_rows_for_company($conn, $companyId, true),
+        'itm_location_option_label'
+    );
+}
+
+function equipment_fetch_rack_select_options(mysqli $conn, int $companyId): array
+{
+    return equipment_build_select_options(
+        itm_rack_select_rows_for_company($conn, $companyId),
+        'itm_rack_option_label'
+    );
+}
 
 function fetch_options($conn, $table, $label = 'name', $where = '') {
     $items = [];
@@ -50,14 +97,16 @@ function equipment_append_persisted_department_option(mysqli $conn, array &$depa
     }
 
     $label = '';
-    $stmt = mysqli_prepare($conn, 'SELECT name FROM departments WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT name, code FROM departments WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $departmentId, $companyId);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
-        $label = trim((string)($row['name'] ?? ''));
+        if (is_array($row)) {
+            $label = itm_department_option_label($row);
+        }
     }
 
     if ($label !== '') {
@@ -78,25 +127,29 @@ function equipment_append_persisted_supplier_option(mysqli $conn, array &$suppli
     }
 
     $label = '';
-    $stmt = mysqli_prepare($conn, 'SELECT name FROM suppliers WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT name, supplier_code FROM suppliers WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $supplierId, $companyId);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
-        $label = trim((string)($row['name'] ?? ''));
+        if (is_array($row)) {
+            $label = itm_supplier_option_label($row);
+        }
     }
 
     if ($label === '') {
-        $stmtFallback = mysqli_prepare($conn, 'SELECT name FROM suppliers WHERE id = ? LIMIT 1');
+        $stmtFallback = mysqli_prepare($conn, 'SELECT name, supplier_code FROM suppliers WHERE id = ? LIMIT 1');
         if ($stmtFallback) {
             mysqli_stmt_bind_param($stmtFallback, 'i', $supplierId);
             mysqli_stmt_execute($stmtFallback);
             $resFallback = mysqli_stmt_get_result($stmtFallback);
             $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
             mysqli_stmt_close($stmtFallback);
-            $label = trim((string)($rowFallback['name'] ?? ''));
+            if (is_array($rowFallback)) {
+                $label = itm_supplier_option_label($rowFallback);
+            }
         }
     }
 
@@ -114,15 +167,15 @@ function equipment_fetch_employee_options(mysqli $conn, int $companyId): array
 
     $stmt = mysqli_prepare(
         $conn,
-        "SELECT id,
+        "SELECT id, first_name, last_name, display_name, username,
                 COALESCE(
                     NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''),
                     NULLIF(TRIM(COALESCE(display_name, '')), ''),
                     CONCAT('Employee #', id)
-                ) AS label
+                ) AS fallback_label
          FROM employees
          WHERE company_id = ?
-         ORDER BY label"
+         ORDER BY fallback_label"
     );
     if (!$stmt) {
         return $items;
@@ -131,7 +184,11 @@ function equipment_fetch_employee_options(mysqli $conn, int $companyId): array
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $items[] = $row;
+        $label = itm_employee_manager_option_label($row);
+        if ($label === '') {
+            $label = trim((string)($row['fallback_label'] ?? ''));
+        }
+        $items[] = ['id' => (int)($row['id'] ?? 0), 'label' => $label];
     }
     mysqli_stmt_close($stmt);
 
@@ -147,11 +204,12 @@ function equipment_resolve_employee_label(mysqli $conn, int $employeeId, int $co
     $label = '';
     $stmt = mysqli_prepare(
         $conn,
-        "SELECT COALESCE(
+        "SELECT id, first_name, last_name, display_name, username,
+                COALESCE(
                     NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''),
                     NULLIF(TRIM(COALESCE(display_name, '')), ''),
                     CONCAT('Employee #', id)
-                ) AS label
+                ) AS fallback_label
          FROM employees
          WHERE id = ? AND company_id = ?
          LIMIT 1"
@@ -162,17 +220,23 @@ function equipment_resolve_employee_label(mysqli $conn, int $employeeId, int $co
         $res = mysqli_stmt_get_result($stmt);
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
-        $label = trim((string)($row['label'] ?? ''));
+        if (is_array($row)) {
+            $label = itm_employee_manager_option_label($row);
+            if ($label === '') {
+                $label = trim((string)($row['fallback_label'] ?? ''));
+            }
+        }
     }
 
     if ($label === '') {
         $stmtFallback = mysqli_prepare(
             $conn,
-            "SELECT COALESCE(
+            "SELECT id, first_name, last_name, display_name, username,
+                    COALESCE(
                         NULLIF(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ''),
                         NULLIF(TRIM(COALESCE(display_name, '')), ''),
                         CONCAT('Employee #', id)
-                    ) AS label
+                    ) AS fallback_label
              FROM employees
              WHERE id = ?
              LIMIT 1"
@@ -183,7 +247,12 @@ function equipment_resolve_employee_label(mysqli $conn, int $employeeId, int $co
             $resFallback = mysqli_stmt_get_result($stmtFallback);
             $rowFallback = $resFallback ? mysqli_fetch_assoc($resFallback) : null;
             mysqli_stmt_close($stmtFallback);
-            $label = trim((string)($rowFallback['label'] ?? ''));
+            if (is_array($rowFallback)) {
+                $label = itm_employee_manager_option_label($rowFallback);
+                if ($label === '') {
+                    $label = trim((string)($rowFallback['fallback_label'] ?? ''));
+                }
+            }
         }
     }
 
@@ -1578,13 +1647,13 @@ function equipment_encode_photo_filenames(array $filenames): string
 
 $types = fetch_options($conn, 'equipment_types');
 $manufacturers = fetch_options($conn, 'manufacturers');
-$departments = fetch_options($conn, 'departments');
-$suppliers = fetch_options($conn, 'suppliers');
+$departments = equipment_fetch_department_select_options($conn, (int)$company_id);
+$suppliers = equipment_fetch_supplier_select_options($conn, (int)$company_id);
 $employees = equipment_fetch_employee_options($conn, (int)$company_id);
 $supplierStatuses = fetch_options($conn, 'supplier_statuses');
-$locations = fetch_options($conn, 'it_locations', 'name', "WHERE company_id = $company_id");
+$locations = equipment_fetch_location_select_options($conn, (int)$company_id);
 $locationTypes = fetch_options($conn, 'location_types', 'name', "WHERE company_id = $company_id");
-$racks = fetch_options($conn, 'racks', 'name', "WHERE company_id = $company_id");
+$racks = equipment_fetch_rack_select_options($conn, (int)$company_id);
 $idfs = fetch_options($conn, 'idfs', 'name', "WHERE company_id = $company_id");
 $rackStatuses = fetch_options($conn, 'rack_statuses');
 $statuses = fetch_options($conn, 'equipment_statuses');
