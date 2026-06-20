@@ -13,6 +13,7 @@ Secure private password manager with vault encryption. It allows users to store 
 
 ## 4. Business Rules (Critical for Agents)
 - **Vault Security**: Data is encrypted at rest using `itm_encrypt` and a session-based `vault_key`.
+- **Master key change**: `user-config.php` re-encrypts all `password_entries` inside a DB transaction via `includes/itm_vault_master_key.php` (`itm_vault_reencrypt_password_entries()`); on failure the transaction rolls back and `vault_key_hash` is not updated. Session `vault_key` updates only after a successful commit.
 - **Strict Ownership**: Passwords are private to the `employee_id` and are NOT shared across the company unless explicitly moved to a shared module (though not supported in the core table).
 - **Session Key**: Decryption requires `$_SESSION['vault_key']` to be populated during login.
 

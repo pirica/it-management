@@ -1,121 +1,136 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once ROOT_PATH . 'includes/itm_vault_master_key.php';
+require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
 /**
- * Verification script for Vault Atomicity.
+ * Verification script for vault master key atomicity.
+ * Simulates a failed master key change and confirms rollback leaves entries readable with the old key.
  */
 
 echo "--- Starting Vault Atomicity Verification ---\n";
 
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if (!$conn) { die("Connection failed\n"); }
+$conn = $GLOBALS['conn'] ?? null;
+if (!$conn) {
+    fwrite(STDERR, "Database connection failed.\n");
+    exit(1);
+}
 
-// 1. Create test user
-$username = 'fix_test_' . time();
-$password_hash = password_hash('system_pass', PASSWORD_DEFAULT);
-$master_key = 'old_master';
-$vault_key_hash = password_hash($master_key, PASSWORD_DEFAULT);
-$old_key_session = hash('sha256', $master_key);
+$employee = itm_script_test_employee_create($conn, 1, ['script_slug' => 'repro-vault-corruption']);
+if (!is_array($employee)) {
+    fwrite(STDERR, "Unable to create disposable test user.\n");
+    exit(1);
+}
 
-// Using standard columns discovered via DESCRIBE
-$sql = "INSERT INTO employees (company_id, first_name, last_name, username, password, vault_key_hash, work_email, active, employment_status_id)
-        VALUES (1, 'Fix', 'Test', '$username', '$password_hash', '$vault_key_hash', '$username@example.com', 1, 1)";
-if (!mysqli_query($conn, $sql)) {
-    echo "Error creating user: " . mysqli_error($conn) . "\n";
-    // Try without optional columns if it fails
-    $sql = "INSERT INTO employees (company_id, first_name, last_name, username, vault_key_hash, work_email, employment_status_id)
-            VALUES (1, 'Fix', 'Test', '$username', '$vault_key_hash', '$username@example.com', 1)";
-    if (!mysqli_query($conn, $sql)) {
-         die("Fatal: Could not create user even with minimal columns: " . mysqli_error($conn) . "\n");
+$userId = (int)$employee['id'];
+$masterKey = 'old_master';
+$vaultKeyHash = password_hash($masterKey, PASSWORD_DEFAULT);
+$oldKeySession = hash('sha256', $masterKey);
+
+$hashStmt = mysqli_prepare($conn, 'UPDATE employees SET vault_key_hash = ? WHERE id = ?');
+if (!$hashStmt) {
+    fwrite(STDERR, "Unable to set vault_key_hash.\n");
+    exit(1);
+}
+mysqli_stmt_bind_param($hashStmt, 'si', $vaultKeyHash, $userId);
+if (!mysqli_stmt_execute($hashStmt)) {
+    mysqli_stmt_close($hashStmt);
+    fwrite(STDERR, "Unable to set vault_key_hash.\n");
+    exit(1);
+}
+mysqli_stmt_close($hashStmt);
+
+echo 'Test user created (ID: ' . $userId . ")\n";
+
+$entries = [
+    ['Account 1', 'secret1'],
+    ['Account 2', 'secret2'],
+];
+$entryIds = [];
+
+foreach ($entries as $entry) {
+    $encrypted = itm_encrypt($entry[1], $oldKeySession);
+    $insert = mysqli_prepare($conn, 'INSERT INTO password_entries (employee_id, account, password) VALUES (?, ?, ?)');
+    if (!$insert) {
+        fwrite(STDERR, 'Error inserting entry: ' . mysqli_error($conn) . "\n");
+        exit(1);
     }
+    mysqli_stmt_bind_param($insert, 'iss', $userId, $entry[0], $encrypted);
+    if (!mysqli_stmt_execute($insert)) {
+        mysqli_stmt_close($insert);
+        fwrite(STDERR, 'Error inserting entry: ' . mysqli_error($conn) . "\n");
+        exit(1);
+    }
+    $entryIds[] = (int)mysqli_insert_id($conn);
+    mysqli_stmt_close($insert);
 }
-$user_id = mysqli_insert_id($conn);
-echo "Test user created (ID: $user_id)\n";
-
-// 2. Add two password entries
-$entry1_plain = 'secret1';
-$entry2_plain = 'secret2';
-$entry1_enc = itm_encrypt($entry1_plain, $old_key_session);
-$entry2_enc = itm_encrypt($entry2_plain, $old_key_session);
-
-if (!mysqli_query($conn, "INSERT INTO password_entries (employee_id, account, password) VALUES ($user_id, 'Account 1', '$entry1_enc')")) {
-    die("Error inserting entry 1: " . mysqli_error($conn) . "\n");
-}
-$entry1_id = mysqli_insert_id($conn);
-
-if (!mysqli_query($conn, "INSERT INTO password_entries (employee_id, account, password) VALUES ($user_id, 'Account 2', '$entry2_enc')")) {
-    die("Error inserting entry 2: " . mysqli_error($conn) . "\n");
-}
-$entry2_id = mysqli_insert_id($conn);
 
 echo "Two password entries added.\n";
 
-// 3. Simulate FIXED Master Key Change logic with a forced rollback
-$new_master_key = 'new_master';
-$new_key_session = hash('sha256', $new_master_key);
+$newMasterKey = 'new_master';
+$newKeySession = hash('sha256', $newMasterKey);
 
-echo "Simulating master key change with transaction and FORCED ROLLBACK...\n";
+echo "Simulating master key change with transaction and forced rollback...\n";
 
 mysqli_begin_transaction($conn);
-
-$res = mysqli_query($conn, "SELECT id, password FROM password_entries WHERE employee_id = $user_id");
-if (!$res) {
-    die("Error selecting entries: " . mysqli_error($conn) . "\n");
+$result = itm_vault_reencrypt_password_entries($conn, $userId, $oldKeySession, $newKeySession);
+if (empty($result['ok'])) {
+    mysqli_rollback($conn);
+    fwrite(STDERR, 'Re-encryption failed: ' . ($result['message'] ?? 'unknown error') . "\n");
+    exit(1);
 }
-
-$upd_stmt = mysqli_prepare($conn, "UPDATE password_entries SET password = ? WHERE id = ?");
-if (!$upd_stmt) {
-    die("Error preparing update: " . mysqli_error($conn) . "\n");
-}
-
-while ($row = mysqli_fetch_assoc($res)) {
-    $decrypted = itm_decrypt($row['password'], $old_key_session);
-    $re_encrypted = itm_encrypt($decrypted, $new_key_session);
-    mysqli_stmt_bind_param($upd_stmt, 'si', $re_encrypted, $row['id']);
-    mysqli_stmt_execute($upd_stmt);
-    echo "Entry {$row['id']} re-encrypted in transaction.\n";
-}
-mysqli_stmt_close($upd_stmt);
 
 echo "FORCING ROLLBACK (simulating failure before employee update)...\n";
 mysqli_rollback($conn);
 
-// 4. Verify No Corruption
 echo "\n--- Verification ---\n";
 
-$res = mysqli_query($conn, "SELECT id, account, password FROM password_entries WHERE employee_id = $user_id");
-if (!$res) {
-    die("Error selecting entries during verification: " . mysqli_error($conn) . "\n");
-}
+$selectEntries = mysqli_prepare($conn, 'SELECT id, account, password FROM password_entries WHERE employee_id = ? ORDER BY id ASC');
+mysqli_stmt_bind_param($selectEntries, 'i', $userId);
+mysqli_stmt_execute($selectEntries);
+$res = mysqli_stmt_get_result($selectEntries);
 
 while ($row = mysqli_fetch_assoc($res)) {
-    $attempt_old = itm_decrypt($row['password'], $old_key_session);
-    $attempt_new = itm_decrypt($row['password'], $new_key_session);
+    $attemptOld = itm_decrypt($row['password'], $oldKeySession);
+    $attemptNew = itm_decrypt($row['password'], $newKeySession);
 
     echo "Entry '{$row['account']}':\n";
-    echo "  Decrypt with OLD key: " . ($attempt_old === false ? "FAILED" : "SUCCESS ('$attempt_old')") . "\n";
-    echo "  Decrypt with NEW key: " . ($attempt_new === false ? "FAILED" : "SUCCESS") . "\n";
+    echo '  Decrypt with OLD key: ' . ($attemptOld === false ? 'FAILED' : "SUCCESS ('{$attemptOld}')") . "\n";
+    echo '  Decrypt with NEW key: ' . ($attemptNew === false ? 'FAILED' : 'SUCCESS') . "\n";
 }
+mysqli_stmt_close($selectEntries);
 
-$res = mysqli_query($conn, "SELECT vault_key_hash FROM employees WHERE id = $user_id");
-$user_data = mysqli_fetch_assoc($res);
-$status = password_verify($master_key, $user_data['vault_key_hash'] ?? '') ? "MATCH (OLD)" : "MISMATCH";
-echo "User's Master Key in DB: $status\n";
+$hashCheck = mysqli_prepare($conn, 'SELECT vault_key_hash FROM employees WHERE id = ?');
+mysqli_stmt_bind_param($hashCheck, 'i', $userId);
+mysqli_stmt_execute($hashCheck);
+$userData = mysqli_fetch_assoc(mysqli_stmt_get_result($hashCheck));
+mysqli_stmt_close($hashCheck);
+
+$status = password_verify($masterKey, $userData['vault_key_hash'] ?? '') ? 'MATCH (OLD)' : 'MISMATCH';
+echo "User's Master Key in DB: {$status}\n";
 
 echo "\nCONCLUSION:\n";
-$res = mysqli_query($conn, "SELECT password FROM password_entries WHERE id = $entry1_id");
-$row = mysqli_fetch_assoc($res);
-if ($row && itm_decrypt($row['password'], $old_key_session) === $entry1_plain) {
+$verify = mysqli_prepare($conn, 'SELECT password FROM password_entries WHERE id = ? AND employee_id = ?');
+$firstEntryId = $entryIds[0] ?? 0;
+mysqli_stmt_bind_param($verify, 'ii', $firstEntryId, $userId);
+mysqli_stmt_execute($verify);
+$row = mysqli_fetch_assoc(mysqli_stmt_get_result($verify));
+mysqli_stmt_close($verify);
+
+if ($row && itm_decrypt($row['password'], $oldKeySession) === $entries[0][1]) {
     echo "SUCCESS: Vault data remains consistent after failed change.\n";
+    $exitCode = 0;
 } else {
     echo "FAILURE: Vault data is corrupted or missing!\n";
-    if (!$row) echo "Reason: Entry 1 not found in DB!\n";
+    $exitCode = 1;
 }
 
-// Cleanup
-mysqli_query($conn, "DELETE FROM password_entries WHERE employee_id = $user_id");
-mysqli_query($conn, "DELETE FROM employees WHERE id = $user_id");
-mysqli_close($conn);
+$delEntries = mysqli_prepare($conn, 'DELETE FROM password_entries WHERE employee_id = ?');
+mysqli_stmt_bind_param($delEntries, 'i', $userId);
+mysqli_stmt_execute($delEntries);
+mysqli_stmt_close($delEntries);
+itm_script_test_employee_delete($conn, $userId);
 
 echo "--- Verification Finished ---\n";
+exit($exitCode);

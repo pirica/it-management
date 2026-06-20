@@ -1367,7 +1367,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="repro_vault_corruption.php">repro_vault_corruption.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction — Vault corruption during master key change.</td>
+                    <td>Regression — vault master key re-encryption rollback (atomicity).</td>
                     <td><code>php scripts/repro_vault_corruption.php</code></td>
                 </tr>
             </tbody>

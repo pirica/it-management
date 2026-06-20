@@ -1,5 +1,6 @@
 <?php
 require_once 'config/config.php';
+require_once ROOT_PATH . 'includes/itm_vault_master_key.php';
 
 // Auth check
 if (!isset($_SESSION['employee_id'])) {
@@ -89,53 +90,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // If not first time, we need to re-encrypt existing entries
                     $transaction_started = false;
                     $re_encryption_failed = false;
+                    $pending_vault_session_key = null;
 
                     if (!$is_first_time) {
                         $old_key_session = hash('sha256', $old_master_key_verify);
                         $new_key_session = hash('sha256', $new_master_key);
-                        
+
                         mysqli_begin_transaction($conn);
                         $transaction_started = true;
 
-                        // Decrypt and Re-encrypt
-                        $res = mysqli_query($conn, "SELECT id, password FROM password_entries WHERE employee_id = $user_id");
-                        $upd_stmt = mysqli_prepare($conn, "UPDATE password_entries SET password = ? WHERE id = ? AND employee_id = ?");
-                        if ($upd_stmt) {
-                            while ($row = mysqli_fetch_assoc($res)) {
-                                $decrypted = itm_decrypt($row['password'], $old_key_session);
-                                if ($decrypted !== false) {
-                                    $re_encrypted = itm_encrypt($decrypted, $new_key_session);
-                                    mysqli_stmt_bind_param($upd_stmt, 'sii', $re_encrypted, $row['id'], $user_id);
-                                    if (!mysqli_stmt_execute($upd_stmt)) {
-                                        $re_encryption_failed = true;
-                                        break;
-                                    }
-                                } else {
-                                    $re_encryption_failed = true;
-                                    break;
-                                }
-                            }
-                            mysqli_stmt_close($upd_stmt);
-                        } else {
+                        $reencrypt_result = itm_vault_reencrypt_password_entries($conn, $user_id, $old_key_session, $new_key_session);
+                        if (empty($reencrypt_result['ok'])) {
                             $re_encryption_failed = true;
-                        }
-
-                        if ($re_encryption_failed) {
                             mysqli_rollback($conn);
                             $transaction_started = false;
-                            $message = 'Error: Failed to re-encrypt vault entries. Please try again.';
+                            $message = 'Error: ' . ($reencrypt_result['message'] !== '' ? $reencrypt_result['message'] : 'Failed to re-encrypt vault entries. Please try again.');
                             $message_type = 'error';
                         }
                     }
-                    
+
                     if (!$re_encryption_failed) {
                         $update_fields[] = 'vault_key_hash = ?';
                         $params[] = password_hash($new_master_key, PASSWORD_DEFAULT);
                         $types .= 's';
 
-                        // Update session if they are currently logged into the vault
                         if (isset($_SESSION['vault_key'])) {
-                            $_SESSION['vault_key'] = hash('sha256', $new_master_key);
+                            $pending_vault_session_key = hash('sha256', $new_master_key);
                         }
                     }
                 }
@@ -154,6 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (mysqli_stmt_execute($stmt_final)) {
                     if (isset($transaction_started) && $transaction_started) {
                         mysqli_commit($conn);
+                    }
+                    if (isset($pending_vault_session_key) && $pending_vault_session_key !== null && $pending_vault_session_key !== '') {
+                        $_SESSION['vault_key'] = $pending_vault_session_key;
                     }
                     $message = 'Profile updated successfully!';
                     $message_type = 'success';

@@ -3,12 +3,11 @@
 namespace Tests\Unit\Security;
 
 use PHPUnit\Framework\TestCase;
-use mysqli;
 
 class VaultSecurityTest extends TestCase
 {
     private $conn;
-    private $testUserId;
+    private $testUserId = 0;
 
     protected function setUp(): void
     {
@@ -19,66 +18,78 @@ class VaultSecurityTest extends TestCase
         if (!defined('ITM_CLI_SCRIPT')) {
             define('ITM_CLI_SCRIPT', true);
         }
-        require_once __DIR__ . '/../../../../config/config.php';
 
-        $this->conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        require_once __DIR__ . '/../../../../config/config.php';
+        require_once ROOT_PATH . 'includes/itm_vault_master_key.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
+        $this->conn = $GLOBALS['conn'] ?? null;
         if (!$this->conn) {
             $this->markTestSkipped('Database connection failed.');
         }
 
-        // Create test user
-        $username = 'test_vault_' . uniqid();
-        $pass = password_hash('pass', PASSWORD_DEFAULT);
-        $vault_hash = password_hash('old_master', PASSWORD_DEFAULT);
+        $row = itm_script_test_employee_create($this->conn, 1, ['script_slug' => 'vault-security-test']);
+        if (!is_array($row)) {
+            $this->fail('Unable to create disposable test user.');
+        }
 
-        mysqli_query($this->conn, "INSERT INTO employees (company_id, username, password, vault_key_hash, work_email, active) VALUES (1, '$username', '$pass', '$vault_hash', '$username@example.com', 1)");
-        $this->testUserId = mysqli_insert_id($this->conn);
+        $this->testUserId = (int)$row['id'];
+        $vaultHash = password_hash('old_master', PASSWORD_DEFAULT);
+        $stmt = mysqli_prepare($this->conn, 'UPDATE employees SET vault_key_hash = ? WHERE id = ?');
+        if (!$stmt) {
+            $this->fail('Unable to set vault_key_hash on disposable test user.');
+        }
+        mysqli_stmt_bind_param($stmt, 'si', $vaultHash, $this->testUserId);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            $this->fail('Unable to set vault_key_hash on disposable test user.');
+        }
+        mysqli_stmt_close($stmt);
     }
 
     protected function tearDown(): void
     {
-        if ($this->conn && $this->testUserId) {
-            mysqli_query($this->conn, "DELETE FROM password_entries WHERE employee_id = $this->testUserId");
-            mysqli_query($this->conn, "DELETE FROM employees WHERE id = $this->testUserId");
-            mysqli_close($this->conn);
+        if ($this->conn && $this->testUserId > 0) {
+            $delEntries = mysqli_prepare($this->conn, 'DELETE FROM password_entries WHERE employee_id = ?');
+            if ($delEntries) {
+                mysqli_stmt_bind_param($delEntries, 'i', $this->testUserId);
+                mysqli_stmt_execute($delEntries);
+                mysqli_stmt_close($delEntries);
+            }
+            itm_script_test_employee_delete($this->conn, $this->testUserId);
         }
     }
 
     public function testVaultReEncryptionIsAtomic()
     {
-        $old_key = hash('sha256', 'old_master');
-        $new_key = hash('sha256', 'new_master');
+        $oldKey = hash('sha256', 'old_master');
+        $newKey = hash('sha256', 'new_master');
+        $plain = 'secret1';
+        $encrypted = itm_encrypt($plain, $oldKey);
 
-        // 1. Add entries
-        $e1_plain = 'secret1';
-        $e1_enc = itm_encrypt($e1_plain, $old_key);
-        mysqli_query($this->conn, "INSERT INTO password_entries (employee_id, account, password) VALUES ($this->testUserId, 'Acc 1', '$e1_enc')");
-        $e1_id = mysqli_insert_id($this->conn);
+        $insert = mysqli_prepare($this->conn, 'INSERT INTO password_entries (employee_id, account, password) VALUES (?, ?, ?)');
+        $this->assertNotFalse($insert);
+        $account = 'Acc 1';
+        mysqli_stmt_bind_param($insert, 'iss', $this->testUserId, $account, $encrypted);
+        $this->assertTrue(mysqli_stmt_execute($insert));
+        $entryId = (int)mysqli_insert_id($this->conn);
+        mysqli_stmt_close($insert);
 
-        // 2. Simulate the re-encryption logic with a failure
         mysqli_begin_transaction($this->conn);
-        $transaction_started = true;
-
-        // Success for first entry
-        $res = mysqli_query($this->conn, "SELECT password FROM password_entries WHERE id = $e1_id");
-        $row = mysqli_fetch_assoc($res);
-        $decrypted = itm_decrypt($row['password'], $old_key);
-        $re_encrypted = itm_encrypt($decrypted, $new_key);
-
-        $upd_stmt = mysqli_prepare($this->conn, "UPDATE password_entries SET password = ? WHERE id = ?");
-        mysqli_stmt_bind_param($upd_stmt, 'si', $re_encrypted, $e1_id);
-        mysqli_stmt_execute($upd_stmt);
-        mysqli_stmt_close($upd_stmt);
-
-        // Simulate failure before committing and before updating employee vault_key_hash
+        $result = itm_vault_reencrypt_password_entries($this->conn, $this->testUserId, $oldKey, $newKey);
+        $this->assertTrue($result['ok'], $result['message'] ?? 'Re-encryption failed unexpectedly.');
         mysqli_rollback($this->conn);
 
-        // 3. Verify that the entry is still encrypted with the OLD key
-        $res = mysqli_query($this->conn, "SELECT password FROM password_entries WHERE id = $e1_id");
-        $row = mysqli_fetch_assoc($res);
-        $current_enc = $row['password'];
+        $select = mysqli_prepare($this->conn, 'SELECT password FROM password_entries WHERE id = ? AND employee_id = ?');
+        $this->assertNotFalse($select);
+        mysqli_stmt_bind_param($select, 'ii', $entryId, $this->testUserId);
+        $this->assertTrue(mysqli_stmt_execute($select));
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($select));
+        mysqli_stmt_close($select);
+        $this->assertIsArray($row);
 
-        $this->assertEquals($e1_plain, itm_decrypt($current_enc, $old_key), "Data should be decryptable with OLD key after rollback.");
-        $this->assertFalse(itm_decrypt($current_enc, $new_key), "Data should NOT be decryptable with NEW key after rollback.");
+        $currentEnc = (string)$row['password'];
+        $this->assertSame($plain, itm_decrypt($currentEnc, $oldKey), 'Data should decrypt with the old key after rollback.');
+        $this->assertFalse(itm_decrypt($currentEnc, $newKey), 'Data should not decrypt with the new key after rollback.');
     }
 }
