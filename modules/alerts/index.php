@@ -22,6 +22,7 @@
  */
 
 require_once '../../config/config.php';
+require_once '../../includes/itm_crud_fk_label_search.php';
 require_once ROOT_PATH . 'includes/alerts_visibility.php';
 
 $crud_table = 'alerts';
@@ -1115,7 +1116,22 @@ if ($searchRaw !== '') {
         if ($fieldName === '') { continue; }
         $searchConditions[] = 'CAST(e.' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
     }
-    if (!empty($searchConditions)) {
+    
+    $itmFkSearchFields = [];
+    foreach ($displayFieldColumns as $col) {
+        $itmFkFieldName = (string)($col['Field'] ?? '');
+        if ($itmFkFieldName !== '') {
+            $itmFkSearchFields[] = $itmFkFieldName;
+        }
+    }
+    if (!empty($fkMap)) {
+        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, 'e', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
+        if (!empty($itmFkLabelSearch)) {
+            $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
+        }
+    }
+
+if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
 }

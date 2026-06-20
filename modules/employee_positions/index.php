@@ -15,6 +15,7 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
+require_once '../../includes/itm_crud_fk_label_search.php';
 
 // Validate table configuration to prevent unauthorized access to other tables
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -702,7 +703,22 @@ if ($searchRaw !== '') {
     }
     $searchConditions[] = "COALESCE(d.name, CONCAT('[Shared] ', ds.name)) LIKE '{$searchEsc}'";
 
-    if (!empty($searchConditions)) {
+    
+    $itmFkSearchFields = [];
+    foreach ($fieldColumns as $col) {
+        $itmFkFieldName = (string)($col['Field'] ?? '');
+        if ($itmFkFieldName !== '') {
+            $itmFkSearchFields[] = $itmFkFieldName;
+        }
+    }
+    if (!empty($fkMap)) {
+        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, 'e', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
+        if (!empty($itmFkLabelSearch)) {
+            $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
+        }
+    }
+
+if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
 }

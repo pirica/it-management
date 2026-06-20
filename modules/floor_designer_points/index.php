@@ -6,6 +6,7 @@
  */
 
 require_once '../../config/config.php';
+require_once '../../includes/itm_crud_fk_label_search.php';
 
 $crud_table = 'floor_designer_points';
 $crud_title = 'Floor Designer Points';
@@ -229,7 +230,22 @@ if ($searchRaw !== '') {
     foreach ($displayFieldColumns as $col) {
         $searchConditions[] = 'CAST(' . cr_escape_identifier($col['Field']) . " AS CHAR) LIKE '{$searchEsc}'";
     }
-    $where .= " AND (" . implode(' OR ', $searchConditions) . ")";
+    
+    $itmFkSearchFields = [];
+    foreach ($displayFieldColumns as $col) {
+        $itmFkFieldName = (string)($col['Field'] ?? '');
+        if ($itmFkFieldName !== '') {
+            $itmFkSearchFields[] = $itmFkFieldName;
+        }
+    }
+    if (!empty($fkMap)) {
+        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, '', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
+        if (!empty($itmFkLabelSearch)) {
+            $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
+        }
+    }
+
+$where .= " AND (" . implode(' OR ', $searchConditions) . ")";
 }
 
 // SORTING

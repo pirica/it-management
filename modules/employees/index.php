@@ -26,6 +26,7 @@ require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_auth_sensitive_fields.php';
 require_once '../../includes/itm_employees_hidden_accounts.php';
+require_once '../../includes/itm_employees_search.php';
 
 // Lazy-initialize required tables if missing
 esa_ensure_table($conn);
@@ -679,11 +680,10 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchValue = mysqli_real_escape_string($conn, $searchPattern);
-    $searchConditions = [];
-    foreach ($columns as $col) { $searchConditions[] = "CAST(e.`" . str_replace('`', '``', $col) . "` AS CHAR) LIKE '" . $searchValue . "'"; }
-    if (!empty($searchConditions)) { $where .= ' AND (' . implode(' OR ', $searchConditions) . ')'; }
+    $searchConditions = itm_employees_build_search_conditions($conn, $columns, $searchRaw);
+    if (!empty($searchConditions)) {
+        $where .= ' AND (' . implode(' OR ', $searchConditions) . ')';
+    }
 }
 
 $sortSql = 'e.`' . str_replace('`', '``', $sort) . '` ' . $dir;
@@ -694,6 +694,7 @@ $offset = ($page - 1) * $perPage;
 $countSql = 'SELECT COUNT(*) AS total
              FROM employees e
              LEFT JOIN departments d ON d.id = e.department_id
+             LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id
              LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
              LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id
              LEFT JOIN it_locations il ON il.id = e.location_id AND il.company_id = e.company_id
@@ -717,13 +718,14 @@ if ($page > $totalPages) {
 // Final Fetch including lookups and system access data
 $rows = mysqli_query(
     $conn,
-    'SELECT e.*, d.name AS department_name, es.name AS employment_status_name, et.name_type AS employee_type_name, il.name AS location_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
+    'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, et.name_type AS employee_type_name, il.name AS location_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
             ep.name AS position_name, m.display_name AS manager_name, er.name AS role_name, al.name AS access_level_name,
             esa.network_access, esa.micros_emc, esa.opera_username, esa.micros_card, esa.pms_id, esa.synergy_mms,
             esa.hu_the_lobby, esa.navision, esa.onq_ri, esa.birchstreet, esa.delphi, esa.omina, esa.vingcard_system,
             esa.digital_rev, esa.office_key_card
      FROM employees e
      LEFT JOIN departments d ON d.id = e.department_id
+     LEFT JOIN departments okd ON okd.id = e.office_key_card_department_id
      LEFT JOIN employee_statuses es ON es.id = e.employment_status_id
      LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id
      LEFT JOIN it_locations il ON il.id = e.location_id AND il.company_id = e.company_id
