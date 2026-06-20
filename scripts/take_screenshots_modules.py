@@ -6,6 +6,8 @@ import time
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 
+DEFAULT_MODULES = ['todo', 'notes', 'roles_permissions', 'system_status']
+
 def cookie_domain_for(base_url):
     """Derive cookie domain from screenshot base URL hostname."""
     return urlparse(base_url).hostname or 'localhost'
@@ -49,6 +51,20 @@ def login_admin(context, base_url):
         raise RuntimeError('Session cookie was not accepted by Apache')
     return page
 
+def resolve_modules():
+    """Resolve module slugs from ITM_SCREENSHOT_ONLY or ITM_SCREENSHOT_MODULES."""
+    only = os.environ.get('ITM_SCREENSHOT_ONLY', '').strip()
+    if only.lower() in ('1', 'true', 'yes'):
+        only = 'system_status'
+    if only:
+        return sorted({m.strip() for m in only.split(',') if m.strip()})
+
+    modules_env = os.environ.get('ITM_SCREENSHOT_MODULES', '').strip()
+    if modules_env:
+        return sorted({m.strip() for m in modules_env.split(',') if m.strip()})
+
+    return list(DEFAULT_MODULES)
+
 def assert_system_status_page(page):
     if 'login.php' in page.url:
         raise RuntimeError('Redirected to login.php instead of System Status')
@@ -69,6 +85,45 @@ def wait_for_monitoring_data(page):
     )
     time.sleep(1)
 
+def assert_roles_permissions_page(page):
+    if 'login.php' in page.url:
+        raise RuntimeError('Redirected to login.php instead of Roles & Permissions')
+    page.wait_for_selector('#rp-permission-matrix', timeout=20000)
+    page.wait_for_selector('#rp-permission-matrix tbody tr', timeout=20000)
+
+def module_url(base_url, module):
+    if module == 'system_status':
+        return f'{base_url}/modules/{module}/index.php?tab=monitoring'
+    if module == 'roles_permissions':
+        return f'{base_url}/modules/{module}/index.php'
+    return f'{base_url}/modules/{module}/index.php'
+
+def capture_module(page, base_url, module, output_dir):
+    screenshot_path = os.path.join(output_dir, f'{module}.png')
+    url = module_url(base_url, module)
+    print(f'Taking screenshot of {module} at {url}...')
+
+    if module == 'system_status':
+        page.goto(url, wait_until='domcontentloaded', timeout=60000)
+        assert_system_status_page(page)
+        wait_for_monitoring_data(page)
+        page.screenshot(path=screenshot_path)
+        print(f'Saved {screenshot_path}')
+        return
+
+    page.goto(url, wait_until='domcontentloaded', timeout=60000)
+    if 'login.php' in page.url:
+        raise RuntimeError(f'Lost session navigating to {module}')
+
+    if module == 'roles_permissions':
+        assert_roles_permissions_page(page)
+        time.sleep(1)
+    else:
+        time.sleep(2)
+
+    page.screenshot(path=screenshot_path)
+    print(f'Saved {screenshot_path}')
+
 def take_screenshots():
     base_url = os.environ.get('ITM_SCREENSHOT_BASE_URL', 'http://localhost/it-management').rstrip('/')
     output_dir = 'docs/readme/'
@@ -76,11 +131,7 @@ def take_screenshots():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    modules = ['todo', 'notes', 'system_status']
-    only_system_status = os.environ.get('ITM_SCREENSHOT_ONLY', '').strip().lower() in ('system_status', '1', 'true', 'yes')
-    if only_system_status:
-        modules = ['system_status']
-    modules.sort()
+    modules = resolve_modules()
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -88,26 +139,7 @@ def take_screenshots():
         page = login_admin(context, base_url)
 
         for module in modules:
-            if module == 'system_status':
-                screenshot_path = os.path.join(output_dir, 'system_status.png')
-                url = f"{base_url}/modules/{module}/index.php?tab=monitoring"
-                print(f'Taking screenshot of {module} monitoring tab at {url}...')
-                page.goto(url, wait_until='domcontentloaded', timeout=60000)
-                assert_system_status_page(page)
-                wait_for_monitoring_data(page)
-                page.screenshot(path=screenshot_path)
-                print(f'Saved {screenshot_path}')
-                continue
-
-            screenshot_path = os.path.join(output_dir, f'{module}.png')
-            url = f"{base_url}/modules/{module}/index.php"
-            print(f'Taking screenshot of {module} index at {url}...')
-            page.goto(url, wait_until='domcontentloaded')
-            time.sleep(2)
-            if 'login.php' in page.url:
-                raise RuntimeError(f'Lost session navigating to {module}')
-            page.screenshot(path=screenshot_path)
-            print(f'Saved {screenshot_path}')
+            capture_module(page, base_url, module, output_dir)
 
         browser.close()
 

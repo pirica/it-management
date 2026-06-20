@@ -17,6 +17,7 @@
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
 - ✅ Email Management — SMTP profiles, send logs, and automated expiry alert rules
+- ✅ Roles & Permissions — dual-pane role sidebar and six-column RBAC matrix (View, Add, Edit, Delete, Import, Export)
 - ✅ System Status — Real-time server monitoring (CPU, RAM, Disk, PHP, MySQL)
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
@@ -45,6 +46,10 @@
 <p align="center"><strong>Email Management</strong> — send logs, SMTP configurations with default transport, and automated alert rules.</p>
 
 <p align="center"><img src="docs/readme/demo_emails.png" alt="Email Management module" /></p>
+
+<p align="center"><strong>Roles & Permissions</strong> — role sidebar with hierarchy order and a six-column permission matrix for tenant RBAC (admins edit; other signed-in users browse read-only).</p>
+
+<p align="center"><img src="docs/readme/roles_permissions.png" alt="Roles and Permissions dashboard" /></p>
 
 <p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
 
@@ -89,6 +94,10 @@
 <p align="center"><strong>System Status</strong> — Admin-only server dashboard with monitoring gauges, PHP settings, and database metrics.</p>
 
 <p align="center"><img src="docs/readme/system_status.png" alt="System Status monitoring tab" /></p>
+
+<p align="center"><strong>Roles & Permissions</strong> — Admin matrix for role-level CRUD flags (company module access remains the first visibility gate).</p>
+
+<p align="center"><img src="docs/readme/roles_permissions.png" alt="Roles and Permissions dashboard" /></p>
 
 <h2 align="center">Architecture</h2>
 
@@ -287,6 +296,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Role Assignment Rights | `modules/role_assignment_rights/` | Who may assign which roles |
 | System Access | `modules/system_access/` | System-level access records |
 | Company Module Access | `modules/company_module_access/` | Per-company module enable/disable matrix ([architectural map](#company-module-access-management)) |
+| Roles & Permissions | `modules/roles_permissions/` | Role sidebar and six-column RBAC permission matrix |
 | Settings | `modules/settings/` | UI configuration, API tier, and global toggles |
 | UI Configuration | `modules/ui_configuration/` | Per-user layout and integration settings |
 | Access Levels | `modules/access_levels/` | Access-level reference data |

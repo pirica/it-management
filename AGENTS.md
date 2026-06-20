@@ -428,6 +428,23 @@ The `company_module_access` module lets administrators (`itm_is_admin()`) enable
 11. **Sidebar discovery from registry:** active `modules_registry` rows are merged into `itm_sidebar_structure()` for SideMenu and the live sidebar without requiring `modules/{slug}/index.php`. Enable the module per company in the matrix (`company_module_access.enabled = 1`) for non-admin users. Opening the link still needs a real module folder for CRUD.
 12. **Sidebar discovery paths (all auto-register):** `itm_sidebar_structure()` discovers modules from (a) `modules/{slug}/index.php`, (b) new MySQL tables via `SHOW TABLES` + `itm_auto_create_module_scaffold()`, and (c) active `modules_registry` rows. `itm_ensure_registry_rows_for_module_slugs()` upserts missing `modules_registry` + `company_module_access` rows during discovery so new tables and folders appear in the live sidebar without visiting Company Module Access or running sync first.
 
+#### Roles & Permissions (mandatory)
+
+The `roles_permissions` module (`modules/roles_permissions/`) provides a unified dashboard for tenant role management and the RBAC permission matrix.
+
+1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** (sidebar user counts).
+2. **Access:** Signed-in tenant users may browse roles and the matrix read-only; only `itm_is_admin()` may create/edit roles or save matrix changes (AJAX returns HTTP 403 for non-admins).
+3. **Admin role:** Seeded **Admin** role (name match, case-insensitive) uses the `ALL` wildcard row; matrix and rename are read-only for that role.
+4. **Effective flags:** Per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
+5. **Matrix columns:** View, Add (`can_create`), Edit, Delete, Import, Export — aligned with `includes/itm_role_module_permissions.php` enforcement.
+6. **Company gate first:** `company_module_access` remains the first visibility gate; this module configures the second RBAC layer.
+7. **RBAC exempt:** Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations.
+8. **UI:** Dual-pane layout patterned after Company Module Access — role sidebar, toolbar card, permission matrix (`js/roles-permissions-matrix.js`).
+9. **AJAX actions:** `save_permissions`, `create_role`, `update_role` — all require CSRF and administrator access.
+10. **Sidebar:** Admin → **🛡️ Roles & Permissions** in `includes/ui_config.php`.
+11. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_roles_permissions.php`.
+12. **README screenshot:** `ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py` → `docs/readme/roles_permissions.png`.
+
 #### Bulk delete toolbar and Cancel button (mandatory)
 
 Standard index markup (inside the list card, above the search row). `department-bulk-form` is the legacy id for `modules/departments/` only; all other modules use `bulk-delete-form`.

@@ -339,6 +339,13 @@ function itmDocProjectJsonEndpoints(): array
             'purpose' => 'Admin matrix AJAX toggle for per-company module visibility (audit via company_module_access triggers).',
         ],
         [
+            'group' => 'Roles & Permissions',
+            'method' => 'POST',
+            'path' => 'modules/roles_permissions/index.php',
+            'params' => 'ajax_action=save_permissions|create_role|update_role, csrf_token, role_id, role_name, permissions_json',
+            'purpose' => 'Administrator-only AJAX for role CRUD and bulk permission matrix upserts on role_module_permissions; non-admins receive HTTP 403. Admin role (ALL wildcard) cannot be edited here.',
+        ],
+        [
             'group' => 'Shared includes',
             'method' => 'POST',
             'path' => 'includes/get_ports.php',
