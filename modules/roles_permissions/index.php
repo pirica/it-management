@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 
 $activeCompanyId = itm_resolve_active_company_id((int)($company_id ?? 0));
 $rpCanManage = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
@@ -21,10 +22,29 @@ $selectedRoleId = (int)($_GET['role_id'] ?? 0);
 function rp_load_roles(mysqli $conn, int $companyId): array
 {
     $roles = [];
+    $empStatusJoin = itm_employee_active_employment_status_join_sql('e', 'es');
+    $empStatusPredicate = itm_employee_active_employment_status_predicate_sql('es');
+    // Why: Count active employees assigned to the role (employment_status), not logged-in sessions.
+    // Cross-company: home role name + employee_companies access to the active tenant.
     $sql = 'SELECT er.id, er.name, er.active,
                    COALESCE(rh.hierarchy_order, 999) AS hierarchy_order,
-                   (SELECT COUNT(*) FROM employees e
-                    WHERE e.role_id = er.id AND e.company_id = er.company_id) AS user_count
+                   (SELECT COUNT(DISTINCT e.id)
+                    FROM employees e
+                    INNER JOIN employee_roles er_assign
+                      ON er_assign.id = e.role_id AND er_assign.company_id = e.company_id'
+                    . $empStatusJoin .
+                    ' WHERE ' . $empStatusPredicate . '
+                      AND er_assign.name = er.name
+                      AND (
+                        (e.company_id = er.company_id AND e.role_id = er.id)
+                        OR EXISTS (
+                          SELECT 1 FROM employee_companies ec
+                          WHERE ec.employee_id = e.id
+                            AND ec.company_id = er.company_id
+                            AND ec.active = 1
+                        )
+                      )
+                   ) AS active_count
             FROM employee_roles er
             LEFT JOIN role_hierarchy rh
               ON rh.role_id = er.id AND rh.company_id = er.company_id
@@ -409,7 +429,7 @@ $crud_title = $pageTitle;
                                     $roleId = (int)($roleRow['id'] ?? 0);
                                     $isSelected = $roleId === $selectedRoleId;
                                     $isSystem = rp_role_is_system($roleRow);
-                                    $userCount = (int)($roleRow['user_count'] ?? 0);
+                                    $activeCount = (int)($roleRow['active_count'] ?? 0);
                                     ?>
                                     <a
                                         href="<?= $modulePathEsc ?>/index.php?role_id=<?= $roleId ?>"
@@ -420,7 +440,7 @@ $crud_title = $pageTitle;
                                             <strong><?= sanitize((string)($roleRow['name'] ?? '')) ?></strong>
                                             <span aria-hidden="true">›</span>
                                         </div>
-                                        <div style="color:var(--text-secondary,#666);font-size:12px;margin-top:4px;"><?= (int)$userCount ?> user<?= $userCount === 1 ? '' : 's' ?></div>
+                                        <div style="color:var(--text-secondary,#666);font-size:12px;margin-top:4px;" title="Active employees with this role"><?= (int)$activeCount ?> active</div>
                                         <?php if ($isSystem): ?>
                                             <div style="margin-top:6px;"><span class="badge">System</span></div>
                                         <?php endif; ?>
