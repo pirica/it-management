@@ -1,0 +1,12 @@
+<?php
+/**
+ * Manufacturers Module - Delete
+ *
+ * Wrapper for the master CRUD implementation.
+ * Handles row deletion via POST in index.php.
+ */
+
+$crud_table = $crud_table ?? 'user_sidebar_preferences';
+$crud_title = $crud_title ?? 'User Sidebar Preferences';
+$crud_action = 'delete';
+require 'index.php';
