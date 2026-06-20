@@ -12,12 +12,16 @@ $csrfToken = itm_get_csrf_token();
 
 $prefilledEmail = trim((string)($_GET['email'] ?? ''));
 $prefilledInviteCode = trim((string)($_GET['invite'] ?? ''));
+$prefilledUsername = '';
+$prefilledConfirmUsername = '';
+$formError = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
+    $confirmUsername = trim($_POST['confirm_username'] ?? '');
     $rawPassword = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     $inviteCode = trim($_POST['invite_code'] ?? '');
@@ -26,10 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Invitation code is required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please provide a valid email address.';
+    } elseif ($username === '') {
+        $formError = 'Enter a username.';
+    } elseif ($confirmUsername === '') {
+        $formError = 'Enter a confirmation username.';
+    } elseif ($username !== $confirmUsername) {
+        $formError = 'Usernames do not match.';
     } elseif ($rawPassword === '' || $confirmPassword === '') {
-        $error = 'Password and confirmation are required.';
+        $formError = 'Password and confirmation are required.';
     } elseif ($rawPassword !== $confirmPassword) {
-        $error = 'Password confirmation does not match.';
+        $formError = 'Password confirmation does not match.';
     } else {
         mysqli_begin_transaction($conn);
 
@@ -183,9 +193,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if (isset($error)) {
+    if (isset($error) || $formError !== '') {
         $prefilledEmail = $email;
         $prefilledInviteCode = $inviteCode;
+        $prefilledUsername = $username;
+        $prefilledConfirmUsername = $confirmUsername;
     }
 }
 ?>
@@ -211,6 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .links a { color: var(--accent); text-decoration: none; }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .help-text { color: var(--muted); font-size: 12px; margin-top: -10px; margin-bottom: 14px; }
+        .client-error { color: #d93025; margin-bottom: 14px; font-size: 14px; font-weight: 600; }
+        input.input-invalid { border-color: #d93025; }
         @media (max-width: 480px) {
             body { padding: 12px; }
             .container { padding: 24px 20px; }
@@ -228,10 +242,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <?php if (isset($success)): ?><p style="color:#2f855a; margin-bottom:14px;"><?php echo htmlspecialchars($success); ?></p><?php endif; ?>
-        <?php if (isset($error)): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
+        <?php if (isset($error)): ?><p class="client-error" role="alert"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
 
-        <form method="POST">
+        <form id="register-form" method="POST" novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+            <div id="register-client-error" class="client-error" role="alert" aria-live="assertive"<?php echo $formError !== '' ? '' : ' style="display:none;"'; ?>><?php echo htmlspecialchars($formError, ENT_QUOTES, 'UTF-8'); ?></div>
 
             <label for="invite_code">Invitation Code</label>
             <input id="invite_code" type="text" name="invite_code" placeholder="Paste invitation code" value="<?php echo htmlspecialchars($prefilledInviteCode); ?>" required>
@@ -241,13 +256,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p class="help-text">Use the same email address that received the invitation.</p>
 
             <label for="username">Username</label>
-            <input id="username" type="text" name="username" placeholder="Username" required>
+            <input id="username" type="text" name="username" placeholder="Username" value="<?php echo htmlspecialchars($prefilledUsername); ?>" autocomplete="username" required>
+
+            <label for="confirm_username">Confirm Username</label>
+            <input id="confirm_username" type="text" name="confirm_username" placeholder="Confirm username" value="<?php echo htmlspecialchars($prefilledConfirmUsername); ?>" autocomplete="username" required>
 
             <label for="password">Password</label>
-            <input id="password" type="password" name="password" placeholder="Password" required>
+            <input id="password" type="password" name="password" placeholder="Password" autocomplete="new-password" required>
 
             <label for="confirm_password">Re-confirm Password</label>
-            <input id="confirm_password" type="password" name="confirm_password" placeholder="Re-confirm Password" required>
+            <input id="confirm_password" type="password" name="confirm_password" placeholder="Re-confirm Password" autocomplete="new-password" required>
 
             <button type="submit">Register</button>
         </form>
@@ -263,6 +281,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
         }
         document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+
+        (function () {
+            const form = document.getElementById('register-form');
+            if (!form) {
+                return;
+            }
+
+            const clientError = document.getElementById('register-client-error');
+            const usernameInput = document.getElementById('username');
+            const confirmUsernameInput = document.getElementById('confirm_username');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm_password');
+            const watchedFields = [usernameInput, confirmUsernameInput, passwordInput, confirmPasswordInput];
+
+            function clearFieldErrors() {
+                watchedFields.forEach(function (field) {
+                    field?.classList.remove('input-invalid');
+                });
+            }
+
+            function showClientError(message, invalidField) {
+                clearFieldErrors();
+                if (invalidField) {
+                    invalidField.classList.add('input-invalid');
+                    invalidField.focus();
+                }
+                if (!clientError) {
+                    return;
+                }
+                clientError.textContent = message;
+                clientError.style.display = 'block';
+            }
+
+            function hideClientError() {
+                clearFieldErrors();
+                if (!clientError) {
+                    return;
+                }
+                clientError.textContent = '';
+                clientError.style.display = 'none';
+            }
+
+            form.addEventListener('submit', function (event) {
+                hideClientError();
+
+                const username = (usernameInput?.value || '').trim();
+                const confirmUsername = (confirmUsernameInput?.value || '').trim();
+                const password = passwordInput?.value || '';
+                const confirmPassword = confirmPasswordInput?.value || '';
+
+                if (username === '') {
+                    event.preventDefault();
+                    showClientError('Enter a username.', usernameInput);
+                    return;
+                }
+                if (confirmUsername === '') {
+                    event.preventDefault();
+                    showClientError('Enter a confirmation username.', confirmUsernameInput);
+                    return;
+                }
+                if (username !== confirmUsername) {
+                    event.preventDefault();
+                    showClientError('Usernames do not match.', confirmUsernameInput);
+                    return;
+                }
+                if (password === '') {
+                    event.preventDefault();
+                    showClientError('Enter a password.', passwordInput);
+                    return;
+                }
+                if (confirmPassword === '') {
+                    event.preventDefault();
+                    showClientError('Enter a confirmation password.', confirmPasswordInput);
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    event.preventDefault();
+                    showClientError('Password confirmation does not match.', confirmPasswordInput);
+                }
+            });
+
+            watchedFields.forEach(function (field) {
+                if (!field) {
+                    return;
+                }
+                field.addEventListener('input', function () {
+                    if (clientError && clientError.style.display !== 'none') {
+                        hideClientError();
+                    }
+                });
+            });
+        })();
     </script>
 </body>
 </html>
