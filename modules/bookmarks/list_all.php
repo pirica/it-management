@@ -60,18 +60,19 @@ $perPage = 25;
 $offset = ($page - 1) * $perPage;
 
 $where = "b.company_id = $company_id AND b.active = 1 AND (b.employee_id = $user_id OR b.shared = 1)";
+$joinFolders = ' LEFT JOIN bookmark_folders f ON b.folder_id = f.id';
 if ($searchRaw !== '') {
     $s = mysqli_real_escape_string($conn, $searchRaw);
-    $where .= " AND (b.title LIKE '%$s%' OR b.url LIKE '%$s%' OR b.notes LIKE '%$s%')";
+    $where .= " AND (b.title LIKE '%$s%' OR b.url LIKE '%$s%' OR b.notes LIKE '%$s%' OR f.name LIKE '%$s%')";
 }
 
 $sql = "SELECT b.*, f.name as folder_display_name
-        FROM bookmarks b
-        LEFT JOIN bookmark_folders f ON b.folder_id = f.id
-        WHERE $where ORDER BY $orderBy $dir LIMIT $offset, $perPage";
+        FROM bookmarks b"
+        . $joinFolders
+        . " WHERE $where ORDER BY $orderBy $dir LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $sql);
 
-$countSql = "SELECT COUNT(*) as total FROM bookmarks b WHERE $where";
+$countSql = "SELECT COUNT(*) as total FROM bookmarks b" . $joinFolders . " WHERE $where";
 $countRes = mysqli_query($conn, $countSql);
 $totalRows = mysqli_fetch_assoc($countRes)['total'];
 $totalPages = ceil($totalRows / $perPage);

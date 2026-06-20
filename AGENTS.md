@@ -540,9 +540,9 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
 | Employees (custom JOINs) | `includes/itm_employees_search.php` — `itm_employees_build_search_conditions()` | `modules/employees/` |
 | Flattened CRUD (scaffold) | `includes/itm_crud_fk_label_search.php` — `itm_crud_fk_label_search_conditions()` | Scaffold `modules/*/index.php` with `cr_fk_map()` + standard search block |
 | Todo (CSV FK columns) | `includes/itm_todo_search.php` — `itm_todo_build_search_clause()` | `modules/todo/` (`category_id`, `department_id`, `assigned_to_employee_id` via `FIND_IN_SET`) |
-| Bespoke (module-specific) | Inline prepared `EXISTS` / JOIN, or shared CRUD helper where applicable | `modules/switch_ports/` (shared CRUD helper), `modules/notes/` (`shared_with_json` employee names), `modules/private_contacts/` (phone, labels) |
+| Bespoke (module-specific) | Inline prepared `EXISTS` / JOIN, or shared CRUD helper where applicable | `modules/switch_ports/`, `modules/notes/`, `modules/private_contacts/`, `modules/bookmarks/`, `modules/passwords/`, IPAM `includes/list_query.php`, and other modules with custom JOIN search |
 
-Modules that already search FK labels via custom SQL (no change required unless search regresses): `equipment`, `tickets`, `idfs`, `inventory_items`, `birthdays`, `resignations`, `audit_logs`.
+**No module exceptions:** every module with server-side list search must pass `php scripts/check_fk_label_search_coverage.php` (smoke step 4). The audit uses universal pass rules only — shared FK helpers, EXISTS/JOIN label `LIKE`, employee name JOIN/CONCAT, or scalar-only fields. No per-module N/A allowlist.
 
 **Hard rules:**
 
@@ -556,7 +556,8 @@ Modules that already search FK labels via custom SQL (no change required unless 
 | Script | When |
 |--------|------|
 | `php scripts/apply_crud_fk_label_search.php` | Bulk-patch scaffold `index.php` files missing the shared FK label search helper |
-| `php scripts/verify_crud_fk_label_search.php` | After changing list search, FK label helpers, or bespoke module search (`employees`, `license_management`, `switch_ports`, `todo`, `notes`, `private_contacts`) |
+| `php scripts/check_fk_label_search_coverage.php` | Static 100% gate: every searchable module matches FK/label columns (smoke step 4) |
+| `php scripts/verify_crud_fk_label_search.php` | After changing list search, FK label helpers, or bespoke module search (`employees`, `license_management`, `switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `bookmarks`, `passwords`); CI **database-import** job |
 
 ### 6. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.

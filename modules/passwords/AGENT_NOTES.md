@@ -28,7 +28,7 @@ All POST to `ajax_handler.php` with `action` (JSON responses, `employee_id` scop
 | `list_folders` | Folder tree for sidebar |
 | `save_folder` | Create/update folder (`parent_id` nesting) |
 | `delete_folder` | Remove folder (entries may move to root) |
-| `list_entries` | Entries for selected folder |
+| `list_entries` | Entries for selected folder; global search (`folder_id=0`) also matches `password_folders.name` via EXISTS |
 | `get_entry` | Single entry for edit modal (decrypt password in memory) |
 | `save_entry` | Create/update encrypted entry |
 | `delete_entry` | Delete entry |

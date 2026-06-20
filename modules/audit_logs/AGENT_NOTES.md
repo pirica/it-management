@@ -20,7 +20,7 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 - **Users trigger redaction:** `trg_users_audit_*` in `database.sql` must not log `password`, `reset_token`, or `reset_token_hash` (credential and reset secrets stay out of `audit_logs`).
 
 ## 5. UI Behavior Requirements
-- **Searchable**: Search by table name, record ID, user, or action.
+- **Searchable**: Search by table name, record ID, user, or action. List search matches employee full name, username, and email via `LEFT JOIN employees` (not only raw `employee_id`).
 - **Detailed View**: View the JSON diff between old and new states.
 - **Admin toolbar**: Download ALL Logs, Backup ALL Logs, and Clear ALL Logs buttons (admin role only).
 - **Responsive:** filter/KPI grids single column below 768px; audit user cells wrap on mobile.

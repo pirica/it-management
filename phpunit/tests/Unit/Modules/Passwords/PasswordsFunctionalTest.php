@@ -29,25 +29,47 @@ class PasswordsFunctionalTest extends TestCase
 
     public function testSaveFolderRootAndChild()
     {
+        $rootName = 'Root Test Folder ' . uniqid();
         $rootParams = [
             'action' => 'save_folder',
             'csrf_token' => $this->csrfToken,
-            'name' => 'Root Test Folder ' . uniqid(),
+            'name' => $rootName,
             'parent_id' => '0',
         ];
         $rootRes = $this->callAjax($rootParams);
         $this->assertIsArray($rootRes);
         $this->assertTrue($rootRes['ok'] ?? false, $rootRes['message'] ?? 'save_folder root failed');
 
+        $rootFolderId = $this->fetchFolderIdByName($rootName);
+        $this->assertGreaterThan(0, $rootFolderId, 'Root folder id not found after save_folder');
+
         $childParams = [
             'action' => 'save_folder',
             'csrf_token' => $this->csrfToken,
             'name' => 'Child Test Folder ' . uniqid(),
-            'parent_id' => '1',
+            'parent_id' => (string)$rootFolderId,
         ];
         $childRes = $this->callAjax($childParams);
         $this->assertIsArray($childRes);
         $this->assertTrue($childRes['ok'] ?? false, $childRes['message'] ?? 'save_folder child failed');
+    }
+
+    private function fetchFolderIdByName($name)
+    {
+        $stmt = mysqli_prepare(
+            $GLOBALS['conn'],
+            'SELECT id FROM password_folders WHERE employee_id = ? AND name = ? ORDER BY id DESC LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $this->employeeId, $name);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return (int)($row['id'] ?? 0);
     }
 
     public function testSaveEntry()

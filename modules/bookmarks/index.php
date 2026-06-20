@@ -61,7 +61,8 @@ if ($view_mode === 'shared') $where .= " AND shared = 1";
 
 if ($search) {
     $s = mysqli_real_escape_string($conn, $search);
-    $where .= " AND (title LIKE '%$s%' OR url LIKE '%$s%' OR notes LIKE '%$s%')";
+    $where .= " AND (title LIKE '%$s%' OR url LIKE '%$s%' OR notes LIKE '%$s%'"
+        . " OR EXISTS (SELECT 1 FROM bookmark_folders bf WHERE bf.id = bookmarks.folder_id AND bf.name LIKE '%$s%'))";
 } elseif ($selected_folder_id) {
     $where .= " AND folder_id = $selected_folder_id";
 } else {

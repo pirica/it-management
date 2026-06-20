@@ -22,6 +22,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 5. UI Behavior Requirements
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
 - View modes: `all`, `private`, `shared` via `?view=`; folder filter via `?folder_id=`.
+- **Search:** `index.php` and `list_all.php` match bookmark title/url/notes and folder name (`bookmark_folders` JOIN or EXISTS).
 - Folder drag-and-drop reparenting posts `action=move_folder` (CSRF on form).
 - Shared bookmarks: edit/delete only for admin or owning `employee_id` (`bkm_can_edit_bookmark()`).
 - **Responsive:** dual-pane stacks below 1200px; bookmark cards single column below 480px.

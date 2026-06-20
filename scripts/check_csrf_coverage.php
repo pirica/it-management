@@ -248,6 +248,15 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
+    // Why: scripts/verify_crud_fk_label_search.php mocks $_POST in isolated subprocesses for AJAX regression only.
+    if ($relativePath === 'scripts/verify_crud_fk_label_search.php') {
+        $skipped[] = [
+            $relativePath,
+            'CLI-only regression script that mocks session/POST in isolated includes; not a web-accessible endpoint',
+        ];
+        continue;
+    }
+
     // Why: repro_* and fix_* scripts are CLI maintenance/test tools.
     if (preg_match('#^scripts/(repro|fix)_.+\.php$#', $relativePath)) {
         $skipped[] = [

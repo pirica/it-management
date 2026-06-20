@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 3) . '/includes/itm_crud_fk_label_search.php';
+
 // FETCH LIST DATA
 $itmIpAddressFocusedList = in_array($crud_action, ['index', 'list_all'], true);
 $itmSubnetFilterId = max(0, (int)($_GET['subnet_id'] ?? 0));
@@ -22,6 +24,22 @@ if (!$itmIpAddressFocusedList && $searchRaw !== '') {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') { continue; }
         $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
+    }
+
+    $itmFkSearchFields = array_map(static function ($col) {
+        return (string)($col['Field'] ?? '');
+    }, $uiColumns);
+    $itmFkLabelSearch = itm_crud_fk_label_search_conditions(
+        $conn,
+        $crud_table,
+        '',
+        $fkMap,
+        $itmFkSearchFields,
+        (int)$company_id,
+        $searchEsc
+    );
+    if (!empty($itmFkLabelSearch)) {
+        $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
     }
 
     if (!empty($searchConditions)) {

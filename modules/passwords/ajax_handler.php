@@ -76,7 +76,11 @@ switch ($action) {
             $sql .= " AND folder_name = ?";
         }
         if ($search !== '') {
-            $sql .= " AND (account LIKE ? OR login_name LIKE ? OR website LIKE ? OR comments LIKE ?)";
+            $sql .= " AND (account LIKE ? OR login_name LIKE ? OR website LIKE ? OR comments LIKE ?";
+            if ($folder_id <= 0) {
+                $sql .= " OR EXISTS (SELECT 1 FROM password_folders pf WHERE pf.id = password_entries.folder_name AND pf.employee_id = ? AND pf.name LIKE ?)";
+            }
+            $sql .= ')';
         }
         $sql .= " ORDER BY account ASC";
         
@@ -88,7 +92,7 @@ switch ($action) {
             mysqli_stmt_bind_param($stmt, 'ii', $user_id, $folder_id);
         } elseif ($search !== '') {
             $search_param = "%$search%";
-            mysqli_stmt_bind_param($stmt, 'issss', $user_id, $search_param, $search_param, $search_param, $search_param);
+            mysqli_stmt_bind_param($stmt, 'issssis', $user_id, $search_param, $search_param, $search_param, $search_param, $user_id, $search_param);
         } else {
             mysqli_stmt_bind_param($stmt, 'i', $user_id);
         }

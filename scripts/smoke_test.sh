@@ -5,6 +5,7 @@
 #   1. php -l on every *.php file in the repository
 #   2. scripts/check_csrf_coverage.php
 #   3. scripts/check_sql_injection_coverage.php
+#   4. scripts/check_fk_label_search_coverage.php
 #
 # Usage (from repository root):
 #   bash scripts/smoke_test.sh
@@ -24,7 +25,7 @@ echo "==> PHP binary: ${PHP_BIN}"
 "$PHP_BIN" -v
 echo
 
-echo "==> Step 1/3: PHP syntax lint (php -l)"
+echo "==> Step 1/4: PHP syntax lint (php -l)"
 lint_failed=0
 lint_count=0
 while IFS= read -r -d '' file; do
@@ -50,10 +51,13 @@ run_check() {
   echo
 }
 
-step_label="Step 2/3"
+step_label="Step 2/4"
 run_check "check_csrf_coverage.php"
 
-step_label="Step 3/3"
+step_label="Step 3/4"
 run_check "check_sql_injection_coverage.php"
+
+step_label="Step 4/4"
+run_check "check_fk_label_search_coverage.php"
 
 echo "==> All smoke tests passed."
