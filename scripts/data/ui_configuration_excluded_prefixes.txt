@@ -1,0 +1,8 @@
+# Modules whose folder name starts with any prefix below are skipped by
+# scripts/check_ui_configuration_coverage.php (smoke step 5).
+#
+# is_* — Equipment-type façades (modules/is_router, is_switch, …) that only
+#        require modules/equipment/index.php; they have no local index table or
+#        standard create/back/save chrome for this audit.
+
+is_
