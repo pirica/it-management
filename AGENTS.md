@@ -443,7 +443,13 @@ The `roles_permissions` module (`modules/roles_permissions/`) provides a unified
 9. **AJAX actions:** `save_permissions`, `create_role`, `update_role` — all require CSRF and administrator access.
 10. **Sidebar:** Admin → **🛡️ Roles & Permissions** in `includes/ui_config.php`.
 11. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_roles_permissions.php`.
-12. **README screenshot:** `ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py` → `docs/readme/roles_permissions.png`.
+12. **README screenshot:** capture with Playwright via `scripts/take_screenshots_modules.py` (same `bypass_login.php` + `PHPSESSID` cookie pattern as other README module shots). Command:
+
+    ```bash
+    ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py
+    ```
+
+    Output: `docs/readme/roles_permissions.png`. The script logs in as Admin through `bypass_login.php`, sets the session cookie for Apache, opens `modules/roles_permissions/index.php`, waits for `#rp-permission-matrix` and at least one matrix row, then saves a 1280×800 PNG. On Cloud Agent VMs, start Apache + MySQL first (see **Cursor Cloud specific instructions → README module screenshots**); do not hand-edit PNGs when the script can regenerate them.
 
 #### Bulk delete toolbar and Cancel button (mandatory)
 
@@ -943,6 +949,56 @@ See **`scripts/SCRIPTS.md`** (Smoke tests). On Cloud Agent VMs:
 bash scripts/smoke_test.sh
 ```
 
+### README module screenshots (Playwright)
+
+Use **`scripts/take_screenshots_modules.py`** for committed README images under `docs/readme/`. It mirrors the manual flow documented in **Bypassing Login (Dev/Test)**, but automates the cookie step for headless Chromium.
+
+**One-time setup (Cloud Agent or local Linux):**
+
+```bash
+pip install playwright
+playwright install chromium   # or: ~/.local/bin/playwright install chromium when pip user bin is not on PATH
+```
+
+**Services must answer before capture:**
+
+1. **Apache** — `sudo mkdir -p /run/lock/apache2` then `sudo apachectl start`. Verify `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` (not `500`).
+2. **MySQL** — PHP connects on `127.0.0.1:3306` after the localhost socket attempt in `config/config.php`. If `service mysql start` or `/var/lib/mysql` fails (common on Cloud Agent: InnoDB `undo_*` / OS error 71 on the repo workspace mount), use a **writable datadir outside the workspace**:
+
+    ```bash
+    rm -rf /tmp/itm-mysql-data
+    mkdir -p /tmp/itm-mysql-data
+    mysqld --initialize-insecure --datadir=/tmp/itm-mysql-data --log-error=/tmp/itm-mysql-data/error.log
+    mysqld --datadir=/tmp/itm-mysql-data --socket=/tmp/itm-mysql.sock --port=3306 \
+      --bind-address=127.0.0.1 --log-error=/tmp/itm-mysql-data/error.log \
+      --skip-log-bin --pid-file=/tmp/itm-mysql.pid &
+    sleep 10
+    mysqladmin -u root --socket=/tmp/itm-mysql.sock ping
+    mysql -u root --socket=/tmp/itm-mysql.sock -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'itmanagement';"
+    mysql -u root -pitmanagement --socket=/tmp/itm-mysql.sock --default-character-set=utf8mb4 < database.sql
+    php -r '$c=mysqli_connect("127.0.0.1","root","itmanagement","itmanagement"); echo $c?"db ok\n":mysqli_connect_error();'
+    ```
+
+    Re-run the import when the datadir is fresh; expect ~121 tables in `itmanagement`.
+
+**Capture (Roles & Permissions example — verified on Cloud Agent):**
+
+```bash
+cd /path/to/it-management   # repo root; Cloud Agent: /workspace
+ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py
+```
+
+**What the script does:**
+
+1. Runs `php scripts/bypass_login.php` and `sudo chown www-data:www-data` on the generated `sess_*` file so Apache can read the CLI session.
+2. Launches Chromium (1280×800), injects `PHPSESSID` for the base URL hostname (default `http://localhost/it-management`).
+3. Loads `dashboard.php` to confirm the cookie, then `modules/roles_permissions/index.php`.
+4. Waits for `#rp-permission-matrix` and `tbody tr` (matrix loaded with seed roles/registry rows).
+5. Writes `docs/readme/roles_permissions.png`.
+
+**Env vars:** `ITM_SCREENSHOT_BASE_URL` (default `http://localhost/it-management`); `ITM_SCREENSHOT_ONLY` (comma-separated slugs; legacy `1`/`true`/`yes` → `system_status` only); `ITM_SCREENSHOT_MODULES` overrides the default list when `ITM_SCREENSHOT_ONLY` is unset. Full catalog notes: **`scripts/SCRIPTS.md`**.
+
+**Do not** rely on the online test host for automated capture when DNS is unavailable in the agent environment; use local Apache + MySQL as above.
 
 ### Bypassing Login (Dev/Test)
 
@@ -966,4 +1022,6 @@ Default credentials: username `Admin`, password `Admin`. After login, select a c
 
 * MySQL `dpkg --configure` may hang on first install because systemd service start is blocked in the container. The update script works around this by starting `mysqld` directly and setting the root password manually.
 * The `/var/run/mysqld/` directory permissions default to `drwx------` (mysql:mysql) which prevents non-root socket access. The startup sequence above includes `chmod 755` to fix this.
+* **`/var/lib/mysql` or a datadir under the repo workspace** may fail to restart with InnoDB errors such as `Can't create UNDO tablespace … since './undo_001' already exists` or `OS error 71` on `ibdata1`. For screenshot/QA sessions, prefer a fresh datadir under **`/tmp/itm-mysql-data`** (see **README module screenshots**).
+* **`apachectl start`** may fail until **`/run/lock/apache2`** exists (`sudo mkdir -p /run/lock/apache2`). A login page HTTP `500` usually means MySQL is down — fix DB before re-running Playwright.
 * PHP 7.4 is not the system default on Ubuntu 24.04; `update-alternatives --set php /usr/bin/php7.4` is run by the update script so `php` resolves to 7.4.33.
