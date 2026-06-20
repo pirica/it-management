@@ -12,6 +12,7 @@ include('config/config.php');
 $token = itm_password_reset_normalize_raw_token($_POST['token'] ?? $_GET['token'] ?? '');
 $csrfToken = itm_get_csrf_token();
 $error = '';
+$formError = '';
 $success = false;
 $tokenUserId = null;
 $tokenUserEmail = null;
@@ -101,8 +102,8 @@ if ($token !== '') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $password = (string)($_POST['password'] ?? '');
-    $passwordConfirm = (string)($_POST['password_confirm'] ?? '');
+    $password = trim((string)($_POST['password'] ?? ''));
+    $passwordConfirm = trim((string)($_POST['password_confirm'] ?? ''));
 
     if ($token === '') {
         $error = 'Reset link is missing. Request a new password reset email.';
@@ -116,11 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($isRateLimited) {
             $error = 'Too many reset attempts. Please wait a few minutes and try again.';
         } elseif ($password === '') {
-            $error = 'Enter a new password.';
+            $formError = 'Enter a new password.';
+        } elseif ($passwordConfirm === '') {
+            $formError = 'Enter a confirmation password.';
         } elseif (strlen($password) < $minPasswordLength) {
-            $error = 'Password must be at least ' . $minPasswordLength . ' characters.';
+            $formError = 'Password must be at least ' . $minPasswordLength . ' characters.';
         } elseif ($password !== $passwordConfirm) {
-            $error = 'Passwords do not match.';
+            $formError = 'Passwords do not match.';
         } else {
             $newPasswordHash = password_hash($password, PASSWORD_DEFAULT);
             if (itm_password_reset_complete_for_employee($conn, (int)$tokenUserId, $token, $newPasswordHash)) {
@@ -155,6 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .links { margin-top: 14px; text-align: center; }
         .links a { color: var(--accent); text-decoration: none; }
+        .form-hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+        .client-error { color: #d93025; margin-bottom: 14px; font-size: 14px; font-weight: 600; }
+        input.input-invalid { border-color: #d93025; }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         @media (max-width: 480px) {
             body { padding: 12px; }
@@ -170,22 +176,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="logo">
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Create a new password</p>
+            <?php if (!$success && $tokenIsValid): ?>
+                <p class="form-hint">Password must be at least <?php echo (int)$minPasswordLength; ?> characters.</p>
+            <?php endif; ?>
         </div>
 
         <?php if ($success): ?>
             <p style="color:#2f855a; margin-bottom:14px;">Password updated successfully. <a href="login.php">Sign in</a></p>
         <?php elseif ($error !== ''): ?>
-            <p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
+            <p class="client-error" role="alert"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
 
         <?php if (!$success && $tokenIsValid): ?>
-        <form method="POST">
+        <form id="reset-password-form" method="POST" novalidate>
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <input type="hidden" name="token" value="<?php echo htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
+            <div id="reset-client-error" class="client-error" role="alert" aria-live="assertive"<?php echo $formError !== '' ? '' : ' style="display:none;"'; ?>><?php echo htmlspecialchars($formError, ENT_QUOTES, 'UTF-8'); ?></div>
             <label for="password">New Password</label>
-            <input id="password" type="password" name="password" placeholder="New password" required minlength="<?php echo (int)$minPasswordLength; ?>" autocomplete="new-password">
+            <input id="password" type="password" name="password" placeholder="New password (8+ characters)" autocomplete="new-password">
             <label for="password_confirm">Confirm New Password</label>
-            <input id="password_confirm" type="password" name="password_confirm" placeholder="Confirm new password" required minlength="<?php echo (int)$minPasswordLength; ?>" autocomplete="new-password">
+            <input id="password_confirm" type="password" name="password_confirm" placeholder="Confirm new password" autocomplete="new-password">
             <button type="submit" title="Update password">Update</button>
         </form>
         <?php endif; ?>
@@ -204,6 +214,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
         }
         document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+
+        (function () {
+            const form = document.getElementById('reset-password-form');
+            if (!form) {
+                return;
+            }
+
+            const minLen = <?php echo (int)$minPasswordLength; ?>;
+            const clientError = document.getElementById('reset-client-error');
+            const passwordInput = document.getElementById('password');
+            const confirmInput = document.getElementById('password_confirm');
+
+            function clearFieldErrors() {
+                passwordInput?.classList.remove('input-invalid');
+                confirmInput?.classList.remove('input-invalid');
+            }
+
+            function showClientError(message, invalidField) {
+                clearFieldErrors();
+                if (invalidField) {
+                    invalidField.classList.add('input-invalid');
+                    invalidField.focus();
+                }
+                if (!clientError) {
+                    return;
+                }
+                clientError.textContent = message;
+                clientError.style.display = 'block';
+            }
+
+            function hideClientError() {
+                clearFieldErrors();
+                if (!clientError) {
+                    return;
+                }
+                clientError.textContent = '';
+                clientError.style.display = 'none';
+            }
+
+            form.addEventListener('submit', function (event) {
+                hideClientError();
+
+                const password = (passwordInput?.value || '').trim();
+                const passwordConfirm = (confirmInput?.value || '').trim();
+
+                if (password === '') {
+                    event.preventDefault();
+                    showClientError('Enter a new password.', passwordInput);
+                    return;
+                }
+                if (passwordConfirm === '') {
+                    event.preventDefault();
+                    showClientError('Enter a confirmation password.', confirmInput);
+                    return;
+                }
+                if (password.length < minLen) {
+                    event.preventDefault();
+                    showClientError('Password must be at least ' + minLen + ' characters.', passwordInput);
+                    return;
+                }
+                if (password !== passwordConfirm) {
+                    event.preventDefault();
+                    showClientError('Passwords do not match.', confirmInput);
+                }
+            });
+
+            [passwordInput, confirmInput].forEach(function (field) {
+                if (!field) {
+                    return;
+                }
+                field.addEventListener('input', function () {
+                    if (clientError && clientError.style.display !== 'none') {
+                        hideClientError();
+                    }
+                });
+            });
+        })();
     </script>
 </body>
 </html>
