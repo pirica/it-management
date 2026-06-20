@@ -1181,7 +1181,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_password_reset_flow.php">verify_password_reset_flow.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Password reset token regression: store with MySQL <code>DATE_ADD</code> expiry, hash lookup, legacy plain <code>reset_token</code> fallback, and completion UPDATE. <strong>Mutates DB:</strong> disposable script-test employee (teardown on exit).</td>
+                    <td>Password reset token regression: store with MySQL <code>DATE_ADD</code> expiry (24 hours), hash lookup, legacy plain <code>reset_token</code> fallback, and completion UPDATE. <strong>Mutates DB:</strong> disposable script-test employee (teardown on exit).</td>
                     <td><code>php scripts/verify_password_reset_flow.php</code> — run after <code>includes/itm_password_reset.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.</td>
                 </tr>
                 <tr>
