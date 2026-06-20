@@ -22,3 +22,12 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 
 ## 12. Module Owner Notes (Optional)
 This is the entry point for the entire system. Refer to `AGENTS.md` for the authoritative process and technical standards.
+
+
+## 13. Employee Dashboard & Profile
+The `user-config.php` has been upgraded to a full Employee Dashboard & Profile system.
+- **Scoping**: All dashboard data is scoped to the logged-in employee via `employee_id` or relevant created/assigned fields.
+- **Stat Cards**: Displays stats from all modules using employee-related ID fields (30+ combinations tracked).
+- **Profile Management**: Integrated photo upload (circular drag-and-drop), theme selection, and emergency contact details.
+- **Security**: Atomicity in Vault Master Key changes with automatic re-encryption of existing entries.
+- **Audit**: All profile and security changes are logged to `audit_logs`.

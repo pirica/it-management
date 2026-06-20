@@ -192,6 +192,12 @@ Repro/verify CLI scripts and PHPUnit tests that INSERT or UPDATE `employees`, to
 
 ## 🏗 Coding Standards
 
+### Employee Dashboard & Profile (user-config.php)
+- **Scoping**: Must remain employee-scoped. Always use `WHERE employee_id = ?` (or appropriate variants like `created_by_employee_id`) for dashboard data.
+- **Vault Security**: Master Key changes must be atomic using database transactions and handle re-encryption of all existing vault entries.
+
+
+
 ### 1. Module Structure
 Each module must maintain a flat structure with these specific files:
 `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
