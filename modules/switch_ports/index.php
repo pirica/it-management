@@ -5,6 +5,7 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+require_once '../../includes/itm_crud_fk_label_search.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -1508,6 +1509,19 @@ if ($searchRaw !== '') {
     $searchParts = [];
     foreach ($visibleFieldColumns as $col) {
         $searchParts[] = 'CAST(' . cr_escape_identifier($col['Field']) . " AS CHAR) LIKE '" . $searchEsc . "'";
+    }
+    $itmFkSearchFields = [];
+    foreach ($visibleFieldColumns as $col) {
+        $itmFkFieldName = (string)($col['Field'] ?? '');
+        if ($itmFkFieldName !== '') {
+            $itmFkSearchFields[] = $itmFkFieldName;
+        }
+    }
+    if (!empty($fkMap)) {
+        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, '', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
+        if (!empty($itmFkLabelSearch)) {
+            $searchParts = array_merge($searchParts, $itmFkLabelSearch);
+        }
     }
     if (!empty($searchParts)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchParts) . ')';

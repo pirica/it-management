@@ -497,10 +497,27 @@ if ($crud_action === "index" || $crud_action === "list_all") {
     }
 
     if ($search !== "") {
-        $baseSql .= " AND (t.title LIKE ? OR t.content LIKE ? OR EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label LIKE ?))";
-        $types .= "sss";
+        $baseSql .= " AND (t.title LIKE ? OR t.content LIKE ? OR EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label LIKE ?) OR EXISTS (
+            SELECT 1 FROM employees e
+            WHERE JSON_CONTAINS(t.shared_with_json, CAST(e.id AS JSON), '$')
+              AND (
+                e.username LIKE ?
+                OR COALESCE(e.display_name, '') LIKE ?
+                OR COALESCE(e.first_name, '') LIKE ?
+                OR COALESCE(e.last_name, '') LIKE ?
+                OR CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')) LIKE ?
+              )
+        ))";
+        $types .= "ssssssss";
         $searchTerm = "%$search%";
-        $params[] = $searchTerm; $params[] = $searchTerm; $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
     }
 
     // Count total rows

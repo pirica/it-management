@@ -11,6 +11,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'includes/itm_crud_fk_label_search.php';
+require_once ROOT_PATH . 'includes/itm_todo_search.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
@@ -120,6 +121,178 @@ if (empty($conds) || stripos($conds[0], 'employee_statuses') === false) {
     $failed = true;
 } else {
     echo colorText('[PASS] Shared FK label search helper builds EXISTS predicate.', 'pass') . $nl;
+}
+
+// Switch ports: search Down should match switch_status.status label.
+$switchPortId = 0;
+$switchPortNumber = 99991;
+$stmtSwitch = mysqli_prepare(
+    $conn,
+    'INSERT INTO switch_ports (company_id, port_type, port_number, status_id, color_id)
+     VALUES (?, ?, ?, ?, ?)'
+);
+if ($stmtSwitch) {
+    $portType = 'RJ45';
+    $statusId = 11;
+    $colorId = 1;
+    mysqli_stmt_bind_param($stmtSwitch, 'isiii', $companyId, $portType, $switchPortNumber, $statusId, $colorId);
+    if (mysqli_stmt_execute($stmtSwitch)) {
+        $switchPortId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtSwitch);
+}
+if ($switchPortId > 0) {
+    $switchHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/switch_ports/list_all.php',
+        $session,
+        ['search' => 'Down', 'sort' => 'id', 'dir' => 'DESC']
+    );
+    if (strpos($switchHtml, (string)$switchPortNumber) === false && stripos($switchHtml, 'Down') === false) {
+        echo colorText('[FAIL] switch_ports search=Down did not return status-labelled row.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] switch_ports search matches switch_status.status.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM switch_ports WHERE id = ' . (int)$switchPortId);
+} else {
+    echo colorText('[FAIL] Unable to seed disposable switch_ports row for search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
+// Todo: search category/department/assignee labels via CSV FK helper.
+$todoCategoryId = 0;
+$todoTaskId = 0;
+$todoCategoryName = 'FkSearchCat' . substr(md5((string)microtime(true)), 0, 8);
+$stmtCat = mysqli_prepare(
+    $conn,
+    'INSERT INTO todo_categories (company_id, cat_from_employee_id, name, active) VALUES (?, ?, ?, 1)'
+);
+if ($stmtCat) {
+    mysqli_stmt_bind_param($stmtCat, 'iis', $companyId, $employeeId, $todoCategoryName);
+    if (mysqli_stmt_execute($stmtCat)) {
+        $todoCategoryId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtCat);
+}
+if ($todoCategoryId > 0) {
+    $deptId = 1;
+    $assigneeId = $employeeId;
+    $todoTitle = 'FkSearchTodoProbe';
+    $categoryCsv = (string)$todoCategoryId;
+    $deptCsv = (string)$deptId;
+    $assigneeCsv = (string)$assigneeId;
+    $createdByAdmin = 1;
+    $stmtTodo = mysqli_prepare(
+        $conn,
+        'INSERT INTO todo (company_id, title, category_id, department_id, assigned_to_employee_id, created_by_employee_id, active)
+         VALUES (?, ?, ?, ?, ?, ?, 1)'
+    );
+    if ($stmtTodo) {
+        mysqli_stmt_bind_param($stmtTodo, 'issssi', $companyId, $todoTitle, $categoryCsv, $deptCsv, $assigneeCsv, $createdByAdmin);
+        if (mysqli_stmt_execute($stmtTodo)) {
+            $todoTaskId = (int)mysqli_insert_id($conn);
+        }
+        mysqli_stmt_close($stmtTodo);
+    }
+}
+if ($todoTaskId > 0) {
+    $todoClause = itm_todo_build_search_clause($todoCategoryName);
+    if ($todoClause['sql'] === '' || $todoClause['types'] !== 'ssssssssss') {
+        echo colorText('[FAIL] itm_todo_build_search_clause did not build expected prepared fragment.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        $todoHtml = verify_crud_fk_label_run_isolated(
+            ROOT_PATH . 'modules/todo/index.php',
+            $session,
+            ['search' => $todoCategoryName, 'filter' => 'tasks']
+        );
+        if (stripos($todoHtml, $todoTitle) === false) {
+            echo colorText('[FAIL] todo search did not match todo_categories.name.', 'fail') . $nl;
+            $failed = true;
+        } else {
+            echo colorText('[PASS] todo search matches category/department/assignee labels.', 'pass') . $nl;
+        }
+    }
+    mysqli_query($conn, 'DELETE FROM todo WHERE id = ' . (int)$todoTaskId);
+}
+if ($todoCategoryId > 0) {
+    mysqli_query($conn, 'DELETE FROM todo_categories WHERE id = ' . (int)$todoCategoryId);
+}
+if ($todoCategoryId <= 0 || $todoTaskId <= 0) {
+    echo colorText('[FAIL] Unable to seed disposable todo row for search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
+// Notes: shared-with employee name search.
+$noteId = 0;
+$noteTitle = 'FkSearchNoteProbe';
+$sharedJson = json_encode([$employeeId]);
+$sharedSearchTerm = (string)($testUser['username'] ?? 'FkSearch');
+$stmtNote = mysqli_prepare(
+    $conn,
+    'INSERT INTO notes (company_id, employee_id, title, content, shared_with_json, active)
+     VALUES (?, 1, ?, ?, ?, 1)'
+);
+if ($stmtNote) {
+    $noteContent = 'Shared-with search probe without matching title token';
+    mysqli_stmt_bind_param($stmtNote, 'isss', $companyId, $noteTitle, $noteContent, $sharedJson);
+    if (mysqli_stmt_execute($stmtNote)) {
+        $noteId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtNote);
+}
+if ($noteId > 0) {
+    $noteHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/notes/index.php',
+        $session,
+        ['search' => $sharedSearchTerm, 'filter' => 'all']
+    );
+    if (stripos($noteHtml, $noteTitle) === false) {
+        echo colorText('[FAIL] notes search did not match shared-with employee names.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] notes search matches shared-with employee labels.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM notes WHERE id = ' . (int)$noteId);
+} else {
+    echo colorText('[FAIL] Unable to seed disposable notes row for search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
+// Private contacts: phone and labels visible in list search.
+$privateContactId = 0;
+$privatePhone = 'FkSearchPhone' . substr(md5((string)microtime(true)), 0, 6);
+$privateLabel = 'FkSearchLabel';
+$stmtContact = mysqli_prepare(
+    $conn,
+    'INSERT INTO private_contacts (company_id, employee_id, first_name, last_name, phone1_value, labels, active)
+     VALUES (?, 1, ?, ?, ?, ?, 1)'
+);
+if ($stmtContact) {
+    $firstName = 'FkSearch';
+    $lastName = 'Contact';
+    mysqli_stmt_bind_param($stmtContact, 'issss', $companyId, $firstName, $lastName, $privatePhone, $privateLabel);
+    if (mysqli_stmt_execute($stmtContact)) {
+        $privateContactId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtContact);
+}
+if ($privateContactId > 0) {
+    $contactHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/private_contacts/index.php',
+        $session,
+        ['search' => $privatePhone]
+    );
+    if (stripos($contactHtml, $privatePhone) === false) {
+        echo colorText('[FAIL] private_contacts search did not match phone1_value.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] private_contacts search matches phone and labels columns.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM private_contacts WHERE id = ' . (int)$privateContactId);
+} else {
+    echo colorText('[FAIL] Unable to seed disposable private_contacts row for search probe.', 'fail') . $nl;
+    $failed = true;
 }
 
 

@@ -6,6 +6,7 @@
 require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/todo_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+require_once ROOT_PATH . 'includes/itm_todo_search.php';
 
 if (!function_exists('todo_merge_assignee_users')) {
     /**
@@ -304,11 +305,14 @@ if ($crud_action === "index") {
     }
 
     if ($search !== "") {
-        $sql .= " AND (t.title LIKE ? OR t.description LIKE ?)";
-        $types .= "ss";
-        $searchTerm = "%$search%";
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
+        $todoSearch = itm_todo_build_search_clause($search);
+        if ($todoSearch['sql'] !== '') {
+            $sql .= $todoSearch['sql'];
+            $types .= $todoSearch['types'];
+            foreach ($todoSearch['params'] as $todoSearchParam) {
+                $params[] = $todoSearchParam;
+            }
+        }
     }
 
     $sql .= " ORDER BY t.completed ASC, t.importance DESC, t.created_at DESC";

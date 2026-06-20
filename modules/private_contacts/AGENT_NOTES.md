@@ -17,6 +17,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 
 ## 5. UI Behavior Requirements
 - Custom list with search, favourite star (AJAX), photo thumbnails.
+- **Search:** matches first/last name, email, organisation, phone (`phone1_value`), labels CSV, and full name concat — aligned with visible list columns.
 - `data-itm-db-import-endpoint` on index table for Excel import.
 - Actions column uses `itm-actions-cell` markers.
 - Create/edit profile photo uses the employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, **PNG only**). Hint: `Drag and drop or click to upload PNG.` Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).

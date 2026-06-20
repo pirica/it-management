@@ -23,6 +23,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - Sidebar filters: pinned, images, important, shared, labels.
 - Supports `import_excel_rows` JSON on index/list_all.
 - Hide `company_id` from views.
+- **Search:** matches title, content, note label names, and shared-with employee names (`shared_with_json` via `JSON_CONTAINS` EXISTS).
 - **Responsive:** sidebar stacks above note list below 768px (`index.php` inline CSS).
 
 ## 6. API Actions (If Applicable)

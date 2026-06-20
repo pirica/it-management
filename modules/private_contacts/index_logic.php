@@ -43,10 +43,10 @@ $params = [$employeeId];
 $types = "i";
 
 if ($search) {
-    $where .= " AND (first_name LIKE ? OR last_name LIKE ? OR email1_value LIKE ? OR organization_name LIKE ?)";
+    $where .= " AND (first_name LIKE ? OR last_name LIKE ? OR email1_value LIKE ? OR organization_name LIKE ? OR phone1_value LIKE ? OR labels LIKE ? OR CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) LIKE ?)";
     $searchParam = "%" . $search . "%";
-    array_push($params, $searchParam, $searchParam, $searchParam, $searchParam);
-    $types .= "ssss";
+    array_push($params, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam);
+    $types .= "sssssss";
 }
 
 $sql = "SELECT * FROM private_contacts WHERE $where ORDER BY is_favorite DESC, first_name ASC, last_name ASC";
