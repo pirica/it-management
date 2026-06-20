@@ -432,7 +432,7 @@ The `company_module_access` module lets administrators (`itm_is_admin()`) enable
 
 The `roles_permissions` module (`modules/roles_permissions/`) provides a unified dashboard for tenant role management and the RBAC permission matrix.
 
-1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** (sidebar user counts).
+1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** + **`employee_statuses`** (sidebar active-employee counts).
 2. **Access:** Signed-in tenant users may browse roles and the matrix read-only; only `itm_is_admin()` may create/edit roles or save matrix changes (AJAX returns HTTP 403 for non-admins).
 3. **Admin role:** Seeded **Admin** role (name match, case-insensitive) uses the `ALL` wildcard row; matrix and rename are read-only for that role.
 4. **Effective flags:** Per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.

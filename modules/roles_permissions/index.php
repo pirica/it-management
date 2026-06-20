@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 
 $activeCompanyId = itm_resolve_active_company_id((int)($company_id ?? 0));
 $rpCanManage = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
@@ -424,7 +425,7 @@ $crud_title = $pageTitle;
                                     $roleId = (int)($roleRow['id'] ?? 0);
                                     $isSelected = $roleId === $selectedRoleId;
                                     $isSystem = rp_role_is_system($roleRow);
-                                    $userCount = (int)($roleRow['user_count'] ?? 0);
+                                    $activeCount = (int)($roleRow['active_count'] ?? 0);
                                     ?>
                                     <a
                                         href="<?= $modulePathEsc ?>/index.php?role_id=<?= $roleId ?>"
@@ -435,7 +436,7 @@ $crud_title = $pageTitle;
                                             <strong><?= sanitize((string)($roleRow['name'] ?? '')) ?></strong>
                                             <span aria-hidden="true">›</span>
                                         </div>
-                                        <div style="color:var(--text-secondary,#666);font-size:12px;margin-top:4px;"><?= (int)$userCount ?> user<?= $userCount === 1 ? '' : 's' ?></div>
+                                        <div style="color:var(--text-secondary,#666);font-size:12px;margin-top:4px;" title="Active employees with this role"><?= (int)$activeCount ?> active</div>
                                         <?php if ($isSystem): ?>
                                             <div style="margin-top:6px;"><span class="badge">System</span></div>
                                         <?php endif; ?>
