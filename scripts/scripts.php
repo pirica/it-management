@@ -939,14 +939,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_roles_permissions.php">verify_roles_permissions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>modules/roles_permissions/</code>: registry row, module entry + matrix JS, RBAC-exempt slug, Admin <code>ALL</code> wildcard with six flags, seeded roles and <code>role_hierarchy</code> for company 1, <code>can_import</code>/<code>can_export</code> columns.</td>
+                    <td>Regression for <code>modules/roles_permissions/</code>: registry row, module entry + matrix JS, RBAC-exempt slug, Admin <code>ALL</code> wildcard with six flags, seeded roles and <code>role_hierarchy</code> for company 1, <code>can_import</code>/<code>can_export</code> columns, role sidebar <code>active_count</code> (role_id + HR Active).</td>
                     <td>Browser: <a href="verify_roles_permissions.php">verify_roles_permissions.php</a>. CLI: <code>php scripts/verify_roles_permissions.php</code>. Run when changing <code>modules/roles_permissions/</code>, <code>js/roles-permissions-matrix.js</code>, or <code>role_module_permissions</code> / <code>employee_roles</code> schema.</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_dashboard_logged_in_users.php">verify_dashboard_logged_in_users.php</a></td>
+                    <td><a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>dashboard.php</code> row-2 <strong>Logged in</strong> stat: <code>includes/itm_active_sessions.php</code> presence touch + parser, <code>config.php</code> hook, dashboard markup, and live unique count for company 1.</td>
-                    <td>Browser: <a href="verify_dashboard_logged_in_users.php">verify_dashboard_logged_in_users.php</a>. CLI: <code>php scripts/verify_dashboard_logged_in_users.php</code>. Run when changing <code>dashboard.php</code> or <code>includes/itm_active_sessions.php</code>.</td>
+                    <td>Regression for <code>dashboard.php</code> row-2 <strong>Active</strong> and <strong>On Leave</strong> stats: employment status helpers and counts for company 1.</td>
+                    <td>Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>dashboard.php</code> or Active/On Leave employee count logic.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_dashboard_online_users.php">verify_dashboard_online_users.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>dashboard.php</code> row-2 <strong>Online now</strong> stat: session presence helper, <code>config/config.php</code> touch hook, count after touch.</td>
+                    <td>Browser: <a href="verify_dashboard_online_users.php">verify_dashboard_online_users.php</a>. CLI: <code>php scripts/verify_dashboard_online_users.php</code>. Run when changing online session presence or dashboard Online now markup.</td>
                 </tr>
                 <tr>
                     <td><a href="seed_company_module_access.php">seed_company_module_access.php</a></td>

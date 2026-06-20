@@ -22,25 +22,17 @@ $selectedRoleId = (int)($_GET['role_id'] ?? 0);
 function rp_load_roles(mysqli $conn, int $companyId): array
 {
     $roles = [];
-    // Why: role_id is on the employee home row; cross-company access uses employee_companies.
-    // Count by role name + tenant access, not only employees.company_id = active company.
+    // Why: Sidebar count = employees.role_id + tenant company_id + HR employment status Active.
+    $empJoin = itm_employee_active_employment_status_join_sql('e', 'es');
+    $empActive = itm_employee_active_employment_status_predicate_sql('es');
     $sql = 'SELECT er.id, er.name, er.active,
                    COALESCE(rh.hierarchy_order, 999) AS hierarchy_order,
-                   (SELECT COUNT(DISTINCT e.id)
-                    FROM employees e
-                    INNER JOIN employee_roles er_assign
-                      ON er_assign.id = e.role_id AND er_assign.company_id = e.company_id
-                    WHERE er_assign.name = er.name
-                      AND (
-                        (e.company_id = er.company_id AND e.role_id = er.id)
-                        OR EXISTS (
-                          SELECT 1 FROM employee_companies ec
-                          WHERE ec.employee_id = e.id
-                            AND ec.company_id = er.company_id
-                            AND ec.active = 1
-                        )
-                      )
-                   ) AS user_count
+                   (SELECT COUNT(*)
+                    FROM employees e' . $empJoin . '
+                    WHERE e.company_id = er.company_id
+                      AND e.role_id = er.id
+                      AND ' . $empActive . '
+                   ) AS active_count
             FROM employee_roles er
             LEFT JOIN role_hierarchy rh
               ON rh.role_id = er.id AND rh.company_id = er.company_id

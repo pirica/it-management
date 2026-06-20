@@ -431,7 +431,7 @@ if (
 
 $company_id = itm_resolve_active_company_id((int)($_SESSION['company_id'] ?? 0));
 
-// Why: Dashboard logged-in count uses writable presence touch files (PHP session dirs are not listable).
+// Why: Dashboard Online now count uses writable presence touch files (PHP session dirs are not listable).
 $itmActiveEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
 if ($company_id > 0 && $itmActiveEmployeeId > 0) {
     require_once ROOT_PATH . 'includes/itm_active_sessions.php';

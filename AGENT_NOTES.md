@@ -16,7 +16,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
-- **dashboard.php** — landing stats: row 1 module counts (Equipment, Tickets, Employees); row 2 **Logged in** = unique employees with a recent presence touch for the active `company_id` via `includes/itm_active_sessions.php` (updated each authenticated request from `config.php`; not HR employment status; distinct from Roles & Permissions sidebar **active employee** counts).
+- **dashboard.php** — landing stats: row 1 module counts (Equipment, Tickets, Employees); row 2 **Active** (HR employment status Active), **Online now** (session presence via `includes/itm_active_sessions.php`), **On Leave** (HR employment status On Leave) for the active `company_id`. Distinct from Roles & Permissions sidebar **N active** counts per role (`employees.role_id` + HR Active).
 - **css/styles.css** — global stylesheet with responsive breakpoints and shared layout utilities (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR, `phpunit.xml`, and `tests/` tree. Runner: **`scripts/run_tests.php`**; coverage report: **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 

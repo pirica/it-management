@@ -185,8 +185,21 @@ $equipment_count = fetch_company_count($conn, $equipmentSql, $companyId);
 $tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM tickets WHERE company_id = ?', $companyId);
 $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
 
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+$empActiveJoin = itm_employee_active_employment_status_join_sql('e', 'es');
+$empActivePredicate = itm_employee_active_employment_status_predicate_sql('es');
+$activeEmployeesSql = 'SELECT COUNT(*) AS count FROM employees e' . $empActiveJoin
+    . ' WHERE e.company_id = ? AND ' . $empActivePredicate;
+$active_employees_count = fetch_company_count($conn, $activeEmployeesSql, $companyId);
+
+$onLeaveJoin = itm_employee_active_employment_status_join_sql('e', 'es_leave');
+$onLeavePredicate = itm_employee_on_leave_employment_status_predicate_sql('es_leave');
+$onLeaveSql = 'SELECT COUNT(*) AS count FROM employees e' . $onLeaveJoin
+    . ' WHERE e.company_id = ? AND ' . $onLeavePredicate;
+$on_leave_count = fetch_company_count($conn, $onLeaveSql, $companyId);
+
 require_once ROOT_PATH . 'includes/itm_active_sessions.php';
-$logged_in_users_count = itm_count_logged_in_users_for_company($companyId, $conn);
+$online_now_count = itm_count_logged_in_users_for_company($companyId, $conn);
 
 // Fetch logged-in user details for the welcome message
 $userDisplayName = '';
@@ -262,10 +275,22 @@ if ($userDisplayName !== '' && $userEmail !== '') {
 
                 <?php if ($companyId > 0): ?>
                 <div class="stats-grid">
-                    <div class="stat-card" title="Employees with an active session for this company">
-                        <div class="stat-label">Logged in</div>
-                        <div class="stat-number"><?php echo (int)$logged_in_users_count; ?></div>
+                    <?php if (has_module_access($conn, $companyId, 'employees')): ?>
+                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/employees/" title="Active employees for this company">
+                        <div class="stat-label">Active</div>
+                        <div class="stat-number"><?php echo (int)$active_employees_count; ?></div>
+                    </a>
+                    <?php endif; ?>
+                    <div class="stat-card" title="Employees currently signed in for this company">
+                        <div class="stat-label">Online now</div>
+                        <div class="stat-number"><?php echo (int)$online_now_count; ?></div>
                     </div>
+                    <?php if (has_module_access($conn, $companyId, 'employees')): ?>
+                    <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/employees/" title="Employees on leave for this company">
+                        <div class="stat-label">On Leave</div>
+                        <div class="stat-number"><?php echo (int)$on_leave_count; ?></div>
+                    </a>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
 
