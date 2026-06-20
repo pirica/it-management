@@ -432,18 +432,19 @@ The `company_module_access` module lets administrators (`itm_is_admin()`) enable
 
 The `roles_permissions` module (`modules/roles_permissions/`) provides a unified dashboard for tenant role management and the RBAC permission matrix.
 
-1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** (sidebar user counts).
+1. **Tables:** **`employee_roles`**, **`role_module_permissions`** (six flags: `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`), **`role_hierarchy`**, **`modules_registry`** (matrix rows), **`employees`** + **`employee_statuses`** (sidebar active-employee counts).
 2. **Access:** Signed-in tenant users may browse roles and the matrix read-only; only `itm_is_admin()` may create/edit roles or save matrix changes (AJAX returns HTTP 403 for non-admins).
 3. **Admin role:** Seeded **Admin** role (name match, case-insensitive) uses the `ALL` wildcard row; matrix and rename are read-only for that role.
 4. **Effective flags:** Per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
 5. **Matrix columns:** View, Add (`can_create`), Edit, Delete, Import, Export — aligned with `includes/itm_role_module_permissions.php` enforcement.
-6. **Company gate first:** `company_module_access` remains the first visibility gate; this module configures the second RBAC layer.
-7. **RBAC exempt:** Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations.
-8. **UI:** Dual-pane layout patterned after Company Module Access — role sidebar, toolbar card, permission matrix (`js/roles-permissions-matrix.js`).
-9. **AJAX actions:** `save_permissions`, `create_role`, `update_role` — all require CSRF and administrator access.
-10. **Sidebar:** Admin → **🛡️ Roles & Permissions** in `includes/ui_config.php`.
-11. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_roles_permissions.php`.
-12. **README screenshot:** capture with Playwright via `scripts/take_screenshots_modules.py` (same `bypass_login.php` + `PHPSESSID` cookie pattern as other README module shots). Command:
+6. **Role sidebar counts:** Show **active employees** with the role (`employment_status_id` → `employee_statuses.name` = Active via `includes/itm_employee_employment_status.php`). This is **not** a logged-in session count. Include employees who can access the active company through `employees.company_id` + matching `role_id`, or an active `employee_companies` row when the home role **name** matches (cross-company Admin access). UI label: **`N active`**.
+7. **Company gate first:** `company_module_access` remains the first visibility gate; this module configures the second RBAC layer.
+8. **RBAC exempt:** Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations.
+9. **UI:** Dual-pane layout patterned after Company Module Access — role sidebar, toolbar card, permission matrix (`js/roles-permissions-matrix.js`).
+10. **AJAX actions:** `save_permissions`, `create_role`, `update_role` — all require CSRF and administrator access.
+11. **Sidebar:** Admin → **🛡️ Roles & Permissions** in `includes/ui_config.php`.
+12. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_roles_permissions.php`.
+13. **README screenshot:** capture with Playwright via `scripts/take_screenshots_modules.py` (same `bypass_login.php` + `PHPSESSID` cookie pattern as other README module shots). Command:
 
     ```bash
     ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py
