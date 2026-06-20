@@ -231,6 +231,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("role_assignment_rights", "Role Assignment Rights", 1, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("role_hierarchy", "Role Hierarchy", 1, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("role_module_permissions", "Role Module Permissions", 1, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("roles_permissions", "Roles & Permissions", 1, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("settings", "Settings", 1, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("supplier_statuses", "Supplier Statuses", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("suppliers", "Suppliers", 0, 1);
