@@ -286,7 +286,10 @@ function itm_log_audit($conn, $table, $record_id, $action, $old_values = null, $
     $ipAddress = itm_get_client_ip_address();
     $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
 
-    $sql = 'INSERT INTO audit_logs (company_id, employee_id, table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
+    // Why: Deployment schema may use user_id or employee_id as the FK column.
+    $userColumn = itm_audit_table_has_column($conn, 'audit_logs', 'employee_id') ? 'employee_id' : 'user_id';
+
+    $sql = 'INSERT INTO audit_logs (company_id, ' . $userColumn . ', table_name, record_id, action, old_values, new_values, ip_address, user_agent) '
          . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
     try {
@@ -357,8 +360,15 @@ function itm_fetch_audit_record($conn, $table, $record_id, $company_id = null) {
 
 /**
  * Checks if a specific table has a given column (used for dynamic audit logic)
+ *
+ * Why: Redundant information_schema queries on every audited mutation cause bottlenecks.
+ * Delegates to itm_table_has_column() which uses a per-request static cache.
  */
 function itm_audit_table_has_column($conn, $table, $column) {
+    if (function_exists('itm_table_has_column')) {
+        return itm_table_has_column($conn, $table, $column);
+    }
+
     if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
         return false;
     }
@@ -367,7 +377,6 @@ function itm_audit_table_has_column($conn, $table, $column) {
         return false;
     }
 
-    // INFORMATION_SCHEMA is used for compatibility across MySQL/MariaDB versions
     $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
