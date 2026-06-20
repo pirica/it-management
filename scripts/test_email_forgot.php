@@ -85,16 +85,9 @@ if ($employeeId <= 0) {
 }
 
 $resetToken = bin2hex(random_bytes(32));
-$resetTokenHash = hash('sha256', $resetToken);
-$resetExpiresAt = date('Y-m-d H:i:s', time() + 3600);
-$tokenStmt = mysqli_prepare(
-    $conn,
-    'UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ? AND company_id = ?'
-);
-if ($tokenStmt) {
-    mysqli_stmt_bind_param($tokenStmt, 'sssii', $resetToken, $resetTokenHash, $resetExpiresAt, $employeeId, $companyId);
-    mysqli_stmt_execute($tokenStmt);
-    mysqli_stmt_close($tokenStmt);
+if (!itm_password_reset_store_token_for_employee($conn, $employeeId, $resetToken)) {
+    echo '❌ Failed to store reset token for employee id ' . (int)$employeeId . '.' . itm_script_output_nl();
+    exit(1);
 }
 
 $resetLink = BASE_URL . 'reset-password.php?token=' . urlencode($resetToken);

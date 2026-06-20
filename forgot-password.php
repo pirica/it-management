@@ -8,6 +8,8 @@
 
 include('config/config.php');
 $csrfToken = itm_get_csrf_token();
+$error = '';
+$message = '';
 
 /**
  * Why: Reset endpoints are public and are attractive for scripted abuse.
@@ -39,37 +41,14 @@ function itm_record_password_reset_attempt(mysqli $conn, string $attemptType, st
  * Why: Password reset tracking should link attempts to a concrete user record
  * whenever an email matches, so security analytics can pivot by user_id.
  */
-function itm_find_password_reset_user(mysqli $conn, string $email): array
+function itm_find_password_reset_user(mysqli $conn, string $identifier): array
 {
-    $user = [
-        'id' => null,
-        'username' => null,
-        'company_id' => null,
+    $user = itm_password_reset_find_user_by_identifier($conn, $identifier);
+    return [
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'company_id' => $user['company_id'],
     ];
-
-    if ($email === '') {
-        return $user;
-    }
-
-    $stmt = mysqli_prepare(
-        $conn,
-        'SELECT id, username, company_id FROM employees
-         WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = LOWER(TRIM(?))
-         LIMIT 1'
-    );
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $email);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_bind_result($stmt, $foundUserId, $foundUsername, $foundCompanyId);
-        if (mysqli_stmt_fetch($stmt)) {
-            $user['id'] = (int)$foundUserId;
-            $user['username'] = (string)$foundUsername;
-            $user['company_id'] = (int)$foundCompanyId;
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    return $user;
 }
 
 /**
@@ -118,13 +97,12 @@ function itm_is_password_reset_rate_limited(mysqli $conn, string $attemptType, s
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
-    
-    $email = trim($_POST['email'] ?? '');
-    // Why: Keep auth attempt IP selection consistent with login and reset flows.
+
+    $identifier = trim((string)($_POST['email'] ?? ''));
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
-    $storedAttemptIdentifier = itm_normalize_login_attempt_identifier($email);
+    $storedAttemptIdentifier = itm_normalize_login_attempt_identifier($identifier);
     $isRateLimited = itm_is_password_reset_rate_limited($conn, 'request', $requestIp, $storedAttemptIdentifier);
-    $requestUser = itm_find_password_reset_user($conn, $email);
+    $requestUser = itm_password_reset_find_user_by_identifier($conn, $identifier);
 
     itm_record_password_reset_attempt(
         $conn,
@@ -134,53 +112,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requestUser['id']
     );
 
-    if (!$isRateLimited) {
-        // Resolve and set audit company scope before mutating users.
-        // Why: Audit triggers rely on @app_company_id. On public pages there is no session company,
-        // so we derive it from the target account to avoid FK violations in audit_logs.
-        $auditCompanyId = $requestUser['company_id'];
-        mysqli_query($conn, 'SET @app_company_id = ' . ($auditCompanyId === null ? 'NULL' : (string)$auditCompanyId));
+    if ($isRateLimited) {
+        $error = 'Too many reset requests. Please wait a few minutes and try again.';
+    } elseif ((int)($requestUser['id'] ?? 0) > 0 && $requestUser['deliverable_email'] === '') {
+        $error = 'This account has no email on file. Contact your administrator to add one.';
+    } elseif (!$isRateLimited && (int)($requestUser['id'] ?? 0) > 0) {
+        $auditCompanyId = (int)($requestUser['company_id'] ?? 0);
+        mysqli_query($conn, 'SET @app_company_id = ' . ($auditCompanyId > 0 ? (string)$auditCompanyId : 'NULL'));
 
-        // Generate a secure random reset token and keep a hash for validation.
-        // Why: Keeping the hash enables constant-size lookup while the raw token
-        // can still support legacy admin diagnostics that expect reset_token.
         $token = bin2hex(random_bytes(32));
-        $tokenHash = hash('sha256', $token);
-        $tokenExpiresAt = date('Y-m-d H:i:s', time() + (60 * 60));
-
-        // Store both token forms and expiry if the email exists.
-        $stmt = mysqli_prepare(
-            $conn,
-            'UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ?
-             WHERE LOWER(TRIM(COALESCE(work_email, personal_email, ""))) = LOWER(TRIM(?))'
-        );
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ssss', $token, $tokenHash, $tokenExpiresAt, $email);
-            mysqli_stmt_execute($stmt);
-
-            // Only attempt to send email if an account was actually found and updated.
-            if (mysqli_stmt_affected_rows($stmt) > 0) {
-                $link = BASE_URL . 'reset-password.php?token=' . urlencode($token);
-                $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
-                $html = '<p>We received a request to reset your password. Use the button below to choose a new one.</p>'
-                    . '<p>If the button does not work, copy and paste this link into your browser:</p>'
-                    . '<p style="word-break:break-all;"><a href="' . $safeLink . '" style="color:#0969da;">' . $safeLink . '</a></p>';
-                itm_send_email($email, 'Reset Your Password', $html, $auditCompanyId, [
-                    'email_template' => [
-                        'subtitle' => 'Reset your password',
-                        'button_text' => 'Reset password',
-                        'button_url' => $link,
-                        'footer_text' => 'If you did not request this, you can ignore this email.',
-                    ],
-                ]);
-            }
-
-            mysqli_stmt_close($stmt);
+        if (itm_password_reset_store_token_for_employee($conn, (int)$requestUser['id'], $token)) {
+            $deliverTo = (string)$requestUser['deliverable_email'];
+            $link = BASE_URL . 'reset-password.php?token=' . urlencode($token);
+            $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+            $html = '<p>We received a request to reset your password. Use the button below to choose a new one.</p>'
+                . '<p>If the button does not work, copy and paste this link into your browser:</p>'
+                . '<p style="word-break:break-all;"><a href="' . $safeLink . '" style="color:#0969da;">' . $safeLink . '</a></p>';
+            itm_send_email($deliverTo, 'Reset Your Password', $html, $auditCompanyId > 0 ? $auditCompanyId : null, [
+                'email_template' => [
+                    'subtitle' => 'Reset your password',
+                    'button_text' => 'Reset password',
+                    'button_url' => $link,
+                    'footer_text' => 'If you did not request this, you can ignore this email.',
+                ],
+            ]);
+            $message = 'If your email exists, a reset link has been sent.';
         }
+    } else {
+        $message = 'If your email exists, a reset link has been sent.';
     }
-
-    // Always show the same message to prevent email enumeration.
-    $message = 'If your email exists, a reset link has been sent.';
 }
 ?>
 <!DOCTYPE html>
@@ -219,14 +179,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Reset your password</p>
         </div>
-        <?php if (isset($message)): ?><p style="color:#2f855a; margin-bottom:14px;"><?php echo htmlspecialchars($message); ?></p><?php endif; ?>
+        <?php if ($error !== ''): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
+        <?php if ($message !== ''): ?><p style="color:#2f855a; margin-bottom:14px;"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-            <label for="email">Email</label>
-            <input id="email" type="email" name="email" placeholder="Email" required>
-            <button type="submit">Send Email</button>
+            <label for="email">Email or Username</label>
+            <input id="email" type="text" name="email" placeholder="Email or username" required autocomplete="username">
+            <button type="submit" title="Send reset email">Send Email</button>
         </form>
-        <div class="links"><a href="login.php">Back to Login</a></div>
+        <div class="links"><a href="<?php echo sanitize(BASE_URL); ?>login.php">Back to Login</a></div>
     </div>
     <script>
         /**

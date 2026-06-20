@@ -9,8 +9,7 @@
 include('config/config.php');
 
 // Why: POST must keep the token when query strings are stripped by proxies or bookmarks.
-$token = trim((string)($_POST['token'] ?? $_GET['token'] ?? ''));
-$tokenHash = $token !== '' ? hash('sha256', $token) : '';
+$token = itm_password_reset_normalize_raw_token($_POST['token'] ?? $_GET['token'] ?? '');
 $csrfToken = itm_get_csrf_token();
 $error = '';
 $success = false;
@@ -92,34 +91,8 @@ function itm_is_password_reset_completion_rate_limited(mysqli $conn, string $ipA
 /**
  * Why: Shared lookup for GET display and POST update so invalid links fail with clear copy.
  */
-function itm_reset_password_lookup_token_user(mysqli $conn, string $tokenHash): array
-{
-    $user = ['id' => null, 'email' => null];
-    if ($tokenHash === '') {
-        return $user;
-    }
-
-    $stmt = mysqli_prepare(
-        $conn,
-        'SELECT id, COALESCE(work_email, personal_email) AS email FROM employees
-         WHERE reset_token_hash = ? AND reset_token_expires_at >= NOW() LIMIT 1'
-    );
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $tokenHash);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_bind_result($stmt, $foundId, $foundEmail);
-        if (mysqli_stmt_fetch($stmt)) {
-            $user['id'] = (int)$foundId;
-            $user['email'] = (string)$foundEmail;
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    return $user;
-}
-
 if ($token !== '') {
-    $tokenLookup = itm_reset_password_lookup_token_user($conn, $tokenHash);
+    $tokenLookup = itm_password_reset_lookup_employee_by_token($conn, $token);
     $tokenUserId = $tokenLookup['id'];
     $tokenUserEmail = $tokenLookup['email'];
     $tokenIsValid = $tokenUserId !== null;
@@ -150,23 +123,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Passwords do not match.';
         } else {
             $newPasswordHash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = mysqli_prepare(
-                $conn,
-                'UPDATE employees
-                 SET password = ?, reset_token = NULL, reset_token_hash = NULL, reset_token_expires_at = NULL
-                 WHERE id = ? AND reset_token_hash = ? AND reset_token_expires_at >= NOW()'
-            );
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'sis', $newPasswordHash, $tokenUserId, $tokenHash);
-                if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
-                    $success = true;
-                    $tokenIsValid = false;
-                } else {
-                    $error = 'Unable to update your password. The link may have expired or already been used.';
-                }
-                mysqli_stmt_close($stmt);
+            if (itm_password_reset_complete_for_employee($conn, (int)$tokenUserId, $token, $newPasswordHash)) {
+                $success = true;
+                $tokenIsValid = false;
             } else {
-                $error = 'Unable to update your password right now. Please try again.';
+                $error = 'Unable to update your password. The link may have expired or already been used.';
             }
         }
     }
@@ -231,9 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="links">
             <?php if (!$success): ?>
-                <a href="forgot-password.php">Request a new reset link</a> ·
+                <a href="<?php echo sanitize(BASE_URL); ?>forgot-password.php">Request a new reset link</a> ·
             <?php endif; ?>
-            <a href="login.php">Back to Login</a>
+            <a href="<?php echo sanitize(BASE_URL); ?>login.php">Back to Login</a>
         </div>
     </div>
     <script>
