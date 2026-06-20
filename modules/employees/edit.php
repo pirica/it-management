@@ -11,6 +11,7 @@ itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_hidden_accounts.php';
+require_once '../../includes/itm_fk_option_labels.php';
 
 /**
  * Ensures unique constraints don't block manual updates when duplicates are allowed in the UI
@@ -52,7 +53,7 @@ if (itm_employees_is_hidden_account($employee)) {
 
 // Load reference data
 $statuses = mysqli_query($conn, 'SELECT id, name FROM employee_statuses WHERE company_id=' . (int)$company_id . ' ORDER BY name');
-$departments = mysqli_query($conn, 'SELECT id, name FROM departments WHERE company_id=' . (int)$company_id . ' ORDER BY name');
+$departmentRows = itm_department_select_rows_for_company($conn, (int)$company_id);
 $workstationModeOptions = mysqli_query($conn, 'SELECT id, mode_name FROM workstation_modes WHERE company_id=' . (int)$company_id . ' ORDER BY pos, mode_name');
 $assignmentTypeOptions = mysqli_query($conn, 'SELECT id, name FROM assignment_types WHERE company_id=' . (int)$company_id . ' ORDER BY name');
 $workstationModeLookup = [];
@@ -299,9 +300,9 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                             <select name="reports_to">
                                 <option value="">-- None --</option>
                                 <?php
-                                $mgrs = mysqli_query($conn, "SELECT id, display_name FROM employees WHERE company_id=" . (int)$company_id . " AND id != " . $id . " AND is_hidden=0 ORDER BY display_name");
+                                $mgrs = mysqli_query($conn, "SELECT id, display_name, username FROM employees WHERE company_id=" . (int)$company_id . " AND id != " . $id . " AND is_hidden=0 ORDER BY display_name");
                                 if ($mgrs): while ($m = mysqli_fetch_assoc($mgrs)): ?>
-                                    <option value="<?php echo (int)$m['id']; ?>" <?php echo ((string)$m['id'] === (string)$form['reports_to']) ? 'selected' : ''; ?>><?php echo sanitize((string)$m['display_name']); ?></option>
+                                    <option value="<?php echo (int)$m['id']; ?>" <?php echo ((string)$m['id'] === (string)$form['reports_to']) ? 'selected' : ''; ?>><?php echo sanitize(itm_employee_manager_option_label($m)); ?></option>
                                 <?php endwhile; endif; ?>
                             </select>
                         </div>
@@ -310,9 +311,9 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Department</label>
                             <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department">
                                 <option value="">-- None --</option>
-                                <?php if ($departments): while ($d = mysqli_fetch_assoc($departments)): ?>
-                                    <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['department_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$d['name']); ?></option>
-                                <?php endwhile; endif; ?>
+                                <?php foreach ($departmentRows as $d): ?>
+                                    <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['department_id']) ? 'selected' : ''; ?>><?php echo sanitize(itm_department_option_label($d)); ?></option>
+                                <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>
@@ -320,10 +321,9 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>Office Key Card Department</label>
                             <select name="office_key_card_department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="office key card department">
                                 <option value="">-- None --</option>
-                                <?php if ($departments instanceof mysqli_result) { mysqli_data_seek($departments, 0); } ?>
-                                <?php if ($departments): while ($d = mysqli_fetch_assoc($departments)): ?>
-                                    <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['office_key_card_department_id']) ? 'selected' : ''; ?>><?php echo sanitize((string)$d['name']); ?></option>
-                                <?php endwhile; endif; ?>
+                                <?php foreach ($departmentRows as $d): ?>
+                                    <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['office_key_card_department_id']) ? 'selected' : ''; ?>><?php echo sanitize(itm_department_option_label($d)); ?></option>
+                                <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>
                         </div>

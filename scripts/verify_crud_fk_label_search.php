@@ -84,6 +84,43 @@ if (strpos($employeesHtml, (string)$employeeId) === false && stripos($employeesH
     echo colorText('[PASS] employees search=Active matches employment_statuses.name.', 'pass') . $nl;
 }
 
+// Employees: search FNB should match departments.code (department label alias).
+$fnbDeptId = 0;
+$stmtFnbDept = mysqli_prepare(
+    $conn,
+    "SELECT id FROM departments WHERE company_id = ? AND code = 'FNB' LIMIT 1"
+);
+if ($stmtFnbDept) {
+    mysqli_stmt_bind_param($stmtFnbDept, 'i', $companyId);
+    mysqli_stmt_execute($stmtFnbDept);
+    $fnbDeptRes = mysqli_stmt_get_result($stmtFnbDept);
+    $fnbDeptRow = $fnbDeptRes ? mysqli_fetch_assoc($fnbDeptRes) : null;
+    mysqli_stmt_close($stmtFnbDept);
+    $fnbDeptId = (int)($fnbDeptRow['id'] ?? 0);
+}
+if ($fnbDeptId > 0) {
+    $stmtDeptAssign = mysqli_prepare($conn, 'UPDATE employees SET department_id = ? WHERE id = ? AND company_id = ?');
+    if ($stmtDeptAssign) {
+        mysqli_stmt_bind_param($stmtDeptAssign, 'iii', $fnbDeptId, $employeeId, $companyId);
+        mysqli_stmt_execute($stmtDeptAssign);
+        mysqli_stmt_close($stmtDeptAssign);
+    }
+    $employeesFnbHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/employees/index.php',
+        $session,
+        ['search' => 'FNB', 'sort' => 'id', 'dir' => 'DESC']
+    );
+    if (strpos($employeesFnbHtml, (string)$employeeId) === false && stripos($employeesFnbHtml, 'FkSearch') === false) {
+        echo colorText('[FAIL] employees search=FNB did not match departments.code.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] employees search=FNB matches departments.code.', 'pass') . $nl;
+    }
+} else {
+    echo colorText('[FAIL] departments seed missing FNB code for company 1.', 'fail') . $nl;
+    $failed = true;
+}
+
 // License management: search a known license type label when seeded.
 $typeRes = mysqli_query($conn, "SELECT lt.name FROM license_types lt WHERE lt.company_id = {$companyId} ORDER BY lt.id ASC LIMIT 1");
 $typeRow = $typeRes ? mysqli_fetch_assoc($typeRes) : null;
