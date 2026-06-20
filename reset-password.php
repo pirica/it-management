@@ -161,6 +161,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
         .client-error { color: #d93025; margin-bottom: 14px; font-size: 14px; font-weight: 600; }
         input.input-invalid { border-color: #d93025; }
+        .status-panel { text-align: center; padding: 4px 0 8px; }
+        .status-icon { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 34px; line-height: 1; box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
+        .status-icon--success { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); color: #fff; box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35); }
+        .status-icon--error { background: linear-gradient(135deg, #fca5a5 0%, #ef4444 100%); color: #fff; box-shadow: 0 12px 28px rgba(239, 68, 68, 0.28); }
+        .status-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+        .status-text { color: var(--muted); font-size: 15px; line-height: 1.55; margin-bottom: 24px; }
+        .btn-signin { display: block; width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; text-align: center; text-decoration: none; box-shadow: 0 10px 24px rgba(102, 126, 234, 0.35); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .btn-signin:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(102, 126, 234, 0.42); color: #fff; }
+        .links--compact { margin-top: 18px; }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         @media (max-width: 480px) {
             body { padding: 12px; }
@@ -175,16 +184,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <div class="logo">
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
-            <p>Create a new password</p>
-            <?php if (!$success && $tokenIsValid): ?>
+            <?php if ($success): ?>
+                <p>You're all set</p>
+            <?php elseif ($tokenIsValid): ?>
+                <p>Create a new password</p>
                 <p class="form-hint">Password must be at least <?php echo (int)$minPasswordLength; ?> characters.</p>
+            <?php else: ?>
+                <p>Password reset</p>
             <?php endif; ?>
         </div>
 
         <?php if ($success): ?>
-            <p style="color:#2f855a; margin-bottom:14px;">Password updated successfully. <a href="login.php">Sign in</a></p>
+            <div class="status-panel" role="status" aria-live="polite">
+                <div class="status-icon status-icon--success" aria-hidden="true">✓</div>
+                <h2 class="status-title">Password updated</h2>
+                <p class="status-text">Your new password is active. Sign in with your email or username and the password you just set.</p>
+                <a class="btn-signin" href="<?php echo sanitize(BASE_URL); ?>login.php" title="Sign in">Sign in</a>
+            </div>
         <?php elseif ($error !== ''): ?>
-            <p class="client-error" role="alert"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
+            <div class="status-panel" role="alert">
+                <div class="status-icon status-icon--error" aria-hidden="true">!</div>
+                <h2 class="status-title">Reset link unavailable</h2>
+                <p class="status-text"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
+            </div>
         <?php endif; ?>
 
         <?php if (!$success && $tokenIsValid): ?>
@@ -200,11 +222,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
         <?php endif; ?>
 
-        <div class="links">
+        <div class="links<?php echo $success ? ' links--compact' : ''; ?>">
             <?php if (!$success): ?>
                 <a href="<?php echo sanitize(BASE_URL); ?>forgot-password.php">Request a new reset link</a> ·
             <?php endif; ?>
-            <a href="<?php echo sanitize(BASE_URL); ?>login.php">Back to Login</a>
+            <?php if (!$success): ?>
+                <a href="<?php echo sanitize(BASE_URL); ?>login.php">Back to Login</a>
+            <?php endif; ?>
         </div>
     </div>
     <script>
