@@ -6,6 +6,13 @@
  * and legacy plain reset_token rows so public reset links work across tenants.
  */
 
+if (!function_exists('itm_password_reset_token_ttl_hours')) {
+    function itm_password_reset_token_ttl_hours()
+    {
+        return 24;
+    }
+}
+
 if (!function_exists('itm_password_reset_normalize_raw_token')) {
     function itm_password_reset_normalize_raw_token($rawToken)
     {
@@ -107,10 +114,11 @@ if (!function_exists('itm_password_reset_store_token_for_employee')) {
         }
 
         $tokenHash = itm_password_reset_hash_token($rawToken);
+        $ttlHours = (int)itm_password_reset_token_ttl_hours();
         $stmt = mysqli_prepare(
             $conn,
             'UPDATE employees
-             SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
+             SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL ' . $ttlHours . ' HOUR)
              WHERE id = ? LIMIT 1'
         );
         if (!$stmt) {
