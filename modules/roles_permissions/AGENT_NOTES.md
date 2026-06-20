@@ -33,7 +33,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 
 ## 5. UI Behavior Requirements
 
-- Dual-pane layout: role cards (left) + permission matrix (right), patterned after `company_module_access`.
+- Dual-pane layout patterned after `company_module_access`: page title header, toolbar card (`margin-bottom:16px`), matrix card (`overflow:auto`), `Modules` column header, accent slug links, centred checkbox cells, and `badge` / `badge-danger` for system/inactive rows.
 - Role cards show name, user count, and **System** badge for Admin.
 - Toolbar: Check All, Uncheck All, Save (💾, admins only), module filter.
 - Add role (➕) and edit role (✏️) modals update `employee_roles.name` via AJAX (admins only).
