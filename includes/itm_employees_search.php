@@ -92,6 +92,9 @@ if (!function_exists('itm_employees_build_search_conditions')) {
             $conditions[] = "CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, '')) LIKE '" . $searchValue . "'";
         }
 
+        // Why: mobile_phone is stored on employees but hidden from list columns (ESA matrix); still searchable.
+        $conditions[] = "COALESCE(e.mobile_phone, '') LIKE '" . $searchValue . "'";
+
         return $conditions;
     }
 }
