@@ -295,6 +295,194 @@ if ($privateContactId > 0) {
     $failed = true;
 }
 
+function verify_crud_fk_label_run_ajax_post($scriptPath, array $session, array $post = [])
+{
+    $sessionExport = var_export($session, true);
+    $postExport = var_export($post, true);
+    $dir = var_export(dirname($scriptPath), true);
+    $base = var_export(basename($scriptPath), true);
+    $rootPath = var_export(rtrim(ROOT_PATH, '/\\') . '/', true);
+    $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+require_once {$rootPath} . 'config/config.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+\$_SESSION = {$sessionExport};
+\$_POST = {$postExport};
+\$_POST['csrf_token'] = itm_get_csrf_token();
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+chdir({$dir});
+ob_start();
+include {$base};
+echo ob_get_clean();
+";
+    $tmpFile = tempnam(sys_get_temp_dir(), 'verify_crud_fk_ajax');
+    file_put_contents($tmpFile, $code);
+    $output = [];
+    exec(PHP_BINARY . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
+    unlink($tmpFile);
+
+    return implode("\n", $output);
+}
+
+// IP subnets: search VLAN name via shared FK helper on list_query.php.
+$ipSubnetId = 0;
+$vlanSearchTerm = 'Factory Default';
+$ipSubnetCidr = '10.99.' . random_int(10, 250) . '.0/24';
+$stmtSubnet = mysqli_prepare(
+    $conn,
+    'INSERT INTO ip_subnets (company_id, vlan_id, cidr, network_ip, prefix_length, active) VALUES (?, 1, ?, ?, 24, 1)'
+);
+if ($stmtSubnet) {
+    $networkIp = preg_replace('#/.*$#', '', $ipSubnetCidr);
+    mysqli_stmt_bind_param($stmtSubnet, 'iss', $companyId, $ipSubnetCidr, $networkIp);
+    if (mysqli_stmt_execute($stmtSubnet)) {
+        $ipSubnetId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtSubnet);
+}
+if ($ipSubnetId > 0) {
+    $subnetHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/ip_subnets/list_all.php',
+        $session,
+        ['search' => $vlanSearchTerm, 'sort' => 'id', 'dir' => 'DESC']
+    );
+    if (strpos($subnetHtml, $ipSubnetCidr) === false && stripos($subnetHtml, $vlanSearchTerm) === false) {
+        echo colorText('[FAIL] ip_subnets search did not match vlans.vlan_name.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] ip_subnets search matches vlans.vlan_name.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM ip_subnets WHERE id = ' . (int)$ipSubnetId);
+} else {
+    echo colorText('[FAIL] Unable to seed disposable ip_subnets row for search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
+// Bookmarks list_all: search folder name via JOIN.
+$bookmarkFolderId = 0;
+$bookmarkId = 0;
+$bookmarkFolderName = 'FkSearchBkmFolder' . substr(md5((string)microtime(true)), 0, 8);
+$stmtBkmFolder = mysqli_prepare(
+    $conn,
+    'INSERT INTO bookmark_folders (company_id, employee_id, name, active) VALUES (?, 1, ?, 1)'
+);
+if ($stmtBkmFolder) {
+    mysqli_stmt_bind_param($stmtBkmFolder, 'is', $companyId, $bookmarkFolderName);
+    if (mysqli_stmt_execute($stmtBkmFolder)) {
+        $bookmarkFolderId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtBkmFolder);
+}
+if ($bookmarkFolderId > 0) {
+    $bookmarkTitle = 'FkSearchBkmProbe';
+    $bookmarkUrl = 'https://example.com/fk-search-probe';
+    $stmtBkm = mysqli_prepare(
+        $conn,
+        'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, shared, active)
+         VALUES (?, 1, ?, ?, ?, 0, 1)'
+    );
+    if ($stmtBkm) {
+        mysqli_stmt_bind_param($stmtBkm, 'iiss', $companyId, $bookmarkFolderId, $bookmarkTitle, $bookmarkUrl);
+        if (mysqli_stmt_execute($stmtBkm)) {
+            $bookmarkId = (int)mysqli_insert_id($conn);
+        }
+        mysqli_stmt_close($stmtBkm);
+    }
+}
+if ($bookmarkId > 0) {
+    $bkmHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/bookmarks/list_all.php',
+        $session,
+        ['search' => $bookmarkFolderName, 'sort' => 'title', 'dir' => 'ASC']
+    );
+    if (stripos($bkmHtml, $bookmarkTitle) === false) {
+        echo colorText('[FAIL] bookmarks list_all search did not match bookmark_folders.name.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] bookmarks list_all search matches folder name.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM bookmarks WHERE id = ' . (int)$bookmarkId);
+}
+if ($bookmarkFolderId > 0) {
+    mysqli_query($conn, 'DELETE FROM bookmark_folders WHERE id = ' . (int)$bookmarkFolderId);
+}
+if ($bookmarkFolderId <= 0 || $bookmarkId <= 0) {
+    echo colorText('[FAIL] Unable to seed disposable bookmarks row for search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
+// Passwords: global list_entries search matches password_folders.name.
+$passwordFolderId = 0;
+$passwordEntryId = 0;
+$passwordFolderName = 'FkSearchPwdFolder' . substr(md5((string)microtime(true)), 0, 8);
+$stmtPwdFolder = mysqli_prepare(
+    $conn,
+    'INSERT INTO password_folders (employee_id, name) VALUES (1, ?)'
+);
+if ($stmtPwdFolder) {
+    mysqli_stmt_bind_param($stmtPwdFolder, 's', $passwordFolderName);
+    if (mysqli_stmt_execute($stmtPwdFolder)) {
+        $passwordFolderId = (int)mysqli_insert_id($conn);
+    }
+    mysqli_stmt_close($stmtPwdFolder);
+}
+if ($passwordFolderId > 0) {
+    $pwdAccount = 'FkSearchPwdProbe';
+    $pwdLogin = 'probe-user';
+    $encryptedPwd = itm_encrypt('probe-secret', hash('sha256', 'Admin'));
+    $stmtPwdEntry = mysqli_prepare(
+        $conn,
+        'INSERT INTO password_entries (employee_id, folder_name, account, login_name, password)
+         VALUES (1, ?, ?, ?, ?)'
+    );
+    if ($stmtPwdEntry) {
+        mysqli_stmt_bind_param($stmtPwdEntry, 'isss', $passwordFolderId, $pwdAccount, $pwdLogin, $encryptedPwd);
+        if (mysqli_stmt_execute($stmtPwdEntry)) {
+            $passwordEntryId = (int)mysqli_insert_id($conn);
+        }
+        mysqli_stmt_close($stmtPwdEntry);
+    }
+}
+if ($passwordEntryId > 0) {
+    $vaultSession = $session;
+    $vaultSession['vault_key'] = hash('sha256', 'Admin');
+    $pwdJson = verify_crud_fk_label_run_ajax_post(
+        ROOT_PATH . 'modules/passwords/ajax_handler.php',
+        $vaultSession,
+        [
+            'action' => 'list_entries',
+            'folder_id' => '0',
+            'search' => $passwordFolderName,
+        ]
+    );
+    $pwdRows = json_decode($pwdJson, true);
+    $pwdMatched = false;
+    if (is_array($pwdRows)) {
+        foreach ($pwdRows as $pwdRow) {
+            if (is_array($pwdRow) && (string)($pwdRow['account'] ?? '') === $pwdAccount) {
+                $pwdMatched = true;
+                break;
+            }
+        }
+    }
+    if (!$pwdMatched) {
+        echo colorText('[FAIL] passwords list_entries global search did not match password_folders.name.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] passwords list_entries global search matches folder name.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM password_entries WHERE id = ' . (int)$passwordEntryId);
+}
+if ($passwordFolderId > 0) {
+    mysqli_query($conn, 'DELETE FROM password_folders WHERE id = ' . (int)$passwordFolderId);
+}
+if ($passwordFolderId <= 0 || $passwordEntryId <= 0) {
+    echo colorText('[FAIL] Unable to seed disposable passwords row for search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
 
 itm_script_output_end();
 exit($failed ? 1 : 0);

@@ -425,8 +425,8 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 | Job | Command | Purpose |
 |-----|---------|---------|
-| **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi audits (no MySQL) |
-| **database-import** | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import on MySQL 8.0 service; asserts table count matches **117** `CREATE TABLE` entries in `database.sql` (catches INSERT/SELECT column-count mismatches such as cross-company `equipment` seed at `department_id`) |
+| **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
+| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `database.sql` import on MySQL 8.0 service; asserts table count matches **117** `CREATE TABLE` entries; runtime FK label search regression |
 
 **smoke** job steps only:
 
@@ -435,8 +435,11 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 | 1 | `php -l` on every `*.php` | Syntax lint |
 | 2 | `php scripts/check_csrf_coverage.php` | POST handlers / forms have CSRF |
 | 3 | `php scripts/check_sql_injection_coverage.php` | SQLi coverage audit |
+| 4 | `php scripts/check_fk_label_search_coverage.php` | FK label search static coverage (100% gate) |
 
-Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import**.
+**database-import** job also runs `php scripts/verify_crud_fk_label_search.php` after import (requires MySQL).
+
+Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
@@ -815,13 +818,15 @@ When adding or changing anything under `scripts/`:
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
 
-**List search FK labels:** after changing flattened CRUD list search, FK display, or bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`), run:
+**List search FK labels:** after changing flattened CRUD list search, FK display, bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `ip_addresses`, `bookmarks`, `passwords`), or adding a new searchable module:
 
 ```bash
+php scripts/apply_crud_fk_label_search.php
+php scripts/check_fk_label_search_coverage.php
 php scripts/verify_crud_fk_label_search.php
 ```
 
-When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`.
+When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`. The static audit (`check_fk_label_search_coverage.php`) is smoke step 4 and uses **universal pass rules only** (no per-module N/A allowlist); runtime verify runs in the **database-import** CI job.
 
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 

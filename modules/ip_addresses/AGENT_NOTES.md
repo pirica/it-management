@@ -18,6 +18,7 @@ Manages individual IP address assignments within subnets.
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
+- **List search:** focused index uses `itm_ipam_address_list_where_clause()` (subnet CIDR, equipment hostname/name); generic `list_all` fallback uses `itm_crud_fk_label_search_conditions()` in `includes/list_query.php`.
 - **Quick Status Change**: Often allows changing status directly from the list.
 
 ## 6. API Actions (If Applicable)

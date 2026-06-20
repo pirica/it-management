@@ -58,3 +58,9 @@ jobs:
           MYSQL_HOST: 127.0.0.1
           MYSQL_PASSWORD: itmanagement
         run: bash scripts/verify_database_sql_import.sh
+
+      - name: Verify FK label search regression
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PASSWORD: itmanagement
+        run: php scripts/verify_crud_fk_label_search.php
