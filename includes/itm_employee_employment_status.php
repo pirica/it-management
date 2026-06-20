@@ -36,7 +36,7 @@ if (!function_exists('itm_employee_employment_status_predicate_by_name_sql')) {
             return '1=0';
         }
 
-        return 'LOWER(TRIM(COALESCE(' . $statusAlias . '.name, ""))) = "' . $statusName . '"';
+        return 'LOWER(TRIM(COALESCE(' . $statusAlias . '.name, \'\'))) = \'' . str_replace('\'', '\'\'', $statusName) . '\'';
     }
 }
 
@@ -90,11 +90,47 @@ if (!function_exists('itm_employee_has_active_employment_status')) {
     }
 }
 
-if (!function_exists('itm_employee_resolve_active_status_id')) {
+if (!function_exists('itm_employee_resolve_employment_status_id_by_name')) {
     /**
-     * Tenant-scoped Active status id for new accounts (registration, scripts).
+     * Tenant-scoped employment_statuses.id for a status label (case-insensitive).
      */
-    function itm_employee_resolve_active_status_id($conn, $companyId)
+    function itm_employee_resolve_employment_status_id_by_name($conn, $companyId, $statusName)
+    {
+        if (!($conn instanceof mysqli)) {
+            return 0;
+        }
+
+        $companyId = (int)$companyId;
+        $statusName = trim((string)$statusName);
+        if ($companyId <= 0 || $statusName === '') {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employee_statuses
+             WHERE company_id = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?))
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $statusName);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $statusId);
+        $found = mysqli_stmt_fetch($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $found ? (int)$statusId : 0;
+    }
+}
+
+if (!function_exists('itm_employee_count_by_employment_status_name')) {
+    /**
+     * Count employees by tenant company_id + resolved employment_status_id (matches HR FK filters).
+     */
+    function itm_employee_count_by_employment_status_name($conn, $companyId, $statusName)
     {
         if (!($conn instanceof mysqli)) {
             return 0;
@@ -105,22 +141,39 @@ if (!function_exists('itm_employee_resolve_active_status_id')) {
             return 0;
         }
 
+        $statusId = itm_employee_resolve_employment_status_id_by_name($conn, $companyId, $statusName);
+        if ($statusId <= 0) {
+            return 0;
+        }
+
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id FROM employee_statuses
-             WHERE company_id = ? AND LOWER(TRIM(name)) = "active"
-             LIMIT 1'
+            'SELECT COUNT(*) FROM employees WHERE company_id = ? AND employment_status_id = ?'
         );
         if (!$stmt) {
             return 0;
         }
 
-        mysqli_stmt_bind_param($stmt, 'i', $companyId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_bind_result($stmt, $statusId);
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $statusId);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return 0;
+        }
+
+        mysqli_stmt_bind_result($stmt, $count);
         $found = mysqli_stmt_fetch($stmt);
         mysqli_stmt_close($stmt);
 
-        return $found ? (int)$statusId : 0;
+        return $found ? (int)$count : 0;
+    }
+}
+
+if (!function_exists('itm_employee_resolve_active_status_id')) {
+    /**
+     * Tenant-scoped Active status id for new accounts (registration, scripts).
+     */
+    function itm_employee_resolve_active_status_id($conn, $companyId)
+    {
+        return itm_employee_resolve_employment_status_id_by_name($conn, $companyId, 'Active');
     }
 }

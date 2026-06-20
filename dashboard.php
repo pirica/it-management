@@ -186,17 +186,8 @@ $tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM ticke
 $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
 
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
-$empActiveJoin = itm_employee_active_employment_status_join_sql('e', 'es');
-$empActivePredicate = itm_employee_active_employment_status_predicate_sql('es');
-$activeEmployeesSql = 'SELECT COUNT(*) AS count FROM employees e' . $empActiveJoin
-    . ' WHERE e.company_id = ? AND ' . $empActivePredicate;
-$active_employees_count = fetch_company_count($conn, $activeEmployeesSql, $companyId);
-
-$onLeaveJoin = itm_employee_active_employment_status_join_sql('e', 'es_leave');
-$onLeavePredicate = itm_employee_on_leave_employment_status_predicate_sql('es_leave');
-$onLeaveSql = 'SELECT COUNT(*) AS count FROM employees e' . $onLeaveJoin
-    . ' WHERE e.company_id = ? AND ' . $onLeavePredicate;
-$on_leave_count = fetch_company_count($conn, $onLeaveSql, $companyId);
+$active_employees_count = itm_employee_count_by_employment_status_name($conn, $companyId, 'Active');
+$on_leave_count = itm_employee_count_by_employment_status_name($conn, $companyId, 'On Leave');
 
 require_once ROOT_PATH . 'includes/itm_active_sessions.php';
 $online_now_count = itm_count_logged_in_users_for_company($companyId, $conn);
