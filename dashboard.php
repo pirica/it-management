@@ -185,6 +185,9 @@ $equipment_count = fetch_company_count($conn, $equipmentSql, $companyId);
 $tickets_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM tickets WHERE company_id = ?', $companyId);
 $employees_count = fetch_company_count($conn, 'SELECT COUNT(*) AS count FROM employees WHERE company_id = ?', $companyId);
 
+require_once ROOT_PATH . 'includes/itm_active_sessions.php';
+$logged_in_users_count = itm_count_logged_in_users_for_company($companyId, $conn);
+
 // Fetch logged-in user details for the welcome message
 $userDisplayName = '';
 $userEmail = '';
@@ -256,6 +259,15 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                     </a>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($companyId > 0): ?>
+                <div class="stats-grid">
+                    <div class="stat-card" title="Employees with an active session for this company">
+                        <div class="stat-label">Logged in</div>
+                        <div class="stat-number"><?php echo (int)$logged_in_users_count; ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- System Settings Quick Link -->
                 <div class="card">
