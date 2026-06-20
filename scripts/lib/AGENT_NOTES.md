@@ -19,6 +19,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `equipment_type_modules.php` | Canonical `is_*` allowlist and cleanup |
 | `itm_api_tier_test_helpers.php` | Disposable `ui_configuration` seed/cleanup, browser probe URL (optional `api_key`; Free uses session URL without key), `itm_apitest_publish_http_session()` for keyless HTTP probes, HTTP probe for `apitest_tier_*.php` |
 | `itm_script_test_employee.php` | Disposable `employees` rows for repro/verify scripts (`script-{slug}-{hex}`), snapshot/restore of sensitive columns, audit `@app_*` context, shutdown teardown. `itm_script_test_employee_create()` returns `id`, `username`, `email`, `company_id`, `role_id`, `access_level_id`, `employment_status_id` (no deprecated `employees.active`). |
+| `itm_force_delete_company.php` | Shared tenant wipe used by `scripts/force_delete_company.php` and PHPUnit teardown (`itm_force_delete_company()` deletes all `company_id` rows then the `companies` row). |
 | `itm_email_script_helpers.php` | Shared `itm_email_script_resolve_company_id()` for email test scripts and browser/CLI `--company=` parsing (session fallback, default company `1`). |
 
 ## 4. Business Rules (Critical for Agents)
