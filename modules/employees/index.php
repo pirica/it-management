@@ -461,7 +461,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 if (!empty($mapped['department_name']) || (!empty($mapped['department_id']) && !is_numeric($mapped['department_id']))) {
                     $depName = !empty($mapped['department_name']) ? $mapped['department_name'] : $mapped['department_id'];
                     $depNameEsc = mysqli_real_escape_string($conn, (string)$depName);
-                    $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND name='" . $depNameEsc . "' LIMIT 1";
+                    $depSql = "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND (name='" . $depNameEsc . "' OR code='" . $depNameEsc . "') LIMIT 1";
                     $depRes = mysqli_query($conn, $depSql);
                     if ($depRes && mysqli_num_rows($depRes) === 1) {
                         $mapped['department_id'] = (int)(mysqli_fetch_assoc($depRes)['id'] ?? 0);
@@ -488,7 +488,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 foreach ($lookupMaps as $targetField => $info) {
                     if (!empty($mapped[$targetField]) && !is_numeric($mapped[$targetField])) {
                         $valEsc = mysqli_real_escape_string($conn, (string)$mapped[$targetField]);
-                        $res = mysqli_query($conn, "SELECT id FROM {$info['table']} WHERE company_id=" . (int)$company_id . " AND {$info['col']}='{$valEsc}' LIMIT 1");
+                        if ($info['table'] === 'departments') {
+                            $res = mysqli_query($conn, "SELECT id FROM departments WHERE company_id=" . (int)$company_id . " AND (name='{$valEsc}' OR code='{$valEsc}') LIMIT 1");
+                        } elseif ($info['table'] === 'it_locations') {
+                            $res = mysqli_query($conn, "SELECT id FROM it_locations WHERE company_id=" . (int)$company_id . " AND (name='{$valEsc}' OR location_code='{$valEsc}') LIMIT 1");
+                        } else {
+                            $res = mysqli_query($conn, "SELECT id FROM {$info['table']} WHERE company_id=" . (int)$company_id . " AND {$info['col']}='{$valEsc}' LIMIT 1");
+                        }
                         if ($res && mysqli_num_rows($res) > 0) {
                             $mapped[$targetField] = (int)mysqli_fetch_assoc($res)['id'];
                         } else {
@@ -892,6 +898,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
                                     <?php if (($col === 'work_email' || $col === 'personal_email') && !empty($row[$col])): ?>
                                         <a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
                                     <?php elseif ($col === 'department_id'): ?><?php echo sanitize((string)($row['department_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'office_key_card_department_id'): ?><?php echo sanitize((string)($row['office_key_card_department_name'] ?? '')); ?>
                                     <?php elseif ($col === 'location_id'): ?><?php echo sanitize((string)($row['location_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employee_position_id'): ?><?php echo sanitize((string)($row['position_name'] ?? '')); ?>
                                     <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($row['manager_name'] ?? '')); ?>
