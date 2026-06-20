@@ -40,6 +40,7 @@ The central module for managing employee records, including contact info, hierar
 - **Profile photo:** Stored under `files/{company_id}/Private/{username}_{employee_id}/profile/` as `{username}_{employee_id}.png` or `.jpg`. Requires `username` and the employee row `id`. Pre-merge installs may still have files under `{username}_{legacy_id}/profile/`; `emp_profile_photo_serve_path()` checks the canonical path first. `employees.photo` holds the filename; serve via `emp_profile_photo_url()` → `itm_files_serve_url()`. Upload uses `emp_profile_photo_store_upload()` in `includes/employee_profile_photo.php` with `itm_ensure_files_storage_directory()`. Explorer `file.php` allows any authenticated company user to read `Private/*/profile/` paths.
 - **Auth-sensitive columns:** list and view hide `password`, `vault_key_hash`, and reset-token fields via `includes/itm_employees_auth_sensitive_fields.php` (`itm_employees_auth_sensitive_field_names()` merged into index list `$hiddenColumns`; `view.php` uses an explicit field whitelist).
 - **Hidden accounts (`is_hidden`):** DB-only flag (`TINYINT`, default `0`) on `employees`; set to `1` directly in MySQL to protect admin/service accounts. Never on create/edit/view forms or index columns. Helpers: `includes/itm_employees_hidden_accounts.php` (`itm_employees_sql_visible_only_predicate()`, `itm_employees_is_hidden_account()`). Import skips updates to hidden rows; delete/clear-table skip hidden rows.
+- **Admin delete dependencies:** `employees_delete_record()` (admin-only entry via `delete.php`) calls `itm_employees_detach_delete_dependencies()` before `itm_can_delete_record()` so inbound rows such as `attempts`, `audit_logs`, `employee_companies`, and `employee_system_access` no longer block deletion. Detach runs in the same transaction as the parent `DELETE`. Hard blockers (for example `approvers` when not removed) still surface via `itm_can_delete_record()`. Helper: `includes/itm_employees_delete_dependencies.php`; shared delete logic: `delete_functions.php`.
 - **Role / access level:** `role_id` → `employee_roles.name`, `access_level_id` → `access_levels.name` on create/edit/view/index via `includes/profile_role_access_fields.php` and list FK label joins.
 - **Birthday / hide year:** `birthday` is a nullable `date`. `hide_year` masks the year in display (`j M` vs `j M Y`) via `emp_format_birthday_display()`. Birthdays module reads these fields for the monthly list.
 
@@ -54,7 +55,7 @@ The central module for managing employee records, including contact info, hierar
 - **import_excel_rows** — handles bulk JSON import with auto-lookup resolution for departments and positions.
 
 ## 7. File Structure
-- Standard CRUD structure + `delete_clear_table.php`.
+- Standard CRUD structure + `delete_clear_table.php`, `delete_functions.php`.
 - **includes/profile_fields.php** — shared profile photo drag-and-drop for create/edit.
 - **includes/profile_employee_code_field.php** — optional employee code text field.
 - **includes/profile_location_field.php** — optional IT location FK select.
