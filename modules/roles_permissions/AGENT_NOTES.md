@@ -89,3 +89,5 @@ rp_upsert_permission_row($conn, $companyId, $roleId, $moduleName, [
 ## 12. Module Owner Notes (Optional)
 
 Complements **Company Module Access** (company on/off) with role-level CRUD flags. Sidebar entry: Admin → **🛡️ Roles & Permissions**.
+
+**Regression:** `php scripts/verify_roles_permissions.php`. **README screenshot:** `ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py` → `docs/readme/roles_permissions.png`.

@@ -703,6 +703,31 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks. Run `benchmark_sidebar_module_access.php` after sidebar discovery or module-access caching changes to confirm query reduction (expect large drop vs legacy simulation when prefetch cache is enabled; marketing figures ~417→~7 depend on module count and environment — treat this script as the authoritative local measurement).
 
+### Roles & Permissions scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_roles_permissions.php` | Regression: `modules_registry` row, module folder + JS, RBAC exempt slug, Admin `ALL` wildcard with six flags, seeded roles/hierarchy for company 1, `can_import`/`can_export` columns |
+
+Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `database.sql`.
+
+Screenshots for README: `python3 scripts/take_screenshots_modules.py` (default modules: `todo`, `notes`, `roles_permissions`, `system_status`; output under `docs/readme/`). Requires Playwright + local Apache at `http://localhost/it-management/`. Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie; derives `PHPSESSID` cookie domain from the screenshot base URL hostname (`urlparse`). Env vars:
+
+| Variable | Purpose |
+|----------|---------|
+| `ITM_SCREENSHOT_BASE_URL` | Base app URL (default `http://localhost/it-management`) |
+| `ITM_SCREENSHOT_ONLY` | Comma-separated module slug(s) to capture; legacy `1`/`true`/`yes` → `system_status` only |
+| `ITM_SCREENSHOT_MODULES` | Override default module list when `ITM_SCREENSHOT_ONLY` is unset |
+
+Examples:
+
+```bash
+ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py
+ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py
+```
+
+`roles_permissions` waits for `#rp-permission-matrix` before saving `docs/readme/roles_permissions.png`. `system_status` waits for `#system-info-content` before saving so README does not show the login page or an empty cache warning.
+
 ### Sidebar module-access benchmark (`benchmark_sidebar_module_access.php`)
 
 | Item | Detail |
@@ -757,9 +782,7 @@ Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_em
 | `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` |
 | `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` |
 
-Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, `includes/itm_system_status_cache.php`, `database.sql` `system_status`, or any `includes/*.ps1` metrics script. On large tenants the storage tree scan and `information_schema` queries can be slow — run Refresh from CLI or raise PHP `max_execution_time` in browser if needed. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php` — tabs read cached JSON from `system_status`; **Refresh** POST runs `itm_system_status_refresh_all()`. Sub Storage parent nodes sum child totals plus direct files in each folder.
-
-Screenshots for README: `python3 scripts/take_screenshots_modules.py` (captures `system_status` monitoring tab to `docs/readme/system_status.png`; requires Playwright + local Apache at `http://localhost/it-management/`). Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie; derives `PHPSESSID` cookie domain from the screenshot base URL hostname (`urlparse`). Set `ITM_SCREENSHOT_ONLY=system_status` to capture only that module. The script waits for `#system-info-content` before saving so README does not show the login page or an empty cache warning.
+Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, `includes/itm_system_status_cache.php`, `database.sql` `system_status`, or any `includes/*.ps1` metrics script. On large tenants the storage tree scan and `information_schema` queries can be slow — run Refresh from CLI or raise PHP `max_execution_time` in browser if needed. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php` — tabs read cached JSON from `system_status`; **Refresh** POST runs `itm_system_status_refresh_all()`. Sub Storage parent nodes sum child totals plus direct files in each folder. For README screenshots see **Roles & Permissions scripts** above (`take_screenshots_modules.py`).
 
 ### Resignations and employee profile scripts
 

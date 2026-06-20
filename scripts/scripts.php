@@ -937,6 +937,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter CompanyModuleAccessVerifyTest</code> (subprocess wrapper). Run when changing <code>includes/itm_company_module_access.php</code>, <code>includes/ui_config.php</code> sidebar discovery, or CMA enforcement.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_roles_permissions.php">verify_roles_permissions.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>modules/roles_permissions/</code>: registry row, module entry + matrix JS, RBAC-exempt slug, Admin <code>ALL</code> wildcard with six flags, seeded roles and <code>role_hierarchy</code> for company 1, <code>can_import</code>/<code>can_export</code> columns.</td>
+                    <td>Browser: <a href="verify_roles_permissions.php">verify_roles_permissions.php</a>. CLI: <code>php scripts/verify_roles_permissions.php</code>. Run when changing <code>modules/roles_permissions/</code>, <code>js/roles-permissions-matrix.js</code>, or <code>role_module_permissions</code> / <code>employee_roles</code> schema.</td>
+                </tr>
+                <tr>
                     <td><a href="seed_company_module_access.php">seed_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (all modules or one <code>company_id</code>). Calls <code>sync_modules_registry.php</code> first when seeding a single company.</td>
@@ -963,8 +969,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><code>take_screenshots_modules.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
-                    <td>Playwright screenshots for README module images. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file; cookie domain follows the base URL hostname; waits for System Status AJAX before saving <code>docs/readme/system_status.png</code>.</td>
-                    <td><code>ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py</code></td>
+                    <td>Playwright screenshots for README module images. Default slugs: <code>todo</code>, <code>notes</code>, <code>roles_permissions</code>, <code>system_status</code>. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file; cookie domain follows the base URL hostname; waits for <code>#rp-permission-matrix</code> (Roles &amp; Permissions) and <code>#system-info-content</code> (System Status) before saving.</td>
+                    <td><code>ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py</code> · <code>ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py</code> · optional <code>ITM_SCREENSHOT_BASE_URL</code>, <code>ITM_SCREENSHOT_MODULES</code> (see <code>scripts/SCRIPTS.md</code>).</td>
                 </tr>
                 <tr>
                     <td><code>take_screenshots_modules_all.py</code></td>
