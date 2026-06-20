@@ -16,66 +16,13 @@ if (PHP_SAPI === 'cli') {
 }
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/itm_force_delete_company.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 
 $conn = $GLOBALS['conn'];
 $message = '';
 $messageType = 'info';
 $itmIsCli = PHP_SAPI === 'cli';
-
-/**
- * Helper for deletion logic
- */
-function itm_force_delete_company(mysqli $conn, int $companyId): string
-{
-    if ($companyId <= 0) {
-        return "Error: Invalid company ID.";
-    }
-
-    mysqli_begin_transaction($conn);
-    try {
-        // Disable foreign key checks to bypass blocking triggers/constraints
-        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 0");
-
-        // 1. Identify all tables that have a company_id column
-        $schemaName = mysqli_real_escape_string($conn, (string) DB_NAME);
-        $tablesQuery = "SELECT TABLE_NAME
-                        FROM information_schema.COLUMNS
-                        WHERE TABLE_SCHEMA = '{$schemaName}'
-                        AND COLUMN_NAME = 'company_id'";
-        $tablesResult = mysqli_query($conn, $tablesQuery);
-        $tablesDeleted = [];
-
-        while ($row = mysqli_fetch_assoc($tablesResult)) {
-            $tableName = $row['TABLE_NAME'];
-            if (itm_is_safe_identifier($tableName)) {
-                $deleteSql = "DELETE FROM `$tableName` WHERE `company_id` = ?";
-                $stmt = mysqli_prepare($conn, $deleteSql);
-                mysqli_stmt_bind_param($stmt, "i", $companyId);
-                mysqli_stmt_execute($stmt);
-                mysqli_stmt_close($stmt);
-                $tablesDeleted[] = $tableName;
-            }
-        }
-
-        // 2. Delete from companies table itself
-        $deleteCompanySql = "DELETE FROM `companies` WHERE `id` = ?";
-        $stmt = mysqli_prepare($conn, $deleteCompanySql);
-        mysqli_stmt_bind_param($stmt, "i", $companyId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-
-        // Re-enable foreign key checks
-        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 1");
-        mysqli_commit($conn);
-
-        return "Successfully deleted company ID $companyId and records from " . count($tablesDeleted) . " related tables.";
-    } catch (Exception $e) {
-        mysqli_rollback($conn);
-        mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 1");
-        return "Error during deletion: " . $e->getMessage();
-    }
-}
 
 // CLI Mode
 if ($itmIsCli) {

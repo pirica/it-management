@@ -10,12 +10,14 @@ class AlertsTest extends TestCase
     private $companyId = 1;
     private $employeeIds = [];
     private $seededEmployeeIds = [];
+    private $tempCompanyIds = [];
 
     protected function setUp(): void
     {
         require_once __DIR__ . '/../../../../../config/config.php';
         require_once ROOT_PATH . 'includes/alerts_visibility.php';
         require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_force_delete_company.php';
         $this->conn = $GLOBALS['conn'];
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
@@ -47,6 +49,11 @@ class AlertsTest extends TestCase
 
     protected function tearDown(): void
     {
+        foreach ($this->tempCompanyIds as $companyId) {
+            $this->purgeTempCompany((int)$companyId);
+        }
+        $this->tempCompanyIds = [];
+
         foreach ($this->seededEmployeeIds as $employeeId) {
             itm_script_test_employee_delete($this->conn, (int)$employeeId);
         }
@@ -222,10 +229,27 @@ class AlertsTest extends TestCase
             $this->assertAlertMissing($publicId);
             $this->assertAlertExists($privateId);
         } finally {
-            if ($publicId > 0) { mysqli_query($this->conn, 'DELETE FROM alerts WHERE id = ' . $publicId); }
-            if ($privateId > 0) { mysqli_query($this->conn, 'DELETE FROM alerts WHERE id = ' . $privateId); }
-            mysqli_query($this->conn, 'DELETE FROM companies WHERE id = ' . (int)$tempCompanyId);
+            $this->purgeTempCompany($tempCompanyId);
             mysqli_query($this->conn, "SET @app_company_id = " . $this->companyId);
+        }
+    }
+
+    private function purgeTempCompany(int $companyId): void
+    {
+        if ($companyId <= 0 || $companyId === $this->companyId) {
+            return;
+        }
+
+        $result = itm_force_delete_company($this->conn, $companyId);
+        $this->tempCompanyIds = array_values(array_filter(
+            $this->tempCompanyIds,
+            static function ($id) use ($companyId) {
+                return (int)$id !== $companyId;
+            }
+        ));
+
+        if (strpos($result, 'Successfully deleted company ID') !== 0) {
+            fwrite(STDERR, '[AlertsTest] Temp company teardown failed for id ' . $companyId . ': ' . $result . PHP_EOL);
         }
     }
 
@@ -240,7 +264,9 @@ class AlertsTest extends TestCase
             mysqli_stmt_bind_param($stmt, 'ss', $company, $incode);
             if (mysqli_stmt_execute($stmt)) {
                 mysqli_stmt_close($stmt);
-                return (int)mysqli_insert_id($this->conn);
+                $companyId = (int)mysqli_insert_id($this->conn);
+                $this->tempCompanyIds[] = $companyId;
+                return $companyId;
             }
             $lastError = mysqli_stmt_error($stmt);
             mysqli_stmt_close($stmt);
