@@ -65,11 +65,20 @@ if (!function_exists('itm_send_email')) {
 if (!function_exists('itm_email_build_transactional_html')) {
     emails_verify_fail('itm_email_build_transactional_html() helper missing.');
 } else {
-    $sampleHtml = itm_email_build_transactional_html('<p>Test</p>', ['subtitle' => 'Verify']);
+    $sampleHtml = itm_email_build_transactional_html('<p>Test</p>', ['subtitle' => 'Verify', 'app_name' => '⚙️ IT Controls']);
     if (!is_string($sampleHtml) || stripos($sampleHtml, '<!DOCTYPE') !== 0 || stripos($sampleHtml, '#667eea') === false) {
         emails_verify_fail('Transactional email template did not produce expected HTML wrapper.');
+    } elseif (!preg_match('/<h1[^>]*>(.*?)<\/h1>/s', $sampleHtml, $headingMatch)) {
+        emails_verify_fail('Transactional email template is missing the header h1.');
     } else {
-        emails_verify_pass('Transactional email template helper produces login-style wrapper.');
+        $headingHtml = (string)$headingMatch[1];
+        $gearEntityCount = substr_count($headingHtml, '&#9881;&#65039;');
+        $gearUtf8Count = preg_match_all('/\x{2699}\x{FE0F}/u', $headingHtml);
+        if ($gearEntityCount !== 1 || $gearUtf8Count > 0 || stripos($headingHtml, 'IT Controls') === false) {
+            emails_verify_fail('Transactional email template header should render one gear plus brand name.');
+        } else {
+            emails_verify_pass('Transactional email template helper produces login-style wrapper.');
+        }
     }
 }
 

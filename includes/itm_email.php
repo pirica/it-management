@@ -366,6 +366,20 @@ if (!function_exists('itm_email_is_wrapped_html')) {
     }
 }
 
+if (!function_exists('itm_email_brand_name_for_template')) {
+    /**
+     * Strip leading gear emoji from ui_configuration app_name so the template renders exactly one.
+     */
+    function itm_email_brand_name_for_template($appName)
+    {
+        $appName = trim((string)$appName);
+        $appName = preg_replace('/^(?:\x{2699}\x{FE0F}\s*)+/u', '', $appName);
+        $appName = trim($appName);
+
+        return $appName !== '' ? $appName : 'IT Controls';
+    }
+}
+
 if (!function_exists('itm_email_build_transactional_html')) {
     /**
      * Why: Transactional mail should match public auth pages (login/forgot/register) for a consistent brand.
@@ -380,13 +394,15 @@ if (!function_exists('itm_email_build_transactional_html')) {
             $appName = 'IT Management';
         }
 
+        $brandName = itm_email_brand_name_for_template($appName);
+
         $subtitle = trim((string)($options['subtitle'] ?? ''));
         $buttonText = trim((string)($options['button_text'] ?? ''));
         $buttonUrl = trim((string)($options['button_url'] ?? ''));
         $footerText = trim((string)($options['footer_text'] ?? ''));
         $loginUrl = defined('BASE_URL') ? (string)BASE_URL . 'login.php' : '';
 
-        $safeAppName = htmlspecialchars($appName, ENT_QUOTES, 'UTF-8');
+        $safeBrandName = htmlspecialchars($brandName, ENT_QUOTES, 'UTF-8');
         $safeSubtitle = htmlspecialchars($subtitle, ENT_QUOTES, 'UTF-8');
         $safeButtonText = htmlspecialchars($buttonText, ENT_QUOTES, 'UTF-8');
         $safeButtonUrl = htmlspecialchars($buttonUrl, ENT_QUOTES, 'UTF-8');
@@ -411,19 +427,19 @@ if (!function_exists('itm_email_build_transactional_html')) {
             $footerBlock = '<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#666666;text-align:center;">' . $safeFooterText . '</p>';
         } elseif ($loginUrl !== '') {
             $footerBlock = '<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#666666;text-align:center;">'
-                . '<a href="' . $safeLoginUrl . '" style="color:#0969da;text-decoration:none;">Sign in to ' . $safeAppName . '</a></p>';
+                . '<a href="' . $safeLoginUrl . '" style="color:#0969da;text-decoration:none;">Sign in to &#9881;&#65039; ' . $safeBrandName . '</a></p>';
         }
 
         return '<!DOCTYPE html>'
             . '<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'
-            . '<title>' . $safeAppName . '</title></head>'
+            . '<title>&#9881;&#65039; ' . $safeBrandName . '</title></head>'
             . '<body style="margin:0;padding:0;background:#667eea;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#667eea;min-height:100%;">'
             . '<tr><td align="center" style="padding:40px 20px;">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:500px;background:#ffffff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">'
             . '<tr><td style="padding:40px;">'
             . '<div style="text-align:center;margin-bottom:24px;">'
-            . '<h1 style="margin:0 0 8px;font-size:28px;line-height:1.2;color:#0969da;">&#9881;&#65039; ' . $safeAppName . '</h1>'
+            . '<h1 style="margin:0 0 8px;font-size:28px;line-height:1.2;color:#0969da;">&#9881;&#65039; ' . $safeBrandName . '</h1>'
             . $subtitleBlock
             . '</div>'
             . '<div style="font-size:14px;line-height:1.6;color:#24292f;">' . (string)$bodyHtml . '</div>'
