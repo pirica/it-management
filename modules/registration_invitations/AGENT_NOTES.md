@@ -17,7 +17,7 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 - **`invitation_code` is NOT NULL:** import must generate a code when Excel payload omits it (index import handler).
 - **Accepted invitations:** set `accepted_at` when used; do not reuse consumed codes for new accounts.
 - **Expiry:** honour `expires_at` when registration flow validates tokens.
-- **Registration consumer:** `register.php` resolves tenant **Active** `employment_status_id` via `itm_employee_resolve_active_status_id()` — do not hardcode status id `1` (breaks login for companies 2+).
+- **Registration consumer:** `register.php` resolves tenant **Active** `employment_status_id` via `itm_employee_resolve_active_status_id()` — do not hardcode status id `1` (breaks login for companies 2+). Registration form requires **Confirm Username** (`confirm_username`) with the same client/server mismatch alerts as password confirmation.
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD (`index.php` procedural template).
