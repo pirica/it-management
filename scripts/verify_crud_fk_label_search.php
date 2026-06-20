@@ -121,6 +121,52 @@ if ($fnbDeptId > 0) {
     $failed = true;
 }
 
+// Equipment: search FNB should match departments.code on linked equipment rows.
+$equipmentProbeId = 0;
+$equipmentProbeName = 'FkSearchEquipProbe-' . substr(md5((string)microtime(true)), 0, 8);
+if ($fnbDeptId > 0) {
+    $equipmentTypeId = 1;
+    $equipmentStatusId = 1;
+    $stmtEquipInsert = mysqli_prepare(
+        $conn,
+        'INSERT INTO equipment (company_id, equipment_type_id, department_id, status_id, name, active)
+         VALUES (?, ?, ?, ?, ?, 1)'
+    );
+    if ($stmtEquipInsert) {
+        mysqli_stmt_bind_param(
+            $stmtEquipInsert,
+            'iiiis',
+            $companyId,
+            $equipmentTypeId,
+            $fnbDeptId,
+            $equipmentStatusId,
+            $equipmentProbeName
+        );
+        if (mysqli_stmt_execute($stmtEquipInsert)) {
+            $equipmentProbeId = (int)mysqli_insert_id($conn);
+        }
+        mysqli_stmt_close($stmtEquipInsert);
+    }
+}
+if ($equipmentProbeId > 0) {
+    $equipmentFnbHtml = verify_crud_fk_label_run_isolated(
+        ROOT_PATH . 'modules/equipment/index.php',
+        $session,
+        ['search' => 'FNB', 'sort' => 'id', 'dir' => 'DESC']
+    );
+    if (strpos($equipmentFnbHtml, (string)$equipmentProbeId) === false
+        && stripos($equipmentFnbHtml, $equipmentProbeName) === false) {
+        echo colorText('[FAIL] equipment search=FNB did not match departments.code.', 'fail') . $nl;
+        $failed = true;
+    } else {
+        echo colorText('[PASS] equipment search=FNB matches departments.code.', 'pass') . $nl;
+    }
+    mysqli_query($conn, 'DELETE FROM equipment WHERE id = ' . (int)$equipmentProbeId . ' AND company_id = ' . (int)$companyId);
+} elseif ($fnbDeptId > 0) {
+    echo colorText('[FAIL] Unable to seed disposable equipment row for FNB search probe.', 'fail') . $nl;
+    $failed = true;
+}
+
 // License management: search a known license type label when seeded.
 $typeRes = mysqli_query($conn, "SELECT lt.name FROM license_types lt WHERE lt.company_id = {$companyId} ORDER BY lt.id ASC LIMIT 1");
 $typeRow = $typeRes ? mysqli_fetch_assoc($typeRes) : null;
