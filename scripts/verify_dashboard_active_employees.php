@@ -44,8 +44,8 @@ if (!is_file($dashboardPath)) {
 }
 
 $dashboardSource = (string)file_get_contents($dashboardPath);
-if (strpos($dashboardSource, 'itm_employee_active_employment_status_join_sql') === false) {
-    dae_verify_fail('dashboard.php does not use employment status helpers for Active count');
+if (strpos($dashboardSource, 'itm_employee_count_by_employment_status_name') === false) {
+    dae_verify_fail('dashboard.php does not use employment status count helper for Active/On Leave');
 } elseif (strpos($dashboardSource, 'active_employees_count') === false) {
     dae_verify_fail('dashboard.php is missing active_employees_count variable');
 } elseif (strpos($dashboardSource, 'stat-label">Active</div>') === false) {
@@ -54,8 +54,8 @@ if (strpos($dashboardSource, 'itm_employee_active_employment_status_join_sql') =
     dae_verify_fail('dashboard.php is missing on_leave_count variable');
 } elseif (strpos($dashboardSource, 'stat-label">On Leave</div>') === false) {
     dae_verify_fail('dashboard.php is missing the On Leave stat card label');
-} elseif (strpos($dashboardSource, 'itm_employee_on_leave_employment_status_predicate_sql') === false) {
-    dae_verify_fail('dashboard.php does not use On Leave employment status predicate');
+} elseif (strpos($dashboardSource, 'itm_employee_on_leave_employment_status_predicate_sql') !== false) {
+    dae_verify_fail('dashboard.php should count On Leave via employment_status_id helper, not join predicate SQL');
 } else {
     dae_verify_pass('dashboard.php renders Active and On Leave stat cards with employment status queries');
 }
@@ -74,43 +74,55 @@ if (!is_file(ROOT_PATH . 'includes/itm_active_sessions.php')) {
 }
 
 $companyId = 1;
-$empJoin = itm_employee_active_employment_status_join_sql('e', 'es');
-$empActive = itm_employee_active_employment_status_predicate_sql('es');
-$activeSql = 'SELECT COUNT(*) AS c FROM employees e' . $empJoin
-    . ' WHERE e.company_id = ? AND ' . $empActive;
-$activeCount = 0;
-$stmt = mysqli_prepare($conn, $activeSql);
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    if (mysqli_stmt_execute($stmt)) {
-        mysqli_stmt_bind_result($stmt, $activeCount);
-        mysqli_stmt_fetch($stmt);
-    }
-    mysqli_stmt_close($stmt);
+$activeStatusId = itm_employee_resolve_employment_status_id_by_name($conn, $companyId, 'Active');
+if ($activeStatusId <= 0) {
+    dae_verify_fail('Could not resolve Active employment status id for company ' . $companyId);
 }
 
-if ((int)$activeCount < 1) {
+$activeCount = itm_employee_count_by_employment_status_name($conn, $companyId, 'Active');
+$directActiveCount = 0;
+$directStmt = mysqli_prepare(
+    $conn,
+    'SELECT COUNT(*) FROM employees WHERE company_id = ? AND employment_status_id = ?'
+);
+if ($directStmt) {
+    mysqli_stmt_bind_param($directStmt, 'ii', $companyId, $activeStatusId);
+    if (mysqli_stmt_execute($directStmt)) {
+        mysqli_stmt_bind_result($directStmt, $directActiveCount);
+        mysqli_stmt_fetch($directStmt);
+    }
+    mysqli_stmt_close($directStmt);
+}
+
+if ((int)$activeCount !== (int)$directActiveCount) {
+    dae_verify_fail('Active count helper must match company_id + employment_status_id filter');
+} elseif ((int)$activeCount < 1) {
     dae_verify_fail('Expected at least one Active employee for company ' . $companyId);
 } else {
     dae_verify_pass('Active employee count for company ' . $companyId . ': ' . (int)$activeCount);
 }
 
-$onLeaveJoin = itm_employee_active_employment_status_join_sql('e', 'es_leave');
-$onLeavePredicate = itm_employee_on_leave_employment_status_predicate_sql('es_leave');
-$onLeaveSql = 'SELECT COUNT(*) AS c FROM employees e' . $onLeaveJoin
-    . ' WHERE e.company_id = ? AND ' . $onLeavePredicate;
-$onLeaveCount = 0;
-$onLeaveStmt = mysqli_prepare($conn, $onLeaveSql);
-if ($onLeaveStmt) {
-    mysqli_stmt_bind_param($onLeaveStmt, 'i', $companyId);
-    if (mysqli_stmt_execute($onLeaveStmt)) {
-        mysqli_stmt_bind_result($onLeaveStmt, $onLeaveCount);
-        mysqli_stmt_fetch($onLeaveStmt);
+$onLeaveCount = itm_employee_count_by_employment_status_name($conn, $companyId, 'On Leave');
+$onLeaveStatusId = itm_employee_resolve_employment_status_id_by_name($conn, $companyId, 'On Leave');
+$directOnLeaveCount = 0;
+if ($onLeaveStatusId > 0) {
+    $onLeaveStmt = mysqli_prepare(
+        $conn,
+        'SELECT COUNT(*) FROM employees WHERE company_id = ? AND employment_status_id = ?'
+    );
+    if ($onLeaveStmt) {
+        mysqli_stmt_bind_param($onLeaveStmt, 'ii', $companyId, $onLeaveStatusId);
+        if (mysqli_stmt_execute($onLeaveStmt)) {
+            mysqli_stmt_bind_result($onLeaveStmt, $directOnLeaveCount);
+            mysqli_stmt_fetch($onLeaveStmt);
+        }
+        mysqli_stmt_close($onLeaveStmt);
     }
-    mysqli_stmt_close($onLeaveStmt);
-    dae_verify_pass('On Leave employee count query for company ' . $companyId . ': ' . (int)$onLeaveCount);
+}
+if ((int)$onLeaveCount !== (int)$directOnLeaveCount) {
+    dae_verify_fail('On Leave count helper must match company_id + employment_status_id filter');
 } else {
-    dae_verify_fail('Could not prepare On Leave count query');
+    dae_verify_pass('On Leave employee count for company ' . $companyId . ': ' . (int)$onLeaveCount);
 }
 
 if ($failures > 0) {
