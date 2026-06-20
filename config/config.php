@@ -431,6 +431,13 @@ if (
 
 $company_id = itm_resolve_active_company_id((int)($_SESSION['company_id'] ?? 0));
 
+// Why: Dashboard logged-in count uses writable presence touch files (PHP session dirs are not listable).
+$itmActiveEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+if ($company_id > 0 && $itmActiveEmployeeId > 0) {
+    require_once ROOT_PATH . 'includes/itm_active_sessions.php';
+    itm_active_sessions_touch($itmActiveEmployeeId, (int)$company_id);
+}
+
 if ($company_id > 0 && isset($conn) && $conn instanceof mysqli) {
     $itmIpamHelpersPath = ROOT_PATH . 'includes/ipam_helpers.php';
     if (is_file($itmIpamHelpersPath)) {

@@ -708,8 +708,11 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_roles_permissions.php` | Regression: `modules_registry` row, module folder + JS, RBAC exempt slug, Admin `ALL` wildcard with six flags, seeded roles/hierarchy for company 1, `can_import`/`can_export` columns |
+| `php scripts/verify_dashboard_logged_in_users.php` | Regression: `includes/itm_active_sessions.php` parser + presence touch files, `config.php` touch hook, dashboard **Logged in** card markup, live count >= 1 for company 1 |
 
 Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `database.sql`.
+
+Run `verify_dashboard_logged_in_users.php` when changing `dashboard.php`, `includes/itm_active_sessions.php`, or PHP session storage settings that affect presence counts.
 
 Screenshots for README: `python3 scripts/take_screenshots_modules.py` (default modules: `todo`, `notes`, `roles_permissions`, `system_status`; output under `docs/readme/`). Requires Playwright + local Apache at `http://localhost/it-management/`. Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie; derives `PHPSESSID` cookie domain from the screenshot base URL hostname (`urlparse`). Env vars:
 
