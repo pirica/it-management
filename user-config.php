@@ -367,7 +367,7 @@ $sql = "SELECT $select_list FROM employee_system_access WHERE employee_id = ? AN
 /* 4) PREPARE */
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) die("PREPARE FAILED: " . mysqli_error($conn));
-echo "user_id company_id $user_id, $company_id";
+//echo "user_id company_id $user_id, $company_id";
 /* 5) BIND PARAM */
 mysqli_stmt_bind_param($stmt, 'ii', $user_id, $company_id);
 
