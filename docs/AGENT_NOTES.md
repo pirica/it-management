@@ -7,6 +7,8 @@ Contains system documentation, including architecture diagrams, README images, i
 - **readme/** — images used in the main project README.
 - **`bolt.md`** — Bolt performance journal (critical learnings only; not routine optimization logs). Entries include sidebar module-access prefetch (~417→~7 on measured seed; verify locally) and UI configuration schema-ensure per-request caching. Benchmark: `php scripts/benchmark_sidebar_module_access.php` (see **`scripts/SCRIPTS.md` → Sidebar module-access benchmark**).
 - **`API-Auth_Validation_Tenant-Scoping.md`** — API audit; §5.1 lists implemented controls (including remediated employee_companies BAC, users tenant scoping, CRUD RBAC on flattened index handlers), §5.2 remaining follow-ups (architecture/hardening only). Per-finding markdown under `docs/findings/` was removed after fixes landed; regressions live in `scripts/repro_*.php`, `scripts/check_crud_rbac_coverage.php`, and `scripts/SCRIPTS.md`.
+- **`extract_by_fields.php`** — script to extract table fields containing "by" (case-insensitive) from `database.sql`.
+- **`fields_by.txt`** — generated list of table fields containing "by".
 - **PHPUNIT_PLAN.md** — phased plan for expanding PHPUnit HTML coverage (`includes/`, `scripts/`, then module functional pilots). Canonical implementation checklist; see also `phpunit/tests/PREFERENCES.md` and `scripts/SCRIPTS.md`.
 
 ## 12. Module Owner Notes (Optional)

@@ -1,0 +1,94 @@
+-- access_levels
+- created_by
+
+-- assignment_types
+- created_by
+
+-- companies
+- created_by
+
+-- modules_registry
+- created_by
+
+-- company_module_access
+- created_by
+
+-- departments
+- created_by
+
+-- budget_categories
+- created_by
+
+-- cost_centers
+- created_by
+
+-- gl_accounts
+- created_by
+
+-- annual_budgets
+- created_by
+
+-- monthly_budgets
+- created_by
+
+-- expenses
+- created_by
+
+-- floor_plan_folders
+- created_by
+
+-- floor_plan_tags
+- created_by
+
+-- floor_plans
+- created_by_employee_id
+
+-- forecast_revisions
+- submitted_by
+- finance_reviewed_by
+- gm_approved_by
+
+-- approvals
+- approved_by
+
+-- employee_assignment_history
+- assigned_by_employee_id
+- received_by_employee_id
+
+-- employee_onboarding_requests
+- hu_the_lobby
+- requested_by
+- requested_by_date
+
+-- employee_system_access
+- hu_the_lobby
+
+-- employees
+- requested_by
+- termination_requested_by
+- hu_the_lobby
+
+-- patches_updates
+- created_by
+
+-- tickets
+- created_by_employee_id
+
+-- registration_invitations
+- invited_by_employee_id
+
+-- employee_companies
+- granted_by_employee_id
+
+-- events
+- created_by_employee_id
+
+-- visitors_access_log
+- pre_approved_by
+- room_opened_by
+
+-- alerts
+- created_by_employee_id
+
+-- todo
+- created_by_employee_id
