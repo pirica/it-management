@@ -1,0 +1,470 @@
+-- access_levels
+ - created_by
+
+
+-- alerts
+ - assigned_to_employee_id
+ - created_by_employee_id
+
+
+-- annual_budgets
+ - created_by
+
+
+-- approvals
+ - approved_by
+
+
+-- approvals_stage
+
+
+-- approver_type
+
+
+-- approvers
+ - employee_id
+ - employee_position_id
+
+
+-- assignment_types
+ - created_by
+
+
+-- attempts
+ - employee_id
+
+
+-- audit_logs
+ - employee_id
+ - actor_username
+ - actor_email
+
+
+-- backup_tape_log
+ - tape_to_be_used
+ - time_returned_to_safe
+ - tape_used_for_restore
+
+
+-- bookmark_folders
+ - employee_id
+
+
+-- bookmarks
+ - employee_id
+
+
+-- budget_categories
+ - created_by
+
+
+-- cable_colors
+
+
+-- catalogs
+
+
+-- companies
+ - created_by
+
+
+-- company_module_access
+ - created_by
+
+
+-- cost_centers
+ - created_by
+
+
+-- departments
+ - created_by
+
+
+-- email_alert_rules
+
+
+-- email_smtp_configurations
+
+
+-- emails
+ - to_email
+
+
+-- employee_assignment_history
+ - employee_id
+ - inventory_item_id
+ - assigned_by_employee_id
+ - received_by_employee_id
+
+
+-- employee_companies
+ - employee_id
+ - granted_by_employee_id
+
+
+-- employee_onboarding_requests
+ - employee_id
+ - employee_position_id
+ - hu_the_lobby
+ - requested_by
+ - requested_by_date
+
+
+-- employee_positions
+
+
+-- employee_roles
+
+
+-- employee_sidebar_preferences
+ - employee_id
+
+
+-- employee_statuses
+
+
+-- employee_system_access
+ - employee_id
+ - hu_the_lobby
+
+
+-- employee_type
+
+
+-- employees
+ - employee_code
+ - reset_token
+ - reset_token_hash
+ - reset_token_expires_at
+ - requested_by
+ - termination_requested_by
+ - hu_the_lobby
+ - employee_position_id
+ - reports_to
+ - photo
+ - employee_type_id
+
+
+-- equipment
+ - assigned_to_employee_id
+ - workstation_storage
+ - photo_filename
+
+
+-- equipment_environment
+
+
+-- equipment_fiber
+
+
+-- equipment_fiber_count
+
+
+-- equipment_fiber_patch
+
+
+-- equipment_fiber_rack
+
+
+-- equipment_poe
+
+
+-- equipment_rj45
+
+
+-- equipment_statuses
+
+
+-- equipment_types
+
+
+-- event_categories
+
+
+-- events
+ - assigned_to_employee_id
+ - created_by_employee_id
+
+
+-- expenses
+ - created_by
+
+
+-- explorer
+ - employee_id
+
+
+-- floor_designer
+
+
+-- floor_designer_points
+
+
+-- floor_plan_folders
+ - created_by
+
+
+-- floor_plan_item_tags
+
+
+-- floor_plan_tags
+ - created_by
+
+
+-- floor_plans
+ - stored_filename
+ - created_by_employee_id
+
+
+-- forecast_revisions
+ - submitted_by
+ - finance_reviewed_by
+ - gm_approved_by
+
+
+-- forecast_revisions_status
+
+
+-- gl_accounts
+ - created_by
+
+
+-- idf_device_type
+
+
+-- idf_links
+ - equipment_to_idf_id
+ - equipment_to_rack_id
+ - equipment_to_location_id
+
+
+-- idf_ports
+ - connected_to
+ - to_idf_id
+ - to_rack_id
+ - to_location_id
+
+
+-- idf_positions
+
+
+-- idfs
+
+
+-- inventory_categories
+
+
+-- inventory_items
+ - storage_date
+ - last_employee_id
+ - last_employee_manual
+
+
+-- ip_addresses
+
+
+-- ip_subnets
+
+
+-- it_locations
+
+
+-- license_management
+
+
+-- license_types
+
+
+-- location_types
+
+
+-- manufacturers
+
+
+-- modules_registry
+ - created_by
+
+
+-- monthly_budgets
+ - created_by
+
+
+-- note_labels
+ - employee_id
+
+
+-- notes
+ - employee_id
+
+
+-- ops_report
+ - today_shift
+ - tomorrow_shift
+ - total_pax
+ - total_revenue
+
+
+-- ops_report_butler
+
+
+-- ops_report_courtesy_call
+ - monitor
+
+
+-- ops_report_fb_outlet
+
+
+-- ops_report_guest_experience
+ - monitor
+
+
+-- ops_report_hotel_figure
+
+
+-- ops_report_night_shift
+
+
+-- ops_report_walk_round
+
+
+-- password_entries
+ - employee_id
+
+
+-- password_folders
+ - employee_id
+
+
+-- patches_updates
+ - patches_updates_photos
+ - created_by
+
+
+-- patches_updates_level
+
+
+-- patches_updates_status
+
+
+-- printer_device_types
+
+
+-- private_contacts
+ - employee_id
+ - custom_field1_label
+ - custom_field1_value
+ - photo
+
+
+-- rack_planner
+
+
+-- rack_statuses
+
+
+-- racks
+
+
+-- registration_invitations
+ - invited_by_employee_id
+
+
+-- rj45_speed
+
+
+-- role_assignment_rights
+
+
+-- role_hierarchy
+
+
+-- role_module_permissions
+
+
+-- supplier_statuses
+
+
+-- suppliers
+
+
+-- switch_port_numbering_layout
+
+
+-- switch_port_types
+
+
+-- switch_ports
+ - to_patch_port
+ - to_idf_id
+ - to_rack_id
+ - to_location_id
+
+
+-- switch_status
+
+
+-- system_access
+
+
+-- system_status
+
+
+-- ticket_categories
+
+
+-- ticket_priorities
+
+
+-- ticket_statuses
+
+
+-- tickets
+ - created_by_employee_id
+ - assigned_to_employee_id
+ - tickets_photos
+
+
+-- todo
+ - assigned_to_employee_id
+ - created_by_employee_id
+
+
+-- todo_categories
+ - cat_from_employee_id
+
+
+-- ui_configuration
+ - employee_id
+ - new_button_position
+ - export_buttons_position
+
+
+-- visitors_access_log
+ - visitor_name
+ - pre_approved_by
+ - room_opened_by
+
+
+-- vlans
+
+
+-- warranty_types
+
+
+-- workstation_device_types
+
+
+-- workstation_modes
+ - monitor_count
+
+
+-- workstation_office
+
+
+-- workstation_os_types
+
+
+-- workstation_os_versions
+
+
+-- workstation_ram
