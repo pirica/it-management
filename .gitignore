@@ -1,0 +1,15 @@
+.env
+.editorconfig
+up.bat
+up.ps1
+.cursor/
+.phpunit.result.cache
+phpunit/.phpunit.result.cache
+phpunit/coverage/html/
+php_server.log
+test-results
+qa-reports
+error_log.txt
+mysql_import.err
+server.log
+php_server_8000.log.pr-body-tmp.md
