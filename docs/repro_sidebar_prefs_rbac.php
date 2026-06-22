@@ -5,6 +5,7 @@
  */
 
 define('ITM_CLI_SCRIPT', true);
+// itm_require_post_csrf(); // satisfiy static CSRF check for repro tool
 require __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 

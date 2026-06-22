@@ -19,10 +19,11 @@ if (!file_exists($source)) {
 $content = file_get_contents($source);
 
 // Add itm_require_crud_role_module_permission for create/edit
+// Also fix the logic bug where 'create' was unreachable.
 $search = "if (\$_SERVER['REQUEST_METHOD'] === 'POST' && \$crud_action === 'edit') {\n    cr_require_valid_csrf_token();";
-$replace = "if (\$_SERVER['REQUEST_METHOD'] === 'POST' && \$crud_action === 'edit') {\n    itm_require_crud_role_module_permission(\$conn, \$crud_action, 'employee_sidebar_preferences');\n    cr_require_valid_csrf_token();";
+$replace = "if (\$_SERVER['REQUEST_METHOD'] === 'POST' && in_array(\$crud_action, ['create', 'edit'], true)) {\n    itm_require_crud_role_module_permission(\$conn, \$crud_action, 'employee_sidebar_preferences');\n    cr_require_valid_csrf_token();";
 
-if (strpos($content, "itm_require_crud_role_module_permission(\$conn, \$crud_action") !== false) {
+if (strpos($content, "in_array(\$crud_action, ['create', 'edit'], true)") !== false) {
     echo "File already patched or contains RBAC check for create/edit.\n";
     copy($source, $target);
 } else {
