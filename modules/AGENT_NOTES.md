@@ -26,6 +26,15 @@ Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` Protection 
 
 ### `select_options_api.php` (module root)
 - Shared JSON endpoint for dropdown quick-add (`js/select-add-option.js`).
-- **Table policy:** inserts are allowed only for tables listed in `includes/itm_select_options_policy.php`; `employees`, `employee_roles`, `role_module_permissions`, and other identity/RBAC tables are blocked.
+- **Security:**
+  - Uses **MySQLi prepared statements** for all database queries and insertions to prevent SQL injection.
+  - Strictly enforces **POST only** method and **CSRF token validation**.
+  - **Table policy:** inserts are allowed only for whitelisted tables in `includes/itm_select_options_policy.php`; identity/RBAC tables (`employees`, `companies`, etc.) are blocked.
+  - **Company Scoping:** automatically scopes insertions and lookups by `company_id`.
+  - **Module Access:** checks `has_module_access()` to ensure the owning module is enabled for the active company.
+- **Business Logic:**
+  - Supports **extra fields** (e.g. status_id, location_id for racks; hex_color for cable colors).
+  - Automatically translates HEX colors to approximate color names (e.g. `#FF0000` -> `Red`).
+  - Ensures required fields (NOT NULL without default) are provided before attempting an insert.
 - **Company module access:** `config/config.php` enforces `has_module_access()` for all `modules/*` requests; sidebar/dashboard/calendar honour the same helper. Admin matrix: `modules/company_module_access/`.
 - Regression: `php scripts/verify_select_options_escalation.php` (expects PASS — admin user creation via `employees` table rejected).
