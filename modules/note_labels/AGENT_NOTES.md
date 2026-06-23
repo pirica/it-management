@@ -15,7 +15,7 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 
 
 ## 5. UI Behavior Requirements
-- Standard flattened CRUD via manufacturers-style dynamic schema.
+- Standard flattened CRUD via dynamic schema.
 - List/search/sort/pagination/export/import per module standards.
 - **Known gap:** list queries currently filter by `company_id` only — they do **not** filter `user_id = logged-in user` despite per-user scoping in section 8. Do not document per-user list filtering until code enforces it.
 
@@ -40,4 +40,4 @@ $stmt->bind_param('ii', $companyId, $employeeId);
 ```
 
 ## 12. Module Owner Notes (Optional)
-Behaviour matches the manufacturers CRUD template but runs against `note_labels` with local PHP copies.
+Behaviour matches the standard CRUD template but runs against `note_labels` with local PHP copies.

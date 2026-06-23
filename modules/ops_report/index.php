@@ -581,7 +581,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_row'])) {
 
 if ($crud_action === 'delete') {
     // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', 'ops_report');
+    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     itm_require_post_csrf();
     $id = (int)($_POST['id'] ?? 0);

@@ -203,7 +203,7 @@ Each module must maintain a flat structure with these specific files:
 `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, and `list_all.php`.
 
 > [!IMPORTANT]
-> **Do not create Master Templates:** Do not attempt to abstract CRUD into a single master template. Each module must remain independent.
+> **Do not create Shared Templates:** Do not attempt to abstract CRUD into a single shared template. Each module must remain independent.
 
 ### 2. Database & Schema Rules
 * **Schema Updates:** If a field/table is deleted or a header renamed, update `database.sql`.
@@ -733,7 +733,7 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 
 **NO MIXED (zero tolerance):** do not ship visible labels that combine emoji + action word, for example `💾 Save`, `🔙 Back`, `🔎 View Ticket Details`, or `➕ New Equipment`. Compound headings use emoji-only visible text plus a descriptive `title` (see canonical markup below).
 
-**Canonical markup** (reference: `modules/manufacturers/index.php`):
+**Standard markup** (reference: `modules/manufacturers/index.php`):
 
 ```html
 <a class="btn btn-sm" href="view.php?id=…" title="View">🔎</a>

@@ -1,12 +1,12 @@
 <?php
 /**
- * Static guard: forbidden cross-module delegates to modules/manufacturers/.
+ * Static guard: forbidden cross-module delegates to standard CRUD template.
  *
- * Why: only modules/manufacturers/ may host the live flattened CRUD template.
- * Other modules must use local copies (itm_materialize_manufacturers_crud_module_files()).
+ * Why: standard CRUD modules must use local materialized copies.
+ * Modules should use itm_materialize_standard_crud_module_files() instead of cross-module requires.
  *
- * CLI:  php scripts/check_manufacturers_delegate_requires.php
- * Browser: scripts/check_manufacturers_delegate_requires.php
+ * CLI:  php scripts/check_standard_crud_delegate_requires.php
+ * Browser: scripts/check_standard_crud_delegate_requires.php
  */
 
 declare(strict_types=1);
@@ -18,7 +18,7 @@ if ($root === false) {
 }
 
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin('Manufacturers delegate require check');
+itm_script_output_begin('Standard CRUD delegate require check');
 
 $modulesRoot = $root . DIRECTORY_SEPARATOR . 'modules';
 $manufacturersDir = $modulesRoot . DIRECTORY_SEPARATOR . 'manufacturers';
@@ -42,10 +42,11 @@ function mdr_relative_path(string $root, string $path): string
 }
 
 /**
- * Detects require/require_once of ../manufacturers/ from another module folder.
+ * Detects require/require_once of a specific template module from another module folder.
  */
 function mdr_line_has_forbidden_delegate(string $line): bool
 {
+    // The manufacturers module is the filesystem source for the standard CRUD pattern.
     if (stripos($line, 'manufacturers') === false) {
         return false;
     }
@@ -115,14 +116,14 @@ foreach ($iterator as $fileInfo) {
 }
 
 if ($violations === []) {
-    echo "Manufacturers delegate require check passed. Scanned {$scannedFiles} PHP file(s) under modules/ (excluding modules/manufacturers/).{$nl}";
+    echo "Standard CRUD delegate require check passed. Scanned {$scannedFiles} PHP file(s) under modules/ (excluding modules/manufacturers/).{$nl}";
     exit(0);
 }
 
-echo "Forbidden require ../manufacturers/ delegate(s) found (only modules/manufacturers/ is allowed):{$nl}{$nl}";
+echo "Forbidden cross-module delegate(s) found (modules must be self-contained):{$nl}{$nl}";
 foreach ($violations as $violation) {
     echo "{$violation['path']}:{$violation['line']}: {$violation['text']}{$nl}";
 }
 
-echo "{$nl}Fix: copy CRUD via itm_materialize_manufacturers_crud_module_files(\$slug, true) — do not require ../manufacturers/.{$nl}";
+echo "{$nl}Fix: materialized standard CRUD modules must be self-contained — do not use cross-module requires for core logic.{$nl}";
 exit(1);

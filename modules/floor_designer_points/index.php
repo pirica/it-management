@@ -292,7 +292,7 @@ if ($crud_action === 'delete') {
         exit('Method not allowed.');
     }
     // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', 'floor_designer_points');
+    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     itm_require_post_csrf();
 

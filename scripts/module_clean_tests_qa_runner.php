@@ -455,11 +455,11 @@ function mbqa_clean_tests_run_cleanup(): array
 
     $modulesRoot = dirname(__DIR__) . '/modules';
     $equipmentCleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesRoot);
-    $manufacturersScaffoldRemoved = 0;
-    if (function_exists('itm_remove_manufacturers_template_scaffold_module_dirs')) {
-        $manufacturersScaffoldRemoved = itm_remove_manufacturers_template_scaffold_module_dirs($modulesRoot);
-        if ($manufacturersScaffoldRemoved > 0) {
-            $equipmentCleanup['dirs_removed'] = (int)($equipmentCleanup['dirs_removed'] ?? 0) + $manufacturersScaffoldRemoved;
+    $standardScaffoldRemoved = 0;
+    if (function_exists('itm_remove_standard_crud_scaffold_module_dirs')) {
+        $standardScaffoldRemoved = itm_remove_standard_crud_scaffold_module_dirs($modulesRoot);
+        if ($standardScaffoldRemoved > 0) {
+            $equipmentCleanup['dirs_removed'] = (int)($equipmentCleanup['dirs_removed'] ?? 0) + $standardScaffoldRemoved;
         }
     }
     $runnerCleanup = mbqa_clean_tests_delete_runner_seed_rows($conn);
@@ -469,7 +469,7 @@ function mbqa_clean_tests_run_cleanup(): array
     $equipmentCleanup['runner_rows_detached'] = (int)($runnerCleanup['detached_total'] ?? 0);
     $equipmentCleanup['runner_tables_touched'] = (int)($runnerCleanup['tables_touched'] ?? 0);
     $equipmentCleanup['runner_table_details'] = (array)($runnerCleanup['table_details'] ?? []);
-    $equipmentCleanup['manufacturers_scaffold_dirs_removed'] = $manufacturersScaffoldRemoved;
+    $equipmentCleanup['standard_scaffold_dirs_removed'] = $standardScaffoldRemoved;
     $equipmentCleanup['errors'] = array_values(array_merge(
         $equipmentCleanup['errors'] ?? [],
         $runnerCleanup['errors'] ?? []
@@ -509,7 +509,7 @@ if ($options['help']) {
     echo '<p>Runs the same cleanup used automatically at the end of <code>module_browser_qa_runner.php</code>:</p>';
     echo '<ul>';
     echo '<li>Remove temporary equipment scaffold module folders under <code>modules/</code>.</li>';
-    echo '<li>Remove orphan <code>manufacturers</code> auto-scaffold module folders (⚠️ sidebar stubs).</li>';
+    echo '<li>Remove orphan standard CRUD auto-scaffold module folders (⚠️ sidebar stubs).</li>';
     echo '<li>Delete QA/test rows in <code>equipment_types</code>, test company rows, and sidebar artifacts.</li>';
     echo '<li>Delete MBQA / QA-IMPORT runner-seeded rows across DB tables by signature.</li>';
     echo '<li>Re-ensure canonical <code>modules/is_*</code> facades.</li>';
@@ -557,11 +557,11 @@ if (mbqa_clean_tests_is_cli()) {
         fwrite(STDOUT, colorText('[OK] No regression-test module folders to remove', 'pass') . "\n");
     }
 
-    $manufacturersDirsRemoved = (int)($cleanup['manufacturers_scaffold_dirs_removed'] ?? 0);
-    if ($manufacturersDirsRemoved > 0) {
-        fwrite(STDOUT, colorText("[OK] clean->>> manufacturers: removed {$manufacturersDirsRemoved} legacy delegate scaffold folder(s)", 'pass') . "\n");
+    $standardDirsRemoved = (int)($cleanup['standard_scaffold_dirs_removed'] ?? 0);
+    if ($standardDirsRemoved > 0) {
+        fwrite(STDOUT, colorText("[OK] clean->>> standard CRUD: removed {$standardDirsRemoved} legacy delegate scaffold folder(s)", 'pass') . "\n");
     } else {
-        fwrite(STDOUT, colorText('[OK] clean->>> manufacturers: no legacy require ../manufacturers/ stub folders', 'pass') . "\n");
+        fwrite(STDOUT, colorText('[OK] clean->>> standard CRUD: no legacy require template stub folders', 'pass') . "\n");
     }
 
     if ($cleanup['companies_deleted'] > 0) {

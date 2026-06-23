@@ -447,7 +447,7 @@ if ($crud_action === 'delete') {
     }
 
     // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', 'workstation_ram');
+    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     cr_require_valid_csrf_token();
 
@@ -574,7 +574,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, $crud_action, 'workstation_ram');
+    itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
     cr_require_valid_csrf_token();
     $sqlValues = [];
 

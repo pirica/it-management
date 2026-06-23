@@ -145,7 +145,7 @@ if ($crud_action === 'delete') {
     }
 
     // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', 'visitors_access_log');
+    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     itm_require_post_csrf();
 

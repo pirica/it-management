@@ -788,7 +788,7 @@ function itm_check_delete_standalone_handler(array $signals)
 }
 
 /**
- * Wrapper delegate OR standalone CRUD entry screen (shared master-template copies).
+ * Wrapper delegate OR standalone CRUD entry screen (shared standard CRUD template copies).
  *
  * @return array{status:string,details:string}
  */

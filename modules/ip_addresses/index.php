@@ -5,7 +5,7 @@ function cr_form_display_value($value) {
 /**
  * IP Addresses Module - Index
  *
- * Uses the flattened master CRUD pattern to display a sortable, searchable list
+ * Uses the standard flattened CRUD pattern to display a sortable, searchable list
  * of IP Addresses records.
  */
 

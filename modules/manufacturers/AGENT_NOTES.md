@@ -55,4 +55,4 @@ $stmt->execute();
 ```
 
 ## 12. Module Owner Notes (Optional)
-Central lookup for asset branding; canonical source for the manufacturers CRUD materialization helpers in `includes/ui_config.php`.
+Central lookup for asset branding; provides the code blueprint for the standard CRUD materialization helpers in `includes/ui_config.php`.

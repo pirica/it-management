@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 cr_require_valid_csrf_token();
-itm_require_crud_role_module_permission($conn, 'delete', 'license_management');
+itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
 $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 $dbErrorCode = 0;

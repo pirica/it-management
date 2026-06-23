@@ -710,10 +710,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_manufacturers_delegate_requires.php">check_manufacturers_delegate_requires.php</a></td>
+                    <td><a href="check_standard_crud_delegate_requires.php">check_standard_crud_delegate_requires.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: <code>modules/*/</code> PHP files must not <code>require __DIR__ . '/../manufacturers/…'</code> (only <code>modules/manufacturers/</code> may host that CRUD tree).</td>
-                    <td>Browser: plain-text report. CLI: <code>php scripts/check_manufacturers_delegate_requires.php</code> — run after manufacturers template or module scaffold changes.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_standard_crud_delegate_requires.php</code> — run after standard CRUD template or module scaffold changes.</td>
                 </tr>
                 <tr>
                     <td><a href="check_csrf_coverage.php">check_csrf_coverage.php</a></td>
@@ -832,7 +832,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Runs the same QA artifact cleanup used by <code>module_browser_qa_runner.php</code>: equipment scaffold folders, legacy <code>require ../manufacturers/</code> stub modules, MBQA/QA-IMPORT DB rows, sidebar leftovers, then re-ensures canonical <code>modules/is_*</code> facades. Browser <strong>Run QA</strong> already triggers this cleanup silently at start and end; use this page for manual cleanup runs. Includes quick links: <strong>Clean Tests · Open markdown file · Download XLSX · Rebuild report · Re-Run Test · Run QA runner</strong>.</td>
+                    <td>Runs the same QA artifact cleanup used by <code>module_browser_qa_runner.php</code>: equipment scaffold folders, legacy template stub modules, MBQA/QA-IMPORT DB rows, sidebar leftovers, then re-ensures canonical <code>modules/is_*</code> facades. Browser <strong>Run QA</strong> already triggers this cleanup silently at start and end; use this page for manual cleanup runs. Includes quick links: <strong>Clean Tests · Open markdown file · Download XLSX · Rebuild report · Re-Run Test · Run QA runner</strong>.</td>
                     <td>
                         Browser: <a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a> (open page, click <strong>Run Clean Tests</strong>; POST + CSRF required).<br>
                         CLI: <code>php scripts/module_clean_tests_qa_runner.php</code><br>

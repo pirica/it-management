@@ -404,9 +404,9 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 
 **Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` or QA tags `MBQA-equipment_types-…` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. In the browser, **`module_browser_qa_runner.php`** now runs **`module_clean_tests_qa_runner.php` silently before and after** **Run QA**; for other equipment DB tests, run `php scripts/cleanup_equipment_test_module_artifacts.php` manually.
 
-#### Manufacturers flattened CRUD template (`modules/manufacturers/`)
+#### Standard flattened CRUD template (`modules/manufacturers/`)
 
-Simple reference modules and auto-discovered DB tables use **copied** PHP from `modules/manufacturers/` (see `itm_materialize_manufacturers_crud_module_files()` in `includes/ui_config.php`).
+Simple reference modules and auto-discovered DB tables use **copied** PHP from `modules/manufacturers/` (see `itm_materialize_standard_crud_module_files()` in `includes/ui_config.php`).
 
 | Rule | Detail |
 |------|--------|
@@ -414,9 +414,9 @@ Simple reference modules and auto-discovered DB tables use **copied** PHP from `
 | **Forbidden** | `require __DIR__ . '/../manufacturers/…'` in any other module folder |
 | **Auto-scaffold** | `itm_auto_create_module_scaffold($table)` copies template files when a DB table has no `modules/{table}/index.php` |
 | **Sidebar label** | Newly scaffolded tables show **⚠️** in discovery (`itm_sidebar_auto_scaffolded_module_emoji()`) |
-| **QA cleanup** | `module_clean_tests_qa_runner.php` removes legacy thin delegate folders via `itm_remove_manufacturers_template_scaffold_module_dirs()` (never deletes `modules/manufacturers/`) |
-| **Refresh materialized module** | CLI after template edits: load app once, then `itm_materialize_manufacturers_crud_module_files('note_labels', true)` (or other slug) |
-| **Static guard** | `php scripts/check_manufacturers_delegate_requires.php` — fails if any `modules/*/` PHP file (except `manufacturers/`) contains `require … ../manufacturers/` |
+| **QA cleanup** | `module_clean_tests_qa_runner.php` removes legacy thin delegate folders via `itm_remove_standard_crud_scaffold_module_dirs()` (never deletes `modules/manufacturers/`) |
+| **Refresh materialized module** | CLI after template edits: load app once, then `itm_materialize_standard_crud_module_files('note_labels', true)` (or other slug) |
+| **Static guard** | `php scripts/check_standard_crud_delegate_requires.php` — fails if any `modules/*/` PHP file (except `manufacturers/`) contains `require … ../manufacturers/` |
 
 Materialized examples: `modules/note_labels/`, `modules/modules_registry/`.
 

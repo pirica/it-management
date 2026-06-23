@@ -190,27 +190,27 @@ function itm_sidebar_module_default_label($moduleName) {
 }
 
 /**
- * Sidebar prefix for modules auto-scaffolded via manufacturers (new DB table, no bespoke UI yet).
+ * Sidebar prefix for modules auto-scaffolded (new DB table, no bespoke UI yet).
  */
 function itm_sidebar_auto_scaffolded_module_emoji() {
     return '⚠️';
 }
 
 /**
- * Module folder names never removed by manufacturers-delegate QA cleanup.
+ * Module folder names never removed by standard-CRUD-scaffold QA cleanup.
  *
  * @return string[]
  */
-function itm_manufacturers_template_scaffold_preserved_module_names() {
+function itm_standard_crud_scaffold_preserved_module_names() {
     return [
         'manufacturers',
     ];
 }
 
 /**
- * Applies manufacturers CRUD template defaults to a copied PHP file for another module table.
+ * Applies standard flattened CRUD defaults to a copied PHP file for another module table.
  */
-function itm_apply_manufacturers_crud_template_to_module_content($moduleName, $templateContent) {
+function itm_apply_standard_crud_template_to_module_content($moduleName, $templateContent) {
     $moduleName = trim((string)$moduleName);
     if ($moduleName === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $moduleName)) {
         return (string)$templateContent;
@@ -244,11 +244,9 @@ function itm_apply_manufacturers_crud_template_to_module_content($moduleName, $t
 }
 
 /**
- * Copies manufacturers CRUD PHP files into modules/{name}/ with table/title substitutions.
- *
- * Why: only modules/manufacturers/ may delegate to itself; other modules need local copies.
+ * Copies standard CRUD PHP files into modules/{name}/ with table/title substitutions.
  */
-function itm_materialize_manufacturers_crud_module_files($moduleName, $overwriteExisting = false) {
+function itm_materialize_standard_crud_module_files($moduleName, $overwriteExisting = false) {
     $moduleName = trim((string)$moduleName);
     if ($moduleName === '' || $moduleName === 'manufacturers' || !preg_match('/^[a-zA-Z0-9_]+$/', $moduleName)) {
         return false;
@@ -281,7 +279,7 @@ function itm_materialize_manufacturers_crud_module_files($moduleName, $overwrite
             return false;
         }
 
-        $moduleContent = itm_apply_manufacturers_crud_template_to_module_content($moduleName, $templateContent);
+        $moduleContent = itm_apply_standard_crud_template_to_module_content($moduleName, $templateContent);
         if (itm_module_php_file_delegates_to_manufacturers_module($moduleContent)) {
             return false;
         }
@@ -295,16 +293,16 @@ function itm_materialize_manufacturers_crud_module_files($moduleName, $overwrite
 }
 
 /**
- * True when a PHP file still uses the forbidden cross-module manufacturers delegate.
+ * True when a PHP file still uses the forbidden cross-module template delegate.
  */
 function itm_module_php_file_delegates_to_manufacturers_module($content) {
     return strpos((string)$content, "require __DIR__ . '/../manufacturers/") !== false;
 }
 
 /**
- * True when every PHP entry file is a legacy thin delegate to modules/manufacturers/.
+ * True when every PHP entry file is a legacy thin delegate to standard CRUD template.
  */
-function itm_module_php_file_is_manufacturers_template_stub($content, $fileName) {
+function itm_module_php_file_is_standard_crud_stub($content, $fileName) {
     $content = str_replace(["\r\n", "\r"], "\n", (string)$content);
     $content = trim($content);
     if (strpos($content, 'config/config.php') !== false) {
@@ -319,11 +317,11 @@ function itm_module_php_file_is_manufacturers_template_stub($content, $fileName)
 }
 
 /**
- * Detects legacy manufacturers delegate stub folders (safe to remove after QA).
+ * Detects legacy standard-CRUD-scaffold delegate stub folders (safe to remove after QA).
  */
-function itm_module_dir_is_manufacturers_template_scaffold($modulesRoot, $moduleDirName) {
+function itm_module_dir_is_standard_crud_scaffold($modulesRoot, $moduleDirName) {
     $moduleDirName = trim((string)$moduleDirName);
-    if ($moduleDirName === '' || in_array($moduleDirName, itm_manufacturers_template_scaffold_preserved_module_names(), true)) {
+    if ($moduleDirName === '' || in_array($moduleDirName, itm_standard_crud_scaffold_preserved_module_names(), true)) {
         return false;
     }
 
@@ -341,7 +339,7 @@ function itm_module_dir_is_manufacturers_template_scaffold($modulesRoot, $module
     foreach ($phpFiles as $phpFile) {
         $fileName = basename($phpFile);
         $content = @file_get_contents($phpFile);
-        if ($content === false || !itm_module_php_file_is_manufacturers_template_stub($content, $fileName)) {
+        if ($content === false || !itm_module_php_file_is_standard_crud_stub($content, $fileName)) {
             return false;
         }
     }
@@ -350,9 +348,9 @@ function itm_module_dir_is_manufacturers_template_scaffold($modulesRoot, $module
 }
 
 /**
- * Removes orphan manufacturers-template scaffold dirs (MBQA / auto-scaffold pollution).
+ * Removes orphan standard-CRUD-scaffold dirs (MBQA / auto-scaffold pollution).
  */
-function itm_remove_manufacturers_template_scaffold_module_dirs($modulesRoot) {
+function itm_remove_standard_crud_scaffold_module_dirs($modulesRoot) {
     $modulesRoot = rtrim((string)$modulesRoot, '/\\');
     if ($modulesRoot === '' || !is_dir($modulesRoot)) {
         return 0;
@@ -362,7 +360,7 @@ function itm_remove_manufacturers_template_scaffold_module_dirs($modulesRoot) {
     $moduleDirs = glob($modulesRoot . '/*', GLOB_ONLYDIR) ?: [];
     foreach ($moduleDirs as $moduleDir) {
         $moduleDirName = basename($moduleDir);
-        if (!itm_module_dir_is_manufacturers_template_scaffold($modulesRoot, $moduleDirName)) {
+        if (!itm_module_dir_is_standard_crud_scaffold($modulesRoot, $moduleDirName)) {
             continue;
         }
 
@@ -527,11 +525,11 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
 /**
  * Automatically creates a new module directory and CRUD files.
  *
- * Copies manufacturers flattened CRUD into modules/{table}/ (no cross-module require).
+ * Copies standard flattened CRUD into modules/{table}/ (no cross-module require).
  * Sidebar labels for these modules use itm_sidebar_auto_scaffolded_module_emoji() (⚠️).
  */
 function itm_auto_create_module_scaffold($moduleName) {
-    return itm_materialize_manufacturers_crud_module_files($moduleName, false);
+    return itm_materialize_standard_crud_module_files($moduleName, false);
 }
 
 /**
@@ -593,7 +591,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
 
             if (is_file($moduleDir . '/index.php')) {
                 $scaffoldEmoji = '';
-                if (itm_module_dir_is_manufacturers_template_scaffold($modulesRoot, $moduleName)) {
+                if (itm_module_dir_is_standard_crud_scaffold($modulesRoot, $moduleName)) {
                     $scaffoldEmoji = itm_sidebar_auto_scaffolded_module_emoji();
                 }
                 $moduleNames[$moduleName] = ['emoji' => $scaffoldEmoji];

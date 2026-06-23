@@ -5,7 +5,7 @@ function cr_form_display_value($value) {
 /**
  * 📈 Forecast Revisions Module - Index
  * 
- * Uses the flattened master CRUD pattern to display a sortable, searchable list 
+ * Uses the standard flattened CRUD pattern to display a sortable, searchable list
  * of forecast revisions records.
  * Configures $crud_table and $crud_title before execution to scope the logic.
  */
@@ -715,7 +715,7 @@ if ($crud_action === 'delete') {
     }
 
     // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', 'forecast_revisions');
+    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
 
     cr_require_valid_csrf_token();
 
@@ -829,7 +829,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, $crud_action, 'forecast_revisions');
+    itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
     cr_require_valid_csrf_token();
 
     foreach ($fieldColumns as $col) {
