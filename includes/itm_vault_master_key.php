@@ -1,0 +1,71 @@
+<?php
+/**
+ * Vault master key change helpers — shared re-encryption for password_entries.
+ */
+
+if (!function_exists('itm_vault_reencrypt_password_entries')) {
+    /**
+     * Re-encrypt all password_entries for one employee when the vault session key changes.
+     * Caller must BEGIN a transaction and COMMIT or ROLLBACK based on the return value.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    function itm_vault_reencrypt_password_entries($conn, $employeeId, $oldKeySession, $newKeySession)
+    {
+        if (!($conn instanceof mysqli)) {
+            return ['ok' => false, 'message' => 'Database connection unavailable.'];
+        }
+
+        $employeeId = (int)$employeeId;
+        if ($employeeId <= 0) {
+            return ['ok' => false, 'message' => 'Invalid employee.'];
+        }
+
+        $oldKeySession = (string)$oldKeySession;
+        $newKeySession = (string)$newKeySession;
+        if ($oldKeySession === '' || $newKeySession === '') {
+            return ['ok' => false, 'message' => 'Invalid vault key material.'];
+        }
+
+        $sel_stmt = mysqli_prepare($conn, 'SELECT id, password FROM password_entries WHERE employee_id = ?');
+        if (!$sel_stmt) {
+            return ['ok' => false, 'message' => 'Failed to load vault entries.'];
+        }
+
+        mysqli_stmt_bind_param($sel_stmt, 'i', $employeeId);
+        if (!mysqli_stmt_execute($sel_stmt)) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to load vault entries.'];
+        }
+
+        $res = mysqli_stmt_get_result($sel_stmt);
+        $upd_stmt = mysqli_prepare($conn, 'UPDATE password_entries SET password = ? WHERE id = ? AND employee_id = ?');
+        if (!$upd_stmt) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to prepare vault update.'];
+        }
+
+        while ($row = mysqli_fetch_assoc($res)) {
+            $entryId = (int)($row['id'] ?? 0);
+            $decrypted = itm_decrypt((string)($row['password'] ?? ''), $oldKeySession);
+            if ($decrypted === false) {
+                mysqli_stmt_close($upd_stmt);
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt vault entries. Please try again.'];
+            }
+
+            $re_encrypted = itm_encrypt($decrypted, $newKeySession);
+            mysqli_stmt_bind_param($upd_stmt, 'sii', $re_encrypted, $entryId, $employeeId);
+            if (!mysqli_stmt_execute($upd_stmt)) {
+                mysqli_stmt_close($upd_stmt);
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt vault entries. Please try again.'];
+            }
+        }
+
+        mysqli_stmt_close($upd_stmt);
+        mysqli_stmt_close($sel_stmt);
+
+        return ['ok' => true, 'message' => ''];
+    }
+}
