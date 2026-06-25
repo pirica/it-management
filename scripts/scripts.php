@@ -1428,16 +1428,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/repro_rbac_bypass.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_user_companies_leak.php" target="_blank" rel="nofollow noreferrer">repro_user_companies_leak.php</a></td>
+                    <td><a href="repro_employee_companies_leak.php" target="_blank" rel="nofollow noreferrer">repro_employee_companies_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Multi-Tenant Data Leak in Employees module (user companies). Subprocess spawn uses <code>escapeshellarg()</code>.</td>
-                    <td><code>php scripts/repro_user_companies_leak.php</code></td>
+                    <td>PoC for Multi-Tenant Data Leak in Employees module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td><code>php scripts/repro_employee_companies_leak.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_user_companies_bac.php" target="_blank" rel="nofollow noreferrer">repro_user_companies_bac.php</a></td>
+                    <td><a href="repro_employee_companies_bac.php" target="_blank" rel="nofollow noreferrer">repro_employee_companies_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Broken Access Control in Employees module (user companies). Subprocess spawn uses <code>escapeshellarg()</code>.</td>
-                    <td><code>php scripts/repro_user_companies_bac.php</code></td>
+                    <td>PoC for Broken Access Control in Employees module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td><code>php scripts/repro_employee_companies_bac.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_audit_token_leak.php" target="_blank" rel="nofollow noreferrer">repro_audit_token_leak.php</a></td>

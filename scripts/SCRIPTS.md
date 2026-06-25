@@ -335,8 +335,6 @@ php scripts/auth_register_reset_human_test.php
 
 **`verify_password_reset_flow.php`:** store/lookup/complete reset tokens using `includes/itm_password_reset.php` (MySQL `DATE_ADD` expiry, legacy plain-token fallback). Uses a disposable script-test employee.
 
-**`repro_esa_vulnerability.php`:** PoC for Employee System Access Broken Access Control. Verifies that a non-admin user cannot access the system access edit page. Uses a disposable script-test user.
-
 #### API tier rate-limit regression (`apitest_tier_*.php`)
 
 | Script | Purpose |
