@@ -42,23 +42,45 @@ function bkm_build_folder_tree(array $folders, $parentId = null) {
 }
 
 /**
+ * Checks if a folder or any of its descendants contains at least one active bookmark.
+ */
+function bkm_folder_has_bookmarks($conn, $folder_id, $company_id) {
+    $folder_id = (int)$folder_id;
+    $company_id = (int)$company_id;
+
+    // Direct check
+    $res = mysqli_query($conn, "SELECT 1 FROM bookmarks WHERE folder_id = $folder_id AND company_id = $company_id AND active = 1 LIMIT 1");
+    if (mysqli_num_rows($res) > 0) return true;
+
+    // Check subfolders
+    $res = mysqli_query($conn, "SELECT id FROM bookmark_folders WHERE parent_folder_id = $folder_id AND company_id = $company_id AND active = 1");
+    while ($row = mysqli_fetch_assoc($res)) {
+        if (bkm_folder_has_bookmarks($conn, $row['id'], $company_id)) return true;
+    }
+
+    return false;
+}
+
+/**
  * Renders the folder tree as HTML list items.
  */
-function bkm_render_folder_tree_html(array $tree, $selectedFolderId, $depth = 0) {
+function bkm_render_folder_tree_html($conn, array $tree, $selectedFolderId, $company_id, $depth = 0) {
     $html = '';
     foreach ($tree as $node) {
         $id = (int)$node['id'];
         $isActive = ($id === (int)$selectedFolderId) ? ' active' : '';
         $icon = (isset($node['shared']) && $node['shared'] == 1) ? '🔓' : '🔒';
         $padding = $depth * 15;
+        $hasBookmarks = bkm_folder_has_bookmarks($conn, $id, $company_id) ? '1' : '0';
 
         $html .= '<li class="itm-folder-tree-item' . $isActive . '" data-folder-id="' . $id . '" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)">';
-        $html .= '<div class="itm-folder-tree-row" style="padding-left:' . $padding . 'px;">';
-        $html .= '<a href="index.php?folder_id=' . $id . '">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
+        $html .= '<div class="itm-folder-tree-row" style="padding-left:' . $padding . 'px; display: flex; align-items: center; justify-content: space-between;">';
+        $html .= '<a href="index.php?folder_id=' . $id . '" style="flex: 1;">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
+        $html .= '<button type="button" class="btn btn-sm btn-danger delete-folder-btn" data-id="' . $id . '" data-has-bookmarks="' . $hasBookmarks . '" title="Delete Folder" style="padding: 2px 6px; margin-left: 8px;">🗑️</button>';
         $html .= '</div>';
 
         if (!empty($node['children'])) {
-            $html .= '<ul class="itm-folder-tree-children">' . bkm_render_folder_tree_html($node['children'], $selectedFolderId, $depth + 1) . '</ul>';
+            $html .= '<ul class="itm-folder-tree-children">' . bkm_render_folder_tree_html($conn, $node['children'], $selectedFolderId, $company_id, $depth + 1) . '</ul>';
         }
         $html .= '</li>';
     }

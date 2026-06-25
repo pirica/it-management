@@ -165,7 +165,7 @@ $csrfToken = itm_get_csrf_token();
                     <li class="<?php echo ($selected_folder_id === null && $search === '') ? 'active' : ''; ?>" ondrop="drop(event)" ondragover="allowDrop(event)" data-folder-id="0">
                         <div><a href="index.php?view=<?php echo $view_mode; ?>">🏠 Root Bookmarks</a></div>
                     </li>
-                    <?php echo bkm_render_folder_tree_html($folder_tree, $selected_folder_id); ?>
+                    <?php echo bkm_render_folder_tree_html($conn, $folder_tree, $selected_folder_id, $company_id); ?>
                 </ul>
             </div>
             <div class="bookmarks-main">
@@ -398,6 +398,53 @@ $csrfToken = itm_get_csrf_token();
         document.querySelectorAll('.dropdown-menu').forEach(function(el) {
             el.classList.remove('show');
         });
+    });
+
+    // Folder deletion logic
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.delete-folder-btn');
+        if (!btn) return;
+
+        const id = btn.dataset.id;
+        const hasBookmarks = btn.dataset.hasBookmarks === '1';
+        let deleteContents = '0';
+
+        if (hasBookmarks) {
+            if (!confirm('This action will delete all bookmarks in the folder. Continue?')) {
+                return;
+            }
+            // Give options: Move or Delete
+            if (confirm('Delete all bookmarks? Click OK to delete everything, or Cancel to move bookmarks to the Root.')) {
+                deleteContents = '1';
+            } else {
+                deleteContents = '0';
+            }
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'delete_folder.php';
+
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'id';
+        idInput.value = id;
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '<?php echo sanitize($csrfToken); ?>';
+
+        const delContentInput = document.createElement('input');
+        delContentInput.type = 'hidden';
+        delContentInput.name = 'delete_contents';
+        delContentInput.value = deleteContents;
+
+        form.appendChild(idInput);
+        form.appendChild(csrfInput);
+        form.appendChild(delContentInput);
+        document.body.appendChild(form);
+        form.submit();
     });
 })();
 
