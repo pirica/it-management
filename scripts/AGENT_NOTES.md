@@ -53,7 +53,15 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
 - **data/** — contains excluded modules and prefixes for audits.
 - **bypass_login.php** — CLI-only utility to authenticate as **Admin** without the UI. Resolves the target user via prepared statement + `itm_mysqli_stmt_fetch_assoc()` (mysqlnd fallback), rejects non-admin users via `itm_is_admin()`, then sets session keys (including `vault_key` for Passwords). Not for production use.
-- **take_screenshots.py** — Python script using Playwright to automate screenshot capture.
+- **take_screenshots_modules.py** — Python script using Playwright to automate screenshot capture for README.
+- **check_phones.php** / **list_phone_columns.php** — PII auditing for phone-related columns in `database.sql`.
+- **list_active_and_checkboxes.php** — Audits `active` inputs and checkboxes in modules, constrained by DB schema.
+- **identify_modules.php** — Scans modules and saves metadata to `modules_metadata.json`.
+- **generate_tests.php** — Generates PHPUnit tests based on module metadata.
+- **count_args.php** — Audits `trg_employees_audit_insert` trigger arguments.
+- **fix_sql.php** / **fix_sql_broad.php** / **fix_sql_departments.php** — Maintenance for `database.sql` (active columns, triggers, column counts).
+- **schema_report.php** / **validate_DB_schema.php** / **test_employee_id-foreign_keys.php** / **validate_delete_employee.php** — Database schema validation suite.
+- **generate_FK_employee_id.php** / **generate_reassignment.php** / **transfer_data_from_employee.php** / **delete_clone_employee.php** — Employee data maintenance tools.
 
 ## 8. Multi-Tenant Rules
 - Maintenance scripts usually operate across all tenants or allow specifying a `company_id` via CLI arguments.

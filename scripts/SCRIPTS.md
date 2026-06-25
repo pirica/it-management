@@ -192,6 +192,24 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 - **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; lists only **new or changed** repo-relative `…/index.html` paths before the summary; upload roots also get `.htaccess`.
 - **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. See `docs/file_upload_modules.md` for the full module/storage map.
 
+### Database Schema validation scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/schema_report.php` | Visual HTML report of schema validation errors and warnings. |
+| `php scripts/validate_DB_schema.php` | Static validation of FKs, duplicate indexes, and orphaned indexes on employee_id. |
+| `php scripts/test_employee_id-foreign_keys.php` | Runtime validation of employee_id FKs and scoping. |
+| `php scripts/validate_delete_employee.php` | Checks if employees can be safely deleted by auditing referencing FKs and triggers. |
+
+### Employee data maintenance scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/generate_FK_employee_id.php` | Detects missing employee_id FKs and suggests ALTER TABLE SQL. |
+| `php scripts/generate_reassignment.php` | Generates UPDATE SQL to reassign data from an old employee to a new one before deletion. |
+| `php scripts/transfer_data_from_employee.php` | Clones an employee and copies their related data to the new record (Copy Mode). |
+| `php scripts/delete_clone_employee.php` | Reverses an employee clone by deleting the employee and their related data. |
+
 ### Explorer verification scripts
 
 | Script | Purpose |
@@ -316,6 +334,8 @@ php scripts/auth_register_reset_human_test.php
 **`auth_register_reset_human_test.php`:** invite → register → login → reset-password human-style regression without a browser. Asserts `mysqli_stmt_bind_param` contracts on `login.php`, `forgot-password.php`, and `reset-password.php`; verifies tenant-scoped **Active** `employment_status_id` on registration (companies 1–2 by default). **Mutates DB:** disposable invitations and `script-*` employees; teardown via `itm_script_test_employee_register_teardown()`. Optional: `--company=2`. Browser: `scripts/auth_register_reset_human_test.php?company=2` (uses `$_GET['company']` when `$argv` is unavailable).
 
 **`verify_password_reset_flow.php`:** store/lookup/complete reset tokens using `includes/itm_password_reset.php` (MySQL `DATE_ADD` expiry, legacy plain-token fallback). Uses a disposable script-test employee.
+
+**`repro_esa_vulnerability.php`:** PoC for Employee System Access Broken Access Control. Verifies that a non-admin user cannot access the system access edit page. Uses a disposable script-test user.
 
 #### API tier rate-limit regression (`apitest_tier_*.php`)
 

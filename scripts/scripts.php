@@ -529,6 +529,54 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Broad-spectrum SQL cleanup utility.</td>
                     <td>CLI: <code>php scripts/fix_sql_broad.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="schema_report.php">schema_report.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Visual report for database schema validation (errors and warnings).</td>
+                    <td>Open <a href="schema_report.php">schema_report.php</a> in the browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="validate_DB_schema.php">validate_DB_schema.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Validates database schema consistency (FKs, duplicate indexes, orphaned indexes).</td>
+                    <td>Open <a href="validate_DB_schema.php">validate_DB_schema.php</a> in the browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="test_employee_id-foreign_keys.php">test_employee_id-foreign_keys.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Validates <code>employee_id</code> foreign keys across all tables.</td>
+                    <td>Open <a href="test_employee_id-foreign_keys.php">test_employee_id-foreign_keys.php</a> in the browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="validate_delete_employee.php">validate_delete_employee.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Validates if employees can be safely deleted by checking FKs and triggers.</td>
+                    <td>Open <a href="validate_delete_employee.php">validate_delete_employee.php</a> in the browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="generate_FK_employee_id.php">generate_FK_employee_id.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Generates SQL for missing <code>employee_id</code> foreign keys.</td>
+                    <td>Open <a href="generate_FK_employee_id.php">generate_FK_employee_id.php</a> in the browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="generate_reassignment.php">generate_reassignment.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Generates reassignment SQL for <code>employee_id</code> before deletion.</td>
+                    <td>Open <a href="generate_reassignment.php">generate_reassignment.php</a> in the browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Clones an employee and transfers/copies their related data to the new record.</td>
+                    <td>Open <a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a> in the browser. <strong>DANGER: Mutates DB.</strong></td>
+                </tr>
+                <tr>
+                    <td><a href="delete_clone_employee.php">delete_clone_employee.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Reverses an employee clone by deleting the employee and their related data.</td>
+                    <td>Open <a href="delete_clone_employee.php">delete_clone_employee.php</a> in the browser. <strong>DANGER: Destructive.</strong></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -1050,6 +1098,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="repro_esa_vulnerability.php">repro_esa_vulnerability.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Employee System Access Broken Access Control (non-admin access to edit page).</td>
+                    <td><code>php scripts/repro_esa_vulnerability.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -1374,16 +1428,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/repro_rbac_bypass.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_employee_companies_leak.php" target="_blank" rel="nofollow noreferrer">repro_employee_companies_leak.php</a></td>
+                    <td><a href="repro_user_companies_leak.php" target="_blank" rel="nofollow noreferrer">repro_user_companies_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Multi-Tenant Data Leak in Employees module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
-                    <td><code>php scripts/repro_employee_companies_leak.php</code></td>
+                    <td>PoC for Multi-Tenant Data Leak in Employees module (user companies). Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td><code>php scripts/repro_user_companies_leak.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_employee_companies_bac.php" target="_blank" rel="nofollow noreferrer">repro_employee_companies_bac.php</a></td>
+                    <td><a href="repro_user_companies_bac.php" target="_blank" rel="nofollow noreferrer">repro_user_companies_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for Broken Access Control in Employee Companies module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
-                    <td><code>php scripts/repro_employee_companies_bac.php</code></td>
+                    <td>PoC for Broken Access Control in Employees module (user companies). Subprocess spawn uses <code>escapeshellarg()</code>.</td>
+                    <td><code>php scripts/repro_user_companies_bac.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_audit_token_leak.php" target="_blank" rel="nofollow noreferrer">repro_audit_token_leak.php</a></td>
