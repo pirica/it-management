@@ -1071,20 +1071,89 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Regression for <code>modules/system_status/</code>: file layout, registry row, native API payloads, storage tree + active DB table reports, <code>information_schema</code> query; Windows also checks <code>is_readable()</code> on each <code>includes/*.ps1</code> and runs <code>test_*.php</code> PowerShell wrappers.</td>
                     <td><code>php scripts/verify_system_status.php</code></td>
                 </tr>
-                <tr><td><a href="system_status_api.php">system_status_api.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td><td>Admin JSON API dispatcher (<code>?action=system_info</code>, etc.). PHP/MySQL actions always native; Windows hardware uses <code>includes/*.ps1</code> via allowlisted <code>itm_system_status_run_powershell_action()</code>. Invalid <code>action</code> → HTTP 400. Documented in <a href="api.php">api.php</a>.</td><td>GET <code>scripts/system_status_api.php?action=cpu_usage</code> (Admin session)</td></tr>
-                <tr><td><a href="system_status_phpinfo.php">system_status_phpinfo.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td><td>Admin-only <code>phpinfo()</code> for the active Apache PHP runtime (linked from System Status → PHP Settings).</td><td>GET <code>scripts/system_status_phpinfo.php</code> (Admin session)</td></tr>
-                <tr><td><a href="test_system_info.php">test_system_info.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests <code>includes/system_info.ps1</code> JSON output (Windows Laragon).</td><td><code>php scripts/test_system_info.php</code></td></tr>
-                <tr><td><a href="test_cpu_usage.php">test_cpu_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests cpu_usage.ps1 output.</td><td><code>php scripts/test_cpu_usage.php</code></td></tr>
-                <tr><td><a href="test_ram_usage.php">test_ram_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests ram_usage.ps1 output.</td><td><code>php scripts/test_ram_usage.php</code></td></tr>
-                <tr><td><a href="test_disk_usage.php">test_disk_usage.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests disk_usage.ps1 output.</td><td><code>php scripts/test_disk_usage.php</code></td></tr>
-                <tr><td><a href="test_uptime.php">test_uptime.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests uptime.ps1 output.</td><td><code>php scripts/test_uptime.php</code></td></tr>
-                <tr><td><a href="test_php_version.php">test_php_version.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests php_version.ps1 output.</td><td><code>php scripts/test_php_version.php</code></td></tr>
-                <tr><td><a href="test_php_extensions.php">test_php_extensions.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests php_extensions.ps1 output.</td><td><code>php scripts/test_php_extensions.php</code></td></tr>
-                <tr><td><a href="test_php_ini_values.php">test_php_ini_values.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests php_ini_values.ps1 output.</td><td><code>php scripts/test_php_ini_values.php</code></td></tr>
-                <tr><td><a href="test_mysql_status.php">test_mysql_status.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_status.ps1 output.</td><td><code>php scripts/test_mysql_status.php</code></td></tr>
-                <tr><td><a href="test_mysql_version.php">test_mysql_version.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_version.ps1 output.</td><td><code>php scripts/test_mysql_version.php</code></td></tr>
-                <tr><td><a href="test_mysql_databases.php">test_mysql_databases.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_databases.ps1 output.</td><td><code>php scripts/test_mysql_databases.php</code></td></tr>
-                <tr><td><a href="test_mysql_size.php">test_mysql_size.php</a></td><td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td><td>Tests mysql_size.ps1 output.</td><td><code>php scripts/test_mysql_size.php</code></td></tr>
+                <tr>
+					<td><a href="system_status_api.php">system_status_api.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+					<td>Admin JSON API dispatcher (<code>?action=system_info</code>, etc.). PHP/MySQL actions always native; Windows hardware uses <code>includes/*.ps1</code> via allowlisted <code>itm_system_status_run_powershell_action()</code>. Invalid <code>action</code> → HTTP 400. Documented in <a href="api.php">api.php</a>.</td>
+					<td>GET <code>scripts/system_status_api.php?action=cpu_usage</code> (Admin session)</td>
+				</tr>
+                <tr>
+					<td><a href="system_status_phpinfo.php">system_status_phpinfo.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+					<td>Admin-only <code>phpinfo()</code> for the active Apache PHP runtime (linked from System Status → PHP Settings).</td><td>GET <code>scripts/system_status_phpinfo.php</code> (Admin session)</td>
+				</tr>
+                <tr>
+					<td><a href="test_system_info.php">test_system_info.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests <code>includes/system_info.ps1</code> JSON output (Windows Laragon).</td>
+					<td><code>php scripts/test_system_info.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_cpu_usage.php">test_cpu_usage.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests cpu_usage.ps1 output.</td>
+					<td><code>php scripts/test_cpu_usage.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_ram_usage.php">test_ram_usage.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests ram_usage.ps1 output.</td>
+					<td><code>php scripts/test_ram_usage.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_disk_usage.php">test_disk_usage.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests disk_usage.ps1 output.</td>
+					<td><code>php scripts/test_disk_usage.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_uptime.php">test_uptime.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests uptime.ps1 output.</td>
+					<td><code>php scripts/test_uptime.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_php_version.php">test_php_version.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests php_version.ps1 output.</td>
+					<td><code>php scripts/test_php_version.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_php_extensions.php">test_php_extensions.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests php_extensions.ps1 output.</td>
+					<td><code>php scripts/test_php_extensions.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_php_ini_values.php">test_php_ini_values.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests php_ini_values.ps1 output.</td>
+					<td><code>php scripts/test_php_ini_values.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_mysql_status.php">test_mysql_status.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests mysql_status.ps1 output.</td>
+					<td><code>php scripts/test_mysql_status.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_mysql_version.php">test_mysql_version.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests mysql_version.ps1 output.</td>
+					<td><code>php scripts/test_mysql_version.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_mysql_databases.php">test_mysql_databases.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests mysql_databases.ps1 output.</td>
+					<td><code>php scripts/test_mysql_databases.php</code></td>
+				</tr>
+                <tr>
+					<td><a href="test_mysql_size.php">test_mysql_size.php</a></td>
+					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+					<td>Tests mysql_size.ps1 output.</td>
+					<td><code>php scripts/test_mysql_size.php</code></td>
+				</tr>
             </tbody>
         </table></div>
     </div>
