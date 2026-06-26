@@ -12,14 +12,14 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../includes/bootstrap_helpers.php';
 
 // Ensure required directories exist
-itm_ensure_upload_directory_chain(['reports_data']);
+itm_ensure_upload_directory_chain(ROOT_PATH . 'reports_data');
 
 $company_id = $_SESSION['company_id'] ?? null;
 $current_user_id = $_SESSION['employee_id'] ?? null;
 $current_role = $_SESSION['role_name'] ?? '';
 
 // Check module access
-if (!has_module_access($company_id, 'reports')) {
+if (!has_module_access($conn, $company_id, 'reports')) {
     header('Location: ../../modules/company_module_access/index.php');
     exit;
 }
