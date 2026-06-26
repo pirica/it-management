@@ -596,7 +596,7 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                     borderRadius: 5
                 }]
             },
-            options: Object.assign({}, baseOptions, { indexAxis: 'y' })
+            options: baseOptions
         });
 
         // --- OPERATIONS CHARTS ---
