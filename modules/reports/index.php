@@ -159,9 +159,6 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                 <!-- Header -->
                 <div class="reports-hub-header">
                     <h1 class="reports-hub-title">📊 Reports Hub</h1>
-                    <div class="itm-actions-wrap">
-                        <a href="../../modules/settings/index.php" class="btn btn-secondary">⚙️ Settings</a>
-                    </div>
                 </div>
 
                 <!-- Quick Stats Cards -->
