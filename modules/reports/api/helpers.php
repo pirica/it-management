@@ -566,3 +566,97 @@ function get_monthly_actual_comparison() {
         'data' => [ $last_year_total, $this_year_total ]
     ];
 }
+
+/**
+ * Equipment by status
+ */
+function get_equipment_status_statistics() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT es.name, COUNT(*) as count
+            FROM equipment e
+            JOIN equipment_statuses es ON e.status_id = es.id
+            WHERE e.company_id = ? AND e.active = 1
+            GROUP BY es.name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Monthly asset additions (last 12 months)
+ */
+function get_monthly_asset_additions() {
+    global $conn, $company_id;
+
+    $labels = [];
+    for ($i = 11; $i >= 0; $i--) {
+        $labels[] = date('Y-m', strtotime("-$i month"));
+    }
+    $counts = array_fill_keys($labels, 0);
+
+    $sql = "SELECT DATE_FORMAT(purchase_date, '%Y-%m') as month_str, COUNT(*) as count
+            FROM equipment
+            WHERE company_id = ? AND purchase_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01') AND active = 1
+            GROUP BY month_str";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (isset($counts[$row['month_str']])) {
+                $counts[$row['month_str']] = (int)$row['count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_keys($counts),
+        'data' => array_values($counts)
+    ];
+}
+
+/**
+ * Assets by department
+ */
+function get_assets_by_department() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+    $sql = "SELECT COALESCE(d.name, 'Unassigned') as dept_name, COUNT(*) as count
+            FROM equipment e
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE e.company_id = ? AND e.active = 1
+            GROUP BY dept_name
+            ORDER BY count DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = $row['dept_name'];
+            $data[] = (int)$row['count'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}

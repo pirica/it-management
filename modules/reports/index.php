@@ -36,6 +36,10 @@ $floorplan_data = get_floorplan_location_data();
 $inventory_data = get_inventory_stock_levels();
 $license_data = get_license_statistics();
 
+$equipment_status_data = get_equipment_status_statistics();
+$asset_additions_data = get_monthly_asset_additions();
+$assets_by_dept_data = get_assets_by_department();
+
 // Advanced Budgeting & Insights
 $budget_vs_actual = get_budget_vs_actual_trend();
 $budget_by_dept = get_budget_by_department();
@@ -262,11 +266,11 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                     </div>
                     <div class="dashboard-grid">
                         <article class="report-card">
-                            <h2>🔧 Equipment by Type</h2>
+                            <h2>📦 Asset Distribution by Type</h2>
                             <div class="chart-container">
                                 <canvas id="equipmentChart"></canvas>
                             </div>
-                            <p class="report-desc">Asset distribution by equipment category.</p>
+                            <p class="report-desc">Asset distribution by equipment category (equipment types).</p>
                         </article>
 
                         <article class="report-card">
@@ -291,6 +295,30 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                                 <canvas id="inventoryChart"></canvas>
                             </div>
                             <p class="report-desc">Inventory levels relative to defined minimum thresholds.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>🔄 Asset Status</h2>
+                            <div class="chart-container">
+                                <canvas id="assetStatusChart"></canvas>
+                            </div>
+                            <p class="report-desc">Distribution of equipment by current operational status.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>📅 Monthly Asset Additions</h2>
+                            <div class="chart-container">
+                                <canvas id="assetAdditionsChart"></canvas>
+                            </div>
+                            <p class="report-desc">Number of new assets acquired per month over the past year.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>🏢 Assets by Department</h2>
+                            <div class="chart-container">
+                                <canvas id="assetsByDeptChart"></canvas>
+                            </div>
+                            <p class="report-desc">Equipment allocation across company departments.</p>
                         </article>
                     </div>
                 </section>
@@ -530,6 +558,48 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                 }]
             },
             options: baseOptions
+        });
+
+        new Chart(document.getElementById('assetStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode($equipment_status_data['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($equipment_status_data['data']); ?>,
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6', '#ec4899']
+                }]
+            },
+            options: {
+                plugins: { legend: { display: true, position: 'right' } },
+                maintainAspectRatio: false
+            }
+        });
+
+        new Chart(document.getElementById('assetAdditionsChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($asset_additions_data['labels']); ?>,
+                datasets: [{
+                    label: 'New Assets',
+                    data: <?php echo json_encode($asset_additions_data['data']); ?>,
+                    backgroundColor: '#6366f1',
+                    borderRadius: 5
+                }]
+            },
+            options: baseOptions
+        });
+
+        new Chart(document.getElementById('assetsByDeptChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($assets_by_dept_data['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($assets_by_dept_data['data']); ?>,
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 5
+                }]
+            },
+            options: Object.assign({}, baseOptions, { indexAxis: 'y' })
         });
 
         // --- OPERATIONS CHARTS ---
