@@ -458,7 +458,7 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                     borderRadius: 5
                 }]
             },
-            options: Object.assign({}, baseOptions, { indexAxis: 'y' })
+            options: baseOptions
         });
 
         new Chart(document.getElementById('budgetYoyChart'), {
@@ -539,7 +539,7 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                     borderRadius: 5
                 }]
             },
-            options: Object.assign({}, baseOptions, { indexAxis: 'y' })
+            options: baseOptions
         });
 
         new Chart(document.getElementById('inventoryChart'), {
