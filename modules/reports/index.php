@@ -14,12 +14,6 @@ require_once __DIR__ . '/../../includes/bootstrap_helpers.php';
 // Ensure required directories exist
 itm_ensure_upload_directory_chain(['reports_data']);
 
-// Check authentication and permissions
-if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
-    header('Location: ../../login.php');
-    exit;
-}
-
 $company_id = $_SESSION['company_id'] ?? null;
 $current_user_id = $_SESSION['employee_id'] ?? null;
 $current_role = $_SESSION['role_name'] ?? '';

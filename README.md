@@ -99,6 +99,10 @@
 
 <p align="center"><img src="docs/readme/roles_permissions.png" alt="Roles and Permissions dashboard" /></p>
 
+<p align="center"><strong>Reports Hub</strong> — visual dashboard with key metrics for assets, tickets, HR, and network devices.</p>
+
+<p align="center"><img src="docs/readme/reports_hub.png" alt="Reports Hub dashboard" /></p>
+
 <h2 align="center">Architecture</h2>
 
 <p align="center">High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.</p>

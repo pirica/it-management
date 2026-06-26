@@ -70,11 +70,11 @@ function get_hr_statistics() {
 
     $labels = [];
     $data = [];
-    $sql = "SELECT d.name, COUNT(*) as count
+    $sql = "SELECT COALESCE(d.name, 'Unassigned') as dept_name, COUNT(*) as count
             FROM employees e
-            JOIN departments d ON e.department_id = d.id
+            LEFT JOIN departments d ON e.department_id = d.id
             WHERE e.company_id = ?
-            GROUP BY d.name
+            GROUP BY dept_name
             ORDER BY count DESC";
 
     $stmt = mysqli_prepare($conn, $sql);
@@ -83,7 +83,7 @@ function get_hr_statistics() {
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         while ($row = mysqli_fetch_assoc($result)) {
-            $labels[] = $row['name'];
+            $labels[] = $row['dept_name'];
             $data[] = (int)$row['count'];
         }
         mysqli_stmt_close($stmt);
@@ -158,11 +158,11 @@ function get_floorplan_location_data() {
 
     $labels = [];
     $data = [];
-    $sql = "SELECT l.name, COUNT(*) as count
+    $sql = "SELECT COALESCE(l.name, 'No Location') as loc_name, COUNT(*) as count
             FROM equipment e
-            JOIN it_locations l ON e.location_id = l.id
+            LEFT JOIN it_locations l ON e.location_id = l.id
             WHERE e.company_id = ? AND e.active = 1
-            GROUP BY l.name
+            GROUP BY loc_name
             ORDER BY count DESC";
 
     $stmt = mysqli_prepare($conn, $sql);
@@ -171,7 +171,7 @@ function get_floorplan_location_data() {
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         while ($row = mysqli_fetch_assoc($result)) {
-            $labels[] = $row['name'];
+            $labels[] = $row['loc_name'];
             $data[] = (int)$row['count'];
         }
         mysqli_stmt_close($stmt);
