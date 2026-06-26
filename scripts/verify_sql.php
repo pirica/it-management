@@ -11,18 +11,24 @@
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
-    require_once dirname(__DIR__) . '/config/config.php';
-} else {
+if (PHP_SAPI === 'cli') {
     define('ITM_CLI_SCRIPT', true);
 }
 
+require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
 itm_script_output_begin('Verify SQL');
+$nl = itm_script_output_nl();
 
 $sqlPath = dirname(__DIR__) . '/database.sql';
 if (!is_file($sqlPath)) {
-    echo "Error: 'database.sql' could not be found.\n";
+    echo "Error: 'database.sql' could not be found." . $nl;
     exit(1);
 }
 
@@ -109,7 +115,9 @@ foreach ($lines as $i => $line) {
     }
 }
 
-foreach ($errors as $err) echo $err . "\n";
-echo "Total errors found: " . count($errors) . "\n";
+foreach ($errors as $err) {
+    echo $err . $nl;
+}
+echo "Total errors found: " . count($errors) . $nl;
 
 exit(count($errors) > 0 ? 1 : 0);

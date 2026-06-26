@@ -13,18 +13,24 @@ declare(strict_types=1);
 
 $isCli = PHP_SAPI === 'cli';
 
-if (!$isCli) {
-    require_once dirname(__DIR__) . '/config/config.php';
-} else {
+if ($isCli) {
     define('ITM_CLI_SCRIPT', true);
 }
 
+require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (!$isCli && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
 itm_script_output_begin('Check Duplicates');
+$nl = itm_script_output_nl();
 
 $sqlPath = dirname(__DIR__) . '/database.sql';
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath\n";
+    echo "Error: database.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 
@@ -82,16 +88,16 @@ foreach ($lines as $index => $line) {
 $total = 0;
 
 foreach ($errors as $table => $items) {
-    echo "\n" . color("Table: $table", '1;31') . "\n";
+    echo $nl . color("Table: $table", '1;31') . $nl;
 
     foreach ($items as $err) {
         echo "  - Duplicate column " . color("`{$err['column']}`", '1;33') .
-             " on line {$err['line']}\n";
-        echo "    → {$err['text']}\n";
+             " on line {$err['line']}" . $nl;
+        echo "    → {$err['text']}" . $nl;
         $total++;
     }
 }
 
-echo "\n" . color("Total duplicate column errors: $total", '1;36') . "\n";
+echo $nl . color("Total duplicate column errors: $total", '1;36') . $nl;
 
 exit($total > 0 ? 1 : 0);

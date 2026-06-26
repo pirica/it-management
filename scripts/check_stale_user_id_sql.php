@@ -4,15 +4,16 @@
  *
  * Why: database.sql uses employee_id; leftover user_id SQL breaks at runtime.
  */
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html><body><p>CLI only: <code>php scripts/check_stale_user_id_sql.php</code></p>';
-    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
+    itm_script_output_begin('Stale user_id SQL Check');
+    echo '<p>CLI only: <code>php scripts/check_stale_user_id_sql.php</code></p>';
     exit(0);
 }
 
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+itm_script_output_begin('Stale user_id SQL Check');
+$nl = itm_script_output_nl();
 
 $root = dirname(__DIR__);
 $scanDirs = [
@@ -105,12 +106,12 @@ foreach ($scanDirs as $dir) {
 }
 
 if (empty($failures)) {
-    echo "PASS: No stale user_id SQL or users table references in modules/includes/config.\n";
+    echo "PASS: No stale user_id SQL or users table references in modules/includes/config." . $nl;
     exit(0);
 }
 
-echo 'FAIL: ' . count($failures) . " stale reference(s):\n";
+echo 'FAIL: ' . count($failures) . " stale reference(s):" . $nl;
 foreach ($failures as $msg) {
-    echo '  - ' . $msg . "\n";
+    echo '  - ' . $msg . $nl;
 }
 exit(1);

@@ -13,6 +13,15 @@ ini_set('display_errors', 1);
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
+itm_script_output_begin('Employee Import User Samples Test');
+$nl = itm_script_output_nl();
 
 $testUser = itm_script_test_employee_create($conn, 1, ['script_slug' => 'test-import-user-samples']);
 if (!is_array($testUser)) {
@@ -32,8 +41,8 @@ if (isset($conn) && $conn) {
 }
 
 function test_import($name, $headers, $rows) {
-    global $conn;
-    echo "--- Testing Import: $name ---\n";
+    global $conn, $nl;
+    echo "--- Testing Import: $name ---" . $nl;
 
     $_SERVER['REQUEST_METHOD'] = 'POST';
 
@@ -49,7 +58,7 @@ function test_import($name, $headers, $rows) {
 
     // We use the 5th parameter to return the result instead of exit-ing with JSON
     $result = itm_handle_json_table_import($conn, 'employees', 1, $payload, true);
-    echo json_encode($result, JSON_PRETTY_PRINT) . "\n\n";
+    echo json_encode($result, JSON_PRETTY_PRINT) . $nl . $nl;
 }
 
 // Sample 1: Normal (Hilton ID)

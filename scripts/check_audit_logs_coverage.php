@@ -515,62 +515,63 @@ if ($options['json']) {
 }
 
 itm_script_output_begin('Audit logs coverage check');
+$nl = itm_script_output_nl();
 
-echo "Audit Logs Coverage Check\n";
-echo "Root: {$root}\n";
-echo 'Schema tables in database.sql: ' . count($schemaTables) . "\n";
-echo 'Tables with trg_*_audit_insert in database.sql: ' . count($triggerTables) . "\n";
+echo "Audit Logs Coverage Check" . $nl;
+echo "Root: {$root}" . $nl;
+echo 'Schema tables in database.sql: ' . count($schemaTables) . $nl;
+echo 'Tables with trg_*_audit_insert in database.sql: ' . count($triggerTables) . $nl;
 if (!empty($schemaTablesMissingTriggers)) {
-    echo 'Schema tables missing audit triggers: ' . implode(', ', $schemaTablesMissingTriggers) . "\n";
+    echo 'Schema tables missing audit triggers: ' . implode(', ', $schemaTablesMissingTriggers) . $nl;
 } else {
-    echo "Schema tables missing audit triggers: (none)\n";
+    echo "Schema tables missing audit triggers: (none)" . $nl;
 }
-echo "\n";
+echo $nl;
 
 foreach ($results as $row) {
     $label = str_pad(strtoupper($row['status']), 4, ' ', STR_PAD_RIGHT);
     $tableLabel = $row['crud_table'] !== null ? $row['crud_table'] : '(no $crud_table)';
     $moduleLabel = itm_script_format_module_link($row['module']);
-    echo "[{$label}] {$moduleLabel} :: {$tableLabel} — {$row['details']}\n";
+    echo itm_script_format_status_line("[{$label}]") . " {$moduleLabel} :: {$tableLabel} — {$row['details']}" . $nl;
 }
 
-echo "\n==== Summary ====\n";
-echo 'PASS: ' . $totals['pass'] . "\n";
-echo 'WARN: ' . $totals['warn'] . "\n";
-echo 'FAIL: ' . $totals['fail'] . "\n";
-echo 'N/A : ' . $totals['n/a'] . "\n";
-echo 'SKIP: ' . $totals['skip'] . "\n";
+echo $nl . "==== Summary ====" . $nl;
+echo 'PASS: ' . $totals['pass'] . $nl;
+echo 'WARN: ' . $totals['warn'] . $nl;
+echo 'FAIL: ' . $totals['fail'] . $nl;
+echo 'N/A : ' . $totals['n/a'] . $nl;
+echo 'SKIP: ' . $totals['skip'] . $nl;
 
 if ($totals['fail'] > 0) {
-    echo "\nModules failing audit coverage:\n";
+    echo $nl . "Modules failing audit coverage:" . $nl;
     foreach ($results as $row) {
         if ($row['status'] !== 'fail') {
             continue;
         }
-        echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}\n";
+        echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}" . $nl;
     }
-    echo "\nNote: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows.\n";
+    echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows." . $nl;
     exit(2);
 }
 
 if ($totals['warn'] > 0) {
-    echo "\nWarnings (review multi-table / custom modules):\n";
+    echo $nl . "Warnings (review multi-table / custom modules):" . $nl;
     foreach ($results as $row) {
         if ($row['status'] !== 'warn') {
             continue;
         }
-        echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}\n";
+        echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}" . $nl;
     }
 }
 
 if (!empty($schemaTablesMissingTriggers)) {
-    echo "\nSchema gaps (add trg_{table}_audit_insert/update/delete in database.sql):\n";
+    echo $nl . "Schema gaps (add trg_{table}_audit_insert/update/delete in database.sql):" . $nl;
     foreach ($schemaTablesMissingTriggers as $tableName) {
-        echo " - {$tableName}\n";
+        echo " - {$tableName}" . $nl;
     }
-    echo "\nNote: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows.\n";
+    echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows." . $nl;
     exit(2);
 }
 
-echo "\nNote: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows.\n";
+echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows." . $nl;
 exit(0);

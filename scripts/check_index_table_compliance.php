@@ -25,6 +25,7 @@ if ($root === false) {
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('Index table compliance check');
+$nl = itm_script_output_nl();
 
 $modulesDir = $root . DIRECTORY_SEPARATOR . 'modules';
 $baselinePath = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'index_table_compliance_baseline.txt';
@@ -347,15 +348,15 @@ foreach ($baseline as $module) {
     }
 }
 
-echo "Index table compliance audit\n";
-echo "Modules scanned (with list table): {$scanned}\n";
-echo "Excluded modules: " . implode(', ', $excludeModules) . "\n";
-echo "Baseline entries: " . count($baseline) . ($strictMode ? ' (ignored — --strict)' : '') . "\n";
-echo "Skipped (no index.php): {$skippedNoIndex}\n";
-echo "Skipped (no <table>): {$skippedNoTable}\n\n";
+echo "Index table compliance audit" . $nl;
+echo "Modules scanned (with list table): {$scanned}" . $nl;
+echo "Excluded modules: " . implode(', ', $excludeModules) . $nl;
+echo "Baseline entries: " . count($baseline) . ($strictMode ? ' (ignored — --strict)' : '') . $nl;
+echo "Skipped (no index.php): {$skippedNoIndex}" . $nl;
+echo "Skipped (no <table>): {$skippedNoTable}" . $nl . $nl;
 
 if ($newViolations === [] && $staleBaseline === []) {
-    echo "Index table compliance check passed.\n";
+    echo "Index table compliance check passed." . $nl;
     exit(0);
 }
 
@@ -364,27 +365,27 @@ $exitCode = 0;
 if ($newViolations !== []) {
     $exitCode = 1;
     echo "Compliance violations";
-    echo $strictMode ? " (--strict, all modules):\n" : " (not in baseline):\n";
+    echo ($strictMode ? " (--strict, all modules):" : " (not in baseline):") . $nl;
     foreach ($newViolations as $module => $violations) {
-        echo " - {$module}\n";
+        echo " - {$module}" . $nl;
         foreach ($violations as $violation) {
-            echo "     * {$violation}\n";
+            echo "     * {$violation}" . $nl;
         }
     }
-    echo "\n";
+    echo $nl;
 }
 
 if ($staleBaseline !== [] && !$strictMode) {
-    echo "Baseline entries with no remaining violations (safe to remove):\n";
+    echo "Baseline entries with no remaining violations (safe to remove):" . $nl;
     foreach ($staleBaseline as $module) {
-        echo " - {$module}\n";
+        echo " - {$module}" . $nl;
     }
-    echo "\n";
+    echo $nl;
 }
 
 if ($exitCode !== 0) {
-    echo "Fix violations or run --write-baseline only when intentionally grandfathering legacy modules.\n";
-    echo "Remove fixed modules from scripts/data/index_table_compliance_baseline.txt.\n";
+    echo "Fix violations or run --write-baseline only when intentionally grandfathering legacy modules." . $nl;
+    echo "Remove fixed modules from scripts/data/index_table_compliance_baseline.txt." . $nl;
 }
 
 exit($exitCode);

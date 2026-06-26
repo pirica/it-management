@@ -48,9 +48,10 @@ if ($action === 'execute' && $sqlInput !== '') {
     }
 
     itm_script_output_begin('SQL Insert Execution');
+    $nl = itm_script_output_nl();
 
     if ($disableFk) {
-        echo "Disabling Foreign Key Checks...\n";
+        echo "Disabling Foreign Key Checks..." . $nl;
         itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 0');
     }
 
@@ -79,20 +80,20 @@ if ($action === 'execute' && $sqlInput !== '') {
         if (itm_run_query($conn, $cmd, $errorCode, $errorMessage)) {
             $successCount++;
         } else {
-            echo "Error executing: " . substr($cmd, 0, 100) . "...\n";
-            echo "Message: $errorMessage (Code: $errorCode)\n\n";
+            echo "Error executing: " . substr($cmd, 0, 100) . "..." . $nl;
+            echo "Message: $errorMessage (Code: $errorCode)" . $nl . $nl;
             $errorCount++;
         }
     }
 
     if ($disableFk) {
-        echo "Re-enabling Foreign Key Checks...\n";
+        echo "Re-enabling Foreign Key Checks..." . $nl;
         itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 1');
     }
 
-    echo "\nSummary:\n";
-    echo "Success: $successCount\n";
-    echo "Errors: $errorCount\n";
+    echo $nl . "Summary:" . $nl;
+    echo "Success: $successCount" . $nl;
+    echo "Errors: $errorCount" . $nl;
 
     itm_script_output_end();
     if (!$isCli) {

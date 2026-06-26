@@ -16,14 +16,12 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:840px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
+    itm_script_output_begin('Sample Data Seed Application');
     echo '<p><strong>CLI only.</strong> This script rewrites <code>database.sql</code>. Run from project root:</p>';
     echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/apply_module_sample_data_seed.php --module=idf_device_type --dry-run</pre>';
-    echo '</body></html>';
     exit(1);
 }
 
@@ -627,7 +625,7 @@ foreach ($companyIds as $companyId) {
 
 if ($addedCount === 0) {
     echo colorText("[OK] No missing sample rows for table '{$table}'. Nothing to update.", 'pass') . itm_script_output_nl();
-    echo 'Companies checked: ' . count($companyIds) . "\n";
+    echo 'Companies checked: ' . count($companyIds) . itm_script_output_nl();
     exit(0);
 }
 
@@ -652,15 +650,15 @@ if (!is_string($newSql) || $newSql === '') {
     exit(2);
 }
 
-echo "Table: {$table}\n";
-echo "Value column: {$valueColumn}\n";
-echo "Emoji column: " . ($emojiColumn !== '' ? $emojiColumn : '(none)') . "\n";
-echo 'Companies: ' . implode(', ', $companyIds) . "\n";
-echo "New rows to add: {$addedCount}\n";
-echo "AUTO_INCREMENT target: {$nextAutoIncrement}\n";
+echo "Table: {$table}" . itm_script_output_nl();
+echo "Value column: {$valueColumn}" . itm_script_output_nl();
+echo "Emoji column: " . ($emojiColumn !== '' ? $emojiColumn : '(none)') . itm_script_output_nl();
+echo 'Companies: ' . implode(', ', $companyIds) . itm_script_output_nl();
+echo "New rows to add: {$addedCount}" . itm_script_output_nl();
+echo "AUTO_INCREMENT target: {$nextAutoIncrement}" . itm_script_output_nl();
 
 if ($args['dry_run']) {
-    echo "[DRY-RUN] database.sql was not modified.\n";
+    echo "[DRY-RUN] database.sql was not modified." . itm_script_output_nl();
     exit(0);
 }
 

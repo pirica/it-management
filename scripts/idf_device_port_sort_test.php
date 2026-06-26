@@ -110,6 +110,11 @@ if (itmdf_sort_is_cli()) {
     $itmdfSortOfflineOnly = isset($_GET['offline_only']) || isset($_GET['offline-only']);
 }
 
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
 itmdf_sort_browser_init();
 
 function itmdf_sort_section_start(string $title, string $why = ''): void

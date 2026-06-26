@@ -6,15 +6,16 @@
  *
  * CLI: php scripts/check_fk_label_search_coverage.php
  */
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html><body><p>CLI only: <code>php scripts/check_fk_label_search_coverage.php</code></p>';
-    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
+    itm_script_output_begin('FK Label Search Coverage Check');
+    echo '<p>CLI only: <code>php scripts/check_fk_label_search_coverage.php</code></p>';
     exit(0);
 }
 
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+itm_script_output_begin('FK Label Search Coverage Check');
+$nl = itm_script_output_nl();
 
 $root = dirname(__DIR__);
 $failures = [];
@@ -193,14 +194,14 @@ foreach (glob($root . '/modules/*', GLOB_ONLYDIR) as $moduleDir) {
 }
 
 if (empty($failures)) {
-    echo "PASS: All modules with server-side search include FK/label search coverage.\n";
+    echo "PASS: All modules with server-side search include FK/label search coverage." . $nl;
     itm_script_output_end();
     exit(0);
 }
 
-echo 'FAIL: ' . count($failures) . " module(s) missing FK label search coverage:\n";
+echo 'FAIL: ' . count($failures) . " module(s) missing FK label search coverage:" . $nl;
 foreach ($failures as $row) {
-    echo '  - ' . $row['module'] . ' | ' . $row['file'] . ' | ' . $row['reason'] . "\n";
+    echo '  - ' . $row['module'] . ' | ' . $row['file'] . ' | ' . $row['reason'] . $nl;
 }
 itm_script_output_end();
 exit(1);

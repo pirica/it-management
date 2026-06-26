@@ -3,6 +3,16 @@
 // This script verifies that all tables in the redesigned schema have the mandatory 8 audit columns with correct defaults.
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
+itm_script_output_begin('Audit Column Verification');
+
+$nl = itm_script_output_nl();
 
 $mandatoryCols = [
     'company_id' => ['type' => 'int', 'null' => 'NO'],
@@ -40,16 +50,16 @@ while ($row = mysqli_fetch_row($res)) {
     }
 
     if (empty($missing)) {
-        echo "<br><font color=green>[PASS] $table</font>\n";
+        echo itm_script_format_status_line("[PASS] $table") . $nl;
     } else {
-        echo "<br><font color=red>[FAIL] $table - " . implode(', ', $missing) . "</font>\n";
+        echo itm_script_format_status_line("[FAIL] $table - " . implode(', ', $missing)) . $nl;
         $allPassed = false;
     }
 }
 
 if ($allPassed) {
-    echo "<br>\n<font color=green>Verification successful! All tables are compliant.</font>\n";
+    echo $nl . colorText('Verification successful! All tables are compliant.', 'pass') . $nl;
 } else {
-    echo "<br>\n<font color=red>Verification failed. Some tables are missing mandatory columns.</font>\n";
+    echo $nl . colorText('Verification failed. Some tables are missing mandatory columns.', 'fail') . $nl;
     exit(1);
 }

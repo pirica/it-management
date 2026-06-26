@@ -1,5 +1,14 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
+itm_script_output_begin('Multi-Tenant Integrity Verification');
+$nl = itm_script_output_nl();
 
 echo "<h3>Validating company_id foreign keys</h3>";
 
@@ -35,13 +44,13 @@ foreach ($tables as $table) {
     $hasCompanyId = mysqli_num_rows($colRes) > 0;
 
     if (!$hasCompanyId) {
-        echo "<br><b>$table</b>: <font color=gray>[SKIPPED] No company_id column</font><br>";
+        echo $nl . "<b>$table</b>: <font color=gray>[SKIPPED] No company_id column</font>" . $nl;
         $skipped++;
         $skippedList[] = $table;
         continue;
     }
 
-    echo "<br><b>Validating FK for $table</b><br>";
+    echo $nl . "<b>Validating FK for $table</b>" . $nl;
 
     $sql = "
         SELECT 
@@ -63,14 +72,14 @@ foreach ($tables as $table) {
 
     // Query failed
     if (!$fkRes) {
-        echo "<br><font color=red>[ERROR] Query failed: " . mysqli_error($conn) . "</font><br>";
-        echo "<font color=red>SQL: $sql</font><br>";
+        echo $nl . "<font color=red>[ERROR] Query failed: " . mysqli_error($conn) . "</font>" . $nl;
+        echo "<font color=red>SQL: $sql</font>" . $nl;
 
         $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `$table`");
         if ($colRes) {
-            echo "<br><b>Columns in $table:</b><br>";
+            echo $nl . "<b>Columns in $table:</b>" . $nl;
             while ($col = mysqli_fetch_assoc($colRes)) {
-                echo "- " . $col['Field'] . " (" . $col['Type'] . ")<br>";
+                echo "- " . $col['Field'] . " (" . $col['Type'] . ")" . $nl;
             }
         }
 
@@ -82,13 +91,13 @@ foreach ($tables as $table) {
 
     // No FK found
     if (mysqli_num_rows($fkRes) === 0) {
-        echo "<font color=red>[ERROR] company_id exists but has NO FOREIGN KEY!</font><br>";
+        echo "<font color=red>[ERROR] company_id exists but has NO FOREIGN KEY!</font>" . $nl;
 
         $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `$table`");
         if ($colRes) {
-            echo "<br><b>Columns in $table:</b><br>";
+            echo $nl . "<b>Columns in $table:</b>" . $nl;
             while ($col = mysqli_fetch_assoc($colRes)) {
-                echo "- " . $col['Field'] . " (" . $col['Type'] . ")<br>";
+                echo "- " . $col['Field'] . " (" . $col['Type'] . ")" . $nl;
             }
         }
 
@@ -106,14 +115,14 @@ foreach ($tables as $table) {
 
     foreach ($fks as $fk) {
         echo "<font color=green>[OK]</font> FK: {$fk['CONSTRAINT_NAME']} → ";
-        echo "{$fk['REFERENCED_TABLE_NAME']}.{$fk['REFERENCED_COLUMN_NAME']}<br>";
-        echo "Update rule: {$fk['UPDATE_RULE']} | Delete rule: {$fk['DELETE_RULE']}<br>";
+        echo "{$fk['REFERENCED_TABLE_NAME']}.{$fk['REFERENCED_COLUMN_NAME']}" . $nl;
+        echo "Update rule: {$fk['UPDATE_RULE']} | Delete rule: {$fk['DELETE_RULE']}" . $nl;
     }
 
     // Check if table has data
     $dataRes = mysqli_query($conn, "SELECT company_id FROM `$table` LIMIT 1");
     if ($dataRes && mysqli_num_rows($dataRes) === 0) {
-        echo "<br><font color=orange>[EMPTY] No data to verify scoping</font>\n";
+        echo $nl . "<font color=orange>[EMPTY] No data to verify scoping</font>" . $nl;
         $empty++;
         $emptyList[] = $table;
     } else {
@@ -126,23 +135,23 @@ foreach ($tables as $table) {
 
 // SUMMARY
 echo "<h3>SUMMARY</h3>";
-echo "SKIPPED: $skipped<br>";
-echo "OK: $ok<br>";
-echo "ERROR: $error<br>";
-echo "EMPTY: $empty<br>";
+echo "SKIPPED: $skipped" . $nl;
+echo "OK: $ok" . $nl;
+echo "ERROR: $error" . $nl;
+echo "EMPTY: $empty" . $nl;
 
 echo "<hr><h3>DETAILS</h3>";
 
-echo "<b>SKIPPED ($skipped):</b><br>";
-echo implode(', ', $skippedList) . "<br><br>";
+echo "<b>SKIPPED ($skipped):</b>" . $nl;
+echo implode(', ', $skippedList) . $nl . $nl;
 
-echo "<b>ERROR ($error):</b><br>";
+echo "<b>ERROR ($error):</b>" . $nl;
 echo $error ? implode(', ', $errorList) : "None";
-echo "<br><br>";
+echo $nl . $nl;
 
-echo "<b>EMPTY ($empty):</b><br>";
+echo "<b>EMPTY ($empty):</b>" . $nl;
 echo $empty ? implode(', ', $emptyList) : "None";
-echo "<br><br>";
+echo $nl . $nl;
 
-echo "<b>OK ($ok):</b><br>";
-echo implode(', ', $okList) . "<br><br>";
+echo "<b>OK ($ok):</b>" . $nl;
+echo implode(', ', $okList) . $nl . $nl;

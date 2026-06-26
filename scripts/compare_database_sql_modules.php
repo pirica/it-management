@@ -327,30 +327,33 @@ $asJson = $itmIsCli
     : isset($_GET['format']) && strtolower((string)$_GET['format']) === 'json';
 $cliShowAll = $itmIsCli && in_array('--all', $cliArgv, true);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if ($itmIsCli) {
+    $nl = itm_script_output_nl();
     if ($asJson) {
-        echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+        echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . $nl;
         exit(($report['summary']['tables_without_module'] + $report['summary']['modules_without_table']) > 0 ? 1 : 0);
     }
 
-    echo "database.sql tables vs modules/ comparison\n";
-    echo str_repeat('=', 120) . "\n";
-    echo 'SQL file: ' . $report['sql_path'] . "\n";
-    echo 'Tables in database.sql: ' . (int)$report['table_count'] . "\n";
-    echo 'Module folders scanned: ' . (int)$report['module_count'] . "\n\n";
+    echo "database.sql tables vs modules/ comparison" . $nl;
+    echo str_repeat('=', 120) . $nl;
+    echo 'SQL file: ' . $report['sql_path'] . $nl;
+    echo 'Tables in database.sql: ' . (int)$report['table_count'] . $nl;
+    echo 'Module folders scanned: ' . (int)$report['module_count'] . $nl . $nl;
 
-    echo "Tables without a module: " . (int)$report['summary']['tables_without_module'] . "\n";
-    echo "Modules without a database.sql table: " . (int)$report['summary']['modules_without_table'] . "\n\n";
+    echo "Tables without a module: " . (int)$report['summary']['tables_without_module'] . $nl;
+    echo "Modules without a database.sql table: " . (int)$report['summary']['modules_without_table'] . $nl . $nl;
 
-    echo "TABLES" . ($cliShowAll ? '' : ' (missing or mismatch only)') . "\n";
-    echo str_repeat('-', 120) . "\n";
-    echo "table | status | module_folder | crud_table | columns\n";
+    echo "TABLES" . ($cliShowAll ? '' : ' (missing or mismatch only)') . $nl;
+    echo str_repeat('-', 120) . $nl;
+    echo "table | status | module_folder | crud_table | columns" . $nl;
     foreach ($report['tables'] as $row) {
         if (!$cliShowAll && ($row['status'] === 'matched' || $row['status'] === 'expected_internal')) {
             continue;
         }
         printf(
-            "%-26s | %-18s | %-22s | %s | %s\n",
+            "%-26s | %-18s | %-22s | %s | %s" . $nl,
             $row['table'],
             $row['status'],
             $row['module_folder'] !== '' ? $row['module_folder'] : '-',
@@ -359,15 +362,15 @@ if ($itmIsCli) {
         );
     }
 
-    echo "\nMODULES" . ($cliShowAll ? '' : ' (issues only)') . "\n";
-    echo str_repeat('-', 120) . "\n";
-    echo "module | status | crud_table | in_sql | columns | notes\n";
+    echo $nl . "MODULES" . ($cliShowAll ? '' : ' (issues only)') . $nl;
+    echo str_repeat('-', 120) . $nl;
+    echo "module | status | crud_table | in_sql | columns | notes" . $nl;
     foreach ($report['modules'] as $row) {
         if (!$cliShowAll && $row['status'] === 'matched') {
             continue;
         }
         printf(
-            "%-26s | %-18s | %-22s | %s | %s | %s\n",
+            "%-26s | %-18s | %-22s | %s | %s | %s" . $nl,
             $row['module'],
             $row['status'],
             $row['crud_table'] !== '' ? $row['crud_table'] : '-',

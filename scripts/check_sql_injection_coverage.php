@@ -16,8 +16,16 @@ if ($root === false) {
     exit(2);
 }
 
+require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
 itm_script_output_begin('SQL injection coverage check');
+$nl = itm_script_output_nl();
 
 $ignorePaths = [
     DIRECTORY_SEPARATOR . '.git' . DIRECTORY_SEPARATOR,
@@ -116,13 +124,13 @@ foreach ($iterator as $fileInfo) {
 
 // Reporting
 if (empty($issues)) {
-    echo "SQL injection static check passed. Scanned {$scanned} PHP files and found no high-confidence direct-query findings." . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "SQL injection static check passed. Scanned {$scanned} PHP files and found no high-confidence direct-query findings." . $nl;
     exit(0);
 }
 
-echo "SQL injection static check found potential issues:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+echo "SQL injection static check found potential issues:" . $nl;
 foreach ($issues as $issue) {
-    echo sprintf(" - %s:%d %s\n", $issue['path'], $issue['line'], $issue['reason']);
+    echo sprintf(" - %s:%d %s", $issue['path'], $issue['line'], $issue['reason']) . $nl;
 }
 
 exit(1);

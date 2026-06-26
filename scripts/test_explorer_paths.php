@@ -72,6 +72,10 @@ $test_cases = [
     ['./Departments', 10, false, 'Departments root (bypass ./ prefix)'],
 ];
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Explorer Path Validation Test');
+$nl = itm_script_output_nl();
+
 $failed = 0;
 foreach ($test_cases as $tc) {
     list($path, $d_id, $expected, $label) = $tc;
@@ -79,16 +83,16 @@ foreach ($test_cases as $tc) {
     $success = ($result !== null);
 
     if ($success === $expected) {
-        echo "<br><br>[PASS] $label ($path): " . ($success ? "Allowed" : "Blocked") . "\n";
+        echo itm_script_format_status_line("[PASS] $label ($path): " . ($success ? "Allowed" : "Blocked")) . $nl;
     } else {
-        echo "<br><br>[FAIL] $label ($path): Expected " . ($expected ? "Allowed" : "Blocked") . " but got " . ($success ? "Allowed" : "Blocked") . "\n";
+        echo itm_script_format_status_line("[FAIL] $label ($path): Expected " . ($expected ? "Allowed" : "Blocked") . " but got " . ($success ? "Allowed" : "Blocked")) . $nl;
         $failed++;
     }
 }
 
 if ($failed === 0) {
-    echo "\n<br>All Explorer logic tests passed!<br>\n";
+    echo $nl . colorText('All Explorer logic tests passed!', 'pass') . $nl;
 } else {
-    echo "\n<br>$failed Explorer logic tests failed!<br>\n";
+    echo $nl . colorText("$failed Explorer logic tests failed!", 'fail') . $nl;
     exit(1);
 }
