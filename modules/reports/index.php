@@ -42,9 +42,7 @@ $floorplan_data = get_floorplan_location_data();
 $inventory_data = get_inventory_stock_levels();
 $license_data = get_license_statistics();
 
-// Close connection after use
-close_connection();
-
+// Why: connection is handled by config/config.php and used by footer.php, do not close here.
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -170,8 +168,6 @@ close_connection();
 
         <!-- Quick Actions -->
         <section class="reports-actions">
-            <button onclick="location.href='../../reports/create.php'" class="btn btn-success">➕ New Report</button>
-            <button onclick="location.href='../../reports/list_all.php'" class="btn btn-info">📋 All Reports</button>
             <button onclick="exportAllReports()" class="btn btn-secondary">📥 Export Data</button>
         </section>
     </div>
