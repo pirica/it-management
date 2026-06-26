@@ -17,17 +17,22 @@ This module is read-only and aggregates data from:
 - **employees**
 - **departments**
 - **annual_budgets**
+- **monthly_budgets**
+- **expenses** (for Actual vs Budget)
 - **gl_accounts**
 - **budget_categories**
 - **it_locations**
 - **inventory_items**
 - **license_management**
+- **cost_centers** (linked to departments)
 
 ---
 
 ## 3. Required Relationships
 
-N/A (Read-only aggregation)
+- `annual_budgets.cost_center_id` -> `cost_centers.id` -> `departments.id` (Departmental budget tracking)
+- `monthly_budgets.annual_budget_id` -> `annual_budgets.id` (Monthly trends)
+- `expenses.gl_account_id` -> `gl_accounts.id` (Actual spend tracking)
 
 ---
 
@@ -35,6 +40,7 @@ N/A (Read-only aggregation)
 
 - Module access is controlled via `has_module_access($conn, $company_id, 'reports')`.
 - All statistical queries must be scoped to the active `company_id`.
+- Advanced Budgeting assumes current year (`YEAR(CURDATE())`) for most comparisons unless specified (e.g. YOY).
 
 ---
 
