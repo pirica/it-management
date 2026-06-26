@@ -72,22 +72,22 @@ $license_data = get_license_statistics();
             <article class="stat-card">
                 <div class="stat-icon">📦</div>
                 <h3>Total Equipment</h3>
-                <p class="stat-value"><?= array_sum($equipment_stats) ?></p>
+                <p class="stat-value"><?= array_sum($equipment_stats['data']) ?></p>
             </article>
             <article class="stat-card">
                 <div class="stat-icon">🎫</div>
-                <h3>Open Tickets</h3>
-                <p class="stat-value"><?= $ticket_data[0] ?? 0 ?></p>
+                <h3>Tickets</h3>
+                <p class="stat-value"><?= array_sum($ticket_data['data']) ?></p>
             </article>
             <article class="stat-card">
                 <div class="stat-icon">👥</div>
                 <h3>Total Employees</h3>
-                <p class="stat-value"><?= array_sum($hr_data) ?></p>
+                <p class="stat-value"><?= array_sum($hr_data['data']) ?></p>
             </article>
             <article class="stat-card">
                 <div class="stat-icon">🌐</div>
                 <h3>Network Devices</h3>
-                <p class="stat-value"><?= array_sum($network_data) ?></p>
+                <p class="stat-value"><?= array_sum($network_data['data']) ?></p>
             </article>
         </section>
 
@@ -197,10 +197,10 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('equipmentChart'), {
             type: 'bar',
             data: {
-                labels: ['Servers', 'Workstations', 'Printers', 'Network Devices'],
+                labels: <?= json_encode($equipment_stats['labels']) ?>,
                 datasets: [{
                     label: 'Equipment Count',
-                    data: <?= json_encode($equipment_stats) ?>,
+                    data: <?= json_encode($equipment_stats['data']) ?>,
                     backgroundColor: 'rgba(54, 162, 235, 0.6)',
                     borderColor: 'rgb(54, 162, 235)',
                     borderWidth: 1
@@ -212,14 +212,16 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('ticketsChart'), {
             type: 'pie',
             data: {
-                labels: ['Open', 'In Progress', 'Resolved', 'Closed'],
+                labels: <?= json_encode($ticket_data['labels']) ?>,
                 datasets: [{
-                    data: <?= json_encode($ticket_data) ?>,
+                    data: <?= json_encode($ticket_data['data']) ?>,
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.7)',
                         'rgba(54, 162, 235, 0.7)',
                         'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)'
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(201, 203, 207, 0.7)'
                     ]
                 }]
             }
@@ -229,15 +231,17 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('hrChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Engineering', 'IT', 'Sales', 'HR', 'Finance'],
+                labels: <?= json_encode($hr_data['labels']) ?>,
                 datasets: [{
-                    data: <?= json_encode($hr_data) ?>,
+                    data: <?= json_encode($hr_data['data']) ?>,
                     backgroundColor: [
                         'rgba(255, 159, 64, 0.7)',
                         'rgba(255, 99, 132, 0.7)',
                         'rgba(54, 162, 235, 0.7)',
                         'rgba(153, 102, 255, 0.7)',
-                        'rgba(201, 203, 207, 0.7)'
+                        'rgba(201, 203, 207, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(255, 206, 86, 0.7)'
                     ]
                 }]
             }
@@ -247,10 +251,10 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('networkChart'), {
             type: 'radar',
             data: {
-                labels: ['Servers', 'Switches', 'Routers', 'Firewalls', 'Access Points'],
+                labels: <?= json_encode($network_data['labels']) ?>,
                 datasets: [{
                     label: 'Device Count',
-                    data: <?= json_encode($network_data) ?>,
+                    data: <?= json_encode($network_data['data']) ?>,
                     backgroundColor: 'rgba(75, 192, 192, 0.4)',
                     borderColor: 'rgb(75, 192, 192)',
                     pointBackgroundColor: 'rgb(75, 192, 192)'
@@ -262,15 +266,16 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('budgetChart'), {
             type: 'pie',
             data: {
-                labels: ['Personnel', 'Equipment', 'Software', 'Services', 'Other'],
+                labels: <?= json_encode($budget_data['labels']) ?>,
                 datasets: [{
-                    data: <?= json_encode($budget_data) ?>,
+                    data: <?= json_encode($budget_data['data']) ?>,
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.7)',
                         'rgba(54, 162, 235, 0.7)',
                         'rgba(255, 206, 86, 0.7)',
                         'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)'
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
                     ]
                 }]
             }
@@ -280,10 +285,10 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('floorplanChart'), {
             type: 'bar',
             data: {
-                labels: ['Floor 1', 'Floor 2', 'Office A', 'Warehouse'],
+                labels: <?= json_encode($floorplan_data['labels']) ?>,
                 datasets: [{
                     label: 'Equipment Count',
-                    data: <?= json_encode($floorplan_data) ?>,
+                    data: <?= json_encode($floorplan_data['data']) ?>,
                     backgroundColor: 'rgba(255, 206, 86, 0.6)'
                 }]
             }
@@ -293,10 +298,10 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('inventoryChart'), {
             type: 'line',
             data: {
-                labels: ['Low Stock', 'Normal', 'High'],
+                labels: <?= json_encode($inventory_data['labels']) ?>,
                 datasets: [{
                     label: 'Items by Level',
-                    data: <?= json_encode($inventory_data) ?>,
+                    data: <?= json_encode($inventory_data['data']) ?>,
                     borderColor: 'rgba(255, 159, 64, 0.8)',
                     backgroundColor: 'rgba(255, 159, 64, 0.2)'
                 }]
@@ -307,10 +312,10 @@ $license_data = get_license_statistics();
         new Chart(document.getElementById('licenseChart'), {
             type: 'bar',
             data: {
-                labels: ['Active', 'Expiring Soon', 'Expired'],
+                labels: <?= json_encode($license_data['labels']) ?>,
                 datasets: [{
                     label: 'License Count',
-                    data: <?= json_encode($license_data) ?>,
+                    data: <?= json_encode($license_data['data']) ?>,
                     backgroundColor: 'rgba(54, 162, 235, 0.6)'
                 }]
             }
