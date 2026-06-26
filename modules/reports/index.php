@@ -1,0 +1,380 @@
+<?php
+/**
+ * Reports Hub - Main Dashboard
+ * @file reports/index.php
+ * 
+ * Visual dashboard using existing IT Management tables from database.sql.
+ * No new database schema required - queries existing tables directly.
+ */
+
+// Include shared configuration and helpers
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/bootstrap_helpers.php';
+
+// Ensure required directories exist
+itm_ensure_upload_directory_chain(ROOT_PATH . 'reports_data');
+
+$company_id = $_SESSION['company_id'] ?? null;
+$current_user_id = $_SESSION['employee_id'] ?? null;
+$current_role = $_SESSION['role_name'] ?? '';
+
+// Check module access
+if (!has_module_access($conn, $company_id, 'reports')) {
+    header('Location: ../../modules/company_module_access/index.php');
+    exit;
+}
+
+// Load chart data using helpers from api/helpers.php
+require_once __DIR__ . '/api/helpers.php';
+
+$equipment_stats = get_equipment_statistics();
+$ticket_data = get_ticket_statistics();
+$hr_data = get_hr_statistics();
+$network_data = get_network_device_counts();
+$budget_data = get_budget_statistics();
+$floorplan_data = get_floorplan_location_data();
+$inventory_data = get_inventory_stock_levels();
+$license_data = get_license_statistics();
+
+// Why: connection is handled by config/config.php and used by footer.php, do not close here.
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports Hub - <?php echo sanitize($app_name); ?></title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="../../css/reports/dashboard.css">
+    <script src="<?php echo BASE_URL; ?>js/vendor/chart.js"></script>
+    <style>
+        .reports-hub-header {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            min-height: 40px;
+        }
+        .reports-hub-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="<?php echo isset($theme) ? $theme : 'light'; ?>">
+    <div class="container">
+        <?php include '../../includes/sidebar.php'; ?>
+
+        <div class="main-content">
+            <?php include '../../includes/header.php'; ?>
+
+            <div class="content">
+                <!-- Header -->
+                <div class="reports-hub-header">
+                    <h1 class="reports-hub-title">📊 Reports Hub</h1>
+                    <div class="itm-actions-wrap">
+                        <a href="../../modules/settings/index.php" class="btn btn-secondary">⚙️ Settings</a>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Cards -->
+                <section class="stats-grid">
+                    <article class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <h3>Total Equipment</h3>
+                        <p class="stat-value"><?php echo array_sum($equipment_stats['data']); ?></p>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">🎫</div>
+                        <h3>Tickets</h3>
+                        <p class="stat-value"><?php echo array_sum($ticket_data['data']); ?></p>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <h3>Total Employees</h3>
+                        <p class="stat-value"><?php echo array_sum($hr_data['data']); ?></p>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-icon">🌐</div>
+                        <h3>Network Devices</h3>
+                        <p class="stat-value"><?php echo array_sum($network_data['data']); ?></p>
+                    </article>
+                </section>
+
+                <!-- Main Dashboard Grid -->
+                <section class="dashboard-grid">
+                    <!-- Equipment Reports -->
+                    <article class="report-card equipment-report">
+                        <h2>🔧 Equipment by Type</h2>
+                        <div class="chart-container">
+                            <canvas id="equipmentChart"></canvas>
+                        </div>
+                        <p class="report-desc">Asset utilization by type (Servers, Workstations, Printers, Network Devices)</p>
+                    </article>
+
+                    <!-- Ticket Reports -->
+                    <article class="report-card tickets-report">
+                        <h2>🎫 Ticket Status</h2>
+                        <div class="chart-container">
+                            <canvas id="ticketsChart"></canvas>
+                        </div>
+                        <p class="report-desc">Ticket distribution by status (Open, In Progress, Resolved, Closed)</p>
+                    </article>
+
+                    <!-- HR Reports -->
+                    <article class="report-card hr-report">
+                        <h2>👥 Employees by Department</h2>
+                        <div class="chart-container">
+                            <canvas id="hrChart"></canvas>
+                        </div>
+                        <p class="report-desc">Employee distribution across departments (Engineering, IT, Sales, HR, Finance)</p>
+                    </article>
+
+                    <!-- Network Reports -->
+                    <article class="report-card networking-report">
+                        <h2>🌐 Network Device Types</h2>
+                        <div class="chart-container">
+                            <canvas id="networkChart"></canvas>
+                        </div>
+                        <p class="report-desc">Device counts by type (Servers, Switches, Routers, Firewalls, Access Points)</p>
+                    </article>
+
+                    <!-- Budget Reports -->
+                    <article class="report-card budget-report">
+                        <h2>💵 Budget Categories</h2>
+                        <div class="chart-container">
+                            <canvas id="budgetChart"></canvas>
+                        </div>
+                        <p class="report-desc">Budget allocation by category (Personnel, Equipment, Software, Services)</p>
+                    </article>
+
+                    <!-- Floor Plans -->
+                    <article class="report-card floorplans-report">
+                        <h2>📍 Equipment per Location</h2>
+                        <div class="chart-container">
+                            <canvas id="floorplanChart"></canvas>
+                        </div>
+                        <p class="report-desc">Equipment count per location (Floor 1, Floor 2, Office A, Warehouse)</p>
+                    </article>
+
+                    <!-- Inventory -->
+                    <article class="report-card inventory-report">
+                        <h2>📦 Stock Level Distribution</h2>
+                        <div class="chart-container">
+                            <canvas id="inventoryChart"></canvas>
+                        </div>
+                        <p class="report-desc">Items categorized by stock level (Low Stock, Normal, High)</p>
+                    </article>
+
+                    <!-- License Management -->
+                    <article class="report-card license-report">
+                        <h2>💾 License Status</h2>
+                        <div class="chart-container">
+                            <canvas id="licenseChart"></canvas>
+                        </div>
+                        <p class="report-desc">License types and expiry status (Active, Expiring Soon, Expired)</p>
+                    </article>
+                </section>
+
+                <!-- Quick Actions -->
+                <section class="reports-actions">
+                    <button onclick="exportAllReports()" class="btn btn-secondary">📥 Export Data</button>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Global Chart.js defaults for this page
+    const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== undefined) {
+                            label += context.parsed.y;
+                        } else {
+                            label += context.parsed;
+                        }
+                        return label;
+                    }
+                }
+            }
+        }
+    };
+
+    // Initialize charts after DOM load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js failed to load.');
+            return;
+        }
+
+        // Equipment Chart - Asset count by type
+        new Chart(document.getElementById('equipmentChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($equipment_stats['labels']); ?>,
+                datasets: [{
+                    label: 'Equipment Count',
+                    data: <?php echo json_encode($equipment_stats['data']); ?>,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    borderWidth: 1
+                }]
+            },
+            options: baseOptions
+        });
+
+        // Ticket Chart - Status distribution
+        new Chart(document.getElementById('ticketsChart'), {
+            type: 'pie',
+            data: {
+                labels: <?php echo json_encode($ticket_data['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($ticket_data['data']); ?>,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(201, 203, 207, 0.7)'
+                    ]
+                }]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: Object.assign({}, baseOptions.plugins, {
+                    legend: { display: true, position: 'right' }
+                })
+            })
+        });
+
+        // HR Chart - Department distribution
+        new Chart(document.getElementById('hrChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode($hr_data['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($hr_data['data']); ?>,
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(201, 203, 207, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(255, 206, 86, 0.7)'
+                    ]
+                }]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: Object.assign({}, baseOptions.plugins, {
+                    legend: { display: true, position: 'right' }
+                })
+            })
+        });
+
+        // Network Chart - Device types (radar)
+        new Chart(document.getElementById('networkChart'), {
+            type: 'radar',
+            data: {
+                labels: <?php echo json_encode($network_data['labels']); ?>,
+                datasets: [{
+                    label: 'Device Count',
+                    data: <?php echo json_encode($network_data['data']); ?>,
+                    backgroundColor: 'rgba(75, 192, 192, 0.4)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    pointBackgroundColor: 'rgb(75, 192, 192)'
+                }]
+            },
+            options: baseOptions
+        });
+
+        // Budget Chart - Category allocation (pie)
+        new Chart(document.getElementById('budgetChart'), {
+            type: 'pie',
+            data: {
+                labels: <?php echo json_encode($budget_data['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($budget_data['data']); ?>,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ]
+                }]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: Object.assign({}, baseOptions.plugins, {
+                    legend: { display: true, position: 'right' }
+                })
+            })
+        });
+
+        // Floor Plans Chart - Location equipment count (bar)
+        new Chart(document.getElementById('floorplanChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($floorplan_data['labels']); ?>,
+                datasets: [{
+                    label: 'Equipment Count',
+                    data: <?php echo json_encode($floorplan_data['data']); ?>,
+                    backgroundColor: 'rgba(255, 206, 86, 0.6)'
+                }]
+            },
+            options: baseOptions
+        });
+
+        // Inventory Chart - Stock levels (line)
+        new Chart(document.getElementById('inventoryChart'), {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($inventory_data['labels']); ?>,
+                datasets: [{
+                    label: 'Items by Level',
+                    data: <?php echo json_encode($inventory_data['data']); ?>,
+                    borderColor: 'rgba(255, 159, 64, 0.8)',
+                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                    fill: true
+                }]
+            },
+            options: baseOptions
+        });
+
+        // License Chart - License status (bar)
+        new Chart(document.getElementById('licenseChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($license_data['labels']); ?>,
+                datasets: [{
+                    label: 'License Count',
+                    data: <?php echo json_encode($license_data['data']); ?>,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                }]
+            },
+            options: baseOptions
+        });
+    });
+
+    // Export functionality
+    function exportAllReports() {
+        alert('Export would generate CSV/PDF of chart data. Implementation pending.');
+    }
+    </script>
+</body>
+</html>
