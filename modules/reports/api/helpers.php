@@ -598,7 +598,6 @@ function get_equipment_status_statistics() {
 
 /**
  * Monthly asset additions (last 12 months)
- * Uses created_at as it is more reliable for system entry tracking than purchase_date.
  */
 function get_monthly_asset_additions() {
     global $conn, $company_id;
@@ -609,9 +608,9 @@ function get_monthly_asset_additions() {
     }
     $counts = array_fill_keys($labels, 0);
 
-    $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month_str, COUNT(*) as count
+    $sql = "SELECT DATE_FORMAT(purchase_date, '%Y-%m') as month_str, COUNT(*) as count
             FROM equipment
-            WHERE company_id = ? AND created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01') AND active = 1
+            WHERE company_id = ? AND purchase_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01') AND active = 1
             GROUP BY month_str";
 
     $stmt = mysqli_prepare($conn, $sql);
