@@ -90,9 +90,7 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 ### Locales and copy
 
-* **UK English (en-GB)** is the default for UI labels, docs, and agent-written prose (spelling: organisation, colour only when matching existing UI).
 * **Dates (display and import):** use **dd/mm/yyyy** in UI lists, views, and Excel import parsing. MySQL storage stays `Y-m-d` / `Y-m-d H:i:s`. Shared helpers: `includes/itm_date_format.php` (`itm_parse_date_input`, `itm_format_date_display`, `itm_format_cell_scalar_display`). Maintenance: `php scripts/apply_date_display_format.php` when new flattened CRUD modules omit the `cr_render_cell_value()` hook.
-* **Portuguese (Portugal) (pt-PT)** is used where the product already ships bilingual or regional copy—match existing tone; do not machine-translate unrelated modules in drive-by edits.
 * **Emoji** in UI, `AGENTS.md`, and seed data are allowed when intentional (e.g. 🧩 section markers, toolbar icons in copy).
 
 ### HTTP and PHP output
@@ -295,12 +293,11 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
     - Creation or upload of items is blocked directly in `Home` (root), `Private` root, and `Departments` root.
     - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage.
 3. **Protected folders:** Top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. The user's primary private folder (`Private/{username}_{employee_id}`) cannot be renamed, moved, or deleted.
-4. **Localisation:** Use UK English (en-GB) for all UI labels (e.g., 'Favourites', 'Trash').
-5. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{employee_id}/`, `Trash/`, leaf folders, etc.):
+4. **Upload hardening (`deny_http`):** Every folder under `files/` must be created with `itm_ensure_files_storage_directory()` (or `itm_ensure_upload_directory_chain(…, 'deny_http', itm_files_storage_root())`), which **force-writes** on **each path segment** (`files/`, `files/{company_id}/`, `Private/`, `{username}_{employee_id}/`, `Trash/`, leaf folders, etc.):
     - **`.htaccess`** — canonical `deny_http` body from `itm_upload_directory_policy_body('deny_http')` (always overwritten). See **Upload directory hardening → Managed `.htaccess` policies** and **`docs/file_upload_modules.md`**.
     - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten; **required on every folder segment**, not only leaves).
     Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer — managed `.htaccess` is restored on every ensure. See `docs/file_upload_modules.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
-6. **Regression scripts:** `php scripts/test_explorer_paths.php` (path ACL logic); `php scripts/verify_explorer_zip_leak.php` (root ZIP blocked). PoC for malicious `.htaccess` upload: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php` (catalog in `scripts/scripts.php`).
+5. **Regression scripts:** `php scripts/test_explorer_paths.php` (path ACL logic); `php scripts/verify_explorer_zip_leak.php` (root ZIP blocked). PoC for malicious `.htaccess` upload: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php` (catalog in `scripts/scripts.php`).
 
 #### Org Chart and Hierarchy (mandatory)
 
