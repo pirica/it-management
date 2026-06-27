@@ -91,8 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Personal Email is required if Work Email is not provided.';
     }
 
-    // Auto-generate display name if missing
+    // Auto-generate display name and full name if missing
     if ($form['display_name'] === '') { $form['display_name'] = trim($form['first_name'] . ' ' . $form['last_name']); }
+    if ($form['full_name'] === '') { $form['full_name'] = trim($form['first_name'] . ' ' . $form['last_name']); }
 
     // Execute insertion
     if (empty($errors)) {
