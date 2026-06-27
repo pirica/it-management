@@ -1821,15 +1821,8 @@ if (!function_exists('itm_handle_json_table_import')) {
                     continue;
                 }
 
-                // Employees module: split full name (virtual field) only if first_name/last_name not provided
+                // Employees module: full_name (virtual field) - no auto-splitting into first/last name
                 if ($tableName === 'employees' && $fieldName === 'full_name') {
-                    if (!in_array('first_name', $providedFields, true) && !in_array('last_name', $providedFields, true)) {
-                        $parts = explode(' ', $rawValue, 2);
-                        $rowValues['first_name'] = "'" . mysqli_real_escape_string($conn, trim($parts[0])) . "'";
-                        $rowValues['last_name'] = "'" . mysqli_real_escape_string($conn, trim($parts[1] ?? '')) . "'";
-                        $providedFields[] = 'first_name';
-                        $providedFields[] = 'last_name';
-                    }
                     // Do not continue; allow the full_name column to be populated below if it exists in schema
                 }
 
