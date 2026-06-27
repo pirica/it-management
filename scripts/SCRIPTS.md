@@ -725,6 +725,12 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks. Run `benchmark_sidebar_module_access.php` after sidebar discovery or module-access caching changes to confirm query reduction (expect large drop vs legacy simulation when prefetch cache is enabled; marketing figures ~417→~7 depend on module count and environment — treat this script as the authoritative local measurement).
 
+### Administrative Tools / Developer Bypass
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/bypass_login.php` | CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via `itm_is_admin()`). Sets up Admin user, TechCorp Global company, and Vault master key. |
+
 ### Roles & Permissions scripts
 
 | Script | Purpose |

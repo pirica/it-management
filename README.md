@@ -20,6 +20,7 @@
 - ✅ Roles & Permissions — dual-pane role sidebar and six-column RBAC matrix (View, Add, Edit, Delete, Import, Export)
 - ✅ System Status — Real-time server monitoring (CPU, RAM, Disk, PHP, MySQL)
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
+- ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 
@@ -102,6 +103,10 @@
 <p align="center"><strong>Reports Hub</strong> — visual dashboard with key metrics for assets, tickets, HR, and network devices.</p>
 
 <p align="center"><img src="docs/readme/reports_hub.png" alt="Reports Hub dashboard" /></p>
+
+<p align="center"><strong>Bulk Import</strong> — Centralized dashboard for importing Assets and Employees via Excel or CSV with template support.</p>
+
+<p align="center"><img src="import_dashboard_xlsx.png" alt="Bulk Import dashboard" /></p>
 
 <h2 align="center">Architecture</h2>
 
@@ -379,6 +384,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Visitors Access Log | `modules/visitors_access_log/` | Manual visitor entry logs with immutability rules |
 | Backup Tape Log | `modules/backup_tape_log/` | Monthly server backup tape grid |
 | Ops Report | `modules/ops_report/` | Daily hotel operations report (figures, F&B, walk-round, guest experience) |
+| Bulk Import | `modules/import/` | Centralized Excel/CSV import for Assets and Employees |
 
 <h3 align="center">Productivity, files, and planning</h3>
 
