@@ -588,8 +588,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         } else {
                             $values[$col] = '0';
                         }
-                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'location_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'employee_type_id', 'office_key_card_department_id', 'role_id', 'access_level_id'], true)) {
+                    } elseif (in_array($col, ['company_id', 'employment_status_id', 'department_id', 'location_id', 'employee_position_id', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'employee_type_id', 'office_key_card_department_id'], true)) {
                         $values[$col] = (string)(int)$value;
+                    } elseif (itm_is_date_field_name($col)) {
+                        $values[$col] = itm_sql_date_fragment($conn, $value);
                     } else {
                         $values[$col] = "'" . mysqli_real_escape_string($conn, $value) . "'";
                     }
