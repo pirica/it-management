@@ -277,13 +277,29 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                 <tbody>
                                     <tr><td>first_name</td><td><span class="required-badge">Yes</span></td><td>John</td></tr>
                                     <tr><td>last_name</td><td><span class="required-badge">Yes</span></td><td>Smith</td></tr>
+                                    <tr><td>display_name</td><td>No</td><td>John S.</td></tr>
                                     <tr><td>full_name</td><td>No</td><td>John Smith</td></tr>
                                     <tr><td>email</td><td><span class="required-badge">Yes</span></td><td>john@company.com</td></tr>
-                                    <tr><td>username</td><td>No</td><td>jsmith</td></tr>
-                                    <tr><td>phone</td><td>No</td><td>+1234567890</td></tr>
-                                    <tr><td>job_title</td><td>No</td><td>IT Manager</td></tr>
-                                    <tr><td>employee_id</td><td>No</td><td>EMP001</td></tr>
+                                    <tr><td>personal_email</td><td>No</td><td>john.personal@gmail.com</td></tr>
+                                    <tr><td>emergency_contact_name</td><td>No</td><td>Jane Smith</td></tr>
+                                    <tr><td>emergency_contact_relationship</td><td>No</td><td>Spouse</td></tr>
+                                    <tr><td>emergency_contact_phone</td><td>No</td><td>+1234567891</td></tr>
+                                    <tr><td>mobile_phone</td><td>No</td><td>+1234567890</td></tr>
+                                    <tr><td>external_number</td><td>No</td><td>+1987654321</td></tr>
+                                    <tr><td>dect</td><td>No</td><td>1234</td></tr>
+                                    <tr><td>extension</td><td>No</td><td>5678</td></tr>
+                                    <tr><td>employee_code</td><td>No</td><td>EMP001</td></tr>
+                                    <tr><td>external_id</td><td>No</td><td>EXT-999</td></tr>
                                     <tr><td>insurance_n</td><td>No</td><td>INS-12345</td></tr>
+                                    <tr><td>username</td><td>No</td><td>jsmith</td></tr>
+                                    <tr><td>job_code</td><td>No</td><td>JOB-101</td></tr>
+                                    <tr><td>job_title</td><td>No</td><td>IT Manager</td></tr>
+                                    <tr><td>comments</td><td>No</td><td>Key member of IT.</td></tr>
+                                    <tr><td>request_date</td><td>No</td><td>31/01/2026</td></tr>
+                                    <tr><td>start_date</td><td>No</td><td>01/02/2026</td></tr>
+                                    <tr><td>requested_by</td><td>No</td><td>Admin</td></tr>
+                                    <tr><td>birthday</td><td>No</td><td>15/05/1990</td></tr>
+                                    <tr><td>status</td><td>No</td><td>Active</td></tr>
                                 </tbody>
                             </table>
                         </div>

@@ -120,12 +120,11 @@ function emp_canonical_header($header) {
         'employment status' => 'employment_status_id',
         'workstation mode' => 'workstation_mode_id',
         'assignment type' => 'assignment_type_id',
-        'role' => 'role_id',
-        'role name' => 'role_id',
-        'employee role' => 'role_id',
-        'access level' => 'access_level_id',
-        'access level name' => 'access_level_id',
         'office key card department id' => 'office_key_card_department_id',
+        'emergency contact name' => 'emergency_contact_name',
+        'emergency contact relationship' => 'emergency_contact_relationship',
+        'emergency contact phone' => 'emergency_contact_phone',
+        'birthday' => 'birthday',
         'id' => 'id',
         'id▼' => 'id'
     ];
@@ -483,9 +482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     'assignment_type_id' => ['table' => 'assignment_types', 'col' => 'name'],
                     'employee_type_id' => ['table' => 'employee_type', 'col' => 'name_type'],
                     'location_id' => ['table' => 'it_locations', 'col' => 'name'],
-                    'office_key_card_department_id' => ['table' => 'departments', 'col' => 'name'],
-                    'role_id' => ['table' => 'employee_roles', 'col' => 'name'],
-                    'access_level_id' => ['table' => 'access_levels', 'col' => 'name'],
+                    'office_key_card_department_id' => ['table' => 'departments', 'col' => 'name']
                 ];
                 foreach ($lookupMaps as $targetField => $info) {
                     if (!empty($mapped[$targetField]) && !is_numeric($mapped[$targetField])) {
@@ -577,7 +574,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','display_name','full_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','insurance_n','username','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id', 'role_id', 'access_level_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','display_name','full_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','insurance_n','username','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone', 'birthday'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
