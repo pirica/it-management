@@ -235,7 +235,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             </div>
 
             <!-- CSV Format Reference -->
-            <div class="card">
+            <div class="card" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1" data-itm-no-search="1">
                 <div class="card-header">
                     <h3>📋 Import Format Reference</h3>
                 </div>

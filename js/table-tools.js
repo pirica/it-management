@@ -577,6 +577,13 @@
             return;
         }
 
+        const card = table.closest('.card');
+        const noSearch = (table && table.dataset.itmNoSearch === '1')
+            || (card && card.dataset.itmNoSearch === '1');
+        if (noSearch) {
+            return;
+        }
+
         const content = table.closest('.content');
         if (content && content.querySelector('input[name="search"]')) {
             return;
