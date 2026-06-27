@@ -83,6 +83,8 @@ function emp_canonical_header($header) {
         'work email' => 'work_email',
         'email' => 'work_email',
         'personal email' => 'personal_email',
+        'full name' => 'full_name',
+        'insurance n' => 'insurance_n',
         'mobile phone' => 'mobile_phone',
         'external number' => 'external_number',
         'work phone' => 'external_number',
@@ -396,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             foreach (array_slice($rows, 1) as $rowOffset => $row) {
                 $sourceRowNumber = $rowOffset + 2;
                 $mapped = [
-                    'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'work_email' => '', 'personal_email' => '', 'employee_code' => '',
+                    'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'full_name' => '', 'insurance_n' => '', 'work_email' => '', 'personal_email' => '', 'employee_code' => '',
                     'external_id' => '', 'username' => '', 'display_name' => '', 'job_code' => '',
                     'comments' => '', 'raw_status_code' => '', 'termination_date' => '', 'request_date' => '', 'start_date' => '', 'requested_by' => '',
                     'termination_requested_by' => '', 'department_name' => '', 'employment_status_id' => 1, 'employee_type_id' => '', 'duplicate' => 0,
@@ -575,7 +577,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                 }
 
                 // Prepare values for SQL
-                $columns = ['company_id','duplicate','first_name','last_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','username','display_name','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id', 'role_id', 'access_level_id'];
+                $columns = ['company_id','duplicate','first_name','last_name','display_name','full_name','work_email','personal_email','mobile_phone','external_number','dect','extension','employee_code','external_id','insurance_n','username','job_code','employee_position_id','comments','raw_status_code','termination_date','request_date','start_date','requested_by','termination_requested_by','department_id','location_id','employment_status_id','employee_type_id','on_orgchart', 'on_contacts', 'reports_to', 'workstation_mode_id', 'assignment_type_id', 'office_key_card_department_id', 'role_id', 'access_level_id'];
                 $mapped['duplicate'] = $isDuplicateInFile ? 1 : 0;
                 $values = [];
                 foreach ($columns as $col) {
@@ -668,7 +670,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
     $columnTypes[$c['Field']] = strtolower((string)($c['Type'] ?? ''));
 }
 
-$preferredOrder = ['id','duplicate','external_id','employee_code','username','display_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','role_id','access_level_id','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
+$preferredOrder = ['id','duplicate','external_id','insurance_n','employee_code','username','display_name','full_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','role_id','access_level_id','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
 $hiddenColumns = array_merge(['company_id', 'location'], itm_employees_hidden_account_column_names());
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()), itm_employees_auth_sensitive_field_names());
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
@@ -762,6 +764,7 @@ function emp_label($field) {
     if ($field === 'workstation_mode_id') return 'Workstation Mode';
     if ($field === 'assignment_type_id') return 'Assignment Type';
     if ($field === 'external_id') return 'External ID';
+    if ($field === 'insurance_n') return 'Insurance N';
     if ($field === 'employee_code') return 'Employee Code';
     if ($field === 'role_id') return 'Role';
     if ($field === 'access_level_id') return 'Access Level';

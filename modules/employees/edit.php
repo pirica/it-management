@@ -89,9 +89,11 @@ $form = [
     'first_name' => (string)($employee['first_name'] ?? ''),
     'last_name' => (string)($employee['last_name'] ?? ''),
     'display_name' => (string)($employee['display_name'] ?? ''),
+    'full_name' => (string)($employee['full_name'] ?? ''),
     'work_email' => (string)($employee['work_email'] ?? ''),
     'personal_email' => (string)($employee['personal_email'] ?? ''),
     'external_id' => (string)($employee['external_id'] ?? ''),
+    'insurance_n' => (string)($employee['insurance_n'] ?? ''),
     'username' => (string)($employee['username'] ?? ''),
     'job_code' => (string)($employee['job_code'] ?? ''),
     'department_id' => (string)($employee['department_id'] ?? ''),
@@ -149,9 +151,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $firstName = mysqli_real_escape_string($conn, $form['first_name']);
         $lastName = mysqli_real_escape_string($conn, $form['last_name']);
         $displayName = $form['display_name'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['display_name']) . "'";
+        $fullName = $form['full_name'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['full_name']) . "'";
         $workEmail = $form['work_email'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['work_email']) . "'";
         $personalEmail = $form['personal_email'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['personal_email']) . "'";
         $externalId = $form['external_id'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_id']) . "'";
+        $insuranceN = $form['insurance_n'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['insurance_n']) . "'";
         $username = $form['username'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['username']) . "'";
         $jobCode = $form['job_code'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['job_code']) . "'";
         $departmentId = $form['department_id'] === '' ? 'NULL' : (string)(int)$form['department_id'];
@@ -200,8 +204,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$errors) {
         $sql = "UPDATE employees SET
-            first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName},
-            work_email={$workEmail}, personal_email={$personalEmail}, external_id={$externalId}, username={$username}, employee_code={$employeeCode},
+            first_name='{$firstName}', last_name='{$lastName}', display_name={$displayName}, full_name={$fullName},
+            work_email={$workEmail}, personal_email={$personalEmail}, external_id={$externalId}, insurance_n={$insuranceN}, username={$username}, employee_code={$employeeCode},
             department_id={$departmentId}, location_id={$locationId}, job_code={$jobCode}, mobile_phone={$mobilePhone}, external_number={$externalNumber}, dect={$dect}, extension={$extension}, on_contacts={$onContacts}, on_orgchart={$onOrgchart},
             raw_status_code={$rawStatusCode}, employment_status_id={$employmentStatusId},
             employee_position_id={$employeePositionId}, reports_to={$reportsTo},
@@ -260,6 +264,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                         <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="<?php echo sanitize($form['first_name']); ?>" required></div>
                         <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" value="<?php echo sanitize($form['last_name']); ?>" required></div>
                         <div class="form-group"><label>Display Name</label><input type="text" name="display_name" value="<?php echo sanitize($form['display_name']); ?>"></div>
+                        <div class="form-group"><label>Full Name</label><input type="text" name="full_name" value="<?php echo sanitize($form['full_name']); ?>"></div>
                         <div class="form-group"><label>Work Email</label><input type="email" name="work_email" value="<?php echo sanitize($form['work_email']); ?>"></div>
                         <div class="form-group"><label>Personal Email</label><input type="email" name="personal_email" value="<?php echo sanitize($form['personal_email']); ?>"></div>
                         <div class="form-group"><label>Mobile Phone</label><input type="text" name="mobile_phone" value="<?php echo sanitize($form['mobile_phone']); ?>"></div>
@@ -281,6 +286,7 @@ function emp_access_checked($selectedSystemAccessIds, $accessId) {
                             </label>
                         </div>
                         <div class="form-group"><label>External ID</label><input type="text" name="external_id" value="<?php echo sanitize($form['external_id']); ?>"></div>
+                        <div class="form-group"><label>Insurance N</label><input type="text" name="insurance_n" value="<?php echo sanitize($form['insurance_n']); ?>"></div>
                         <?php include __DIR__ . '/includes/profile_employee_code_field.php'; ?>
                         <div class="form-group"><label>Username</label><input type="text" name="username" value="<?php echo sanitize($form['username']); ?>"></div>
                         <?php include __DIR__ . '/includes/profile_role_access_fields.php'; ?>

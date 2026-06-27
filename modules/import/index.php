@@ -177,7 +177,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                             <div class="form-group">
                                 <label>File <span style="color:red;">*</span></label>
-                                <div class="itm-photo-upload-target" style="padding: 30px; border: 2px dashed #d0d7de; border-radius: 6px; text-align: center; cursor: pointer; background: #f6f8fa; transition: background 0.2s;">
+                                <div class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload asset import file" style="padding: 30px; border: 2px dashed #d0d7de; border-radius: 6px; text-align: center; cursor: pointer; background: #f6f8fa; transition: background 0.2s;">
                                     <input type="file" name="import_file" accept=".csv, .xlsx" required style="display: none;">
                                     <div class="itm-dropzone-hint">
                                         <span style="font-size: 2rem; display: block; margin-bottom: 10px;">📄</span>
@@ -215,7 +215,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                             <div class="form-group">
                                 <label>File <span style="color:red;">*</span></label>
-                                <div class="itm-photo-upload-target" style="padding: 30px; border: 2px dashed #d0d7de; border-radius: 6px; text-align: center; cursor: pointer; background: #f6f8fa; transition: background 0.2s;">
+                                <div class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload employee import file" style="padding: 30px; border: 2px dashed #d0d7de; border-radius: 6px; text-align: center; cursor: pointer; background: #f6f8fa; transition: background 0.2s;">
                                     <input type="file" name="import_file" accept=".csv, .xlsx" required style="display: none;">
                                     <div class="itm-dropzone-hint">
                                         <span style="font-size: 2rem; display: block; margin-bottom: 10px;">👥</span>
@@ -281,6 +281,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                     <tr><td>phone</td><td>No</td><td>+1234567890</td></tr>
                                     <tr><td>job_title</td><td>No</td><td>IT Manager</td></tr>
                                     <tr><td>employee_id</td><td>No</td><td>EMP001</td></tr>
+                                    <tr><td>insurance_n</td><td>No</td><td>INS-12345</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -308,7 +309,10 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             const target = this.closest('.itm-photo-upload-target');
             const hint = target.querySelector('.itm-dropzone-hint');
             if (this.files && this.files.length > 0) {
-                hint.innerHTML = '<strong>Selected:</strong> ' + this.files[0].name;
+                hint.innerHTML = '<strong>Selected:</strong> ';
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = this.files[0].name;
+                hint.appendChild(nameSpan);
                 target.style.borderColor = '#2e7d32';
                 target.style.background = '#f1f8e9';
             }
