@@ -390,7 +390,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** from **`AGENTS.md` → Setup & Debugging → PHP CLI tests**.
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **`AGENTS.md` → Setup & Debugging → PHP CLI tests**).
 * **`PHP_BINARY` for sub-processes:** When a script needs to execute another PHP script, prefer using the **`PHP_BINARY`** constant to ensure the same PHP version is used.
-* **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_module_sample_data_seed.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
+* **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_module_sample_data_seed.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, `fix_sql*.php`, `ensure_equipment_type_modules.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and use `itm_script_output_begin()` from `scripts/lib/script_cli_output.php` to show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
 #### 4. Shared libraries (do not duplicate ad hoc)

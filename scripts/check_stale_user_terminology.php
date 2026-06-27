@@ -5,15 +5,16 @@
  *
  * Why: After the employees merge, docs/scripts must say Employees module and employee_id.
  */
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html><body><p>CLI only: <code>php scripts/check_stale_user_terminology.php</code></p>';
-    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
+    itm_script_output_begin('Stale User Terminology Check');
+    echo '<p>CLI only: <code>php scripts/check_stale_user_terminology.php</code></p>';
     exit(0);
 }
 
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+itm_script_output_begin('Stale User Terminology Check');
+$nl = itm_script_output_nl();
 
 $root = dirname(__DIR__);
 $scanDirs = [
@@ -136,12 +137,12 @@ if (is_file($auditPath)) {
 }
 
 if (empty($failures)) {
-    echo "PASS: No stale Users-module prose, employee_companies user_id helpers, session role_name admin checks, cr_username_for_user_id, or user_id in \$hidden scaffold arrays.\n";
+    echo "PASS: No stale Users-module prose, employee_companies user_id helpers, session role_name admin checks, cr_username_for_user_id, or user_id in \$hidden scaffold arrays." . $nl;
     exit(0);
 }
 
-echo 'FAIL: ' . count($failures) . " stale reference(s):\n";
+echo 'FAIL: ' . count($failures) . " stale reference(s):" . $nl;
 foreach ($failures as $msg) {
-    echo '  - ' . $msg . "\n";
+    echo '  - ' . $msg . $nl;
 }
 exit(1);

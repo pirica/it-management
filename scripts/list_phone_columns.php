@@ -10,18 +10,22 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli') {
     require_once dirname(__DIR__) . '/config/config.php';
-} else {
-    define('ITM_CLI_SCRIPT', true);
+    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+        http_response_code(403);
+        die('Access denied. Administrator privileges required.');
+    }
 }
 
-require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('List Columns');
+$nl = itm_script_output_nl();
 
 $sqlPath = dirname(__DIR__) . '/database.sql';
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath\n";
+    echo "Error: database.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 
@@ -44,11 +48,11 @@ foreach ($lines as $line) {
     }
 }
 
-echo "Scanning for phone-related columns in database.sql:\n\n";
+echo "Scanning for phone-related columns in database.sql:" . $nl . $nl;
 
 foreach ($tables as $table => $cols) {
     $phoneCols = array_filter($cols, function($c) { return strpos(strtolower($c), 'phone') !== false; });
     if (!empty($phoneCols)) {
-        echo "Table $table: " . implode(', ', $phoneCols) . "\n";
+        echo "Table $table: " . implode(', ', $phoneCols) . $nl;
     }
 }

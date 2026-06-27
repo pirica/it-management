@@ -41,22 +41,26 @@ $test_cases = [
     ['image.jpg.bak', 'unsupported', 'Backup suffix must not match image'],
 ];
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Explorer Preview Mode Test');
+$nl = itm_script_output_nl();
+
 $failed = 0;
 foreach ($test_cases as $tc) {
     list($filename, $expected, $label) = $tc;
     $result = explorer_resolve_preview_mode_logic($filename);
     if ($result === $expected) {
-        echo "[PASS] $label ($filename): $result\n";
+        echo itm_script_format_status_line("[PASS] $label ($filename): $result") . $nl;
     } else {
-        echo "[FAIL] $label ($filename): expected $expected, got $result\n";
+        echo itm_script_format_status_line("[FAIL] $label ($filename): expected $expected, got $result") . $nl;
         $failed++;
     }
 }
 
 if ($failed === 0) {
-    echo "\nAll Explorer preview mode tests passed!\n";
+    echo $nl . colorText('All Explorer preview mode tests passed!', 'pass') . $nl;
     exit(0);
 }
 
-echo "\n$failed Explorer preview mode test(s) failed!\n";
+echo $nl . colorText("$failed Explorer preview mode test(s) failed!", 'fail') . $nl;
 exit(1);

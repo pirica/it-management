@@ -8,12 +8,11 @@
  *      php scripts/apply_bulk_delete_cancel_ux.php --dry-run
  */
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong></p><pre>php scripts/apply_bulk_delete_cancel_ux.php [--dry-run]</pre></body></html>';
+    itm_script_output_begin('Bulk Delete Cancel UX Fix');
+    echo '<p><strong>CLI only.</strong></p><pre>php scripts/apply_bulk_delete_cancel_ux.php [--dry-run]</pre>';
     exit(1);
 }
 
@@ -52,7 +51,7 @@ foreach ($iterator as $fileInfo) {
     }
     $changed++;
     $rel = str_replace('\\', '/', substr($path, strlen($root) + 1));
-    echo ($dryRun ? '[dry-run] ' : '') . "updated: {$rel}\n";
+    echo ($dryRun ? '[dry-run] ' : '') . "updated: {$rel}" . PHP_EOL;
 }
 
-echo "\nDone. updated={$changed} skipped_pattern={$skipped}" . ($dryRun ? ' (dry-run)' : '') . "\n";
+echo "\nDone. updated={$changed} skipped_pattern={$skipped}" . ($dryRun ? ' (dry-run)' : '') . PHP_EOL;

@@ -18,6 +18,7 @@ if ($root === false) {
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('CSRF coverage check');
+$nl = itm_script_output_nl();
 
 // Known CSRF protection function names used across the system
 $csrfPatterns = [
@@ -273,30 +274,30 @@ foreach ($iterator as $fileInfo) {
 
 // Final output of results
 if (empty($missing)) {
-    echo "CSRF coverage check passed. Scanned {$scanned} PHP files and {$handlerScanned} POST handlers with no uncovered state-changing POST handlers." . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo "CSRF coverage check passed. Scanned {$scanned} PHP files and {$handlerScanned} POST handlers with no uncovered state-changing POST handlers." . $nl;
     if ($handlersSkippedNoMutation > 0) {
-        echo "POST handlers skipped (read-only / no state mutation in block): {$handlersSkippedNoMutation}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+        echo "POST handlers skipped (read-only / no state mutation in block): {$handlersSkippedNoMutation}" . $nl;
     }
     if (!empty($skipped)) {
-        echo "\nSkipped (trusted — not direct POST endpoints):" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+        echo $nl . "Skipped (trusted — not direct POST endpoints):" . $nl;
         foreach ($skipped as $entry) {
-            echo " - {$entry[0]}: {$entry[1]}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+            echo " - {$entry[0]}: {$entry[1]}" . $nl;
         }
     }
     exit(0);
 }
 
-echo "CSRF coverage check found potential gaps:" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+echo "CSRF coverage check found potential gaps:" . $nl;
 foreach ($missing as $entry) {
     $path = $entry[0];
     $reason = $entry[1];
     $relative = csrf_coverage_relative_path($root, $path);
-    echo " - {$relative}: {$reason}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo " - {$relative}: {$reason}" . $nl;
 }
 if (!empty($skipped)) {
-    echo "\nSkipped (trusted — not direct POST endpoints):" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+    echo $nl . "Skipped (trusted — not direct POST endpoints):" . $nl;
     foreach ($skipped as $entry) {
-        echo " - {$entry[0]}: {$entry[1]}" . (php_sapi_name() === "cli" ? "\n" : "<br><br>");
+        echo " - {$entry[0]}: {$entry[1]}" . $nl;
     }
 }
 exit(1);

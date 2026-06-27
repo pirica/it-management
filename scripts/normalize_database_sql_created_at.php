@@ -10,14 +10,12 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:720px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
+    itm_script_output_begin('Normalize created_at in database.sql');
     echo '<p><strong>CLI only.</strong> This script rewrites <code>database.sql</code> on disk. Run from the project root:</p>';
     echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/normalize_database_sql_created_at.php</pre>';
-    echo '</body></html>';
     exit(1);
 }
 
@@ -431,5 +429,5 @@ $output = preg_replace('/^DELIMITER;\s*$/m', 'DELIMITER ;', $output) ?? $output;
 
 file_put_contents($schemaPath, $output);
 echo colorText("[OK] Updated created_at in {$updatedCount} INSERT statement(s).", 'pass') . itm_script_output_nl();
-echo "Target value: {$targetCreatedAt}\n";
-echo 'Tables with created_at column: ' . count($tablesWithCreatedAt) . "\n";
+echo "Target value: {$targetCreatedAt}" . itm_script_output_nl();
+echo 'Tables with created_at column: ' . count($tablesWithCreatedAt) . itm_script_output_nl();

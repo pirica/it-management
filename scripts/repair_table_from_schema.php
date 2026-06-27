@@ -7,14 +7,13 @@
  * This helper rebuilds one table from database.sql safely by explicit table name.
  */
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:720px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
+    itm_script_output_begin('Table Repair Helper');
+    itm_script_output_close_pre();
     echo '<p><strong>CLI only.</strong> Rebuilds one InnoDB table from <code>database.sql</code> (destructive). Backup first.</p>';
     echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/repair_table_from_schema.php --table=table_name</pre>';
-    echo '</body></html>';
     exit(1);
 }
 
@@ -92,6 +91,6 @@ if (!itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 1')) {
     exit(1);
 }
 
-fwrite(STDOUT, "Table '{$tableName}' rebuilt successfully.\n");
-fwrite(STDOUT, "Next step: run php scripts/analyze_database_health.php to verify.\n");
+fwrite(STDOUT, "Table '{$tableName}' rebuilt successfully." . PHP_EOL);
+fwrite(STDOUT, "Next step: run php scripts/analyze_database_health.php to verify." . PHP_EOL);
 exit(0);

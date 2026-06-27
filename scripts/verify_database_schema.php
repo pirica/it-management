@@ -5,38 +5,55 @@
  */
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>CLI only</title></head><body>';
-    echo '<p>Run from repository root:</p><pre>php scripts/verify_database_schema.php</pre>';
-    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
-    exit;
-}
-
 // Why: config.php skips web auth redirects only when ITM_CLI_SCRIPT is set before load.
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
+itm_script_output_begin('Database Schema Verification');
+$nl = itm_script_output_nl();
 
 /**
  * @return list<string>
  */
 function itm_verify_expected_tables_from_database_sql(): array
 {
+    global $nl;
     $path = ROOT_PATH . 'database.sql';
     if (!is_readable($path)) {
-        fwrite(STDERR, "Cannot read database.sql at {$path}\n");
+        $msg = "Cannot read database.sql at {$path}";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . "\n");
+        } else {
+            echo colorText($msg, 'fail') . $nl;
+        }
         exit(2);
     }
     $sql = file_get_contents($path);
     if ($sql === false) {
-        fwrite(STDERR, "Failed to read database.sql\n");
+        $msg = "Failed to read database.sql";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . "\n");
+        } else {
+            echo colorText($msg, 'fail') . $nl;
+        }
         exit(2);
     }
     if (!preg_match_all('/^CREATE TABLE `([^`]+)`/m', $sql, $matches)) {
-        fwrite(STDERR, "No CREATE TABLE entries found in database.sql\n");
+        $msg = "No CREATE TABLE entries found in database.sql";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . "\n");
+        } else {
+            echo colorText($msg, 'fail') . $nl;
+        }
         exit(2);
     }
     return $matches[1];
@@ -56,9 +73,17 @@ $res = itm_run_query(
     $dbErrorMessage
 );
 if ($res === false) {
-    fwrite(STDERR, "Failed to read information_schema for database '{$schema}'.\n");
-    if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
-        fwrite(STDERR, "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
+    $msg = "Failed to read information_schema for database '{$schema}'.";
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $msg . "\n");
+        if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
+            fwrite(STDERR, "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
+        }
+    } else {
+        echo colorText($msg, 'fail') . $nl;
+        if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
+            echo "MySQL error ({$dbErrorCode}): {$dbErrorMessage}" . $nl;
+        }
     }
     exit(2);
 }
@@ -69,29 +94,29 @@ while ($row = $res->fetch_assoc()) {
 $missing = array_values(array_diff($expected, $actual));
 $extra = array_values(array_diff($actual, $expected));
 
-echo "Database: {$schema}\n";
-echo 'Expected tables (database.sql): ' . count($expected) . "\n";
-echo 'Actual tables (MySQL): ' . count($actual) . "\n";
+echo "Database: {$schema}" . $nl;
+echo "Expected tables (database.sql): " . count($expected) . $nl;
+echo "Actual tables (MySQL): " . count($actual) . $nl;
 
 if ($missing !== []) {
-    echo "\nMissing tables (" . count($missing) . "):\n";
+    echo $nl . "Missing tables (" . count($missing) . "):" . $nl;
     foreach ($missing as $name) {
-        echo "  - {$name}\n";
+        echo "  - {$name}" . $nl;
     }
 }
 
 if ($extra !== []) {
-    echo "\nExtra tables not in database.sql (" . count($extra) . "):\n";
+    echo $nl . "Extra tables not in database.sql (" . count($extra) . "):" . $nl;
     foreach ($extra as $name) {
-        echo "  - {$name}\n";
+        echo "  - {$name}" . $nl;
     }
 }
 
 if ($missing === [] && $extra === [] && count($actual) === count($expected)) {
-    echo "\nOK — schema matches database.sql.\n";
+    echo $nl . itm_script_format_status_line("[PASS] OK — schema matches database.sql.") . $nl;
     exit(0);
 }
 
-echo "\nFAIL — import incomplete or stale schema. Re-import the full database.sql (include DROP DATABASE at top; password itmanagement).\n";
-echo "Check mysql stderr (e.g. mysql-import.err) for the first ERROR after the last table created.\n";
+echo $nl . itm_script_format_status_line("[FAIL] FAIL — import incomplete or stale schema. Re-import the full database.sql (include DROP DATABASE at top; password itmanagement).") . $nl;
+echo "Check mysql stderr (e.g. mysql-import.err) for the first ERROR after the last table created." . $nl;
 exit(1);

@@ -185,37 +185,37 @@ function itm_analyze_database_health_run(mysqli $conn): array
 function itm_analyze_database_health_print_cli(array $result): void
 {
     if ($result['table_count'] === 0 && $result['error_count'] === 0) {
-        fwrite(STDOUT, "No base tables were found in schema '" . $result['schema'] . "'.\n");
+        fwrite(STDOUT, "No base tables were found in schema '" . $result['schema'] . "'." . PHP_EOL);
         return;
     }
 
     fwrite(
         STDOUT,
-        'Running ANALYZE TABLE on ' . $result['table_count'] . " base table(s) in schema '" . $result['schema'] . "'...\n\n"
+        'Running ANALYZE TABLE on ' . $result['table_count'] . " base table(s) in schema '" . $result['schema'] . "'..." . PHP_EOL . PHP_EOL
     );
 
     foreach ($result['lines'] as $line) {
         if ($line['level'] === 'ok') {
-            fwrite(STDOUT, "[OK   ] {$line['table']}\n");
+            fwrite(STDOUT, "[OK   ] {$line['table']}" . PHP_EOL);
             continue;
         }
         if ($line['level'] === 'warning') {
-            fwrite(STDOUT, "[WARN ] {$line['table']}: {$line['message']}\n");
+            fwrite(STDOUT, "[WARN ] {$line['table']}: {$line['message']}" . PHP_EOL);
             continue;
         }
         if ($line['level'] === 'error') {
-            fwrite(STDOUT, "[ERROR] {$line['table']}: {$line['message']}\n");
+            fwrite(STDOUT, "[ERROR] {$line['table']}: {$line['message']}" . PHP_EOL);
             if ($line['hint'] !== '') {
-                fwrite(STDOUT, "        Hint: {$line['hint']}\n");
+                fwrite(STDOUT, "        Hint: {$line['hint']}" . PHP_EOL);
             }
             continue;
         }
-        fwrite(STDOUT, '[' . strtoupper($line['level']) . "] {$line['message']}\n");
+        fwrite(STDOUT, '[' . strtoupper($line['level']) . "] {$line['message']}" . PHP_EOL);
     }
 
     fwrite(
         STDOUT,
-        "\nSummary: OK={$result['ok_count']}, WARN={$result['warning_count']}, ERROR={$result['error_count']}\n"
+        PHP_EOL . "Summary: OK={$result['ok_count']}, WARN={$result['warning_count']}, ERROR={$result['error_count']}" . PHP_EOL
     );
 }
 
@@ -223,9 +223,9 @@ if ($itmIsCli) {
     try {
         require_once dirname(__DIR__) . '/config/config.php';
     } catch (Throwable $e) {
-        fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . "\n");
-        fwrite(STDERR, "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:\n");
-        fwrite(STDERR, "  C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php\n");
+        fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . PHP_EOL);
+        fwrite(STDERR, "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:" . PHP_EOL);
+        fwrite(STDERR, "  C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php" . PHP_EOL);
         exit(1);
     }
 
@@ -240,6 +240,11 @@ if ($itmIsCli) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+
+if (!$itmIsCli && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
 
 if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
     http_response_code(500);

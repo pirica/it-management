@@ -12,18 +12,22 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli') {
     require_once dirname(__DIR__) . '/config/config.php';
-} else {
-    define('ITM_CLI_SCRIPT', true);
+    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+        http_response_code(403);
+        die('Access denied. Administrator privileges required.');
+    }
 }
 
-require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('Check Delimiters');
+$nl = itm_script_output_nl();
 
 $sqlPath = dirname(__DIR__) . '/database.sql';
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath\n";
+    echo "Error: database.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 
@@ -63,7 +67,9 @@ if ($inTrigger) {
     $errors[] = "Reached end of file while inside a trigger block";
 }
 
-foreach ($errors as $err) echo $err . "\n";
-echo "Total delimiter errors: " . count($errors) . "\n";
+foreach ($errors as $err) {
+    echo $err . $nl;
+}
+echo "Total delimiter errors: " . count($errors) . $nl;
 
 exit(count($errors) > 0 ? 1 : 0);

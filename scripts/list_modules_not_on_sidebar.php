@@ -97,34 +97,37 @@ $asJson = $itmIsCli
     ? in_array('--json', $argv ?? [], true)
     : isset($_GET['format']) && strtolower((string)$_GET['format']) === 'json';
 
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if ($itmIsCli) {
+    $nl = itm_script_output_nl();
     if ($asJson) {
-        echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+        echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . $nl;
         exit(0);
     }
 
-    echo "Modules not listed on the sidebar\n";
-    echo str_repeat('=', 72) . "\n";
-    echo 'Sidebar items: ' . (int)$report['sidebar_item_count'] . "\n";
-    echo 'Policy-hidden module IDs: ' . implode(', ', $report['policy_hidden_ids']) . "\n\n";
+    echo "Modules not listed on the sidebar" . $nl;
+    echo str_repeat('=', 72) . $nl;
+    echo 'Sidebar items: ' . (int)$report['sidebar_item_count'] . $nl;
+    echo 'Policy-hidden module IDs: ' . implode(', ', $report['policy_hidden_ids']) . $nl . $nl;
 
     if ($report['not_on_sidebar'] === []) {
-        echo "All modules with index.php appear on the sidebar.\n";
+        echo "All modules with index.php appear on the sidebar." . $nl;
         exit(0);
     }
 
-    printf("%-32s %-28s %s\n", 'Module', 'CRUD table', 'Reason');
-    echo str_repeat('-', 72) . "\n";
+    printf("%-32s %-28s %s" . $nl, 'Module', 'CRUD table', 'Reason');
+    echo str_repeat('-', 72) . $nl;
     foreach ($report['not_on_sidebar'] as $row) {
         printf(
-            "%-32s %-28s %s\n",
+            "%-32s %-28s %s" . $nl,
             $row['module'],
             $row['crud_table'] ?? '(unknown)',
             $row['reason']
         );
     }
 
-    echo "\nTotal not on sidebar: " . count($report['not_on_sidebar']) . "\n";
+    echo $nl . "Total not on sidebar: " . count($report['not_on_sidebar']) . $nl;
     exit(0);
 }
 

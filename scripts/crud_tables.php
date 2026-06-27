@@ -23,7 +23,17 @@ $moduleDirs = array_values(array_filter(scandir($modulesPath), static function (
 
 sort($moduleDirs, SORT_NATURAL | SORT_FLAG_CASE);
 
+if (PHP_SAPI === 'cli') {
+    define('ITM_CLI_SCRIPT', true);
+}
+
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
+
+if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
 
 header('Content-Type: text/html; charset=UTF-8');
 
