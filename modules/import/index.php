@@ -13,60 +13,27 @@ $messages = [];
 $errors = [];
 $csrfToken = itm_get_csrf_token();
 
-/**
- * Resolves a label to an ID in a lookup table, creating it if it doesn't exist.
- * Scopes by company_id if the table supports it.
- */
-function resolve_lookup_id($conn, $table, $column, $value, $company_id) {
-    $value = trim((string)$value);
-    if ($value === '' || strtolower($value) === 'none' || strtolower($value) === 'n/a') return null;
-
-    $escapedValue = mysqli_real_escape_string($conn, $value);
-
-    // Check if table has company_id column for scoping
-    static $table_columns_cache = [];
-    if (!isset($table_columns_cache[$table])) {
-        $colRes = mysqli_query($conn, "SHOW COLUMNS FROM `{$table}` LIKE 'company_id'");
-        $table_columns_cache[$table] = ($colRes && mysqli_num_rows($colRes) > 0);
-    }
-    $hasCompanyId = $table_columns_cache[$table];
-
-    $sql = "SELECT id FROM `{$table}` WHERE `{$column}` = '{$escapedValue}'";
-    if ($hasCompanyId) {
-        $sql .= " AND company_id = " . (int)$company_id;
-    }
-    $sql .= " LIMIT 1";
-
-    $res = mysqli_query($conn, $sql);
-    if ($res && mysqli_num_rows($res) > 0) {
-        $row = mysqli_fetch_assoc($res);
-        return (int)$row['id'];
-    }
-
-    // Create new entry if not found
-    $insertSql = "INSERT INTO `{$table}` (`{$column}`" . ($hasCompanyId ? ", company_id" : "") . ") VALUES ('{$escapedValue}'" . ($hasCompanyId ? ", " . (int)$company_id : "") . ")";
-    if (mysqli_query($conn, $insertSql)) {
-        return (int)mysqli_insert_id($conn);
-    }
-
-    return null;
-}
-
 // Handle template downloads
 if (isset($_GET['download'])) {
     $template = $_GET['download'];
     if ($template === 'assets') {
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="template_assets.csv"');
-        echo "name,brand,model,serial_number,category,purchase_date,purchase_cost\n";
-        echo "Dell Laptop,Dell Technologies,Latitude 5520,SN123456,Workstation,2024-01-15,1200.00\n";
-        exit;
+        $file = __DIR__ . '/asset_template.xlsx';
+        if (file_exists($file)) {
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="asset_template.xlsx"');
+            header('Content-Length: ' . filesize($file));
+            readfile($file);
+            exit;
+        }
     } elseif ($template === 'employees') {
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="template_employees.csv"');
-        echo "full_name,email,username,phone,job_title,employee_id\n";
-        echo "John Smith,john@company.com,jsmith,+1234567890,IT Manager,EMP001\n";
-        exit;
+        $file = __DIR__ . '/employee_template.xlsx';
+        if (file_exists($file)) {
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="employee_template.xlsx"');
+            header('Content-Length: ' . filesize($file));
+            readfile($file);
+            exit;
+        }
     }
 }
 
@@ -84,111 +51,16 @@ while ($deptRes && ($row = mysqli_fetch_assoc($deptRes))) {
     $departments[] = $row;
 }
 
-// Import logic
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    itm_require_post_csrf();
-    $action = $_POST['action'];
-    $skipErrors = isset($_POST['skip_errors']);
-
-    if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
-        $file = $_FILES['import_file']['tmp_name'];
-        $handle = fopen($file, 'r');
-        if ($handle) {
-            $headers = fgetcsv($handle);
-            if ($headers) {
-                $headers = array_map('trim', $headers);
-                $rowCount = 0;
-                $successCount = 0;
-                $errorCount = 0;
-
-                if ($action === 'import_assets') {
-                    $activeStatusId = resolve_lookup_id($conn, 'equipment_statuses', 'name', 'Active', $company_id);
-
-                    while (($data = fgetcsv($handle)) !== false) {
-                        $rowCount++;
-                        if (empty($data) || (count($data) === 1 && $data[0] === null)) continue;
-                        $rowData = array_combine($headers, array_pad($data, count($headers), ''));
-
-                        $name = trim($rowData['name'] ?? '');
-                        if ($name === '') {
-                            $errorCount++;
-                            if (!$skipErrors) { $errors[] = "Row $rowCount: Name is required."; break; }
-                            continue;
-                        }
-
-                        $brandId = resolve_lookup_id($conn, 'manufacturers', 'name', $rowData['brand'] ?? 'Unknown', $company_id);
-                        $categoryId = resolve_lookup_id($conn, 'equipment_types', 'name', $rowData['category'] ?? 'Other', $company_id);
-                        $model = trim($rowData['model'] ?? '');
-                        $serial = trim($rowData['serial_number'] ?? '');
-                        $pDate = !empty($rowData['purchase_date']) ? $rowData['purchase_date'] : null;
-                        $pCost = !empty($rowData['purchase_cost']) ? (float)$rowData['purchase_cost'] : 0;
-
-                        $stmt = $conn->prepare("INSERT INTO equipment (company_id, name, manufacturer_id, equipment_type_id, model, serial_number, status_id, purchase_date, purchase_cost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmt->bind_param("isiiisiss", $company_id, $name, $brandId, $categoryId, $model, $serial, $activeStatusId, $pDate, $pCost);
-
-                        if ($stmt->execute()) {
-                            $successCount++;
-                        } else {
-                            $errorCount++;
-                            if (!$skipErrors) { $errors[] = "Row $rowCount: " . $stmt->error; break; }
-                        }
-                    }
-                    $messages[] = "Successfully imported $successCount assets. $errorCount errors.";
-
-                } elseif ($action === 'import_employees') {
-                    $defaultRoleId = !empty($_POST['default_role']) ? (int)$_POST['default_role'] : null;
-                    $defaultDeptId = !empty($_POST['default_dept']) ? (int)$_POST['default_dept'] : null;
-                    $activeStatusId = resolve_lookup_id($conn, 'employee_statuses', 'name', 'Active', $company_id);
-
-                    while (($data = fgetcsv($handle)) !== false) {
-                        $rowCount++;
-                        if (empty($data) || (count($data) === 1 && $data[0] === null)) continue;
-                        $rowData = array_combine($headers, array_pad($data, count($headers), ''));
-
-                        $fullName = trim($rowData['full_name'] ?? '');
-                        $email = trim($rowData['email'] ?? '');
-
-                        if ($fullName === '' || $email === '') {
-                            $errorCount++;
-                            if (!$skipErrors) { $errors[] = "Row $rowCount: Full Name and Email are required."; break; }
-                            continue;
-                        }
-
-                        $parts = explode(' ', $fullName, 2);
-                        $firstName = $parts[0];
-                        $lastName = $parts[1] ?? '';
-
-                        $username = !empty($rowData['username']) ? trim($rowData['username']) : strtolower(str_replace(' ', '.', $fullName));
-                        $phone = trim($rowData['phone'] ?? '');
-                        $jobTitle = trim($rowData['job_title'] ?? '');
-                        $empCode = trim($rowData['employee_id'] ?? '');
-
-                        $posId = null;
-                        if ($jobTitle !== '') {
-                            $posId = resolve_lookup_id($conn, 'employee_positions', 'name', $jobTitle, $company_id);
-                        }
-
-                        $password = password_hash('Welcome123!', PASSWORD_DEFAULT);
-
-                        $stmt = $conn->prepare("INSERT INTO employees (company_id, first_name, last_name, display_name, work_email, username, mobile_phone, employee_code, department_id, employee_position_id, role_id, employment_status_id, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmt->bind_param("isssssssiiiis", $company_id, $firstName, $lastName, $fullName, $email, $username, $phone, $empCode, $defaultDeptId, $posId, $defaultRoleId, $activeStatusId, $password);
-
-                        if ($stmt->execute()) {
-                            $successCount++;
-                        } else {
-                            $errorCount++;
-                            if (!$skipErrors) { $errors[] = "Row $rowCount: " . $stmt->error; break; }
-                        }
-                    }
-                    $messages[] = "Successfully imported $successCount employees. $errorCount errors.";
-                }
-            }
-            fclose($handle);
-        } else {
-            $errors[] = "Could not open the uploaded file.";
+// Import logic (JSON handle for AJAX imports - now handles BOTH CSV and XLSX)
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        $action = (string)($itmImportJsonBody['action'] ?? '');
+        $tableName = ($action === 'import_assets') ? 'equipment' : (($action === 'import_employees') ? 'employees' : '');
+        if ($tableName !== '') {
+            itm_handle_json_table_import($conn, $tableName, (int)($company_id ?? 0));
         }
-    } else {
-        $errors[] = "Please upload a valid CSV file.";
     }
 }
 
@@ -280,45 +152,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         <div class="content">
             <h1 title="Bulk Import"><span style="margin-right: 10px;">📥</span> Bulk Import</h1>
 
-            <?php foreach ($messages as $msg): ?>
-                <div class="alert alert-success"><?= sanitize($msg) ?></div>
-            <?php endforeach; ?>
-            <?php foreach ($errors as $err): ?>
-                <div class="alert alert-danger"><?= sanitize($err) ?></div>
-            <?php endforeach; ?>
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success">Successfully imported data.</div>
+            <?php endif; ?>
 
             <div class="import-grid">
                 <!-- Import Assets Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span style="color: #0969da;">📁</span> Import Assets (CSV)</h3>
+                        <h3><span style="color: #0969da;">📁</span> Import Assets (Excel/CSV)</h3>
                     </div>
                     <div class="card-body" style="padding: 20px;">
                         <div class="info-alert">
                             <span>ℹ️</span>
-                            <p style="margin:0;">Upload a CSV file with asset data. Download the template below to see the required format.</p>
+                            <p style="margin:0;">Upload an Excel or CSV file with asset data. Download the template below to see the required format.</p>
                         </div>
 
-                        <a href="?download=assets" class="template-btn" style="color: #0969da; border-color: #0969da;">📥 Download Asset CSV Template</a>
+                        <a href="?download=assets" class="template-btn" style="color: #0969da; border-color: #0969da;">📥 Download Asset Excel Template</a>
 
                         <form method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                            <input type="hidden" name="company_id" value="<?= (int)($company_id ?? 0) ?>">
                             <input type="hidden" name="action" value="import_assets">
 
                             <div class="form-group">
-                                <label>CSV File <span style="color:red;">*</span></label>
-                                <input type="file" name="import_file" accept=".csv" required>
-                                <small style="display:block; margin-top:5px; color:#666;">Max 5MB. Must have headers matching the template.</small>
+                                <label>File <span style="color:red;">*</span></label>
+                                <input type="file" name="import_file" accept=".csv, .xlsx" required>
+                                <small style="display:block; margin-top:5px; color:#666;">Max 5MB. Must have headers matching the template. <strong style="color: #c62828;">Bold red headers</strong> in Excel template are required.</small>
                             </div>
 
-                            <div class="form-group">
-                                <label class="itm-checkbox-control">
-                                    <input type="checkbox" name="skip_errors" value="1">
-                                    <span>Skip rows with errors and continue <span class="itm-check-indicator" aria-hidden="true">❌</span></span>
-                                </label>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-import-assets">📤 Import Assets</button>
+                            <button type="button" class="btn btn-primary btn-import-assets" data-action="import_assets">📤 Import Assets</button>
                         </form>
                     </div>
                 </div>
@@ -326,53 +189,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 <!-- Import Employees Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span style="color: #2e7d32;">👥</span> Import Employees (CSV)</h3>
+                        <h3><span style="color: #2e7d32;">👥</span> Import Employees (Excel/CSV)</h3>
                     </div>
                     <div class="card-body" style="padding: 20px;">
                         <div class="info-alert" style="background-color: #e8f5e9; border-color: #4caf50; color: #1b5e20;">
                             <span>ℹ️</span>
-                            <p style="margin:0;">Import employees with role and department assignments. Passwords will be auto-generated.</p>
+                            <p style="margin:0;">Import employees with role and department assignments. Missing Departments and Positions will be created automatically.</p>
                         </div>
 
-                        <a href="?download=employees" class="template-btn">📥 Download Employee CSV Template</a>
+                        <a href="?download=employees" class="template-btn">📥 Download Employee Excel Template</a>
 
                         <form method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                            <input type="hidden" name="company_id" value="<?= (int)($company_id ?? 0) ?>">
                             <input type="hidden" name="action" value="import_employees">
 
                             <div class="form-group">
-                                <label>CSV File <span style="color:red;">*</span></label>
-                                <input type="file" name="import_file" accept=".csv" required>
+                                <label>File <span style="color:red;">*</span></label>
+                                <input type="file" name="import_file" accept=".csv, .xlsx" required>
+                                <small style="display:block; margin-top:5px; color:#666;"><strong style="color: #c62828;">Bold red headers</strong> in Excel template are required.</small>
                             </div>
 
-                            <div class="form-group">
-                                <label>Default Role for New Users</label>
-                                <select name="default_role">
-                                    <option value="">Administrator</option>
-                                    <?php foreach ($roles as $role): ?>
-                                        <option value="<?= (int)$role['id'] ?>"><?= sanitize($role['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Default Department</label>
-                                <select name="default_dept">
-                                    <option value="">None</option>
-                                    <?php foreach ($departments as $dept): ?>
-                                        <option value="<?= (int)$dept['id'] ?>"><?= sanitize($dept['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="itm-checkbox-control">
-                                    <input type="checkbox" name="skip_errors" value="1">
-                                    <span>Skip rows with errors and continue <span class="itm-check-indicator" aria-hidden="true">❌</span></span>
-                                </label>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-import-employees">📤 Import Employees</button>
+                            <button type="button" class="btn btn-primary btn-import-employees" data-action="import_employees">📤 Import Employees</button>
                         </form>
                     </div>
                 </div>
@@ -381,13 +219,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             <!-- CSV Format Reference -->
             <div class="card">
                 <div class="card-header">
-                    <h3>📋 CSV Format Reference</h3>
+                    <h3>📋 Import Format Reference</h3>
                 </div>
                 <div class="card-body" style="padding: 20px;">
                     <div class="csv-reference-grid">
                         <!-- Assets Columns -->
                         <div>
-                            <h4>Assets CSV Columns</h4>
+                            <h4>Assets Import Columns</h4>
                             <table class="table-sm">
                                 <thead>
                                     <tr>
@@ -409,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                         <!-- Employees Columns -->
                         <div>
-                            <h4>Employees CSV Columns</h4>
+                            <h4>Employees Import Columns</h4>
                             <table class="table-sm">
                                 <thead>
                                     <tr>
@@ -436,15 +274,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/vendor/xlsx.full.min.js"></script>
 <script>
-    document.querySelectorAll('.itm-checkbox-control input').forEach(cb => {
-        cb.addEventListener('change', function() {
-            const indicator = this.parentNode.querySelector('.itm-check-indicator');
-            if (indicator) {
-                indicator.textContent = this.checked ? '✅' : '❌';
+    /**
+     * AJAX Excel/CSV Import handler
+     */
+    document.querySelectorAll('.btn-import-assets, .btn-import-employees').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const form = this.closest('form');
+            const fileInput = form.querySelector('input[type="file"]');
+            const action = this.dataset.action;
+
+            if (!fileInput.files.length) {
+                alert("Please select a file to import.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const ext = file.name.split('.').pop().toLowerCase();
+            const reader = new FileReader();
+
+            btn.disabled = true;
+            btn.textContent = "⏳ Processing...";
+
+            const sendPayload = (rows) => {
+                const payload = {
+                    action: action,
+                    import_excel_rows: rows,
+                    csrf_token: form.querySelector('input[name="csrf_token"]').value,
+                    company_id: form.querySelector('input[name="company_id"]').value
+                };
+
+                fetch('index.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.ok) {
+                        window.location.href = 'index.php?success=1';
+                    } else {
+                        alert("Import failed: " + (res.error || res.message || (res.errors ? res.errors.join(', ') : "Unknown error")));
+                        btn.disabled = false;
+                        btn.textContent = "📤 Import " + (action === 'import_assets' ? 'Assets' : 'Employees');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Error communicating with server.");
+                    btn.disabled = false;
+                    btn.textContent = "📤 Import " + (action === 'import_assets' ? 'Assets' : 'Employees');
+                });
+            };
+
+            if (ext === 'xlsx' || ext === 'xls') {
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                    if (rows.length < 2) {
+                        alert("The file has no data rows.");
+                        btn.disabled = false;
+                        btn.textContent = "📤 Import " + (action === 'import_assets' ? 'Assets' : 'Employees');
+                        return;
+                    }
+                    sendPayload(rows);
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (ext === 'csv') {
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const rows = parseCsv(text);
+                    if (rows.length < 2) {
+                        alert("The file has no data rows.");
+                        btn.disabled = false;
+                        btn.textContent = "📤 Import " + (action === 'import_assets' ? 'Assets' : 'Employees');
+                        return;
+                    }
+                    sendPayload(rows);
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Unsupported file format. Please use .csv or .xlsx");
+                btn.disabled = false;
+                btn.textContent = "📤 Import " + (action === 'import_assets' ? 'Assets' : 'Employees');
             }
         });
     });
+
+    function parseCsv(text) {
+        const rows = [];
+        let row = [];
+        let cell = '';
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const next = text[i + 1];
+            if (inQuotes) {
+                if (char === '"' && next === '"') { cell += '"'; i++; }
+                else if (char === '"') { inQuotes = false; }
+                else { cell += char; }
+            } else {
+                if (char === '"') { inQuotes = true; }
+                else if (char === ',') { row.push(cell.trim()); cell = ''; }
+                else if (char === '\n' || char === '\r') {
+                    if (char === '\r' && next === '\n') i++;
+                    row.push(cell.trim());
+                    if (row.some(c => c !== '')) rows.push(row);
+                    row = []; cell = '';
+                } else { cell += char; }
+            }
+        }
+        if (cell !== '' || row.length > 0) {
+            row.push(cell.trim());
+            if (row.some(c => c !== '')) rows.push(row);
+        }
+        return rows;
+    }
 </script>
 </body>
 </html>
