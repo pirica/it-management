@@ -103,6 +103,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'company_module_access', 'label' => '🧩 Company Module Access', 'href' => 'modules/company_module_access/', 'match_dir' => 'company_module_access'],
                 ['id' => 'roles_permissions', 'label' => '🛡️ Roles & Permissions', 'href' => 'modules/roles_permissions/', 'match_dir' => 'roles_permissions'],
                 ['id' => 'emails', 'label' => '📧 Email Management', 'href' => 'modules/emails/', 'match_dir' => 'emails'],
+                ['id' => 'import', 'label' => '📥 Bulk Import', 'href' => 'modules/import/', 'match_dir' => 'import'],
             ],
         ],
         [
@@ -184,6 +185,7 @@ function itm_sidebar_module_default_label($moduleName) {
         'note_labels' => '🏷️ Note Labels',
         'modules_registry' => '🧩 Modules Registry',
         'emails' => '📧 Email Management',
+        'import' => '📥 Bulk Import',
     ];
 
     return $labels[$moduleName] ?? null;
