@@ -158,8 +158,8 @@ function emp_format_birthday_display($birthday, $hide_year) {
         return '—';
     }
     if ((int)$hide_year === 1) {
-        return date('j M', $ts);
+        return date('d/m', $ts);
     }
-    return date('j M Y', $ts);
+    return date('d/m/Y', $ts);
 }
 }
