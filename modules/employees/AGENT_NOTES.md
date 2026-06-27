@@ -4,7 +4,7 @@
 The central module for managing employee records, including contact info, hierarchy, employment details, and **login accounts** (auth columns live on `employees` after the users-table merge).
 
 ## 2. Key Tables
-- **employees** — main employee data (`photo`, `birthday`, `hide_year`, `start_date`, `employee_type_id`, `termination_date`, `role_id`, `access_level_id`, `is_hidden` among profile fields).
+- **employees** — main employee data (`photo`, `full_name`, `insurance_n`, `birthday`, `hide_year`, `start_date`, `employee_type_id`, `termination_date`, `role_id`, `access_level_id`, `is_hidden` among profile fields).
 - **employee_type** — lookup for `employees.employee_type_id` (`name_type` labels such as Team member / Internship).
 
 ## 3. Required Relationships
@@ -32,6 +32,7 @@ The central module for managing employee records, including contact info, hierar
   - If `id` column present, update existing row instead of duplicate insert. Only columns provided in the import (or auto-derived with a resolved value, such as department/position IDs, email reclassification, or derived display names) are updated in the database to prevent data loss in omitted columns (`providedFields` tracking). Unchanged existing rows increment **skipped**, not **updated**. **INSERT** still applies defaults for missing columns.
   - Auto-create **departments** and **employee_positions** when names/titles not found.
   - Email classification: personal domains (gmail.com, etc.) → `personal_email`; others → `work_email`.
+  - **Full name:** auto-splits into `first_name` and `last_name` if they are missing; also populates the `full_name` column.
   - Boolean markers: `✅` / `Active` → `1`, `❌` → `0` for `on_contacts`, `on_orgchart`.
   - **Employee type:** defaults to tenant **Team member** when import omits `employee_type_id`; accepts `employee type` header mapped to `employee_type_id` (`name_type` lookup).
   - **Termination date:** `termination_date` nullable `date` on create/edit/view/list (`includes/profile_termination_date_field.php`, after Employee Type). Display and import use **dd/mm/yyyy** via `itm_format_date_display()` / `itm_parse_date_input()`. Drives **Resignations** weekly report (`modules/resignations/`) when set to a valid calendar date; downstream SQL must use `itm_sql_valid_date_predicate('e.termination_date')`, not `<> '0000-00-00'` (MySQL 8 `NO_ZERO_DATE`).

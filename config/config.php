@@ -256,6 +256,7 @@ define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/employee_dropdown_helpers.php';
@@ -1671,6 +1672,10 @@ if (!function_exists('itm_handle_json_table_import')) {
             }
             if ($fieldName === 'equipment_type_id') {
                 $headerMap['type'] = $fieldName;
+                $headerMap['category'] = $fieldName;
+            }
+            if ($fieldName === 'status_id') {
+                $headerMap['status'] = $fieldName;
             }
         }
 
@@ -1683,6 +1688,7 @@ if (!function_exists('itm_handle_json_table_import')) {
             $headerMap['email'] = 'work_email';
             $headerMap['employee status'] = 'raw_status_code';
             $headerMap['status'] = 'raw_status_code';
+            $headerMap['full name'] = 'full_name';
             $headerMap['on orgchart'] = 'on_orgchart';
             $headerMap['on org chart'] = 'on_orgchart';
             $headerMap['department name'] = 'department_id';
@@ -1806,9 +1812,29 @@ if (!function_exists('itm_handle_json_table_import')) {
             }
 
             foreach ($importColumnFields as $index => $fieldName) {
-                if ($fieldName === null || !isset($columns[$fieldName])) {
+                if ($fieldName === null) {
                     continue;
                 }
+
+                $rawValue = trim((string)($sourceRow[$index] ?? ''));
+                if ($rawValue === '' || $rawValue === '—' || strcasecmp($rawValue, 'null') === 0) {
+                    continue;
+                }
+
+                // Employees module: split full name (virtual field)
+                if ($tableName === 'employees' && $fieldName === 'full_name') {
+                    $parts = explode(' ', $rawValue, 2);
+                    $rowValues['first_name'] = "'" . mysqli_real_escape_string($conn, trim($parts[0])) . "'";
+                    $rowValues['last_name'] = "'" . mysqli_real_escape_string($conn, trim($parts[1] ?? '')) . "'";
+                    $providedFields[] = 'first_name';
+                    $providedFields[] = 'last_name';
+                    // Do not continue; allow the full_name column to be populated below if it exists in schema
+                }
+
+                if (!isset($columns[$fieldName])) {
+                    continue;
+                }
+
                 if ($fieldName === 'company_id') {
                     continue;
                 }
@@ -1818,12 +1844,25 @@ if (!function_exists('itm_handle_json_table_import')) {
                     continue;
                 }
 
-                $rawValue = trim((string)($sourceRow[$index] ?? ''));
-                if ($rawValue === '' || $rawValue === '—' || strcasecmp($rawValue, 'null') === 0) {
-                    continue;
-                }
-
                 $columnType = (string)$columns[$fieldName]['type'];
+
+                // Employees module: raw status resolution
+                if ($tableName === 'employees' && $fieldName === 'raw_status_code') {
+                    $statusName = 'Active';
+                    if (strcasecmp($rawValue, 'I') === 0 || strcasecmp($rawValue, 'Inactive') === 0) $statusName = 'Inactive';
+                    elseif (strcasecmp($rawValue, 'L') === 0 || strcasecmp($rawValue, 'On Leave') === 0) $statusName = 'On Leave';
+                    elseif (strcasecmp($rawValue, 'T') === 0 || strcasecmp($rawValue, 'Terminated') === 0) $statusName = 'Terminated';
+
+                    if (function_exists('itm_employee_resolve_employment_status_id_by_name')) {
+                        $resId = itm_employee_resolve_employment_status_id_by_name($conn, $companyId, $statusName);
+                        if ($resId > 0) {
+                            $rowValues['employment_status_id'] = (string)$resId;
+                            if (!in_array('employment_status_id', $providedFields, true)) {
+                                $providedFields[] = 'employment_status_id';
+                            }
+                        }
+                    }
+                }
 
                 // Employees module: classification of emails
                 if ($tableName === 'employees' && $fieldName === 'work_email') {
@@ -2063,6 +2102,35 @@ if (!function_exists('itm_handle_json_table_import')) {
                 }
 
                 if (preg_match('/\b(int|tinyint|smallint|mediumint|bigint|decimal|float|double)\b/i', $columnType)) {
+                    // Smart defaults for mandatory Foreign Keys
+                    if ($tableName === 'employees' && $fieldName === 'employment_status_id') {
+                        if (function_exists('itm_employee_resolve_active_status_id')) {
+                            $defaultId = itm_employee_resolve_active_status_id($conn, $companyId);
+                            if ($defaultId > 0) {
+                                $rowValues[$fieldName] = (string)$defaultId;
+                                continue;
+                            }
+                        }
+                    }
+                    if ($tableName === 'equipment' && $fieldName === 'status_id') {
+                        $defaultId = 0;
+                        $res = mysqli_query($conn, "SELECT id FROM equipment_statuses WHERE company_id = $companyId AND name = 'Active' LIMIT 1");
+                        if ($res && $row = mysqli_fetch_assoc($res)) $defaultId = (int)$row['id'];
+                        if ($defaultId > 0) {
+                            $rowValues[$fieldName] = (string)$defaultId;
+                            continue;
+                        }
+                    }
+                    if ($tableName === 'equipment' && $fieldName === 'equipment_type_id') {
+                        $defaultId = 0;
+                        $res = mysqli_query($conn, "SELECT id FROM equipment_types WHERE company_id = $companyId AND name = 'Other' LIMIT 1");
+                        if ($res && $row = mysqli_fetch_assoc($res)) $defaultId = (int)$row['id'];
+                        if ($defaultId > 0) {
+                            $rowValues[$fieldName] = (string)$defaultId;
+                            continue;
+                        }
+                    }
+
                     $rowValues[$fieldName] = '0';
                     continue;
                 }

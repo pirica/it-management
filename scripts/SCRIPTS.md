@@ -730,6 +730,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | Script | Purpose |
 |--------|---------|
 | `php scripts/bypass_login.php` | CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via `itm_is_admin()`). Sets up Admin user, TechCorp Global company, and Vault master key. |
+| `php scripts/bypass_v2.php` | CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via `itm_is_admin()`). Sets up Admin user, TechCorp Global company, and Vault master key. |
 
 ### Roles & Permissions scripts
 

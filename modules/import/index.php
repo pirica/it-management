@@ -177,7 +177,16 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                             <div class="form-group">
                                 <label>File <span style="color:red;">*</span></label>
-                                <input type="file" name="import_file" accept=".csv, .xlsx" required>
+                                <div class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload asset import file" style="padding: 30px; border: 2px dashed #d0d7de; border-radius: 6px; text-align: center; cursor: pointer; background: #f6f8fa; transition: background 0.2s;">
+                                    <input type="file" name="import_file" accept=".csv, .xlsx" required style="display: none;">
+                                    <div class="itm-dropzone-hint">
+                                        <span style="font-size: 2rem; display: block; margin-bottom: 10px;">📄</span>
+                                        <strong>Click to select</strong> or drag and drop your file here
+                                    </div>
+                                    <div class="itm-dropzone-hint-secondary" style="margin-top: 8px; font-size: 0.85rem; color: #57606a;">
+                                        Only .csv and .xlsx files are supported
+                                    </div>
+                                </div>
                                 <small style="display:block; margin-top:5px; color:#666;">Max 5MB. Must have headers matching the template. <strong style="color: #c62828;">Bold red headers</strong> in Excel template are required.</small>
                             </div>
 
@@ -206,7 +215,16 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                             <div class="form-group">
                                 <label>File <span style="color:red;">*</span></label>
-                                <input type="file" name="import_file" accept=".csv, .xlsx" required>
+                                <div class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload employee import file" style="padding: 30px; border: 2px dashed #d0d7de; border-radius: 6px; text-align: center; cursor: pointer; background: #f6f8fa; transition: background 0.2s;">
+                                    <input type="file" name="import_file" accept=".csv, .xlsx" required style="display: none;">
+                                    <div class="itm-dropzone-hint">
+                                        <span style="font-size: 2rem; display: block; margin-bottom: 10px;">👥</span>
+                                        <strong>Click to select</strong> or drag and drop your file here
+                                    </div>
+                                    <div class="itm-dropzone-hint-secondary" style="margin-top: 8px; font-size: 0.85rem; color: #57606a;">
+                                        Only .csv and .xlsx files are supported
+                                    </div>
+                                </div>
                                 <small style="display:block; margin-top:5px; color:#666;"><strong style="color: #c62828;">Bold red headers</strong> in Excel template are required.</small>
                             </div>
 
@@ -263,6 +281,7 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                     <tr><td>phone</td><td>No</td><td>+1234567890</td></tr>
                                     <tr><td>job_title</td><td>No</td><td>IT Manager</td></tr>
                                     <tr><td>employee_id</td><td>No</td><td>EMP001</td></tr>
+                                    <tr><td>insurance_n</td><td>No</td><td>INS-12345</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -275,7 +294,31 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 </div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/vendor/xlsx.full.min.js"></script>
+<script src="../../js/itm-upload-helper.js"></script>
 <script>
+    /**
+     * Initialize drag-and-drop
+     */
+    itmUploadHelper.setupByClass('.itm-photo-upload-target');
+
+    /**
+     * Update dropzone text when file is selected
+     */
+    document.querySelectorAll('.itm-photo-upload-target input[type="file"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const target = this.closest('.itm-photo-upload-target');
+            const hint = target.querySelector('.itm-dropzone-hint');
+            if (this.files && this.files.length > 0) {
+                hint.innerHTML = '<strong>Selected:</strong> ';
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = this.files[0].name;
+                hint.appendChild(nameSpan);
+                target.style.borderColor = '#2e7d32';
+                target.style.background = '#f1f8e9';
+            }
+        });
+    });
+
     /**
      * AJAX Excel/CSV Import handler
      */
