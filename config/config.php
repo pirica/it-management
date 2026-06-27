@@ -1614,6 +1614,11 @@ if (!function_exists('itm_handle_json_table_import')) {
                 continue;
             }
 
+            // Why: Sensitive fields should never be imported via Excel/CSV for security reasons.
+            if ($tableName === 'employees' && in_array($fieldName, ['password', 'vault_key_hash', 'reset_token', 'reset_token_hash', 'reset_token_expires_at', 'role_id', 'access_level_id'], true)) {
+                continue;
+            }
+
             $columns[$fieldName] = [
                 'field' => $fieldName,
                 'type' => strtolower((string)($column['Type'] ?? '')),
