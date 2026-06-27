@@ -612,6 +612,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         if ($col === 'company_id') continue;
                         $incomingNorm = ($mapped[$col] === '') ? null : $mapped[$col];
                         $existingNorm = ($existingCurrent[$col] === '') ? null : $existingCurrent[$col];
+
+                        if (itm_is_date_field_name($col)) {
+                            $incomingNorm = itm_parse_date_input($incomingNorm);
+                            $existingNorm = itm_parse_date_input($existingNorm);
+                        }
+
                         if ($incomingNorm !== $existingNorm) { $hasChanges = true; break; }
                     }
 
