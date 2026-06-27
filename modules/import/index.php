@@ -275,7 +275,9 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>full_name</td><td><span class="required-badge">Yes</span></td><td>John Smith</td></tr>
+                                    <tr><td>first_name</td><td><span class="required-badge">Yes</span></td><td>John</td></tr>
+                                    <tr><td>last_name</td><td><span class="required-badge">Yes</span></td><td>Smith</td></tr>
+                                    <tr><td>full_name</td><td>No</td><td>John Smith</td></tr>
                                     <tr><td>email</td><td><span class="required-badge">Yes</span></td><td>john@company.com</td></tr>
                                     <tr><td>username</td><td>No</td><td>jsmith</td></tr>
                                     <tr><td>phone</td><td>No</td><td>+1234567890</td></tr>
