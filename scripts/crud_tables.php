@@ -23,6 +23,10 @@ $moduleDirs = array_values(array_filter(scandir($modulesPath), static function (
 
 sort($moduleDirs, SORT_NATURAL | SORT_FLAG_CASE);
 
+if (PHP_SAPI === 'cli') {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 

@@ -26,18 +26,34 @@ $nl = itm_script_output_nl();
  */
 function itm_verify_expected_tables_from_database_sql(): array
 {
+    global $nl;
     $path = ROOT_PATH . 'database.sql';
     if (!is_readable($path)) {
-        fwrite(STDERR, "Cannot read database.sql at {$path}\n");
+        $msg = "Cannot read database.sql at {$path}";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . "\n");
+        } else {
+            echo colorText($msg, 'fail') . $nl;
+        }
         exit(2);
     }
     $sql = file_get_contents($path);
     if ($sql === false) {
-        fwrite(STDERR, "Failed to read database.sql\n");
+        $msg = "Failed to read database.sql";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . "\n");
+        } else {
+            echo colorText($msg, 'fail') . $nl;
+        }
         exit(2);
     }
     if (!preg_match_all('/^CREATE TABLE `([^`]+)`/m', $sql, $matches)) {
-        fwrite(STDERR, "No CREATE TABLE entries found in database.sql\n");
+        $msg = "No CREATE TABLE entries found in database.sql";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . "\n");
+        } else {
+            echo colorText($msg, 'fail') . $nl;
+        }
         exit(2);
     }
     return $matches[1];
@@ -57,9 +73,17 @@ $res = itm_run_query(
     $dbErrorMessage
 );
 if ($res === false) {
-    fwrite(STDERR, "Failed to read information_schema for database '{$schema}'.\n");
-    if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
-        fwrite(STDERR, "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
+    $msg = "Failed to read information_schema for database '{$schema}'.";
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $msg . "\n");
+        if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
+            fwrite(STDERR, "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
+        }
+    } else {
+        echo colorText($msg, 'fail') . $nl;
+        if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
+            echo "MySQL error ({$dbErrorCode}): {$dbErrorMessage}" . $nl;
+        }
     }
     exit(2);
 }

@@ -1613,7 +1613,8 @@ if (empty($issues)) {
             echo "    file_scope_signal: {$issue['file_scope_signal']}" . $nl;
             echo "    scope_signals: {$issue['scope_signals']}" . $nl;
             echo "    context_hints: {$issue['context_hints']}" . $nl;
-            echo "    snippet: <pre style='display:inline-block; margin:0; vertical-align:top; white-space:pre-wrap; font-family:monospace; background:#fffbe6; border:1px solid #ffe58f; padding:2px 4px;'>" . htmlspecialchars($issue['snippet']) . "</pre>" . PHP_EOL . $nl;
+            $snippet_html = "<pre style='display:inline-block; margin:0; vertical-align:top; white-space:pre-wrap; font-family:monospace; background:#fffbe6; border:1px solid #ffe58f; padding:2px 4px;'>" . htmlspecialchars($issue['snippet']) . "</pre>";
+            echo "    snippet: " . ($is_cli ? $issue['snippet'] : $snippet_html) . PHP_EOL . $nl;
         }
     }
 }
