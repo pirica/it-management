@@ -661,3 +661,210 @@ function get_assets_by_department() {
     }
     return ['labels' => $labels, 'data' => $data];
 }
+
+/**
+ * Operational Summary Metrics (MTD)
+ */
+function get_ops_summary_metrics() {
+    global $conn, $company_id;
+
+    $metrics = [
+        'avg_occupancy' => 0,
+        'avg_adr' => 0,
+        'avg_revpar' => 0,
+        'total_revenue' => 0
+    ];
+
+    $sql = "SELECT
+                AVG(CAST(occupancy_pct AS DECIMAL(10,2))) as avg_occ,
+                AVG(average_daily_rate) as avg_adr,
+                AVG(revpar) as avg_revpar,
+                SUM(total_revenue) as total_rev
+            FROM ops_report
+            WHERE company_id = ?
+            AND report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
+            AND active = 1";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($row = mysqli_fetch_assoc($result)) {
+            $metrics['avg_occupancy'] = (float)$row['avg_occ'];
+            $metrics['avg_adr'] = (float)$row['avg_adr'];
+            $metrics['avg_revpar'] = (float)$row['avg_revpar'];
+            $metrics['total_revenue'] = (float)$row['total_rev'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return $metrics;
+}
+
+/**
+ * Daily Occupancy Trend (Last 30 Days)
+ */
+function get_ops_occupancy_30day() {
+    global $conn, $company_id;
+
+    $labels = [];
+    $data = [];
+
+    $sql = "SELECT report_date, CAST(occupancy_pct AS DECIMAL(10,2)) as occ
+            FROM ops_report
+            WHERE company_id = ?
+            AND report_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND active = 1
+            ORDER BY report_date ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $labels[] = date('d M', strtotime($row['report_date']));
+            $data[] = (float)$row['occ'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
+ * Monthly Revenue Comparison (This Year vs Last Year)
+ */
+function get_ops_monthly_revenue_yoy() {
+    global $conn, $company_id;
+
+    $months = [
+        1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun',
+        7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'
+    ];
+    $this_year_data = array_fill(1, 12, 0);
+    $last_year_data = array_fill(1, 12, 0);
+
+    $sql = "SELECT YEAR(report_date) as yr, MONTH(report_date) as m, SUM(total_revenue) as total
+            FROM ops_report
+            WHERE company_id = ?
+            AND YEAR(report_date) IN (YEAR(CURDATE()), YEAR(CURDATE()) - 1)
+            AND active = 1
+            GROUP BY yr, m";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $current_yr = (int)date('Y');
+        while ($row = mysqli_fetch_assoc($result)) {
+            if ((int)$row['yr'] === $current_yr) {
+                $this_year_data[(int)$row['m']] = (float)$row['total'];
+            } else {
+                $last_year_data[(int)$row['m']] = (float)$row['total'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_values($months),
+        'this_year' => array_values($this_year_data),
+        'last_year' => array_values($last_year_data)
+    ];
+}
+
+/**
+ * Revenue Mix (MTD)
+ */
+function get_ops_revenue_mix_mtd() {
+    global $conn, $company_id;
+
+    $data = [
+        'Room' => 0,
+        'F&B' => 0,
+        'Spa' => 0,
+        'Kids Club' => 0,
+        'Housekeeping' => 0,
+        'FO Upgrades' => 0
+    ];
+
+    $sql = "SELECT
+                SUM(room_revenue) as room,
+                SUM(fb_revenue) as fb,
+                SUM(spa_revenue) as spa,
+                SUM(kids_club_revenue) as kids,
+                SUM(hsk_revenue) as hsk,
+                SUM(fo_upgrade_rooms) as fo
+            FROM ops_report
+            WHERE company_id = ?
+            AND report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
+            AND active = 1";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($row = mysqli_fetch_assoc($result)) {
+            $data['Room'] = (float)$row['room'];
+            $data['F&B'] = (float)$row['fb'];
+            $data['Spa'] = (float)$row['spa'];
+            $data['Kids Club'] = (float)$row['kids'];
+            $data['Housekeeping'] = (float)$row['hsk'];
+            $data['FO Upgrades'] = (float)$row['fo'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => array_keys($data),
+        'data' => array_values($data)
+    ];
+}
+
+/**
+ * F&B Outlet Covers Analysis (MTD)
+ */
+function get_ops_fb_outlet_covers() {
+    global $conn, $company_id;
+
+    $outlets = [];
+    $breakfast = [];
+    $lunch = [];
+    $dinner = [];
+
+    $sql = "SELECT
+                outlet_name,
+                SUM(CAST(NULLIF(covers_breakfast, '') AS UNSIGNED)) as b,
+                SUM(CAST(NULLIF(covers_lunch, '') AS UNSIGNED)) as l,
+                SUM(CAST(NULLIF(covers_dinner, '') AS UNSIGNED)) as d
+            FROM ops_report_fb_outlet o
+            JOIN ops_report r ON o.ops_report_id = r.id
+            WHERE o.company_id = ?
+            AND r.report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
+            AND o.active = 1
+            AND r.active = 1
+            GROUP BY outlet_name";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $outlets[] = $row['outlet_name'];
+            $breakfast[] = (int)$row['b'];
+            $lunch[] = (int)$row['l'];
+            $dinner[] = (int)$row['d'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return [
+        'labels' => $outlets,
+        'breakfast' => $breakfast,
+        'lunch' => $lunch,
+        'dinner' => $dinner
+    ];
+}
