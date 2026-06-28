@@ -210,6 +210,12 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/transfer_data_from_employee.php` | Clones an employee and copies their related data to the new record (Copy Mode). |
 | `php scripts/delete_clone_employee.php` | Reverses an employee clone by deleting the employee and their related data. |
 
+### Equipment & Audit verification scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_equipment_triggers.php` | Regression — verifies that INSERT, UPDATE, and DELETE operations on the `equipment` table are correctly logged to `audit_logs` via database triggers. Performs a full lifecycle test with a disposable test user and handles its own test data cleanup. |
+
 ### Explorer verification scripts
 
 | Script | Purpose |
