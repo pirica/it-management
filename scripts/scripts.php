@@ -660,6 +660,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="verify_equipment_triggers.php">verify_equipment_triggers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        MySQL regression for <code>equipment</code> audit triggers: verifies that <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> operations on the equipment table are correctly logged to <code>audit_logs</code>. <strong>Mutates DB:</strong> creates and deletes temporary equipment rows.
+                    </td>
+                    <td>
+                        CLI: <code>php scripts/verify_equipment_triggers.php</code> · <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).<br>
+                        Browser: runs the verification and displays results (HTML).
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="employees_delete_clear_table_test.php">employees_delete_clear_table_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>MySQL regression for employees <code>clear_table</code> transactional delete (access rows roll back when employee delete is blocked by FK). <strong>Mutates DB:</strong> creates temporary tenant/reference/employee rows, then cleans them up.</td>
