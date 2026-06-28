@@ -844,6 +844,7 @@ function get_ops_fb_outlet_covers() {
             WHERE o.company_id = ?
             AND r.report_date BETWEEN DATE_FORMAT(CURDATE(), '%Y-%m-01') AND CURDATE()
             AND o.active = 1
+            AND r.active = 1
             GROUP BY outlet_name";
 
     $stmt = mysqli_prepare($conn, $sql);
