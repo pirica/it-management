@@ -40,6 +40,13 @@ $equipment_status_data = get_equipment_status_statistics();
 $asset_additions_data = get_monthly_asset_additions();
 $assets_by_dept_data = get_assets_by_department();
 
+// Hotel Operations Data
+$ops_summary = get_ops_summary_metrics();
+$ops_occupancy_trend = get_ops_occupancy_30day();
+$ops_revenue_yoy = get_ops_monthly_revenue_yoy();
+$ops_revenue_mix = get_ops_revenue_mix_mtd();
+$ops_fb_covers = get_ops_fb_outlet_covers();
+
 // Advanced Budgeting & Insights
 $budget_vs_actual = get_budget_vs_actual_trend();
 $budget_by_dept = get_budget_by_department();
@@ -183,6 +190,67 @@ foreach ($ticket_data['labels'] as $idx => $label) {
                         <h3>Workforce</h3>
                         <p class="stat-value"><?php echo number_format(array_sum($hr_data['data'])); ?></p>
                     </article>
+                </section>
+
+                <!-- Hotel Operations Section -->
+                <section class="report-section">
+                    <div class="section-header">
+                        <span>🏨</span>
+                        <h2>Hotel Operations</h2>
+                    </div>
+
+                    <div class="insight-grid">
+                        <div class="insight-card" style="border-left-color: #3b82f6;">
+                            <h4>MTD Avg Occupancy</h4>
+                            <div class="insight-value"><?php echo number_format($ops_summary['avg_occupancy'], 1); ?>%</div>
+                        </div>
+                        <div class="insight-card" style="border-left-color: #10b981;">
+                            <h4>MTD Avg ADR</h4>
+                            <div class="insight-value">$<?php echo number_format($ops_summary['avg_adr'], 2); ?></div>
+                        </div>
+                        <div class="insight-card" style="border-left-color: #f59e0b;">
+                            <h4>MTD Avg RevPAR</h4>
+                            <div class="insight-value">$<?php echo number_format($ops_summary['avg_revpar'], 2); ?></div>
+                        </div>
+                        <div class="insight-card" style="border-left-color: #ef4444;">
+                            <h4>MTD Total Revenue</h4>
+                            <div class="insight-value">$<?php echo number_format($ops_summary['total_revenue'], 0); ?></div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <article class="report-card">
+                            <h2>📈 30-Day Occupancy Trend</h2>
+                            <div class="chart-container">
+                                <canvas id="opsOccupancyChart"></canvas>
+                            </div>
+                            <p class="report-desc">Daily occupancy percentage over the last 30 operational days.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>📊 Revenue YoY Comparison</h2>
+                            <div class="chart-container">
+                                <canvas id="opsRevenueYoyChart"></canvas>
+                            </div>
+                            <p class="report-desc">Monthly total revenue comparison: This Year vs Last Year.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>🍕 Revenue Mix (MTD)</h2>
+                            <div class="chart-container">
+                                <canvas id="opsRevenueMixChart"></canvas>
+                            </div>
+                            <p class="report-desc">Distribution of revenue across different departments for the current month.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>🍽️ F&B Outlet Covers (MTD)</h2>
+                            <div class="chart-container">
+                                <canvas id="opsFbCoversChart"></canvas>
+                            </div>
+                            <p class="report-desc">Total covers by F&B outlet and meal period for the current month.</p>
+                        </article>
+                    </div>
                 </section>
 
                 <!-- Financial Performance Section -->
@@ -416,6 +484,118 @@ foreach ($ticket_data['labels'] as $idx => $label) {
 
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof Chart === 'undefined') return;
+
+        // --- HOTEL OPERATIONS CHARTS ---
+
+        new Chart(document.getElementById('opsOccupancyChart'), {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($ops_occupancy_trend['labels']); ?>,
+                datasets: [{
+                    label: 'Occupancy %',
+                    data: <?php echo json_encode($ops_occupancy_trend['data']); ?>,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: Object.assign({}, baseOptions, {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: value => value + '%' }
+                    }
+                }
+            })
+        });
+
+        new Chart(document.getElementById('opsRevenueYoyChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($ops_revenue_yoy['labels']); ?>,
+                datasets: [
+                    {
+                        label: 'This Year',
+                        data: <?php echo json_encode($ops_revenue_yoy['this_year']); ?>,
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Last Year',
+                        data: <?php echo json_encode($ops_revenue_yoy['last_year']); ?>,
+                        backgroundColor: '#94a3b8',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: { legend: { display: true, position: 'top' } }
+            })
+        });
+
+        new Chart(document.getElementById('opsRevenueMixChart'), {
+            type: 'polarArea',
+            data: {
+                labels: <?php echo json_encode($ops_revenue_mix['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($ops_revenue_mix['data']); ?>,
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(239, 68, 68, 0.7)',
+                        'rgba(99, 102, 241, 0.7)',
+                        'rgba(236, 72, 153, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'right' } },
+                scales: {
+                    r: {
+                        grid: { color: gridColor },
+                        ticks: { display: false }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('opsFbCoversChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($ops_fb_covers['labels']); ?>,
+                datasets: [
+                    {
+                        label: 'Breakfast',
+                        data: <?php echo json_encode($ops_fb_covers['breakfast']); ?>,
+                        backgroundColor: '#fbbf24'
+                    },
+                    {
+                        label: 'Lunch',
+                        data: <?php echo json_encode($ops_fb_covers['lunch']); ?>,
+                        backgroundColor: '#60a5fa'
+                    },
+                    {
+                        label: 'Dinner',
+                        data: <?php echo json_encode($ops_fb_covers['dinner']); ?>,
+                        backgroundColor: '#34d399'
+                    }
+                ]
+            },
+            options: Object.assign({}, baseOptions, {
+                plugins: { legend: { display: true, position: 'top' } },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, grid: { color: gridColor } }
+                }
+            })
+        });
 
         // --- FINANCIAL CHARTS ---
 
