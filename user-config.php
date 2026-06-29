@@ -644,6 +644,7 @@ $sql = "
     LEFT JOIN equipment_statuses ls ON e.status_id = ls.id
     WHERE e.assigned_to_employee_id = ? 
       AND e.company_id = ? 
+      AND e.deleted_at IS NULL
       AND et.name = 'Workstation'
     LIMIT 1
 ";

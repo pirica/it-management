@@ -24,7 +24,7 @@ function idf_equipment_switch_rj45_capacity_hint(mysqli $conn, int $company_id, 
          FROM equipment e
          LEFT JOIN equipment_rj45 er
            ON er.company_id = e.company_id AND er.id = e.switch_rj45_id
-         WHERE e.company_id = ? AND e.id = ?
+         WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
          LIMIT 1"
     );
     if (!$stmt) {
@@ -212,7 +212,7 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
              LEFT JOIN equipment_fiber_count efc
                ON efc.company_id = e.company_id
               AND efc.name = e.switch_fiber_ports_number
-             WHERE e.company_id = ? AND e.id = ?
+             WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
              LIMIT 1"
         );
         if ($stmtPortMeta) {
@@ -236,7 +236,7 @@ function idf_collect_port_slots_for_position(mysqli $conn, int $company_id, arra
                     COALESCE(ef.name, '') AS switch_fiber_name
              FROM equipment e
              LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-             WHERE e.company_id = ? AND e.id = ?
+             WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
              LIMIT 1"
         );
         if ($stmtFiberMeta) {
@@ -399,7 +399,7 @@ function idf_infer_equipment_id_after_ports_load(
             $conn,
             'SELECT id
              FROM equipment
-             WHERE company_id = ?
+             WHERE company_id = ? AND deleted_at IS NULL
                AND (LOWER(hostname) = LOWER(?) OR LOWER(name) = LOWER(?))
              LIMIT 1'
         );
@@ -1317,7 +1317,7 @@ function idf_ensure_ports_for_position(mysqli $conn, int $company_id, int $posit
             $conn,
             "SELECT COALESCE(e.switch_fiber_ports_number, 0) AS switch_fiber_ports_number
              FROM equipment e
-             WHERE e.company_id = ? AND e.id = ?
+             WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
              LIMIT 1"
         );
         if ($stmtFiberCap) {
@@ -1337,7 +1337,7 @@ function idf_ensure_ports_for_position(mysqli $conn, int $company_id, int $posit
         $equipmentHostname = '';
         $stmtHostname = mysqli_prepare(
             $conn,
-            'SELECT COALESCE(hostname, name, \'\') AS equipment_hostname FROM equipment WHERE company_id = ? AND id = ? LIMIT 1'
+            'SELECT COALESCE(hostname, name, \'\') AS equipment_hostname FROM equipment WHERE company_id = ? AND id = ? AND deleted_at IS NULL LIMIT 1'
         );
         if ($stmtHostname) {
             mysqli_stmt_bind_param($stmtHostname, 'ii', $company_id, $equipmentId);

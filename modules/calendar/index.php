@@ -299,7 +299,7 @@ if ($stmt) {
 
 // Equipment Warranties
 if (has_module_access($conn, (int)$company_id, 'equipment')) {
-$sql_warranty = "SELECT id, name, warranty_expiry FROM equipment WHERE company_id = ? AND warranty_expiry BETWEEN ? AND ?";
+$sql_warranty = "SELECT id, name, warranty_expiry FROM equipment WHERE company_id = ? AND deleted_at IS NULL AND warranty_expiry BETWEEN ? AND ?";
 $stmt = mysqli_prepare($conn, $sql_warranty);
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);
@@ -319,7 +319,7 @@ if ($stmt) {
 }
 
 // Equipment Certificates
-$sql_equip = "SELECT id, name, certificate_expiry FROM equipment WHERE company_id = ? AND certificate_expiry BETWEEN ? AND ?";
+$sql_equip = "SELECT id, name, certificate_expiry FROM equipment WHERE company_id = ? AND deleted_at IS NULL AND certificate_expiry BETWEEN ? AND ?";
 $stmt = mysqli_prepare($conn, $sql_equip);
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);

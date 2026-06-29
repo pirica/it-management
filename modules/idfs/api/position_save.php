@@ -654,7 +654,7 @@ if ($equipment_id > 0) {
         "SELECT e.name, e.notes, e.switch_rj45_id, e.switch_port_numbering_layout_id, e.switch_environment_id, e.switch_fiber_ports_number, er.name AS switch_rj45_name
          FROM equipment e
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-         WHERE e.id=? AND e.company_id=?
+         WHERE e.id=? AND e.company_id=? AND e.deleted_at IS NULL
          LIMIT 1"
     );
     if ($stmtEquipment) {
@@ -681,6 +681,7 @@ if ($equipment_id > 0) {
                  WHERE company_id = ?
                    AND LOWER(name) = LOWER(?)
                    AND id <> ?
+                   AND deleted_at IS NULL
                  LIMIT 1"
             );
             if ($stmtDuplicateEquipmentName) {
@@ -762,7 +763,7 @@ if (!$isIntentionallyUnlinked && $equipment_id <= 0 && $device_type_name === 'sw
         "SELECT e.id, e.switch_rj45_id, e.switch_port_numbering_layout_id, er.name AS switch_rj45_name
          FROM equipment e
          LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id
-         WHERE e.company_id = ? AND LOWER(e.name) = LOWER(?)
+         WHERE e.company_id = ? AND LOWER(e.name) = LOWER(?) AND e.deleted_at IS NULL
          ORDER BY e.id DESC
          LIMIT 1"
     );
@@ -1100,7 +1101,7 @@ if ($pid > 0) {
                         $conn,
                         "SELECT id
                          FROM equipment
-                         WHERE company_id = ? AND LOWER(name) = LOWER(?)
+                         WHERE company_id = ? AND LOWER(name) = LOWER(?) AND deleted_at IS NULL
                          ORDER BY id DESC
                          LIMIT 1"
                     );
@@ -1216,7 +1217,7 @@ if ($pid > 0) {
                 $conn,
                 "SELECT COALESCE(hostname, '') AS hostname
                  FROM equipment
-                 WHERE company_id = ? AND id = ?
+                 WHERE company_id = ? AND id = ? AND deleted_at IS NULL
                  LIMIT 1"
             );
             if ($stmtSwitchHostname) {
@@ -1278,7 +1279,7 @@ if ($pid > 0) {
                         COALESCE(ef.name, '') AS switch_fiber_name
                  FROM equipment e
                  LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-                 WHERE e.company_id = ? AND e.id = ?
+                 WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
                  LIMIT 1"
             );
             if ($stmtFiberSyncMeta) {
@@ -1443,7 +1444,7 @@ if ($pid > 0) {
                         COALESCE(ef.name, '') AS switch_fiber_name
                  FROM equipment e
                  LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id
-                 WHERE e.company_id = ? AND e.id = ?
+                 WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
                  LIMIT 1"
             );
             if ($stmtFiberPorts) {

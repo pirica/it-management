@@ -34,7 +34,7 @@ if (!function_exists('equipment_fetch_assignment_assigned_date')) {
 
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT COALESCE(updated_at, created_at) AS assignment_timestamp FROM equipment WHERE id = ? AND company_id = ? LIMIT 1'
+            'SELECT COALESCE(updated_at, created_at) AS assignment_timestamp FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
         );
         if (!$stmt) {
             return equipment_resolve_assignment_assigned_date('');
@@ -176,7 +176,7 @@ if (!function_exists('equipment_sync_assigned_employee')) {
         $otherEquipmentStmt = mysqli_prepare(
             $conn,
             'SELECT id FROM equipment
-             WHERE company_id = ? AND assigned_to_employee_id = ? AND id <> ?'
+             WHERE company_id = ? AND assigned_to_employee_id = ? AND id <> ? AND deleted_at IS NULL'
         );
         if (!$otherEquipmentStmt) {
             return 'Unable to load conflicting equipment assignments: ' . mysqli_error($conn);

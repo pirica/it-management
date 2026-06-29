@@ -125,7 +125,7 @@ if ($positionEquipmentIds) {
         $conn,
         "SELECT id, serial_number
          FROM equipment
-         WHERE company_id = $company_id
+         WHERE company_id = $company_id AND deleted_at IS NULL
            AND id IN ($list)"
     );
     while ($resPositionEquipment && ($row = mysqli_fetch_assoc($resPositionEquipment))) {
@@ -410,6 +410,7 @@ if ($switchPortId > 0) {
          FROM equipment e
          WHERE e.id = ?
            AND e.company_id = ?
+           AND e.deleted_at IS NULL
          LIMIT 1"
     );
     if ($stmtEquipment) {

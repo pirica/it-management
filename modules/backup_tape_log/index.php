@@ -65,7 +65,7 @@ $can_edit_restricted = ($is_admin || $is_it_staff);
 $servers = [];
 $sql = "SELECT e.id, e.hostname FROM equipment e
         JOIN equipment_types et ON e.equipment_type_id = et.id
-        WHERE et.name = 'Server' AND e.active = 1 AND e.company_id = ?
+        WHERE et.name = 'Server' AND e.active = 1 AND e.company_id = ? AND e.deleted_at IS NULL
         ORDER BY e.hostname ASC";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, 'i', $company_id);

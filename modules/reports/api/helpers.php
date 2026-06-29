@@ -15,7 +15,7 @@ function get_equipment_statistics() {
     $sql = "SELECT et.name, COUNT(*) as count
             FROM equipment e
             JOIN equipment_types et ON e.equipment_type_id = et.id
-            WHERE e.company_id = ? AND e.active = 1
+            WHERE e.company_id = ? AND e.active = 1 AND e.deleted_at IS NULL
             GROUP BY et.name
             ORDER BY count DESC";
 
@@ -102,7 +102,7 @@ function get_network_device_counts() {
     $sql = "SELECT et.name, COUNT(*) as count
             FROM equipment e
             JOIN equipment_types et ON e.equipment_type_id = et.id
-            WHERE e.company_id = ? AND e.active = 1
+            WHERE e.company_id = ? AND e.active = 1 AND e.deleted_at IS NULL
             GROUP BY et.name
             ORDER BY count DESC";
 
@@ -161,7 +161,7 @@ function get_floorplan_location_data() {
     $sql = "SELECT COALESCE(l.name, 'No Location') as loc_name, COUNT(*) as count
             FROM equipment e
             LEFT JOIN it_locations l ON e.location_id = l.id
-            WHERE e.company_id = ? AND e.active = 1
+            WHERE e.company_id = ? AND e.active = 1 AND e.deleted_at IS NULL
             GROUP BY loc_name
             ORDER BY count DESC";
 
@@ -397,7 +397,7 @@ function get_asset_financial_value() {
     $sql = "SELECT et.name, SUM(e.purchase_cost) as total_value
             FROM equipment e
             JOIN equipment_types et ON e.equipment_type_id = et.id
-            WHERE e.company_id = ? AND e.active = 1
+            WHERE e.company_id = ? AND e.active = 1 AND e.deleted_at IS NULL
             GROUP BY et.name
             ORDER BY total_value DESC";
 
@@ -434,6 +434,7 @@ function get_upcoming_maintenance_forecast() {
     $sql_w = "SELECT MONTH(warranty_expiry) as m, COUNT(*) as count
               FROM equipment
               WHERE company_id = ?
+              AND deleted_at IS NULL
               AND warranty_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 6 MONTH)
               AND active = 1
               GROUP BY m";
@@ -578,7 +579,7 @@ function get_equipment_status_statistics() {
     $sql = "SELECT es.name, COUNT(*) as count
             FROM equipment e
             JOIN equipment_statuses es ON e.status_id = es.id
-            WHERE e.company_id = ? AND e.active = 1
+            WHERE e.company_id = ? AND e.active = 1 AND e.deleted_at IS NULL
             GROUP BY es.name
             ORDER BY count DESC";
 
@@ -611,7 +612,7 @@ function get_monthly_asset_additions() {
 
     $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month_str, COUNT(*) as count
             FROM equipment
-            WHERE company_id = ? AND created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01') AND active = 1
+            WHERE company_id = ? AND deleted_at IS NULL AND created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01') AND active = 1
             GROUP BY month_str";
 
     $stmt = mysqli_prepare($conn, $sql);
@@ -644,7 +645,7 @@ function get_assets_by_department() {
     $sql = "SELECT COALESCE(d.name, 'Unassigned') as dept_name, COUNT(*) as count
             FROM equipment e
             LEFT JOIN departments d ON e.department_id = d.id
-            WHERE e.company_id = ? AND e.active = 1
+            WHERE e.company_id = ? AND e.active = 1 AND e.deleted_at IS NULL
             GROUP BY dept_name
             ORDER BY count DESC";
 

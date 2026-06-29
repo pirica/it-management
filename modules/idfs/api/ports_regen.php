@@ -55,7 +55,7 @@ if ($equipmentId > 0) {
         $conn,
         "SELECT COALESCE(e.switch_environment_id, 0) AS switch_environment_id
          FROM equipment e
-         WHERE e.company_id = ? AND e.id = ?
+         WHERE e.company_id = ? AND e.id = ? AND e.deleted_at IS NULL
          LIMIT 1"
     );
     if ($stmtPortMeta) {

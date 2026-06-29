@@ -760,7 +760,7 @@ $moduleListHeading = '🧩 ' . $crud_title;
                             <select id="modal-switch" onchange="loadPorts(this.value)">
                                 <option value="">-- Select Switch --</option>
                                 <?php 
-                                $switches = mysqli_query($conn, "SELECT id, name FROM equipment WHERE company_id=$company_id AND active=1 AND equipment_type_id IN (SELECT id FROM equipment_types WHERE name LIKE '%Switch%') ORDER BY name ASC");
+                                $switches = mysqli_query($conn, "SELECT id, name FROM equipment WHERE company_id=$company_id AND active=1 AND deleted_at IS NULL AND equipment_type_id IN (SELECT id FROM equipment_types WHERE name LIKE '%Switch%') ORDER BY name ASC");
                                 while ($s = mysqli_fetch_assoc($switches)): ?>
                                     <option value="<?php echo $s['id']; ?>"><?php echo sanitize($s['name']); ?></option>
                                 <?php endwhile; ?>

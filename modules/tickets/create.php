@@ -130,7 +130,7 @@ function tickets_equipment_select_options(mysqli $conn, int $companyId, $selecte
     $options = [];
     $res = mysqli_query(
         $conn,
-        'SELECT id, name FROM equipment WHERE company_id = ' . (int)$companyId . ' AND active = 1 ORDER BY name ASC'
+        'SELECT id, name FROM equipment WHERE company_id = ' . (int)$companyId . ' AND active = 1 AND deleted_at IS NULL ORDER BY name ASC'
     );
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $options[] = ['id' => (int)($row['id'] ?? 0), 'label' => (string)($row['name'] ?? '')];
@@ -147,7 +147,7 @@ function tickets_equipment_select_options(mysqli $conn, int $companyId, $selecte
         }
     }
 
-    $stmt = mysqli_prepare($conn, 'SELECT id, name FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT id, name FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
     if (!$stmt) {
         return $options;
     }

@@ -79,7 +79,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
                es.name AS status_name
         FROM equipment e
         {$equipmentSearchJoinSql}
-        WHERE e.company_id = $company_id
+        WHERE e.company_id = $company_id AND e.deleted_at IS NULL
         {$moduleFilterSql}
         {$searchSql}";
 $sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'department_label', 'status_name'];
@@ -108,7 +108,7 @@ $orderByMap = [
 $countSql = "SELECT COUNT(*) AS total
              FROM equipment e
              {$equipmentSearchJoinSql}
-             WHERE e.company_id = $company_id
+             WHERE e.company_id = $company_id AND e.deleted_at IS NULL
              {$moduleFilterSql}
              {$searchSql}";
 $countResult = mysqli_query($conn, $countSql);
@@ -163,7 +163,7 @@ if ($enableSwitchPortManager) {
          LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
          LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
          LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
-         WHERE e.company_id = $company_id
+         WHERE e.company_id = $company_id AND e.deleted_at IS NULL
            AND LOWER(TRIM(et.name)) LIKE '%switch%'
          ORDER BY e.name ASC"
     );

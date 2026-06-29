@@ -149,7 +149,7 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
         return 'Invalid equipment ID.';
     }
 
-    $checkStmt = mysqli_prepare($conn, 'SELECT id FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    $checkStmt = mysqli_prepare($conn, 'SELECT id FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
     if (!$checkStmt) {
         return 'Unable to check record before delete: ' . mysqli_error($conn);
     }
@@ -181,7 +181,8 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
             throw new RuntimeException($assignmentCloseError);
         }
 
-        $deleteStmt = mysqli_prepare($conn, 'DELETE FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+        $currentUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
+        $deleteStmt = mysqli_prepare($conn, "UPDATE equipment SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $currentUserId WHERE id = ? AND company_id = ? LIMIT 1");
         if (!$deleteStmt) {
             throw new RuntimeException('Delete failed: ' . mysqli_error($conn));
         }
@@ -220,7 +221,7 @@ function equipment_clear_table_for_company(mysqli $conn, int $companyId): ?strin
     }
 
     $idList = [];
-    $listResult = mysqli_query($conn, 'SELECT id FROM equipment WHERE company_id = ' . $companyId);
+    $listResult = mysqli_query($conn, 'SELECT id FROM equipment WHERE company_id = ' . $companyId . ' AND deleted_at IS NULL');
     if ($listResult === false) {
         return 'Unable to load equipment records for clear table: ' . mysqli_error($conn);
     }

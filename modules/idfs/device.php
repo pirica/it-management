@@ -713,7 +713,7 @@ if ($positionLinkedEquipmentId > 0 && !empty($ports)) {
         $conn,
         'SELECT COALESCE(switch_poe_id, 0) AS switch_poe_id
          FROM equipment
-         WHERE company_id = ? AND id = ?
+         WHERE company_id = ? AND id = ? AND deleted_at IS NULL
          LIMIT 1'
     );
     if ($stmtEquipmentPoe) {
@@ -1095,7 +1095,7 @@ $resEq = mysqli_query(
     $conn,
     "SELECT e.id, e.name, e.hostname, e.serial_number
      FROM equipment e
-     WHERE e.company_id=$company_id
+     WHERE e.company_id=$company_id AND e.deleted_at IS NULL
      ORDER BY e.name ASC
      LIMIT 500"
 );

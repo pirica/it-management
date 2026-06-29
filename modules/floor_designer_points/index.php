@@ -84,7 +84,7 @@ function cr_fk_options($conn, $fk, $company_id) {
 
     // Special case for equipment (only Switches)
     if ($table === 'equipment' && $hasCompany) {
-        $where .= " AND equipment_type_id IN (SELECT id FROM equipment_types WHERE name LIKE '%Switch%')";
+        $where .= " AND deleted_at IS NULL AND equipment_type_id IN (SELECT id FROM equipment_types WHERE name LIKE '%Switch%')";
     }
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';

@@ -211,7 +211,7 @@ function cr_idf_link_enrich_snapshot_fields($conn, &$data, $company_id) {
     $equipmentIdRaw = trim((string)($data['equipment_id'] ?? ''));
     $equipmentId = ctype_digit($equipmentIdRaw) ? (int)$equipmentIdRaw : 0;
     if ($equipmentId > 0) {
-        $sql = 'SELECT hostname, status_id FROM `equipment` WHERE id=?';
+        $sql = 'SELECT hostname, status_id FROM `equipment` WHERE id=? AND deleted_at IS NULL';
         if ($companyId > 0) {
             $sql .= ' AND company_id=?';
         }
@@ -409,7 +409,7 @@ function cr_equipment_display_label($conn, $equipmentId, $companyId) {
         return $cache[$cacheKey];
     }
 
-    $sql = 'SELECT hostname FROM `equipment` WHERE id = ?';
+    $sql = 'SELECT hostname FROM `equipment` WHERE id = ? AND deleted_at IS NULL';
     $query = function ($withCompany) use ($conn, $sql, $equipmentId, $companyId) {
         $localSql = $sql;
         if ($withCompany && $companyId > 0) {

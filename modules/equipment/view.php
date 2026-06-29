@@ -42,7 +42,11 @@ $assignedEmployeeJoin = $hasAssignedEmployeeColumn
 $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
                d.name department_name, s.name supplier_name,
                r.name rack_name, idf.name idf_name, es.name status_name, wt.name warranty_type_name,
-               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$equipmentRj45SpeedSelect$workstationOsVersionSelect$workstationRamSelect$assignedEmployeeSelect
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name,
+               er.name switch_rj45_name, spnl.name switch_layout_name, ef.name switch_fiber_name,
+               efp.name switch_fiber_patch_name, efr.name switch_fiber_rack_name, ep.name switch_poe_name,
+               ee.name switch_environment_name
+               $workstationOfficeSelect$equipmentRj45SpeedSelect$workstationOsVersionSelect$workstationRamSelect$assignedEmployeeSelect
         FROM equipment e
         LEFT JOIN companies c ON c.id = e.company_id
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
@@ -57,12 +61,19 @@ $sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name 
         LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id AND pdt.company_id = e.company_id
         LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id AND wdt.company_id = e.company_id
         LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id AND wot.company_id = e.company_id
+        LEFT JOIN equipment_rj45 er ON er.id = e.switch_rj45_id AND er.company_id = e.company_id
+        LEFT JOIN switch_port_numbering_layout spnl ON spnl.id = e.switch_port_numbering_layout_id
+        LEFT JOIN equipment_fiber ef ON ef.id = e.switch_fiber_id AND ef.company_id = e.company_id
+        LEFT JOIN equipment_fiber_patch efp ON efp.id = e.switch_fiber_patch_id AND efp.company_id = e.company_id
+        LEFT JOIN equipment_fiber_rack efr ON efr.id = e.switch_fiber_rack_id AND efr.company_id = e.company_id
+        LEFT JOIN equipment_poe ep ON ep.id = e.switch_poe_id AND ep.company_id = e.company_id
+        LEFT JOIN equipment_environment ee ON ee.id = e.switch_environment_id AND ee.company_id = e.company_id
         $workstationOfficeJoin
         $equipmentRj45SpeedJoin
         $workstationOsVersionJoin
         $workstationRamJoin
         $assignedEmployeeJoin
-        WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
+        WHERE e.id = $id AND e.company_id = $company_id AND e.deleted_at IS NULL LIMIT 1";
 $res = mysqli_query($conn, $sql);
 $item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
 $itmEquipmentIpAssignments = [];
@@ -125,6 +136,13 @@ function equipment_field_label($key) {
         'assigned_employee_label' => 'Assign To Employee',
         'workstation_storage' => 'Storage (GB/TB)',
         'workstation_os_installed_on' => 'Workstation OS Installed On',
+        'switch_rj45_name' => 'RJ45 Ports',
+        'switch_layout_name' => 'Port Numbering Layout',
+        'switch_fiber_name' => 'Fiber Port Type',
+        'switch_fiber_patch_name' => 'Fiber Patch',
+        'switch_fiber_rack_name' => 'Fiber Rack',
+        'switch_poe_name' => 'PoE Type',
+        'switch_environment_name' => 'Management',
         'switch_fiber_port_label' => 'Fiber Port Label',
         'notes' => 'Notes',
     ];

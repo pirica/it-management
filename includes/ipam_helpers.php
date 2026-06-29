@@ -1522,7 +1522,7 @@ function itm_ipam_find_equipment_by_ip_text(mysqli $conn, int $company_id, strin
         $conn,
         'SELECT id, name, hostname
          FROM equipment
-         WHERE company_id = ? AND TRIM(COALESCE(ip_address, \'\')) = ?
+         WHERE company_id = ? AND TRIM(COALESCE(ip_address, \'\')) = ? AND deleted_at IS NULL
          ORDER BY id ASC
          LIMIT 1'
     );

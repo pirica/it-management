@@ -675,7 +675,7 @@ $stmtEq = mysqli_prepare(
      LEFT JOIN switch_port_numbering_layout e_layout_company_match
        ON e_layout_company_match.company_id = e.company_id
       AND LOWER(e_layout_company_match.name) = LOWER(e_layout_any.name)
-     WHERE e.company_id=?
+     WHERE e.company_id=? AND e.deleted_at IS NULL
      ORDER BY e.name ASC
      LIMIT 500"
 );

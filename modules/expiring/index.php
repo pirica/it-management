@@ -127,7 +127,7 @@ $expirySummaries = [
 
 if ($company_id > 0) {
     $totalEquipment = 0;
-    $totalStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_count FROM equipment WHERE company_id = ?');
+    $totalStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_count FROM equipment WHERE company_id = ? AND deleted_at IS NULL');
     if ($totalStmt) {
         mysqli_stmt_bind_param($totalStmt, 'i', $company_id);
         mysqli_stmt_execute($totalStmt);
@@ -153,7 +153,7 @@ if ($company_id > 0) {
         FROM equipment e
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
         LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id
-        WHERE e.company_id = ?
+        WHERE e.company_id = ? AND e.deleted_at IS NULL
           AND e.%s IS NOT NULL
           AND e.%s >= '1000-01-01'
         ORDER BY e.%s ASC, e.name ASC
@@ -172,7 +172,7 @@ if ($company_id > 0) {
             '' AS warranty_type
         FROM equipment e
         LEFT JOIN equipment_types et ON et.id = e.equipment_type_id
-        WHERE e.company_id = ?
+        WHERE e.company_id = ? AND e.deleted_at IS NULL
           AND e.%s IS NOT NULL
           AND e.%s >= '1000-01-01'
         ORDER BY e.%s ASC, e.name ASC
@@ -306,7 +306,7 @@ if ($company_id > 0) {
             $unknownSql = "SELECT COUNT(*) AS unknown_count FROM alerts WHERE company_id = ? AND (end_datetime IS NULL OR TRIM(end_datetime) = '' OR end_datetime IN ('0000-00-00', '0000-00-00 00:00:00')) AND (assigned_to_employee_id IS NULL OR assigned_to_employee_id = $logged_user_id OR created_by_employee_id = $logged_user_id) AND active = 1";
         } else {
             $unknownSql = sprintf(
-                "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
+            "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND deleted_at IS NULL AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
                 $field,
                 $field,
                 $field

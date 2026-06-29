@@ -42,7 +42,7 @@ function itm_ipam_fk_options_override(mysqli $conn, array $fk, int $company_id, 
             "SELECT id,
                     TRIM(CONCAT(COALESCE(hostname, ''), CASE WHEN hostname IS NOT NULL AND hostname <> '' AND name IS NOT NULL AND name <> '' THEN ' (' ELSE '' END, COALESCE(name, ''), CASE WHEN hostname IS NOT NULL AND hostname <> '' AND name IS NOT NULL AND name <> '' THEN ')' ELSE '' END)) AS label
              FROM equipment
-             WHERE company_id = ?
+             WHERE company_id = ? AND deleted_at IS NULL
              ORDER BY name ASC, hostname ASC"
         );
         if (!$stmt) {

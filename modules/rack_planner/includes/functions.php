@@ -194,7 +194,7 @@ function rack_planner_fetch_equipment_picker_options(mysqli $conn, int $companyI
     $equipmentSql = "SELECT e.id, e.name, e.purchase_cost, et.name AS equipment_type_name
                      FROM equipment e
                      LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
-                     WHERE e.company_id = ?
+                     WHERE e.company_id = ? AND e.deleted_at IS NULL
                      ORDER BY e.name ASC, e.id ASC";
     $equipmentStmt = mysqli_prepare($conn, $equipmentSql);
     if ($equipmentStmt) {

@@ -189,7 +189,7 @@ function table_has_column(mysqli $conn, string $table, string $column): bool
 }
 
 // Build dynamic queries for dashboard cards based on available columns
-$equipmentSql = 'SELECT COUNT(*) AS count FROM equipment WHERE company_id = ?';
+$equipmentSql = 'SELECT COUNT(*) AS count FROM equipment WHERE company_id = ? AND deleted_at IS NULL';
 if (table_has_column($conn, 'equipment', 'active')) {
     $equipmentSql .= ' AND active = 1';
 }

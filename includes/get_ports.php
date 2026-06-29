@@ -254,6 +254,7 @@ $switchSql = "SELECT e.id, e.name, {$legacyNumberPortSql} COALESCE(er.name, '24 
               {$fiberCountJoinSql}
               WHERE e.id = ?
                 AND e.company_id = ?
+                AND e.deleted_at IS NULL
               LIMIT 1";
 $switchStmt = mysqli_prepare($conn, $switchSql);
 $switch = null;

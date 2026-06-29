@@ -344,7 +344,7 @@ try {
             $conn,
             "SELECT *
              FROM equipment
-             WHERE id=? AND company_id=?
+             WHERE id=? AND company_id=? AND deleted_at IS NULL
              LIMIT 1"
         );
         $sourceEquipment = null;

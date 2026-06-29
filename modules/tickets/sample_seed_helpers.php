@@ -104,7 +104,7 @@ function tickets_sample_primary_file_server_id(mysqli $conn, int $companyId): in
     $res = mysqli_query(
         $conn,
         "SELECT id FROM equipment WHERE company_id = " . (int)$companyId
-        . " AND name = 'Primary File Server' AND active = 1 ORDER BY id ASC LIMIT 1"
+        . " AND name = 'Primary File Server' AND active = 1 AND deleted_at IS NULL ORDER BY id ASC LIMIT 1"
     );
     $row = ($res) ? mysqli_fetch_assoc($res) : null;
 

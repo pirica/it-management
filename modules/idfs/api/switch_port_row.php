@@ -42,7 +42,7 @@ $sql = "SELECT
             COALESCE(NULLIF(sc.color_name, ''), sc.hex_color, '') AS equipment_color,
             COALESCE(sc.hex_color, '') AS equipment_color_hex
         FROM switch_ports sp
-        JOIN equipment e ON e.id = sp.equipment_id AND e.company_id = sp.company_id
+        JOIN equipment e ON e.id = sp.equipment_id AND e.company_id = sp.company_id AND e.deleted_at IS NULL
         LEFT JOIN switch_port_types spt ON spt.id = sp.port_type AND spt.company_id = sp.company_id
         LEFT JOIN vlans v ON v.id = sp.vlan_id AND v.company_id = sp.company_id
         LEFT JOIN switch_status ss ON ss.id = sp.status_id AND ss.company_id = sp.company_id

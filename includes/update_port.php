@@ -107,7 +107,7 @@ if ($hasManagementId) {
         $conn,
         "SELECT COALESCE(switch_environment_id, 0) AS switch_environment_id
          FROM equipment
-         WHERE id = ? AND company_id = ?
+         WHERE id = ? AND company_id = ? AND deleted_at IS NULL
          LIMIT 1"
     );
     if ($stmtEquipmentManagement) {
