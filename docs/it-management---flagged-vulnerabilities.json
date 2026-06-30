@@ -1,0 +1,28 @@
+{
+    "findings": [
+        {
+            "title": "Regular users can view and modify employee system access permissions due to missing authorization check.",
+            "status": "active",
+            "commit_hash": "b3bf58f78144888ffa070a025374c08482a42392",
+            "detected_at_pst": "2026-06-30T05:23:11-07:00",
+            "reported_link": "",
+            "location": "modules/employee_system_access/index.php"
+        },
+        {
+            "title": "Missing administrator gate in System Access module allows regular users to manage company access catalog.",
+            "status": "active",
+            "commit_hash": "b3bf58f78144888ffa070a025374c08482a42392",
+            "detected_at_pst": "2026-06-30T05:23:11-07:00",
+            "reported_link": "",
+            "location": "modules/system_access/index.php"
+        },
+        {
+            "title": "Regular users can manage role definitions in the Employee Roles module due to missing admin verification.",
+            "status": "active",
+            "commit_hash": "b3bf58f78144888ffa070a025374c08482a42392",
+            "detected_at_pst": "2026-06-30T05:23:11-07:00",
+            "reported_link": "",
+            "location": "modules/employee_roles/index.php"
+        }
+    ]
+}
