@@ -1,10 +1,33 @@
 <?php
+require_once '../../includes/itm_role_assignment_rights.php';
+
 /**
  * Employee role and access level FK selects (tenant-scoped with persisted-value fallback).
  */
 $empRoleAccessForm = $form ?? [];
 $empRoleAccessCompanyId = (int)($company_id ?? 0);
-$empRoleAccessRoles = mysqli_query($conn, 'SELECT id, name FROM employee_roles WHERE company_id=' . $empRoleAccessCompanyId . ' ORDER BY name');
+
+// Role Assignment Rights Filtering
+$empRoleAccessUserRoleId = 0;
+$empRoleAccessCurrentUserId = (int)($_SESSION['employee_id'] ?? 0);
+if ($empRoleAccessCurrentUserId > 0) {
+    $empRoleAccessUserRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $empRoleAccessCurrentUserId LIMIT 1");
+    if ($empRoleAccessUserRes && $empRoleAccessUserRow = mysqli_fetch_assoc($empRoleAccessUserRes)) {
+        $empRoleAccessUserRoleId = (int)$empRoleAccessUserRow['role_id'];
+    }
+}
+
+$empRoleAccessAssignableIds = $empRoleAccessIsAdmin ? [] : itm_get_assignable_role_ids($conn, $empRoleAccessCompanyId, $empRoleAccessUserRoleId);
+
+$empRoleAccessRolesSql = 'SELECT id, name FROM employee_roles WHERE company_id=' . $empRoleAccessCompanyId;
+if (!empty($empRoleAccessAssignableIds)) {
+    $empRoleAccessRolesSql .= ' AND id IN (' . implode(',', $empRoleAccessAssignableIds) . ')';
+} else {
+    $empRoleAccessRolesSql .= ' AND 1=0'; // No assignable roles
+}
+$empRoleAccessRolesSql .= ' ORDER BY name';
+
+$empRoleAccessRoles = mysqli_query($conn, $empRoleAccessRolesSql);
 $empRoleAccessLevels = mysqli_query($conn, 'SELECT id, name FROM access_levels WHERE company_id=' . $empRoleAccessCompanyId . ' ORDER BY name');
 $empRoleAccessRoleLookup = [];
 if ($empRoleAccessRoles) {

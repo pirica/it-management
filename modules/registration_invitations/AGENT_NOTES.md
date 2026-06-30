@@ -13,6 +13,7 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 
 ## 4. Business Rules (Critical for Agents)
 - **Admin only:** all entry points call `itm_require_admin()` — non-admins get HTTP 403 on mutations.
+- **Role Assignment Rights:** `role_id` options are filtered based on the logged-in user's role assignment rights (except for full Admins). Server-side validation enforces these rights on create/edit.
 - **Unique email per company:** `uq_registration_invitations_company_scope` (`company_id`, `email`).
 - **`invitation_code` is NOT NULL:** import must generate a code when Excel payload omits it (index import handler).
 - **Accepted invitations:** set `accepted_at` when used; do not reuse consumed codes for new accounts.

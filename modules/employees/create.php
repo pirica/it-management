@@ -16,6 +16,7 @@ require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_hidden_accounts.php';
 require_once '../../includes/itm_fk_option_labels.php';
+require_once '../../includes/itm_role_assignment_rights.php';
 
 /**
  * Cleanup unique constraints for email if they exist, facilitating manual handling
@@ -128,12 +129,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $externalNumber = $form['external_number'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['external_number']) . "'";
         $dect = $form['dect'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['dect']) . "'";
         $extension = $form['extension'] === '' ? 'NULL' : "'" . mysqli_real_escape_string($conn, $form['extension']) . "'";
-    $onContacts = (int)$form['on_contacts'];
-    $onOrgchart = (int)$form['on_orgchart'];
-    $birthday = itm_sql_date_fragment($conn, $form['birthday']);
-    $hideYear = (int)$form['hide_year'];
-    $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
-    $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
+        $onContacts = (int)$form['on_contacts'];
+        $onOrgchart = (int)$form['on_orgchart'];
+        $birthday = itm_sql_date_fragment($conn, $form['birthday']);
+        $hideYear = (int)$form['hide_year'];
+        $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
+        $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
+
+        if ($roleId !== 'NULL') {
+        $currentUserRoleId = 0;
+        $currentUserId = (int)($_SESSION['employee_id'] ?? 0);
+
+        if ($currentUserId > 0) {
+            $userRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $currentUserId LIMIT 1");
+            if ($userRes && $userRow = mysqli_fetch_assoc($userRes)) {
+                $currentUserRoleId = (int)$userRow['role_id'];
+            }
+        }
+        if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$roleId)) {
+            $errors[] = 'You do not have permission to assign this role.';
+        }
+    }
+
+    if (empty($errors)) {
         $sql = "INSERT INTO employees (
             company_id, first_name, last_name, display_name, full_name, work_email, personal_email, external_id, insurance_n, username, employee_code,
             department_id, location_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
@@ -171,6 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $errors[] = itm_format_db_constraint_error(mysqli_errno($conn), mysqli_error($conn));
+    }
     }
 }
 
