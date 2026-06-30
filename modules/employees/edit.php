@@ -191,18 +191,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($roleId !== 'NULL' && (int)$roleId !== (int)($employee['role_id'] ?? 0)) {
             $currentUserRoleId = 0;
             $currentUserId = (int)($_SESSION['employee_id'] ?? 0);
-            $isUserAdmin = itm_is_admin($conn, $currentUserId);
 
-            if (!$isUserAdmin) {
-                if ($currentUserId > 0) {
-                    $userRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $currentUserId LIMIT 1");
-                    if ($userRes && $userRow = mysqli_fetch_assoc($userRes)) {
-                        $currentUserRoleId = (int)$userRow['role_id'];
-                    }
+            if ($currentUserId > 0) {
+                $userRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $currentUserId LIMIT 1");
+                if ($userRes && $userRow = mysqli_fetch_assoc($userRes)) {
+                    $currentUserRoleId = (int)$userRow['role_id'];
                 }
-                if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$roleId)) {
-                    $errors[] = 'You do not have permission to assign this role.';
-                }
+            }
+            if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$roleId)) {
+                $errors[] = 'You do not have permission to assign this role.';
             }
         }
 

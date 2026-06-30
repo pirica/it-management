@@ -20,6 +20,23 @@ function itm_get_assignable_role_ids($conn, $companyId, $granterRoleId) {
         return [];
     }
 
+    // Admins can assign any role by default if it belongs to their company
+    if (function_exists('itm_is_admin') && itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
+        $sql = "SELECT id FROM employee_roles WHERE company_id = ? AND active = 1";
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $ids = [];
+            while ($row = mysqli_fetch_assoc($result)) {
+                $ids[] = (int)$row['id'];
+            }
+            mysqli_stmt_close($stmt);
+            return $ids;
+        }
+    }
+
     $sql = "SELECT can_assign_role_id FROM role_assignment_rights
             WHERE company_id = ? AND role_id = ? AND active = 1";
     $stmt = mysqli_prepare($conn, $sql);
@@ -56,6 +73,11 @@ function itm_can_assign_role($conn, $companyId, $granterRoleId, $targetRoleId) {
 
     if ($companyId <= 0 || $granterRoleId <= 0 || $targetRoleId <= 0) {
         return false;
+    }
+
+    // Admins can assign any role by default if it belongs to their company
+    if (function_exists('itm_is_admin') && itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
+        return true;
     }
 
     $sql = "SELECT 1 FROM role_assignment_rights

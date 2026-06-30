@@ -17,16 +17,13 @@ if ($empRoleAccessCurrentUserId > 0) {
     }
 }
 
-$empRoleAccessIsAdmin = itm_is_admin($conn, $empRoleAccessCurrentUserId);
 $empRoleAccessAssignableIds = itm_get_assignable_role_ids($conn, $empRoleAccessCompanyId, $empRoleAccessUserRoleId);
 
 $empRoleAccessRolesSql = 'SELECT id, name FROM employee_roles WHERE company_id=' . $empRoleAccessCompanyId;
-if (!$empRoleAccessIsAdmin) {
-    if (!empty($empRoleAccessAssignableIds)) {
-        $empRoleAccessRolesSql .= ' AND id IN (' . implode(',', $empRoleAccessAssignableIds) . ')';
-    } else {
-        $empRoleAccessRolesSql .= ' AND 1=0'; // No assignable roles
-    }
+if (!empty($empRoleAccessAssignableIds)) {
+    $empRoleAccessRolesSql .= ' AND id IN (' . implode(',', $empRoleAccessAssignableIds) . ')';
+} else {
+    $empRoleAccessRolesSql .= ' AND 1=0'; // No assignable roles
 }
 $empRoleAccessRolesSql .= ' ORDER BY name';
 

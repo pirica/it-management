@@ -320,9 +320,6 @@ function cr_filter_invitation_hierarchy_options($conn, $company_id, $fieldName, 
         return $options;
     }
 
-    if (!empty($permissionProfile['is_admin'])) {
-        return $options;
-    }
 
     $filtered = [];
     if ($fieldName === 'role_id') {
@@ -359,9 +356,6 @@ function cr_validate_invitation_hierarchy_selection($conn, $company_id, $permiss
         return;
     }
 
-    if (!empty($permissionProfile['is_admin'])) {
-        return;
-    }
 
     if ($fieldName === 'role_id') {
         if (!itm_can_assign_role($conn, $company_id, (int)($permissionProfile['role_id'] ?? 0), $selectionId)) {
