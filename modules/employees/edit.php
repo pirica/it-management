@@ -12,6 +12,7 @@ require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_hidden_accounts.php';
 require_once '../../includes/itm_fk_option_labels.php';
+require_once '../../includes/itm_role_assignment_rights.php';
 
 /**
  * Ensures unique constraints don't block manual updates when duplicates are allowed in the UI
@@ -186,6 +187,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hideYear = (int)$form['hide_year'];
         $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
         $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
+
+        if ($roleId !== 'NULL' && (int)$roleId !== (int)($employee['role_id'] ?? 0)) {
+            $currentUserRoleId = 0;
+            $currentUserId = (int)($_SESSION['employee_id'] ?? 0);
+            $isUserAdmin = itm_is_admin($conn, $currentUserId);
+
+            if (!$isUserAdmin) {
+                if ($currentUserId > 0) {
+                    $userRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $currentUserId LIMIT 1");
+                    if ($userRes && $userRow = mysqli_fetch_assoc($userRes)) {
+                        $currentUserRoleId = (int)$userRow['role_id'];
+                    }
+                }
+                if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$roleId)) {
+                    $errors[] = 'You do not have permission to assign this role.';
+                }
+            }
+        }
+
         $photoValue = mysqli_real_escape_string($conn, (string)($employee['photo'] ?? ''));
         if (isset($_FILES['photo']) && (int)$_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
             $photoEmployee = [

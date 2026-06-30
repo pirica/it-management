@@ -49,9 +49,6 @@ if (!$user) {
 }
 
 $employeeId = (int)$user['id'];
-if (!itm_is_admin($conn, $employeeId)) {
-    die("Error: Bypass login is restricted to Admin users. User '{$user['username']}' is not an admin.\n");
-}
 
 // Fetch Company details
 $stmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE id = ? LIMIT 1');

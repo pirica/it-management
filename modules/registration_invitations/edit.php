@@ -15,6 +15,7 @@ $crud_action = 'edit';
 <?php
 require_once '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_registration_invitation_email.php';
+require_once ROOT_PATH . 'includes/itm_role_assignment_rights.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 
 // Validate table configuration to prevent unauthorized access to other tables
@@ -314,7 +315,7 @@ function cr_access_level_rank($accessLevelLabel) {
     return $rankMap[$normalized] ?? 0;
 }
 
-function cr_filter_invitation_hierarchy_options($fieldName, $options, $permissionProfile) {
+function cr_filter_invitation_hierarchy_options($conn, $company_id, $fieldName, $options, $permissionProfile) {
     if (!in_array($fieldName, ['role_id', 'access_level_id'], true) || !is_array($options)) {
         return $options;
     }
@@ -323,30 +324,32 @@ function cr_filter_invitation_hierarchy_options($fieldName, $options, $permissio
         return $options;
     }
 
-    $maxRank = 0;
-    if ($fieldName === 'role_id') {
-        $maxRank = cr_role_rank((string)($permissionProfile['role_name'] ?? ''));
-    } elseif ($fieldName === 'access_level_id') {
-        $maxRank = cr_access_level_rank((string)($permissionProfile['access_level_name'] ?? ''));
-    }
-
-    if ($maxRank <= 0) {
-        return [];
-    }
-
     $filtered = [];
-    foreach ($options as $option) {
-        $label = (string)($option['label'] ?? '');
-        $rank = ($fieldName === 'role_id') ? cr_role_rank($label) : cr_access_level_rank($label);
-        if ($rank > 0 && $rank <= $maxRank) {
-            $filtered[] = $option;
+    if ($fieldName === 'role_id') {
+        $assignableIds = itm_get_assignable_role_ids($conn, $company_id, (int)($permissionProfile['role_id'] ?? 0));
+        foreach ($options as $option) {
+            if (in_array((int)($option['id'] ?? 0), $assignableIds, true)) {
+                $filtered[] = $option;
+            }
+        }
+    } else {
+        $maxRank = cr_access_level_rank((string)($permissionProfile['access_level_name'] ?? ''));
+        if ($maxRank <= 0) {
+            return [];
+        }
+        foreach ($options as $option) {
+            $label = (string)($option['label'] ?? '');
+            $rank = cr_access_level_rank($label);
+            if ($rank > 0 && $rank <= $maxRank) {
+                $filtered[] = $option;
+            }
         }
     }
 
     return $filtered;
 }
 
-function cr_validate_invitation_hierarchy_selection($fieldName, $postedId, $allowedOptions, &$errors) {
+function cr_validate_invitation_hierarchy_selection($conn, $company_id, $permissionProfile, $fieldName, $postedId, $allowedOptions, &$errors) {
     if (!in_array($fieldName, ['role_id', 'access_level_id'], true)) {
         return;
     }
@@ -356,6 +359,17 @@ function cr_validate_invitation_hierarchy_selection($fieldName, $postedId, $allo
         return;
     }
 
+    if (!empty($permissionProfile['is_admin'])) {
+        return;
+    }
+
+    if ($fieldName === 'role_id') {
+        if (!itm_can_assign_role($conn, $company_id, (int)($permissionProfile['role_id'] ?? 0), $selectionId)) {
+            $errors[] = 'You do not have permission to assign this role.';
+            return;
+        }
+    }
+
     foreach ($allowedOptions as $option) {
         if ((int)($option['id'] ?? 0) === $selectionId) {
             return;
@@ -363,7 +377,7 @@ function cr_validate_invitation_hierarchy_selection($fieldName, $postedId, $allo
     }
 
     $errors[] = $fieldName === 'role_id'
-        ? 'You cannot assign a role above your own role.'
+        ? 'You do not have permission to assign this role.'
         : 'You cannot assign an access level above your own access level.';
 }
 
@@ -680,10 +694,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     $allowedRoleOptions = isset($fkMap['role_id'])
-        ? cr_filter_invitation_hierarchy_options('role_id', cr_fk_options($conn, $fkMap['role_id'], (int)$company_id), $permissionProfile)
+        ? cr_filter_invitation_hierarchy_options($conn, (int)$company_id, 'role_id', cr_fk_options($conn, $fkMap['role_id'], (int)$company_id), $permissionProfile)
         : [];
     $allowedAccessLevelOptions = isset($fkMap['access_level_id'])
-        ? cr_filter_invitation_hierarchy_options('access_level_id', cr_fk_options($conn, $fkMap['access_level_id'], (int)$company_id), $permissionProfile)
+        ? cr_filter_invitation_hierarchy_options($conn, (int)$company_id, 'access_level_id', cr_fk_options($conn, $fkMap['access_level_id'], (int)$company_id), $permissionProfile)
         : [];
 
     foreach ($fieldColumns as $col) {
@@ -763,9 +777,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
 
         if ($name === 'role_id') {
-            cr_validate_invitation_hierarchy_selection($name, $_POST[$name] ?? 0, $allowedRoleOptions, $errors);
+            cr_validate_invitation_hierarchy_selection($conn, (int)$company_id, $permissionProfile, $name, $_POST[$name] ?? 0, $allowedRoleOptions, $errors);
         } elseif ($name === 'access_level_id') {
-            cr_validate_invitation_hierarchy_selection($name, $_POST[$name] ?? 0, $allowedAccessLevelOptions, $errors);
+            cr_validate_invitation_hierarchy_selection($conn, (int)$company_id, $permissionProfile, $name, $_POST[$name] ?? 0, $allowedAccessLevelOptions, $errors);
         }
 
         // Sanitize regular field values
@@ -1064,7 +1078,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                                         (int)($inviterDefaults['id'] ?? 0),
                                         !empty($inviterDefaults['is_admin'])
                                     );
-                                    $opts = cr_filter_invitation_hierarchy_options($name, $opts, $permissionProfile);
+                                    $opts = cr_filter_invitation_hierarchy_options($conn, (int)$company_id, $name, $opts, $permissionProfile);
                                     $selectedOptionExists = false;
                                     foreach ($opts as $optRow) {
                                         if ((string)$displayVal === (string)($optRow['id'] ?? '')) {
