@@ -17,7 +17,7 @@ if ($empRoleAccessCurrentUserId > 0) {
     }
 }
 
-$empRoleAccessAssignableIds = itm_get_assignable_role_ids($conn, $empRoleAccessCompanyId, $empRoleAccessUserRoleId);
+$empRoleAccessAssignableIds = $empRoleAccessIsAdmin ? [] : itm_get_assignable_role_ids($conn, $empRoleAccessCompanyId, $empRoleAccessUserRoleId);
 
 $empRoleAccessRolesSql = 'SELECT id, name FROM employee_roles WHERE company_id=' . $empRoleAccessCompanyId;
 if (!empty($empRoleAccessAssignableIds)) {
