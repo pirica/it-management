@@ -727,6 +727,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                         $sqlValues[$name] = 'NULL';
                     }
                 }
+
+                if ($name === 'role_id') {
+                    cr_validate_invitation_hierarchy_selection($conn, (int)$company_id, $permissionProfile, $name, $data[$name] ?? 0, $allowedRoleOptions, $errors);
+                } elseif ($name === 'access_level_id') {
+                    cr_validate_invitation_hierarchy_selection($conn, (int)$company_id, $permissionProfile, $name, $data[$name] ?? 0, $allowedAccessLevelOptions, $errors);
+                }
+
                 continue;
             }
         }
