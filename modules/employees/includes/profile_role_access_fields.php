@@ -8,22 +8,22 @@ $empRoleAccessForm = $form ?? [];
 $empRoleAccessCompanyId = (int)($company_id ?? 0);
 
 // Role Assignment Rights Filtering
-$empRoleAccessUserRoleId = 0;
+$empRoleAccessAssignableIds = [];
 $empRoleAccessCurrentUserId = (int)($_SESSION['employee_id'] ?? 0);
-if ($empRoleAccessCurrentUserId > 0) {
-    $empRoleAccessUserRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $empRoleAccessCurrentUserId LIMIT 1");
-    if ($empRoleAccessUserRes && $empRoleAccessUserRow = mysqli_fetch_assoc($empRoleAccessUserRes)) {
-        $empRoleAccessUserRoleId = (int)$empRoleAccessUserRow['role_id'];
-    }
+$empRoleAccessIsAdminUser = itm_is_admin($conn, $empRoleAccessCurrentUserId);
+
+if (!$empRoleAccessIsAdminUser) {
+    $empRoleAccessUserRoleId = itm_get_employee_role_id($conn, $empRoleAccessCurrentUserId);
+    $empRoleAccessAssignableIds = itm_get_assignable_role_ids($conn, $empRoleAccessCompanyId, $empRoleAccessUserRoleId);
 }
 
-$empRoleAccessAssignableIds = $empRoleAccessIsAdmin ? [] : itm_get_assignable_role_ids($conn, $empRoleAccessCompanyId, $empRoleAccessUserRoleId);
-
 $empRoleAccessRolesSql = 'SELECT id, name FROM employee_roles WHERE company_id=' . $empRoleAccessCompanyId;
-if (!empty($empRoleAccessAssignableIds)) {
+if ($empRoleAccessIsAdminUser) {
+    // Admins see all roles for their company
+} elseif (!empty($empRoleAccessAssignableIds)) {
     $empRoleAccessRolesSql .= ' AND id IN (' . implode(',', $empRoleAccessAssignableIds) . ')';
 } else {
-    $empRoleAccessRolesSql .= ' AND 1=0'; // No assignable roles
+    $empRoleAccessRolesSql .= ' AND 1=0'; // Non-admin with no assignable rights sees nothing
 }
 $empRoleAccessRolesSql .= ' ORDER BY name';
 

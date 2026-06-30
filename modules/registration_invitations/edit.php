@@ -294,85 +294,19 @@ function cr_current_user_permission_profile($conn) {
 }
 
 function cr_role_rank($roleLabel) {
-    $normalized = strtolower(trim((string)$roleLabel));
-    $rankMap = [
-        'admin' => 500,
-        'it manager' => 400,
-        'it assistant' => 300,
-        'helpdesk' => 200,
-        'user' => 100,
-    ];
-    return $rankMap[$normalized] ?? 0;
+    return itm_role_rank($roleLabel);
 }
 
 function cr_access_level_rank($accessLevelLabel) {
-    $normalized = strtolower(trim((string)$accessLevelLabel));
-    $rankMap = [
-        'full' => 300,
-        'read only' => 200,
-        'limited' => 100,
-    ];
-    return $rankMap[$normalized] ?? 0;
+    return itm_access_level_rank($accessLevelLabel);
 }
 
 function cr_filter_invitation_hierarchy_options($conn, $company_id, $fieldName, $options, $permissionProfile) {
-    if (!in_array($fieldName, ['role_id', 'access_level_id'], true) || !is_array($options)) {
-        return $options;
-    }
-
-
-    $filtered = [];
-    if ($fieldName === 'role_id') {
-        $assignableIds = itm_get_assignable_role_ids($conn, $company_id, (int)($permissionProfile['role_id'] ?? 0));
-        foreach ($options as $option) {
-            if (in_array((int)($option['id'] ?? 0), $assignableIds, true)) {
-                $filtered[] = $option;
-            }
-        }
-    } else {
-        $maxRank = cr_access_level_rank((string)($permissionProfile['access_level_name'] ?? ''));
-        if ($maxRank <= 0) {
-            return [];
-        }
-        foreach ($options as $option) {
-            $label = (string)($option['label'] ?? '');
-            $rank = cr_access_level_rank($label);
-            if ($rank > 0 && $rank <= $maxRank) {
-                $filtered[] = $option;
-            }
-        }
-    }
-
-    return $filtered;
+    return itm_filter_invitation_hierarchy_options($conn, $company_id, $fieldName, $options, $permissionProfile);
 }
 
 function cr_validate_invitation_hierarchy_selection($conn, $company_id, $permissionProfile, $fieldName, $postedId, $allowedOptions, &$errors) {
-    if (!in_array($fieldName, ['role_id', 'access_level_id'], true)) {
-        return;
-    }
-
-    $selectionId = (int)$postedId;
-    if ($selectionId <= 0) {
-        return;
-    }
-
-
-    if ($fieldName === 'role_id') {
-        if (!itm_can_assign_role($conn, $company_id, (int)($permissionProfile['role_id'] ?? 0), $selectionId)) {
-            $errors[] = 'You do not have permission to assign this role.';
-            return;
-        }
-    }
-
-    foreach ($allowedOptions as $option) {
-        if ((int)($option['id'] ?? 0) === $selectionId) {
-            return;
-        }
-    }
-
-    $errors[] = $fieldName === 'role_id'
-        ? 'You do not have permission to assign this role.'
-        : 'You cannot assign an access level above your own access level.';
+    itm_validate_invitation_hierarchy_selection($conn, $company_id, $permissionProfile, $fieldName, $postedId, $allowedOptions, $errors);
 }
 
 /**
@@ -725,6 +659,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
 
             if ($value === '__new__' && $newValueRaw !== '') {
+                // Why: validate assignment rights BEFORE performing the inline INSERT.
+                if ($name === 'role_id') {
+                    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+                        $errors[] = 'Only administrators can create new roles.';
+                        $data[$name] = '';
+                        $sqlValues[$name] = 'NULL';
+                        continue;
+                    }
+                } elseif ($name === 'access_level_id') {
+                    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+                        $errors[] = 'Only administrators can create new access levels.';
+                        $data[$name] = '';
+                        $sqlValues[$name] = 'NULL';
+                        continue;
+                    }
+                }
+
                 // If a new value was typed into the dropdown, create it first
                 $fk = $fkMap[$name];
                 $fkTable = $fk['REFERENCED_TABLE_NAME'];
@@ -766,6 +717,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                         $sqlValues[$name] = 'NULL';
                     }
                 }
+
+                if ($name === 'role_id') {
+                    cr_validate_invitation_hierarchy_selection($conn, (int)$company_id, $permissionProfile, $name, $data[$name] ?? 0, $allowedRoleOptions, $errors);
+                } elseif ($name === 'access_level_id') {
+                    cr_validate_invitation_hierarchy_selection($conn, (int)$company_id, $permissionProfile, $name, $data[$name] ?? 0, $allowedAccessLevelOptions, $errors);
+                }
+
                 continue;
             }
         }

@@ -189,15 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
 
         if ($roleId !== 'NULL' && (int)$roleId !== (int)($employee['role_id'] ?? 0)) {
-            $currentUserRoleId = 0;
-            $currentUserId = (int)($_SESSION['employee_id'] ?? 0);
-
-            if ($currentUserId > 0) {
-                $userRes = mysqli_query($conn, "SELECT role_id FROM employees WHERE id = $currentUserId LIMIT 1");
-                if ($userRes && $userRow = mysqli_fetch_assoc($userRes)) {
-                    $currentUserRoleId = (int)$userRow['role_id'];
-                }
-            }
+            $currentUserRoleId = itm_get_employee_role_id($conn, (int)($_SESSION['employee_id'] ?? 0));
             if (!itm_can_assign_role($conn, (int)$company_id, $currentUserRoleId, (int)$roleId)) {
                 $errors[] = 'You do not have permission to assign this role.';
             }
