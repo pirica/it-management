@@ -8,8 +8,6 @@
  * rules are executed consistently for every record in the batch.
  */
 
-require_once __DIR__ . '/delete_functions.php';
-
 /**
  * @param mysqli $conn Active database connection.
  * @param int $companyId The tenant ID to clear.
