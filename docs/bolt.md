@@ -1,0 +1,3 @@
+## 01-07-2024 - Sidebar N+1 Query Bottleneck
+**Learning:** The sidebar rendering process triggered an extreme N+1 query pattern. Each sidebar item call to `has_module_access` and `itm_resolve_module_sidebar_icon` resulted in individual database queries for UI configuration and module metadata. In a typical environment with many modules, this scaled to over 500 queries per page load, significantly impacting TTFB.
+**Action:** Implement per-request static caching for repetitive configuration fetches (`itm_get_ui_configuration`). Use the first module access check to pre-fetch all company-specific module metadata (icons and enabled status) in a single batch query, storing it in a shared static cache for subsequent sidebar item resolutions.
