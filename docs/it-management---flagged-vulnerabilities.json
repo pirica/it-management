@@ -1,0 +1,31 @@
+{
+    "findings": [
+        {
+            "title": "Broken Access Control in standalone module handlers allows unauthorized CRUD operations.",
+            "status": "active",
+            "commit_hash": "a24a8cc3a3cff95b1ea064d43b13cd80c7ff1cae",
+            "detected_at_pst": "2026-07-01T18:49:31-07:00",
+            "reported_link": "",
+            "location": "index.php",
+            "evidence": "Multiple standalone PHP files in modules/ directory (e.g., tickets/delete.php) lacked itm_require_crud_role_module_permission() checks, allowing direct execution by any authenticated user regardless of role."
+        },
+        {
+            "title": "Sensitive data exposure in audit logs through plaintext storage of passwords and tokens.",
+            "status": "active",
+            "commit_hash": "a24a8cc3a3cff95b1ea064d43b13cd80c7ff1cae",
+            "detected_at_pst": "2026-07-01T18:49:31-07:00",
+            "reported_link": "",
+            "location": "includes/audit_functions.php",
+            "evidence": "The itm_log_audit function stored the entire record state in JSON format without redacting sensitive fields like password, reset_token, or api_key."
+        },
+        {
+            "title": "Remote Code Execution (RCE) via unrestricted file upload and ZIP extraction in Explorer module.",
+            "status": "active",
+            "commit_hash": "a24a8cc3a3cff95b1ea064d43b13cd80c7ff1cae",
+            "detected_at_pst": "2026-07-01T18:49:31-07:00",
+            "reported_link": "",
+            "location": "modules/explorer/api.php",
+            "evidence": "The Explorer module lacked an extension whitelist for uploads and ZIP extractions, allowing attackers to upload or extract .php files to gain code execution."
+        }
+    ]
+}

@@ -1,0 +1,2 @@
+-- No database schema changes were required for the implemented security fixes.
+-- The fixes were applied at the application logic layer (RBAC guards, Audit redaction, and Explorer whitelisting).
