@@ -19,12 +19,12 @@ class BackupTapeLogPermissionsTest extends TestCase
         }
 
         // Ensure we have a server
-        $res = mysqli_query($this->conn, "SELECT id FROM equipment WHERE company_id = {$this->companyId} AND active = 1 LIMIT 1");
+        $res = mysqli_query($this->conn, "SELECT id FROM equipment WHERE company_id = {$this->companyId} AND status_id > 0 LIMIT 1");
         if ($row = mysqli_fetch_assoc($res)) {
             $this->serverId = $row['id'];
         } else {
             // Seed a server if none exists
-            mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, name, hostname, status_id, active) VALUES ({$this->companyId}, 2, 'Test Server', 'srv-test-01', 1, 1)");
+            mysqli_query($this->conn, "INSERT INTO equipment (company_id, equipment_type_id, name, hostname, status_id) VALUES ({$this->companyId}, 2, 'Test Server', 'srv-test-01', 1)");
             $this->serverId = mysqli_insert_id($this->conn);
         }
 

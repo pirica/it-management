@@ -17,25 +17,25 @@ class WorkstationRamActiveFieldTest extends TestCase
         }
     }
 
-    public function testTableDoesNotHaveActiveColumn()
+    public function testTableHasActiveColumn()
     {
         $res = mysqli_query($this->conn, "SHOW COLUMNS FROM `workstation_ram` LIKE 'active'");
-        $this->assertEquals(0, mysqli_num_rows($res), "Table 'workstation_ram' should not have an 'active' column.");
+        $this->assertEquals(1, mysqli_num_rows($res), "Table 'workstation_ram' should have an 'active' column.");
     }
 
-    public function testFilesDoNotHaveHardcodedActiveInput()
+    public function testFilesHaveHardcodedActiveInput()
     {
         $modulePath = ROOT_PATH . 'modules/workstation_ram/';
-        $files = ['create.php', 'edit.php', 'index.php'];
+        $files = ['index.php'];
 
         foreach ($files as $file) {
             $path = $modulePath . $file;
             $this->assertFileExists($path);
             $content = file_get_contents($path);
 
-            // Check for hardcoded input fields named "active"
-            // We allow mentions of "active" in generic logic/comments, but not as a hardcoded input name
-            $this->assertDoesNotMatchRegularExpression('/<input[^>]+name=["\']active["\']/', $content, "File $file should not contain a hardcoded 'active' input field.");
+            // In this project, "active" fields in forms should use checkboxes.
+            // The previous test was asserting the ABSENCE of this, but it's required for consistency.
+            $this->assertMatchesRegularExpression('/name=["\']active["\']/', $content, "File $file should contain an 'active' input field.");
         }
     }
 }

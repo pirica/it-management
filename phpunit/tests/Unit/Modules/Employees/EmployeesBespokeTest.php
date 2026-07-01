@@ -17,6 +17,7 @@ class EmployeesBespokeTest extends TestCase
             $this->markTestSkipped('Database connection unavailable.');
         }
 
+        require_once ROOT_PATH . 'modules/employees/delete_functions.php';
         require_once ROOT_PATH . 'modules/employees/delete_clear_table.php';
 
         // Create a temporary company
