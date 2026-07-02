@@ -7513,7 +7513,7 @@ END$$
 
 DELIMITER ;
 
-CREATE TABLE IF NOT EXISTS `knowledge_base` (
+CREATE TABLE `knowledge_base` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -7528,7 +7528,7 @@ CREATE TABLE IF NOT EXISTS `knowledge_base` (
   CONSTRAINT `knowledge_base_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `it_settings` (
+CREATE TABLE `it_settings` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `contact_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,

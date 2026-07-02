@@ -20,6 +20,15 @@ if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
 $company_id = (int)$_SESSION['company_id'];
 $rawBody = file_get_contents('php://input');
 $data = json_decode($rawBody, true);
+
+// CSRF protection for JSON API
+$csrfToken = $data['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (!itm_validate_csrf_token($csrfToken)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Invalid CSRF token.']);
+    exit;
+}
+
 $query = trim((string)($data['query'] ?? ''));
 
 if ($query === '') {
