@@ -923,7 +923,12 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($isTinyInt || $name === 'active'): ?>
+                            <?php if ($name === 'active'): ?>
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="active" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
+                                </label>
+                            <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
