@@ -48,6 +48,7 @@ if (!empty($_SESSION['crud_success'])) {
 <div id="itm-js-alert-region" class="itm-js-alert-region" aria-live="polite"></div>
 
 <!-- Load Theme Logic Early -->
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>css/chatbot.css">
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-ui-action-labels.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-user-errors.js"></script>
@@ -75,6 +76,7 @@ $itmBulkDeleteVersion = is_file($itmBulkDeletePath) ? (string)filemtime($itmBulk
 ?>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js?v=<?php echo sanitize($itmTableToolsVersion); ?>"></script>
 <script src="<?php echo BASE_URL; ?>js/bulk-delete-selection.js?v=<?php echo sanitize($itmBulkDeleteVersion); ?>"></script>
+<script src="<?php echo BASE_URL; ?>js/chatbot.js"></script>
 
 <script>
 /**
