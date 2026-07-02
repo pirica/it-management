@@ -1,0 +1,2 @@
+-- Database structural fixes (if any) would be listed here.
+-- Currently, fixes are implemented at the application logic level.

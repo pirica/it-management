@@ -1,0 +1,56 @@
+{
+    "findings": [
+        {
+            "title": "Insecure Direct Object Reference (IDOR) in Contacts AJAX endpoint",
+            "status": "active",
+            "commit_hash": "14ed1b175763c273f20848546627b5276dd6a783",
+            "detected_at_pst": "2026-07-02T05:34:28.454090-07:00",
+            "reported_link": "",
+            "location": "modules/contacts/api/inline_edit.php",
+            "severity": "high",
+            "attacker": "Authenticated non-admin user",
+            "input": "The id parameter in POST request",
+            "reach": "An attacker can send a POST request to modules/contacts/api/inline_edit.php with an arbitrary id",
+            "impact": "Unauthorized update of email, phone, and other contact information for any employee in the company"
+        },
+        {
+            "title": "RBAC Bypass in Select Options API allows unauthorized record creation",
+            "status": "active",
+            "commit_hash": "14ed1b175763c273f20848546627b5276dd6a783",
+            "detected_at_pst": "2026-07-02T05:34:28.454090-07:00",
+            "reported_link": "",
+            "location": "modules/select_options_api.php",
+            "severity": "medium",
+            "attacker": "Authenticated user with restricted permissions",
+            "input": "The table parameter in POST request",
+            "reach": "A user can use the Select Options API to insert records into whitelisted tables for which they lack create permissions",
+            "impact": "Unauthorized addition of reference data (e.g., departments, equipment types, etc.) bypassing module-level access controls"
+        },
+        {
+            "title": "Missing RBAC enforcement in IDFs API endpoints",
+            "status": "active",
+            "commit_hash": "14ed1b175763c273f20848546627b5276dd6a783",
+            "detected_at_pst": "2026-07-02T05:34:28.454090-07:00",
+            "reported_link": "",
+            "location": "modules/idfs/api/_bootstrap.php",
+            "severity": "medium",
+            "attacker": "Authenticated non-admin user",
+            "input": "Direct AJAX requests to IDF API endpoints",
+            "reach": "A user can bypass the UI and interact directly with endpoints in modules/idfs/api/",
+            "impact": "Unauthorized modification of network topology, including IDF links and port configurations"
+        },
+        {
+            "title": "Unauthorized hierarchy updates in Org Chart module",
+            "status": "active",
+            "commit_hash": "14ed1b175763c273f20848546627b5276dd6a783",
+            "detected_at_pst": "2026-07-02T05:34:28.454090-07:00",
+            "reported_link": "",
+            "location": "modules/org_chart/index.php",
+            "severity": "medium",
+            "attacker": "Authenticated non-admin user",
+            "input": "The action=update_hierarchy parameter in POST request",
+            "reach": "A user can drag and drop nodes in the Org Chart to trigger a hierarchy update",
+            "impact": "Unauthorized changes to the company reporting structure"
+        }
+    ]
+}
