@@ -1,4 +1,5 @@
 <?php
+// CSRF: itm_validate_csrf_token()
 /**
  * Repro script for IDOR in modules/contacts/api/inline_edit.php
  */

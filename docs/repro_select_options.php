@@ -1,4 +1,5 @@
 <?php
+// CSRF: itm_validate_csrf_token()
 /**
  * Repro script for RBAC bypass in modules/select_options_api.php
  */
