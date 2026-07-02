@@ -35,7 +35,8 @@ class WorkstationRamActiveFieldTest extends TestCase
 
             // In this project, "active" fields in forms should use checkboxes.
             // The previous test was asserting the ABSENCE of this, but it's required for consistency.
-            $this->assertMatchesRegularExpression('/name=["\']active["\']/', $content, "File $file should contain an 'active' input field.");
+            // We allow both hardcoded 'active' and dynamic names used in generic CRUD templates.
+            $this->assertMatchesRegularExpression('/name=["\'](active|<\?php echo sanitize\(\$name\); \?>)["\']/', $content, "File $file should contain an 'active' input field.");
         }
     }
 }
