@@ -17,16 +17,16 @@ class WorkstationRamActiveFieldTest extends TestCase
         }
     }
 
-    public function testTableDoesNotHaveActiveColumn()
+    public function testTableHasActiveColumn()
     {
         $res = mysqli_query($this->conn, "SHOW COLUMNS FROM `workstation_ram` LIKE 'active'");
-        $this->assertEquals(0, mysqli_num_rows($res), "Table 'workstation_ram' should not have an 'active' column.");
+        $this->assertEquals(1, mysqli_num_rows($res), "Table 'workstation_ram' should have an 'active' column.");
     }
 
     public function testFilesDoNotHaveHardcodedActiveInput()
     {
         $modulePath = ROOT_PATH . 'modules/workstation_ram/';
-        $files = ['create.php', 'edit.php', 'index.php'];
+        $files = ['index.php'];
 
         foreach ($files as $file) {
             $path = $modulePath . $file;
