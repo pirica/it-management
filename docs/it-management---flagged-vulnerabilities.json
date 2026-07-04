@@ -1,0 +1,12 @@
+{
+    "findings": [
+        {
+            "title": "SQL Injection in Visitors Access Log via ajax_inline_edit field parameter",
+            "status": "active",
+            "location": "modules/visitors_access_log/index.php",
+            "commit_hash": "7886a383d8cb941ac18197f03192489196a46879",
+            "detected_at_pst": "2026-07-04T12:38:00.543570-07:00",
+            "reported_link": ""
+        }
+    ]
+}
