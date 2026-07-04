@@ -21,7 +21,8 @@ Manage IT support articles, manuals, and procedures for the organization.
 - Category field should be used to classify articles (e.g., Technical Documentation, Common Issues, etc.).
 
 ## 7. UI / Layout
-- Follows the standard CRUD pattern using wrappers that require `modules/departments/index.php` or `modules/departments/create.php`.
+- Standard flattened CRUD module (independent).
+- Created By field is hidden in create/edit forms and automatically populated.
 
 ## 8. API & AJAX
 - `chat_api.php`: JSON endpoint for Chatbot search queries. Requires session and CSRF token.

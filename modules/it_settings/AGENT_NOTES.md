@@ -20,7 +20,7 @@ Manage IT department contact information, hours, and escalation rules for the or
 - This information is used by the IT Support Chatbot for providing contact details and escalation instructions.
 
 ## 7. UI / Layout
-- Follows the standard CRUD pattern using wrappers that require `modules/departments/index.php` or `modules/departments/create.php`.
+- Standard flattened CRUD module (independent).
 
 ## 8. API & AJAX
 - None (standard CRUD).

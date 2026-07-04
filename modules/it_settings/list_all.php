@@ -7,4 +7,4 @@ $crud_table = 'it_settings';
 $crud_title = 'IT Department Settings';
 $crud_action = 'list_all';
 
-require_once '../../modules/departments/index.php';
+require_once 'index.php';

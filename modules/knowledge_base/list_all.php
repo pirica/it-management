@@ -7,4 +7,4 @@ $crud_table = 'knowledge_base';
 $crud_title = 'Knowledge Base';
 $crud_action = 'list_all';
 
-require_once '../../modules/departments/index.php';
+require_once 'index.php';
