@@ -21,6 +21,7 @@
 - ✅ System Status — Real-time server monitoring (CPU, RAM, Disk, PHP, MySQL)
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 - ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
+- ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 

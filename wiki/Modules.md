@@ -20,6 +20,8 @@ The modules below use **custom entry points** instead (or in addition). They are
 | [Budget report](#budget-report) | Read-only analytics | `modules/budget_report/index.php` |
 | [IDFs](#idfs-non-crud-entry-points) | Rack / port workspace | `modules/idfs/index.php` → `view.php` |
 | [Floor Plans](#floor-plans-entry-points) | Gallery + optional table CRUD | `modules/floor_plans/index.php` (gallery) |
+| [Knowledge Base](#knowledge-base) | Support articles | `modules/knowledge_base/index.php` |
+| [IT Settings](#it-settings) | Chatbot & Contact config | `modules/it_settings/index.php` |
 
 ## Module list
 
@@ -155,6 +157,14 @@ Read-only **Weekly Resignations Report** from `employees.termination_date` with 
 ## Budgeting
 
 CRUD modules for source data: annual/monthly budgets, forecasts, expenses, GL accounts, cost centers, and categories. For the read-only comparison screen, use [Budget report](#budget-report) (`modules/budget_report/index.php`).
+
+## Knowledge Base
+
+Manage IT support articles, manuals, and troubleshooting guides. These articles are used by the **IT Support Chatbot** to assist users.
+
+## IT Settings
+
+Configure IT department contact information, hours of operation, and escalation procedures. This data is used by the chatbot for escalation and contact queries.
 
 ## Audit Logs
 

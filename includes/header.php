@@ -34,6 +34,9 @@ $csrfToken = itm_get_csrf_token();
 </div>
 
 <?php
+$headerUiConfig = $ui_config ?? (isset($conn) ? itm_get_ui_configuration($conn, $company_id) : itm_ui_config_defaults());
+$chatbotEnabled = (int)($headerUiConfig['enable_chatbot'] ?? 1) === 1;
+
 // Display one-time session-based notifications (Flash Messages)
 if (!empty($_SESSION['crud_error'])) {
     echo itm_render_alert_errors((string)$_SESSION['crud_error']);
@@ -48,6 +51,9 @@ if (!empty($_SESSION['crud_success'])) {
 <div id="itm-js-alert-region" class="itm-js-alert-region" aria-live="polite"></div>
 
 <!-- Load Theme Logic Early -->
+<?php if ($chatbotEnabled): ?>
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>css/chatbot.css">
+<?php endif; ?>
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-ui-action-labels.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-user-errors.js"></script>
@@ -58,9 +64,9 @@ if (!empty($_SESSION['crud_success'])) {
  */
 window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
-window.ITM_UI_CONFIG = <?php echo json_encode($ui_config ?? itm_ui_config_defaults()); ?>;
-window.ITM_APP_NAME = <?php echo json_encode($app_name ?? itm_ui_config_app_name($ui_config ?? null)); ?>;
-window.ITM_FAVICON_URL = <?php echo json_encode($favicon_url ?? itm_ui_config_favicon_url($ui_config ?? null)); ?>;
+window.ITM_UI_CONFIG = <?php echo json_encode($headerUiConfig); ?>;
+window.ITM_APP_NAME = <?php echo json_encode($app_name ?? itm_ui_config_app_name($headerUiConfig)); ?>;
+window.ITM_FAVICON_URL = <?php echo json_encode($favicon_url ?? itm_ui_config_favicon_url($headerUiConfig)); ?>;
 </script>
 
 <!-- Global JS Library Dependencies -->
@@ -75,6 +81,9 @@ $itmBulkDeleteVersion = is_file($itmBulkDeletePath) ? (string)filemtime($itmBulk
 ?>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js?v=<?php echo sanitize($itmTableToolsVersion); ?>"></script>
 <script src="<?php echo BASE_URL; ?>js/bulk-delete-selection.js?v=<?php echo sanitize($itmBulkDeleteVersion); ?>"></script>
+<?php if ($chatbotEnabled): ?>
+<script src="<?php echo BASE_URL; ?>js/chatbot.js"></script>
+<?php endif; ?>
 
 <script>
 /**

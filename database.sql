@@ -282,6 +282,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_ram", "Workstation Ram", 0, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("import", "Bulk Import", 1, 1, "📥");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("system_status", "System Status", 1, 1);
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("knowledge_base", "Knowledge Base", 0, 1, "🧩");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("it_settings", "IT Settings", 0, 1, "⚙️");
 -- Data for `company_module_access`
 INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
@@ -3308,6 +3310,7 @@ CREATE TABLE `ui_configuration` (
   `back_save_position` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'left_right',
   `enable_all_error_reporting` tinyint(1) NOT NULL DEFAULT '1',
   `enable_audit_logs` tinyint(1) NOT NULL DEFAULT '1',
+  `enable_chatbot` tinyint(1) NOT NULL DEFAULT '1',
   `records_per_page` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '25',
   `app_name` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '⚙️ IT Controls',
   `favicon_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
@@ -3328,11 +3331,11 @@ CREATE TABLE `ui_configuration` (
   CONSTRAINT `fk_ui_configuration_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `ui_configuration`
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (1, 1, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (2, 2, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_2.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (3, 3, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_3.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (4, 4, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_4.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (5, 5, 1, 'left', 'left', 'left', 'left', 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_5.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (1, 1, 1, 'left', 'left', 'left', 'left', 1, 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (2, 2, 1, 'left', 'left', 'left', 'left', 1, 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_2.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (3, 3, 1, 'left', 'left', 'left', 'left', 1, 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_3.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (4, 4, 1, 'left', 'left', 'left', 'left', 1, 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_4.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (5, 5, 1, 'left', 'left', 'left', 'left', 1, 1, 1, '25', '⚙️ IT Controls', 'images/favicons/company_5.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
 -- Table structure for `employee_roles`
 DROP TABLE IF EXISTS `employee_roles`;
 CREATE TABLE `employee_roles` (
@@ -5821,11 +5824,11 @@ DROP TRIGGER IF EXISTS `trg_ui_configuration_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_ui_configuration_audit_insert` AFTER INSERT ON `ui_configuration` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ui_configuration', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'table_actions_position', NEW.`table_actions_position`, 'new_button_position', NEW.`new_button_position`, 'export_buttons_position', NEW.`export_buttons_position`, 'back_save_position', NEW.`back_save_position`, 'enable_all_error_reporting', NEW.`enable_all_error_reporting`, 'enable_audit_logs', NEW.`enable_audit_logs`, 'records_per_page', NEW.`records_per_page`, 'app_name', NEW.`app_name`, 'favicon_path', NEW.`favicon_path`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ui_configuration', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'table_actions_position', NEW.`table_actions_position`, 'new_button_position', NEW.`new_button_position`, 'export_buttons_position', NEW.`export_buttons_position`, 'back_save_position', NEW.`back_save_position`, 'enable_all_error_reporting', NEW.`enable_all_error_reporting`, 'enable_audit_logs', NEW.`enable_audit_logs`, 'enable_chatbot', NEW.`enable_chatbot`, 'records_per_page', NEW.`records_per_page`, 'app_name', NEW.`app_name`, 'favicon_path', NEW.`favicon_path`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_ui_configuration_audit_update` AFTER UPDATE ON `ui_configuration` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ui_configuration', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'table_actions_position', OLD.`table_actions_position`, 'new_button_position', OLD.`new_button_position`, 'export_buttons_position', OLD.`export_buttons_position`, 'back_save_position', OLD.`back_save_position`, 'enable_all_error_reporting', OLD.`enable_all_error_reporting`, 'enable_audit_logs', OLD.`enable_audit_logs`, 'records_per_page', OLD.`records_per_page`, 'app_name', OLD.`app_name`, 'favicon_path', OLD.`favicon_path`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'table_actions_position', NEW.`table_actions_position`, 'new_button_position', NEW.`new_button_position`, 'export_buttons_position', NEW.`export_buttons_position`, 'back_save_position', NEW.`back_save_position`, 'enable_all_error_reporting', NEW.`enable_all_error_reporting`, 'enable_audit_logs', NEW.`enable_audit_logs`, 'records_per_page', NEW.`records_per_page`, 'app_name', NEW.`app_name`, 'favicon_path', NEW.`favicon_path`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ui_configuration', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'table_actions_position', OLD.`table_actions_position`, 'new_button_position', OLD.`new_button_position`, 'export_buttons_position', OLD.`export_buttons_position`, 'back_save_position', OLD.`back_save_position`, 'enable_all_error_reporting', OLD.`enable_all_error_reporting`, 'enable_audit_logs', OLD.`enable_audit_logs`, 'enable_chatbot', OLD.`enable_chatbot`, 'records_per_page', OLD.`records_per_page`, 'app_name', OLD.`app_name`, 'favicon_path', OLD.`favicon_path`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'table_actions_position', NEW.`table_actions_position`, 'new_button_position', NEW.`new_button_position`, 'export_buttons_position', NEW.`export_buttons_position`, 'back_save_position', NEW.`back_save_position`, 'enable_all_error_reporting', NEW.`enable_all_error_reporting`, 'enable_audit_logs', NEW.`enable_audit_logs`, 'enable_chatbot', NEW.`enable_chatbot`, 'records_per_page', NEW.`records_per_page`, 'app_name', NEW.`app_name`, 'favicon_path', NEW.`favicon_path`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_ui_configuration_audit_delete` AFTER DELETE ON `ui_configuration` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
@@ -7511,3 +7514,98 @@ END$$
 
 DELIMITER ;
 
+CREATE TABLE `knowledge_base` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `content` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `knowledge_base_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `it_settings` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `contact_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_phone` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hours_of_operation` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `escalation_procedure` text COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `company_id` (`company_id`),
+  CONSTRAINT `it_settings_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS `trg_knowledge_base_audit_insert`$$
+CREATE TRIGGER `trg_knowledge_base_audit_insert` AFTER INSERT ON `knowledge_base` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'category', NEW.`category`, 'title', NEW.`title`, 'content', NEW.`content`, 'active', NEW.`active`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_knowledge_base_audit_update`$$
+CREATE TRIGGER `trg_knowledge_base_audit_update` AFTER UPDATE ON `knowledge_base` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'category', OLD.`category`, 'title', OLD.`title`, 'content', OLD.`content`, 'active', OLD.`active`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'category', NEW.`category`, 'title', NEW.`title`, 'content', NEW.`content`, 'active', NEW.`active`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_knowledge_base_audit_delete`$$
+CREATE TRIGGER `trg_knowledge_base_audit_delete` AFTER DELETE ON `knowledge_base` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'category', OLD.`category`, 'title', OLD.`title`, 'content', OLD.`content`, 'active', OLD.`active`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_it_settings_audit_insert`$$
+CREATE TRIGGER `trg_it_settings_audit_insert` AFTER INSERT ON `it_settings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'it_settings', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'contact_email', NEW.`contact_email`, 'contact_phone', NEW.`contact_phone`, 'hours_of_operation', NEW.`hours_of_operation`, 'escalation_procedure', NEW.`escalation_procedure`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_it_settings_audit_update`$$
+CREATE TRIGGER `trg_it_settings_audit_update` AFTER UPDATE ON `it_settings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'it_settings', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'contact_email', OLD.`contact_email`, 'contact_phone', OLD.`contact_phone`, 'hours_of_operation', OLD.`hours_of_operation`, 'escalation_procedure', OLD.`escalation_procedure`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'contact_email', NEW.`contact_email`, 'contact_phone', NEW.`contact_phone`, 'hours_of_operation', NEW.`hours_of_operation`, 'escalation_procedure', NEW.`escalation_procedure`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_it_settings_audit_delete`$$
+CREATE TRIGGER `trg_it_settings_audit_delete` AFTER DELETE ON `it_settings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'it_settings', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'contact_email', OLD.`contact_email`, 'contact_phone', OLD.`contact_phone`, 'hours_of_operation', OLD.`hours_of_operation`, 'escalation_procedure', OLD.`escalation_procedure`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+-- Additional Sample Data for Knowledge Base
+INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`) VALUES
+(1, 'Network', 'VPN Setup Guide', 'To set up your VPN:\n1. Open Cisco AnyConnect.\n2. Enter vpn.techcorp.example.\n3. Log in with your windows credentials.\n4. Approve the DUO push notification.', 1),
+(1, 'Password Management', 'How to reset your password', 'To reset your domain password:\n1. Press Ctrl+Alt+Del\n2. Select "Change a password"\n3. Follow the on-screen instructions.\nIf you are locked out, please call the IT helpdesk.', 1),
+(1, 'Printers', 'Troubleshooting Printer Issues', 'If your printer is not working:\n1. Check if it is turned on and connected to the network.\n2. Ensure there is paper and toner.\n3. Restart the printer spooler on your PC.\n4. If issues persist, contact IT with the printer name/IP.', 1),
+(1, 'Network', 'Connecting to Office WiFi', 'To connect to the "TechCorp_Internal" WiFi:\n1. Select the SSID from your device.\n2. Use your windows credentials (domain username and password).\n3. Accept the security certificate if prompted.', 1),
+(1, 'Software', 'Installing Authorized Software', 'Software must be requested via the IT Portal. Once approved, it will appear in the "Software Center" on your desktop for one-click installation.', 1),
+(1, 'Security', 'Reporting Suspicious Emails', 'If you receive a suspicious email (phishing):\n1. Do not click any links or download attachments.\n2. Click the "Report Phish" button in Outlook.\n3. Delete the email immediately.', 1);
+
+-- Repeat for other companies if they exist in the seed
+INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`)
+SELECT 2, category, title, content, active FROM knowledge_base WHERE company_id = 1;
+INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`)
+SELECT 3, category, title, content, active FROM knowledge_base WHERE company_id = 1;
+INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`)
+SELECT 4, category, title, content, active FROM knowledge_base WHERE company_id = 1;
+INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`)
+SELECT 5, category, title, content, active FROM knowledge_base WHERE company_id = 1;
+
+-- Also add some IT Settings
+INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hours_of_operation`, `escalation_procedure`) VALUES
+(1, 'it-support@techcorp.example', '+1-212-555-0199', '24/7', 'For critical outages, call the On-Call Manager at +1-212-555-0911.'),
+(2, 'support@datacenterplus.example', '+1-972-555-0200', '08:00 - 18:00 CST', 'Issues unresolved after 4 hours should be escalated to the IT Director.'),
+(3, 'help@networksolutions.example', '+1-415-555-0300', '09:00 - 17:00 PST', 'Please submit a ticket via the portal for escalation.'),
+(4, 'it@cloudtech.example', '+1-206-555-0400', '24/7', 'Contact the Level 2 support team via Slack #it-escalations.'),
+(5, 'it-ops@enterpriseit.example', '+1-617-555-0500', '08:00 - 20:00 EST', 'Standard escalation through the ticketing system.');

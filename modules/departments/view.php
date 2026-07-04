@@ -5,9 +5,9 @@
  * Read-only detailed view of a single department record.
  */
 
-$crud_table = 'departments';
-$crud_title = 'Departments';
-$crud_action = 'view';
+$crud_table = $crud_table ?? 'departments';
+$crud_title = $crud_title ?? 'Departments';
+$crud_action = $crud_action ?? 'view';
 ?>
 <?php
 require_once '../../config/config.php';

@@ -22,6 +22,8 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
 
+itm_require_crud_role_module_permission($conn, 'view', $crud_table);
+
 $crud_title = $crud_title ?? ucwords(str_replace('_', ' ', $crud_table));
 $crud_action = $crud_action ?? 'index';
 $pk = 'id';
@@ -324,7 +326,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments', 'it_settings', 'knowledge_base'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     if (($col['Field'] ?? '') !== 'company_id') {
         return true;
@@ -352,6 +354,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
             exit;
         }
+
+        itm_require_crud_role_module_permission($conn, 'import', $crud_table);
 
         if (!$hasCompany || $company_id <= 0) {
             http_response_code(400);
@@ -412,7 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     continue;
                 }
 
-                $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$columnMeta['Type']);
+                $isTinyInt = (bool)preg_match('/^tinyint\(1\)/i', (string)$columnMeta['Type']);
                 if ($isTinyInt) {
                     $normalizedBool = strtolower($rawValue);
                     if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
@@ -575,6 +579,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
     if (!$data) {
+        http_response_code(404);
         $errors[] = 'Record not found.';
     }
 }
@@ -664,6 +669,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 // If a new value was typed into the dropdown, create it first
                 $fk = $fkMap[$name];
                 $fkTable = $fk['REFERENCED_TABLE_NAME'];
+                itm_require_crud_role_module_permission($conn, 'create', $fkTable);
+
                 $fkCol = $fk['REFERENCED_COLUMN_NAME'];
                 $meta = cr_fk_metadata($conn, $fkTable);
                 $labelCol = $meta['label_col'];

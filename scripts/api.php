@@ -548,6 +548,13 @@ function itmDocProjectJsonEndpoints(): array
             'params' => 'action, credentials, csrf_token',
             'purpose' => 'Full-module browser QA automation runner.',
         ],
+        [
+            'group' => 'Chatbot',
+            'method' => 'POST',
+            'path' => 'modules/knowledge_base/chat_api.php',
+            'params' => 'query, csrf_token',
+            'purpose' => 'Multi-tenant IT Support Chatbot API; searches Knowledge Base and IT Settings.',
+        ],
     ];
 }
 
