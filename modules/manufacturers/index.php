@@ -406,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                     continue;
                 }
 
-                $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$columnMeta['Type']);
+                $isTinyInt = (bool)preg_match('/^tinyint\(1\)/i', (string)$columnMeta['Type']);
                 if ($isTinyInt) {
                     $normalizedBool = strtolower($rawValue);
                     if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {

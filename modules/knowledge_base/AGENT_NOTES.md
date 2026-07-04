@@ -24,7 +24,7 @@ Manage IT support articles, manuals, and procedures for the organization.
 - Follows the standard CRUD pattern using wrappers that require `modules/departments/index.php` or `modules/departments/create.php`.
 
 ## 8. API & AJAX
-- None (standard CRUD).
+- `chat_api.php`: JSON endpoint for Chatbot search queries. Requires session and CSRF token.
 
 ## 9. Search & Filtering
 - Standard text search on title and content.

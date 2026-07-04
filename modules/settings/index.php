@@ -411,6 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
         $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
+        $newConfig['enable_chatbot'] = isset($_POST['enable_chatbot']) ? 1 : 0;
         $newConfig['equipment_type_sidebar_visibility'] = [];
         foreach ($equipmentTypeRows as $equipmentTypeRow) {
             $typeName = (string)($equipmentTypeRow['name'] ?? '');
@@ -927,6 +928,12 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
                                     <label class="role-flag-option" for="enable_audit_logs">
                                         <input type="checkbox" id="enable_audit_logs" name="enable_audit_logs" value="1" <?php echo (($currentUiConfig['enable_audit_logs'] ?? 1) === 1) ? 'checked' : ''; ?>>
                                         <span>Enable Audit Logs</span>
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="role-flag-option" for="enable_chatbot">
+                                        <input type="checkbox" id="enable_chatbot" name="enable_chatbot" value="1" <?php echo (($currentUiConfig['enable_chatbot'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <span>Enable IT Support Chatbot</span>
                                     </label>
                                 </div>
                             </div>

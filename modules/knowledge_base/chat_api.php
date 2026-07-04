@@ -9,6 +9,10 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require_once '../../config/config.php';
+require_once '../../includes/itm_api_rate_limit.php';
+
+// Enforce API rate limits/quotas
+itm_api_enforce_rate_limit_or_exit($conn);
 
 // Ensure user is logged in and has an active company
 if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
@@ -29,7 +33,20 @@ if (!itm_validate_csrf_token($csrfToken)) {
     exit;
 }
 
-$query = trim((string)($data['query'] ?? ''));
+if (!isset($data['query']) || !is_string($data['query'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid request: query must be a string.']);
+    exit;
+}
+
+$query = trim($data['query']);
+
+// Enforce maximum query length to prevent DoS/Buffer issues
+if (strlen($query) > 1000) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Query too long. Please keep your message under 1000 characters.']);
+    exit;
+}
 
 if ($query === '') {
     echo json_encode(['response' => 'Hello! I am your IT Support Assistant. How can I help you today?']);

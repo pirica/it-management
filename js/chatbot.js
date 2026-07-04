@@ -40,11 +40,26 @@
         toggle.classList.remove('hidden');
     });
 
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
     function addMessage(text, side) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `itm-chat-msg ${side}`;
+
+        // Sanitize first to prevent XSS
+        let safeText = escapeHtml(text);
+
         // Simple markdown-ish conversion for bold and newlines
-        msgDiv.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        msgDiv.innerHTML = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
         messages.appendChild(msgDiv);
         messages.scrollTop = messages.scrollHeight;
     }

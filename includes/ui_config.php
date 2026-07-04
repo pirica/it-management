@@ -852,6 +852,7 @@ function itm_ui_config_defaults() {
         'back_save_position' => 'left',
         'enable_all_error_reporting' => 1,
         'enable_audit_logs' => 1,
+        'enable_chatbot' => 1,
         'records_per_page' => '25',
         'app_name' => '⚙️ IT Controls',
         'favicon_path' => '',
@@ -954,6 +955,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `back_save_position` VARCHAR(30) NOT NULL DEFAULT 'left_right',
         `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1,
+        `enable_chatbot` TINYINT(1) NOT NULL DEFAULT 1,
         `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25',
         `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
         `favicon_path` VARCHAR(255) NOT NULL DEFAULT '',
@@ -1000,7 +1002,8 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         'employee_id' => "ALTER TABLE `ui_configuration` ADD COLUMN `employee_id` INT NOT NULL DEFAULT 0 AFTER `company_id`",
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
-        'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_audit_logs`",
+        'enable_chatbot' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_chatbot` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_audit_logs`",
+        'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_chatbot`",
         'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
@@ -1163,7 +1166,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -1219,6 +1222,7 @@ function itm_normalize_ui_configuration($values) {
     $values['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($values['sidebar_submenu_order'] ?? null);
     $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
     $values['enable_audit_logs'] = itm_normalize_flag($values['enable_audit_logs'] ?? $defaults['enable_audit_logs']);
+    $values['enable_chatbot'] = itm_normalize_flag($values['enable_chatbot'] ?? $defaults['enable_chatbot']);
     $values['equipment_type_sidebar_visibility'] = itm_normalize_equipment_type_sidebar_visibility($values['equipment_type_sidebar_visibility'] ?? []);
     $values['module_icon_overrides'] = itm_normalize_module_icon_overrides($values['module_icon_overrides'] ?? []);
 
@@ -1488,8 +1492,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     $config = itm_normalize_ui_configuration($input);
 
-    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    $sql = 'INSERT INTO ui_configuration (company_id, employee_id, table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 table_actions_position = VALUES(table_actions_position),
                 new_button_position = VALUES(new_button_position),
@@ -1497,6 +1501,7 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
                 back_save_position = VALUES(back_save_position),
                 enable_all_error_reporting = VALUES(enable_all_error_reporting),
                 enable_audit_logs = VALUES(enable_audit_logs),
+                enable_chatbot = VALUES(enable_chatbot),
                 records_per_page = VALUES(records_per_page),
                 app_name = VALUES(app_name),
                 favicon_path = VALUES(favicon_path),
@@ -1513,7 +1518,7 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
 
     mysqli_stmt_bind_param(
         $stmt,
-        'iissssiisssss',
+        'iissssiiisssss',
         $company_id,
         $user_id,
         $config['table_actions_position'],
@@ -1522,6 +1527,7 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
         $config['back_save_position'],
         $config['enable_all_error_reporting'],
         $config['enable_audit_logs'],
+        $config['enable_chatbot'],
         $config['records_per_page'],
         $config['app_name'],
         $config['favicon_path'],

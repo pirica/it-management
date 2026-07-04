@@ -370,6 +370,7 @@ if (
 ) {
     $itmNoAuthScripts = [
         'count_db_tables.php',
+        'test_chatbot.php',
     ];
     $itmNoAuthScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 
@@ -740,7 +741,6 @@ if (!function_exists('itm_format_db_constraint_error')) {
                     if (defined('ROOT_PATH')) {
                         @error_log('[ITM DB] ' . $fallbackText . PHP_EOL, 3, ROOT_PATH . 'error_log.txt');
                     }
-                    return 'We could not save your changes. Error: ' . $fallbackText;
                 }
 
                 return 'We could not save your changes. Review the required fields and try again.';

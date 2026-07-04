@@ -400,6 +400,21 @@ The email management module (`modules/emails/`) provides tenant SMTP configurati
 8. **Audit logging:** `database.sql` defines `trg_emails_audit_*`, `trg_email_smtp_configurations_audit_*`, `trg_email_alert_rules_audit_*`.
 9. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
 
+#### Chatbot & Knowledge Base (mandatory)
+
+The chatbot module provides a floating technical assistance widget powered by a multi-tenant knowledge base.
+
+1. **Architecture:**
+    - **Frontend:** `js/chatbot.js` (widget) and `css/chatbot.css`.
+    - **Backend API:** `modules/knowledge_base/chat_api.php`.
+    - **Data Source:** `knowledge_base` table, strictly scoped by `company_id`.
+2. **Security & Hardening:**
+    - **XSS Prevention:** All chatbot messages must be HTML-escaped in JavaScript using the `escapeHtml()` helper before rendering.
+    - **API Protection:** `chat_api.php` must call `itm_api_enforce_rate_limit_or_exit($conn)` and validate CSRF via `X-CSRF-Token` header.
+    - **Multi-tenancy:** Knowledge base searches must include `AND company_id = ?` to prevent data leaks across tenants.
+3. **Configuration:** Chatbot visibility is controlled by `ui_configuration.enable_chatbot` (boolean).
+4. **Escalation:** When the keyword "escalate" is detected in the knowledge base response, the UI must display the IT department's contact information from `it_settings`.
+
 #### License Management (mandatory)
 
 The license management module (`modules/license_management/`) tracks software licenses per company.
