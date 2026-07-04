@@ -1121,6 +1121,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>PoC for Employee System Access Broken Access Control (non-admin access to edit page).</td>
                     <td><code>php scripts/repro_esa_vulnerability.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="benchmark_stats_optimized.php">benchmark_stats_optimized.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Benchmark for user-config.php stats gathering optimization. Compares performance of individual queries vs one consolidated query.</td>
+                    <td><code>php scripts/benchmark_stats_optimized.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -1539,6 +1545,84 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. <strong>CLI-only</strong> — catalog listing only; no browser runner link.</td>
                     <td><code>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_contacts_idor.php">repro_contacts_idor.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for IDOR vulnerability in contacts API inline edit.</td>
+                    <td><code>php scripts/repro_contacts_idor.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_select_options.php">repro_select_options.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for RBAC bypass in select options API.</td>
+                    <td><code>php scripts/repro_select_options.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_status_leak.php">repro_status_leak.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for employee status cross-tenant leak.</td>
+                    <td><code>php scripts/repro_status_leak.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_visitors_bac.php">repro_visitors_bac.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for Broken Access Control in visitors access log.</td>
+                    <td><code>php scripts/repro_visitors_bac.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_visitors_sqli.php">repro_visitors_sqli.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for SQL Injection in visitors access log inline edit.</td>
+                    <td><code>php scripts/repro_visitors_sqli.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_audit_updated.php">verify_audit_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for audit log redaction of sensitive fields.</td>
+                    <td><code>php scripts/verify_audit_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_clear_table_fix.php">verify_clear_table_fix.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for employees clear table fix navigating FK dependencies.</td>
+                    <td><code>php scripts/verify_clear_table_fix.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_updated.php">verify_explorer_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for Explorer file extension whitelisting.</td>
+                    <td><code>php scripts/verify_explorer_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_rbac_updated.php">verify_rbac_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for RBAC protection guards in module handlers.</td>
+                    <td><code>php scripts/verify_rbac_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_sqli_updated.php">verify_sqli_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for SQL Injection fix in visitors access log.</td>
+                    <td><code>php scripts/verify_sqli_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_status_leak_fixed.php">verify_status_leak_fixed.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for employee status cross-tenant leak fix.</td>
+                    <td><code>php scripts/verify_status_leak_fixed.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_visitors_bac_fix.php">verify_visitors_bac_fix.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for Broken Access Control fix in visitors access log.</td>
+                    <td><code>php scripts/verify_visitors_bac_fix.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_visitors_sqli_fix.php">verify_visitors_sqli_fix.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for SQL Injection fix in visitors access log against fixed files.</td>
+                    <td><code>php scripts/verify_visitors_sqli_fix.php</code></td>
                 </tr>
             </tbody>
         </table></div>
