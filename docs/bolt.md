@@ -1,0 +1,3 @@
+## 20-05-2024 - Redundant Query Consolidation in user-config.php
+**Learning:** `user-config.php` was performing multiple individual queries to count events and alerts, despite already having a consolidated query block that could gather these stats in a single database round-trip. Furthermore, the consolidated query lacked consistent `company_id` and `active` status filtering, potentially leading to inaccurate counts or data leaks across tenants.
+**Action:** Removed 4 redundant individual queries. Updated the consolidated stats block to use parameterized subqueries that enforce `company_id` scoping and `active = 1` filters where appropriate. Extracted results from the optimized array to maintain compatibility with existing UI variables.
