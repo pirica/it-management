@@ -5,6 +5,11 @@
  */
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
 require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
 function colorText($text, $type) {

@@ -38,7 +38,7 @@ mysqli_stmt_bind_param($stmtCount, 'i', $companyId);
 mysqli_stmt_execute($stmtCount);
 $initialCountRes = mysqli_stmt_get_result($stmtCount);
 $initialCount = mysqli_fetch_assoc($initialCountRes)['c'];
-echo "Initial employee count for company $companyId: $initialCount\n";
+echo "Initial employee count for company $companyId: $initialCount" . $nl;
 
 // 2. Simulate import with only 'Keep Me'
 $_SESSION['csrf_token'] = 'repro_token';
@@ -52,7 +52,7 @@ $importData = [
 $_POST['import_payload'] = json_encode($importData);
 $_SERVER['REQUEST_METHOD'] = 'POST';
 
-echo "Running import with 1 employee (Keep Me)...\n";
+echo "Running import with 1 employee (Keep Me)..." . $nl;
 chdir($root . '/modules/employees');
 ob_start();
 require 'index.php';
@@ -63,10 +63,10 @@ chdir($root);
 mysqli_stmt_execute($stmtCount);
 $finalCountRes = mysqli_stmt_get_result($stmtCount);
 $finalCount = mysqli_fetch_assoc($finalCountRes)['c'];
-echo "Final employee count for company $companyId: $finalCount\n";
+echo "Final employee count for company $companyId: $finalCount" . $nl;
 
 if ($finalCount < $initialCount) {
-    echo "BUG CONFIRMED: Import DELETED existing records not in payload.\n";
+    echo "BUG CONFIRMED: Import DELETED existing records not in payload." . $nl;
 } else {
-    echo "SUCCESS: No records deleted.\n";
+    echo "SUCCESS: No records deleted." . $nl;
 }

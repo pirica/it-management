@@ -110,6 +110,13 @@ function colorText($text, $type) {
 
 Catalog: `scripts/scripts.php`.
 
+### Path and directory audits
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/empty_folders.php` | Backfill empty `index.html` on every project folder (excluding dot dirs). Upload paths also receive managed `.htaccess`. |
+| `php scripts/ensure_files_htaccess_chain.php` | Backfill `deny_http` managed `.htaccess` and empty `index.html` on every directory segment under `files/`. |
+
 ### Select Options API verification
 
 | Script | Purpose |
@@ -185,7 +192,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
 | `php scripts/verify_audit_updated.php` | Verification — audit log redaction of sensitive fields. |
 | `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
-| `php scripts/verify_visitors_bac_fix.php` | Verification — blocked unauthorized visitor log additions. |
+| `php scripts/verify_visitors_bac_fix.php` | Verification — blocked unauthorized visitor log additions (against live module). |
 | `php scripts/verify_visitors_sqli_fix.php` | Verification — fixed SQL Injection in visitors access log. |
 | `php scripts/verify_sqli_updated.php` | Verification — SQL Injection fix in visitors access log against fixed files. |
 | `php scripts/verify_rbac_updated.php` | Verification — RBAC protection guards in module handlers. |

@@ -42,8 +42,8 @@ mysqli_stmt_bind_param($stmt2, 'iss', $company2Id, $adminCo2, $email2);
 mysqli_stmt_execute($stmt2);
 $adminCo2Id = mysqli_insert_id($conn);
 
-echo "Created User '$userCo1' in Company $company1Id.\n";
-echo "Created Admin '$adminCo2' in Company $company2Id.\n";
+echo "Created User '$userCo1' in Company $company1Id." . $nl;
+echo "Created Admin '$adminCo2' in Company $company2Id." . $nl;
 
 // 2. Access Employees module as Admin 2
 $_SESSION['employee_id'] = $adminCo2Id;
@@ -52,7 +52,7 @@ $GLOBALS['company_id'] = $company2Id;
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['PHP_SELF'] = '/modules/employees/index.php';
 
-echo "Accessing Employees module as Admin of Company 2...\n";
+echo "Accessing Employees module as Admin of Company 2..." . $nl;
 chdir($root . '/modules/employees');
 ob_start();
 include 'index.php';
@@ -70,7 +70,7 @@ if (isset($rows) && $rows instanceof mysqli_result) {
         }
     }
 } else {
-    echo "Error: \$rows result set not found.\n";
+    echo "Error: \$rows result set not found." . $nl;
 }
 
 if ($hasCrossTenant) {

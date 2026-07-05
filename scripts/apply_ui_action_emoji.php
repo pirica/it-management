@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 
 $apply = in_array('--apply', $argv ?? [], true);
 $dryRun = !$apply;
@@ -121,12 +123,12 @@ foreach ($iterator as $fileInfo) {
 }
 
 if ($changedFiles === 0) {
-    echo "No simple mixed markup found to replace.\n";
+    echo "No simple mixed markup found to replace." . $nl;
     exit(0);
 }
 
 echo ($dryRun ? 'Dry-run complete' : 'Apply complete') . ": {$changedFiles} file(s), {$totalReplacements} replacement(s).\n";
 if ($dryRun) {
-    echo "Re-run with --apply to write changes.\n";
+    echo "Re-run with --apply to write changes." . $nl;
 }
 exit(0);

@@ -29,6 +29,9 @@ putenv('ITM_SKIP_DB_TESTS=1');
 $_ENV['ITM_SKIP_DB_TESTS'] = '1';
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 require_once ROOT_PATH . 'scripts/lib/script_browser_nav.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 
@@ -94,13 +97,13 @@ function itm_run_tests_echo_coverage_link($isCli, $wantCoverage, $coverageReport
 
     if ($isCli) {
         if ($reportExists) {
-            echo "\nHTML coverage report: phpunit/coverage/html/coverage.html\n";
+            echo "\nHTML coverage report: phpunit/coverage/html/coverage.html" . $nl;
             echo 'Full path: ' . $coverageReportFile . "\n";
         } elseif ($wantCoverage) {
             if ($coverageSkippedNoDriver) {
-                echo "\nCoverage report not generated: enable Xdebug or PCOV in PHP, then re-run with --coverage.\n";
+                echo "\nCoverage report not generated: enable Xdebug or PCOV in PHP, then re-run with --coverage." . $nl;
             } else {
-                echo "\nCoverage report not generated.\n";
+                echo "\nCoverage report not generated." . $nl;
             }
         }
         return;
@@ -251,10 +254,10 @@ if (!$isCli) {
     echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;border-radius:5px;">';
 } else {
     if ($coverage_skipped_no_driver) {
-        echo "Note: Coverage driver not available — running without HTML coverage.\n";
-        echo "Enable Xdebug or PCOV in PHP, then re-run with --coverage.\n\n";
+        echo "Note: Coverage driver not available — running without HTML coverage." . $nl;
+        echo "Enable Xdebug or PCOV in PHP, then re-run with --coverage.\n" . $nl;
     }
-    echo "Running command: $command\n\n";
+    echo "Running command: $command\n" . $nl;
 }
 
 passthru($command, $return_var);

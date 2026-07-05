@@ -24,6 +24,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
 
 $dryRun = in_array('--dry-run', $argv ?? [], true);
 $onlyModules = [];

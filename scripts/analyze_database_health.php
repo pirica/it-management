@@ -222,6 +222,11 @@ function itm_analyze_database_health_print_cli(array $result): void
 if ($itmIsCli) {
     try {
         require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
     } catch (Throwable $e) {
         fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . PHP_EOL);
         fwrite(STDERR, "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:" . PHP_EOL);

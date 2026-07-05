@@ -1,6 +1,9 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 require_once __DIR__ . '/../scripts/lib/script_cli_output.php';
 require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
@@ -61,10 +64,10 @@ $session = [
     'csrf_token' => $csrf
 ];
 
-echo "Testing Broken Access Control in Visitors Access Log...\n";
+echo "Testing Broken Access Control in Visitors Access Log..." . $nl;
 
 // 1. Attempt quick add as a regular user
-echo "Attempting action_quick_add as regular user...\n";
+echo "Attempting action_quick_add as regular user..." . $nl;
 $postData = [
     'action_quick_add' => '1',
     'csrf_token' => $csrf,

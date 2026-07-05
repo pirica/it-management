@@ -9,6 +9,8 @@
  */
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     itm_script_output_begin('Bulk Delete Cancel UX Fix');

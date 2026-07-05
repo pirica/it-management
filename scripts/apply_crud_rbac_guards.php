@@ -85,5 +85,5 @@ foreach (glob(dirname(__DIR__) . '/modules/*/index.php') as $path) {
 
 echo 'Updated ' . count($changed) . " module index.php file(s).\n";
 foreach ($changed as $rel) {
-    echo "  - {$rel}\n";
+    echo "  - {$rel}" . $nl;
 }

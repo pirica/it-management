@@ -55,7 +55,7 @@ try {
     $_SERVER['REQUEST_METHOD'] = 'POST';
     $_SERVER['CONTENT_TYPE'] = 'application/json';
 
-    echo "Running generic import WITHOUT code column...\n";
+    echo "Running generic import WITHOUT code column..." . $nl;
     ob_start();
     $result = itm_handle_json_table_import($conn, 'departments', $companyId, $importData, true);
     ob_end_clean();

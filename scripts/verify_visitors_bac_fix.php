@@ -69,12 +69,14 @@ $session = [
     'csrf_token' => $csrf
 ];
 
-$fixedFilePath = realpath(__DIR__ . '/../fixed_files_vulnerability_visitors_access_log/fixed_files/index.php');
+$nl = itm_script_output_nl();
 
-echo "Testing Broken Access Control in Visitors Access Log (AGAINST FIXED FILE)...\n";
+$fixedFilePath = realpath(__DIR__ . '/../modules/visitors_access_log/index.php');
+
+echo "Testing Broken Access Control in Visitors Access Log (AGAINST LIVE MODULE)..." . $nl;
 
 // 1. Attempt quick add as a regular user
-echo "Attempting action_quick_add as regular user...\n";
+echo "Attempting action_quick_add as regular user..." . $nl;
 $postData = [
     'action_quick_add' => '1',
     'csrf_token' => $csrf,
@@ -87,14 +89,14 @@ $res = mysqli_query($conn, "SELECT id FROM visitors_access_log WHERE visitor_nam
 $row = mysqli_fetch_assoc($res);
 
 if ($row) {
-    echo colorText("[FAIL] Vulnerability Still Present: Regular user can add visitor logs!", 'fail') . "\n";
+    echo colorText("[FAIL] Vulnerability Still Present: Regular user can add visitor logs!", 'fail') . $nl;
     mysqli_query($conn, "DELETE FROM visitors_access_log WHERE id = " . (int)$row['id']);
 } else {
-    echo "Output: " . $output . "\n";
+    echo "Output: " . $output . $nl;
     if (strpos($output, 'Access Denied') !== false || strpos($output, 'dashboard.php') !== false) {
-         echo colorText("[PASS] Regular user blocked from adding visitor logs.", 'pass') . "\n";
+         echo colorText("[PASS] Regular user blocked from adding visitor logs.", 'pass') . $nl;
     } else {
-         echo colorText("[FAIL] Expected access denial or redirect in output.", 'fail') . "\n";
+         echo colorText("[FAIL] Expected access denial or redirect in output.", 'fail') . $nl;
     }
 }
 

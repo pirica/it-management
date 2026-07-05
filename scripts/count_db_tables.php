@@ -18,6 +18,11 @@ if (!defined('ITM_SCRIPT_NO_AUTH')) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
 
 $schema = DB_NAME;
 $count = 0;
@@ -72,7 +77,7 @@ if (PHP_SAPI !== 'cli' && !headers_sent()) {
 
 echo (string) $count;
 if (PHP_SAPI === 'cli') {
-    echo "\n";
+    echo "" . $nl;
 }
 
 exit(0);

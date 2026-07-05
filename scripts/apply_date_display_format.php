@@ -56,7 +56,7 @@ foreach ($paths as $path) {
 
 echo 'Updated ' . count($changed) . " file(s) with dd/mm/yyyy cell display.\n";
 foreach ($changed as $rel) {
-    echo "  - {$rel}\n";
+    echo "  - {$rel}" . $nl;
 }
 if ($skipped !== []) {
     echo 'Skipped ' . count($skipped) . " file(s) (already patched or different cr_render_cell_value shape).\n";

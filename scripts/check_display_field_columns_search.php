@@ -2,14 +2,14 @@
 /**
  * CLI audit: fail when index.php uses $displayFieldColumns in foreach without assigning it.
  */
+require_once __DIR__ . '/lib/script_cli_output.php';
+
 if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html><body><p>CLI only: <code>php scripts/check_display_field_columns_search.php</code></p>';
-    echo '<p><a href="scripts.php">← Scripts index</a></p></body></html>';
+    itm_script_output_begin('CLI only');
+    echo '<p>CLI only: <code>php scripts/check_display_field_columns_search.php</code></p>';
+    itm_script_output_end();
     exit(0);
 }
-
-require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin();
 
 $root = dirname(__DIR__);

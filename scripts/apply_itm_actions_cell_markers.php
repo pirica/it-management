@@ -115,5 +115,5 @@ foreach ($paths as $path) {
 
 echo 'Updated ' . count($changed) . " module list file(s).\n";
 foreach ($changed as $rel) {
-    echo "  - {$rel}\n";
+    echo "  - {$rel}" . $nl;
 }

@@ -3,13 +3,16 @@
  * Validation Script: Explorer Whitelisting
  *
  * Verifies that the fixed itm_explorer_paths.php correctly whitelists/blacklists
- * extensions as expected.
- */
+ * extensions as expected." . $nl */
 
 require_once __DIR__ . '/../includes/itm_explorer_paths.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('Explorer Whitelisting Validation');
+$nl = itm_script_output_nl();
 
-echo "Explorer Whitelisting Validation\n";
-echo "===============================\n";
+
+echo "Explorer Whitelisting Validation" . $nl;
+echo "===============================" . $nl;
 
 $tests = [
     'image.jpg' => true,
@@ -36,8 +39,10 @@ foreach ($tests as $file => $expected) {
 }
 
 if ($allPassed) {
-    echo "\nSUMMARY: Explorer extension whitelisting verified successfully.\n";
+    echo "\nSUMMARY: Explorer extension whitelisting verified successfully." . $nl;
 } else {
-    echo "\nSUMMARY: Explorer extension whitelisting failed validation.\n";
+    echo "\nSUMMARY: Explorer extension whitelisting failed validation." . $nl;
     exit(1);
 }
+
+itm_script_output_end();

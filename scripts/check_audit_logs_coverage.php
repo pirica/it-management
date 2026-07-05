@@ -26,7 +26,7 @@ if ($root === false) {
     } else {
         header('Content-Type: text/plain; charset=utf-8');
         http_response_code(500);
-        echo "Unable to resolve project root.\n";
+        echo "Unable to resolve project root." . $nl;
     }
     exit(2);
 }
@@ -69,13 +69,13 @@ if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
 
 if ($options['help']) {
     itm_script_output_begin('Audit logs coverage check');
-    echo "Audit logs coverage check\n\n";
-    echo "Options:\n";
-    echo "  --module=NAME   Limit scan to one module folder\n";
-    echo "  --json          Machine-readable output\n";
-    echo "  --help          Show this help\n";
+    echo "Audit logs coverage check\n" . $nl;
+    echo "Options:" . $nl;
+    echo "  --module=NAME   Limit scan to one module folder" . $nl;
+    echo "  --json          Machine-readable output" . $nl;
+    echo "  --help          Show this help" . $nl;
     if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-        echo "\nBrowser query: ?module=rack_planner or ?json=1\n";
+        echo "\nBrowser query: ?module=rack_planner or ?json=1" . $nl;
     }
     exit(0);
 }
@@ -480,7 +480,7 @@ $modules = audit_logs_list_modules($modulesDir, $options['module']);
 
 if ($options['module'] !== '' && empty($modules)) {
     itm_script_output_begin('Audit logs coverage check');
-    echo "Module not found: {$options['module']}\n";
+    echo "Module not found: {$options['module']}" . $nl;
     exit(2);
 }
 

@@ -31,6 +31,9 @@ if ($tableName === '') {
 
 try {
     require_once dirname(__DIR__) . '/config/config.php';
+
+$nl = itm_script_output_nl();
+
 } catch (Throwable $e) {
     fwrite(STDERR, "Unable to bootstrap application config/db connection: " . $e->getMessage() . "\n");
     exit(1);

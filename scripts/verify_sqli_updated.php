@@ -1,6 +1,11 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
 
 // Setup a test record from today
 $company_id = 1;
@@ -51,9 +56,9 @@ $row = mysqli_fetch_assoc($res);
 mysqli_stmt_close($stmt);
 
 if ($row['visitor_name'] === 'Original Name') {
-    echo "PASS: SQL Injection was blocked.\n";
+    echo "PASS: SQL Injection was blocked." . $nl;
 } else {
-    echo "FAIL: SQL Injection successful.\n";
+    echo "FAIL: SQL Injection successful." . $nl;
 }
 
 // Teardown

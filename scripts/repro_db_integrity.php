@@ -48,7 +48,7 @@ function test_assignment_history($conn) {
     $res = mysqli_query($conn, "SELECT id FROM employees WHERE company_id = $company_id LIMIT 1");
     $row = mysqli_fetch_assoc($res);
     if (!$row) {
-        echo "[SKIP] No employee found for company $company_id.\n";
+        echo "[SKIP] No employee found for company $company_id." . $nl;
         return false;
     }
     $employee_id = $row['id'];
@@ -91,7 +91,7 @@ function test_employee_trigger($conn) {
     $role_id = $row['id'] ?? null;
 
     if (!$role_id) {
-        echo "[SKIP] Admin role not found.\n";
+        echo "[SKIP] Admin role not found." . $nl;
         return false;
     }
 

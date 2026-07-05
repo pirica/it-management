@@ -89,7 +89,7 @@ echo '</style>';
 echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
-echo itm_script_browser_nav_html();
+itm_script_browser_nav_echo();
 echo '<h1>CRUD Table Mapper</h1>';
 echo '<p>Total modules scanned: <strong>' . count($rows) . '</strong></p>';
 echo '<table>';

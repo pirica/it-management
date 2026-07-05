@@ -24,6 +24,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/utf8_file.php';
 require_once __DIR__ . '/lib/mbqa_import_helpers.php';

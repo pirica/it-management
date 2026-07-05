@@ -24,6 +24,8 @@ define('ITM_CLI_SCRIPT', true);
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
 require $projectRoot . '/modules/equipment/delete_functions.php';
 require __DIR__ . '/lib/equipment_type_modules.php';
 

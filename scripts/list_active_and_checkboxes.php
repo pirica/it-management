@@ -13,6 +13,9 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 
+$nl = itm_script_output_nl();
+
+
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 itm_script_output_begin('List Active Fields and Checkboxes (Constrained by DB Column)');
 

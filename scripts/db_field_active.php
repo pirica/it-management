@@ -28,6 +28,8 @@ if (!function_exists('sanitize')) {
 
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 
 $isCli = (PHP_SAPI === 'cli');
 $asJson = in_array('--json', $argv ?? []);
@@ -128,17 +130,17 @@ if ($asJson) {
 }
 
 if ($isCli) {
-    echo "DB Field 'active' Audit\n";
-    echo "========================\n\n";
+    echo "DB Field 'active' Audit" . $nl;
+    echo "========================\n" . $nl;
     
-    echo "Tables missing 'active' column:\n";
+    echo "Tables missing 'active' column:" . $nl;
     foreach ($findings['missing_active_column'] as $table) {
-        echo "  - $table\n";
+        echo "  - $table" . $nl;
     }
     
-    echo "\nPotential code mismatches:\n";
+    echo "\nPotential code mismatches:" . $nl;
     foreach ($findings['potential_code_mismatches'] as $mismatch) {
-        echo "  - {$mismatch['file']} (Table: {$mismatch['table']}): {$mismatch['reason']}\n";
+        echo "  - {$mismatch['file']} (Table: {$mismatch['table']}): {$mismatch['reason']}" . $nl;
     }
 } else {
     echo "<h1>DB Field 'active' Audit</h1>";

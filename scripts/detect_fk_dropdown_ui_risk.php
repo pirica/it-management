@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
 
 if (PHP_SAPI !== 'cli') {
     require __DIR__ . '/detect_fk_dropdown_ui_risk_ui.php';

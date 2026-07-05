@@ -9,6 +9,8 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 require_once $root . '/includes/itm_ui_action_labels.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 
 $isCli = (PHP_SAPI === 'cli');
 if (!$isCli) {
@@ -156,12 +158,12 @@ foreach ($violations as $v) {
 }
 
 if (empty($violations)) {
-    echo "PASS: 0 violations incl. mixed emoji+word\n";
+    echo "PASS: 0 violations incl. mixed emoji+word" . $nl;
     exit(0);
 }
 
 echo 'FAIL: ' . count($violations) . " violation(s); NO MIXED + known literals: {$mixedCount}\n";
 foreach ($violations as $msg) {
-    echo "  - {$msg}\n";
+    echo "  - {$msg}" . $nl;
 }
 exit(1);

@@ -37,6 +37,11 @@ $sqlPath = dirname(__DIR__) . '/database.sql';
 
 if ($itmIsCli) {
     require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
     require_once dirname(__DIR__) . '/includes/database_sql_unique_audit.php';
 
     $result = itm_database_sql_unique_audit_run($sqlPath);

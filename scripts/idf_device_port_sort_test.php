@@ -119,6 +119,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 itmdf_sort_browser_init();
+itm_script_browser_nav_echo();
 
 function itmdf_sort_section_start(string $title, string $why = ''): void
 {

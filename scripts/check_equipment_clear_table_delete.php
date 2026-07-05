@@ -8,6 +8,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
 
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     header('Content-Type: text/html; charset=utf-8');

@@ -70,12 +70,12 @@ foreach ($entries as $entry) {
     mysqli_stmt_close($insert);
 }
 
-echo "Two password entries added.\n";
+echo "Two password entries added." . $nl;
 
 $newMasterKey = 'new_master';
 $newKeySession = hash('sha256', $newMasterKey);
 
-echo "Simulating master key change with transaction and forced rollback...\n";
+echo "Simulating master key change with transaction and forced rollback..." . $nl;
 
 mysqli_begin_transaction($conn);
 $result = itm_vault_reencrypt_password_entries($conn, $userId, $oldKeySession, $newKeySession);
@@ -85,10 +85,10 @@ if (empty($result['ok'])) {
     exit(1);
 }
 
-echo "FORCING ROLLBACK (simulating failure before employee update)...\n";
+echo "FORCING ROLLBACK (simulating failure before employee update)..." . $nl;
 mysqli_rollback($conn);
 
-echo "\n--- Verification ---\n";
+echo "\n--- Verification ---" . $nl;
 
 $selectEntries = mysqli_prepare($conn, 'SELECT id, account, password FROM password_entries WHERE employee_id = ? ORDER BY id ASC');
 mysqli_stmt_bind_param($selectEntries, 'i', $userId);
@@ -99,7 +99,7 @@ while ($row = mysqli_fetch_assoc($res)) {
     $attemptOld = itm_decrypt($row['password'], $oldKeySession);
     $attemptNew = itm_decrypt($row['password'], $newKeySession);
 
-    echo "Entry '{$row['account']}':\n";
+    echo "Entry '{$row['account']}':" . $nl;
     echo '  Decrypt with OLD key: ' . ($attemptOld === false ? 'FAILED' : "SUCCESS ('{$attemptOld}')") . "\n";
     echo '  Decrypt with NEW key: ' . ($attemptNew === false ? 'FAILED' : 'SUCCESS') . "\n";
 }
@@ -112,9 +112,9 @@ $userData = mysqli_fetch_assoc(mysqli_stmt_get_result($hashCheck));
 mysqli_stmt_close($hashCheck);
 
 $status = password_verify($masterKey, $userData['vault_key_hash'] ?? '') ? 'MATCH (OLD)' : 'MISMATCH';
-echo "User's Master Key in DB: {$status}\n";
+echo "User's Master Key in DB: {$status}" . $nl;
 
-echo "\nCONCLUSION:\n";
+echo "\nCONCLUSION:" . $nl;
 $verify = mysqli_prepare($conn, 'SELECT password FROM password_entries WHERE id = ? AND employee_id = ?');
 $firstEntryId = $entryIds[0] ?? 0;
 mysqli_stmt_bind_param($verify, 'ii', $firstEntryId, $userId);

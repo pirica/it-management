@@ -11,6 +11,11 @@ if (isset($_GET['rate_limit']) && (string)$_GET['rate_limit'] === '1') {
         define('ITM_API_RATE_LIMIT_PROBE', true);
     }
     require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
     if (!isset($conn) || !($conn instanceof mysqli)) {
         header('Content-Type: application/json; charset=utf-8');
         http_response_code(500);

@@ -72,7 +72,9 @@ $session = [
     'csrf_token' => $csrf
 ];
 
-echo "Testing SQL Injection fix in Visitors Access Log...\n";
+$nl = itm_script_output_nl();
+
+echo "Testing SQL Injection fix in Visitors Access Log..." . $nl;
 
 $payload = "visitor_name = 'SQLI_SUCCESS', reason_for_visit";
 $postData = [
@@ -90,14 +92,14 @@ $res = mysqli_query($conn, "SELECT visitor_name, reason_for_visit FROM visitors_
 $row = mysqli_fetch_assoc($res);
 
 if ($row && $row['visitor_name'] === 'SQLI_SUCCESS') {
-    echo colorText("[FAIL] Vulnerability Still Present: SQL Injection successful in Visitors Access Log!", 'fail') . "\n";
+    echo colorText("[FAIL] Vulnerability Still Present: SQL Injection successful in Visitors Access Log!", 'fail') . $nl;
 } else {
     if (strpos($output, 'Invalid field.') !== false) {
-        echo colorText("[PASS] SQL Injection attempt blocked with 'Invalid field.' error.", 'pass') . "\n";
+        echo colorText("[PASS] SQL Injection attempt blocked with 'Invalid field.' error.", 'pass') . $nl;
     } else {
-        echo "Output: " . $output . "\n";
-        echo "Visitor name: " . ($row['visitor_name'] ?? 'NULL') . "\n";
-        echo colorText("[FAIL] Expected 'Invalid field.' error message in output.", 'fail') . "\n";
+        echo "Output: " . $output . $nl;
+        echo "Visitor name: " . ($row['visitor_name'] ?? 'NULL') . $nl;
+        echo colorText("[FAIL] Expected 'Invalid field.' error message in output.", 'fail') . $nl;
     }
 }
 

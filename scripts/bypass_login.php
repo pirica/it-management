@@ -8,6 +8,11 @@
 
 if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
+$nl = itm_script_output_nl();
+
 
 if (PHP_SAPI !== 'cli' && !defined('PHPUNIT_RUNNING')) {
     die("This script can only be run from the CLI.\n");
@@ -98,17 +103,17 @@ if (file_exists($sessionFile)) {
 }
 
 if (!defined('PHPUNIT_RUNNING')) {
-    echo "Bypass Login Successful!\n";
-    echo "------------------------\n";
+    echo "Bypass Login Successful!" . $nl;
+    echo "------------------------" . $nl;
     echo "User: " . $_SESSION['username'] . " (ID: " . $_SESSION['employee_id'] . ")\n";
     echo "Role: " . $_SESSION['role_name'] . "\n";
     echo "Company: " . $_SESSION['company_name'] . " (ID: " . $_SESSION['company_id'] . ")\n";
     echo "Session ID: " . $sessionId . "\n";
     echo "Vault Key: Set (hash of '" . $password . "')\n";
-    echo "------------------------\n";
-    echo "To use this session in your browser:\n";
-    echo "1. Open the application in your browser: http://localhost/\n";
-    echo "2. Open Developer Tools (F12) -> Application/Storage -> Cookies\n";
+    echo "------------------------" . $nl;
+    echo "To use this session in your browser:" . $nl;
+    echo "1. Open the application in your browser: http://localhost/" . $nl;
+    echo "2. Open Developer Tools (F12) -> Application/Storage -> Cookies" . $nl;
     echo "3. Change 'PHPSESSID' value to: " . $sessionId . "\n";
-    echo "4. Refresh the page to access the Dashboard.\n";
+    echo "4. Refresh the page to access the Dashboard." . $nl;
 }

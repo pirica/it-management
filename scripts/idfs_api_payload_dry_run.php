@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
     itm_script_output_begin('IDF API payload dry run');
-    echo "This script must be run from the command line.\n";
-    echo "Example: php scripts/idfs_api_payload_dry_run.php --samples\n";
+    echo "This script must be run from the command line." . $nl;
+    echo "Example: php scripts/idfs_api_payload_dry_run.php --samples" . $nl;
     exit(1);
 }
 

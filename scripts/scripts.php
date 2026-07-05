@@ -1469,12 +1469,6 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/repro_employee_companies_bac.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_audit_token_leak.php" target="_blank" rel="nofollow noreferrer">repro_audit_token_leak.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification for Audit Log Sensitive Data Exposure. Disposable test user; prepared <code>UPDATE employees</code> for <code>reset_token</code> fields.</td>
-                    <td><code>php scripts/repro_audit_token_leak.php</code></td>
-                </tr>
-                <tr>
                     <td><a href="repro_destructive_import.php" target="_blank" rel="nofollow noreferrer">repro_destructive_import.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for destructive employee import.</td>
@@ -1645,18 +1639,6 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td><a href="http://myhome.dynip.sapo.pt/deletev2.php" target="_blank" rel="nofollow noreferrer">deletev2.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Clone Github + Import Database</td>
-                    <td>Open in browser to trigger remote deployment</td>
-                </tr>
-                <tr>
-                    <td><a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Completely reset Git history and force push a clean master branch. <strong>BETA only</strong> — destructive; rewrites Git history and force-pushes. Used in development to purge history or reset a branch to a clean state.</td>
-                    <td><strong>Log in first.</strong> Open <a href="http://myhome.dynip.sapo.pt/it-management/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a>. <strong>DANGER: Destructive.</strong> <strong>BETA / pre-production only</strong> — no implementation changes while the project remains in BETA and not yet in production.</td>
-                </tr>
             </tbody>
         </table></div>
     </div>

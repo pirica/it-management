@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+$nl = itm_script_output_nl();
 
 /**
  * Browser/CLI helper to run the same cleanup that module_browser_qa_runner.php
@@ -98,11 +100,12 @@ function mbqa_clean_tests_action_links_html(array $hrefs): string
 
 function mbqa_clean_tests_cli_help(): void
 {
-    echo "Module QA clean tests helper\n\n";
-    echo "Runs the same cleanup used by module_browser_qa_runner.php before/after runs.\n\n";
-    echo "Usage:\n";
-    echo "  php scripts/module_clean_tests_qa_runner.php\n";
-    echo "  php scripts/module_clean_tests_qa_runner.php --help\n";
+    global $nl;
+    echo "Module QA clean tests helper\n" . $nl;
+    echo "Runs the same cleanup used by module_browser_qa_runner.php before/after runs.\n" . $nl;
+    echo "Usage:" . $nl;
+    echo "  php scripts/module_clean_tests_qa_runner.php" . $nl;
+    echo "  php scripts/module_clean_tests_qa_runner.php --help" . $nl;
 }
 
 /**
@@ -430,6 +433,8 @@ function mbqa_clean_tests_run_cleanup(): array
         $conn = $GLOBALS['conn'];
     } else {
         require_once dirname(__DIR__) . '/config/config.php';
+
+
         if (isset($conn) && $conn instanceof mysqli) {
             // Loaded in local scope by include.
         } elseif (isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {

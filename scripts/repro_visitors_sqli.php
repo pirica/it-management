@@ -1,6 +1,9 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+$nl = itm_script_output_nl();
+
 require_once __DIR__ . '/../scripts/lib/script_cli_output.php';
 require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
@@ -76,7 +79,7 @@ $session = [
     'csrf_token' => $csrf
 ];
 
-echo "Testing SQL Injection in ajax_inline_edit 'field' parameter...\n";
+echo "Testing SQL Injection in ajax_inline_edit 'field' parameter..." . $nl;
 
 $payload = "visitor_name = 'SQLI_SUCCESS', reason_for_visit";
 $postData = [

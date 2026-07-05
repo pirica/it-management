@@ -20,6 +20,8 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin();
+
 require_once __DIR__ . '/lib/itm_email_script_helpers.php';
 
 if (PHP_SAPI !== 'cli') {
@@ -43,7 +45,7 @@ $companyId = itm_email_script_resolve_company_id($argv ?? [], $_REQUEST ?? []);
 
 if ($userEmail === '') {
     if (PHP_SAPI === 'cli') {
-        echo "Usage: php scripts/test_register_mail.php email=your@email.com [--company=1]\n";
+        echo "Usage: php scripts/test_register_mail.php email=your@email.com [--company=1]" . $nl;
     } else {
         echo '<form method="GET">'
             . 'Email: <input type="email" name="email" required> '

@@ -29,12 +29,12 @@ $stmtUC = mysqli_prepare($conn, "INSERT INTO employee_companies (employee_id, co
 mysqli_stmt_bind_param($stmtUC, 'ii', $leakId, $company2Id);
 mysqli_stmt_execute($stmtUC);
 
-echo "Created user '$leakUser' (ID $leakId) in Company $company2Id.\n";
+echo "Created user '$leakUser' (ID $leakId) in Company $company2Id." . $nl;
 
 // 2. Access Todo module as a user from Company 1
 $_SERVER['REQUEST_METHOD'] = 'GET';
 
-echo "Accessing Todo module as user from Company 1...\n";
+echo "Accessing Todo module as user from Company 1..." . $nl;
 chdir($root . '/modules/todo');
 unset($users);
 ob_start();
