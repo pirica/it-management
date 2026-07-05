@@ -386,9 +386,18 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
 
+#### Passwords module (mandatory)
+
+The Passwords module provides a secure, private manager for user credentials.
+1. **Privacy Scoping**: All queries for password folders and entries MUST be strictly scoped to the logged-in employee (`employee_id = $_SESSION['employee_id']`). Data is never shared across the company.
+2. **Encryption at Rest**: Passwords MUST be stored encrypted in the database using the `itm_encrypt()` helper. Decryption requires the `$_SESSION['vault_key']` (unlocked via master key).
+3. **Vault State**: If the `$_SESSION['vault_key']` is absent, the module MUST prompt for the master key and hide all decrypted data.
+4. **Master Key Change**: Re-encryption of all entries during a master key change must be atomic via database transactions.
+5. **UI behavior**: Password fields MUST be masked by default with a toggle visibility button. Always provide a 🗐 icon for copying fields to the clipboard.
+
 #### Email Management (mandatory)
 
-The email management module (`modules/emails/`) provides tenant SMTP configuration, send logging, and automated alert rules.
+The email management module (`modules/emails/` and `modules/email_smtp_configurations/`) provides tenant SMTP configuration, send logging, and automated alert rules.
 
 1. **Tables:** **`emails`** (send log), **`email_smtp_configurations`** (SMTP profiles), **`email_alert_rules`** (automated alerts per `rule_slug`).
 2. **Default SMTP:** `is_default = 1` on one active `email_smtp_configurations` row per company drives **`itm_send_email()`** in `includes/itm_email.php`.
