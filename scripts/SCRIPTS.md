@@ -196,6 +196,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/verify_visitors_sqli_fix.php` | Verification — fixed SQL Injection in visitors access log. |
 | `php scripts/verify_sqli_updated.php` | Verification — SQL Injection fix in visitors access log against fixed files. |
 | `php scripts/verify_rbac_updated.php` | Verification — RBAC protection guards in module handlers. |
+| `php scripts/verify_import_fix_updated.php` | Verification — Employee Import Department Data Loss Fix. |
 
 Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
@@ -247,6 +248,11 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
 | `php scripts/verify_explorer_rce_marker.php` | PoC — `.htaccess` with ITM marker cannot persist RCE directives |
 | `php scripts/verify_explorer_updated.php` | Verification — Explorer file extension whitelisting. |
+| `php scripts/repro_explorer_traversal.php` | Repro — Explorer Path Traversal vulnerability via 'item' parameter. |
+| `php scripts/verify_explorer_fix.php` | Verification — Explorer Path Traversal fix. |
+| `php scripts/verify_explorer_fix_updated.php` | Verification — Updated Explorer Path Traversal fix. |
+| `php scripts/verify_explorer_fix_web.php` | Verification — Web-friendly Explorer Path Traversal fix. |
+| `php scripts/verify_explorer_fix_standalone.php` | Verification — Standalone Explorer Path Traversal fix (HTML UI). |
 
 Run path/ZIP checks after Explorer ACL changes. Isolated subprocess spawns use `escapeshellarg()`. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`.
 
@@ -858,6 +864,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | Script | Purpose |
 |--------|---------|
 | `php scripts/benchmark_stats_optimized.php` | Benchmark for user-config.php stats gathering optimization. Compares performance of 31 individual queries vs 1 consolidated query. |
+| `php scripts/benchmark_user_config.php` | Benchmark for user-config.php redundant query removal. Compares individual vs consolidated query performance. |
 
 Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
 

@@ -5,14 +5,18 @@
 define('ITM_CLI_SCRIPT', true);
 
 // Include original config first to get base paths and connection
-require_once __DIR__ . '/../../../config/config.php';
-require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
+itm_script_output_begin();
 $nl = itm_script_output_nl();
-echo "--- Verifying Employee Import Department Data Loss Fix ---" . $nl;
+
+echo colorText("--- Verifying Employee Import Department Data Loss Fix ---", 'info') . $nl;
 
 $companyId = 1;
+// Mock session for itm_get_csrf_token() and other helpers
 $_SESSION['employee_id'] = 1;
+$_SESSION['company_id'] = $companyId;
 
 // Setup: Create two departments
 $suffix = time();
@@ -48,7 +52,8 @@ $sourceRow = $importData['import_excel_rows'][1];
 $deptIndex = 4; // index of 'Department ID'
 $geralDeptId_local = $geralId;
 
-// --- START FIXED LOGIC SIMULATION (from docs/fixed_files_vulnerability_employees/fixed_files/config/config.php) ---
+// --- START FIXED LOGIC SIMULATION ---
+// This replicates the logic in itm_handle_json_table_import in config/config.php
 $rowValues = [];
 $rowValues['department_id'] = (string)$geralDeptId_local;
 $deptValue = trim((string)($sourceRow[$deptIndex] ?? ''));
@@ -79,7 +84,7 @@ if ((int)$rowValues['department_id'] === $targetDeptId) {
 mysqli_query($conn, "DELETE FROM employees WHERE id=$employeeId");
 mysqli_query($conn, "DELETE FROM departments WHERE id IN ($geralId, $targetDeptId)");
 
-echo $nl . "--- Verifying Employee Module Manual Import Fix ---" . $nl;
+echo $nl . colorText("--- Verifying Employee Module Manual Import Fix ---", 'info') . $nl;
 
 $geralId_manual = 100;
 $targetDeptId_manual = 200;
@@ -88,9 +93,8 @@ $targetDeptId_manual = 200;
 $mapped = ['department_id' => (string)$targetDeptId_manual];
 $providedFields = [];
 
-// --- START FIXED LOGIC SIMULATION (from docs/fixed_files_vulnerability_employees/fixed_files/modules/employees/index.php) ---
-// Note: In the real file, this is part of an 'if' chain that handles string resolution.
-// The FIX is the 'elseif' that prevents overwriting if it's already numeric.
+// --- START FIXED LOGIC SIMULATION ---
+// Replicates logic in modules/employees/index.php
 $is_resolved_by_name = false; // Simulated: it didn't enter the name resolution block
 
 if (!$is_resolved_by_name) {
@@ -123,3 +127,4 @@ if ((int)$mapped['department_id'] === $geralId_manual) {
 } else {
     echo colorText("[FAIL] Fallback to Geral failed.", 'fail') . $nl;
 }
+?>

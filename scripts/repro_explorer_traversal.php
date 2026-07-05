@@ -11,10 +11,14 @@ $_SERVER['HTTP_HOST'] = 'localhost';
 $_SERVER['REQUEST_URI'] = '/repro_explorer_traversal.php';
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
-// Setup paths to allow inclusion from /docs/scripts/
-$projectRoot = dirname(dirname(__DIR__));
+// Setup paths
+$projectRoot = dirname(__DIR__);
 require_once $projectRoot . '/config/config.php';
+require_once $projectRoot . '/scripts/lib/script_cli_output.php';
 require_once $projectRoot . '/includes/itm_explorer_paths.php';
+
+itm_script_output_begin();
+$nl = itm_script_output_nl();
 
 /**
  * Replicate get_full_path from modules/explorer/api.php
@@ -68,17 +72,17 @@ $username = 'attacker';
 $path = 'Private/attacker_123';
 $item = '..'; // Attacker attempts to go up to Private root
 
-echo "Simulating Action: zip\n";
-echo "Storage Root: $storage_root\n";
-echo "Path: $path\n";
-echo "Item: $item\n\n";
+echo colorText("Simulating Action: zip", 'info') . $nl;
+echo "Storage Root: $storage_root" . $nl;
+echo "Path: $path" . $nl;
+echo "Item: $item" . $nl . $nl;
 
 $dir = repro_get_full_path($storage_root, $path, $user_id, $dept_id, $username);
 
 if ($dir) {
-    echo "Resolved Directory: $dir\n";
+    echo "Resolved Directory: $dir" . $nl;
     $src = $dir . "/" . basename($item);
-    echo "Source to Zip: $src\n";
+    echo "Source to Zip: $src" . $nl;
 
     // In modules/explorer/api.php, the zip action does:
     // $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
@@ -88,15 +92,16 @@ if ($dir) {
     $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
     $is_sensitive_root = ($path === 'Private' || $path === 'Departments');
 
-    echo "is_restricted: " . ($is_restricted ? "TRUE" : "FALSE") . "\n";
-    echo "is_sensitive_root: " . ($is_sensitive_root ? "TRUE" : "FALSE") . "\n";
+    echo "is_restricted: " . ($is_restricted ? "TRUE" : "FALSE") . $nl;
+    echo "is_sensitive_root: " . ($is_sensitive_root ? "TRUE" : "FALSE") . $nl;
 
     if (!$is_restricted && !$is_sensitive_root) {
-        echo "\n[VULNERABLE] Path Traversal via 'item=..' successful!\n";
-        echo "The zip operation would process: " . $src . " (which is the root Private folder containing other users' data).\n";
+        echo $nl . colorText("[VULNERABLE] Path Traversal via 'item=..' successful!", 'fail') . $nl;
+        echo "The zip operation would process: " . $src . " (which is the root Private folder containing other users' data)." . $nl;
     } else {
-        echo "\n[SAFE] Path Traversal blocked.\n";
+        echo $nl . colorText("[SAFE] Path Traversal blocked.", 'pass') . $nl;
     }
 } else {
-    echo "[SAFE] Path Access Denied.\n";
+    echo colorText("[SAFE] Path Access Denied.", 'pass') . $nl;
 }
+?>
