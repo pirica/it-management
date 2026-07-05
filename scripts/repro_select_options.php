@@ -19,18 +19,122 @@ echo colorText('Verifying RBAC bypass in select_options_api.php...', 'info') . $
 
 $company_id = 1;
 
-// 1. Create disposable attacker (non-admin, role_id=2)
-$attacker = itm_script_test_employee_create($conn, $company_id, [
-    'script_slug' => 'repro-select-rbac',
-    'role_id'     => 2,
-]);
+// --- Debug & ID Discovery ---
+echo colorText('Environment Discovery:', 'info') . $nl;
+
+// Check if company exists
+$res = mysqli_query($conn, "SELECT id, company FROM companies WHERE id = $company_id");
+if (!$res || mysqli_num_rows($res) === 0) {
+    echo itm_script_format_status_line('[FAIL] Company ID ' . $company_id . ' does not exist.') . $nl;
+    echo "Check companies table count: " . (mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as c FROM companies"))['c'] ?? 0) . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+$companyRow = mysqli_fetch_assoc($res);
+echo " - Company: " . $companyRow['company'] . " (id=$company_id)" . $nl;
+
+// Find a non-admin role
+$role_id = 0;
+$res = mysqli_query($conn, "SELECT id, name FROM employee_roles WHERE company_id = $company_id AND LOWER(name) != 'admin' LIMIT 1");
+if ($res && $row = mysqli_fetch_assoc($res)) {
+    $role_id = (int)$row['id'];
+    echo " - Found non-admin role: " . $row['name'] . " (id=$role_id)" . $nl;
+} else {
+    $res = mysqli_query($conn, "SELECT id, name FROM employee_roles WHERE company_id = $company_id LIMIT 1");
+    if ($res && $row = mysqli_fetch_assoc($res)) {
+        $role_id = (int)$row['id'];
+        echo colorText(" - WARN: Only found role: " . $row['name'] . " (id=$role_id). RBAC test might be less effective.", 'warn') . $nl;
+    } else {
+        echo colorText(" - FAIL: No roles found for company $company_id in employee_roles.", 'fail') . $nl;
+    }
+}
+
+// Find an access level
+$access_level_id = 0;
+$res = mysqli_query($conn, "SELECT id, name FROM access_levels WHERE company_id = $company_id ORDER BY id ASC LIMIT 1");
+if ($res && $row = mysqli_fetch_assoc($res)) {
+    $access_level_id = (int)$row['id'];
+    echo " - Found access level: " . $row['name'] . " (id=$access_level_id)" . $nl;
+} else {
+    echo colorText(" - FAIL: No access levels found for company $company_id in access_levels.", 'fail') . $nl;
+}
+
+// Find an employment status
+$employment_status_id = 0;
+$res = mysqli_query($conn, "SELECT id, name FROM employee_statuses WHERE company_id = $company_id AND LOWER(name) = 'active' LIMIT 1");
+if ($res && $row = mysqli_fetch_assoc($res)) {
+    $employment_status_id = (int)$row['id'];
+    echo " - Found employment status: " . $row['name'] . " (id=$employment_status_id)" . $nl;
+} else {
+    $res = mysqli_query($conn, "SELECT id, name FROM employee_statuses WHERE company_id = $company_id LIMIT 1");
+    if ($res && $row = mysqli_fetch_assoc($res)) {
+        $employment_status_id = (int)$row['id'];
+        echo " - Found alternative employment status: " . $row['name'] . " (id=$employment_status_id)" . $nl;
+    } else {
+        echo colorText(" - FAIL: No employment statuses found for company $company_id in employee_statuses.", 'fail') . $nl;
+    }
+}
+
+$employeeCount = 0;
+$res = mysqli_query($conn, "SELECT COUNT(*) as c FROM employees WHERE company_id = $company_id");
+if ($res && $row = mysqli_fetch_assoc($res)) {
+    $employeeCount = (int)$row['c'];
+}
+echo " - Current employee count for company $company_id: $employeeCount" . $nl;
+
+// Check for existing disposable employees
+$res = mysqli_query($conn, "SELECT id, username FROM employees WHERE company_id = $company_id AND username LIKE 'script-%'");
+if ($res) {
+    $disposableCount = mysqli_num_rows($res);
+    echo " - Disposable employees found: $disposableCount" . $nl;
+    while ($row = mysqli_fetch_assoc($res)) {
+        echo "   - id=" . $row['id'] . ", username=" . $row['username'] . $nl;
+    }
+}
+
+// Check employees table schema
+$res = mysqli_query($conn, "DESCRIBE employees");
+$requiredMissing = [];
+$expectedColumns = ['company_id', 'first_name', 'last_name', 'username', 'work_email', 'password', 'role_id', 'access_level_id', 'employment_status_id'];
+if ($res) {
+    while ($row = mysqli_fetch_assoc($res)) {
+        if ($row['Null'] === 'NO' && $row['Default'] === null && $row['Extra'] !== 'auto_increment') {
+            if (!in_array($row['Field'], $expectedColumns)) {
+                $requiredMissing[] = $row['Field'] . ' (' . $row['Type'] . ')';
+            }
+        }
+    }
+}
+if (!empty($requiredMissing)) {
+    echo colorText(" - WARN: employees table has additional NOT NULL columns without defaults: " . implode(', ', $requiredMissing), 'warn') . $nl;
+}
+echo $nl;
+
+if ($role_id === 0 || $access_level_id === 0 || $employment_status_id === 0) {
+    echo itm_script_format_status_line('[FAIL] Missing required reference data to create attacker employee.') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+// 1. Create disposable attacker
+$attackerOptions = [
+    'script_slug'        => 'repro-select-rbac',
+    'role_id'            => $role_id,
+    'access_level_id'    => $access_level_id,
+    'employment_status_id' => $employment_status_id,
+];
+
+$attacker = itm_script_test_employee_create($conn, $company_id, $attackerOptions);
+
 if (!$attacker) {
     $dbError = mysqli_error($conn);
     echo itm_script_format_status_line('[FAIL] Could not create disposable attacker employee.') . $nl;
+    echo colorText('Attempted options: ' . json_encode($attackerOptions), 'warn') . $nl;
     if ($dbError !== '') {
         echo colorText('DB error: ' . $dbError, 'warn') . $nl;
+    } else {
+        echo colorText('No DB error reported. Check itm_script_test_employee_create() logic in scripts/lib/itm_script_test_employee.php.', 'warn') . $nl;
     }
-    echo colorText('Check: role_id=2 exists in employee_roles, access_level_id=2 in access_levels, employment_status_id=1 in employee_statuses — all for company_id=' . $company_id . '.', 'warn') . $nl;
     itm_script_output_end();
     exit(1);
 }
@@ -44,8 +148,8 @@ $_SESSION['username']    = $attacker['username'];
 $_SESSION['csrf_token']  = 'test_token';
 
 // 3. Confirm attacker has no CREATE permission on departments
-if (function_exists('itm_has_crud_role_module_permission')) {
-    $hasPerm = itm_has_crud_role_module_permission($conn, 'create', 'departments');
+if (function_exists('itm_user_has_role_module_permission')) {
+    $hasPerm = itm_user_has_role_module_permission($conn, (int)$attacker['id'], $company_id, 'Departments', 'create');
     $permLabel = $hasPerm
         ? 'YES (attacker has create — test may not reflect a real bypass)'
         : 'NO (correct — attacker lacks create permission)';

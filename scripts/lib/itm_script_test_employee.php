@@ -92,6 +92,9 @@ if (!function_exists('itm_script_test_employee_create')) {
             ? trim((string)$options['username'])
             : itm_script_test_employee_username($scriptSlug);
         if (!itm_script_test_employee_is_disposable($username)) {
+            if (PHP_SAPI === 'cli') {
+                echo "DEBUG: itm_script_test_employee_create: username '$username' is not disposable according to itm_script_test_employee_is_disposable()" . PHP_EOL;
+            }
             return null;
         }
 
@@ -110,16 +113,35 @@ if (!function_exists('itm_script_test_employee_create')) {
 
         $firstName = isset($options['first_name']) ? trim((string)$options['first_name']) : 'Script';
         $lastName = isset($options['last_name']) ? trim((string)$options['last_name']) : 'Test';
+
+        if (PHP_SAPI === 'cli') {
+            echo "DEBUG: itm_script_test_employee_create: Attempting INSERT with:" . PHP_EOL;
+            echo " - company_id: $companyId" . PHP_EOL;
+            echo " - first_name: $firstName" . PHP_EOL;
+            echo " - last_name: $lastName" . PHP_EOL;
+            echo " - username: $username" . PHP_EOL;
+            echo " - work_email: $email" . PHP_EOL;
+            echo " - role_id: $roleId" . PHP_EOL;
+            echo " - access_level_id: $accessLevelId" . PHP_EOL;
+            echo " - employment_status_id: $employmentStatusId" . PHP_EOL;
+        }
+
         mysqli_stmt_bind_param($stmt, 'isssssiii', $companyId, $firstName, $lastName, $username, $email, $password, $roleId, $accessLevelId, $employmentStatusId);
         if (!mysqli_stmt_execute($stmt)) {
+            if (PHP_SAPI === 'cli') {
+                echo "DEBUG: itm_script_test_employee_create: execute failed: " . mysqli_stmt_error($stmt) . " (errno: " . mysqli_stmt_errno($stmt) . ")" . PHP_EOL;
+            }
             mysqli_stmt_close($stmt);
             return null;
         }
 
-        $employeeId = (int)mysqli_insert_id($conn);
+        $employeeId = (int)mysqli_stmt_insert_id($stmt);
         mysqli_stmt_close($stmt);
 
         if ($employeeId <= 0) {
+            if (PHP_SAPI === 'cli') {
+                echo "DEBUG: itm_script_test_employee_create: insert_id is 0 or less ($employeeId)" . PHP_EOL;
+            }
             return null;
         }
 
