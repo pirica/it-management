@@ -12,14 +12,6 @@ $nl = itm_script_output_nl();
 
 require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
-function colorText($text, $type) {
-    if (PHP_SAPI !== 'cli') return $text;
-    switch ($type) {
-        case 'pass': return "\033[32m$text\033[0m";
-        case 'fail': return "\033[31m$text\033[0m";
-        default: return $text;
-    }
-}
 
 $company_id = 1;
 
