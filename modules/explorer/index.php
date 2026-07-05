@@ -42,18 +42,20 @@ $user_private_dir = "{$safe_username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
 // Why: Department scope for sidebar and folder navigation (Private/Departments roots are API-blocked).
-$dept_id = 0;
-$dept_stmt = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE id = ? AND company_id = ? LIMIT 1");
+$dept_code = '';
+$dept_stmt = mysqli_prepare($conn, "SELECT d.code FROM employees e LEFT JOIN departments d ON d.id = e.department_id WHERE e.id = ? AND e.company_id = ? LIMIT 1");
 if ($dept_stmt) {
     mysqli_stmt_bind_param($dept_stmt, "ii", $user_id, $company_id);
     mysqli_stmt_execute($dept_stmt);
     $dept_res = mysqli_stmt_get_result($dept_stmt);
     if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
-        $dept_id = (int)$dept_row['department_id'];
+        $dept_code = trim((string)($dept_row['code'] ?? ''));
     }
     mysqli_stmt_close($dept_stmt);
 }
-$user_dept_id_json = json_encode($dept_id, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// Why: Sanitise department code for filesystem safety to match api.php.
+$safe_dept_code = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $dept_code);
+$user_dept_code_json = json_encode($safe_dept_code, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 // Why: Ensure the root /files/{company_id} directory exists with deny_http on every segment.
 $storage_root = ROOT_PATH . 'files/' . $company_id;
@@ -324,7 +326,7 @@ const CLIPBOARD_STORAGE_KEY = "itm_explorer_clipboard";
 let contextItem = null;
 let inRecycle = false;
 let userPrivateDir = <?= $user_private_dir_json ?>;
-let userDeptId = <?= $user_dept_id_json ?>;
+let userDeptCode = <?= $user_dept_code_json ?>;
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
 
 /* Why: API blocks Private/Departments roots; UI must open the user's scoped subfolder instead. */
@@ -334,11 +336,11 @@ function resolveScopedFolderPath(path) {
         return "Private/" + userPrivateDir;
     }
     if (normalized === "Departments") {
-        if (userDeptId <= 0) {
+        if (userDeptCode === "") {
             alert("You are not assigned to a department. Department files are unavailable.");
             return null;
         }
-        return "Departments/" + userDeptId;
+        return "Departments/" + userDeptCode;
     }
     return normalized;
 }
