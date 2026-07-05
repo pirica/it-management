@@ -5,7 +5,16 @@
  * Log and manage visitor access to premises.
  */
 
-require_once '../../../config/config.php';
+require_once '../../config/config.php';
+
+// Handle Excel/CSV database import requests from table-tools.js.
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = (string)@file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        itm_handle_json_table_import($conn, 'visitors_access_log', (int)($company_id ?? 0));
+    }
+}
 
 $crud_table = $crud_table ?? 'visitors_access_log';
 $crud_title = $crud_title ?? 'Visitors Access Log';
@@ -43,6 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) 
     $id = (int)($_POST['id'] ?? 0);
     $field = trim((string)($_POST['field'] ?? ''));
     $value = trim((string)($_POST['value'] ?? ''));
+
+    // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, 'edit', $crud_table);
 
     // Whitelist allowed fields to prevent SQL Injection
     $allowedFields = [
@@ -82,6 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
     itm_require_post_csrf();
     header('Content-Type: application/json; charset=UTF-8');
 
+    // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, 'edit', $crud_table);
+
     $id = (int)($_POST['id'] ?? 0);
     $type = trim((string)($_POST['type'] ?? '')); // 'in' or 'out'
     $now = date('Y-m-d H:i:s');
@@ -118,6 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_timestamp'])) 
 // Handle Quick Add (First Row)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_quick_add'])) {
     itm_require_post_csrf();
+
+    // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, 'create', $crud_table);
 
     $visitor_name = trim((string)($_POST['visitor_name'] ?? ''));
     $company_department = trim((string)($_POST['company_department'] ?? ''));
@@ -160,6 +178,18 @@ if ($crud_action === 'delete') {
     itm_require_post_csrf();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+
+    if ($bulkAction === 'add_sample_data') {
+        itm_require_post_csrf();
+        $inserted = itm_seed_table_from_database_sql($conn, 'visitors_access_log', $company_id);
+        if ($inserted > 0) {
+            $_SESSION['crud_success'] = "$inserted sample records added.";
+        } else {
+            $_SESSION['crud_error'] = "No sample data found or table is not empty.";
+        }
+        header('Location: index.php');
+        exit;
+    }
 
     if ($bulkAction === 'clear_table') {
         $stmt = mysqli_prepare($conn, "DELETE FROM visitors_access_log WHERE company_id = ? AND (DATE(date_time_in) = CURDATE() OR (date_time_in IS NULL AND DATE(created_at) = CURDATE()))");
@@ -207,6 +237,9 @@ $data = [];
 // Handle Full Form Save (Create/Edit)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     itm_require_post_csrf();
+
+    // Why: Server-side RBAC before CSRF/mutation SQL (UI-only hiding is not enough).
+    itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
 
     $id = (int)($_POST['id'] ?? 0);
     $visitor_name = trim((string)($_POST['visitor_name'] ?? ''));
@@ -351,13 +384,13 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize($crud_title) ?> - IT Management</title>
-    <link rel="stylesheet" href="../../../css/styles.css">
+    <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
 <div class="container">
-    <?php include '../../../includes/sidebar.php'; ?>
+    <?php include '../../includes/sidebar.php'; ?>
     <div class="main-content">
-        <?php include '../../../includes/header.php'; ?>
+        <?php include '../../includes/header.php'; ?>
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
 
@@ -382,6 +415,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                            <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1" style="display:none;">Cancel</button>
                             <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                         </form>
                     </div>
@@ -404,7 +438,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                 </div>
 
                 <div class="card" style="overflow:auto;">
-                    <table class="table table-hover" data-itm-no-import-excel="1">
+                    <table class="table table-hover" data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
                             <th style="width: 40px;"></th>
@@ -492,6 +526,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
                         </tbody>
                     </table>
                 </div>
+
+                <?php if ($totalRows === 0): ?>
+                    <div class="card" style="text-align:center;padding:20px;margin-top:16px;">
+                        <form method="POST" action="delete.php">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <button type="submit" name="bulk_action" value="add_sample_data" class="btn btn-primary">Add sample data</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($totalRows > $perPage): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
@@ -585,7 +628,7 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     </div>
 </div>
 
-<script src="../../../js/script.js"></script>
+<script src="../../js/script.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Inline editing for text fields
