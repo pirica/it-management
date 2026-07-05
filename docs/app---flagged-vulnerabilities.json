@@ -1,0 +1,16 @@
+{
+    "findings": [
+        {
+            "title": "Path Traversal in Explorer module via zip and move actions",
+            "status": "active",
+            "commit_hash": "49fac90ed665c4de51cc544c02a93dfdf72f3340",
+            "detected_at_pst": "2026-07-05T19:18:32-07:00",
+            "reported_link": "",
+            "location": "modules/explorer/api.php",
+            "attacker": "Authenticated tenant user",
+            "input_controlled": "The POST parameter item in zip, unzip, move, rename, delete actions.",
+            "reach_vulnerability": "An attacker sends a POST request with action=zip and item=.. while having access to a subfolder.",
+            "impact": "The attacker can zip or move files outside their authorized scoped directory, potentially gaining access to other users private files or system files within the company storage root."
+        }
+    ]
+}
