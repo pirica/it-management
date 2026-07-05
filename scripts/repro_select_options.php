@@ -25,7 +25,12 @@ $attacker = itm_script_test_employee_create($conn, $company_id, [
     'role_id'     => 2,
 ]);
 if (!$attacker) {
+    $dbError = mysqli_error($conn);
     echo itm_script_format_status_line('[FAIL] Could not create disposable attacker employee.') . $nl;
+    if ($dbError !== '') {
+        echo colorText('DB error: ' . $dbError, 'warn') . $nl;
+    }
+    echo colorText('Check: role_id=2 exists in employee_roles, access_level_id=2 in access_levels, employment_status_id=1 in employee_statuses — all for company_id=' . $company_id . '.', 'warn') . $nl;
     itm_script_output_end();
     exit(1);
 }
