@@ -178,6 +178,17 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_employee.php`; prepared `UPDATE employees` for token fields. |
 | `php scripts/repro_employee_dataloss.php` | Regression — generic `itm_handle_json_table_import()` UPDATE must not NULL-out omitted columns on `employees` (expects exit `0`; seeds/disposable row in transaction). |
 | `php scripts/repro_generic_dataloss.php` | Regression — generic JSON import UPDATE must not NULL-out omitted columns (e.g. `departments.code`; expects exit `0`; seeds/disposable row in transaction). |
+| `php scripts/repro_contacts_idor.php` | PoC — IDOR vulnerability in contacts API inline edit. |
+| `php scripts/repro_select_options.php` | PoC — RBAC bypass in select options API. |
+| `php scripts/repro_status_leak.php` | PoC — cross-tenant employee status leak. |
+| `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
+| `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
+| `php scripts/verify_audit_updated.php` | Verification — audit log redaction of sensitive fields. |
+| `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
+| `php scripts/verify_visitors_bac_fix.php` | Verification — blocked unauthorized visitor log additions. |
+| `php scripts/verify_visitors_sqli_fix.php` | Verification — fixed SQL Injection in visitors access log. |
+| `php scripts/verify_sqli_updated.php` | Verification — SQL Injection fix in visitors access log against fixed files. |
+| `php scripts/verify_rbac_updated.php` | Verification — RBAC protection guards in module handlers. |
 
 Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
@@ -209,6 +220,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/generate_reassignment.php` | Generates UPDATE SQL to reassign data from an old employee to a new one before deletion. |
 | `php scripts/transfer_data_from_employee.php` | Clones an employee and copies their related data to the new record (Copy Mode). |
 | `php scripts/delete_clone_employee.php` | Reverses an employee clone by deleting the employee and their related data. |
+| `php scripts/verify_clear_table_fix.php` | Verification — employees clear table fix navigating FK dependencies. |
 
 ### Equipment & Audit verification scripts
 
@@ -227,6 +239,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/repro_explorer_zip_slip_v2.php` | Regression — malicious ZIP traversal entries blocked during `unzip` |
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
 | `php scripts/verify_explorer_rce_marker.php` | PoC — `.htaccess` with ITM marker cannot persist RCE directives |
+| `php scripts/verify_explorer_updated.php` | Verification — Explorer file extension whitelisting. |
 
 Run path/ZIP checks after Explorer ACL changes. Isolated subprocess spawns use `escapeshellarg()`. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`.
 
@@ -832,6 +845,12 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | `php scripts/debug_resignations_termination_date.php` | Diagnose why a `termination_date` (default `18/06/2026`, ISO week 25) does or does not match `modules/resignations/index.php`: PHP vs MySQL week metadata, `itm_iso_week_bounds()` range, legacy `YEAR/MONTH/WEEK`, simulated module SQL (uses `itm_sql_valid_date_predicate()` — not `<> '0000-00-00'`), live employee row, today's verify-probe bounds. Browser or CLI. Surfaces MySQL 8 `NO_ZERO_DATE` prepare errors. |
 | `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)` + `itm_sql_valid_date_predicate()`). Browser or CLI via `lib/script_cli_output.php` (no `STDERR` on web SAPI). |
 | `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`) |
+
+### Performance benchmarks
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/benchmark_stats_optimized.php` | Benchmark for user-config.php stats gathering optimization. Compares performance of 31 individual queries vs 1 consolidated query. |
 
 Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
 

@@ -6,7 +6,7 @@
  */
 
 define('ITM_CLI_SCRIPT', true);
-require __DIR__ . '/../../../../config/config.php';
+require __DIR__ . '/../config/config.php';
 
 $user_id = 1; // Assuming a standard test user ID
 $company_id = 1;

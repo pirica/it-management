@@ -7,9 +7,9 @@
  */
 
 $testFiles = [
-    __DIR__ . '/../fixed_files/modules/tickets/delete.php',
-    __DIR__ . '/../fixed_files/modules/companies/delete.php',
-    __DIR__ . '/../fixed_files/modules/private_contacts/create.php'
+    __DIR__ . '/../modules/tickets/delete.php',
+    __DIR__ . '/../modules/companies/delete.php',
+    __DIR__ . '/../modules/private_contacts/create.php'
 ];
 
 echo "RBAC Protection Validation\n";

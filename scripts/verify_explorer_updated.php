@@ -6,7 +6,7 @@
  * extensions as expected.
  */
 
-require_once __DIR__ . '/../fixed_files/includes/itm_explorer_paths.php';
+require_once __DIR__ . '/../includes/itm_explorer_paths.php';
 
 echo "Explorer Whitelisting Validation\n";
 echo "===============================\n";
