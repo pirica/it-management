@@ -861,7 +861,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/includes/update_port
 
     <div class="card">
         <h2>Explorer API (<code>modules/explorer/api.php</code>)</h2>
-        <p>Multi-tenant file manager for <code>files/{company_id}/</code>. ACL: <code>Common/</code> (all company users), <code>Departments/{dept_id}/</code> (department members), <code>Private/{username}_{employee_id}/</code> (owner only), <code>Trash/</code> (soft-delete mirror). Paths are normalized with <code>explorer_normalize_relative_path()</code> before ACL checks so prefixes such as <code>./Private</code> cannot bypass segment rules. Protected roots cannot be listed via API for <code>Private</code> or <code>Departments</code> — UI uses scoped paths.</p>
+        <p>Multi-tenant file manager for <code>files/{company_id}/</code>. ACL: <code>Common/</code> (all company users), <code>Departments/{dept_id}/</code> (department members), <code>Private/{username}_{employee_id}/</code> (owner only), <code>Trash/</code> (soft-delete mirror). Paths are normalized with <code>explorer_normalize_relative_path()</code> before ACL checks so prefixes such as <code>./Private</code> cannot bypass segment rules. <code>Private</code> and <code>Departments</code> roots are filtered via API to show only permitted subfolders.</p>
         <p>All POST actions require <code>csrf_token</code>. Responses are JSON (<code>Content-Type: application/json; charset=utf-8</code>) unless noted.</p>
         <table>
             <thead><tr><th>Method</th><th>Action</th><th>Parameters</th><th>Response</th><th>Purpose</th></tr></thead>

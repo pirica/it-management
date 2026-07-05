@@ -41,10 +41,9 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
 
     // Paths starting with 'Private' are restricted to the owner's username_id subfolder.
     if ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/')) {
-        // Forbidden to access the 'Private' root itself.
-        if ($relative_path === 'Private') return null;
-
-        if (!str_starts_with($relative_path, "Private/$user_private_dir/") &&
+        // Restricted access to subfolders, but allow the 'Private' root itself for filtered listing.
+        if ($relative_path !== 'Private' &&
+            !str_starts_with($relative_path, "Private/$user_private_dir/") &&
             $relative_path !== "Private/$user_private_dir") {
             return null;
         }
@@ -52,12 +51,10 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_id, $usern
 
     // Paths starting with 'Departments' are restricted to the user's department ID subfolder.
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
-        // Forbidden to access the 'Departments' root itself.
-        if ($relative_path === 'Departments') return null;
-
-        if ($dept_id <= 0) return null; // User has no department
-        if (!str_starts_with($relative_path, "Departments/$dept_id/") &&
-            $relative_path !== "Departments/$dept_id") {
+        // Restricted access to subfolders, but allow the 'Departments' root itself for filtered listing.
+        if ($relative_path !== 'Departments' &&
+            ($dept_id <= 0 || (!str_starts_with($relative_path, "Departments/$dept_id/") &&
+            $relative_path !== "Departments/$dept_id"))) {
             return null;
         }
     }
@@ -305,15 +302,52 @@ case "list":
         explorer_ensure_dir("$dir/Common");
         explorer_ensure_dir("$dir/Private");
         explorer_ensure_dir("$dir/Departments");
+        explorer_ensure_dir("$dir/Trash");
         explorer_ensure_dir("$dir/Private/$user_private_dir");
         if ($dept_id > 0) explorer_ensure_dir("$dir/Departments/$dept_id");
+    }
+
+    // Why: Ensure subfolders exist when visiting Private or Departments level.
+    if ($path === 'Private') {
+        explorer_ensure_dir("$dir/$user_private_dir");
+    }
+    if ($path === 'Departments' && $dept_id > 0) {
+        explorer_ensure_dir("$dir/$dept_id");
     }
 
     $items = [];
     if (is_dir($dir)) {
         foreach (scandir($dir) as $f) {
-            if ($f === "." || $f === ".." || $f === "Trash" || $f === "Recycle") continue;
+            if ($f === "." || $f === ".." || $f === "Recycle") continue;
             if (explorer_is_hidden_system_entry($f)) continue;
+
+            // Why: Trash should only appear if not empty.
+            if ($path === '' && $f === 'Trash') {
+                $trash_has_content = false;
+                $trash_full_path = $dir . "/Trash";
+                if (is_dir($trash_full_path)) {
+                    $trash_it = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($trash_full_path, FilesystemIterator::SKIP_DOTS),
+                        RecursiveIteratorIterator::SELF_FIRST
+                    );
+                    foreach ($trash_it as $file) {
+                        $rel = substr($file->getPathname(), strlen($trash_full_path) + 1);
+                        if (!explorer_is_hidden_system_entry($rel)) {
+                            // Apply same ACL check as listRecycle to see if user has anything in trash.
+                            $safe_rel = str_replace('\\', '/', $rel);
+                            if (get_full_path($trash_full_path, $safe_rel, $user_id, $dept_id, $username) !== null) {
+                                $trash_has_content = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!$trash_has_content) continue;
+            }
+
+            // Why: Filter Private and Departments roots to only show the user's own folder.
+            if ($path === 'Private' && $f !== $user_private_dir) continue;
+            if ($path === 'Departments' && (string)$f !== (string)$dept_id) continue;
 
             $full = $dir . "/" . $f;
             $type = is_dir($full) ? "folder" : "file";

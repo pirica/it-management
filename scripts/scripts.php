@@ -1139,6 +1139,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Benchmark for user-config.php redundant query removal. Compares performance of individual queries vs consolidated query results.</td>
                     <td><code>php scripts/benchmark_user_config.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="ensure_explorer_defaults.php" target="_blank" rel="nofollow noreferrer">ensure_explorer_defaults.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Backfills default Explorer folders (Common, Departments, Private, Trash) for all companies in the database.</td>
+                    <td><code>php scripts/ensure_explorer_defaults.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>

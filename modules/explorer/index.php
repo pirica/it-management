@@ -327,28 +327,13 @@ let userPrivateDir = <?= $user_private_dir_json ?>;
 let userDeptId = <?= $user_dept_id_json ?>;
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
 
-/* Why: API blocks Private/Departments roots; UI must open the user's scoped subfolder instead. */
+/* Why: API filtered Private/Departments roots; users may enter them and see only permitted subfolders. */
 function resolveScopedFolderPath(path) {
-    const normalized = String(path || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-    if (normalized === "Private") {
-        return "Private/" + userPrivateDir;
-    }
-    if (normalized === "Departments") {
-        if (userDeptId <= 0) {
-            alert("You are not assigned to a department. Department files are unavailable.");
-            return null;
-        }
-        return "Departments/" + userDeptId;
-    }
-    return normalized;
+    return String(path || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
 }
 
 function openEmployeeProfileFolder() {
-    const profilePath = resolveScopedFolderPath("Private");
-    if (!profilePath) {
-        return;
-    }
-    loadFolder(profilePath + "/profile");
+    loadFolder("Private/" + userPrivateDir + "/profile");
 }
 
 const sidebar   = document.getElementById("sidebar");
@@ -587,7 +572,7 @@ function showContextMenu(e, item) {
     loadClipboard();
 
     // Why: Restrict actions on top-level system folders.
-    const isSystemFolder = (currentPath === "" && ["Common", "Departments", "Private"].includes(item.name));
+    const isSystemFolder = (currentPath === "" && ["Common", "Departments", "Private", "Trash"].includes(item.name));
 
     clearContextMenu();
     appendContextAction("Open", () => openItem(item.name, item.type));

@@ -28,8 +28,8 @@ class ExplorerPathBypassTest extends TestCase
         $username = 'testuser';
 
         $this->assertNotNull(get_full_path($storage_root, 'Common', $user_id, $dept_id, $username));
-        $this->assertNull(get_full_path($storage_root, 'Private', $user_id, $dept_id, $username));
-        $this->assertNull(get_full_path($storage_root, './Private', $user_id, $dept_id, $username));
+        $this->assertNotNull(get_full_path($storage_root, 'Private', $user_id, $dept_id, $username));
+        $this->assertNotNull(get_full_path($storage_root, './Private', $user_id, $dept_id, $username));
         $this->assertNull(get_full_path($storage_root, './Private/other_user_1', $user_id, $dept_id, $username));
 
         rmdir($storage_root);

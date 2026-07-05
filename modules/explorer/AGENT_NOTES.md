@@ -8,7 +8,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Physical storage:** `files/{company_id}/Common/`, `Departments/{dept_id}/`, `Private/{username}_{user_id}/`, `Trash/`.
 
 ## 3. Required Relationships
-- **explorer** → **companies**, **users**, **departments** (department segment access).
+- **explorer** → **companies**, **employees**, **departments** (department segment access).
 
 ## 4. Business Rules (Critical for Agents)
 - **Storage segments:**
@@ -16,9 +16,10 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
   - `Departments/{dept_id}/` — department members only.
   - `Private/{username}_{user_id}/` — owner only.
   - `Trash/` — soft-deleted items (relative paths mirror live layout).
-- **Blocked API access** to `Private` and `Departments` **roots** (`get_full_path` returns null). The UI resolves sidebar and double-click navigation to scoped paths (`Private/{username}_{user_id}`, `Departments/{dept_id}`) via `resolveScopedFolderPath()` in `index.php`.
+- **Filtered API access** to `Private` and `Departments` **roots**. `get_full_path()` allows these roots for listing, but `api.php` filters the results so users only see their own subfolders (`Private/{username}_{user_id}` or `Departments/{dept_id}`).
 - **Blocked creation/upload** at Home root, `Private` root, and `Departments` root.
 - **Protected folders:** top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. User primary private folder cannot be renamed, moved, or deleted.
+- **Trash Visibility:** The `Trash` folder icon is only shown at the Home root if it contains accessible deleted items for the current user.
 - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage (users only see/restore/empty their permitted items).
 - **Path validation:** normalize backslashes to `/`, trim slashes, collapse `.` segments via `explorer_normalize_relative_path()`, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_id}` (blocks `./Private` bypass).
 - **Zip extraction:** `unzip` uses `explorer_extract_zip_safely()` — rejects archive entries whose resolved path escapes the target folder.
