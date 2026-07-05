@@ -1,0 +1,8 @@
+Testing FIXED Explorer API
+--------------------------
+Action: zip, Item: ..
+[PASS] Path Traversal '..' correctly blocked by get_safe_post_item().
+Action: zip, Item: sub/../../
+[PASS] Path Traversal with separators correctly blocked.
+Action: zip, Item: valid_file.txt
+[PASS] Valid item correctly allowed.
