@@ -1133,6 +1133,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Benchmark for user-config.php stats gathering optimization. Compares performance of individual queries vs one consolidated query.</td>
                     <td><code>php scripts/benchmark_stats_optimized.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="benchmark_user_config.php" target="_blank" rel="nofollow noreferrer">benchmark_user_config.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Benchmark for user-config.php redundant query removal. Compares performance of individual queries vs consolidated query results.</td>
+                    <td><code>php scripts/benchmark_user_config.php</code></td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -1499,6 +1505,36 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/repro_explorer_path_bypass_v4.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="repro_explorer_traversal.php" target="_blank" rel="nofollow noreferrer">repro_explorer_traversal.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Reproduction script for Explorer Path Traversal vulnerability via 'item' parameter.</td>
+                    <td><code>php scripts/repro_explorer_traversal.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_fix.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Verification script for Explorer Path Traversal fix.</td>
+                    <td><code>php scripts/verify_explorer_fix.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_fix_updated.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Updated verification script for Explorer Path Traversal fix.</td>
+                    <td><code>php scripts/verify_explorer_fix_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_fix_web.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_web.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Web-friendly verification for Explorer Path Traversal fix.</td>
+                    <td>Open <code>scripts/verify_explorer_fix_web.php</code> in browser.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_explorer_fix_standalone.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_standalone.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Standalone verification for Explorer Path Traversal fix (HTML UI).</td>
+                    <td>Open <code>scripts/verify_explorer_fix_standalone.php</code> in browser.</td>
+                </tr>
+                <tr>
                     <td><a href="repro_attempts_data_leak_v2.php" target="_blank" rel="nofollow noreferrer">repro_attempts_data_leak_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression — password-like login identifiers redacted in <code>attempts.email</code>.</td>
@@ -1545,6 +1581,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. <strong>CLI-only</strong> — catalog listing only; no browser runner link.</td>
                    <td><code>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_import_fix_updated.php" target="_blank" rel="nofollow noreferrer">verify_import_fix_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Verification script for Employee Import Department Data Loss Fix.</td>
+                    <td><code>php scripts/verify_import_fix_updated.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_generic_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_generic_dataloss.php</a></td>

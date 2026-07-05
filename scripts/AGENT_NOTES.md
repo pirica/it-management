@@ -64,6 +64,11 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **schema_report.php** / **validate_DB_schema.php** / **test_employee_id-foreign_keys.php** / **validate_delete_employee.php** — Database schema validation suite.
 - **generate_FK_employee_id.php** / **generate_reassignment.php** / **transfer_data_from_employee.php** / **delete_clone_employee.php** — Employee data maintenance tools.
 - **benchmark_stats_optimized.php** — Performance benchmark for consolidated stats query.
+- **benchmark_user_config.php** — Performance benchmark for redundant query removal in `user-config.php`.
+- **repro_explorer_traversal.php** — Repro script for Explorer Path Traversal vulnerability via 'item' parameter.
+- **verify_explorer_fix.php** / **verify_explorer_fix_updated.php** — Verification for Explorer Path Traversal fix.
+- **verify_explorer_fix_web.php** / **verify_explorer_fix_standalone.php** — Web-friendly and standalone HTML UI verification for Explorer Path Traversal fix.
+- **verify_import_fix_updated.php** — Verification for Employee Import Department Data Loss Fix.
 
 ## 8. Multi-Tenant Rules
 - Maintenance scripts usually operate across all tenants or allow specifying a `company_id` via CLI arguments.

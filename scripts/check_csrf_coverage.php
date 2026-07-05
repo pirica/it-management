@@ -259,10 +259,10 @@ foreach ($iterator as $fileInfo) {
     }
 
     // Why: repro_* and fix_* scripts are CLI maintenance/test tools.
-    if (preg_match('#^scripts/(repro|fix)_.+\.php$#', $relativePath)) {
+    if (preg_match('#^scripts/(repro|fix|verify)_.+\.php$#', $relativePath)) {
         $skipped[] = [
             $relativePath,
-            'CLI-only maintenance/repro script; not a web-accessible endpoint',
+            'CLI-only maintenance/repro/verify script; not a web-accessible endpoint',
         ];
         continue;
     }
