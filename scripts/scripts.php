@@ -114,13 +114,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="api.php">api.php</a></td>
+                    <td><a href="api.php" target="_blank" rel="nofollow noreferrer">api.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>HTML reference for JSON/AJAX endpoints: Explorer file manager, Switch Port Manager (<code>includes/get_ports.php</code>, <code>includes/update_port.php</code>), IDF APIs, module imports (auto-detected), passwords, notes, todo, System Status API, and shared includes. Switch-port handlers document <code>itm_api_json_response()</code> contracts and mysqlnd-safe fetch helpers.</td>
                     <td>Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers. After switch-port changes also run <code>php scripts/idfs_sync_human_test.php</code>.</td>
                 </tr>
                 <tr>
-                    <td><a href="SCRIPTS.md">SCRIPTS.md</a></td>
+                    <td><a href="SCRIPTS.md" target="_blank" rel="nofollow noreferrer">SCRIPTS.md</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
                     <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
                     <td>Read in repository root or online. Follow rules when creating new utilities.</td>
@@ -142,18 +142,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="DBdesign.php">DBdesign.php</a></td>
+                    <td><a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>ER-style diagram generated from <code>database.sql</code> (Mermaid render, zoom, SVG/PNG export).</td>
                     <td>
-                        Open <a href="DBdesign.php">DBdesign.php</a>. Optional:
+                        Open <a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a>. Optional:
                         <a href="DBdesign.php?format=mermaid">?format=mermaid</a>,
                         <a href="DBdesign.php?format=json">?format=json</a>.
                         CLI: <code>php scripts/DBdesign.php --mermaid</code> or <code>--json</code>.
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="crud_tables.php">crud_tables.php</a></td>
+                    <td><a href="crud_tables.php" target="_blank" rel="nofollow noreferrer">crud_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Lists every module folder and the first <code>$crud_table =</code> line found in <code>index.php</code>, with links to each module.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_tables.php</code> (HTML to stdout) or <code>&gt; crud_tables.html</code>.</td>
@@ -165,7 +165,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><strong>Log in first.</strong> Open <a href="update_all_created_at.php">update_all_created_at.php</a> (HTML + <strong>← Scripts index</strong>). CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
                 </tr>
                 <tr>
-                    <td><a href="detect_fk_dropdown_ui_risk_ui.php">detect_fk_dropdown_ui_risk_ui.php</a></td>
+                    <td><a href="detect_fk_dropdown_ui_risk_ui.php" target="_blank" rel="nofollow noreferrer">detect_fk_dropdown_ui_risk_ui.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Scans cross-tenant FK rows and module code that can cause <strong>duplicate dropdown options</strong>. Results are plain-language summaries with links to <code>modules/…/</code> and edit screens (new tab) when a module folder exists.</td>
                     <td>
@@ -174,7 +174,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="detect_fk_dropdown_ui_risk.php">detect_fk_dropdown_ui_risk.php</a></td>
+                    <td><a href="detect_fk_dropdown_ui_risk.php" target="_blank" rel="nofollow noreferrer">detect_fk_dropdown_ui_risk.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Same scanner as the UI. Browser requests load <code>detect_fk_dropdown_ui_risk_ui.php</code>; CLI prints human-readable lines (or JSON with <code>--json</code>).</td>
                     <td>
@@ -183,13 +183,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="debug.php">debug.php</a></td>
+                    <td><a href="debug.php" target="_blank" rel="nofollow noreferrer">debug.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>System overview (DB, tables, PHP version, extensions, and file permissions).</td>
                     <td>Open in browser for quick troubleshooting.</td>
                 </tr>
                 <tr>
-                    <td><a href="health.php">health.php</a></td>
+                    <td><a href="health.php" target="_blank" rel="nofollow noreferrer">health.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Lightweight health check endpoint for monitoring.</td>
                     <td>Open in browser or use with monitoring tools.</td>
@@ -212,7 +212,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="test_form_failed_save_display.php">test_form_failed_save_display.php</a></td>
+                    <td><a href="test_form_failed_save_display.php" target="_blank" rel="nofollow noreferrer">test_form_failed_save_display.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Scans all module create forms for SQL-quoted re-display after failed saves (e.g. <code>value="'USA'"</code>); optional runtime POST tests per module.</td>
                     <td>
@@ -221,7 +221,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="test_sql_injection.php">test_sql_injection.php</a></td>
+                    <td><a href="test_sql_injection.php" target="_blank" rel="nofollow noreferrer">test_sql_injection.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>JSON sandbox to test SQL-injection signature detection and safe prepared-statement execution (GET/POST).</td>
                     <td>
@@ -259,7 +259,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="test_email_forgot.php">test_email_forgot.php</a></td>
+                    <td><a href="test_email_forgot.php" target="_blank" rel="nofollow noreferrer">test_email_forgot.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Test script for Password Reset email delivery verification.</td>
                     <td>
@@ -268,7 +268,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="test_register_mail.php">test_register_mail.php</a></td>
+                    <td><a href="test_register_mail.php" target="_blank" rel="nofollow noreferrer">test_register_mail.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Test script for Registration Welcome email delivery verification.</td>
                     <td>
@@ -277,13 +277,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="verify_emails_module.php">verify_emails_module.php</a></td>
+                    <td><a href="verify_emails_module.php" target="_blank" rel="nofollow noreferrer">verify_emails_module.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, and <code>itm_send_email()</code> helper.</td>
                     <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> tables in <code>database.sql</code>.</td>
                 </tr>
                 <tr>
-                    <td><a href="run_email_alert_rules.php">run_email_alert_rules.php</a></td>
+                    <td><a href="run_email_alert_rules.php" target="_blank" rel="nofollow noreferrer">run_email_alert_rules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Dispatches enabled <code>email_alert_rules</code> (warranty, license, certificate, alerts, notes, to-do, events) using tenant default SMTP.</td>
                     <td><code>php scripts/run_email_alert_rules.php</code>, <code>php scripts/run_email_alert_rules.php --company=1</code>, or <code>php scripts/run_email_alert_rules.php --verbose</code>. Schedule via cron; admin browser access. Use <code>--verbose</code> when dispatched count is 0 to see per-rule match notes.</td>
@@ -310,7 +310,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="run_tests.php">run_tests.php</a></td>
+                    <td><a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs the PHPUnit suite in <code>phpunit/tests/Unit/</code> via <code>phpunit/phpunit.phar</code> and <code>phpunit/phpunit.xml</code>. Browser menu: <strong>Standard</strong> (verbose) or <strong>HTML coverage</strong> (Xdebug/PCOV). Report: <code>phpunit/coverage/html/coverage.html</code>. Skips coverage driver when Xdebug/PCOV missing. <code>processUncoveredFiles="false"</code> in phpunit.xml for reliable report generation. Entry guards: <code>includes/itm_script_entry_guard.php</code>. See <code>scripts/SCRIPTS.md</code> (PHPUnit test runner).</td>
                     <td>
@@ -385,13 +385,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Open <a href="http://localhost/phpmyadmin/" target="_blank" rel="noopener noreferrer">http://localhost/phpmyadmin/</a> in a new tab. Default dev: user <code>root</code>, password per your Laragon/MySQL setup (often blank locally).</td>
                 </tr>
                 <tr>
-                    <td><a href="analyze_database_health.php">analyze_database_health.php</a></td>
+                    <td><a href="analyze_database_health.php" target="_blank" rel="nofollow noreferrer">analyze_database_health.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs <code>ANALYZE TABLE</code> on every base table and lists per-table success/failure (avoids phpMyAdmin stopping on first error).</td>
                     <td>Open <a href="analyze_database_health.php">analyze_database_health.php</a> while logged in. Optional CLI: <code>php scripts/analyze_database_health.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="force_delete_company.php">force_delete_company.php</a></td>
+                    <td><a href="force_delete_company.php" target="_blank" rel="nofollow noreferrer">force_delete_company.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Bypasses triggers and FK checks to completely remove a company and its data across all <code>company_id</code> tables (including audit logs).</td>
                     <td>Open <a href="force_delete_company.php">force_delete_company.php</a> while logged in as Admin. CLI: <code>php scripts/force_delete_company.php --id=N</code>. <strong>DANGER: Destructive.</strong></td>
@@ -409,7 +409,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
-                    <td><a href="count_db_tables.php">count_db_tables.php</a></td>
+                    <td><a href="count_db_tables.php" target="_blank" rel="nofollow noreferrer">count_db_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code>, echoes the total as plain text, and overwrites <code>scripts/number_db_tables.txt</code> with the same number (for external monitors). <strong>No login required.</strong></td>
                     <td>Open <a href="count_db_tables.php">count_db_tables.php</a> (plain number response) or run <code>php scripts/count_db_tables.php</code> from the repository root. Output file: <code>scripts/number_db_tables.txt</code>.</td>
@@ -427,19 +427,19 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>bash scripts/verify_database_sql_import.sh</code> — requires MySQL on <code>127.0.0.1</code>, user <code>root</code>, password <code>itmanagement</code>. Env: <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>, optional <code>EXPECTED_TABLE_COUNT</code> override.</td>
                 </tr>
                 <tr>
-                    <td><a href="employee_fields_missing.php">employee_fields_missing.php</a></td>
+                    <td><a href="employee_fields_missing.php" target="_blank" rel="nofollow noreferrer">employee_fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Compares <code>employees</code> columns in <code>database.sql</code> and the live schema with create/edit/view/index coverage in <code>modules/employees/</code>. Fails when critical columns (including <code>termination_date</code>) are missing from the DB or module UI; lists optional gaps as <code>[INFO]</code>.</td>
                     <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>database.sql</code>, <code>modules/employees/</code> profile fields, or employee list/import columns.</td>
                 </tr>
                 <tr>
-                    <td><a href="debug_resignations_termination_date.php">debug_resignations_termination_date.php</a></td>
+                    <td><a href="debug_resignations_termination_date.php" target="_blank" rel="nofollow noreferrer">debug_resignations_termination_date.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Diagnose why a <code>termination_date</code> (default <code>18/06/2026</code>, ISO week 25) does or does not match <code>modules/resignations/index.php</code> — PHP vs MySQL week metadata, ISO bounds, legacy <code>YEAR/MONTH/WEEK</code>, simulated module SQL (<code>itm_sql_valid_date_predicate()</code>; not <code>&lt;&gt; '0000-00-00'</code>), employee row, verify-probe bounds. Use when the report is empty or prepare fails with <code>Incorrect DATE value: '0000-00-00'</code>.</td>
                     <td><code>php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_employee_type_resignations.php">verify_employee_type_resignations.php</a></td>
+                    <td><a href="verify_employee_type_resignations.php" target="_blank" rel="nofollow noreferrer">verify_employee_type_resignations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs, and the weekly resignations SQL filter (<code>itm_iso_week_bounds()</code>, <code>MONTH(termination_date)</code>, <code>itm_sql_valid_date_predicate()</code>) aligned with <code>modules/resignations/index.php</code>.</td>
                     <td><code>php scripts/verify_employee_type_resignations.php</code> — after changes to <code>modules/employee_type/</code>, <code>modules/resignations/</code>, <code>modules/employees/</code> termination/type fields, or related <code>database.sql</code> tables.</td>
@@ -470,31 +470,31 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="check_delimiters.php">check_delimiters.php</a></td>
+                    <td><a href="check_delimiters.php" target="_blank" rel="nofollow noreferrer">check_delimiters.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audit database.sql for correct DELIMITER usage in trigger blocks.</td>
                     <td>Open <a href="check_delimiters.php">check_delimiters.php</a> while logged in. CLI: <code>php scripts/check_delimiters.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="check_duplicates.php">check_duplicates.php</a></td>
+                    <td><a href="check_duplicates.php" target="_blank" rel="nofollow noreferrer">check_duplicates.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audit database.sql for duplicate column definitions in CREATE TABLE blocks.</td>
                     <td>Open <a href="check_duplicates.php">check_duplicates.php</a> while logged in. CLI: <code>php scripts/check_duplicates.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="check_phones.php">check_phones.php</a></td>
+                    <td><a href="check_phones.php" target="_blank" rel="nofollow noreferrer">check_phones.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Identify tables in database.sql that contain phone-related columns for PII auditing.</td>
                     <td>Open <a href="check_phones.php">check_phones.php</a> while logged in. CLI: <code>php scripts/check_phones.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="check_sql_errors.php">check_sql_errors.php</a></td>
+                    <td><a href="check_sql_errors.php" target="_blank" rel="nofollow noreferrer">check_sql_errors.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audit database.sql for column mismatches in triggers and INSERT statements.</td>
                     <td>Open <a href="check_sql_errors.php">check_sql_errors.php</a> while logged in. CLI: <code>php scripts/check_sql_errors.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="count_args.php">count_args.php</a></td>
+                    <td><a href="count_args.php" target="_blank" rel="nofollow noreferrer">count_args.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Count arguments in the <code>trg_employees_audit_insert</code> trigger in database.sql.</td>
                     <td>Open <a href="count_args.php">count_args.php</a> while logged in. CLI: <code>php scripts/count_args.php</code></td>
@@ -506,13 +506,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/fix_sql_departments.php</code> — CLI only (browser shows instructions).</td>
                 </tr>
                 <tr>
-                    <td><a href="list_phone_columns.php">list_phone_columns.php</a></td>
+                    <td><a href="list_phone_columns.php" target="_blank" rel="nofollow noreferrer">list_phone_columns.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>List columns for each table defined in database.sql, filtering for phone columns.</td>
                     <td>Open <a href="list_phone_columns.php">list_phone_columns.php</a> while logged in. CLI: <code>php scripts/list_phone_columns.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_sql.php">verify_sql.php</a></td>
+                    <td><a href="verify_sql.php" target="_blank" rel="nofollow noreferrer">verify_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Comprehensive SQL audit script for database.sql (delimiters, duplicates, references).</td>
                     <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
@@ -530,49 +530,49 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>CLI: <code>php scripts/fix_sql_broad.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="schema_report.php">schema_report.php</a></td>
+                    <td><a href="schema_report.php" target="_blank" rel="nofollow noreferrer">schema_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Visual report for database schema validation (errors and warnings).</td>
                     <td>Open <a href="schema_report.php">schema_report.php</a> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="validate_DB_schema.php">validate_DB_schema.php</a></td>
+                    <td><a href="validate_DB_schema.php" target="_blank" rel="nofollow noreferrer">validate_DB_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Validates database schema consistency (FKs, duplicate indexes, orphaned indexes).</td>
                     <td>Open <a href="validate_DB_schema.php">validate_DB_schema.php</a> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="test_employee_id-foreign_keys.php">test_employee_id-foreign_keys.php</a></td>
+                    <td><a href="test_employee_id-foreign_keys.php" target="_blank" rel="nofollow noreferrer">test_employee_id-foreign_keys.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Validates <code>employee_id</code> foreign keys across all tables.</td>
                     <td>Open <a href="test_employee_id-foreign_keys.php">test_employee_id-foreign_keys.php</a> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="validate_delete_employee.php">validate_delete_employee.php</a></td>
+                    <td><a href="validate_delete_employee.php" target="_blank" rel="nofollow noreferrer">validate_delete_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Validates if employees can be safely deleted by checking FKs and triggers.</td>
                     <td>Open <a href="validate_delete_employee.php">validate_delete_employee.php</a> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="generate_FK_employee_id.php">generate_FK_employee_id.php</a></td>
+                    <td><a href="generate_FK_employee_id.php" target="_blank" rel="nofollow noreferrer">generate_FK_employee_id.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Generates SQL for missing <code>employee_id</code> foreign keys.</td>
                     <td>Open <a href="generate_FK_employee_id.php">generate_FK_employee_id.php</a> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="generate_reassignment.php">generate_reassignment.php</a></td>
+                    <td><a href="generate_reassignment.php" target="_blank" rel="nofollow noreferrer">generate_reassignment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Generates reassignment SQL for <code>employee_id</code> before deletion.</td>
                     <td>Open <a href="generate_reassignment.php">generate_reassignment.php</a> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a></td>
+                    <td><a href="transfer_data_from_employee.php" target="_blank" rel="nofollow noreferrer">transfer_data_from_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Clones an employee and transfers/copies their related data to the new record.</td>
                     <td>Open <a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a> in the browser. <strong>DANGER: Mutates DB.</strong></td>
                 </tr>
                 <tr>
-                    <td><a href="delete_clone_employee.php">delete_clone_employee.php</a></td>
+                    <td><a href="delete_clone_employee.php" target="_blank" rel="nofollow noreferrer">delete_clone_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Reverses an employee clone by deleting the employee and their related data.</td>
                     <td>Open <a href="delete_clone_employee.php">delete_clone_employee.php</a> in the browser. <strong>DANGER: Destructive.</strong></td>
@@ -594,7 +594,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="idfs_sync_human_test.php">idfs_sync_human_test.php</a></td>
+                    <td><a href="idfs_sync_human_test.php" target="_blank" rel="nofollow noreferrer">idfs_sync_human_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>End-to-end HTTP regression for IDF rack/device flows; asserts sync across <code>idf_ports</code>, <code>switch_ports</code>, <code>equipment</code>, <code>idf_links</code>. <strong>Mutates DB:</strong> creates temporary equipment/port/position/link rows and removes temporary artifacts at the end. After login, POSTs to <code>index.php</code> so session <code>company_id</code> matches <code>ITM_COMPANY_ID</code>; company-selection GET resolves redirects manually (open_basedir-safe).</td>
                     <td>
@@ -604,7 +604,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="idfs_api_payload_dry_run.php">idfs_api_payload_dry_run.php</a></td>
+                    <td><a href="idfs_api_payload_dry_run.php" target="_blank" rel="nofollow noreferrer">idfs_api_payload_dry_run.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Validates IDF device API JSON payloads offline (no MySQL). Requires CLI flags for payload validation.</td>
                     <td>
@@ -614,7 +614,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="idf_device_port_sort_test.php">idf_device_port_sort_test.php</a></td>
+                    <td><a href="idf_device_port_sort_test.php" target="_blank" rel="nofollow noreferrer">idf_device_port_sort_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Proves RJ45 ports sort before fiber (SFP) in IDF device SQL; optional live MySQL checks.</td>
                     <td>
@@ -624,13 +624,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="ensure_equipment_type_modules.php">ensure_equipment_type_modules.php</a></td>
+                    <td><a href="ensure_equipment_type_modules.php" target="_blank" rel="nofollow noreferrer">ensure_equipment_type_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verifies or recreates canonical equipment-type façade modules under <code>modules/is_*</code> (<code>is_switch</code>, <code>is_server</code>, <code>is_workstation</code>, …). Does not delete anything.</td>
                     <td><code>php scripts/ensure_equipment_type_modules.php</code> — CLI-only (browser shows <strong>← Scripts index</strong> + CLI command). Exit <code>1</code> if any canonical <code>index.php</code> is missing.</td>
                 </tr>
                 <tr>
-                    <td><a href="cleanup_equipment_test_module_artifacts.php">cleanup_equipment_test_module_artifacts.php</a></td>
+                    <td><a href="cleanup_equipment_test_module_artifacts.php" target="_blank" rel="nofollow noreferrer">cleanup_equipment_test_module_artifacts.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         <strong>Destructive (local dev DB):</strong> removes regression-test <code>equipment_types</code> rows (including <code>MBQA-equipment_types-…</code> runner tags), ITM test companies, junk <code>modules/is_*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> / orphan <code>modules/is_mbqa_equipment_types_*</code> folders, and matching sidebar prefs — then re-ensures canonical <code>is_*</code> modules. Never removes <code>is_switch</code>, <code>is_server</code>, etc. Browser <strong>Run QA</strong> now executes this cleanup silently before and after <code>module_browser_qa_runner.php</code>.
@@ -638,7 +638,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/cleanup_equipment_test_module_artifacts.php</code> — CLI-only (browser shows <strong>← Scripts index</strong> + CLI command). Same logic as post-QA runner cleanup; run manually after other equipment DB tests if needed.</td>
                 </tr>
                 <tr>
-                    <td><a href="equipment_delete_clear_table_test.php">equipment_delete_clear_table_test.php</a></td>
+                    <td><a href="equipment_delete_clear_table_test.php" target="_blank" rel="nofollow noreferrer">equipment_delete_clear_table_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         MySQL regression for equipment <code>clear_table</code> and transactional <code>equipment_delete_record()</code>. Uses equipment type names <code>Switch</code> / <code>Server</code> only (not suffixed names) so canonical <code>modules/is_*</code> façades are reused and the sidebar stays clean. <strong>Mutates DB:</strong> creates temporary tenant/reference/equipment rows, then cleans them up.
@@ -649,7 +649,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="tickets_related_asset_equipment_delete_test.php">tickets_related_asset_equipment_delete_test.php</a></td>
+                    <td><a href="tickets_related_asset_equipment_delete_test.php" target="_blank" rel="nofollow noreferrer">tickets_related_asset_equipment_delete_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         MySQL regression for tickets sample data: seeds lookup parents (including <code>equipment</code>), inserts <code>TCK-0001</code> with <code>asset_id</code> on Primary File Server, and asserts <code>equipment_delete_record()</code> is blocked with a Related Asset / in-use message. <strong>Mutates DB:</strong> seeds/updates sample ticket rows during the test.
@@ -660,7 +660,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="verify_equipment_triggers.php">verify_equipment_triggers.php</a></td>
+                    <td><a href="verify_equipment_triggers.php" target="_blank" rel="nofollow noreferrer">verify_equipment_triggers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         MySQL regression for <code>equipment</code> audit triggers: verifies that <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> operations on the equipment table are correctly logged to <code>audit_logs</code>. <strong>Mutates DB:</strong> creates and deletes temporary equipment rows.
@@ -671,7 +671,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="employees_delete_clear_table_test.php">employees_delete_clear_table_test.php</a></td>
+                    <td><a href="employees_delete_clear_table_test.php" target="_blank" rel="nofollow noreferrer">employees_delete_clear_table_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>MySQL regression for employees <code>clear_table</code> transactional delete (access rows roll back when employee delete is blocked by FK). <strong>Mutates DB:</strong> creates temporary tenant/reference/employee rows, then cleans them up.</td>
                     <td>
@@ -708,27 +708,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a></td>
+                    <td><a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Lists <code>modules/*/index.php</code> folders that are <strong>not</strong> on the sidebar (including policy-hidden internal modules such as <code>floor_plan_folders</code>, <code>floor_plan_tags</code>, <code>floor_plan_item_tags</code>).</td>
                     <td>
-                        <strong>Log in first.</strong> Open <a href="list_modules_not_on_sidebar.php">list_modules_not_on_sidebar.php</a> or
+                        <strong>Log in first.</strong> Open <a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a> or
                         <a href="list_modules_not_on_sidebar.php?format=json">?format=json</a>.<br>
                         CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code>
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a></td>
+                    <td><a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Compares every <code>CREATE TABLE</code> in <code>database.sql</code> with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
                     <td>
-                        <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php">compare_database_sql_modules.php</a> or
+                        <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a> or
                         <a href="compare_database_sql_modules.php?format=json">?format=json</a>.<br>
                         CLI: <code>php scripts/compare_database_sql_modules.php</code> · JSON: <code>--json</code> · exit code <code>1</code> when gaps exist.
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="floor_plans_folder_move_test.php">floor_plans_folder_move_test.php</a></td>
+                    <td><a href="floor_plans_folder_move_test.php" target="_blank" rel="nofollow noreferrer">floor_plans_folder_move_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>MySQL regression for Floor Plans folder reparenting (<code>fp_move_folder_to_parent</code> in <code>gallery_helpers.php</code>). <strong>Mutates DB:</strong> creates temporary folder hierarchy rows, then removes them.</td>
                     <td>Browser: HTML log with module/table links (needs DB). CLI: <code>php scripts/floor_plans_folder_move_test.php</code> — optional <code>ITM_TEST_COMPANY_ID</code>.</td>
@@ -740,7 +740,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/explorer_human_test.php</code> — CLI-only; run from the repository root after Explorer module changes.</td>
                 </tr>
                 <tr>
-                    <td><a href="floor_designer_test.php">floor_designer_test.php</a></td>
+                    <td><a href="floor_designer_test.php" target="_blank" rel="nofollow noreferrer">floor_designer_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Validates Floor Designer module logic, AJAX endpoints, and schema mapping.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/floor_designer_test.php</code>.</td>
@@ -775,49 +775,49 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_standard_crud_delegate_requires.php">check_standard_crud_delegate_requires.php</a></td>
+                    <td><a href="check_standard_crud_delegate_requires.php" target="_blank" rel="nofollow noreferrer">check_standard_crud_delegate_requires.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: <code>modules/*/</code> PHP files must not <code>require __DIR__ . '/../manufacturers/…'</code> (only <code>modules/manufacturers/</code> may host that CRUD tree).</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_standard_crud_delegate_requires.php</code> — run after standard CRUD template or module scaffold changes.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_csrf_coverage.php">check_csrf_coverage.php</a></td>
+                    <td><a href="check_csrf_coverage.php" target="_blank" rel="nofollow noreferrer">check_csrf_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: POST handlers that mutate data without a known CSRF guard.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_csrf_coverage.php</code> — smoke step 2 / AGENTS.md after CRUD changes.</td>
                 </tr>
                 <tr>
-                    <td><a href="apply_date_display_format.php">apply_date_display_format.php</a></td>
+                    <td><a href="apply_date_display_format.php" target="_blank" rel="nofollow noreferrer">apply_date_display_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: patch duplicated <code>cr_render_cell_value()</code> helpers to call <code>itm_format_cell_scalar_display()</code> (dd/mm/yyyy list/view display).</td>
                     <td><code>php scripts/apply_date_display_format.php</code> from repository root. Re-run when new flattened CRUD modules ship without the date display hook.</td>
                 </tr>
                 <tr>
-                    <td><a href="apply_crud_hidden_employee_id_alias.php">apply_crud_hidden_employee_id_alias.php</a></td>
+                    <td><a href="apply_crud_hidden_employee_id_alias.php" target="_blank" rel="nofollow noreferrer">apply_crud_hidden_employee_id_alias.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: replace dead <code>'user_id'</code> entries in flattened CRUD <code>$hidden</code> column arrays with <code>'employee_id'</code> under <code>modules/</code>.</td>
                     <td><code>php scripts/apply_crud_hidden_employee_id_alias.php</code> from repository root. Idempotent; re-run when new scaffolds copy the old hide list.</td>
                 </tr>
                 <tr>
-                    <td><a href="apply_crud_fk_label_search.php">apply_crud_fk_label_search.php</a></td>
+                    <td><a href="apply_crud_fk_label_search.php" target="_blank" rel="nofollow noreferrer">apply_crud_fk_label_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: extend flattened CRUD <code>index.php</code> search blocks with <code>itm_crud_fk_label_search_conditions()</code> so Search (all fields) matches FK label tables, not only raw IDs.</td>
                     <td><code>php scripts/apply_crud_fk_label_search.php</code> from repository root. Idempotent; re-run when new flattened modules ship without the FK label search hook. Employees uses <code>includes/itm_employees_search.php</code> instead.</td>
                 </tr>
                 <tr>
-                    <td><a href="apply_display_field_columns_search_alias.php">apply_display_field_columns_search_alias.php</a></td>
+                    <td><a href="apply_display_field_columns_search_alias.php" target="_blank" rel="nofollow noreferrer">apply_display_field_columns_search_alias.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable.</td>
                     <td><code>php scripts/apply_display_field_columns_search_alias.php</code> from repository root. Re-run only when new flattened CRUD modules omit the alias.</td>
                 </tr>
                 <tr>
-                    <td><a href="apply_itm_actions_cell_markers.php">apply_itm_actions_cell_markers.php</a></td>
+                    <td><a href="apply_itm_actions_cell_markers.php" target="_blank" rel="nofollow noreferrer">apply_itm_actions_cell_markers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: add <code>class="itm-actions-cell"</code> and <code>data-itm-actions-origin="1"</code> on Actions column header and body cells in module list tables (module browser QA <code>ui_check</code>).</td>
                     <td><code>php scripts/apply_itm_actions_cell_markers.php</code> from repository root (Windows Laragon: full PHP 7.4 path). Updates <code>modules/*/index.php</code> and <code>modules/*/includes/partials/render.php</code>.</td>
                 </tr>
                 <tr>
-                    <td><a href="apply_ui_action_emoji.php">apply_ui_action_emoji.php</a></td>
+                    <td><a href="apply_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">apply_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>One-time/maintenance: bulk replace simple NO MIXED markup (disk emoji + Save word) → emoji-only + <code>title</code> on modules and shared UI files.</td>
                     <td><code>php scripts/apply_ui_action_emoji.php</code> dry-run default; <code>--apply</code> writes. Skip PHP ternaries / JS templates — fix manually.</td>
@@ -829,49 +829,49 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_ui_action_emoji.php</code> — exit <code>0</code> when <strong>0 violations incl. mixed emoji+word</strong>; exit <code>1</code> on any match. Run after UI label changes.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_fk_label_search_coverage.php">check_fk_label_search_coverage.php</a></td>
+                    <td><a href="check_fk_label_search_coverage.php" target="_blank" rel="nofollow noreferrer">check_fk_label_search_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Static audit: every module with server-side list search must match visible FK/label columns (shared CRUD helper, EXISTS/JOIN label LIKE, employee JOIN/CONCAT, or scalar-only fields). No per-module allowlist.</td>
                     <td><code>php scripts/check_fk_label_search_coverage.php</code> — smoke step 4 / AGENTS.md after list search changes; exit <code>0</code> on full coverage.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_display_field_columns_search.php">check_display_field_columns_search.php</a></td>
+                    <td><a href="check_display_field_columns_search.php" target="_blank" rel="nofollow noreferrer">check_display_field_columns_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_script_disposable_employees.php">check_script_disposable_employees.php</a></td>
+                    <td><a href="check_script_disposable_employees.php" target="_blank" rel="nofollow noreferrer">check_script_disposable_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>employees</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_employee.php</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_script_disposable_employees.php</code> — run after changing audit repro scripts; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_sql_injection_coverage.php">check_sql_injection_coverage.php</a></td>
+                    <td><a href="check_sql_injection_coverage.php" target="_blank" rel="nofollow noreferrer">check_sql_injection_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3 / AGENTS.md after PHP/SQL changes.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_stale_user_id_sql.php">check_stale_user_id_sql.php</a></td>
+                    <td><a href="check_stale_user_id_sql.php" target="_blank" rel="nofollow noreferrer">check_stale_user_id_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: fail on stale <code>user_id</code> column SQL or legacy <code>users</code> table references in <code>modules/</code>, <code>includes/</code>, and <code>config/</code> after the employees merge.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_id_sql.php</code> — run after auth/session or schema merge changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_stale_user_terminology.php">check_stale_user_terminology.php</a></td>
+                    <td><a href="check_stale_user_terminology.php" target="_blank" rel="nofollow noreferrer">check_stale_user_terminology.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose, <code>employee_companies</code> + <code>user_id</code> helper references, session <code>role_name</code> admin checks in <code>modules/</code>, <code>cr_username_for_user_id</code>, and <code>'user_id'</code> inside CRUD <code>$hidden</code> arrays.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_multi_tenant_leaks.php">check_multi_tenant_leaks.php</a></td>
+                    <td><a href="check_multi_tenant_leaks.php" target="_blank" rel="nofollow noreferrer">check_multi_tenant_leaks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static scan: SQL queries and INSERTs on scoped tables missing <code>company_id</code> filters, and improper UI exposure of company identifiers.</td>
                     <td>Browser: HTML report with detailed leak locations. CLI: <code>php scripts/check_multi_tenant_leaks.php</code> — run after CRUD changes to ensure data isolation.</td>
                 </tr>
                 <tr>
-                    <td><a href="check_index_table_compliance.php">check_index_table_compliance.php</a></td>
+                    <td><a href="check_index_table_compliance.php" target="_blank" rel="nofollow noreferrer">check_index_table_compliance.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         Index list tables: <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF, form <code>csrf_token</code>.
@@ -895,23 +895,23 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/apply_bulk_actions_records_per_page_gate.php [--dry-run]</code> — CLI only (browser shows instructions).</td>
                 </tr>
                 <tr>
-                    <td><a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a></td>
+                    <td><a href="module_clean_tests_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_clean_tests_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Runs the same QA artifact cleanup used by <code>module_browser_qa_runner.php</code>: equipment scaffold folders, legacy template stub modules, MBQA/QA-IMPORT DB rows, sidebar leftovers, then re-ensures canonical <code>modules/is_*</code> facades. Browser <strong>Run QA</strong> already triggers this cleanup silently at start and end; use this page for manual cleanup runs. Includes quick links: <strong>Clean Tests · Open markdown file · Download XLSX · Rebuild report · Re-Run Test · Run QA runner</strong>.</td>
                     <td>
-                        Browser: <a href="module_clean_tests_qa_runner.php">module_clean_tests_qa_runner.php</a> (open page, click <strong>Run Clean Tests</strong>; POST + CSRF required).<br>
+                        Browser: <a href="module_clean_tests_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_clean_tests_qa_runner.php</a> (open page, click <strong>Run Clean Tests</strong>; POST + CSRF required).<br>
                         CLI: <code>php scripts/module_clean_tests_qa_runner.php</code><br>
                         Help: <code>php scripts/module_clean_tests_qa_runner.php --help</code>
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a></td>
+                    <td><a href="module_browser_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, then per module <strong>mysql</strong> (<code>database.sql</code> INSERT row count), <strong>rotate error_log.txt</strong>, list/<strong>clear</strong>/sample_data, <strong>add</strong>, <strong>bulk_delete</strong>, CRUD/export, <strong>clear_table</strong>, second <strong>clear</strong>, import/<strong>single_delete</strong>, end sample restore + <strong>error_log</strong>. <strong>Mutates DB:</strong> seeds sample data and inserts/imports test rows as part of the flow. Tier lists: <code>$bespokeSmoke</code> / <code>$skipClear</code> in <code>scripts/lib/mbqa_runner_tiers.php</code>. Browser <strong>Run QA</strong> silently runs <code>module_clean_tests_qa_runner.php</code> at start and end. Preflight validation, auto-detected Base URL on Laragon, structured <strong>import_db</strong> JSON parsing, stale AJAX cleanup. Optional browser-only <strong>UI click smoke</strong> (one module + one company) appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, <code>import_excel_click</code>. Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run.
                     </td>
                     <td>
-                        Browser: <a href="module_browser_qa_runner.php">module_browser_qa_runner.php</a> — form: <strong>Run QA</strong> + <strong>Stop</strong> (AJAX poll every 400ms). Optional <strong>UI click smoke</strong> (one module + one company).<br>
+                        Browser: <a href="module_browser_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_runner.php</a> — form: <strong>Run QA</strong> + <strong>Stop</strong> (AJAX poll every 400ms). Optional <strong>UI click smoke</strong> (one module + one company).<br>
                         <code>php scripts/module_browser_qa_runner.php</code><br>
                         <code>php scripts/module_browser_qa_runner.php --pilot-only</code> (expenses only)<br>
                         <code>php scripts/module_browser_qa_runner.php --module=expenses --company=1</code><br>
@@ -921,35 +921,35 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a></td>
+                    <td><a href="module_browser_qa_build_report.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_build_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Builds markdown summary from a timestamped runner JSON: tier reference (<code>$bespokeSmoke</code>, <code>$skipClear</code>), configured step exceptions, per-module results, failure/skip indexes. Re-Run links preserve UI click smoke when set. Writes <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
                     <td>
-                        Browser: <a href="module_browser_qa_build_report.php">module_browser_qa_build_report.php</a> (form; <code>?run=1&amp;date=YYYY-MM-DD</code>)<br>
+                        Browser: <a href="module_browser_qa_build_report.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_build_report.php</a> (form; <code>?run=1&amp;date=YYYY-MM-DD</code>)<br>
                         <code>php scripts/module_browser_qa_build_report.php</code><br>
                         <code>php scripts/module_browser_qa_build_report.php --date=2026-05-20</code>
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="check_employees_clear_table_transaction.php">check_employees_clear_table_transaction.php</a></td>
+                    <td><a href="check_employees_clear_table_transaction.php" target="_blank" rel="nofollow noreferrer">check_employees_clear_table_transaction.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static guard: employees <code>clear_table</code> uses a MySQL transaction (access delete + employees delete with rollback).</td>
                     <td><code>php scripts/check_employees_clear_table_transaction.php</code> — run manually after employees <code>clear_table</code> changes (AGENTS.md).</td>
                 </tr>
                 <tr>
-                    <td><a href="check_equipment_clear_table_delete.php">check_equipment_clear_table_delete.php</a></td>
+                    <td><a href="check_equipment_clear_table_delete.php" target="_blank" rel="nofollow noreferrer">check_equipment_clear_table_delete.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static guard: equipment <code>clear_table</code> / <code>equipment_delete_record()</code> helpers in <code>delete_functions.php</code>.</td>
                     <td><code>php scripts/check_equipment_clear_table_delete.php</code> — run manually after equipment delete/clear-table changes (AGENTS.md).</td>
                 </tr>
                 <tr>
-                    <td><a href="check_ui_configuration_coverage.php">check_ui_configuration_coverage.php</a></td>
+                    <td><a href="check_ui_configuration_coverage.php" target="_blank" rel="nofollow noreferrer">check_ui_configuration_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>UI configuration hooks: table actions, new button, export toolbar, back/save on forms.</td>
                     <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — run manually when module UI/layout changes; exits <code>2</code> on failure. Audits table actions, export card, search, Settings <code>records_per_page</code> pagination, bulk Select to Delete / Clear Table, and CRUD entry files. Skips modules in <code>scripts/data/ui_configuration_excluded_modules.txt</code> (e.g. <code>audit_logs</code>, <code>ip_subnets</code>, <code>rack_planner</code>) and prefixes in <code>ui_configuration_excluded_prefixes.txt</code> (e.g. <code>is_*</code>).</td>
                 </tr>
                 <tr>
-                    <td><a href="check_audit_logs_coverage.php">check_audit_logs_coverage.php</a></td>
+                    <td><a href="check_audit_logs_coverage.php" target="_blank" rel="nofollow noreferrer">check_audit_logs_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>database.sql</code>.</td>
                     <td>
@@ -958,13 +958,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="sql_injection_matrix_test.php">sql_injection_matrix_test.php</a></td>
+                    <td><a href="sql_injection_matrix_test.php" target="_blank" rel="nofollow noreferrer">sql_injection_matrix_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Fixed payload matrix against <code>lib/sql_injection_detector.php</code>.</td>
                     <td>Browser: plain-text results. CLI: <code>php scripts/sql_injection_matrix_test.php</code> — non-zero exit if any case fails.</td>
                 </tr>
                 <tr>
-                    <td><a href="db_field_active.php">db_field_active.php</a></td>
+                    <td><a href="db_field_active.php" target="_blank" rel="nofollow noreferrer">db_field_active.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Identifies tables missing the mandatory <code>active</code> column and detects code mismatches where queries expect this field on tables that lack it.</td>
                     <td>Browser: HTML report with detailed mismatch locations. CLI: <code>php scripts/db_field_active.php</code> — run after CRUD changes to ensure schema compliance.</td>
@@ -990,49 +990,49 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="sync_modules_registry.php">sync_modules_registry.php</a></td>
+                    <td><a href="sync_modules_registry.php" target="_blank" rel="nofollow noreferrer">sync_modules_registry.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs; seeds <code>company_module_access</code> for new registry rows. Sidebar discovery also auto-registers new tables/folders on page load — use this script for bulk backfill after deploy or when icons/labels need catalog sync.</td>
                     <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code>. Run after adding module folders; optional when only a new MySQL table was created (sidebar auto-scaffold + register).</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_ops_report.php">verify_ops_report.php</a></td>
+                    <td><a href="verify_ops_report.php" target="_blank" rel="nofollow noreferrer">verify_ops_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
                 </tr>
                 <tr>
-                    <td><a href="benchmark_sidebar_module_access.php">benchmark_sidebar_module_access.php</a></td>
+                    <td><a href="benchmark_sidebar_module_access.php" target="_blank" rel="nofollow noreferrer">benchmark_sidebar_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Read-only benchmark for sidebar generation: measures MySQL <code>Questions</code> delta for the live path (<code>itm_sidebar_structure()</code> + <code>has_module_access()</code> filter) vs an uncached legacy N+1 simulation (per-slug registry + admin + CMA queries and per-slug registry ensure). Reports median query count, timing, and reduction percentage. Requires prefetch cache in <code>includes/itm_company_module_access.php</code>.</td>
                     <td>CLI: <code>php scripts/benchmark_sidebar_module_access.php</code> · optional <code>--company=1 --employee=1 --iterations=3 --checks=100</code>. Browser: <a href="benchmark_sidebar_module_access.php">benchmark_sidebar_module_access.php</a> · query params <code>company</code>, <code>employee</code>, <code>iterations</code>, <code>checks</code>. Env thresholds: <code>ITM_BSMA_MAX_FULL_QUERIES</code> (default 45), <code>ITM_BSMA_MIN_REDUCTION_PCT</code> (default 50), plus BOLT journal component vars documented in <code>scripts/SCRIPTS.md</code>. Verifies claims in <code>docs/bolt.md</code>.</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_company_module_access.php">verify_company_module_access.php</a></td>
+                    <td><a href="verify_company_module_access.php" target="_blank" rel="nofollow noreferrer">verify_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for registry coverage, opt-out deny, sidebar-excluded slugs in the admin matrix, company icon overrides, and disposable sidebar discovery probes: registry-only (no <code>modules/{slug}/</code>), new MySQL table (auto-scaffold), folder-only (<code>index.php</code>), registry + folder (single entry), neither (absent + denied). Uses <code>itm_sidebar_discovery_probe_cleanup()</code> for probe teardown.</td>
                     <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter CompanyModuleAccessVerifyTest</code> (subprocess wrapper). Run when changing <code>includes/itm_company_module_access.php</code>, <code>includes/ui_config.php</code> sidebar discovery, or CMA enforcement.</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_roles_permissions.php">verify_roles_permissions.php</a></td>
+                    <td><a href="verify_roles_permissions.php" target="_blank" rel="nofollow noreferrer">verify_roles_permissions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/roles_permissions/</code>: registry row, module entry + matrix JS, RBAC-exempt slug, Admin <code>ALL</code> wildcard with six flags, seeded roles and <code>role_hierarchy</code> for company 1, <code>can_import</code>/<code>can_export</code> columns, role sidebar <code>active_count</code> (role_id + HR Active).</td>
                     <td>Browser: <a href="verify_roles_permissions.php">verify_roles_permissions.php</a>. CLI: <code>php scripts/verify_roles_permissions.php</code>. Run when changing <code>modules/roles_permissions/</code>, <code>js/roles-permissions-matrix.js</code>, or <code>role_module_permissions</code> / <code>employee_roles</code> schema.</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a></td>
+                    <td><a href="verify_dashboard_active_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_active_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>dashboard.php</code> row-2 <strong>Active</strong> and <strong>On Leave</strong> stats: employment status helpers and counts for company 1.</td>
                     <td>Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>dashboard.php</code> or Active/On Leave employee count logic.</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_dashboard_online_users.php">verify_dashboard_online_users.php</a></td>
+                    <td><a href="verify_dashboard_online_users.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_online_users.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>dashboard.php</code> row-2 <strong>Online now</strong> stat: session presence helper, <code>config/config.php</code> touch hook, count after touch.</td>
                     <td>Browser: <a href="verify_dashboard_online_users.php">verify_dashboard_online_users.php</a>. CLI: <code>php scripts/verify_dashboard_online_users.php</code>. Run when changing online session presence or dashboard Online now markup.</td>
                 </tr>
                 <tr>
-                    <td><a href="seed_company_module_access.php">seed_company_module_access.php</a></td>
+                    <td><a href="seed_company_module_access.php" target="_blank" rel="nofollow noreferrer">seed_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (all modules or one <code>company_id</code>). Calls <code>sync_modules_registry.php</code> first when seeding a single company.</td>
                     <td>CLI: <code>php scripts/seed_company_module_access.php</code> (all companies) or <code>php scripts/seed_company_module_access.php 3</code> (one company). Browser: <a href="seed_company_module_access.php">seed_company_module_access.php</a>.</td>
@@ -1050,7 +1050,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/bypass_v2.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
                 <tr>
-                    <td><a href="sql_insert.php">sql_insert.php</a></td>
+                    <td><a href="sql_insert.php" target="_blank" rel="nofollow noreferrer">sql_insert.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Allows administrators to paste and execute raw SQL <code>INSERT</code> commands with optional Foreign Key check toggling. Maintains audit logging.</td>
                     <td>Browser: <a href="sql_insert.php">sql_insert.php</a> (form).<br>CLI: <code>php scripts/sql_insert.php --file=path/to/file.sql [--disable-fk]</code></td>
@@ -1116,19 +1116,19 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/repro_bug.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_vulnerabilities.php">repro_vulnerabilities.php</a></td>
+                    <td><a href="repro_vulnerabilities.php" target="_blank" rel="nofollow noreferrer">repro_vulnerabilities.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_esa_vulnerability.php">repro_esa_vulnerability.php</a></td>
+                    <td><a href="repro_esa_vulnerability.php" target="_blank" rel="nofollow noreferrer">repro_esa_vulnerability.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for Employee System Access Broken Access Control (non-admin access to edit page).</td>
                     <td><code>php scripts/repro_esa_vulnerability.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="benchmark_stats_optimized.php">benchmark_stats_optimized.php</a></td>
+                    <td><a href="benchmark_stats_optimized.php" target="_blank" rel="nofollow noreferrer">benchmark_stats_optimized.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Benchmark for user-config.php stats gathering optimization. Compares performance of individual queries vs one consolidated query.</td>
                     <td><code>php scripts/benchmark_stats_optimized.php</code></td>
@@ -1149,90 +1149,90 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             </thead>
             <tbody>
                 <tr>
-                    <td><a href="verify_system_status.php">verify_system_status.php</a></td>
+                    <td><a href="verify_system_status.php" target="_blank" rel="nofollow noreferrer">verify_system_status.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/system_status/</code>: file layout, registry row, native API payloads, storage tree + active DB table reports, <code>information_schema</code> query; Windows also checks <code>is_readable()</code> on each <code>includes/*.ps1</code> and runs <code>test_*.php</code> PowerShell wrappers.</td>
                     <td><code>php scripts/verify_system_status.php</code></td>
                 </tr>
                 <tr>
-					<td><a href="system_status_api.php">system_status_api.php</a></td>
+					<td><a href="system_status_api.php" target="_blank" rel="nofollow noreferrer">system_status_api.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
 					<td>Admin JSON API dispatcher (<code>?action=system_info</code>, etc.). PHP/MySQL actions always native; Windows hardware uses <code>includes/*.ps1</code> via allowlisted <code>itm_system_status_run_powershell_action()</code>. Invalid <code>action</code> → HTTP 400. Documented in <a href="api.php">api.php</a>.</td>
 					<td>GET <code>scripts/system_status_api.php?action=cpu_usage</code> (Admin session)</td>
 				</tr>
                 <tr>
-					<td><a href="system_status_phpinfo.php">system_status_phpinfo.php</a></td>
+					<td><a href="system_status_phpinfo.php" target="_blank" rel="nofollow noreferrer">system_status_phpinfo.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
 					<td>Admin-only <code>phpinfo()</code> for the active Apache PHP runtime (linked from System Status → PHP Settings).</td><td>GET <code>scripts/system_status_phpinfo.php</code> (Admin session)</td>
 				</tr>
                 <tr>
-					<td><a href="test_system_info.php">test_system_info.php</a></td>
+					<td><a href="test_system_info.php" target="_blank" rel="nofollow noreferrer">test_system_info.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests <code>includes/system_info.ps1</code> JSON output (Windows Laragon).</td>
 					<td><code>php scripts/test_system_info.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_cpu_usage.php">test_cpu_usage.php</a></td>
+					<td><a href="test_cpu_usage.php" target="_blank" rel="nofollow noreferrer">test_cpu_usage.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests cpu_usage.ps1 output.</td>
 					<td><code>php scripts/test_cpu_usage.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_ram_usage.php">test_ram_usage.php</a></td>
+					<td><a href="test_ram_usage.php" target="_blank" rel="nofollow noreferrer">test_ram_usage.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests ram_usage.ps1 output.</td>
 					<td><code>php scripts/test_ram_usage.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_disk_usage.php">test_disk_usage.php</a></td>
+					<td><a href="test_disk_usage.php" target="_blank" rel="nofollow noreferrer">test_disk_usage.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests disk_usage.ps1 output.</td>
 					<td><code>php scripts/test_disk_usage.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_uptime.php">test_uptime.php</a></td>
+					<td><a href="test_uptime.php" target="_blank" rel="nofollow noreferrer">test_uptime.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests uptime.ps1 output.</td>
 					<td><code>php scripts/test_uptime.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_php_version.php">test_php_version.php</a></td>
+					<td><a href="test_php_version.php" target="_blank" rel="nofollow noreferrer">test_php_version.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests php_version.ps1 output.</td>
 					<td><code>php scripts/test_php_version.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_php_extensions.php">test_php_extensions.php</a></td>
+					<td><a href="test_php_extensions.php" target="_blank" rel="nofollow noreferrer">test_php_extensions.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests php_extensions.ps1 output.</td>
 					<td><code>php scripts/test_php_extensions.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_php_ini_values.php">test_php_ini_values.php</a></td>
+					<td><a href="test_php_ini_values.php" target="_blank" rel="nofollow noreferrer">test_php_ini_values.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests php_ini_values.ps1 output.</td>
 					<td><code>php scripts/test_php_ini_values.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_mysql_status.php">test_mysql_status.php</a></td>
+					<td><a href="test_mysql_status.php" target="_blank" rel="nofollow noreferrer">test_mysql_status.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests mysql_status.ps1 output.</td>
 					<td><code>php scripts/test_mysql_status.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_mysql_version.php">test_mysql_version.php</a></td>
+					<td><a href="test_mysql_version.php" target="_blank" rel="nofollow noreferrer">test_mysql_version.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests mysql_version.ps1 output.</td>
 					<td><code>php scripts/test_mysql_version.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_mysql_databases.php">test_mysql_databases.php</a></td>
+					<td><a href="test_mysql_databases.php" target="_blank" rel="nofollow noreferrer">test_mysql_databases.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests mysql_databases.ps1 output.</td>
 					<td><code>php scripts/test_mysql_databases.php</code></td>
 				</tr>
                 <tr>
-					<td><a href="test_mysql_size.php">test_mysql_size.php</a></td>
+					<td><a href="test_mysql_size.php" target="_blank" rel="nofollow noreferrer">test_mysql_size.php</a></td>
 					<td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
 					<td>Tests mysql_size.ps1 output.</td>
 					<td><code>php scripts/test_mysql_size.php</code></td>
@@ -1553,79 +1553,79 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_contacts_idor.php">repro_contacts_idor.php</a></td>
+                    <td><a href="repro_contacts_idor.php" target="_blank" rel="nofollow noreferrer">repro_contacts_idor.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for IDOR vulnerability in contacts API inline edit.</td>
                     <td><code>php scripts/repro_contacts_idor.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_select_options.php">repro_select_options.php</a></td>
+                    <td><a href="repro_select_options.php" target="_blank" rel="nofollow noreferrer">repro_select_options.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for RBAC bypass in select options API.</td>
                     <td><code>php scripts/repro_select_options.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_status_leak.php">repro_status_leak.php</a></td>
+                    <td><a href="repro_status_leak.php" target="_blank" rel="nofollow noreferrer">repro_status_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for employee status cross-tenant leak.</td>
                     <td><code>php scripts/repro_status_leak.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_visitors_bac.php">repro_visitors_bac.php</a></td>
+                    <td><a href="repro_visitors_bac.php" target="_blank" rel="nofollow noreferrer">repro_visitors_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for Broken Access Control in visitors access log.</td>
                     <td><code>php scripts/repro_visitors_bac.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="repro_visitors_sqli.php">repro_visitors_sqli.php</a></td>
+                    <td><a href="repro_visitors_sqli.php" target="_blank" rel="nofollow noreferrer">repro_visitors_sqli.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for SQL Injection in visitors access log inline edit.</td>
                     <td><code>php scripts/repro_visitors_sqli.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_audit_updated.php">verify_audit_updated.php</a></td>
+                    <td><a href="verify_audit_updated.php" target="_blank" rel="nofollow noreferrer">verify_audit_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for audit log redaction of sensitive fields.</td>
                     <td><code>php scripts/verify_audit_updated.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_clear_table_fix.php">verify_clear_table_fix.php</a></td>
+                    <td><a href="verify_clear_table_fix.php" target="_blank" rel="nofollow noreferrer">verify_clear_table_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for employees clear table fix navigating FK dependencies.</td>
                     <td><code>php scripts/verify_clear_table_fix.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_explorer_updated.php">verify_explorer_updated.php</a></td>
+                    <td><a href="verify_explorer_updated.php" target="_blank" rel="nofollow noreferrer">verify_explorer_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for Explorer file extension whitelisting.</td>
                     <td><code>php scripts/verify_explorer_updated.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_rbac_updated.php">verify_rbac_updated.php</a></td>
+                    <td><a href="verify_rbac_updated.php" target="_blank" rel="nofollow noreferrer">verify_rbac_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for RBAC protection guards in module handlers.</td>
                     <td><code>php scripts/verify_rbac_updated.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_sqli_updated.php">verify_sqli_updated.php</a></td>
+                    <td><a href="verify_sqli_updated.php" target="_blank" rel="nofollow noreferrer">verify_sqli_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for SQL Injection fix in visitors access log.</td>
                     <td><code>php scripts/verify_sqli_updated.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_status_leak_fixed.php">verify_status_leak_fixed.php</a></td>
+                    <td><a href="verify_status_leak_fixed.php" target="_blank" rel="nofollow noreferrer">verify_status_leak_fixed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for employee status cross-tenant leak fix.</td>
                     <td><code>php scripts/verify_status_leak_fixed.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_visitors_bac_fix.php">verify_visitors_bac_fix.php</a></td>
+                    <td><a href="verify_visitors_bac_fix.php" target="_blank" rel="nofollow noreferrer">verify_visitors_bac_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for Broken Access Control fix in visitors access log.</td>
                     <td><code>php scripts/verify_visitors_bac_fix.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_visitors_sqli_fix.php">verify_visitors_sqli_fix.php</a></td>
+                    <td><a href="verify_visitors_sqli_fix.php" target="_blank" rel="nofollow noreferrer">verify_visitors_sqli_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Verification script for SQL Injection fix in visitors access log against fixed files.</td>
                     <td><code>php scripts/verify_visitors_sqli_fix.php</code></td>
