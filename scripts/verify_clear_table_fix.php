@@ -9,8 +9,8 @@
 
 define('ITM_CLI_SCRIPT', true);
 // Why: Robust path resolution that works across different deployment layouts.
-require_once dirname(__DIR__, 3) . '/config/config.php';
-require_once dirname(__DIR__, 3) . '/scripts/lib/script_cli_output.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Employees Clear Table Fix Verification');
 $nl = itm_script_output_nl();
@@ -45,7 +45,7 @@ echo "Created dependent bookmark ID: $testBookmarkId" . $nl;
 
 // 4. Load the fix and dependencies
 require_once ROOT_PATH . 'modules/employees/delete_functions.php';
-require_once dirname(__DIR__) . '/fixed_files/delete_clear_table.php';
+require_once ROOT_PATH . 'modules/employees/delete_clear_table.php';
 
 // 5. Execute the Clear Table action
 echo "Executing fixed clear-table logic..." . $nl;

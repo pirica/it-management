@@ -11,6 +11,6 @@ $_GET['id'] = $id;
 $_SERVER['REQUEST_METHOD'] = 'POST';
 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 $_POST['csrf_token'] = $_SESSION['csrf_token'];
-chdir("modules/notes");
+chdir(__DIR__ . "/../modules/notes");
 $crud_action = 'edit';
 require "index.php";

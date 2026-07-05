@@ -3,9 +3,9 @@
  * Reproduction script for Employee Status Leak and Broken Access Control.
  */
 define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../scripts/lib/script_cli_output.php';
-require_once __DIR__ . '/../../scripts/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../scripts/lib/script_cli_output.php';
+require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
 $nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 

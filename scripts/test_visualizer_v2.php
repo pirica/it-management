@@ -2,7 +2,7 @@
 // Standalone mock to avoid DB connection issues in verification environment
 function sanitize($s) { return htmlspecialchars((string)$s); }
 
-require_once __DIR__ . '/port_visualizer_helper.php';
+require_once __DIR__ . '/../modules/idfs/port_visualizer_helper.php';
 
 $ports = [];
 for ($i=1; $i<=48; $i++) {
@@ -32,8 +32,8 @@ echo '</head><body>';
 echo '<h1>IDF Port Visualizer V2 (Relation-based)</h1>';
 echo '<div id="captureArea" class="card">';
 echo '<h2>Vertical Layout (48 Ports)</h2>';
-echo itm_render_port_visualizer($ports, ['rows' => 2, 'layout' => 'Vertical', 'base_url' => '../../']);
+echo itm_render_port_visualizer($ports, ['rows' => 2, 'layout' => 'Vertical', 'base_url' => '../']);
 echo '<br><br><h2>Horizontal Layout (48 Ports)</h2>';
-echo itm_render_port_visualizer($ports, ['rows' => 2, 'layout' => 'Horizontal', 'base_url' => '../../']);
+echo itm_render_port_visualizer($ports, ['rows' => 2, 'layout' => 'Horizontal', 'base_url' => '../']);
 echo '</div>';
 echo '</body></html>';

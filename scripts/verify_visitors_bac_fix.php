@@ -1,8 +1,8 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../scripts/lib/script_cli_output.php';
-require_once __DIR__ . '/../../scripts/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../scripts/lib/script_cli_output.php';
+require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Visitors Access Log BAC Verification');
 
@@ -18,7 +18,7 @@ define('ITM_CLI_SCRIPT', true);
 \$_SERVER['PHP_SELF'] = '/it-management/modules/visitors_access_log/index.php';
 \$_SERVER['SCRIPT_FILENAME'] = '$script_path';
 
-require '" . realpath(__DIR__ . "/../../config/config.php") . "';
+require '" . realpath(__DIR__ . "/../config/config.php") . "';
 
 \$_SESSION = unserialize(" . var_export($session_str, true) . ");
 \$company_id = \$_SESSION['company_id'];

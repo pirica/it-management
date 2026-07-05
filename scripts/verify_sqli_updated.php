@@ -1,6 +1,6 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../../../config/config.php';
+require_once __DIR__ . '/../config/config.php';
 
 // Setup a test record from today
 $company_id = 1;
@@ -21,16 +21,18 @@ function make_request($id, $field, $value) {
         'csrf_token' => 'attack_token'
     ];
 
+    $config_path = realpath(__DIR__ . '/../config/config.php');
+    $module_dir = realpath(__DIR__ . '/../modules/visitors_access_log');
     $code = "<?php
     define('ITM_CLI_SCRIPT', true);
-    require 'config/config.php';
+    require '$config_path';
     \$_SESSION['employee_id'] = 1;
     \$_SESSION['company_id'] = $company_id;
     \$_SESSION['csrf_token'] = 'attack_token';
     \$_POST = " . var_export($post_data, true) . ";
     \$_SERVER['REQUEST_METHOD'] = 'POST';
-    chdir('modules/visitors_access_log');
-    include '../../docs/fixed_files_vulnerability_visitors_access_log/fixed_files/index.php';
+    chdir('$module_dir');
+    include 'index.php';
     ?>";
 
     $tmp = tempnam(sys_get_temp_dir(), 'sqli_fixed');

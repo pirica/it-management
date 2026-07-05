@@ -5,7 +5,7 @@
  * Verifies that the fixed audit_functions.php correctly redacts sensitive fields.
  */
 
-require_once __DIR__ . '/../fixed_files/includes/audit_functions.php';
+require_once __DIR__ . '/../includes/audit_functions.php';
 
 echo "Audit Log Redaction Validation\n";
 echo "==============================\n";
