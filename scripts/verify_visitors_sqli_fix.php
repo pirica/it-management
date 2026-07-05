@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../scripts/lib/script_cli_output.php';
 require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
 
-itm_script_output_begin('Visitors Access Log SQLi PoC');
+itm_script_output_begin('Visitors Access Log SQLi Fix Verification');
 
 function run_request($script_path, $session_data, $post_data = []) {
     $tmp_file = tempnam(sys_get_temp_dir(), 'repro');
@@ -23,12 +23,12 @@ require '" . realpath(__DIR__ . "/../config/config.php") . "';
 \$_SESSION = unserialize(" . var_export($session_str, true) . ");
 \$company_id = \$_SESSION['company_id'];
 
-function itm_require_crud_role_module_permission(\$conn, \$action, \$table) {
-    // Stub for verification in isolation
-    if (\$_SESSION['role_name'] !== 'Admin') {
-        echo 'Access Denied';
-        exit;
-    }
+if (!function_exists('itm_require_post_csrf')) {
+    function itm_require_post_csrf() { return true; }
+}
+
+if (!defined('ITM_CONFIG_LOADED')) {
+    define('ITM_CONFIG_LOADED', true);
 }
 
 \$_POST = " . var_export($post_data, true) . ";
@@ -49,7 +49,7 @@ echo \$out;
 
 $company_id = 1;
 $testUser = itm_script_test_employee_create($conn, $company_id, [
-    'script_slug' => 'repro-visitors-sqli',
+    'script_slug' => 'verify-visitors-sqli-fix',
     'role_id' => 1
 ]);
 
@@ -72,7 +72,7 @@ $session = [
     'csrf_token' => $csrf
 ];
 
-echo "Testing SQL Injection in ajax_inline_edit 'field' parameter (AGAINST FIXED FILE)...\n";
+echo "Testing SQL Injection fix in Visitors Access Log...\n";
 
 $payload = "visitor_name = 'SQLI_SUCCESS', reason_for_visit";
 $postData = [
@@ -83,8 +83,8 @@ $postData = [
     'value' => 'Actually this value goes to reason_for_visit due to injection'
 ];
 
-$fixedFilePath = realpath(__DIR__ . '/../fixed_files_vulnerability_visitors_access_log/fixed_files/index.php');
-$output = run_request($fixedFilePath, $session, $postData);
+$modulePath = realpath(__DIR__ . '/../modules/visitors_access_log/index.php');
+$output = run_request($modulePath, $session, $postData);
 
 $res = mysqli_query($conn, "SELECT visitor_name, reason_for_visit FROM visitors_access_log WHERE id = $logId");
 $row = mysqli_fetch_assoc($res);
@@ -92,12 +92,12 @@ $row = mysqli_fetch_assoc($res);
 if ($row && $row['visitor_name'] === 'SQLI_SUCCESS') {
     echo colorText("[FAIL] Vulnerability Still Present: SQL Injection successful in Visitors Access Log!", 'fail') . "\n";
 } else {
-    echo "Output: " . $output . "\n";
-    echo "Visitor name: " . ($row['visitor_name'] ?? 'NULL') . "\n";
     if (strpos($output, 'Invalid field.') !== false) {
         echo colorText("[PASS] SQL Injection attempt blocked with 'Invalid field.' error.", 'pass') . "\n";
     } else {
-         echo colorText("[FAIL] Expected 'Invalid field.' error message in output.", 'fail') . "\n";
+        echo "Output: " . $output . "\n";
+        echo "Visitor name: " . ($row['visitor_name'] ?? 'NULL') . "\n";
+        echo colorText("[FAIL] Expected 'Invalid field.' error message in output.", 'fail') . "\n";
     }
 }
 

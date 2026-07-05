@@ -18,13 +18,24 @@ define('ITM_CLI_SCRIPT', true);
 \$_SERVER['PHP_SELF'] = '/it-management/modules/visitors_access_log/index.php';
 \$_SERVER['SCRIPT_FILENAME'] = '$script_path';
 
-require '" . realpath(__DIR__ . "/../config/config.php") . "';
+// Manual inclusion to avoid relative path issues in the included script
+require_once '" . realpath(__DIR__ . "/../config/config.php") . "';
 
 \$_SESSION = unserialize(" . var_export($session_str, true) . ");
 \$company_id = \$_SESSION['company_id'];
 
 \$_POST = " . var_export($post_data, true) . ";
 \$_GET = \$_POST;
+
+// Define itm_require_post_csrf before including the file
+if (!function_exists('itm_require_post_csrf')) {
+    function itm_require_post_csrf() { return true; }
+}
+
+// Intercept the require_once call by defining ITM_CONFIG_LOADED
+if (!defined('ITM_CONFIG_LOADED')) {
+    define('ITM_CONFIG_LOADED', true);
+}
 
 chdir(dirname('$script_path'));
 ob_start();
@@ -34,7 +45,8 @@ echo \$out;
 ?>";
     file_put_contents($tmp_file, $code);
     $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-    $output = shell_exec(escapeshellarg($php_bin) . ' ' . escapeshellarg($tmp_file) . ' 2>&1');
+
+    $output = shell_exec(escapeshellarg($php_bin) . " " . escapeshellarg($tmp_file) . " 2>&1");
     unlink($tmp_file);
     return $output;
 }
@@ -86,7 +98,11 @@ if ($row && $row['visitor_name'] === 'SQLI_SUCCESS') {
 } else {
     echo "Output: " . $output . "\n";
     echo "Visitor name: " . ($row['visitor_name'] ?? 'NULL') . "\n";
-    echo colorText("[PASS] SQL Injection attempt failed.", 'pass') . "\n";
+    if (strpos($output, 'Invalid field.') !== false) {
+        echo colorText("[PASS] SQL Injection attempt blocked with 'Invalid field.' error.", 'pass') . "\n";
+    } else {
+         echo colorText("[PASS] SQL Injection attempt failed.", 'pass') . "\n";
+    }
 }
 
 itm_script_output_end();
