@@ -87,6 +87,10 @@ The Passwords module provides a secure, private manager for user credentials. It
 - Export operations are handled by `export_handler.php`.
 - The frontend uses a three-column responsive layout (Generator | Tree | List).
 ```
+## 12. Module Owner Notes (Optional)
+The most sensitive module in the system. Follow all security guidelines in `AGENTS.md`.
+
+
 # Passwords Module Agent Instructions
 
 ## Overview
@@ -111,5 +115,4 @@ The Passwords module provides a secure, private manager for user credentials. It
 - AJAX operations are centralized in `ajax_handler.php`.
 - Export operations are handled by `export_handler.php`.
 - The frontend uses a three-column responsive layout (Generator | Tree | List).
-## 12. Module Owner Notes (Optional)
-The most sensitive module in the system. Follow all security guidelines in `AGENTS.md`.
+
