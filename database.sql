@@ -284,6 +284,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("system_status", "System Status", 1, 1);
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("knowledge_base", "Knowledge Base", 0, 1, "🧩");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("it_settings", "IT Settings", 0, 1, "⚙️");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("request_password", "Request Password", 0, 1, "🔑");
 -- Data for `company_module_access`
 INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
@@ -7609,3 +7610,52 @@ INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hour
 (3, 'help@networksolutions.example', '+1-415-555-0300', '09:00 - 17:00 PST', 'Please submit a ticket via the portal for escalation.'),
 (4, 'it@cloudtech.example', '+1-206-555-0400', '24/7', 'Contact the Level 2 support team via Slack #it-escalations.'),
 (5, 'it-ops@enterpriseit.example', '+1-617-555-0500', '08:00 - 20:00 EST', 'Standard escalation through the ticketing system.');
+
+-- Table structure for `request_password`
+DROP TABLE IF EXISTS `request_password`;
+CREATE TABLE `request_password` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `requested_by_employee_id` int NOT NULL,
+  `application` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reason` enum('Cannot recall password', 'Password expired', 'Account locked', 'Security reasons (3rd party may know password)') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `applicant_signature_date` date DEFAULT NULL,
+  `ism_signature_date` date DEFAULT NULL,
+  `hr_approval_status` enum('Waiting', 'Approved', 'Declined') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting',
+  `hr_signature_date` date DEFAULT NULL,
+  `hod_approval_status` enum('Waiting', 'Approved', 'Declined') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting',
+  `hod_signature_date` date DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `employee_id` (`employee_id`),
+  KEY `requested_by_employee_id` (`requested_by_employee_id`),
+  CONSTRAINT `request_password_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `request_password_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `request_password_ibfk_3` FOREIGN KEY (`requested_by_employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS `trg_request_password_audit_insert`$$
+CREATE TRIGGER `trg_request_password_audit_insert` AFTER INSERT ON `request_password` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'application', NEW.`application`, 'reason', NEW.`reason`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_request_password_audit_update`$$
+CREATE TRIGGER `trg_request_password_audit_update` AFTER UPDATE ON `request_password` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'hr_approval_status', OLD.`hr_approval_status`, 'hod_approval_status', OLD.`hod_approval_status`), JSON_OBJECT('id', NEW.`id`, 'hr_approval_status', NEW.`hr_approval_status`, 'hod_approval_status', NEW.`hod_approval_status`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_request_password_audit_delete`$$
+CREATE TRIGGER `trg_request_password_audit_delete` AFTER DELETE ON `request_password` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;

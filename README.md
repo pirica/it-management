@@ -105,6 +105,12 @@
 
 <p align="center"><img src="docs/readme/reports_hub.png" alt="Reports Hub dashboard" /></p>
 
+<p align="center"><strong>Request Password</strong> — user password reset requests with multi-stage approval workflow (HR, HOD, and ISM).</p>
+
+<p align="center"><img src="docs/readme/request_password.png" alt="Request Password module list" /></p>
+
+<p align="center"><img src="docs/readme/request_password_view.png" alt="Request Password module view" /></p>
+
 <p align="center"><strong>Bulk Import</strong> — Centralized dashboard for importing Assets and Employees via Excel or CSV with template support.</p>
 
 <p align="center"><img src="docs/readme/import_dashboard.png" alt="Bulk Import dashboard" /></p>
@@ -358,6 +364,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Departments | `modules/departments/` | Department management |
 | Employees | `modules/employees/` | Employee records, import, and reporting lines |
 | Employee refs | `employee_positions/`, `employee_statuses/`, `employee_assignment_history/`, `employee_onboarding_requests/`, `employee_system_access/`, `assignment_types/` | Positions, status, history, onboarding, and access |
+| Request Password | `modules/request_password/` | User password reset requests with HR/HOD workflow |
 | Contacts | `modules/contacts/` | Company-wide contact directory with inline editing |
 | Private Contacts | `modules/private_contacts/` | User-scoped contacts with photo uploads |
 | Org Chart | `modules/org_chart/` | Visual hierarchy with drag-and-drop reporting lines |

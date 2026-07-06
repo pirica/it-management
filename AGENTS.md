@@ -438,6 +438,15 @@ The license management module (`modules/license_management/`) tracks software li
 8. **Audit logging:** `database.sql` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
 9. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/module_browser_qa_runner.php --module=license_management --company=1`.
 
+#### Request Password module (mandatory)
+
+The Request Password module (`modules/request_password/`) handles user requests for password resets.
+
+1. **Workflow:** HR and HOD must both approve the request before ISM can finalize it.
+2. **Signatures:** The module displays signature blocks with Name and Date for the Applicant, ISM, HR, and HOD.
+3. **Notifications:** Automated email requests are sent to HR and HOD for approval; a final notification is sent to the Applicant and ISM once both are secured.
+4. **Multi-tenancy:** Strictly scoped by `company_id`.
+
 #### Company module access (mandatory)
 
 The `company_module_access` module lets administrators (`itm_is_admin()`) enable or disable modules per company.
