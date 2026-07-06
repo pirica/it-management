@@ -5,22 +5,23 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 
 ## 2. Key Tables
 - **explorer** — file/folder metadata (optional tracking).
-- **Physical storage:** `files/{company_id}/Common/`, `Departments/{dept_id}/`, `Private/{username}_{user_id}/`, `Trash/`.
+- **Physical storage:** `files/{company_id}/Common/`, `Departments/{dept_code}/`, `Private/{username}_{user_id}/`, `Trash/`.
 
 ## 3. Required Relationships
-- **explorer** → **companies**, **users**, **departments** (department segment access).
+- **explorer** → **companies**, **employees**, **departments** (department segment access).
 
 ## 4. Business Rules (Critical for Agents)
 - **Storage segments:**
   - `Common/` — all company users.
-  - `Departments/{dept_id}/` — department members only.
+  - `Departments/{dept_code}/` — department members only (uses department code instead of ID).
   - `Private/{username}_{user_id}/` — owner only.
   - `Trash/` — soft-deleted items (relative paths mirror live layout).
-- **Blocked API access** to `Private` and `Departments` **roots** (`get_full_path` returns null). The UI resolves sidebar and double-click navigation to scoped paths (`Private/{username}_{user_id}`, `Departments/{dept_id}`) via `resolveScopedFolderPath()` in `index.php`.
-- **Blocked creation/upload** at Home root, `Private` root, and `Departments` root.
+- **Blocked API access** to `Private` and `Departments` **roots** (`get_full_path` returns null). The UI resolves sidebar and double-click navigation to scoped paths (`Private/{username}_{user_id}`, `Departments/{dept_code}`) via `resolveScopedFolderPath()` in `index.php`.
+- **Blocked creation/upload** at Home root, `Private` root, `Departments` root, and `Trash` root.
 - **Protected folders:** top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. User primary private folder cannot be renamed, moved, or deleted.
+- **Trash Protection:** `Trash` root cannot be deleted if it contains any items.
 - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage (users only see/restore/empty their permitted items).
-- **Path validation:** normalize backslashes to `/`, trim slashes, collapse `.` segments via `explorer_normalize_relative_path()`, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_id}` (blocks `./Private` bypass).
+- **Path validation:** normalize backslashes to `/`, trim slashes, collapse `.` segments via `explorer_normalize_relative_path()`, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_code}` (blocks `./Private` bypass).
 - **Zip extraction:** `unzip` uses `explorer_extract_zip_safely()` — rejects archive entries whose resolved path escapes the target folder.
 - **Localisation:** UK English (en-GB) UI labels (Favourites, Trash, etc.).
 - **Upload hardening (`deny_http`):** never bare `mkdir()` under `files/` — use `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Every segment gets force-written `deny_http` `.htaccess` + `index.html`. Serve UI via `itm_files_serve_url()` → `file.php`. See **`docs/file_upload_modules.md`**.

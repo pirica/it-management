@@ -24,7 +24,7 @@ itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $user_id = (int)$testUser['id'];
 $username = (string)$testUser['username'];
-$dept_id = 0;
+$dept_code = '';
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 
 $_SESSION['company_id'] = $company_id;
@@ -43,7 +43,7 @@ if (!function_exists('get_full_path')) {
 
 $exitCode = 0;
 $bypassPath = './Private';
-$result = get_full_path($storage_root, $bypassPath, $user_id, $dept_id, $username);
+$result = get_full_path($storage_root, $bypassPath, $user_id, $dept_code, $username);
 if ($result === null) {
     echo colorText("[PASS] Blocked Private root via '$bypassPath'.", 'pass') . $nl;
 } else {
@@ -52,7 +52,7 @@ if ($result === null) {
 }
 
 $bypassOtherUser = './Private/admin_1';
-$resultOther = get_full_path($storage_root, $bypassOtherUser, $user_id, $dept_id, $username);
+$resultOther = get_full_path($storage_root, $bypassOtherUser, $user_id, $dept_code, $username);
 if ($resultOther === null) {
     echo colorText("[PASS] Blocked other-user Private path via '$bypassOtherUser'.", 'pass') . $nl;
 } else {
