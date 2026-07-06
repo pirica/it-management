@@ -12,7 +12,7 @@ if (!function_exists('str_starts_with')) {
 // Logic copied from api.php get_full_path (via includes/itm_explorer_paths.php)
 require_once __DIR__ . '/../includes/itm_explorer_paths.php';
 
-function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_id, $username) {
+function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_code, $username) {
     $relative_path = explorer_normalize_relative_path($relative_path);
     if ($relative_path === null) {
         return null;
@@ -35,9 +35,9 @@ function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_id, 
 
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
         if ($relative_path === 'Departments') return null;
-        if ($dept_id <= 0) return null;
-        if (!str_starts_with($relative_path, "Departments/$dept_id/") &&
-            $relative_path !== "Departments/$dept_id") {
+        if ($dept_code === '') return null;
+        if (!str_starts_with($relative_path, "Departments/$dept_code/") &&
+            $relative_path !== "Departments/$dept_code") {
             return null;
         }
     }
@@ -49,22 +49,22 @@ $storage_root = '/app/files/1';
 $user_id = 123;
 $username = 'jdoe';
 $user_private_dir = "jdoe_123";
-$dept_id = 10;
+$dept_code = 'IT';
 
 $test_cases = [
-    ['', 10, true, 'Home root'],
-    ['/', 10, true, 'Home root (bypass /)'],
-    ['Common', 10, true, 'Common folder'],
-    ['Private', 10, false, 'Private root'],
-    ['/Private/', 10, false, 'Private root (bypass /Private/)'],
-    ['Private/' . $user_private_dir, 10, true, 'Own private folder'],
-    ['Private/' . $user_private_dir . '/sub', 10, true, 'Subfolder in own private'],
-    ['Private/other_456', 10, false, 'Other user private folder'],
-    ['Private\\other_456\\secret', 10, false, 'Backslash other private path'],
-    ['Departments', 10, false, 'Departments root'],
-    ['Departments/' . $dept_id, 10, true, 'Own department folder'],
-    ['Departments/20', 10, false, 'Other department folder'],
-    ['Departments/10/sub', 10, true, 'Subfolder in own department'],
+    ['', 'IT', true, 'Home root'],
+    ['/', 'IT', true, 'Home root (bypass /)'],
+    ['Common', 'IT', true, 'Common folder'],
+    ['Private', 'IT', false, 'Private root'],
+    ['/Private/', 'IT', false, 'Private root (bypass /Private/)'],
+    ['Private/' . $user_private_dir, 'IT', true, 'Own private folder'],
+    ['Private/' . $user_private_dir . '/sub', 'IT', true, 'Subfolder in own private'],
+    ['Private/other_456', 'IT', false, 'Other user private folder'],
+    ['Private\\other_456\\secret', 'IT', false, 'Backslash other private path'],
+    ['Departments', 'IT', false, 'Departments root'],
+    ['Departments/' . $dept_code, 'IT', true, 'Own department folder'],
+    ['Departments/OTHER', 'IT', false, 'Other department folder'],
+    ['Departments/IT/sub', 'IT', true, 'Subfolder in own department'],
     ['..', 10, false, 'Traversal up'],
     ['Common/../Private', 10, false, 'Traversal attempt'],
     ['./Private', 10, false, 'Private root (bypass ./ prefix)'],

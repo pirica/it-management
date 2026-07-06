@@ -23,7 +23,7 @@ $nl = itm_script_output_nl();
 /**
  * Replicate get_full_path from modules/explorer/api.php
  */
-function repro_get_full_path($storage_root, $relative_path, $user_id, $dept_id, $username) {
+function repro_get_full_path($storage_root, $relative_path, $user_id, $dept_code, $username) {
     if (function_exists('explorer_normalize_relative_path')) {
         $relative_path = explorer_normalize_relative_path($relative_path);
     }
@@ -48,9 +48,9 @@ function repro_get_full_path($storage_root, $relative_path, $user_id, $dept_id, 
 
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
         if ($relative_path === 'Departments') return null;
-        if ($dept_id <= 0) return null;
-        if (!str_starts_with($relative_path, "Departments/$dept_id/") &&
-            $relative_path !== "Departments/$dept_id") {
+        if ($dept_code === '') return null;
+        if (!str_starts_with($relative_path, "Departments/$dept_code/") &&
+            $relative_path !== "Departments/$dept_code") {
             return null;
         }
     }
@@ -65,7 +65,7 @@ $_SESSION['username'] = 'attacker';
 
 $storage_root = ROOT_PATH . 'files/1';
 $user_id = 123;
-$dept_id = 1; // belongs to department 1
+$dept_code = 'ATTACK'; // belongs to department ATTACK
 $username = 'attacker';
 
 // Case: User has access to Private/attacker_123
@@ -77,19 +77,24 @@ echo "Storage Root: $storage_root" . $nl;
 echo "Path: $path" . $nl;
 echo "Item: $item" . $nl . $nl;
 
-$dir = repro_get_full_path($storage_root, $path, $user_id, $dept_id, $username);
+// Simulating get_safe_post_item() from modules/explorer/api.php
+function repro_get_safe_post_item($item) {
+    $item = trim((string)($item ?? ''));
+    if ($item === '..' || strpos($item, '/') !== false || strpos($item, '\\') !== false) {
+        return null;
+    }
+    return basename($item);
+}
 
-if ($dir) {
+$dir = repro_get_full_path($storage_root, $path, $user_id, $dept_code, $username);
+$safe_item = repro_get_safe_post_item($item);
+
+if ($dir && $safe_item !== null) {
     echo "Resolved Directory: $dir" . $nl;
-    $src = $dir . "/" . basename($item);
+    $src = $dir . "/" . $safe_item;
     echo "Source to Zip: $src" . $nl;
 
-    // In modules/explorer/api.php, the zip action does:
-    // $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
-    // $is_sensitive_root = ($path === 'Private' || $path === 'Departments');
-    // if ($is_restricted || $is_sensitive_root) { ... }
-
-    $is_restricted = ($path === '' && in_array($item, ['Common', 'Departments', 'Private', 'Trash']));
+    $is_restricted = ($path === '' && in_array($safe_item, ['Common', 'Departments', 'Private', 'Trash']));
     $is_sensitive_root = ($path === 'Private' || $path === 'Departments');
 
     echo "is_restricted: " . ($is_restricted ? "TRUE" : "FALSE") . $nl;
