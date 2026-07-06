@@ -1,0 +1,43 @@
+{
+    "findings": [
+        {
+            "title": "SQL Injection in Floor Designer ORDER BY clause",
+            "status": "active",
+            "commit_hash": "430aeb946da819d0f7da7f09d85bd4c06c0b75a1",
+            "detected_at_pst": "2026-07-06T15:06:11-07:00",
+            "reported_link": "",
+            "location": "modules/floor_designer/index.php",
+            "description": "The dir parameter is directly concatenated into the SQL ORDER BY clause, allowing time-based blind SQL injection.",
+            "attacker": "Authenticated Admin user",
+            "input": "GET dir parameter",
+            "reach": "Accessed via modules/floor_designer/index.php",
+            "impact": "Full database compromise via SQL Injection."
+        },
+        {
+            "title": "Remote Code Execution in Floor Designer save_as_floor_plan",
+            "status": "active",
+            "commit_hash": "430aeb946da819d0f7da7f09d85bd4c06c0b75a1",
+            "detected_at_pst": "2026-07-06T15:06:11-07:00",
+            "reported_link": "",
+            "location": "modules/floor_designer/index.php",
+            "description": "The save_as_floor_plan action accepts a user-provided file extension without whitelisting, allowing PHP file uploads.",
+            "attacker": "Authenticated Admin user",
+            "input": "POST ext parameter",
+            "reach": "Accessed via AJAX action in modules/floor_designer/index.php",
+            "impact": "Remote Code Execution on the server."
+        },
+        {
+            "title": "Broken Access Control in IDFs API endpoints",
+            "status": "active",
+            "commit_hash": "430aeb946da819d0f7da7f09d85bd4c06c0b75a1",
+            "detected_at_pst": "2026-07-06T15:06:11-07:00",
+            "reported_link": "",
+            "location": "modules/idfs/api/_bootstrap.php",
+            "description": "Specialized API endpoints lack RBAC enforcement, allowing low-privileged users to perform restricted actions.",
+            "attacker": "Any authenticated user",
+            "input": "API request parameters",
+            "reach": "Accessed via modules/idfs/api/*",
+            "impact": "Unauthorized modification or deletion of IDF position data."
+        }
+    ]
+}

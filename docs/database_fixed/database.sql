@@ -1,0 +1,4 @@
+-- No schema changes were required for these fixes.
+-- The fixes were implemented at the application code level.
+-- Ensure that the modules_registry table contains the following for RBAC to work correctly:
+-- INSERT IGNORE INTO `modules_registry` (`module_name`, `module_slug`, `active`) VALUES ('Idfs', 'idfs', 1);
