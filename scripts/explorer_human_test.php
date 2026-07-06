@@ -31,11 +31,18 @@ $audit_company_id = 1;
 if (!function_exists('deleteDir')) {
     function deleteDir($dirPath) {
         if (!is_dir($dirPath)) return;
-        if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') $dirPath .= '/';
-        $files = glob($dirPath . '*', GLOB_MARK);
-        foreach ($files as $file) {
-            if (is_dir($file)) deleteDir($file);
-            else unlink($file);
+
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dirPath, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($it as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getPathname());
+            } else {
+                unlink($file->getPathname());
+            }
         }
         rmdir($dirPath);
     }
@@ -43,6 +50,10 @@ if (!function_exists('deleteDir')) {
 
 // Use a temporary tenant so the test never deletes live company files.
 $test_company_name = 'ITM Explorer Test ' . date('YmdHis') . '-' . mt_rand(1000, 9999);
+
+// Why: Ensure audit trigger on companies table has a valid company_id context before insert.
+mysqli_query($conn, 'SET @app_company_id = ' . (int)$audit_company_id);
+
 $stmt_company = mysqli_prepare($conn, "INSERT INTO companies (company, incode, active) VALUES (?, NULL, 1)");
 if (!$stmt_company) {
     die("Unable to prepare test company insert: " . mysqli_error($conn) . "\n");
@@ -68,17 +79,17 @@ $_SESSION['company_id'] = $company_id;
 $_SESSION['employee_id'] = $user_id;
 $_SESSION['username'] = $username;
 
-// Fetch any department scoped to the temporary tenant.
-$dept_id = 0;
-$stmt_dept = mysqli_prepare($conn, "SELECT department_id FROM employees WHERE id = ? AND company_id = ? LIMIT 1");
+// Fetch any department code scoped to the temporary tenant.
+$dept_code = '';
+$stmt_dept = mysqli_prepare($conn, "SELECT d.code FROM employees e LEFT JOIN departments d ON d.id = e.department_id WHERE e.id = ? AND e.company_id = ? LIMIT 1");
 mysqli_stmt_bind_param($stmt_dept, "ii", $user_id, $company_id);
 mysqli_stmt_execute($stmt_dept);
 $res = mysqli_stmt_get_result($stmt_dept);
 if ($res && $row = mysqli_fetch_assoc($res)) {
-    $dept_id = (int)$row['department_id'];
+    $dept_code = trim((string)($row['code'] ?? ''));
 }
 mysqli_stmt_close($stmt_dept);
-echo "Testing as user '$username' (ID: $user_id) in Department ID: $dept_id, Company ID: $company_id\n";
+echo "Testing as user '$username' (ID: $user_id) with Department Code: '$dept_code', Company ID: $company_id\n";
 
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 
@@ -111,7 +122,7 @@ mysqli_stmt_execute($stmt_clean);
 mysqli_stmt_close($stmt_clean);
 
 function mock_api_call($action, $path = '', $params = []) {
-    global $conn, $company_id, $user_id, $username, $dept_id, $storage_root;
+    global $conn, $company_id, $user_id, $username, $dept_code, $storage_root;
 
     // Set up POST environment for each call
     $_POST = [];
