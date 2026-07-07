@@ -56,7 +56,7 @@ $output = shell_exec("php " . escapeshellarg($tmp) . " 2>&1");
 unlink($tmp);
 
 // Check if position still exists
-$res = mysqli_query($conn, "SELECT id FROM idf_positions WHERE id = $position_id");
+$res = mysqli_query($conn, "SELECT id FROM idf_positions WHERE id = " . (int)$position_id);
 $exists = mysqli_num_rows($res) > 0;
 
 if ($exists) {

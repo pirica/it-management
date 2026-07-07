@@ -70,7 +70,7 @@ file_put_contents($tmp_script, $script_content);
 $output = shell_exec("php $tmp_script 2>&1");
 unlink($tmp_script);
 
-$res = mysqli_query($conn, "SELECT name FROM equipment WHERE id = $equipment_id");
+$res = mysqli_query($conn, "SELECT name FROM equipment WHERE id = " . (int)$equipment_id);
 $row = mysqli_fetch_assoc($res);
 
 if ($row && $row['name'] === 'Repro Test Equip Updated') {
