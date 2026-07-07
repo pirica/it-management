@@ -261,7 +261,11 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $employeeId = (int)$owner['id'];
         $username = (string)$owner['username'];
-        itm_script_test_employee_register_teardown($this->conn, $employeeId);
+        itm_script_test_employee_register_teardown($this->conn, $employeeId, [], [
+            'cleanup' => true,
+            'company_id' => $companyId,
+            'username' => $username,
+        ]);
 
         $traversalPath = '../../../../../config/config.php';
         $this->assertNull(
@@ -323,8 +327,16 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
 
         $victimId = (int)$victim['id'];
         $attackerId = (int)$attacker['id'];
-        itm_script_test_employee_register_teardown($this->conn, $victimId);
-        itm_script_test_employee_register_teardown($this->conn, $attackerId);
+        itm_script_test_employee_register_teardown($this->conn, $victimId, [], [
+            'cleanup' => true,
+            'company_id' => $companyId,
+            'username' => (string)$victim['username'],
+        ]);
+        itm_script_test_employee_register_teardown($this->conn, $attackerId, [], [
+            'cleanup' => true,
+            'company_id' => $companyId,
+            'username' => (string)$attacker['username'],
+        ]);
 
         $title = 'VULN_TEST_IDOR_VIEW_FIX';
         $secret = 'SECRET_CONTENT_' . bin2hex(random_bytes(8));

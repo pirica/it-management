@@ -53,7 +53,11 @@ if (!is_array($testUser)) {
     itm_script_output_end();
     exit(1);
 }
-itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
+itm_script_test_employee_register_teardown($conn, (int)$testUser['id'], [], [
+    'cleanup' => true,
+    'company_id' => $company_id,
+    'username' => (string)$testUser['username'],
+]);
 
 $session = [
     'company_id' => $company_id,

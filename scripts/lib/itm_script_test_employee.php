@@ -282,8 +282,14 @@ if (!function_exists('itm_script_test_employee_set_audit_context')) {
 if (!function_exists('itm_script_test_employee_register_teardown')) {
     /**
      * Restore snapshot (when provided) and delete disposable user on shutdown.
+     * Optionally cleans up physical storage.
+     *
+     * @param mysqli $conn
+     * @param int $employeeId
+     * @param array $snapshot
+     * @param array $cleanupStorageOptions Keys: cleanup (bool), company_id, username
      */
-    function itm_script_test_employee_register_teardown($conn, $employeeId, array $snapshot = [])
+    function itm_script_test_employee_register_teardown($conn, $employeeId, array $snapshot = [], array $cleanupStorageOptions = [])
     {
         if (!($conn instanceof mysqli)) {
             return;
@@ -294,9 +300,16 @@ if (!function_exists('itm_script_test_employee_register_teardown')) {
             return;
         }
 
-        register_shutdown_function(function () use ($conn, $employeeId, $snapshot) {
+        register_shutdown_function(function () use ($conn, $employeeId, $snapshot, $cleanupStorageOptions) {
             if (!empty($snapshot)) {
                 itm_script_test_employee_restore($conn, $employeeId, $snapshot);
+            }
+            if (!empty($cleanupStorageOptions['cleanup'])) {
+                itm_script_test_employee_cleanup_storage(
+                    (int)($cleanupStorageOptions['company_id'] ?? 0),
+                    (string)($cleanupStorageOptions['username'] ?? ''),
+                    $employeeId
+                );
             }
             itm_script_test_employee_delete($conn, $employeeId);
         });
