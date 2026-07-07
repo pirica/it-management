@@ -259,7 +259,7 @@ foreach ($iterator as $fileInfo) {
 
     // Why: scripts/ and other tools that define ITM_CLI_SCRIPT or ITM_SCRIPT_NO_AUTH
     // are either maintenance tools or have custom security logic.
-    if (strpos($source, "define('ITM_CLI_SCRIPT'") !== false || strpos($source, "define('ITM_SCRIPT_NO_AUTH'") !== false) {
+    if (preg_match("/define\s*\(\s*['\"]ITM_(?:CLI_SCRIPT|SCRIPT_NO_AUTH)['\"]/", $source)) {
         $skipped[] = [
             $relativePath,
             'CLI-only or no-auth maintenance script; not a standard web POST endpoint',
