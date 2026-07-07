@@ -25,6 +25,18 @@ if (!function_exists('itm_ensure_upload_directory')) {
         return true;
     }
 }
+if (!function_exists('itm_active_sessions_presence_root')) {
+    function itm_active_sessions_presence_root(): string {
+        return rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'itm-session-presence-mock';
+    }
+}
+
+// Why: Ensure online-now metrics do not create folders under /tmp in tests.
+if (!function_exists('itm_active_sessions_touch')) {
+    function itm_active_sessions_touch($employeeId, $companyId) {
+        return true;
+    }
+}
 if (!function_exists('itm_ensure_upload_directory_chain')) {
     function itm_ensure_upload_directory_chain($absolutePath, $policy = 'upload', $anchorRoot = '') {
         return true;

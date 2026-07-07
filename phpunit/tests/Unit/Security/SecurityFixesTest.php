@@ -37,6 +37,10 @@ class SecurityFixesTest extends TestCase
         $scriptPathLiteral = var_export($script_path, true);
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
+if (!function_exists('itm_ensure_upload_directory')) { function itm_ensure_upload_directory(\$d, \$p='upload') { return true; } }
+if (!function_exists('itm_ensure_upload_directory_chain')) { function itm_ensure_upload_directory_chain(\$a, \$p='upload', \$r='') { return true; } }
+if (!function_exists('itm_ensure_files_storage_directory')) { function itm_ensure_files_storage_directory(\$a) { return true; } }
+if (!function_exists('itm_active_sessions_touch')) { function itm_active_sessions_touch(\$e, \$c) { return true; } }
 session_start();
 " . implode("\n", array_map(function($k, $v) { return "\$_SESSION['$k'] = " . var_export($v, true) . ";"; }, array_keys($session_data), $session_data)) . "
 " . implode("\n", array_map(function($k, $v) { return "\$_POST['$k'] = " . var_export($v, true) . ";"; }, array_keys($post_data), $post_data)) . "

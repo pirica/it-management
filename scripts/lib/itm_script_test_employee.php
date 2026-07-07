@@ -349,7 +349,11 @@ if (!function_exists('itm_script_test_employee_recursive_rmdir')) {
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . DIRECTORY_SEPARATOR . $file;
-            (is_dir($path)) ? itm_script_test_employee_recursive_rmdir($path) : unlink($path);
+            if (is_dir($path)) {
+                itm_script_test_employee_recursive_rmdir($path);
+            } elseif (is_file($path) || is_link($path)) {
+                unlink($path);
+            }
         }
 
         return rmdir($dir);
