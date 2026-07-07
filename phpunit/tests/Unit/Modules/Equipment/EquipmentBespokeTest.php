@@ -92,11 +92,17 @@ class EquipmentBespokeTest extends TestCase
         $this->assertNull($error, "Delete should succeed: " . (string)$error);
 
         // 3. Verify
-        $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM equipment WHERE id = $equipmentId");
-        $this->assertEquals(0, (int)mysqli_fetch_assoc($res)['count']);
+        // Equipment is soft-deleted
+        $res = mysqli_query($this->conn, "SELECT deleted_at FROM equipment WHERE id = $equipmentId");
+        $row = mysqli_fetch_assoc($res);
+        $this->assertNotNull($row['deleted_at'] ?? null, "Equipment should be soft-deleted (deleted_at should not be null)");
 
+        // Switch ports are hard-deleted
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM switch_ports WHERE equipment_id = $equipmentId");
         $this->assertEquals(0, (int)mysqli_fetch_assoc($res)['count']);
+
+        // Cleanup
+        mysqli_query($this->conn, "DELETE FROM equipment WHERE id = $equipmentId");
     }
 
     public function testEquipmentDeleteUsageBlock()
