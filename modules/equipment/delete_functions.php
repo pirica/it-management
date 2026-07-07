@@ -181,7 +181,8 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
             throw new RuntimeException($assignmentCloseError);
         }
 
-        $deleteStmt = mysqli_prepare($conn, 'DELETE FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+        $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
+        $deleteStmt = mysqli_prepare($conn, "UPDATE equipment SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $currentEmployeeId WHERE id = ? AND company_id = ? LIMIT 1");
         if (!$deleteStmt) {
             throw new RuntimeException('Delete failed: ' . mysqli_error($conn));
         }

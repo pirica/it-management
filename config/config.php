@@ -741,6 +741,7 @@ if (!function_exists('itm_format_db_constraint_error')) {
                     if (defined('ROOT_PATH')) {
                         @error_log('[ITM DB] ' . $fallbackText . PHP_EOL, 3, ROOT_PATH . 'error_log.txt');
                     }
+                    return 'We could not save your changes. Database error: ' . $fallbackText . ' (Code: ' . (int)$errorCode . ')';
                 }
 
                 return 'We could not save your changes. Review the required fields and try again.';
