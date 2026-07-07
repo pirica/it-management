@@ -8,7 +8,7 @@ define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
-itm_script_output_begin();
+itm_script_output_begin('Verify: Import Fix (Updated)');
 $nl = itm_script_output_nl();
 
 echo colorText("--- Verifying Employee Import Department Data Loss Fix ---", 'info') . $nl;
@@ -75,9 +75,9 @@ if ($deptValue !== '' && $deptValue !== '—' && strcasecmp($deptValue, 'null') 
 echo "Simulated rowValues['department_id']: " . $rowValues['department_id'] . $nl;
 
 if ((int)$rowValues['department_id'] === $targetDeptId) {
-    echo colorText("[PASS] SUCCESS: Department ID was correctly recognized as numeric ID!", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] SUCCESS: Department ID was correctly recognized as numeric ID!") . $nl;
 } else {
-    echo colorText("[FAIL] BUG STILL PRESENT: Numeric Department ID was not correctly handled.", 'fail') . $nl;
+    echo itm_script_format_status_line("[FAIL] BUG STILL PRESENT: Numeric Department ID was not correctly handled.") . $nl;
 }
 
 // Cleanup
@@ -106,9 +106,9 @@ if (!$is_resolved_by_name) {
 
 echo "Mapped department_id (Numeric input): " . $mapped['department_id'] . $nl;
 if ((int)$mapped['department_id'] === $targetDeptId_manual) {
-    echo colorText("[PASS] SUCCESS: Numeric Department ID was preserved!", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] SUCCESS: Numeric Department ID was preserved!") . $nl;
 } else {
-    echo colorText("[FAIL] BUG STILL PRESENT: Numeric Department ID was overwritten.", 'fail') . $nl;
+    echo itm_script_format_status_line("[FAIL] BUG STILL PRESENT: Numeric Department ID was overwritten.") . $nl;
 }
 
 // Test case 2: Empty input (should fallback to Geral)
@@ -123,8 +123,7 @@ if (!$is_resolved_by_name) {
 
 echo "Mapped department_id (Empty input): " . $mapped['department_id'] . $nl;
 if ((int)$mapped['department_id'] === $geralId_manual) {
-    echo colorText("[PASS] SUCCESS: Fallback to Geral worked correctly.", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] SUCCESS: Fallback to Geral worked correctly.") . $nl;
 } else {
-    echo colorText("[FAIL] Fallback to Geral failed.", 'fail') . $nl;
+    echo itm_script_format_status_line("[FAIL] Fallback to Geral failed.") . $nl;
 }
-?>

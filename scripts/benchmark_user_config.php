@@ -8,14 +8,16 @@ define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
-itm_script_output_begin();
+itm_script_output_begin('Benchmark: Redundant Queries');
 $nl = itm_script_output_nl();
 
-$user_id = 1;
-$company_id = 1;
+// Why: Use session user/company if available, otherwise default to Admin for benchmark.
+$user_id = (int)($_SESSION['employee_id'] ?? 1);
+$company_id = (int)($_SESSION['company_id'] ?? 1);
 $iterations = 100;
 
 echo colorText("Running benchmark for redundant queries in user-config.php ($iterations iterations)...", 'info') . $nl;
+echo "User ID: $user_id, Company ID: $company_id" . $nl . $nl;
 
 // --- 1. REDUNDANT INDIVIDUAL QUERIES ---
 $startRedundant = microtime(true);
@@ -57,8 +59,6 @@ $redundantTime = $endRedundant - $startRedundant;
 echo "Redundant Individual Queries (4 queries): " . number_format($redundantTime, 4) . "s" . $nl;
 
 // --- 2. CONSOLIDATED QUERY RESULTS ---
-// This represents using the $all_stats results which are already gathered later.
-// The cost of extracting them from the array is negligible compared to a DB round-trip.
 $stat_definitions = [
     ['table' => 'alerts', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Alerts', 'slug' => 'alerts'],
     ['table' => 'alerts', 'field' => 'created_by_employee_id', 'label' => 'Created Alerts', 'slug' => 'alerts'],
@@ -114,4 +114,3 @@ $reduction = (($redundantTime - $consolidatedTime) / max(0.001, $redundantTime))
 echo $nl . colorText("Performance Improvement: " . number_format($reduction, 2) . "%", 'pass') . $nl;
 echo "Reduction in Database Round-trips: 4 per request -> 1 per request (for these 4 stats)." . $nl;
 echo "Total round-trip savings across entire user-config.php stats: 31 separate queries -> 1 consolidated query." . $nl;
-?>

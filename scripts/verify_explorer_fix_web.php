@@ -88,3 +88,4 @@ $_SESSION['csrf_token'] = 'test_token';
     </div>
 </body>
 </html>
+<!-- Standard: scripts/SCRIPTS.md -->
