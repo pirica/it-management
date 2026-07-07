@@ -11,10 +11,10 @@ class ExplorerZipSlipTest extends TestCase
     {
         require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 
-        $destination = sys_get_temp_dir() . '/itm_zip_slip_' . uniqid();
-        mkdir($destination, 0777, true);
+        // Use existing directory but different filename for ZIP
+        $destination = __DIR__ . '/zip_destination';
+        $zipPath = $destination . '/itm_malicious_' . uniqid() . '.zip';
 
-        $zipPath = $destination . '/malicious.zip';
         $zip = new ZipArchive();
         $this->assertTrue($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
         $zip->addFromString('../../../poc_zip_slip_explorer.txt', 'Zip Slip Success');
@@ -26,9 +26,9 @@ class ExplorerZipSlipTest extends TestCase
         $zip->close();
 
         $this->assertFalse($extracted);
-        $this->assertFileDoesNotExist(dirname($destination) . '/poc_zip_slip_explorer.txt');
+        // The check still works because explorer_extract_zip_safely should block the traversal
+        $this->assertFileDoesNotExist(dirname($destination, 3) . '/poc_zip_slip_explorer.txt');
 
         @unlink($zipPath);
-        @rmdir($destination);
     }
 }

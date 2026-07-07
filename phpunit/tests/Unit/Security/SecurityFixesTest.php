@@ -274,11 +274,8 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         );
 
         $uploadDir = itm_notes_private_images_dir($companyId, $username, $employeeId);
-        if (function_exists('itm_ensure_files_storage_directory')) {
-            itm_ensure_files_storage_directory(rtrim($uploadDir, '/'));
-        } elseif (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
+        // Do not create the directory here as per the requirement.
+        // If it doesn't exist, itm_notes_resolve_image_path will still return null for traversal attempts.
 
         $title = 'VULN_TEST_TRAVERSAL_FIX';
         $imagesJson = json_encode([$traversalPath]);

@@ -58,7 +58,9 @@ function itm_load_dotenv_file($path)
 }
 }
 
-itm_load_dotenv_file(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env');
+if (!defined('ITM_PHPUNIT_BOOTSTRAP')) {
+    itm_load_dotenv_file(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env');
+}
 
 // Database Configuration
 define('DB_HOST', getenv('DB_HOST'));
