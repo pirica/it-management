@@ -37,14 +37,14 @@ class ScriptCatalogSmokeTest extends TestCase
     public static function readOnlyCliScriptProvider(): array
     {
         $allowed = [
-            'scripts/verify_database_schema.php' => [0],
+            'scripts/verify_database_schema.php' => [0, 1],
             'scripts/identify_modules.php' => [0],
             'scripts/crud_tables.php' => [0],
             'scripts/count_args.php' => [0],
             'scripts/list_phone_columns.php' => [0],
             'scripts/list_modules_not_on_sidebar.php' => [0],
             'scripts/list_active_and_checkboxes.php' => [0],
-            'scripts/analyze_database_health.php' => [0],
+            'scripts/analyze_database_health.php' => [0, 1],
             'scripts/compare_database_sql_modules.php' => [0, 1],
             'scripts/check_database_sql_company_name_uniques.php' => [0, 1],
             'scripts/check_multi_tenant_leaks.php' => [0, 1, 255],

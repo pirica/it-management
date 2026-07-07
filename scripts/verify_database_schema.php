@@ -13,6 +13,17 @@ if (!defined('ITM_CLI_SCRIPT')) {
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
+if (!$conn instanceof mysqli) {
+    $msg = "Database connection failed.";
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $msg . "\n");
+    } else {
+        itm_script_output_begin('Database Schema Verification');
+        echo colorText($msg, 'fail') . itm_script_output_nl();
+    }
+    exit(1);
+}
+
 if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
     http_response_code(403);
     die('Access denied. Administrator privileges required.');
@@ -68,7 +79,7 @@ $dbErrorCode = null;
 $dbErrorMessage = null;
 $res = itm_run_query(
     $conn,
-    "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . $conn->real_escape_string($schema) . "' ORDER BY TABLE_NAME",
+    "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . mysqli_real_escape_string($conn, $schema) . "' ORDER BY TABLE_NAME",
     $dbErrorCode,
     $dbErrorMessage
 );
