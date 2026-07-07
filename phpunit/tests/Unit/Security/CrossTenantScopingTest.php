@@ -13,6 +13,10 @@ class CrossTenantScopingTest extends TestCase
         $this->conn = $conn;
 
         if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
+
+        if (!$this->conn instanceof mysqli) {
+            $this->markTestSkipped('Database connection unavailable.');
+        }
     }
 
     public function testTodoUserListIsScoped()
