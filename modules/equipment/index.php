@@ -91,6 +91,7 @@ $sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address,
         FROM equipment e
         {$equipmentSearchJoinSql}
         WHERE e.company_id = $company_id
+          AND e.deleted_at IS NULL
         {$moduleFilterSql}
         {$searchSql}";
 
@@ -126,6 +127,7 @@ $countSql = "SELECT COUNT(*) AS total
              FROM equipment e
              {$countJoins}
              WHERE e.company_id = $company_id
+               AND e.deleted_at IS NULL
              {$moduleFilterSql}
              {$searchSql}";
 
@@ -183,6 +185,7 @@ if ($enableSwitchPortManager && $showSwitchPortManager) {
          LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
          LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
          WHERE e.company_id = ?
+           AND e.deleted_at IS NULL
            AND LOWER(TRIM(et.name)) LIKE '%switch%'
          ORDER BY e.name ASC";
 

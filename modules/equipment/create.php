@@ -343,7 +343,7 @@ function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $
         return false;
     }
 
-    $sql = 'SELECT id FROM equipment WHERE company_id = ? AND name = ?';
+    $sql = 'SELECT id FROM equipment WHERE company_id = ? AND name = ? AND deleted_at IS NULL';
     $types = 'is';
     $params = [$companyId, $name];
 
@@ -380,7 +380,7 @@ function equipment_optional_unique_field_exists(mysqli $conn, int $companyId, st
         return false;
     }
 
-    $sql = "SELECT id FROM equipment WHERE company_id = ? AND {$fieldName} = ?";
+    $sql = "SELECT id FROM equipment WHERE company_id = ? AND {$fieldName} = ? AND deleted_at IS NULL";
     $types = 'is';
     $params = [$companyId, $value];
 
@@ -1719,11 +1719,11 @@ $data = [
     'workstation_office_id' => '', 'rj45_speed_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
     'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
-    'notes' => '', 'photo_filename' => '', 'active' => 1
+    'notes' => '', 'photo_filename' => '',
 ];
 
 if ($isEdit) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
@@ -1748,9 +1748,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data[$k] = isset($_POST[$k]) ? 1 : 0;
         } elseif ($k === 'photo_filename') {
             $data[$k] = $isEdit ? (string)($originalData['photo_filename'] ?? $v) : '';
-        } elseif ($k === 'active') {
-            $postedActive = $_POST['active'] ?? $data['active'];
-            $data[$k] = (int)$postedActive === 1 ? 1 : 0;
         } elseif ($k === 'assigned_date') {
             $data[$k] = trim($_POST['assigned_date'] ?? '');
         } elseif ($k === 'equipment_id') {
@@ -1994,7 +1991,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notes = $data['notes'] === '' ? 'NULL' : "'" . escape_sql($data['notes'], $conn) . "'";
         $encodedPhotoFilenames = equipment_encode_photo_filenames($photoFilenames);
         $photo = $encodedPhotoFilenames === '' ? 'NULL' : "'" . escape_sql($encodedPhotoFilenames, $conn) . "'";
-        $active = (int)$data['active'];
+        $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
 
         $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
         $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
@@ -2030,17 +2027,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_ports_number=$switch_fiber_ports_number, $switchFiberPortLabelUpdateSql
                     switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
                     notes=$notes,
-                    photo_filename=$photo, active=$active
+                    photo_filename=$photo, updated_by=$currentEmployeeId
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, supplier_id, name, serial_number, model, hostname,
                     ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id,
                     printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, active)
+                    workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, created_by)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $supplier_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $active)";
+                    $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $currentEmployeeId)";
         }
 
         mysqli_begin_transaction($conn);
@@ -2534,7 +2531,6 @@ $data['equipment_id'] = (string)$assignmentEquipmentIdHidden;
                     <option value="__add_new__">➕</option>
                 </select>
             </div>
-            <input type="hidden" name="active" value="<?php echo (int)$data['active']; ?>">
             <div class="form-actions">
                 <button class="btn btn-primary" type="submit">💾</button>
                 <a href="index.php" class="btn">🔙</a>
