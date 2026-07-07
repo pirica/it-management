@@ -282,8 +282,14 @@ if (!function_exists('itm_script_test_employee_set_audit_context')) {
 if (!function_exists('itm_script_test_employee_register_teardown')) {
     /**
      * Restore snapshot (when provided) and delete disposable user on shutdown.
+     * Optionally cleans up physical storage.
+     *
+     * @param mysqli $conn
+     * @param int $employeeId
+     * @param array $snapshot
+     * @param array $cleanupStorageOptions Keys: cleanup (bool), company_id, username
      */
-    function itm_script_test_employee_register_teardown($conn, $employeeId, array $snapshot = [])
+    function itm_script_test_employee_register_teardown($conn, $employeeId, array $snapshot = [], array $cleanupStorageOptions = [])
     {
         if (!($conn instanceof mysqli)) {
             return;
@@ -294,11 +300,58 @@ if (!function_exists('itm_script_test_employee_register_teardown')) {
             return;
         }
 
-        register_shutdown_function(function () use ($conn, $employeeId, $snapshot) {
+        register_shutdown_function(function () use ($conn, $employeeId, $snapshot, $cleanupStorageOptions) {
             if (!empty($snapshot)) {
                 itm_script_test_employee_restore($conn, $employeeId, $snapshot);
             }
+            if (!empty($cleanupStorageOptions['cleanup'])) {
+                itm_script_test_employee_cleanup_storage(
+                    (int)($cleanupStorageOptions['company_id'] ?? 0),
+                    (string)($cleanupStorageOptions['username'] ?? ''),
+                    $employeeId
+                );
+            }
             itm_script_test_employee_delete($conn, $employeeId);
         });
+    }
+}
+
+if (!function_exists('itm_script_test_employee_cleanup_storage')) {
+    /**
+     * Deletes the Private storage directory for a disposable user.
+     * Use with caution.
+     */
+    function itm_script_test_employee_cleanup_storage($companyId, $username, $employeeId)
+    {
+        if (!function_exists('itm_notes_private_images_dir')) {
+            require_once ROOT_PATH . 'includes/notes_visibility.php';
+        }
+
+        $notesDir = itm_notes_private_images_dir($companyId, $username, $employeeId);
+        if ($notesDir === '') {
+            return;
+        }
+
+        $privateDir = dirname(rtrim($notesDir, '/\\'));
+        if (is_dir($privateDir)) {
+            itm_script_test_employee_recursive_rmdir($privateDir);
+        }
+    }
+}
+
+if (!function_exists('itm_script_test_employee_recursive_rmdir')) {
+    function itm_script_test_employee_recursive_rmdir($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            (is_dir($path)) ? itm_script_test_employee_recursive_rmdir($path) : unlink($path);
+        }
+
+        return rmdir($dir);
     }
 }

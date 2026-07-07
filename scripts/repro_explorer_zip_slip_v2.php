@@ -22,7 +22,11 @@ if (!$employee) {
     itm_script_output_end();
     exit(1);
 }
-itm_script_test_employee_register_teardown($conn, (int)$employee['id']);
+itm_script_test_employee_register_teardown($conn, (int)$employee['id'], [], [
+    'cleanup' => true,
+    'company_id' => (int)$employee['company_id'],
+    'username' => (string)$employee['username'],
+]);
 
 $_SESSION['employee_id'] = (int)$employee['id'];
 $_SESSION['username'] = (string)$employee['username'];
