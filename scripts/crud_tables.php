@@ -28,14 +28,14 @@ if (PHP_SAPI === 'cli') {
 }
 
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/lib/script_browser_nav.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
 if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
     http_response_code(403);
     die('Access denied. Administrator privileges required.');
 }
 
-header('Content-Type: text/html; charset=UTF-8');
+itm_script_output_begin('CRUD Table Mapper');
 
 $rows = [];
 
@@ -89,7 +89,6 @@ echo '</style>';
 echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
-itm_script_browser_nav_echo();
 echo '<h1>CRUD Table Mapper</h1>';
 echo '<p>Total modules scanned: <strong>' . count($rows) . '</strong></p>';
 echo '<table>';
@@ -123,5 +122,4 @@ foreach ($rows as $index => $row) {
 echo '</tbody>';
 echo '</table>';
 echo '</div>';
-echo '</body>';
-echo '</html>';
+itm_script_output_end();

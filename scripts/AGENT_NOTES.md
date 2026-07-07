@@ -427,7 +427,8 @@ php scripts/ensure_files_htaccess_chain.php
 
 ## Recent Changes (Maintenance Task)
 
-- **Standardized Output**: Focus scripts (`benchmark_user_config.php`, `repro_explorer_traversal.php`, and `verify_explorer_fix*` suite) refactored to use `scripts/lib/script_cli_output.php` for consistent CLI/Browser reporting.
+- **Standardized Output**: Focus scripts (`benchmark_user_config.php`, `repro_explorer_traversal.php`, `verify_explorer_fix*` suite, `repro_rce.php`, `repro_bac.php`, `repro_sqli.php`, `benchmark_stats_optimized.php`, `idf_device_port_sort_test.php`, `crud_tables.php`, `test_visualizer_v2.php`, and `repro_bug.php`) refactored to use `scripts/lib/script_cli_output.php` and `itm_script_output_begin()` for consistent CLI/Browser reporting.
 - **Obsolete Directory Removal**: All references to the non-existent `fixed_files/` directory have been removed from reproduction and verification scripts. These now target the live `modules/` directory.
-- **New Diagnostic Tool**: Added `scripts/repro_equip_issues.php` to help diagnose equipment module behaviors by mocking POST requests.
-- **Catalog Sync**: Updated `scripts/scripts.php` to include missing reproduction and verification scripts while maintaining the mandatory "Deployment & Git" section.
+- **Path and Include Audit**: Fixed relative path issues in multiple scripts (`repro_rce.php`, `repro_bac.php`, `repro_sqli.php`, `generate_tests.php`) to ensure they correctly resolve dependencies from the `scripts/` directory.
+- **Catalog Sync**: Updated `scripts/scripts.php` to include missing reproduction and verification scripts while maintaining the mandatory "Deployment & Git" section. Fixed broken links and added appropriate access badges.
+- **Bug Fixes**: Identified and developed a fix for a regression in `EquipmentBespokeTest.php` and `equipment_delete_clear_table_test.php` where soft-deleted records (with `deleted_at`) were being incorrectly counted as active during tests. *Note: The fix for `EquipmentBespokeTest.php` was developed but remains uncommitted to strictly adhere to the directory constraint.*

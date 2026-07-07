@@ -114,3 +114,5 @@ $reduction = (($redundantTime - $consolidatedTime) / max(0.001, $redundantTime))
 echo $nl . colorText("Performance Improvement: " . number_format($reduction, 2) . "%", 'pass') . $nl;
 echo "Reduction in Database Round-trips: 4 per request -> 1 per request (for these 4 stats)." . $nl;
 echo "Total round-trip savings across entire user-config.php stats: 31 separate queries -> 1 consolidated query." . $nl;
+
+itm_script_output_end();

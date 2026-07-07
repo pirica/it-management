@@ -1110,8 +1110,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>python3 scripts/verify_notes_ui.py</code></td>
                 </tr>
                 <tr>
-                    <td><code>repro_bug.php</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td><a href="repro_bug.php" target="_blank" rel="nofollow noreferrer">repro_bug.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction and verification script for Todo module visibility and security bugs (multi-assignment and IDOR).</td>
                     <td><code>php scripts/repro_bug.php</code></td>
                 </tr>
@@ -1580,13 +1580,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><a href="verify_explorer_fix_web.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_web.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Web-friendly verification for Explorer Path Traversal fix.</td>
-                    <td>Open <code>scripts/verify_explorer_fix_web.php</code> in browser.</td>
+                    <td>Open <code>verify_explorer_fix_web.php</code> in browser.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_explorer_fix_standalone.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_standalone.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Standalone verification for Explorer Path Traversal fix (HTML UI).</td>
-                    <td>Open <code>scripts/verify_explorer_fix_standalone.php</code> in browser.</td>
+                    <td>Open <code>verify_explorer_fix_standalone.php</code> in browser.</td>
                 </tr>
                 <tr>
                     <td><a href="repro_attempts_data_leak_v2.php" target="_blank" rel="nofollow noreferrer">repro_attempts_data_leak_v2.php</a></td>
@@ -1634,7 +1634,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><a href="repro_employee_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_employee_dataloss.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. <strong>CLI-only</strong> — catalog listing only; no browser runner link.</td>
-                   <td><code>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</code></td>
+                   <td>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
                 <tr>
                     <td><a href="verify_import_fix_updated.php" target="_blank" rel="nofollow noreferrer">verify_import_fix_updated.php</a></td>
@@ -1646,7 +1646,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><a href="repro_generic_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_generic_dataloss.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. <strong>CLI-only</strong> — catalog listing only; no browser runner link.</td>
-                    <td><code>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</code></td>
+                    <td>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
                 <tr>
                     <td><a href="repro_contacts_idor.php" target="_blank" rel="nofollow noreferrer">repro_contacts_idor.php</a></td>
