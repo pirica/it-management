@@ -118,8 +118,8 @@ if (PHP_SAPI !== 'cli') {
     }
 }
 
+itm_script_output_begin('IDF device port sort test');
 itmdf_sort_browser_init();
-itm_script_browser_nav_echo();
 
 function itmdf_sort_section_start(string $title, string $why = ''): void
 {
@@ -462,5 +462,6 @@ if (itmdf_sort_is_cli()) {
 }
 
 itmdf_sort_browser_close();
+itm_script_output_end();
 
 exit(0);

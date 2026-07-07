@@ -62,9 +62,9 @@ function eqdct_set_audit_context(mysqli $conn, int $companyId, int $employeeId =
     mysqli_query($conn, "SET @app_user_agent = 'equipment_delete_clear_table_test'");
 }
 
-function eqdct_count_equipment(mysqli $conn, int $companyId): int
+function eqdct_count_equipment(mysqli $conn, int $companyId, bool $includeDeleted = false): int
 {
-    $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM equipment WHERE company_id=' . (int)$companyId);
+    $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM equipment WHERE company_id=' . (int)$companyId . ($includeDeleted ? '' : ' AND deleted_at IS NULL'));
     if (!$res) {
         return -1;
     }

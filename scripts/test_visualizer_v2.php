@@ -3,6 +3,7 @@
 function sanitize($s) { return htmlspecialchars((string)$s); }
 
 require_once __DIR__ . '/../modules/idfs/port_visualizer_helper.php';
+require_once __DIR__ . '/lib/script_browser_nav.php';
 
 $ports = [];
 for ($i=1; $i<=48; $i++) {
@@ -29,6 +30,7 @@ body { background: var(--bg-primary); color: var(--text-primary); font-family: -
 .card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-bottom: 20px; }
 </style>';
 echo '</head><body>';
+itm_script_browser_nav_echo();
 echo '<h1>IDF Port Visualizer V2 (Relation-based)</h1>';
 echo '<div id="captureArea" class="card">';
 echo '<h2>Vertical Layout (48 Ports)</h2>';

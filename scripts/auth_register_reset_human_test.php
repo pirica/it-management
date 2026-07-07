@@ -307,10 +307,10 @@ foreach ($companyIds as $companyId) {
 
 if ($failures > 0) {
     echo colorText('Auth human test finished with ' . $failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 echo colorText('All auth register/login/reset human checks passed.', 'pass') . $nl;
-exit(0);
-
 itm_script_output_end();
+exit(0);

@@ -7,8 +7,8 @@ putenv('DB_HOST=127.0.0.1');
 putenv('DB_USER=root');
 putenv('DB_PASS=itmanagement');
 putenv('DB_NAME=itmanagement');
-require_once __DIR__ . '/../../../config/config.php';
-require_once __DIR__ . '/../../../scripts/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 $company_id = 1;
 if (!$conn) {
@@ -29,7 +29,11 @@ $_SESSION['employee_id'] = $testUser['id'];
 $_SESSION['username'] = $testUser['username'];
 $_SESSION['role_name'] = 'admin';
 
-echo "Testing SQL Injection in modules/floor_designer/index.php\n";
+require_once __DIR__ . '/lib/script_cli_output.php';
+itm_script_output_begin('PoC: Floor Designer SQLi');
+$nl = itm_script_output_nl();
+
+echo colorText("Testing SQL Injection in Floor Designer via 'dir' parameter", 'info') . $nl;
 
 $start = microtime(true);
 $payload = "ASC, (SELECT 1 FROM (SELECT(SLEEP(2)))a)";
@@ -37,7 +41,7 @@ $_GET['dir'] = $payload;
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['PHP_SELF'] = '/it-management/modules/floor_designer/index.php';
 
-chdir(__DIR__ . '/../../../modules/floor_designer');
+chdir(__DIR__ . '/../modules/floor_designer');
 ob_start();
 include 'index.php';
 ob_end_clean();
@@ -51,3 +55,5 @@ if ($duration >= 2) {
 } else {
     echo "SQL Injection attempt failed or was blocked.\n";
 }
+
+itm_script_output_end();

@@ -197,6 +197,10 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/verify_sqli_updated.php` | Verification — SQL Injection fix in visitors access log against fixed files. |
 | `php scripts/verify_rbac_updated.php` | Verification — RBAC protection guards in module handlers. |
 | `php scripts/verify_import_fix_updated.php` | Verification — Employee Import Department Data Loss Fix. |
+| `php scripts/repro_bug.php` | Bug reproduction and verification script for Todo module visibility and security. |
+| `php scripts/repro_rce.php` | PoC for RCE in Floor Designer via 'save_as_floor_plan' action. |
+| `php scripts/repro_sqli.php` | PoC for SQL Injection in Floor Designer via 'dir' parameter. |
+| `php scripts/repro_bac.php` | PoC for Broken Access Control in IDFs API. |
 
 Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
 
@@ -865,6 +869,9 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 |--------|---------|
 | `php scripts/benchmark_stats_optimized.php` | Benchmark for user-config.php stats gathering optimization. Compares performance of 31 individual queries vs 1 consolidated query. |
 | `php scripts/benchmark_user_config.php` | Benchmark for user-config.php redundant query removal. Compares individual vs consolidated query performance. |
+| `php scripts/idf_device_port_sort_test.php` | Regression test for IDF device port list sorting (copper before fiber). |
+| `php scripts/crud_tables.php` | Audits module-to-table mapping by reading each module's index.php. |
+| `php scripts/test_visualizer_v2.php` | Visual test for Equipment Port Visualizer (IDF rack/device dots). |
 
 Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
 
@@ -1226,10 +1233,18 @@ Added or updated the following scripts in the catalog to ensure comprehensive se
 - `repro_rce.php` / `repro_rce_updated.php`: Floor Designer file upload security.
 - `repro_sqli.php` / `repro_sqli_updated.php`: Floor Designer SQL injection guards.
 - `repro_explorer_traversal.php` / `verify_explorer_fix*`: Explorer path traversal suite.
+- `repro_bug.php`: Todo module visibility and security.
 
 ### Utilities
 - `benchmark_user_config.php`: Performance testing for optimized stats gathering.
+- `benchmark_stats_optimized.php`: Performance benchmark for consolidated stats query.
 - `repro_equip_issues.php`: Mocking framework for equipment module diagnostics.
+- `idf_device_port_sort_test.php`: Regression test for IDF device port list sorting.
+- `crud_tables.php`: Audits module-to-table mapping.
+- `test_visualizer_v2.php`: Visual test for Equipment Port Visualizer.
 
 ### Pathing Standard
-The `fixed_files/` directory is officially obsolete. All verification scripts must target the live code in `modules/`.
+The `fixed_files/` directory is officially obsolete. All verification scripts must target the live code in `modules/`. Path issues in reproduction scripts (`repro_rce.php`, `repro_bac.php`, `repro_sqli.php`) and `generate_tests.php` have been fixed.
+
+### Standardization
+Standardized output handling using `scripts/lib/script_cli_output.php` has been applied to several functional and reproduction scripts for consistent reporting across Browser and CLI environments.

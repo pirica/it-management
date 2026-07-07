@@ -7,6 +7,10 @@
 
 define('ITM_CLI_SCRIPT', true);
 require __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Benchmark: user-config.php stats optimization');
+$nl = itm_script_output_nl();
 
 $user_id = 1; // Assuming a standard test user ID
 $company_id = 1;
@@ -46,7 +50,7 @@ $stat_definitions = [
 ];
 
 $iterations = 10;
-echo "Running benchmarks ($iterations iterations)...\n\n";
+echo "Running benchmarks ($iterations iterations)..." . $nl . $nl;
 
 // --- 1. ORIGINAL PATTERN (Loop of queries) ---
 $startOriginal = microtime(true);
@@ -67,7 +71,7 @@ for ($i = 0; $i < $iterations; $i++) {
 }
 $endOriginal = microtime(true);
 $originalTime = $endOriginal - $startOriginal;
-echo "Original Loop: " . number_format($originalTime, 4) . "s\n";
+echo "Original Loop: " . number_format($originalTime, 4) . "s" . $nl;
 
 // --- 2. OPTIMIZED PATTERN (Single consolidated query) ---
 $startOptimized = microtime(true);
@@ -98,11 +102,11 @@ for ($i = 0; $i < $iterations; $i++) {
 }
 $endOptimized = microtime(true);
 $optimizedTime = $endOptimized - $startOptimized;
-echo "Optimized Single Query: " . number_format($optimizedTime, 4) . "s\n";
+echo "Optimized Single Query: " . number_format($optimizedTime, 4) . "s" . $nl;
 
 // --- VERIFICATION ---
 $reduction = (($originalTime - $optimizedTime) / max(0.001, $originalTime)) * 100;
-echo "\nPerformance Improvement: " . number_format($reduction, 2) . "%\n";
+echo $nl . "Performance Improvement: " . number_format($reduction, 2) . "%" . $nl;
 
 $match = true;
 if (count($all_stats_original) !== count($all_stats_optimized)) {
@@ -110,15 +114,18 @@ if (count($all_stats_original) !== count($all_stats_optimized)) {
 } else {
     foreach ($all_stats_original as $index => $stat) {
         if ($stat['count'] !== $all_stats_optimized[$index]['count']) {
-            echo "Mismatch at index $index (" . $stat['label'] . "): " . $stat['count'] . " vs " . $all_stats_optimized[$index]['count'] . "\n";
+            echo "Mismatch at index $index (" . $stat['label'] . "): " . $stat['count'] . " vs " . $all_stats_optimized[$index]['count'] . $nl;
             $match = false;
         }
     }
 }
 
 if ($match) {
-    echo "Results matched perfectly between both methods.\n";
+    echo itm_script_format_status_line("[PASS] Results matched perfectly between both methods.") . $nl;
 } else {
-    echo "ERROR: Results mismatch detected!\n";
+    echo itm_script_format_status_line("[FAIL] Results mismatch detected!") . $nl;
+    itm_script_output_end();
     exit(1);
 }
+
+itm_script_output_end();

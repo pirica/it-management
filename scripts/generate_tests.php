@@ -80,7 +80,7 @@ class $className extends TestCase
 
     protected function setUp(): void
     {
-        require_once __DIR__ . '/../../../../config/config.php';
+        require_once __DIR__ . '/../../../../../config/config.php';
         \$this->conn = \$GLOBALS['conn'];
         if (!\$this->conn) {
             \$this->markTestSkipped('Database connection unavailable.');

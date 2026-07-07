@@ -9,14 +9,12 @@ if (!defined('ITM_CLI_SCRIPT')) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Todo Module Bug Verification');
 $nl = itm_script_output_nl();
 
 require_once ROOT_PATH . 'includes/todo_visibility.php';
 
-
-itm_script_output_begin('Todo Module Bug Verification');
-
- (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
 echo "=== Todo Module Bug Verification ===" . $nl;
 
 function verify_multi_assign_visibility($conn, $nl) {
@@ -106,6 +104,5 @@ $success1 = verify_multi_assign_visibility($conn, $nl);
 $success2 = verify_action_permission_enforcement($conn, $nl);
 
 echo $nl . "Summary: " . ($success1 && $success2 ? "ALL PASS" : "FAILURES DETECTED") . $nl;
-exit($success1 && $success2 ? 0 : 1);
-
 itm_script_output_end();
+exit($success1 && $success2 ? 0 : 1);
