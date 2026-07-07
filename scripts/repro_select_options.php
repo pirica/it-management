@@ -9,11 +9,11 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
+
+itm_script_output_begin('Verify: Select Options RBAC Bypass');
 
 $nl = itm_script_output_nl();
-
-require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 echo colorText('Verifying RBAC bypass in select_options_api.php...', 'info') . $nl;
 
@@ -157,23 +157,76 @@ if (function_exists('itm_user_has_role_module_permission')) {
 }
 
 // 4. Perform the bypass attempt
-$_SERVER['REQUEST_METHOD'] = 'POST';
-$_POST['table']          = 'departments';
-$_POST['id_col']         = 'id';
-$_POST['label_col']      = 'name';
-$_POST['new_value']      = 'Unauthorized Dept ' . bin2hex(random_bytes(4));
-$_POST['company_scoped'] = '1';
-$_POST['csrf_token']     = 'test_token';
-
 echo colorText('Sending unauthorized POST to select_options_api.php (table=departments)...', 'info') . $nl;
 
-$old_cwd = getcwd();
-chdir(__DIR__ . '/../modules');
-ob_start();
-include 'select_options_api.php';
-$output = ob_get_clean();
-chdir($old_cwd);
+$apiFile = realpath(__DIR__ . '/../modules/select_options_api.php');
+if (!$apiFile) {
+    echo itm_script_format_status_line('[FAIL] select_options_api.php not found in modules/.') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
 
+function run_select_options_request($script_path, $session_data, $post_data = []) {
+    $tmp_file = tempnam(sys_get_temp_dir(), 'repro_select');
+    $session_str = serialize($session_data);
+    $config_path = realpath(__DIR__ . '/../config/config.php');
+
+    $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+\$_SERVER['HTTP_HOST'] = 'localhost';
+\$_SERVER['PHP_SELF'] = '/it-management/modules/" . basename($script_path) . "';
+\$_SERVER['SCRIPT_FILENAME'] = '$script_path';
+
+require '$config_path';
+
+\$_SESSION = unserialize(" . var_export($session_str, true) . ");
+\$_POST = " . var_export($post_data, true) . ";
+
+// Disable actual CSRF check for the test
+if (!function_exists('itm_validate_csrf_token')) {
+    function itm_validate_csrf_token(\$t) { return true; }
+}
+if (!function_exists('itm_require_post_csrf')) {
+    function itm_require_post_csrf() { return; }
+}
+
+chdir(dirname('$script_path'));
+ob_start();
+include basename('$script_path');
+echo ob_get_clean();
+?>";
+    file_put_contents($tmp_file, $code);
+    $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
+    $phpIni = '';
+    $mysqliSocket = ini_get('mysqli.default_socket');
+    if (is_string($mysqliSocket) && $mysqliSocket !== '') {
+        $phpIni = ' -d mysqli.default_socket=' . escapeshellarg($mysqliSocket);
+    }
+    $output = shell_exec(escapeshellarg($php_bin) . $phpIni . ' ' . escapeshellarg($tmp_file) . ' 2>&1');
+    unlink($tmp_file);
+    return (string)$output;
+}
+
+$csrfToken = 'test_token';
+$session = [
+    'employee_id' => (int)$attacker['id'],
+    'company_id'  => $company_id,
+    'username'    => $attacker['username'],
+    'csrf_token'  => $csrfToken,
+];
+
+$payload = [
+    'table'          => 'departments',
+    'id_col'         => 'id',
+    'label_col'      => 'name',
+    'new_value'      => 'Unauthorized Dept ' . bin2hex(random_bytes(4)),
+    'company_scoped' => '1',
+    'csrf_token'     => $csrfToken,
+];
+
+$output = run_select_options_request($apiFile, $session, $payload);
 $response = json_decode($output, true);
 
 // 5. Parse and display result in human-readable form
@@ -181,8 +234,13 @@ $inserted = isset($response['selected_id']) && $response['selected_id'] > 0;
 $ok       = isset($response['ok']) && $response['ok'] === true;
 $errorMsg = $response['error'] ?? $response['message'] ?? null;
 
+if (!$response && strpos($output, 'Forbidden') !== false) {
+    $errorMsg = trim($output);
+    $ok = false;
+}
+
 $apiSummary = 'API response: ok=' . ($ok ? 'true' : 'false')
-    . ($inserted ? ', selected_id=' . $response['selected_id'] : '')
+    . ($inserted ? ', selected_id=' . ($response['selected_id'] ?? 'N/A') . '' : '')
     . ($errorMsg ? ', error=' . $errorMsg : '');
 echo colorText($apiSummary, 'info') . $nl;
 
