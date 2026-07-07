@@ -26,7 +26,6 @@ $csrfPatterns = [
     'itm_validate_csrf_token',
     'cr_require_valid_csrf_token',
     'so_require_valid_csrf_token',
-    'itm_validate_csrf_token',
     'idf_require_csrf',
 ];
 
@@ -258,11 +257,12 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
-    // Why: repro_* and fix_* scripts are CLI maintenance/test tools.
-    if (preg_match('#(?:^|/)(repro|fix|verify)_.+\.php$#', $relativePath)) {
+    // Why: scripts/ and other tools that define ITM_CLI_SCRIPT or ITM_SCRIPT_NO_AUTH
+    // are either maintenance tools or have custom security logic.
+    if (strpos($source, "define('ITM_CLI_SCRIPT'") !== false || strpos($source, "define('ITM_SCRIPT_NO_AUTH'") !== false) {
         $skipped[] = [
             $relativePath,
-            'CLI-only maintenance/repro/verify script; not a web-accessible endpoint',
+            'CLI-only or no-auth maintenance script; not a standard web POST endpoint',
         ];
         continue;
     }
