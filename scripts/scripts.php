@@ -1656,7 +1656,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 </tr>
                 <tr>
                     <td><a href="repro_select_options.php" target="_blank" rel="nofollow noreferrer">repro_select_options.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction script for RBAC bypass in select options API.</td>
                     <td><code>php scripts/repro_select_options.php</code></td>
                 </tr>
@@ -1741,19 +1741,19 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td><a href="http://myhome.dynip.sapo.pt/deletev2.php" target="_blank" rel="nofollow noreferrer">deletev2.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Clone Github + Import Database</td>
-                    <td>Open in browser to trigger remote deployment</td>
-                </tr>
-                <tr>
-                    <td><a href="reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Completely reset Git history and force push a clean master branch. <strong>BETA only</strong> — destructive; rewrites Git history and force-pushes. Used in development to purge history or reset a branch to a clean state.</td>
-                    <td><strong>Log in first.</strong> Open <code>reset_git_history.php</code>. <strong>DANGER: Destructive.</strong> <strong>BETA / pre-production only</strong> — no implementation changes while the project remains in BETA and not yet in production.</td>
-                </tr>
-            </tbody>
+             <tr>
+                <td><a href="http://myhome.dynip.sapo.pt/deletev2.php" target="_blank" rel="nofollow noreferrer">deletev2.php</a></td>
+                <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                <td>Clone Github + Import Database</td>
+                <td>Open in browser to trigger remote deployment</td>
+            </tr>
+            <tr>
+                <td><a href="http://myhome.dynip.sapo.pt/reset_git_history.php" target="_blank" rel="nofollow noreferrer">reset_git_history.php</a></td>
+                <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                <td>Completely reset Git history and force push a clean master branch. <strong>BETA only</strong> — destructive; rewrites Git history and force-pushes. Used in development to purge history or reset a branch to a clean state.</td>
+                <td><strong>Log in first.</strong> Open <code>reset_git_history.php</code>. <strong>DANGER: Destructive.</strong> <strong>BETA / pre-production only</strong> — no implementation changes while the project remains in BETA and not yet in production.</td>
+            </tr>
+        </tbody>
         </table></div>
     </div>
 

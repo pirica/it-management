@@ -186,7 +186,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_employee_dataloss.php` | Regression — generic `itm_handle_json_table_import()` UPDATE must not NULL-out omitted columns on `employees` (expects exit `0`; seeds/disposable row in transaction). |
 | `php scripts/repro_generic_dataloss.php` | Regression — generic JSON import UPDATE must not NULL-out omitted columns (e.g. `departments.code`; expects exit `0`; seeds/disposable row in transaction). |
 | `php scripts/repro_contacts_idor.php` | PoC — IDOR vulnerability in contacts API inline edit. |
-| `php scripts/repro_select_options.php` | PoC — RBAC bypass in select options API. |
+| `php scripts/repro_select_options.php` | PoC — RBAC bypass in select options API. Standardized with `itm_script_output_begin()`. |
 | `php scripts/repro_status_leak.php` | PoC — cross-tenant employee status leak. |
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
@@ -1244,7 +1244,7 @@ Added or updated the following scripts in the catalog to ensure comprehensive se
 - `test_visualizer_v2.php`: Visual test for Equipment Port Visualizer.
 
 ### Pathing Standard
-The `fixed_files/` directory is officially obsolete. All verification scripts must target the live code in `modules/`. Path issues in reproduction scripts (`repro_rce.php`, `repro_bac.php`, `repro_sqli.php`) and `generate_tests.php` have been fixed.
+The `fixed_files/` directory is officially obsolete and has been removed from all functional scripts. All verification and reproduction scripts must target the live code in `modules/`. Path issues in reproduction scripts (`repro_rce.php`, `repro_bac.php`, `repro_sqli.php`, `repro_select_options.php`) and `generate_tests.php` have been resolved.
 
 ### Standardization
 Standardized output handling using `scripts/lib/script_cli_output.php` has been applied to several functional and reproduction scripts for consistent reporting across Browser and CLI environments.

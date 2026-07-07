@@ -27,7 +27,6 @@ $_GET['dir'] = "ASC, (SELECT 1 FROM (SELECT(SLEEP(2)))a)";
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['PHP_SELF'] = '/it-management/modules/floor_designer/index.php';
 
-// Point to the live module instead of non-existent fixed_files
 $module_dir = realpath(__DIR__ . '/../modules/floor_designer');
 if (!$module_dir) {
     die("Module directory not found: modules/floor_designer\n");
