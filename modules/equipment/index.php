@@ -674,6 +674,7 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
         let rackOptions = [];
         let selected = null;
         let skipNextColorAutoSave = false;
+        let currentLayout = null;
         const tooltip = document.getElementById('switchTooltip');
         const csrfToken = window.ITM_CSRF_TOKEN
             || (document.querySelector('input[name="csrf_token"]') || {}).value
@@ -1194,7 +1195,12 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
             return el;
         }
 
-        function renderPorts() {
+        function renderPorts(layout) {
+            if (layout) {
+                currentLayout = layout;
+            } else {
+                layout = currentLayout;
+            }
             const row1 = document.getElementById('switchRow1');
             const row2 = document.getElementById('switchRow2');
             const sfpRow = document.getElementById('switchSfpRow');
@@ -1240,8 +1246,10 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
             sfpRow.style.display = showFiber ? 'flex' : 'none';
             sfpRowAlt.style.display = showFiber ? sfpRowAlt.style.display : 'none';
 
-            const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
-            document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, (layout.rj45 || 0), Number(layout.sfp || 0) + Number(layout.sfp_plus || 0));
+            if (layout) {
+                const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
+                document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, (layout.rj45 || 0), Number(layout.sfp || 0) + Number(layout.sfp_plus || 0));
+            }
             document.getElementById('fiberGrid').style.display = showFiber ? 'grid' : 'none';
         }
 
@@ -1444,9 +1452,7 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
                         data.locations || []
                     );
                     const layout = data.layout || localLayout;
-                    const layoutLabel = String((selectedSwitchMeta && selectedSwitchMeta.port_numbering_layout) || 'Vertical');
-                    document.getElementById('switchLayoutSummary').textContent = buildLayoutSummary(layoutLabel, (layout.rj45 || 0), Number(layout.sfp || 0) + Number(layout.sfp_plus || 0));
-                    renderPorts();
+                    renderPorts(layout);
                 })
                 .catch(function (err) {
                     alert(err && err.message ? ('Unable to load switch ports: ' + err.message) : 'Unable to load switch ports.');
