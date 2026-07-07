@@ -1122,6 +1122,60 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="repro_bac.php" target="_blank" rel="nofollow noreferrer">repro_bac.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for Broken Access Control in IDFs API.</td>
+                    <td><code>php scripts/repro_bac.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_bac_updated.php" target="_blank" rel="nofollow noreferrer">repro_bac_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Validation for IDFs API BAC fix.</td>
+                    <td><code>php scripts/repro_bac_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_rce.php" target="_blank" rel="nofollow noreferrer">repro_rce.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for RCE in Floor Designer via 'save_as_floor_plan' action.</td>
+                    <td><code>php scripts/repro_rce.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_rce_updated.php" target="_blank" rel="nofollow noreferrer">repro_rce_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Validation for Floor Designer RCE fix.</td>
+                    <td><code>php scripts/repro_rce_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_sqli.php" target="_blank" rel="nofollow noreferrer">repro_sqli.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>PoC for SQL Injection in Floor Designer via 'dir' parameter.</td>
+                    <td><code>php scripts/repro_sqli.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_sqli_updated.php" target="_blank" rel="nofollow noreferrer">repro_sqli_updated.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Validation for Floor Designer SQLi fix.</td>
+                    <td><code>php scripts/repro_sqli_updated.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_request_password_bypass.php" target="_blank" rel="nofollow noreferrer">repro_request_password_bypass.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for request_password module bypass.</td>
+                    <td><code>php scripts/repro_request_password_bypass.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_select_options_rbac.php" target="_blank" rel="nofollow noreferrer">repro_select_options_rbac.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for Select Options RBAC bypass.</td>
+                    <td><code>php scripts/repro_select_options_rbac.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="repro_equip_issues.php" target="_blank" rel="nofollow noreferrer">repro_equip_issues.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Reproduction script for Equipment edit issues. Mocks a POST request to equipment/edit.php.</td>
+                    <td><code>php scripts/repro_equip_issues.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="repro_esa_vulnerability.php" target="_blank" rel="nofollow noreferrer">repro_esa_vulnerability.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>PoC for Employee System Access Broken Access Control (non-admin access to edit page).</td>

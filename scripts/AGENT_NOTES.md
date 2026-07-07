@@ -424,3 +424,10 @@ php scripts/ensure_files_htaccess_chain.php
   - `.itm-dropzone-hint`: Used for instructional text within the dropzone.
 - **JavaScript:** Implementation involves using `itmUploadHelper.setupById(targetId, inputId)` or `itmUploadHelper.setupByClass(className)`. The helper handles preventing default drag events, toggling visual states, and assigning files to the input while triggering the `change` event.
 
+
+## Recent Changes (Maintenance Task)
+
+- **Standardized Output**: Focus scripts (`benchmark_user_config.php`, `repro_explorer_traversal.php`, and `verify_explorer_fix*` suite) refactored to use `scripts/lib/script_cli_output.php` for consistent CLI/Browser reporting.
+- **Obsolete Directory Removal**: All references to the non-existent `fixed_files/` directory have been removed from reproduction and verification scripts. These now target the live `modules/` directory.
+- **New Diagnostic Tool**: Added `scripts/repro_equip_issues.php` to help diagnose equipment module behaviors by mocking POST requests.
+- **Catalog Sync**: Updated `scripts/scripts.php` to include missing reproduction and verification scripts while maintaining the mandatory "Deployment & Git" section.

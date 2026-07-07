@@ -17,7 +17,7 @@ require_once $projectRoot . '/config/config.php';
 require_once $projectRoot . '/scripts/lib/script_cli_output.php';
 require_once $projectRoot . '/includes/itm_explorer_paths.php';
 
-itm_script_output_begin();
+itm_script_output_begin('Repro: Explorer Path Traversal');
 $nl = itm_script_output_nl();
 
 /**
@@ -104,9 +104,8 @@ if ($dir && $safe_item !== null) {
         echo $nl . colorText("[VULNERABLE] Path Traversal via 'item=..' successful!", 'fail') . $nl;
         echo "The zip operation would process: " . $src . " (which is the root Private folder containing other users' data)." . $nl;
     } else {
-        echo $nl . colorText("[SAFE] Path Traversal blocked.", 'pass') . $nl;
+        echo $nl . itm_script_format_status_line("[PASS] Path Traversal blocked.") . $nl;
     }
 } else {
-    echo colorText("[SAFE] Path Access Denied.", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] Path Access Denied.") . $nl;
 }
-?>

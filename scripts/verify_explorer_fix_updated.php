@@ -17,7 +17,7 @@ $projectRoot = dirname(__DIR__);
 require_once $projectRoot . '/config/config.php';
 require_once $projectRoot . '/scripts/lib/script_cli_output.php';
 
-itm_script_output_begin();
+itm_script_output_begin('Verify: Explorer Fix (Updated)');
 $nl = itm_script_output_nl();
 
 // Mock session
@@ -40,9 +40,9 @@ $_POST['item'] = '..';
 echo "Action: zip, Item: .." . $nl;
 $safe_item = get_safe_post_item();
 if ($safe_item === null) {
-    echo colorText("[PASS] Path Traversal '..' correctly blocked by get_safe_post_item().", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] Path Traversal '..' correctly blocked by get_safe_post_item().") . $nl;
 } else {
-    echo colorText("[FAIL] Path Traversal '..' allowed! Item: $safe_item", 'fail') . $nl;
+    echo itm_script_format_status_line("[FAIL] Path Traversal '..' allowed! Item: $safe_item") . $nl;
 }
 
 // Case 2: Attempt traversal with item=sub/../../
@@ -50,9 +50,9 @@ $_POST['item'] = 'sub/../../';
 echo "Action: zip, Item: sub/../../" . $nl;
 $safe_item = get_safe_post_item();
 if ($safe_item === null) {
-    echo colorText("[PASS] Path Traversal with separators correctly blocked.", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] Path Traversal with separators correctly blocked.") . $nl;
 } else {
-    echo colorText("[FAIL] Path Traversal with separators allowed! Item: $safe_item", 'fail') . $nl;
+    echo itm_script_format_status_line("[FAIL] Path Traversal with separators allowed! Item: $safe_item") . $nl;
 }
 
 // Case 3: Valid item
@@ -60,8 +60,8 @@ $_POST['item'] = 'valid_file.txt';
 echo "Action: zip, Item: valid_file.txt" . $nl;
 $safe_item = get_safe_post_item();
 if ($safe_item === 'valid_file.txt') {
-    echo colorText("[PASS] Valid item correctly allowed.", 'pass') . $nl;
+    echo itm_script_format_status_line("[PASS] Valid item correctly allowed.") . $nl;
 } else {
-    echo colorText("[FAIL] Valid item incorrectly blocked! Item: " . var_export($safe_item, true), 'fail') . $nl;
+    echo itm_script_format_status_line("[FAIL] Valid item incorrectly blocked! Item: " . var_export($safe_item, true)) . $nl;
 }
 ?>

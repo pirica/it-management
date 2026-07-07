@@ -1217,3 +1217,19 @@ php scripts/ensure_files_htaccess_chain.php
 |--------|---------|
 | `deletev2.php` | Remote deployment tool: clones GitHub repository and imports the database. |
 | `reset_git_history.php` | **BETA only**: Destructive utility to completely reset Git history and force-push a clean master branch. |
+
+## Recent Maintenance Summary
+
+### Security Reproduction & Verification
+Added or updated the following scripts in the catalog to ensure comprehensive security auditing:
+- `repro_bac.php` / `repro_bac_updated.php`: IDFs API access control.
+- `repro_rce.php` / `repro_rce_updated.php`: Floor Designer file upload security.
+- `repro_sqli.php` / `repro_sqli_updated.php`: Floor Designer SQL injection guards.
+- `repro_explorer_traversal.php` / `verify_explorer_fix*`: Explorer path traversal suite.
+
+### Utilities
+- `benchmark_user_config.php`: Performance testing for optimized stats gathering.
+- `repro_equip_issues.php`: Mocking framework for equipment module diagnostics.
+
+### Pathing Standard
+The `fixed_files/` directory is officially obsolete. All verification scripts must target the live code in `modules/`.
