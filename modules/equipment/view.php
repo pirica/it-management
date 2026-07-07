@@ -133,7 +133,7 @@ function equipment_field_label($key) {
 }
 
 function equipment_field_value($key, $value) {
-    if (in_array($key, ['printer_scan'], true)) {
+    if (in_array($key, ['printer_scan', 'active'], true)) {
         return (int)$value === 1 ? 'Yes' : 'No';
     }
 
@@ -145,7 +145,7 @@ function equipment_field_is_populated($key, $value) {
         return false;
     }
 
-    if (in_array($key, ['printer_scan'], true)) {
+    if (in_array($key, ['printer_scan', 'active'], true)) {
         return (int)$value === 1;
     }
 

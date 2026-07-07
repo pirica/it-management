@@ -33,6 +33,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Standard CRUD**.
 - **Photo Upload**: Supports uploading photos of the equipment.
 - **Search & Filter**: Index list search uses `includes/itm_equipment_search.php` (`itm_equipment_search_join_sql()`, `itm_equipment_build_search_where_sql()`) to match scalar fields (including dates, purchase cost, workstation/switch/printer columns, `photo_filename`) plus all create/edit FK labels (department code, supplier code, location code, rack code, assignee username, type/manufacturer/status/warranty/workstation/switch lookup names, etc.). Supplier and assignee columns are not shown on the index table. Regression: `php scripts/verify_employees_equipment_search_coverage.php`.
+- **Active column**: The `equipment` table **does not** have an `active` column. Record state is managed via `status_id` (linking to `equipment_statuses`). Soft delete is handled via `deleted_at` and `deleted_by`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
@@ -44,6 +45,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 ## 8. Multi-Tenant Rules
 - Strictly scoped by `company_id`.
 - Employee assignee POST values must belong to the active company (`employees.company_id`). The `employees` table has no `active` column — use `employment_status_id` / `employee_statuses` elsewhere; the assignee dropdown lists all tenant employees (see `equipment_fetch_employee_options()`).
+- **Active column**: The `equipment` table **does not** have an `active` column. Record state is managed via `status_id` (linking to `equipment_statuses`). Soft delete is handled via `deleted_at` and `deleted_by`.
 
 ## 9. Audit Logging Requirements
 - Managed via database triggers (`department_id`, `supplier_id`, `assigned_to_employee_id` in equipment audit JSON payloads).

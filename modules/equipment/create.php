@@ -1720,6 +1720,7 @@ $data = [
     'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
     'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '',
+    'deleted_by' => '', 'deleted_at' => '', 'created_by' => '', 'created_at' => '', 'updated_by' => '', 'updated_at' => '',
 ];
 
 if ($isEdit) {
@@ -1993,6 +1994,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photo = $encodedPhotoFilenames === '' ? 'NULL' : "'" . escape_sql($encodedPhotoFilenames, $conn) . "'";
         $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
 
+        $created_by = $data['created_by'] !== '' ? (int)$data['created_by'] : $currentEmployeeId;
+        $created_at = $data['created_at'] !== '' ? "'" . escape_sql($data['created_at'], $conn) . "'" : 'CURRENT_TIMESTAMP';
+        $updated_by = $currentEmployeeId;
+        $updated_at = 'CURRENT_TIMESTAMP';
+        $deleted_by = $data['deleted_by'] !== '' ? (int)$data['deleted_by'] : 'NULL';
+        $deleted_at = $data['deleted_at'] !== '' ? "'" . escape_sql($data['deleted_at'], $conn) . "'" : 'NULL';
+
         $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
         $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
         $workstationOfficeInsertValues = $hasWorkstationOfficeIdColumn ? ", $workstation_office_id" : '';
@@ -2027,17 +2035,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     switch_rj45_id=$switch_rj45_id, switch_port_numbering_layout_id=$switch_port_numbering_layout_id, switch_fiber_id=$switch_fiber_id, switch_fiber_patch_id=$switch_fiber_patch_id, switch_fiber_rack_id=$switch_fiber_rack_id, switch_fiber_ports_number=$switch_fiber_ports_number, $switchFiberPortLabelUpdateSql
                     switch_poe_id=$switch_poe_id, switch_environment_id=$switch_environment_id,
                     notes=$notes,
-                    photo_filename=$photo, updated_by=$currentEmployeeId
+                    photo_filename=$photo,
+                    created_by=$created_by, created_at=$created_at, updated_by=$updated_by, updated_at=$updated_at, deleted_by=$deleted_by, deleted_at=$deleted_at
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, supplier_id, name, serial_number, model, hostname,
                     ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id,
                     printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
-                    workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename, created_by)
+                    workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename,
+                    created_by, created_at, updated_by, updated_at, deleted_by, deleted_at)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $supplier_id, $name, $serial_number, $model, $hostname,
                     $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
-                    $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo, $currentEmployeeId)";
+                    $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo,
+                    $created_by, $created_at, $updated_by, $updated_at, $deleted_by, $deleted_at)";
         }
 
         mysqli_begin_transaction($conn);
@@ -2424,6 +2435,12 @@ $data['equipment_id'] = (string)$assignmentEquipmentIdHidden;
                       data-original-switch-poe-id="<?php echo sanitize((string)($originalData['switch_poe_id'] ?? '')); ?>"
                       data-original-switch-environment-id="<?php echo sanitize((string)($originalData['switch_environment_id'] ?? '')); ?>">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+            <input type="hidden" name="created_by" value="<?php echo sanitize($data['created_by']); ?>">
+            <input type="hidden" name="created_at" value="<?php echo sanitize($data['created_at']); ?>">
+            <input type="hidden" name="updated_by" value="<?php echo sanitize($data['updated_by']); ?>">
+            <input type="hidden" name="updated_at" value="<?php echo sanitize($data['updated_at']); ?>">
+            <input type="hidden" name="deleted_by" value="<?php echo sanitize($data['deleted_by']); ?>">
+            <input type="hidden" name="deleted_at" value="<?php echo sanitize($data['deleted_at']); ?>">
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Name *</label><input required name="name" value="<?php echo sanitize($data['name']); ?>"></div>
                 <div class="form-group"><label>Type *</label><select name="equipment_type_id" required data-addable-select="1" data-add-table="equipment_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="equipment type"><option value="">-- Select --</option><?php render_options($types, $data['equipment_type_id']); ?><option value="__add_new__">➕</option></select></div>
