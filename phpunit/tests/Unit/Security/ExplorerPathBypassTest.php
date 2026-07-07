@@ -20,8 +20,7 @@ class ExplorerPathBypassTest extends TestCase
             $this->markTestSkipped('get_full_path function not defined.');
         }
 
-        $storage_root = sys_get_temp_dir() . '/itm_explorer_bypass_' . uniqid();
-        mkdir($storage_root, 0777, true);
+        $storage_root = __DIR__ . '/storage_root';
 
         $user_id = 123;
         $dept_id = 456;
@@ -31,7 +30,5 @@ class ExplorerPathBypassTest extends TestCase
         $this->assertNull(get_full_path($storage_root, 'Private', $user_id, $dept_id, $username));
         $this->assertNull(get_full_path($storage_root, './Private', $user_id, $dept_id, $username));
         $this->assertNull(get_full_path($storage_root, './Private/other_user_1', $user_id, $dept_id, $username));
-
-        rmdir($storage_root);
     }
 }

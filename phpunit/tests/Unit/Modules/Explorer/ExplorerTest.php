@@ -16,26 +16,11 @@ class ExplorerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->storageRoot = sys_get_temp_dir() . '/itm_explorer_test_' . uniqid();
-        mkdir($this->storageRoot, 0777, true);
+        $this->storageRoot = __DIR__ . '/storage_root';
 
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'get_full_path');
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_is_hidden_system_entry');
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_resolve_preview_mode');
-    }
-
-    protected function tearDown(): void
-    {
-        $this->rrmdir($this->storageRoot);
-    }
-
-    private function rrmdir($dir) {
-        if (!is_dir($dir)) return;
-        $files = array_diff(scandir($dir), array('.', '..'));
-        foreach ($files as $file) {
-            (is_dir("$dir/$file")) ? $this->rrmdir("$dir/$file") : unlink("$dir/$file");
-        }
-        return rmdir($dir);
     }
 
     public function testGetFullPathSecurity()
