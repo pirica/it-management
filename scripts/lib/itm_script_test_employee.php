@@ -302,3 +302,43 @@ if (!function_exists('itm_script_test_employee_register_teardown')) {
         });
     }
 }
+
+if (!function_exists('itm_script_test_employee_cleanup_storage')) {
+    /**
+     * Deletes the Private storage directory for a disposable user.
+     * Use with caution.
+     */
+    function itm_script_test_employee_cleanup_storage($companyId, $username, $employeeId)
+    {
+        if (!function_exists('itm_notes_private_images_dir')) {
+            require_once ROOT_PATH . 'includes/notes_visibility.php';
+        }
+
+        $notesDir = itm_notes_private_images_dir($companyId, $username, $employeeId);
+        if ($notesDir === '') {
+            return;
+        }
+
+        $privateDir = dirname(rtrim($notesDir, '/\\'));
+        if (is_dir($privateDir)) {
+            itm_script_test_employee_recursive_rmdir($privateDir);
+        }
+    }
+}
+
+if (!function_exists('itm_script_test_employee_recursive_rmdir')) {
+    function itm_script_test_employee_recursive_rmdir($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            (is_dir($path)) ? itm_script_test_employee_recursive_rmdir($path) : unlink($path);
+        }
+
+        return rmdir($dir);
+    }
+}

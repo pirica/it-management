@@ -306,6 +306,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         }
 
         $this->conn->query("DELETE FROM notes WHERE id = $noteId");
+        itm_script_test_employee_cleanup_storage($companyId, $username, $employeeId);
     }
 
     public function testNotesIdorViewBlocked()
