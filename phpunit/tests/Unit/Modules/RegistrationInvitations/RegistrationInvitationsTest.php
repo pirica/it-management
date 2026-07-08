@@ -26,7 +26,7 @@ class RegistrationInvitationsTest extends TestCase
         $data['email'] = 'Test email';
         $data['invitation_code'] = 'Test invitation_code';
         $data['active'] = 1;
-        // Find or fallback for invited_by_employee_id (users)
+        // Find or fallback for invited_by_employee_id (employees)
         $resinvited_by_employee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowinvited_by_employee_id = mysqli_fetch_assoc($resinvited_by_employee_id)) {
             $data['invited_by_employee_id'] = $rowinvited_by_employee_id['id'];

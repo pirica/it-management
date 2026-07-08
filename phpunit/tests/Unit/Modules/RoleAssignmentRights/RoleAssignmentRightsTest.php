@@ -23,6 +23,7 @@ class RoleAssignmentRightsTest extends TestCase
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
+        $data['active'] = 1;
         // Find or fallback for role_id (employee_roles)
         $resrole_id = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE " . (strpos('employee_roles', 'companies') === false && strpos('employee_roles', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowrole_id = mysqli_fetch_assoc($resrole_id)) {
@@ -40,7 +41,7 @@ class RoleAssignmentRightsTest extends TestCase
             $this->markTestSkipped('Required dependency employee_roles not found in database.');
         }
 
-        $sql = "INSERT INTO `role_assignment_rights` (company_id, `role_id`, `can_assign_role_id`) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO `role_assignment_rights` (company_id, `role_id`, `can_assign_role_id`, `active`) VALUES (?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
@@ -48,7 +49,8 @@ class RoleAssignmentRightsTest extends TestCase
         $bindValues[] = $data['company_id'];
         $bindValues[] = $data['role_id'];
         $bindValues[] = $data['can_assign_role_id'];
-        $bindTypes = 'iii';
+        $bindValues[] = $data['active'];
+        $bindTypes = 'iiii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt));

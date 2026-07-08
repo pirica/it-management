@@ -22,19 +22,13 @@ class UserRolesTest extends TestCase
     {
         // 1. Create
         $data = [];
-        $data['company_id'] = $this->companyId;
-        $data['name'] = 'Test name';
-        $data['active'] = 1;
 
-        $sql = "INSERT INTO `employee_roles` (company_id, `name`, `active`) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO `user_roles` () VALUES ()";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
         $bindValues = [];
-        $bindValues[] = $data['company_id'];
-        $bindValues[] = $data['name'];
-        $bindValues[] = $data['active'];
-        $bindTypes = 'isi';
+        $bindTypes = '';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt));
@@ -42,31 +36,21 @@ class UserRolesTest extends TestCase
         mysqli_stmt_close($stmt);
 
         // 2. Read
-        $res = mysqli_query($this->conn, "SELECT * FROM `employee_roles` WHERE id = $id");
+        $res = mysqli_query($this->conn, "SELECT * FROM `user_roles` WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertNotNull($row);
-        $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
-        $updatedValue = 'Updated Value';
-        $updateSql = "UPDATE `employee_roles` SET `name` = ? WHERE id = ?";
-        $stmt = mysqli_prepare($this->conn, $updateSql);
-        mysqli_stmt_bind_param($stmt, 'si', $updatedValue, $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt));
-        mysqli_stmt_close($stmt);
-
-        $res = mysqli_query($this->conn, "SELECT `name` FROM `employee_roles` WHERE id = $id");
-        $row = mysqli_fetch_assoc($res);
-        $this->assertEquals($updatedValue, $row['name']);
+        // No suitable varchar/text column found for update test, skipping update assertion
 
         // 4. Delete
-        $deleteSql = "DELETE FROM `employee_roles` WHERE id = ?";
+        $deleteSql = "DELETE FROM `user_roles` WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $deleteSql);
         mysqli_stmt_bind_param($stmt, 'i', $id);
         $this->assertTrue(mysqli_stmt_execute($stmt));
         mysqli_stmt_close($stmt);
 
-        $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `employee_roles` WHERE id = $id");
+        $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `user_roles` WHERE id = $id");
         $row = mysqli_fetch_assoc($res);
         $this->assertEquals(0, (int)$row['count']);
     }

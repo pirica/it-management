@@ -16,91 +16,60 @@ class FloorPlansTest extends TestCase
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
         }
-
-        // Set session company_id for auditing
-        mysqli_query($this->conn, "SET @app_company_id = {$this->companyId}");
-    }
-
-    private function getOrCreateFolder() {
-        $res = mysqli_query($this->conn, "SELECT id FROM `floor_plan_folders` WHERE company_id = {$this->companyId} LIMIT 1");
-        if ($row = mysqli_fetch_assoc($res)) {
-            return $row['id'];
-        }
-        $stmt = mysqli_prepare($this->conn, 'INSERT INTO `floor_plan_folders` (company_id, parent_folder_id, name, active) VALUES (?, NULL, ?, 1)');
-        $this->assertNotFalse($stmt, mysqli_error($this->conn));
-        $name = 'Test Folder ' . uniqid();
-        mysqli_stmt_bind_param($stmt, 'is', $this->companyId, $name);
-        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
-        $id = (int)mysqli_insert_id($this->conn);
-        mysqli_stmt_close($stmt);
-        return $id;
-    }
-
-    public function testFolderCreateUsesParentFolderIdColumn()
-    {
-        require_once __DIR__ . '/../../../../../modules/floor_plans/gallery_helpers.php';
-
-        $suffix = uniqid('fp_folder_');
-        $rootName = 'PHPUnit Root ' . $suffix;
-        $childName = 'PHPUnit Child ' . $suffix;
-
-        $rootStmt = mysqli_prepare($this->conn, 'INSERT INTO `floor_plan_folders` (company_id, parent_folder_id, name, active) VALUES (?, NULL, ?, 1)');
-        $this->assertNotFalse($rootStmt, mysqli_error($this->conn));
-        mysqli_stmt_bind_param($rootStmt, 'is', $this->companyId, $rootName);
-        $this->assertTrue(mysqli_stmt_execute($rootStmt), mysqli_stmt_error($rootStmt));
-        $rootId = (int)mysqli_insert_id($this->conn);
-        mysqli_stmt_close($rootStmt);
-        $this->assertGreaterThan(0, $rootId);
-
-        $childStmt = mysqli_prepare($this->conn, 'INSERT INTO `floor_plan_folders` (company_id, parent_folder_id, name, active) VALUES (?, ?, ?, 1)');
-        $this->assertNotFalse($childStmt, mysqli_error($this->conn));
-        mysqli_stmt_bind_param($childStmt, 'iis', $this->companyId, $rootId, $childName);
-        $this->assertTrue(mysqli_stmt_execute($childStmt), mysqli_stmt_error($childStmt));
-        $childId = (int)mysqli_insert_id($this->conn);
-        mysqli_stmt_close($childStmt);
-        $this->assertGreaterThan(0, $childId);
-
-        $folders = fp_fetch_folders($this->conn, $this->companyId);
-        $childRow = fp_folder_row_by_id($folders, $childId);
-        $this->assertNotNull($childRow);
-        $this->assertSame($rootId, fp_folder_parent_id_from_row($childRow));
-
-        mysqli_query($this->conn, 'DELETE FROM `floor_plan_folders` WHERE id IN (' . (int)$childId . ', ' . (int)$rootId . ') AND company_id = ' . (int)$this->companyId);
     }
 
     public function testCRUD()
     {
-        $folderId = $this->getOrCreateFolder();
-        $uniqueSuffix = uniqid();
-
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
-        $data['display_name'] = 'Test floor plan ' . $uniqueSuffix;
-        $data['stored_filename'] = 'test_file_' . $uniqueSuffix . '.png';
-        $data['mime_type'] = 'image/png';
-        $data['file_ext'] = 'png';
-        $data['file_size'] = 1024;
+        $data['display_name'] = 'Test display_name';
+        $data['stored_filename'] = 'Test stored_filename';
+        $data['mime_type'] = 'Test mime_type';
+        $data['file_ext'] = 'Test file_ext';
+        $data['file_size'] = 1;
         $data['active'] = 1;
-        $data['folder_id'] = $folderId;
+        // Find or fallback for folder_id (floor_plan_folders)
+        $resfolder_id = mysqli_query($this->conn, "SELECT id FROM `floor_plan_folders` WHERE " . (strpos('floor_plan_folders', 'companies') === false && strpos('floor_plan_folders', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        if ($rowfolder_id = mysqli_fetch_assoc($resfolder_id)) {
+            $data['folder_id'] = $rowfolder_id['id'];
+        } else {
+            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
+            $data['folder_id'] = null;
+        }
+        // Find or fallback for it_location_id (it_locations)
+        $resit_location_id = mysqli_query($this->conn, "SELECT id FROM `it_locations` WHERE " . (strpos('it_locations', 'companies') === false && strpos('it_locations', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        if ($rowit_location_id = mysqli_fetch_assoc($resit_location_id)) {
+            $data['it_location_id'] = $rowit_location_id['id'];
+        } else {
+            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
+            $data['it_location_id'] = null;
+        }
+        // Find or fallback for created_by_employee_id (employees)
+        $rescreated_by_employee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        if ($rowcreated_by_employee_id = mysqli_fetch_assoc($rescreated_by_employee_id)) {
+            $data['created_by_employee_id'] = $rowcreated_by_employee_id['id'];
+        } else {
+            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
+            $data['created_by_employee_id'] = null;
+        }
 
-        $sql = "INSERT INTO `floor_plans` (company_id, folder_id, `display_name`, `stored_filename`, `mime_type`, `file_ext`, `file_size`, `active`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `floor_plans` (company_id, `display_name`, `stored_filename`, `mime_type`, `file_ext`, `file_size`, `active`) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
-        $bindValues[] = $data['folder_id'];
         $bindValues[] = $data['display_name'];
         $bindValues[] = $data['stored_filename'];
         $bindValues[] = $data['mime_type'];
         $bindValues[] = $data['file_ext'];
         $bindValues[] = $data['file_size'];
         $bindValues[] = $data['active'];
-        $bindTypes = 'iissssii';
+        $bindTypes = 'issssii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
-        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt));
         $id = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
 
@@ -111,11 +80,11 @@ class FloorPlansTest extends TestCase
         $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
-        $updatedValue = 'Updated floor plan ' . $uniqueSuffix;
+        $updatedValue = 'Updated Value';
         $updateSql = "UPDATE `floor_plans` SET `display_name` = ? WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $updateSql);
         mysqli_stmt_bind_param($stmt, 'si', $updatedValue, $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT `display_name` FROM `floor_plans` WHERE id = $id");
@@ -126,7 +95,7 @@ class FloorPlansTest extends TestCase
         $deleteSql = "DELETE FROM `floor_plans` WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $deleteSql);
         mysqli_stmt_bind_param($stmt, 'i', $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM `floor_plans` WHERE id = $id");

@@ -30,6 +30,7 @@ class RoleModulePermissionsTest extends TestCase
         $data['can_delete'] = 1;
         $data['can_import'] = 1;
         $data['can_export'] = 1;
+        $data['active'] = 1;
         // Find or fallback for role_id (employee_roles)
         $resrole_id = mysqli_query($this->conn, "SELECT id FROM `employee_roles` WHERE " . (strpos('employee_roles', 'companies') === false && strpos('employee_roles', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowrole_id = mysqli_fetch_assoc($resrole_id)) {
@@ -39,7 +40,7 @@ class RoleModulePermissionsTest extends TestCase
             $this->markTestSkipped('Required dependency employee_roles not found in database.');
         }
 
-        $sql = "INSERT INTO `role_module_permissions` (company_id, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `role_module_permissions` (company_id, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `active`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
@@ -53,7 +54,8 @@ class RoleModulePermissionsTest extends TestCase
         $bindValues[] = $data['can_delete'];
         $bindValues[] = $data['can_import'];
         $bindValues[] = $data['can_export'];
-        $bindTypes = 'iisiiiiii';
+        $bindValues[] = $data['active'];
+        $bindTypes = 'iisiiiiiii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt));

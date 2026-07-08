@@ -47,7 +47,7 @@ class PatchesUpdatesTest extends TestCase
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
             $data['level_id'] = null;
         }
-        // Find or fallback for created_by (users)
+        // Find or fallback for created_by (employees)
         $rescreated_by = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowcreated_by = mysqli_fetch_assoc($rescreated_by)) {
             $data['created_by'] = $rowcreated_by['id'];

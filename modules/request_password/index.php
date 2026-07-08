@@ -278,7 +278,7 @@ unset($_SESSION['crud_error']);
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Actions</th>
+                                    <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                                     <th>Name</th>
                                     <th>Department</th>
                                     <th>Application</th>

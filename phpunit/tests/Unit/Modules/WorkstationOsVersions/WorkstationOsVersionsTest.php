@@ -24,15 +24,17 @@ class WorkstationOsVersionsTest extends TestCase
         $data = [];
         $data['company_id'] = $this->companyId;
         $data['name'] = 'Test name';
+        $data['active'] = 1;
 
-        $sql = "INSERT INTO `workstation_os_versions` (company_id, `name`) VALUES (?, ?)";
+        $sql = "INSERT INTO `workstation_os_versions` (company_id, `name`, `active`) VALUES (?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
         $bindValues[] = $data['name'];
-        $bindTypes = 'is';
+        $bindValues[] = $data['active'];
+        $bindTypes = 'isi';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt));

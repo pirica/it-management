@@ -26,11 +26,12 @@ class AttemptsTest extends TestCase
         $data['attempt_source'] = 'login';
         $data['attempt_type'] = 'success';
         $data['ip_address'] = 'Test ip_address';
-        // Find or fallback for employee_id
-        $resEmployee = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE company_id = {$this->companyId} LIMIT 1");
-        if ($rowEmployee = mysqli_fetch_assoc($resEmployee)) {
-            $data['employee_id'] = $rowEmployee['id'];
+        // Find or fallback for employee_id (employees)
+        $resemployee_id = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
+        if ($rowemployee_id = mysqli_fetch_assoc($resemployee_id)) {
+            $data['employee_id'] = $rowemployee_id['id'];
         } else {
+            // If no existing record, we might need to seed it, but for now we skip this test if mandatory
             $data['employee_id'] = null;
         }
 

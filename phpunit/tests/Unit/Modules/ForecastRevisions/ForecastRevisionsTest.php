@@ -51,7 +51,7 @@ class ForecastRevisionsTest extends TestCase
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
             $this->markTestSkipped('Required dependency forecast_revisions_status not found in database.');
         }
-        // Find or fallback for submitted_by (users)
+        // Find or fallback for submitted_by (employees)
         $ressubmitted_by = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowsubmitted_by = mysqli_fetch_assoc($ressubmitted_by)) {
             $data['submitted_by'] = $rowsubmitted_by['id'];
@@ -59,7 +59,7 @@ class ForecastRevisionsTest extends TestCase
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
             $data['submitted_by'] = null;
         }
-        // Find or fallback for finance_reviewed_by (users)
+        // Find or fallback for finance_reviewed_by (employees)
         $resfinance_reviewed_by = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowfinance_reviewed_by = mysqli_fetch_assoc($resfinance_reviewed_by)) {
             $data['finance_reviewed_by'] = $rowfinance_reviewed_by['id'];
@@ -67,7 +67,7 @@ class ForecastRevisionsTest extends TestCase
             // If no existing record, we might need to seed it, but for now we skip this test if mandatory
             $data['finance_reviewed_by'] = null;
         }
-        // Find or fallback for gm_approved_by (users)
+        // Find or fallback for gm_approved_by (employees)
         $resgm_approved_by = mysqli_query($this->conn, "SELECT id FROM `employees` WHERE " . (strpos('employees', 'companies') === false && strpos('employees', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
         if ($rowgm_approved_by = mysqli_fetch_assoc($resgm_approved_by)) {
             $data['gm_approved_by'] = $rowgm_approved_by['id'];
