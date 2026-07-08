@@ -5,6 +5,7 @@
 
 define('ITM_CLI_SCRIPT', true);
 putenv('ITM_SKIP_DB_TESTS=1');
+define('ITM_VERIFY_SKIP_ROUTER', true);
 
 // Mock server vars for config.php
 $_SERVER['HTTP_HOST'] = 'localhost';

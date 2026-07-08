@@ -190,7 +190,8 @@ $storage_root = ROOT_PATH . 'files/' . $company_id;
 $trash_root = ROOT_PATH . 'files/' . $company_id . '/Trash';
 
 // Why: Auto-create basic structure if it doesn't exist and deny direct HTTP access on every segment.
-if ($company_id > 0 && isset($conn) && $conn) {
+// Skip auto-creation when included for verification only to avoid unwanted folder noise.
+if ($company_id > 0 && isset($conn) && $conn && !(defined('ITM_VERIFY_SKIP_ROUTER') && ITM_VERIFY_SKIP_ROUTER)) {
     itm_ensure_files_storage_directory($storage_root);
     itm_ensure_files_storage_directory($trash_root);
 
