@@ -20,7 +20,7 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 - **Searchable**: Fast lookup for names and numbers.
 
 ## 6. API Actions (If Applicable)
-- None (Display module).
+- **api/inline_edit.php**: Handles inline updates for contact fields. Restricted to the employee themselves or administrators (IDOR protection).
 
 ## 7. File Structure
 - **index.php** — main contact directory logic.

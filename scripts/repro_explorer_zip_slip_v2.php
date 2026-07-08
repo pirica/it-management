@@ -34,8 +34,8 @@ $_SESSION['company_id'] = (int)$employee['company_id'];
 $_SESSION['csrf_token'] = itm_get_csrf_token();
 
 $company_id = (int)$_SESSION['company_id'];
-$storage_root = itm_files_storage_root() . $company_id;
-$common_dir = $storage_root . '/Common';
+$storage_root = itm_files_storage_root() . DIRECTORY_SEPARATOR . $company_id;
+$common_dir = $storage_root . DIRECTORY_SEPARATOR . 'Common';
 itm_ensure_files_storage_directory($common_dir);
 
 $zipPath = $common_dir . '/malicious.zip';
@@ -46,7 +46,11 @@ if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
     exit(1);
 }
 $zip->addFromString('../../../poc_zip_slip_explorer.txt', 'Zip Slip Success');
-$zip->close();
+if (!$zip->close()) {
+    echo colorText('[FAIL] ZipArchive::close() failed for ' . $zipPath, 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
 
 $_SERVER['REQUEST_METHOD'] = 'POST';
 $_POST['action'] = 'unzip';
@@ -54,9 +58,44 @@ $_POST['path'] = 'Common';
 $_POST['item'] = 'malicious.zip';
 $_POST['csrf_token'] = $_SESSION['csrf_token'];
 
-ob_start();
-include __DIR__ . '/../modules/explorer/api.php';
-$output = ob_get_clean();
+function run_explorer_request($script_path, $session_data, $post_data = []) {
+    $tmp_file = tempnam(sys_get_temp_dir(), 'repro_explorer');
+    $session_str = serialize($session_data);
+
+    $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+\$_SERVER['HTTP_HOST'] = 'localhost';
+\$_SERVER['PHP_SELF'] = '/it-management/modules/explorer/api.php';
+\$_SERVER['SCRIPT_FILENAME'] = '$script_path';
+
+require '" . realpath(__DIR__ . "/../config/config.php") . "';
+
+\$_SESSION = unserialize(" . var_export($session_str, true) . ");
+\$_POST = " . var_export($post_data, true) . ";
+
+chdir(dirname('$script_path'));
+include basename('$script_path');
+?>";
+    file_put_contents($tmp_file, $code);
+    $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
+    $output = shell_exec(escapeshellarg($php_bin) . ' ' . escapeshellarg($tmp_file) . ' 2>&1');
+    unlink($tmp_file);
+    return $output;
+}
+
+$modulePath = realpath(__DIR__ . '/../modules/explorer/api.php');
+$session = [
+    'employee_id' => (int)$employee['id'],
+    'username' => (string)$employee['username'],
+    'company_id' => (int)$employee['company_id'],
+    'csrf_token' => $_SESSION['csrf_token']
+];
+
+$postData = $_POST;
+
+$output = run_explorer_request($modulePath, $session, $postData);
 
 $targetFile = ROOT_PATH . 'poc_zip_slip_explorer.txt';
 $exitCode = 0;

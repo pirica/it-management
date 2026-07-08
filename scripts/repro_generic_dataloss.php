@@ -10,6 +10,16 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Repro: Generic Table Import Data Loss');
 
+// Why: Ensure a clean audit context to avoid FK failures on audit_logs if a stale session exists.
+if (isset($_SESSION)) {
+    $_SESSION['employee_id'] = null;
+    $_SESSION['company_id'] = null;
+}
+if ($conn) {
+    mysqli_query($conn, 'SET @app_employee_id = NULL');
+    mysqli_query($conn, 'SET @app_company_id = NULL');
+}
+
 $root = dirname(__DIR__);
 $nl = itm_script_output_nl();
 
