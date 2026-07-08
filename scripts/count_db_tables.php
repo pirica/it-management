@@ -1,3 +1,4 @@
+<!-- ***BETA MODE! ***MANDATORY! DONT MAKE CHANGES ON THIS FILE -->
 <?php
 $host = "127.0.0.1";
 $user = "root";
