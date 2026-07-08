@@ -8,13 +8,12 @@ putenv('ITM_SKIP_DB_TESTS=1');
 define('ITM_VERIFY_SKIP_ROUTER', true);
 
 // Setup paths
-$projectRoot = dirname(__DIR__);
-require_once $projectRoot . '/config/config.php';
-require_once $projectRoot . '/scripts/lib/script_cli_output.php';
-require_once $projectRoot . '/includes/itm_explorer_paths.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 
 // Include the LIVE file logic
-require_once $projectRoot . '/modules/explorer/api.php';
+require_once ROOT_PATH . 'modules/explorer/api.php';
 
 // Mock session
 $_SESSION['employee_id'] = 123;

@@ -13,9 +13,8 @@ $_SERVER['REQUEST_URI'] = '/verify_explorer_fix_updated.php';
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
 // Setup paths
-$projectRoot = dirname(__DIR__);
-require_once $projectRoot . '/config/config.php';
-require_once $projectRoot . '/scripts/lib/script_cli_output.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Verify: Explorer Fix (Updated)');
 $nl = itm_script_output_nl();
@@ -26,10 +25,10 @@ $_SESSION['company_id'] = 1;
 $_SESSION['username'] = 'attacker';
 $_SESSION['csrf_token'] = 'test_token';
 
-require_once $projectRoot . '/includes/itm_explorer_paths.php';
+require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 
 // Include the LIVE file logic
-require_once $projectRoot . '/modules/explorer/api.php';
+require_once ROOT_PATH . 'modules/explorer/api.php';
 
 echo colorText("Testing Explorer API Fix (Updated)", 'info') . $nl;
 echo "--------------------------" . $nl;
@@ -64,4 +63,5 @@ if ($safe_item === 'valid_file.txt') {
 } else {
     echo itm_script_format_status_line("[FAIL] Valid item incorrectly blocked! Item: " . var_export($safe_item, true)) . $nl;
 }
-?>
+
+itm_script_output_end();

@@ -5,14 +5,10 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-$nl = itm_script_output_nl();
-
-require_once __DIR__ . '/../scripts/lib/script_cli_output.php';
-require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
-
-$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Employee Status Leak & BAC Reproduction');
+$nl = itm_script_output_nl();
 
 function test_emp_status_id_from_raw_leak($conn, $nl) {
     echo "1. Testing emp_status_id_from_raw Cross-Tenant Leak..." . $nl;

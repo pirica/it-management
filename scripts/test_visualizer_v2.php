@@ -3,7 +3,10 @@
 function sanitize($s) { return htmlspecialchars((string)$s); }
 
 require_once __DIR__ . '/../modules/idfs/port_visualizer_helper.php';
-require_once __DIR__ . '/lib/script_browser_nav.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('IDF Port Visualizer V2');
+itm_script_output_close_pre();
 
 $ports = [];
 for ($i=1; $i<=48; $i++) {
@@ -38,4 +41,5 @@ echo itm_render_port_visualizer($ports, ['rows' => 2, 'layout' => 'Vertical', 'b
 echo '<br><br><h2>Horizontal Layout (48 Ports)</h2>';
 echo itm_render_port_visualizer($ports, ['rows' => 2, 'layout' => 'Horizontal', 'base_url' => '../']);
 echo '</div>';
-echo '</body></html>';
+
+itm_script_output_end();

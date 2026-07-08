@@ -6,20 +6,11 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+itm_script_output_begin('PoC: Contacts IDOR');
 
 $nl = itm_script_output_nl();
 
-require_once __DIR__ . '/../scripts/lib/itm_script_test_employee.php';
-
-function colorText($text, $type) {
-    if (PHP_SAPI !== 'cli') return $text;
-    switch ($type) {
-        case 'pass': return "\033[32m$text\033[0m";
-        case 'fail': return "\033[31m$text\033[0m";
-        default: return $text;
-    }
-}
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 $company_id = 1;
 

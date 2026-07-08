@@ -48,12 +48,12 @@ ob_end_clean();
 
 $end = microtime(true);
 $duration = $end - $start;
-echo "Request took: " . round($duration, 2) . " seconds\n";
+echo "Request took: " . round($duration, 2) . " seconds" . $nl;
 
 if ($duration >= 2) {
-    echo "VULNERABILITY CONFIRMED: SQL Injection via 'dir' parameter successful.\n";
+    echo itm_script_format_status_line("[FAIL] VULNERABILITY CONFIRMED: SQL Injection via 'dir' parameter successful.") . $nl;
 } else {
-    echo "SQL Injection attempt failed or was blocked.\n";
+    echo itm_script_format_status_line("[PASS] SQL Injection attempt failed or was blocked.") . $nl;
 }
 
 itm_script_output_end();
