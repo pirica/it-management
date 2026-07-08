@@ -15,3 +15,4 @@ if (!$conn) {
 $result = mysqli_query($conn, "SHOW TABLES");
 echo mysqli_num_rows($result);
 ?>
+<!-- ***BETA MODE! ***MANDATORY! DONT MAKE CHANGES ON THIS FILE -->
