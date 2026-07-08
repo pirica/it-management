@@ -41,6 +41,13 @@ $admin1 = itm_script_test_employee_create($conn, $company1, [
     'script_slug' => 'repro-leak-admin',
     'role_id' => 1 // Admin
 ]);
+
+if (!$admin1) {
+    echo colorText("[ERROR] Could not create Admin user. Check database connection.\n", 'fail');
+    itm_script_output_end();
+    exit(1);
+}
+
 itm_script_test_employee_register_teardown($conn, (int)$admin1['id']);
 
 // 2. Create a victim user in Company 2
@@ -48,6 +55,13 @@ $company2 = 2;
 $victim = itm_script_test_employee_create($conn, $company2, [
     'script_slug' => 'repro-leak-victim'
 ]);
+
+if (!$victim) {
+    echo colorText("[ERROR] Could not create Victim user. Check database connection.\n", 'fail');
+    itm_script_output_end();
+    exit(1);
+}
+
 itm_script_test_employee_register_teardown($conn, (int)$victim['id']);
 
 $session = [

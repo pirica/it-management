@@ -51,6 +51,13 @@ $testUser = itm_script_test_employee_create($conn, $company_id, [
     'script_slug' => 'repro-uc-bac',
     'role_id' => 5 // User
 ]);
+
+if (!$testUser) {
+    echo colorText("[ERROR] Could not create test user. Check database connection.\n", 'fail');
+    itm_script_output_end();
+    exit(1);
+}
+
 itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
 $session = [
