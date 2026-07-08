@@ -7,7 +7,6 @@
  * Implements CSRF protection and role-based redirection.
  */
 
-session_start();
 include('config/config.php');
 require_once __DIR__ . '/includes/itm_employee_employment_status.php';
 $csrfToken = itm_get_csrf_token();
