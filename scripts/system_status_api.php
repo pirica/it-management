@@ -24,6 +24,17 @@ $allowed_actions = array_merge(
     ['php_version', 'php_extensions', 'php_ini_values', 'mysql_status', 'mysql_version', 'mysql_databases', 'mysql_size']
 );
 
+if ($action === '') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'System Status API active. Please specify a valid action query parameter.',
+        'usage' => 'GET scripts/system_status_api.php?action=<action_name>',
+        'allowed_actions' => $allowed_actions
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if (!in_array($action, $allowed_actions, true)) {
     header('Content-Type: application/json; charset=utf-8');
     http_response_code(400);
