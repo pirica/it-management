@@ -12,6 +12,7 @@ function run_request($script_path, $session_data, $post_data = []) {
 
     $code = "<?php
 define('ITM_CLI_SCRIPT', true);
+define('ITM_API_RATE_LIMIT_PROBE', true);
 \$_SERVER['REQUEST_METHOD'] = 'POST';
 \$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 \$_SERVER['HTTP_HOST'] = 'localhost';
@@ -97,8 +98,20 @@ if ($row && $row['visitor_name'] === 'SQLI_SUCCESS') {
     if (strpos($output, 'Invalid field.') !== false) {
         echo colorText("[PASS] SQL Injection attempt blocked with 'Invalid field.' error.", 'pass') . $nl;
     } else {
-        echo "Output: " . $output . $nl;
-        echo "Visitor name: " . ($row['visitor_name'] ?? 'NULL') . $nl;
+        echo "=== DEBUG INFO ===" . $nl;
+        echo "Outside PHP SAPI: " . php_sapi_name() . $nl;
+        echo "Outside PHP Version: " . PHP_VERSION . $nl;
+        echo "Outside PHP Binary: " . (defined('PHP_BINARY') ? PHP_BINARY : 'N/A') . $nl;
+        echo "Target Module Path: " . $modulePath . $nl;
+        echo "Visitor log Row in DB: " . json_encode($row) . $nl;
+        echo "Raw Output from Request (Length: " . strlen($output) . "):" . $nl;
+        echo "----------------------------------------" . $nl;
+        echo $output . $nl;
+        echo "----------------------------------------" . $nl;
+        if (strpos($output, 'login.php') !== false || strpos($output, '302 Found') !== false) {
+            echo "Tip: The response redirected to login.php. This usually indicates that the authentication bypass failed." . $nl;
+            echo "Ensure that ITM_CLI_SCRIPT or ITM_API_RATE_LIMIT_PROBE bypass is functioning correctly in config/config.php." . $nl;
+        }
         echo colorText("[FAIL] Expected 'Invalid field.' error message in output.", 'fail') . $nl;
     }
 }
