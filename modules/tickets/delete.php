@@ -1,0 +1,83 @@
+<?php
+/**
+ * Tickets Module - Delete
+ *
+ * Handles deletion of a single ticket record.
+ * Validates CSRF tokens and performs a safety check using itm_can_delete_record
+ * before executing the DELETE query to ensure no orphan records are created.
+ */
+
+require '../../config/config.php';
+itm_require_crud_role_module_permission($conn, 'delete', 'tickets');
+
+
+// Only allow deletion via POST for security
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed');
+}
+
+// Ensure request is from an authenticated source
+itm_require_post_csrf();
+
+$bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+$id = (int)($_POST['id'] ?? 0);
+
+if ($bulkAction === 'clear_table') {
+    $tenantCompanyId = (int)$company_id;
+    if ($tenantCompanyId <= 0) {
+        $_SESSION['crud_error'] = 'Clear table requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $stmtClear = mysqli_prepare($conn, 'DELETE FROM tickets WHERE company_id = ?');
+    if ($stmtClear) {
+        mysqli_stmt_bind_param($stmtClear, 'i', $tenantCompanyId);
+        mysqli_stmt_execute($stmtClear);
+        mysqli_stmt_close($stmtClear);
+    }
+    header('Location: index.php');
+    exit;
+}
+
+if ($bulkAction === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if (is_array($ids) && $ids) {
+        $stmtBulk = mysqli_prepare($conn, 'DELETE FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($stmtBulk) {
+            foreach ($ids as $rawId) {
+                $bulkId = (int)$rawId;
+                if ($bulkId <= 0) {
+                    continue;
+                }
+                mysqli_stmt_bind_param($stmtBulk, 'ii', $bulkId, $company_id);
+                mysqli_stmt_execute($stmtBulk);
+            }
+            mysqli_stmt_close($stmtBulk);
+        }
+    }
+    header('Location: index.php');
+    exit;
+}
+
+if ($id > 0) {
+    $usageError = '';
+    // Use the generic safety check to verify the ID belongs to the current company
+    // and isn't being referenced in a way that prevents deletion.
+    if (!itm_can_delete_record($conn, 'tickets', 'id', $id, $company_id, $usageError)) {
+        $_SESSION['crud_error'] = $usageError;
+    } else {
+        // Execute the delete query using prepared statements for safety.
+        $stmt = mysqli_prepare($conn, 'DELETE FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+    }
+}
+
+// Redirect back to the main list
+header('Location: index.php');
+exit;
