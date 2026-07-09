@@ -58,12 +58,97 @@ if ($statusRes && $row = mysqli_fetch_assoc($statusRes)) {
 
 
 // ----------------------------------------------------
-// CREATE TEST SUBJECTS WITH DETAILED ERROR CAPTURING
+// CUSTOM ROBUST TEST EMPLOYEE CREATOR (EXHAUSTIVE DIAGNOSTICS)
 // ----------------------------------------------------
+
+/**
+ * Creates a test employee with statement-level error capturing BEFORE close to prevent error erasing.
+ */
+function repro_create_test_employee($conn, $companyId, $options = []) {
+    $scriptSlug = $options['script_slug'] ?? 'script';
+    $username = itm_script_test_employee_username($scriptSlug);
+    $firstName = $options['first_name'] ?? 'Script';
+    $lastName = $options['last_name'] ?? 'Test';
+    $email = $options['email'] ?? ($username . '@script-test.example.com');
+    $password = $options['password'] ?? 'script-test-pass';
+    $roleId = $options['role_id'] ?? null;
+    $accessLevelId = $options['access_level_id'] ?? null;
+    $employmentStatusId = $options['employment_status_id'] ?? 1;
+
+    // Detect actual column layout to avoid missing columns
+    $columnsInDb = [];
+    $resCols = mysqli_query($conn, "SHOW COLUMNS FROM employees");
+    if ($resCols) {
+        while ($colRow = mysqli_fetch_assoc($resCols)) {
+            $columnsInDb[] = $colRow['Field'];
+        }
+    }
+
+    $colsToInsert = ['company_id', 'first_name', 'last_name', 'username', 'work_email', 'password', 'employment_status_id'];
+    $bindTypes = 'isssssi';
+    $bindVals = [$companyId, $firstName, $lastName, $username, $email, $password, $employmentStatusId];
+
+    if (in_array('role_id', $columnsInDb) && $roleId !== null) {
+        $colsToInsert[] = 'role_id';
+        $bindTypes .= 'i';
+        $bindVals[] = $roleId;
+    }
+    if (in_array('access_level_id', $columnsInDb) && $accessLevelId !== null) {
+        $colsToInsert[] = 'access_level_id';
+        $bindTypes .= 'i';
+        $bindVals[] = $accessLevelId;
+    }
+
+    $placeholders = array_fill(0, count($colsToInsert), '?');
+    $sql = 'INSERT INTO employees (' . implode(', ', $colsToInsert) . ') VALUES (' . implode(', ', $placeholders) . ')';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        echo "[ERROR] mysqli_prepare failed: " . mysqli_error($conn) . " (Code: " . mysqli_errno($conn) . ")\n";
+        return null;
+    }
+
+    $bindParams = [$stmt, $bindTypes];
+    foreach ($bindVals as $key => $val) {
+        $bindParams[] = &$bindVals[$key];
+    }
+    call_user_func_array('mysqli_stmt_bind_param', $bindParams);
+
+    if (!mysqli_stmt_execute($stmt)) {
+        // CAPTURE ERROR IMMEDIATELY BEFORE CLOSING THE STATEMENT (Critical!)
+        $stmtError = mysqli_stmt_error($stmt);
+        $stmtErrno = mysqli_stmt_errno($stmt);
+        $connError = mysqli_error($conn);
+        $connErrno = mysqli_errno($conn);
+
+        echo "[ERROR] mysqli_stmt_execute failed!\n";
+        echo "  -> Statement Error: $stmtError (Code: $stmtErrno)\n";
+        echo "  -> Connection Error: $connError (Code: $connErrno)\n";
+
+        mysqli_stmt_close($stmt);
+        return null;
+    }
+
+    $insertedId = mysqli_stmt_insert_id($stmt);
+    mysqli_stmt_close($stmt);
+
+    if ($insertedId <= 0) {
+        echo "[ERROR] Insert succeeded but auto_increment ID was not returned.\n";
+        return null;
+    }
+
+    return [
+        'id' => $insertedId,
+        'username' => $username,
+        'email' => $email,
+        'company_id' => $companyId,
+    ];
+}
+
 
 // 1. Create Attacker (non-admin)
 echo "[DEBUG] Attempting to create Attacker employee..." . $nl;
-$attacker = itm_script_test_employee_create($conn, $company_id, [
+$attacker = repro_create_test_employee($conn, $company_id, [
     'script_slug' => 'repro-idor-attacker',
     'role_id' => $role_id,
     'access_level_id' => $access_level_id,
@@ -72,13 +157,6 @@ $attacker = itm_script_test_employee_create($conn, $company_id, [
 
 if (!$attacker) {
     echo colorText("[FATAL ERROR] Failed to create attacker employee.", 'fail') . $nl;
-    echo "  MySQL Error: " . mysqli_error($conn) . $nl;
-    echo "  MySQL Error Code: " . mysqli_errno($conn) . $nl;
-    echo "  Attempted Parameters:" . $nl;
-    echo "    Company ID: $company_id" . $nl;
-    echo "    Role ID: $role_id" . $nl;
-    echo "    Access Level ID: $access_level_id" . $nl;
-    echo "    Employment Status ID: $employment_status_id" . $nl;
     exit(1);
 }
 itm_script_test_employee_register_teardown($conn, (int)$attacker['id']);
@@ -87,7 +165,7 @@ echo colorText("[DEBUG] Attacker created successfully.", 'pass') . $nl;
 
 // 2. Create Victim
 echo "[DEBUG] Attempting to create Victim employee..." . $nl;
-$victim = itm_script_test_employee_create($conn, $company_id, [
+$victim = repro_create_test_employee($conn, $company_id, [
     'script_slug' => 'repro-idor-victim',
     'role_id' => $role_id,
     'access_level_id' => $access_level_id,
@@ -96,8 +174,6 @@ $victim = itm_script_test_employee_create($conn, $company_id, [
 
 if (!$victim) {
     echo colorText("[FATAL ERROR] Failed to create victim employee.", 'fail') . $nl;
-    echo "  MySQL Error: " . mysqli_error($conn) . $nl;
-    echo "  MySQL Error Code: " . mysqli_errno($conn) . $nl;
     exit(1);
 }
 itm_script_test_employee_register_teardown($conn, (int)$victim['id']);
