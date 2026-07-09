@@ -73,6 +73,47 @@ function itm_apitest_cleanup_configuration($conn, $companyId, $employeeId) {
 }
 
 /**
+ * Ensures the required employee row exists in the employees table.
+ * satisfying the Foreign Key constraints on ui_configuration.employee_id safely.
+ */
+function itm_apitest_ensure_employee_exists($conn, $companyId, $employeeId) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    $companyId = (int)$companyId;
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
+        return false;
+    }
+
+    // Check if employee already exists
+    $checkSql = "SELECT 1 FROM employees WHERE id = $employeeId LIMIT 1";
+    $res = mysqli_query($conn, $checkSql);
+    if ($res && mysqli_num_rows($res) > 0) {
+        return true;
+    }
+
+    // Lookup a valid employment status ID for this company
+    $statusId = 1;
+    $statusRes = mysqli_query($conn, "SELECT id FROM employee_statuses WHERE company_id = $companyId LIMIT 1");
+    if ($statusRes && $row = mysqli_fetch_assoc($statusRes)) {
+        $statusId = (int)$row['id'];
+    }
+
+    // Insert dummy employee with exact designated ID to bypass FK validation failure
+    $username = 'apitest-user-' . $employeeId;
+    $email = $username . '@example.com';
+    $firstName = 'Apitest';
+    $lastName = 'User';
+
+    $insertSql = "INSERT IGNORE INTO employees (id, company_id, first_name, last_name, username, work_email, employment_status_id)
+                  VALUES ($employeeId, $companyId, '{$firstName}', '{$lastName}', '{$username}', '{$email}', $statusId)";
+
+    return (bool)mysqli_query($conn, $insertSql);
+}
+
+/**
  * Inserts a disposable ui_configuration row for tier testing.
  */
 function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, array $overrides = []) {
@@ -83,6 +124,11 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
     if ($companyId <= 0 || $employeeId <= 0) {
+        return null;
+    }
+
+    // Ensure target employee exists in employees table (Foreign Key compliance)
+    if (!itm_apitest_ensure_employee_exists($conn, $companyId, $employeeId)) {
         return null;
     }
 
