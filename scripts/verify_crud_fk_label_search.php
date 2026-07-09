@@ -129,8 +129,8 @@ if ($fnbDeptId > 0) {
     $equipmentStatusId = 1;
     $stmtEquipInsert = mysqli_prepare(
         $conn,
-        'INSERT INTO equipment (company_id, equipment_type_id, department_id, status_id, name, active)
-         VALUES (?, ?, ?, ?, ?, 1)'
+        'INSERT INTO equipment (company_id, equipment_type_id, department_id, status_id, name)
+         VALUES (?, ?, ?, ?, ?)'
     );
     if ($stmtEquipInsert) {
         mysqli_stmt_bind_param(
