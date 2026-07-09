@@ -270,7 +270,7 @@ $itm_generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
     </style>
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose', maxTextSize: 1000000 });
     </script>
 </head>
 <body>
