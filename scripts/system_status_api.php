@@ -7,10 +7,6 @@
  */
 
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
-
-$nl = itm_script_output_nl();
 
 require_once ROOT_PATH . 'includes/itm_system_status_native.php';
 require_once ROOT_PATH . 'includes/itm_system_status_powershell.php';
@@ -27,6 +23,17 @@ $allowed_actions = array_merge(
     itm_system_status_hardware_actions(),
     ['php_version', 'php_extensions', 'php_ini_values', 'mysql_status', 'mysql_version', 'mysql_databases', 'mysql_size']
 );
+
+if ($action === '') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'System Status API active. Please specify a valid action query parameter.',
+        'usage' => 'GET scripts/system_status_api.php?action=<action_name>',
+        'allowed_actions' => $allowed_actions
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 if (!in_array($action, $allowed_actions, true)) {
     header('Content-Type: application/json; charset=utf-8');
@@ -66,5 +73,3 @@ if (($json_data['status'] ?? '') !== 'success') {
     http_response_code(500);
 }
 echo json_encode($json_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-itm_script_output_end();
