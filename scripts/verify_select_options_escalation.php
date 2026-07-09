@@ -19,6 +19,10 @@ function run_isolated_post($script_path, $session_data = [], $post_data = []) {
         $post_init .= "\$_POST['$k'] = " . var_export($v, true) . ";\n";
     }
 
+    // WHY: Initialize session and post variables BEFORE requiring config.php.
+    // If config.php runs first, the global authentication middleware will see an empty
+    // $_SESSION['employee_id'] and redirect to login.php (HTTP 302 Found) when executed
+    // under a web/HTTP runner environment where PHP_SAPI is not 'cli' or is simulated.
     $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 \$_SERVER['REQUEST_METHOD'] = 'POST';
@@ -26,10 +30,14 @@ define('ITM_CLI_SCRIPT', true);
 \$_SERVER['HTTP_HOST'] = 'localhost';
 function itm_validate_csrf_token(\$token) { return true; }
 
-require '" . realpath(__DIR__ . "/../config/config.php") . "';
-
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 $session_init
 $post_init
+
+require '" . realpath(__DIR__ . "/../config/config.php") . "';
+
 \$company_id = \$_SESSION['company_id'];
 
 chdir(dirname('$script_path'));
@@ -106,7 +114,13 @@ if ($row && (int)$row['role_id'] === 1) {
 } else {
     echo colorText("[FAIL] Select Options API: Expected whitelist block; output: $output", 'fail') . $nl;
     if ($decoded === null) {
-        echo "Debug: Output was not valid JSON. Real output received:\n" . $output . $nl;
+        echo "Debug Info:\n";
+        echo "- Output was not valid JSON. Real output received:\n" . $output . $nl;
+        echo "- This usually means a '302 Redirect' to login.php was returned.\n";
+        echo "- Session values used for authentication check in isolated process:\n";
+        echo "  employee_id: " . $employeeId . "\n";
+        echo "  username: " . $testUser['username'] . "\n";
+        echo "  company_id: 1\n";
     } else {
         echo "Debug: Parsed JSON response is: " . print_r($decoded, true) . $nl;
     }
