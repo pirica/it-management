@@ -93,7 +93,20 @@ $post = [
 
 $output = run_isolated_post(realpath(__DIR__ . '/../modules/select_options_api.php'), $session, $post);
 
-$decoded = json_decode(trim((string)$output), true);
+// WHY: Extract the HTTP body from the output in case PHP SAPI outputs HTTP headers to stdout
+$body = trim((string)$output);
+$double_break = strpos($body, "\r\n\r\n");
+if ($double_break !== false) {
+    $body = substr($body, $double_break + 4);
+} else {
+    $double_break = strpos($body, "\n\n");
+    if ($double_break !== false) {
+        $body = substr($body, $double_break + 2);
+    }
+}
+$body = trim($body);
+
+$decoded = json_decode($body, true);
 $blockedByPolicy = is_array($decoded)
     && empty($decoded['ok'])
     && stripos((string)($decoded['error'] ?? ''), 'quick-add') !== false;
