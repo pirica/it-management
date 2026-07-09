@@ -7,10 +7,6 @@
  */
 
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
-
-$nl = itm_script_output_nl();
 
 require_once ROOT_PATH . 'includes/itm_system_status_native.php';
 require_once ROOT_PATH . 'includes/itm_system_status_powershell.php';
@@ -66,5 +62,3 @@ if (($json_data['status'] ?? '') !== 'success') {
     http_response_code(500);
 }
 echo json_encode($json_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-itm_script_output_end();
