@@ -49,6 +49,11 @@ echo "Verifying Select Options API Escalation..." . $nl;
 $testUser = itm_script_test_employee_create($conn, 1, ['script_slug' => 'verify-select-options']);
 if (!is_array($testUser)) {
     echo colorText('[FAIL] Unable to create disposable test user.', 'fail') . $nl;
+    if ($conn) {
+        echo "Database error details: " . mysqli_error($conn) . $nl;
+    } else {
+        echo "Database connection is not established." . $nl;
+    }
     itm_script_output_end();
     exit(1);
 }
@@ -86,7 +91,12 @@ $blockedByPolicy = is_array($decoded)
     && stripos((string)($decoded['error'] ?? ''), 'quick-add') !== false;
 
 $res = mysqli_query($conn, "SELECT id, role_id FROM employees WHERE username = '$evilUsername'");
-$row = mysqli_fetch_assoc($res);
+if (!$res) {
+    echo "Query to check created user failed: " . mysqli_error($conn) . $nl;
+    $row = null;
+} else {
+    $row = mysqli_fetch_assoc($res);
+}
 
 if ($row && (int)$row['role_id'] === 1) {
     echo colorText("[FAIL] Select Options API: Regular user successfully created an Admin user!", 'fail') . $nl;
@@ -95,6 +105,11 @@ if ($row && (int)$row['role_id'] === 1) {
     echo colorText('[PASS] Select Options API: Admin creation blocked by table whitelist.', 'pass') . $nl;
 } else {
     echo colorText("[FAIL] Select Options API: Expected whitelist block; output: $output", 'fail') . $nl;
+    if ($decoded === null) {
+        echo "Debug: Output was not valid JSON. Real output received:\n" . $output . $nl;
+    } else {
+        echo "Debug: Parsed JSON response is: " . print_r($decoded, true) . $nl;
+    }
 }
 
 itm_script_output_end();
