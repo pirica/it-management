@@ -52,9 +52,9 @@ foreach ($files as $path) {
     $relative = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
     $relativeNorm = str_replace('\\', '/', $relative);
 
-    // Replace 'modules/' prefix with 'module/'
-    if (strpos($relativeNorm, 'modules/') === 0) {
-        $modulePath = 'module/' . substr($relativeNorm, 8);
+    // Ensure path starts with modules/
+    if (strpos($relativeNorm, 'modules/') !== 0) {
+        $modulePath = 'modules/' . ltrim($relativeNorm, '/');
     } else {
         $modulePath = $relativeNorm;
     }
