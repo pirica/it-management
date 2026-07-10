@@ -1,4 +1,4 @@
-# AGENT_NOTES.md - UserSidebarPreferences Tests
+# AGENT_NOTES.md - EmployeeSidebarPreferences Tests
 
 ## 1. Module Purpose
 Unit/regression tests for `modules/employee_sidebar_preferences/`.
@@ -14,4 +14,4 @@ Unit/regression tests for `modules/employee_sidebar_preferences/`.
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
 
 ## 4. Business Rules (Critical for Agents)
-- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
+- **Disposable script test employees:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed employee id `1`. See `scripts/SCRIPTS.md` → Disposable script test employees.

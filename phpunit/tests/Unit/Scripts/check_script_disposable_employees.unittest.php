@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-class CheckScriptDisposableUsersUnittest extends ItmScriptCliTestCase
+class CheckScriptDisposableEmployeesUnittest extends ItmScriptCliTestCase
 {
-    public function testCheckScriptDisposableUsersPasses(): void
+    public function testCheckScriptDisposableEmployeesPasses(): void
     {
         $result = $this->runRepoScript('scripts/check_script_disposable_employees.php');
         $this->assertSame(0, $result['exit'], $result['output']);

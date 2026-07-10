@@ -776,13 +776,13 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 |--------|---------|
 | `php scripts/verify_roles_permissions.php` | Regression: `modules_registry` row, module folder + JS, RBAC exempt slug, Admin `ALL` wildcard with six flags, seeded roles/hierarchy for company 1, `can_import`/`can_export` columns, role sidebar `active_count` (role_id + HR Active) |
 | `php scripts/verify_dashboard_active_employees.php` | Regression: dashboard row 2 **Active** and **On Leave** stats use employment status helpers |
-| `php scripts/verify_dashboard_online_users.php` | Regression: dashboard **Online now** stat, session presence touch hook, count after touch |
+| `php scripts/verify_dashboard_online_employees.php` | Regression: dashboard **Online now** stat, session presence touch hook, count after touch |
 
 Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `database.sql`.
 
 Run `verify_dashboard_active_employees.php` when changing `dashboard.php` or `includes/itm_employee_employment_status.php` Active/On Leave count logic.
 
-Run `verify_dashboard_online_users.php` when changing `dashboard.php`, `includes/itm_active_sessions.php`, or the session presence hook in `config/config.php`.
+Run `verify_dashboard_online_employees.php` when changing `dashboard.php`, `includes/itm_active_sessions.php`, or the session presence hook in `config/config.php`.
 
 Screenshots for README: `python3 scripts/take_screenshots_modules.py` (default modules: `todo`, `notes`, `roles_permissions`, `system_status`; output under `docs/readme/`). Requires Playwright + local Apache at `http://localhost/it-management/`. Uses `scripts/bypass_login.php` plus `sudo chown www-data:www-data` on the sess file so Apache accepts the cookie; derives `PHPSESSID` cookie domain from the screenshot base URL hostname (`urlparse`). Env vars:
 
@@ -1250,3 +1250,6 @@ The `fixed_files/` directory is officially obsolete and has been removed from al
 
 ### Standardization
 Standardized output handling using `scripts/lib/script_cli_output.php` has been applied to several functional and reproduction scripts for consistent reporting across Browser and CLI environments.
+
+### System-Wide Path & Include Verification
+Performed a rigorous audit of all file path and `require`/`include` context behaviors. Confirmed that relative file references correctly resolve using parent/child directories (via proper `chdir()` context switches where relevant). Verified complete removal of obsolete `fixed_files/` directory, cementing `modules/` as the sole authoritative code target for reproduction and verification scripts.

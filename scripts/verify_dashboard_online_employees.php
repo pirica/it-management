@@ -2,8 +2,8 @@
 /**
  * Dashboard Online now regression checks.
  *
- * CLI: php scripts/verify_dashboard_online_users.php
- * Browser: scripts/verify_dashboard_online_users.php
+ * CLI: php scripts/verify_dashboard_online_employees.php
+ * Browser: scripts/verify_dashboard_online_employees.php
  */
 
 declare(strict_types=1);
