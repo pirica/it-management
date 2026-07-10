@@ -51,7 +51,15 @@ if ($format === 'csv') {
     header('Content-Disposition: attachment; filename=bookmarks.html');
     echo "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n";
     echo "<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n";
-    echo "<TITLE>Bookmarks</TITLE>\n";
+    echo "<?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Bookmarks';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>\n";
     echo "<H1>Bookmarks</H1>\n";
     echo "<DL><p>\n";
     foreach ($data as $row) {
@@ -70,7 +78,15 @@ if ($format === 'csv') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Export Bookmarks</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Bookmarks';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <style>
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }

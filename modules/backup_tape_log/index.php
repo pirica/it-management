@@ -368,7 +368,15 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?= sanitize($crud_title) ?> - IT Management</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Backup Tape Log';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .btl-grid-header { margin-bottom: 20px; }

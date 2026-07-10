@@ -114,7 +114,15 @@ $moduleListHeading = '🧾 View Audit Log';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Audit Log</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'View Audit Log';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .audit-json { white-space:pre-wrap; word-break:break-word; margin:0; font-size:12px; line-height:1.4; background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px; }

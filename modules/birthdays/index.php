@@ -152,7 +152,15 @@ $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Birthdays - IT Management</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Birthdays';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .bdays-controls { display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; }

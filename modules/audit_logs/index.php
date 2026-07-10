@@ -534,7 +534,15 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Audit Logs - IT Management</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Audit Logs';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .audit-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }

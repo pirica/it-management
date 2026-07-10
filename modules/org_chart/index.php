@@ -132,7 +132,15 @@ $employeesJson = json_encode($employees, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizational Chart</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Organizational Chart';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .org-chart-container {

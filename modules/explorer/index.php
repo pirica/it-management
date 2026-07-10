@@ -67,7 +67,15 @@ itm_ensure_files_storage_directory($storage_root);
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Explorer - <?= sanitize($app_name) ?></title>
+<?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Explorer';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
 <link rel="icon" type="image/png" href="<?= sanitize($favicon_url) ?>">
 <link rel="stylesheet" href="../../css/styles.css">
 

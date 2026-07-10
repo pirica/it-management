@@ -75,7 +75,15 @@ $page_title = 'System Status';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo sanitize($page_title); ?> - IT Management</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'System Status';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <script src="../../js/vendor/chart.js"></script>
     <style>
