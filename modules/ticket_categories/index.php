@@ -7,6 +7,18 @@ $crud_action = 'index';
 require '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
 
+// Dynamically resolve custom emoji based on employee's overrides
+$company_id_pref = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
+$logged_user_id_pref = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
+$module_slug_pref = basename(dirname($_SERVER['PHP_SELF']));
+$resolved_emoji_pref = '';
+if (function_exists('itm_resolve_module_sidebar_icon')) {
+    $resolved_emoji_pref = itm_resolve_module_sidebar_icon($conn, $company_id_pref, $logged_user_id_pref, $module_slug_pref);
+}
+if ($resolved_emoji_pref !== '') {
+    $crud_title = trim($resolved_emoji_pref . ' ' . $crud_title);
+}
+
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
 }
