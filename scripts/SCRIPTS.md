@@ -160,7 +160,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `itm_script_test_employee_register_teardown($conn, $employeeId, $snapshot)` | Shutdown restore + delete |
 | `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` |
 
-**Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_employees.unittest.php`.
+**Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_users.unittest.php`.
 
 **Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 
@@ -1250,3 +1250,6 @@ The `fixed_files/` directory is officially obsolete and has been removed from al
 
 ### Standardization
 Standardized output handling using `scripts/lib/script_cli_output.php` has been applied to several functional and reproduction scripts for consistent reporting across Browser and CLI environments.
+
+### System-Wide Path & Include Verification
+Performed a rigorous audit of all file path and `require`/`include` context behaviors. Confirmed that relative file references correctly resolve using parent/child directories (via proper `chdir()` context switches where relevant). Verified complete removal of obsolete `fixed_files/` directory, cementing `modules/` as the sole authoritative code target for reproduction and verification scripts.
