@@ -717,6 +717,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="titles_list_show.php" target="_blank" rel="nofollow noreferrer">titles_list_show.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Scans all PHP files under the <code>modules/</code> directory to extract their <code>&lt;title&gt;</code> tags showing only the inner title text. Outputs the list matching <code>module/{module_name}/{file}.php</code>.</td>
+                    <td>Browser: HTML report. CLI: <code>php scripts/titles_list_show.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Lists <code>modules/*/index.php</code> folders that are <strong>not</strong> on the sidebar (including policy-hidden internal modules such as <code>floor_plan_folders</code>, <code>floor_plan_tags</code>, <code>floor_plan_item_tags</code>).</td>
