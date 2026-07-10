@@ -7,7 +7,7 @@
 
 require_once '../../config/config.php';
 
-$crud_table = 'backup_tape_log';
+$crud_table = $crud_table ?? 'backup_tape_log';
 $crud_title = 'Backup Tape Log';
 $crud_action = $crud_action ?? 'index';
 

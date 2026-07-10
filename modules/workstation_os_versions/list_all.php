@@ -4,7 +4,7 @@
  * 
  * Lists all defined workstation OS versions.
  */
-$crud_table = 'workstation_os_versions';
+$crud_table = $crud_table ?? 'workstation_os_versions';
 $crud_title = 'Workstation Os Versions';
 $crud_action = 'list_all';
 ?>

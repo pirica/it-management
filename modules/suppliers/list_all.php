@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'suppliers';
+$crud_table = $crud_table ?? 'suppliers';
 $crud_title = 'Suppliers';
 $crud_action = 'list_all';
 ?>

@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides the interface and logic for adding new access levels to the system.
  */
 
-$crud_table = 'access_levels';
+$crud_table = $crud_table ?? 'access_levels';
 $crud_title = 'Access Levels';
 $crud_action = 'create';
 ?>

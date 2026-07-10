@@ -16,7 +16,7 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'ops_report_night_shift';
+$crud_table = $crud_table ?? 'ops_report_night_shift';
 $crud_title = 'Ops Report Night Shift';
 $crud_action = $crud_action ?? 'index';
 ?>

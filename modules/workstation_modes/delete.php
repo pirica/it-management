@@ -4,7 +4,7 @@
  *
  * Processes deletion requests for workstation mode records.
  */
-$crud_table = 'workstation_modes';
+$crud_table = $crud_table ?? 'workstation_modes';
 $crud_title = 'Workstation Modes';
 $crud_action = 'delete';
 ?>

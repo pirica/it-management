@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'patches_updates';
+$crud_table = $crud_table ?? 'patches_updates';
 $crud_title = 'Patches Updates';
 $crud_action = 'delete';
 ?>

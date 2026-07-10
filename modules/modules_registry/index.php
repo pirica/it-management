@@ -13,7 +13,7 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'modules_registry';
+$crud_table = $crud_table ?? 'modules_registry';
 $crud_title = 'Modules Registry';
 $crud_action = $crud_action ?? 'index';
 ?>

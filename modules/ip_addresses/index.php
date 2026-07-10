@@ -9,7 +9,7 @@ function cr_form_display_value($value) {
  * of IP Addresses records.
  */
 
-$crud_table = 'ip_addresses';
+$crud_table = $crud_table ?? 'ip_addresses';
 $crud_title = 'IP Addresses';
 $crud_action = $crud_action ?? 'index';
 ?>

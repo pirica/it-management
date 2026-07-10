@@ -5,7 +5,7 @@
  * Wrapper for the local CRUD implementation.
  */
 
-$crud_table = 'employee_positions';
+$crud_table = $crud_table ?? 'employee_positions';
 $crud_title = 'Positions Titles';
 $crud_action = 'create';
 require 'index.php';

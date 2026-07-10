@@ -4,7 +4,7 @@
  *
  * Interface for adding a new IT location.
  */
-$crud_table = 'it_locations';
+$crud_table = $crud_table ?? 'it_locations';
 $crud_title = 'It Locations';
 $crud_action = 'create';
 ?>

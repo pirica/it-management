@@ -14,7 +14,7 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'note_labels';
+$crud_table = $crud_table ?? 'note_labels';
 $crud_title = 'Note Labels';
 $crud_action = $crud_action ?? 'index';
 ?>

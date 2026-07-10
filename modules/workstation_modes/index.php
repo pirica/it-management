@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides a CRUD interface for managing workstation modes (e.g., Kiosk, 
  * Standard, Training). Includes logic to hide legacy fields like 'max_users'.
  */
-$crud_table = 'workstation_modes';
+$crud_table = $crud_table ?? 'workstation_modes';
 $crud_title = 'Workstation Modes';
 $crud_action = 'index';
 ?>

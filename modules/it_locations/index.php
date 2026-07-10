@@ -5,7 +5,7 @@
  * Provides a CRUD interface for managing IT locations (e.g., MDF, IDF, 
  * Server Room, Guest Room).
  */
-$crud_table = 'it_locations';
+$crud_table = $crud_table ?? 'it_locations';
 $crud_title = 'It Locations';
 $crud_action = 'index';
 ?>

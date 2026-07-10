@@ -1,7 +1,5 @@
 <?php
-if (!isset($crud_table)) {
-    $crud_table = 'modules_registry';
-}
+$crud_table = $crud_table ?? 'modules_registry';
 if (!isset($crud_title)) {
     $crud_title = 'Company Module Access';
 }

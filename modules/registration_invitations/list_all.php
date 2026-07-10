@@ -5,7 +5,7 @@
  * A simplified list view for access levels, often used for quick reference.
  */
 
-$crud_table = 'registration_invitations';
+$crud_table = $crud_table ?? 'registration_invitations';
 $crud_title = 'Registration Invitations';
 $crud_action = 'list_all';
 ?>

@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Read-only detailed view of a single access level record.
  */
 
-$crud_table = 'registration_invitations';
+$crud_table = $crud_table ?? 'registration_invitations';
 $crud_title = 'Registration Invitations';
 $crud_action = 'view';
 ?>

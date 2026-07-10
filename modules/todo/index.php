@@ -53,7 +53,7 @@ if (!function_exists('todo_merge_assignee_users')) {
     }
 }
 
-$crud_table = "todo";
+$crud_table = $crud_table ?? 'todo';
 $crud_title = "Todo";
 $crud_action = $crud_action ?? "index";
 $logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;

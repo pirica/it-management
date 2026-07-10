@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'supplier_statuses';
+$crud_table = $crud_table ?? 'supplier_statuses';
 $crud_title = 'Supplier Statuses';
 $crud_action = 'delete';
 ?>

@@ -3,7 +3,7 @@
  * Alerts Module - View
  */
 
-$crud_table = 'alerts';
+$crud_table = $crud_table ?? 'alerts';
 $crud_title = 'Alerts';
 $crud_action = 'view';
 

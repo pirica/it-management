@@ -4,7 +4,7 @@
  *
  * Provides the interface for updating existing workstation OS type records.
  */
-$crud_table = 'workstation_os_types';
+$crud_table = $crud_table ?? 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'edit';
 ?>

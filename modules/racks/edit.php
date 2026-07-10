@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'racks';
+$crud_table = $crud_table ?? 'racks';
 $crud_title = 'Racks';
 $crud_action = 'edit';
 ?>

@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'ticket_categories';
+$crud_table = $crud_table ?? 'ticket_categories';
 $crud_title = 'Ticket Categories';
 $crud_action = 'create';
 ?>

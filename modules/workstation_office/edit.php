@@ -4,7 +4,7 @@
  *
  * Provides the interface for updating existing Office version records.
  */
-$crud_table = 'workstation_office';
+$crud_table = $crud_table ?? 'workstation_office';
 $crud_title = 'Workstation Office';
 $crud_action = 'edit';
 ?>

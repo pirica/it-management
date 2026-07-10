@@ -6,7 +6,7 @@
  * which includes the color picker and automatic color_name inference from hex.
  */
 
-$crud_table = 'cable_colors';
+$crud_table = $crud_table ?? 'cable_colors';
 $crud_title = 'Cable Colors';
 $crud_action = 'edit';
 

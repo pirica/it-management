@@ -3,7 +3,7 @@
  * Events Module - Delete
  */
 
-$crud_table = 'events';
+$crud_table = $crud_table ?? 'events';
 $crud_title = 'Events';
 $crud_action = 'delete';
 

@@ -1,5 +1,5 @@
 <?php
-if (!isset($crud_table)) { $crud_table = 'role_hierarchy'; }
+$crud_table = $crud_table ?? 'role_hierarchy';
 if (!isset($crud_title)) { $crud_title = 'Role Hierarchy'; }
 if (!isset($crud_action)) { $crud_action = 'index'; }
 ?>

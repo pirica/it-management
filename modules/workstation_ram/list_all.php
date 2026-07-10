@@ -4,7 +4,7 @@
  * 
  * Lists all defined RAM options.
  */
-$crud_table = 'workstation_ram';
+$crud_table = $crud_table ?? 'workstation_ram';
 $crud_title = 'Workstation RAM';
 $crud_action = 'list_all';
 ?>

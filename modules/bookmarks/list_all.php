@@ -30,7 +30,7 @@ if ($company_id <= 0) {
     return;
 }
 
-$crud_table = 'bookmarks';
+$crud_table = $crud_table ?? 'bookmarks';
 $crud_title = 'Bookmarks List';
 
 $sort = $_GET['sort'] ?? 'title';

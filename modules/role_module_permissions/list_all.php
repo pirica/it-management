@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'role_module_permissions';
+$crud_table = $crud_table ?? 'role_module_permissions';
 $crud_title = 'Role Module Permissions';
 $crud_action = 'list_all';
 require __DIR__ . '/index.php';

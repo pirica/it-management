@@ -9,7 +9,7 @@ function cr_form_display_value($value) {
  * of IP Subnets records.
  */
 
-$crud_table = 'ip_subnets';
+$crud_table = $crud_table ?? 'ip_subnets';
 $crud_title = 'IP Subnets';
 $crud_action = $crud_action ?? 'index';
 ?>

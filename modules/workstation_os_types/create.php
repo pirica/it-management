@@ -4,7 +4,7 @@
  *
  * Interface for defining a new operating system type.
  */
-$crud_table = 'workstation_os_types';
+$crud_table = $crud_table ?? 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'create';
 ?>

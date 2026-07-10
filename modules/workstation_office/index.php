@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides a CRUD interface for managing Microsoft Office versions 
  * installed on workstations (e.g., Office 2019, Office 365, Office 2021).
  */
-$crud_table = 'workstation_office';
+$crud_table = $crud_table ?? 'workstation_office';
 $crud_title = 'Workstation Office';
 $crud_action = 'index';
 ?>

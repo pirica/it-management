@@ -12,7 +12,7 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'email_alert_rules';
+$crud_table = $crud_table ?? 'email_alert_rules';
 $crud_title = 'Email Alert Rules';
 $crud_action = $crud_action ?? 'index';
 ?>

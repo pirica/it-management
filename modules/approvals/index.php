@@ -10,7 +10,7 @@ function cr_form_display_value($value) {
  * Configures $crud_table and $crud_title before execution to scope the logic.
  */
 
-$crud_table = 'approvals';
+$crud_table = $crud_table ?? 'approvals';
 $crud_title = '✅ Forecast Approvals';
 $crud_action = $crud_action ?? 'index';
 ?>

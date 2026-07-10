@@ -4,7 +4,7 @@
  * 
  * Read-only detailed view of a workstation OS type record.
  */
-$crud_table = 'workstation_os_types';
+$crud_table = $crud_table ?? 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'view';
 ?>

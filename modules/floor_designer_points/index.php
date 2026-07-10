@@ -8,7 +8,7 @@
 require_once '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
 
-$crud_table = 'floor_designer_points';
+$crud_table = $crud_table ?? 'floor_designer_points';
 $crud_title = 'Floor Designer Points';
 $crud_action = $crud_action ?? 'index';
 $pk = 'id';

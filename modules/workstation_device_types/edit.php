@@ -4,7 +4,7 @@
  *
  * Provides the interface for updating existing workstation device type records.
  */
-$crud_table = 'workstation_device_types';
+$crud_table = $crud_table ?? 'workstation_device_types';
 $crud_title = 'Workstation Device Types';
 $crud_action = 'edit';
 ?>

@@ -4,7 +4,7 @@
  *
  * Provides the interface for updating existing workstation OS version records.
  */
-$crud_table = 'workstation_os_versions';
+$crud_table = $crud_table ?? 'workstation_os_versions';
 $crud_title = 'Workstation Os Versions';
 $crud_action = 'edit';
 ?>

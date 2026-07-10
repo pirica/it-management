@@ -1,5 +1,5 @@
 <?php
-if (!isset($crud_table)) { $crud_table = 'role_module_permissions'; }
+$crud_table = $crud_table ?? 'role_module_permissions';
 if (!isset($crud_title)) { $crud_title = 'Role Module Permissions'; }
 if (!isset($crud_action)) { $crud_action = 'index'; }
 ?>

@@ -6,7 +6,7 @@
  * Configures the action to 'edit' and delegates to index.php.
  */
 
-$crud_table = 'approvals';
+$crud_table = $crud_table ?? 'approvals';
 $crud_title = '✅ Forecast Approvals';
 $crud_action = 'edit';
 require 'index.php';

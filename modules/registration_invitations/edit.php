@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Interface for modifying existing access level records.
  */
 
-$crud_table = 'registration_invitations';
+$crud_table = $crud_table ?? 'registration_invitations';
 $crud_title = 'Registration Invitations';
 $crud_action = 'edit';
 ?>

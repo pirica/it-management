@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'bookmark_folders';
+$crud_table = $crud_table ?? 'bookmark_folders';
 $crud_title = 'Bookmark Folders';
 $crud_action = 'delete';
 require 'index.php';

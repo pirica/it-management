@@ -5,7 +5,7 @@
  * Simplified list view routed through the shared index handler.
  */
 
-$crud_table = 'license_management';
+$crud_table = $crud_table ?? 'license_management';
 $crud_title = 'License Management';
 $crud_action = 'list_all';
 ?>

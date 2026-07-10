@@ -8,7 +8,7 @@
 
 require_once '../../config/config.php';
 
-$crud_table = 'ops_report';
+$crud_table = $crud_table ?? 'ops_report';
 $crud_title = 'Ops Report';
 $crud_action = $crud_action ?? 'index';
 

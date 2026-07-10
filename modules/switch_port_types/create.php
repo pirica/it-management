@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'switch_port_types';
+$crud_table = $crud_table ?? 'switch_port_types';
 $crud_title = 'Switch Port Types';
 $crud_action = 'create';
 ?>

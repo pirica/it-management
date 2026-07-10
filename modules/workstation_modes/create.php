@@ -4,7 +4,7 @@
  *
  * Interface for defining a new workstation mode.
  */
-$crud_table = 'workstation_modes';
+$crud_table = $crud_table ?? 'workstation_modes';
 $crud_title = 'Workstation Modes';
 $crud_action = 'create';
 ?>

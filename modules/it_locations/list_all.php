@@ -4,7 +4,7 @@
  * 
  * Lists all defined IT locations.
  */
-$crud_table = 'it_locations';
+$crud_table = $crud_table ?? 'it_locations';
 $crud_title = 'It Locations';
 $crud_action = 'list_all';
 ?>

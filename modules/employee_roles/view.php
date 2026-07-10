@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'employee_roles';
+$crud_table = $crud_table ?? 'employee_roles';
 $crud_title = 'Employee Roles';
 $crud_action = 'view';
 ?>

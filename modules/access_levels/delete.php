@@ -6,7 +6,7 @@
  * to prevent deleting access levels that are currently assigned to users.
  */
 
-$crud_table = 'access_levels';
+$crud_table = $crud_table ?? 'access_levels';
 $crud_title = 'Access Levels';
 $crud_action = 'delete';
 ?>

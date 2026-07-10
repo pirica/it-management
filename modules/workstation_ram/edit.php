@@ -4,7 +4,7 @@
  *
  * Provides the interface for updating existing RAM option records.
  */
-$crud_table = 'workstation_ram';
+$crud_table = $crud_table ?? 'workstation_ram';
 $crud_title = 'Workstation RAM';
 $crud_action = 'edit';
 ?>

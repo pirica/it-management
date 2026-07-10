@@ -4,7 +4,7 @@
  *
  * Lists all defined workstation device types.
  */
-$crud_table = 'todo_categories';
+$crud_table = $crud_table ?? 'todo_categories';
 $crud_title = 'Todo Categories';
 $crud_action = 'list_all';
 ?>

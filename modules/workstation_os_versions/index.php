@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides a CRUD interface for managing operating system versions 
  * installed on workstations (e.g., Windows 10, Windows 11, macOS).
  */
-$crud_table = 'workstation_os_versions';
+$crud_table = $crud_table ?? 'workstation_os_versions';
 $crud_title = 'Workstation Os Versions';
 $crud_action = 'index';
 ?>

@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides a CRUD interface for managing different types of 
  * equipment warranties (e.g., On-site, Carry-in, NBD).
  */
-$crud_table = 'warranty_types';
+$crud_table = $crud_table ?? 'warranty_types';
 $crud_title = 'Warranty Types';
 $crud_action = 'index';
 ?>

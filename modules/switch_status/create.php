@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'switch_status';
+$crud_table = $crud_table ?? 'switch_status';
 $crud_title = 'Switch Status';
 $crud_action = 'create';
 ?>

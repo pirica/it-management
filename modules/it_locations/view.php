@@ -4,7 +4,7 @@
  * 
  * Read-only detailed view of an IT location record.
  */
-$crud_table = 'it_locations';
+$crud_table = $crud_table ?? 'it_locations';
 $crud_title = 'It Locations';
 $crud_action = 'view';
 ?>

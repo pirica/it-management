@@ -4,7 +4,7 @@
  * 
  * Lists all defined workstation OS types.
  */
-$crud_table = 'workstation_os_types';
+$crud_table = $crud_table ?? 'workstation_os_types';
 $crud_title = 'Workstation Os Types';
 $crud_action = 'list_all';
 ?>

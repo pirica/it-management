@@ -4,7 +4,7 @@
  * 
  * Read-only detailed view of a RAM option record.
  */
-$crud_table = 'workstation_ram';
+$crud_table = $crud_table ?? 'workstation_ram';
 $crud_title = 'Workstation RAM';
 $crud_action = 'view';
 ?>

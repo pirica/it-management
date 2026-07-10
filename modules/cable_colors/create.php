@@ -7,7 +7,7 @@
  * avoids duplicate function declarations when the shared runtime is loaded.
  */
 
-$crud_table = 'cable_colors';
+$crud_table = $crud_table ?? 'cable_colors';
 $crud_title = 'Cable Colors';
 $crud_action = 'create';
 

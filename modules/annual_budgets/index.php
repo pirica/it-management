@@ -10,7 +10,7 @@ function cr_form_display_value($value) {
  * Configures $crud_table and $crud_title before execution to scope the logic.
  */
 
-$crud_table = 'annual_budgets';
+$crud_table = $crud_table ?? 'annual_budgets';
 $crud_title = '📅 Annual Budget';
 $crud_action = $crud_action ?? 'index';
 ?>

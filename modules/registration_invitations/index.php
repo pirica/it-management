@@ -9,7 +9,7 @@ function cr_form_display_value($value) {
  * access levels defined for the company.
  */
 
-$crud_table = 'registration_invitations';
+$crud_table = $crud_table ?? 'registration_invitations';
 $crud_title = 'Registration Invitations';
 $crud_action = 'index';
 ?>

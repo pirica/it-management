@@ -3,7 +3,7 @@
  * Alerts Module - List All
  */
 
-$crud_table = 'alerts';
+$crud_table = $crud_table ?? 'alerts';
 $crud_title = 'Alerts';
 $crud_action = 'list_all';
 

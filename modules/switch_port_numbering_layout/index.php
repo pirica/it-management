@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'switch_port_numbering_layout';
+$crud_table = $crud_table ?? 'switch_port_numbering_layout';
 $crud_title = 'Switch Port Numbering Layout';
 $crud_action = 'index';
 ?>

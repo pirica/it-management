@@ -4,7 +4,7 @@
  *
  * Interface for defining a new workstation device type.
  */
-$crud_table = 'workstation_device_types';
+$crud_table = $crud_table ?? 'workstation_device_types';
 $crud_title = 'Workstation Device Types';
 $crud_action = 'create';
 ?>

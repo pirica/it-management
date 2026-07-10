@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides a CRUD interface for managing workstation hardware types
  * (e.g., Desktop, Laptop, Tablet, All-in-One).
  */
-$crud_table = 'todo_categories';
+$crud_table = $crud_table ?? 'todo_categories';
 $crud_title = 'Todo Categories';
 $crud_action = 'index';
 ?>

@@ -20,7 +20,7 @@ $stmtUL->execute();
 $resUserLabels = $stmtUL->get_result();
 if ($resUserLabels) { while ($row = mysqli_fetch_assoc($resUserLabels)) { $user_tags[] = $row["label"]; } }
 
-$crud_table = "notes";
+$crud_table = $crud_table ?? 'notes';
 $join = itm_employee_active_employment_status_join_sql('e', 'es');
 $predicate = itm_employee_active_employment_status_predicate_sql('es');
 $stmtUsers = $conn->prepare('SELECT e.id, e.username FROM employees e' . $join . ' WHERE e.company_id = ? AND ' . $predicate);

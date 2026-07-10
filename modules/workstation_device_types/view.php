@@ -4,7 +4,7 @@
  * 
  * Read-only detailed view of a workstation device type.
  */
-$crud_table = 'workstation_device_types';
+$crud_table = $crud_table ?? 'workstation_device_types';
 $crud_title = 'Workstation Device Types';
 $crud_action = 'view';
 ?>

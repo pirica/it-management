@@ -8,7 +8,7 @@ function cr_form_display_value($value) {
  * Provides a CRUD interface for managing workstation RAM capacity options 
  * used for workstation inventory records (e.g., 4 GB, 8 GB, 16 GB).
  */
-$crud_table = 'workstation_ram';
+$crud_table = $crud_table ?? 'workstation_ram';
 $crud_title = 'Workstation RAM';
 $crud_action = 'index';
 ?>

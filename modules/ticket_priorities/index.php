@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'ticket_priorities';
+$crud_table = $crud_table ?? 'ticket_priorities';
 $crud_title = 'Ticket Priorities';
 $crud_action = 'index';
 ?>

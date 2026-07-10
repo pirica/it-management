@@ -5,7 +5,7 @@
  * Handles deletion of license records for the active company.
  */
 
-$crud_table = 'license_management';
+$crud_table = $crud_table ?? 'license_management';
 $crud_title = 'License Management';
 $crud_action = 'delete';
 ?>

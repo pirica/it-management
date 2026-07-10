@@ -4,7 +4,7 @@
  *
  * Interface for defining a new workstation device type.
  */
-$crud_table = 'todo_categories';
+$crud_table = $crud_table ?? 'todo_categories';
 $crud_title = 'Todo Categories';
 $crud_action = 'create';
 ?>

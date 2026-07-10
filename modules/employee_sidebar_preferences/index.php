@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'employee_sidebar_preferences';
+$crud_table = $crud_table ?? 'employee_sidebar_preferences';
 $crud_title = 'Employee Sidebar Preferences';
 $crud_action = 'index';
 ?>

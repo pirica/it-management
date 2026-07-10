@@ -4,7 +4,7 @@
  *
  * Interface for adding a new RAM option to the system.
  */
-$crud_table = 'workstation_ram';
+$crud_table = $crud_table ?? 'workstation_ram';
 $crud_title = 'Workstation RAM';
 $crud_action = 'create';
 ?>

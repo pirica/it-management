@@ -3,7 +3,7 @@
  * Todo Module - Create
  */
 
-$crud_table = 'todo';
+$crud_table = $crud_table ?? 'todo';
 $crud_title = 'Todo';
 $crud_action = 'create';
 

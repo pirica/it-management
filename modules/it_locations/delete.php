@@ -4,7 +4,7 @@
  *
  * Processes the deletion of IT location records.
  */
-$crud_table = 'it_locations';
+$crud_table = $crud_table ?? 'it_locations';
 $crud_title = 'It Locations';
 $crud_action = 'delete';
 ?>

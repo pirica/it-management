@@ -7,7 +7,7 @@
 
 require '../../config/config.php';
 
-$crud_table = 'rack_planner';
+$crud_table = $crud_table ?? 'rack_planner';
 $crud_title = 'Rack Planner';
 $crud_action = $crud_action ?? 'index';
 

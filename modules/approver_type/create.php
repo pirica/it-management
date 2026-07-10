@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'approver_type';
+$crud_table = $crud_table ?? 'approver_type';
 $crud_title = 'Approver Type';
 $crud_action = 'create';
 ?>

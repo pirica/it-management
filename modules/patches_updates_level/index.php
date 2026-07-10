@@ -1,5 +1,5 @@
 <?php
-$crud_table = 'patches_updates_level';
+$crud_table = $crud_table ?? 'patches_updates_level';
 $crud_title = 'Patches Updates Level';
 $crud_action = 'index';
 ?>

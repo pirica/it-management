@@ -9,7 +9,7 @@ function cr_form_display_value($value) {
  * records defined for the company.
  */
 
-$crud_table = 'equipment_statuses';
+$crud_table = $crud_table ?? 'equipment_statuses';
 $crud_title = 'Equipment Statuses';
 $crud_action = 'index';
 ?>

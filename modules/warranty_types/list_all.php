@@ -4,7 +4,7 @@
  * 
  * Lists all defined warranty types.
  */
-$crud_table = 'warranty_types';
+$crud_table = $crud_table ?? 'warranty_types';
 $crud_title = 'Warranty Types';
 $crud_action = 'list_all';
 ?>
