@@ -741,6 +741,11 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
+* **Dynamic Module-Title Emojis (Mandatory):** Browser `<title>` tags for individual module views must dynamically prepend the employee-selected custom emoji (or fallback company/system icon) to the page title.
+  - Retrieve the current company, employee session, and directory-derived module slug.
+  - Resolve the icon using `itm_resolve_module_sidebar_icon($conn, $company_id, $employee_id, $module_slug)`.
+  - Strip any hardcoded prefix emojis from the static `$crud_title` using `itm_module_access_strip_catalog_label_prefix($crud_title)` before prepending.
+  - Construct the dynamic title: `trim($resolved_emoji . ' ' . $clean_title)`.
 * **Color Fields:** Use color picker UI: `<input type="color" name="hex_color" id="cable-hex-color-picker" value="#008000">`.
 * **Date Fields:** Show date picker UI.
 
