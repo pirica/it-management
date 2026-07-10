@@ -3472,7 +3472,7 @@ function mbqa_temporarily_detach_never_clear_fk_refs(mysqli $conn, string $paren
 /**
  * @param array<int, array{child_table:string, child_column:string, child_id:int, old_value:int, parent_table:string, parent_column:string, parent_company_id:int, parent_label_column:string, parent_label_value:string}> $detachedRefs
  */
-function mbqa_detached_ref_is_disposable_users_seed(mysqli $conn, array $ref): bool
+function mbqa_detached_ref_is_disposable_employees_seed(mysqli $conn, array $ref): bool
 {
     $childTable = (string)($ref['child_table'] ?? '');
     $childId = (int)($ref['child_id'] ?? 0);
@@ -3548,7 +3548,7 @@ function mbqa_restore_temporarily_detached_fk_refs(mysqli $conn, array &$detache
             $fallbackRow = $fallbackRes ? mysqli_fetch_assoc($fallbackRes) : null;
             $resolvedValue = is_array($fallbackRow) ? (int)($fallbackRow['resolved_id'] ?? 0) : 0;
             if ($resolvedValue <= 0) {
-                if (mbqa_detached_ref_is_disposable_users_seed($conn, $ref)) {
+                if (mbqa_detached_ref_is_disposable_employees_seed($conn, $ref)) {
                     $skippedDisposable++;
                     continue;
                 }

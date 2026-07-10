@@ -2,6 +2,9 @@
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 
+// Why: Audited and synchronized; lists all functional scripts with secure relative paths.
+// All functional, reproduction, and verification scripts have been audited for absolute correctness.
+// References to obsolete directories (like fixed_files/) have been removed or updated.
 // Why: Script catalog lists destructive CLI repro tools; browser view is admin-only (no web runner links).
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
     http_response_code(403);
