@@ -103,7 +103,7 @@ foreach ($files as $path) {
         $rendered = preg_replace('/\s+/', ' ', $rendered);
         $rendered = trim($rendered);
 
-        $outputLine = $modulePath . ' - title = <title>' . $rendered . '</title>';
+        $outputLine = $modulePath . ' - title = ' . $rendered;
         $escapedLine = $isCli ? $outputLine : htmlspecialchars($outputLine, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         echo $escapedLine . ($isCli ? "\n" : "<br>");
     }
