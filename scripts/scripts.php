@@ -1041,10 +1041,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>dashboard.php</code> or Active/On Leave employee count logic.</td>
                 </tr>
                 <tr>
-                    <td><a href="verify_dashboard_online_users.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_online_users.php</a></td>
+                    <td><a href="verify_dashboard_online_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_online_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>dashboard.php</code> row-2 <strong>Online now</strong> stat: session presence helper, <code>config/config.php</code> touch hook, count after touch.</td>
-                    <td>Browser: <a href="verify_dashboard_online_users.php">verify_dashboard_online_users.php</a>. CLI: <code>php scripts/verify_dashboard_online_users.php</code>. Run when changing online session presence or dashboard Online now markup.</td>
+                    <td>Browser: <a href="verify_dashboard_online_employees.php">verify_dashboard_online_employees.php</a>. CLI: <code>php scripts/verify_dashboard_online_employees.php</code>. Run when changing online session presence or dashboard Online now markup.</td>
                 </tr>
                 <tr>
                     <td><a href="seed_company_module_access.php" target="_blank" rel="nofollow noreferrer">seed_company_module_access.php</a></td>
@@ -1390,7 +1390,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_company_deletion.php" target="_blank" rel="nofollow noreferrer">verify_company_deletion.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for unauthorized company deletion by regular users.</td>
+                    <td>PoC for unauthorized company deletion by regular employees.</td>
                     <td><code>php scripts/verify_company_deletion.php</code></td>
                 </tr>
                 <tr>
@@ -1438,7 +1438,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_audit_logs_disclosure.php" target="_blank" rel="nofollow noreferrer">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable users via <code>itm_script_test_employee.php</code>.</td>
+                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable employees via <code>itm_script_test_employee.php</code>.</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
                 </tr>
                 <tr>
@@ -1618,7 +1618,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="repro_select_options_unauthorized_v2.php" target="_blank" rel="nofollow noreferrer">repro_select_options_unauthorized_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression — <code>companies</code> quick-add blocked for regular users.</td>
+                    <td>Regression — <code>companies</code> quick-add blocked for regular employees.</td>
                     <td><code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
                 </tr>
                 <tr>

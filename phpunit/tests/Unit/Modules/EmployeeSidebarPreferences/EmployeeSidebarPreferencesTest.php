@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Unit\Modules\UserSidebarPreferences;
+namespace Tests\Unit\Modules\EmployeeSidebarPreferences;
 
 use PHPUnit\Framework\TestCase;
 
-class UserSidebarPreferencesTest extends TestCase
+class EmployeeSidebarPreferencesTest extends TestCase
 {
     private $conn;
     private $companyId = 1;
