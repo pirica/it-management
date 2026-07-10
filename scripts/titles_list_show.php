@@ -48,7 +48,8 @@ foreach ($iterator as $fileInfo) {
 
 sort($files);
 
-$globalAppName = !empty($app_name) ? $app_name : 'IT Management System';
+// Resolve application name dynamically using existing configuration global variable or fallback to constant
+$globalAppName = !empty($app_name) ? $app_name : (defined('APP_NAME') ? APP_NAME : 'IT Management System');
 
 foreach ($files as $path) {
     $relative = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
