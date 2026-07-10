@@ -550,7 +550,15 @@ function itm_idf_sort_indicator($column, $currentSort, $currentSortDir)
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>IDFs</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'IDFs';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
     <style>
         .idf-page-shell { display:grid; gap:16px; }

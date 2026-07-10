@@ -839,7 +839,15 @@ foreach ($equipmentOptions as $equipmentOption) {
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>IDF View</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'IDF View';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
     <style>
         .idf-view-shell { display:grid; gap:16px; }

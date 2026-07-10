@@ -1390,7 +1390,15 @@ $ui_config = itm_get_ui_configuration($conn, $company_id);
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Device</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Device';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
     <style>
         .idf-toolbar {

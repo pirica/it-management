@@ -696,7 +696,15 @@ if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_d
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Settings';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <?php if ($currentFaviconUrl !== ""): ?>
         <link rel="icon" type="image/x-icon" href="<?php echo sanitize($currentFaviconUrl); ?>">

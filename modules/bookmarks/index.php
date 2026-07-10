@@ -82,7 +82,15 @@ $csrfToken = itm_get_csrf_token();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo sanitize($crud_title); ?> Management</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Bookmarks';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .bookmarks-layout { display: flex; gap: 24px; }

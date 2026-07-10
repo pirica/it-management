@@ -531,7 +531,15 @@ $moduleListHeading = '🧩 ' . $crud_title;
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo sanitize($crud_title); ?></title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Floor Designer';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         :root { --designer-width: 1000px; --designer-height: 800px; }

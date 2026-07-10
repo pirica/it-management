@@ -60,7 +60,15 @@ $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($module_title, ENT_QUOTES, 'UTF-8'); ?> Management</title>
+    <?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'Passwords';
+}
+?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <!-- Bootstrap CSS removed to avoid theme conflicts -->
     <style>        .dropdown-item, .folder-item a { text-decoration: none !important; }
