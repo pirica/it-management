@@ -162,6 +162,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_tables.php</code> (HTML to stdout) or <code>&gt; crud_tables.html</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="crud_titles.php" target="_blank" rel="nofollow noreferrer">crud_titles.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists every module folder and the first <code>$crud_title =</code> line found in <code>index.php</code>, with links to each module.</td>
+                    <td>Browser: HTML report. CLI: <code>php scripts/crud_titles.php</code> (HTML to stdout) or <code>&gt; crud_titles.html</code>.</td>
+                </tr>
+                <tr>
+                    <td><a href="crud_actions.php" target="_blank" rel="nofollow noreferrer">crud_actions.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists every module folder and the first <code>$crud_action =</code> line found in <code>index.php</code>, with links to each module.</td>
+                    <td>Browser: HTML report. CLI: <code>php scripts/crud_actions.php</code> (HTML to stdout) or <code>&gt; crud_actions.html</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="update_all_created_at.php">update_all_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>After importing <code>database.sql</code>, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>

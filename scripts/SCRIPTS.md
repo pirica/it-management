@@ -401,7 +401,7 @@ php scripts/apitest_tier_basic.php
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo()`.
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
 * **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
-* **Line-breaking prevention for tables (nowrap standard):** To guarantee readability and maintain professional UI appearance in admin/report tool dashboards (e.g., `crud_tables.php`), data rows must not wrap arbitrarily. Implement this by applying `white-space: nowrap;` to table header and body cells (`thead th` and `tbody td`), and wrap the table structure in a container set to `overflow-x: auto;` (such as the `.wrap` container class) to facilitate horizontal scrolling for overflowing data without distorting column structures.
+* **Line-breaking prevention for tables (nowrap standard):** To guarantee readability and maintain professional UI appearance in admin/report tool dashboards (e.g., `crud_tables.php`, `crud_titles.php`, `crud_actions.php`), data rows must not wrap arbitrarily. Implement this by applying `white-space: nowrap;` to table header and body cells (`thead th` and `tbody td`), and wrap the table structure in a container set to `overflow-x: auto;` (such as the `.wrap` container class) to facilitate horizontal scrolling for overflowing data without distorting column structures.
 
 #### Link creation rules (browser scripts — mandatory)
 
@@ -875,6 +875,8 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | `php scripts/benchmark_user_config.php` | Benchmark for user-config.php redundant query removal. Compares individual vs consolidated query performance. |
 | `php scripts/idf_device_port_sort_test.php` | Regression test for IDF device port list sorting (copper before fiber). |
 | `php scripts/crud_tables.php` | Audits module-to-table mapping by reading each module's index.php. |
+| `php scripts/crud_titles.php` | Audits module-to-title mapping by reading each module's index.php and printing the first $crud_title assignment. |
+| `php scripts/crud_actions.php` | Audits module-to-action mapping by reading each module's index.php and printing the first $crud_action assignment. |
 | `php scripts/test_visualizer_v2.php` | Visual test for Equipment Port Visualizer (IDF rack/device dots). |
 
 Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
@@ -1245,6 +1247,8 @@ Added or updated the following scripts in the catalog to ensure comprehensive se
 - `repro_equip_issues.php`: Mocking framework for equipment module diagnostics.
 - `idf_device_port_sort_test.php`: Regression test for IDF device port list sorting.
 - `crud_tables.php`: Audits module-to-table mapping.
+- `crud_titles.php`: Audits module-to-title mapping.
+- `crud_actions.php`: Audits module-to-action mapping.
 - `test_visualizer_v2.php`: Visual test for Equipment Port Visualizer.
 
 ### Pathing Standard
