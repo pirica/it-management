@@ -401,6 +401,7 @@ php scripts/apitest_tier_basic.php
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo()`.
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
 * **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
+* **Line-breaking prevention for tables (nowrap standard):** To guarantee readability and maintain professional UI appearance in admin/report tool dashboards (e.g., `crud_tables.php`), data rows must not wrap arbitrarily. Implement this by applying `white-space: nowrap;` to table header and body cells (`thead th` and `tbody td`), and wrap the table structure in a container set to `overflow-x: auto;` (such as the `.wrap` container class) to facilitate horizontal scrolling for overflowing data without distorting column structures.
 
 #### Link creation rules (browser scripts — mandatory)
 

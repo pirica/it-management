@@ -13,6 +13,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - Bypassing the session-based company isolation.
 - Introducing external libraries.
 - Forgetting to update `database.sql` when changing the schema.
+- Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper).
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
