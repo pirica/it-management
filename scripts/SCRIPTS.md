@@ -118,6 +118,7 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/ensure_files_htaccess_chain.php` | Backfill `deny_http` managed `.htaccess` and empty `index.html` on every directory segment under `files/`. |
 | `php scripts/perform_audit.php` | Discovers and executes all executable PHP scripts in the `scripts/` folder using subprocesses. Collects execution exit codes and any logged PHP error logs. Report written to `/scripts/php_error_audit_results.json`. |
 | `php scripts/titles_list.php` | Scans all PHP files under the `modules/` directory to extract their `<title>` tags, listing them in a standardized path-title mapping format. |
+| `php scripts/titles_list_show.php` | Scans all PHP files under the `modules/` directory to extract their `<title>` tags, listing them with only the inner title text rendered. |
 
 ### Select Options API verification
 
