@@ -160,7 +160,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `itm_script_test_employee_register_teardown($conn, $employeeId, $snapshot)` | Shutdown restore + delete |
 | `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` |
 
-**Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_users.unittest.php`.
+**Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_employees.unittest.php`.
 
 **Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 
