@@ -517,7 +517,7 @@ if ($passwordFolderId > 0) {
     $encryptedPwd = itm_encrypt('probe-secret', hash('sha256', 'Admin'));
 $stmtPwdEntry = mysqli_prepare(
     $conn,
-    'INSERT INTO password_entries (employee_id, folder_name, account, login_name, password)
+    'INSERT INTO password_entries (employee_id, folder_id, account, login_name, password)
      VALUES (1, ?, ?, ?, ?)'
 );
 

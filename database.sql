@@ -1247,6 +1247,7 @@ CREATE TABLE `employees` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_employees_company_username` (`company_id`,`username`),
+  UNIQUE KEY `uq_employees_company_work_email` (`company_id`,`work_email`),
   KEY `department_id` (`department_id`),
   KEY `location_id` (`location_id`),
   KEY `company_id` (`company_id`),
@@ -6885,14 +6886,19 @@ DELIMITER ;
 DROP TABLE IF EXISTS `password_folders`;
 CREATE TABLE `password_folders` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `employee_id` int NOT NULL,
   `parent_id` int DEFAULT NULL,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_password_folders_company_scope` (`company_id`, `name`, `employee_id`, `id`),
+  KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   KEY `parent_id` (`parent_id`),
+  CONSTRAINT `password_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `password_folders_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `password_folders_ibfk_parent` FOREIGN KEY (`parent_id`) REFERENCES `password_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -6901,20 +6907,25 @@ CREATE TABLE `password_folders` (
 DROP TABLE IF EXISTS `password_entries`;
 CREATE TABLE `password_entries` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
   `employee_id` int NOT NULL,
-  `folder_name` int DEFAULT NULL,
+  `folder_id` int DEFAULT NULL,
   `account` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `login_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `comments` text COLLATE utf8mb4_unicode_ci,
+  `active` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_password_entries_company_scope` (`company_id`, `employee_id`, `account`, `id`),
+  KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
-  KEY `folder_name` (`folder_name`),
+  KEY `folder_id` (`folder_id`),
+  CONSTRAINT `password_entries_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `password_entries_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `password_entries_ibfk_folder` FOREIGN KEY (`folder_name`) REFERENCES `password_folders` (`id`) ON DELETE CASCADE
+  CONSTRAINT `password_entries_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `password_folders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `bookmark_folders`

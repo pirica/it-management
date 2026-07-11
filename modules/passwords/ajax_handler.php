@@ -39,8 +39,9 @@ switch ($action) {
             $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'siii', $name, $parent_id, $id, $user_id);
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (employee_id, name, parent_id) VALUES (?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, 'isi', $user_id, $name, $parent_id);
+            $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (company_id, employee_id, name, parent_id) VALUES (?, ?, ?, ?)");
+            $company_id_val = (int)$_SESSION['company_id'];
+            mysqli_stmt_bind_param($stmt, 'iisi', $company_id_val, $user_id, $name, $parent_id);
         }
         
         if (mysqli_stmt_execute($stmt)) {
@@ -77,7 +78,7 @@ case 'list_entries':
 
     // Filter by folder
     if ($folder_id > 0) {
-        $sql .= " AND folder_name = ?";
+        $sql .= " AND folder_id = ?";
     }
 
     // Search filter
@@ -92,7 +93,7 @@ case 'list_entries':
             $sql .= " OR EXISTS (
                         SELECT 1 
                         FROM password_folders pf 
-                        WHERE pf.id = password_entries.folder_name
+                        WHERE pf.id = password_entries.folder_id
                           AND pf.employee_id = ?
                           AND pf.name LIKE ?
                       )";
@@ -197,11 +198,12 @@ case 'list_entries':
         $comments = (string)($_POST['comments'] ?? '');
         
         if ($id) {
-            $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_name = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND employee_id = ?");
+            $stmt = mysqli_prepare($conn, "UPDATE password_entries SET folder_id = ?, account = ?, login_name = ?, password = ?, website = ?, comments = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'isssssii', $folder_id, $account, $login_name, $password, $website, $comments, $id, $user_id);
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, 'iisssss', $user_id, $folder_id, $account, $login_name, $password, $website, $comments);
+            $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (company_id, employee_id, folder_id, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $company_id_val = (int)$_SESSION['company_id'];
+            mysqli_stmt_bind_param($stmt, 'iiisssss', $company_id_val, $user_id, $folder_id, $account, $login_name, $password, $website, $comments);
         }
         
         if (mysqli_stmt_execute($stmt)) {
@@ -239,7 +241,7 @@ case 'list_entries':
         $map = array_flip($headers);
 
         $imported = 0; $failed = 0;
-        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (company_id, employee_id, folder_id, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
@@ -252,7 +254,8 @@ case 'list_entries':
             $comments = (string)($row[$map['comments'] ?? $map['notes'] ?? -1] ?? '');
 
             $encrypted_pwd = itm_encrypt($password, $_SESSION['vault_key']);
-            mysqli_stmt_bind_param($stmt, 'iisssss', $user_id, $folder_id, $account, $login_name, $encrypted_pwd, $website, $comments);
+            $company_id_val = (int)$_SESSION['company_id'];
+            mysqli_stmt_bind_param($stmt, 'iiisssss', $company_id_val, $user_id, $folder_id, $account, $login_name, $encrypted_pwd, $website, $comments);
             if (mysqli_stmt_execute($stmt)) $imported++; else $failed++;
         }
         mysqli_stmt_close($stmt);
@@ -291,7 +294,7 @@ case 'list_entries':
         }
         
         $total = 0; $imported = 0; $failed = 0; $skipped = 0;
-        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = mysqli_prepare($conn, "INSERT INTO password_entries (company_id, employee_id, folder_id, account, login_name, password, website, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
         while (($row = fgetcsv($handle)) !== FALSE) {
             $total++;
@@ -317,7 +320,8 @@ case 'list_entries':
             if (empty($data['account'])) { $skipped++; continue; }
             
             $pwd = itm_encrypt($data['password'], $_SESSION['vault_key']);
-            mysqli_stmt_bind_param($stmt, 'iisssss', $user_id, $folder_id, $data['account'], $data['login_name'], $pwd, $data['website'], $data['comments']);
+            $company_id_val = (int)$_SESSION['company_id'];
+            mysqli_stmt_bind_param($stmt, 'iiisssss', $company_id_val, $user_id, $folder_id, $data['account'], $data['login_name'], $pwd, $data['website'], $data['comments']);
             if (mysqli_stmt_execute($stmt)) $imported++; else $failed++;
         }
         mysqli_stmt_close($stmt);

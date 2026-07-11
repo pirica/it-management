@@ -67,7 +67,7 @@ class VaultSecurityTest extends TestCase
         $plain = 'secret1';
         $encrypted = itm_encrypt($plain, $oldKey);
 
-        $insert = mysqli_prepare($this->conn, 'INSERT INTO password_entries (employee_id, account, password) VALUES (?, ?, ?)');
+        $insert = mysqli_prepare($this->conn, 'INSERT INTO password_entries (company_id, employee_id, account, password) VALUES (1, ?, ?, ?)');
         $this->assertNotFalse($insert);
         $account = 'Acc 1';
         mysqli_stmt_bind_param($insert, 'iss', $this->testUserId, $account, $encrypted);
