@@ -20,7 +20,7 @@ Secure private password manager with vault encryption. It allows users to store 
 - **password_folders** → depends on **employees** (`employee_id`, `ON DELETE CASCADE`)
 - **password_folders** → self-referencing for hierarchy (`parent_id`, `ON DELETE SET NULL`)
 - **password_entries** → depends on **employees** (`employee_id`, `ON DELETE CASCADE`)
-- **password_entries** → depends on **password_folders** (`folder_name` column stores the folder ID, `ON DELETE CASCADE`)
+- **password_entries** → depends on **password_folders** (`folder_id` column stores the folder ID, `ON DELETE CASCADE`)
 
 ---
 
@@ -53,7 +53,7 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 - **delete_folder** — remove folder
 - **list_entries** — retrieves entries for selected folder; supports search (`folder_id`, `search`)
 - **get_entry** — retrieves single entry for editing (decrypts password)
-- **save_entry** — create/update encrypted entry (`id`, `folder_id` maps to `folder_name` column, `account`, `login_name`, `password`, `website`, `comments`)
+- **save_entry** — create/update encrypted entry (`id`, `folder_id` maps to `folder_id` column, `account`, `login_name`, `password`, `website`, `comments`)
 - **delete_entry** — remove entry
 - **import_rows** — JSON-based import for Excel/XLSX
 - **import_csv** — CSV import supporting Edge and KeePass formats
@@ -104,8 +104,8 @@ $entry = mysqli_fetch_assoc($res);
 
 ```php
 $encrypted = itm_encrypt($plainText, $_SESSION['vault_key']);
-// folder_name column stores the folder ID
-$stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_name, account, password) VALUES (?, ?, ?, ?)");
+// folder_id column stores the folder ID
+$stmt = mysqli_prepare($conn, "INSERT INTO password_entries (employee_id, folder_id, account, password) VALUES (?, ?, ?, ?)");
 mysqli_stmt_bind_param($stmt, 'iiss', $user_id, $folder_id, $account, $encrypted);
 mysqli_stmt_execute($stmt);
 ```

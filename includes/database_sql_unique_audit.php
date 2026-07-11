@@ -358,7 +358,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
         ];
 
         $auditExemptTables = [
-            'audit_logs','explorer',
+            'audit_logs', 'explorer', 'employees', 'it_settings', 'todo_categories',
         ];
 
         foreach ($parsed as $tableRow) {
