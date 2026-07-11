@@ -6151,7 +6151,6 @@ CREATE TRIGGER `trg_rack_planner_audit_delete` AFTER DELETE ON `rack_planner` FO
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
-SET FOREIGN_KEY_CHECKS=1;
 -- Table structure for `explorer`
 DROP TABLE IF EXISTS `explorer`;
 CREATE TABLE `explorer` (
@@ -7691,3 +7690,4 @@ CREATE TRIGGER `trg_request_password_audit_delete` AFTER DELETE ON `request_pass
 END$$
 
 DELIMITER ;
+SET FOREIGN_KEY_CHECKS=1;
