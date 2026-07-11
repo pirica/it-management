@@ -193,15 +193,15 @@ $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
 $sortableColumns = [
-    'changed_at' => 'al.changed_at',
+    'created_at' => 'al.created_at',
     'table_name' => 'al.table_name',
     'record_id' => 'al.record_id',
     'action' => 'al.action',
 ];
-$sort = (string)($_GET['sort'] ?? 'changed_at');
+$sort = (string)($_GET['sort'] ?? 'created_at');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!isset($sortableColumns[$sort])) {
-    $sort = 'changed_at';
+    $sort = 'created_at';
 }
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
@@ -239,12 +239,12 @@ if ($action !== '') {
 
 // Apply date range filters
 if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) === 1) {
-    $where[] = 'al.changed_at >= ?';
+    $where[] = 'al.created_at >= ?';
     $params[] = $dateFrom . ' 00:00:00';
     $types .= 's';
 }
 if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
-    $where[] = 'al.changed_at <= ?';
+    $where[] = 'al.created_at <= ?';
     $params[] = $dateTo . ' 23:59:59';
     $types .= 's';
 }
@@ -282,10 +282,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_action'
     $postedActionFilter = strtoupper(trim((string)($_POST['action_filter'] ?? '')));
     $postedDateFrom = trim((string)($_POST['date_from'] ?? ''));
     $postedDateTo = trim((string)($_POST['date_to'] ?? ''));
-    $postedSort = (string)($_POST['sort'] ?? 'changed_at');
+    $postedSort = (string)($_POST['sort'] ?? 'created_at');
     $postedDir = strtoupper((string)($_POST['dir'] ?? 'DESC'));
     if (!isset($sortableColumns[$postedSort])) {
-        $postedSort = 'changed_at';
+        $postedSort = 'created_at';
     }
     if (!in_array($postedDir, ['ASC', 'DESC'], true)) {
         $postedDir = 'DESC';
@@ -378,10 +378,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['audit_logs_save_re
     $postedAction = strtoupper(trim((string)($_POST['action_filter'] ?? '')));
     $postedDateFrom = trim((string)($_POST['date_from'] ?? ''));
     $postedDateTo = trim((string)($_POST['date_to'] ?? ''));
-    $postedSort = (string)($_POST['sort'] ?? 'changed_at');
+    $postedSort = (string)($_POST['sort'] ?? 'created_at');
     $postedDir = strtoupper((string)($_POST['dir'] ?? 'DESC'));
     if (!isset($sortableColumns[$postedSort])) {
-        $postedSort = 'changed_at';
+        $postedSort = 'created_at';
     }
     if (!in_array($postedDir, ['ASC', 'DESC'], true)) {
         $postedDir = 'DESC';
@@ -680,8 +680,8 @@ if (!isset($crud_title)) {
                 <table>
                     <thead>
                         <tr>
-                            <?php $nextDir = ($sort === 'changed_at' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                            <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'changed_at', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Date &amp; Time<?php if ($sort === 'changed_at'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <?php $nextDir = ($sort === 'created_at' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'created_at', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Date &amp; Time<?php if ($sort === 'created_at'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                             <th>User</th>
                             <?php $nextDir = ($sort === 'table_name' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(itm_audit_logs_build_query(array_merge($listQueryBase, ['sort' => 'table_name', 'dir' => $nextDir, 'page' => 1]))); ?>" style="text-decoration:none;color:inherit;">Table Name<?php if ($sort === 'table_name'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -732,7 +732,7 @@ if (!isset($crud_title)) {
                             $previewText = 'Old: ' . itm_audit_preview($oldValuesDisplay, 80) . ' | New: ' . itm_audit_preview($newValuesDisplay, 80);
                             ?>
                             <tr>
-                                <td><?php echo sanitize((string)$row['changed_at']); ?></td>
+                                <td><?php echo sanitize((string)$row['created_at']); ?></td>
                                 <td class="audit-user" title="<?php echo sanitize($userEmail !== '' ? ($userName . ' <' . $userEmail . '>') : $userName); ?>">
                                     <?php echo sanitize($userName); ?>
                                     <?php if ($userEmail !== ''): ?>
