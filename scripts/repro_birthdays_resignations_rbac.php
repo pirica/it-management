@@ -1,0 +1,80 @@
+<?php
+/**
+ * Verification/Validation script for Birthdays and Resignations RBAC View Bypass fix.
+ *
+ * Why: Confirms that unprivileged users cannot bypass Birthdays or Resignations view controls anymore.
+ */
+
+define('ITM_CLI_SCRIPT', true);
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Verify: Birthdays & Resignations RBAC Fix');
+$nl = itm_script_output_nl();
+
+echo colorText("Validating Birthdays & Resignations RBAC view fix", 'info') . $nl;
+
+$companyId = 1;
+
+// 1. Create a custom test role with NO permissions for birthdays or resignations
+mysqli_query($conn, "INSERT INTO employee_roles (company_id, name, active) VALUES ($companyId, 'NoAccessTestRole', 1)");
+$roleId = mysqli_insert_id($conn);
+
+mysqli_query($conn, "INSERT INTO role_module_permissions (company_id, role_id, module_name, can_view, can_create, can_edit, can_delete, can_import, can_export) VALUES ($companyId, $roleId, 'Birthdays', 0, 0, 0, 0, 0, 0)");
+mysqli_query($conn, "INSERT INTO role_module_permissions (company_id, role_id, module_name, can_view, can_create, can_edit, can_delete, can_import, can_export) VALUES ($companyId, $roleId, 'Resignations', 0, 0, 0, 0, 0, 0)");
+
+// 2. Create a test employee with this role
+$testUser = itm_script_test_employee_create($conn, $companyId, [
+    'script_slug' => 'val-birthdays-resignations-rbac',
+    'role_id' => $roleId
+]);
+$empId = (int)$testUser['id'];
+
+// Register cleanup
+itm_script_test_employee_register_teardown($conn, $empId);
+
+// 3. Simulate session
+$_SESSION['employee_id'] = $empId;
+$_SESSION['company_id'] = $companyId;
+$_SESSION['username'] = $testUser['username'];
+
+// Mock HTTP variables for including birthdays/index.php
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_SERVER['PHP_SELF'] = '/it-management/modules/birthdays/index.php';
+$_SERVER['SCRIPT_FILENAME'] = ROOT_PATH . 'modules/birthdays/index.php';
+
+// Include birthdays/index.php
+chdir(ROOT_PATH . 'modules/birthdays');
+ob_start();
+include 'index.php';
+$outputBdays = ob_get_clean();
+chdir(ROOT_PATH);
+
+// Mock HTTP variables for including resignations/index.php
+$_SERVER['PHP_SELF'] = '/it-management/modules/resignations/index.php';
+$_SERVER['SCRIPT_FILENAME'] = ROOT_PATH . 'modules/resignations/index.php';
+
+chdir(ROOT_PATH . 'modules/resignations');
+ob_start();
+include 'index.php';
+$outputResignations = ob_get_clean();
+chdir(ROOT_PATH);
+
+// Clean up database additions
+$roleIdClean = (int)$roleId;
+mysqli_query($conn, "DELETE FROM role_module_permissions WHERE role_id = " . $roleIdClean);
+mysqli_query($conn, "DELETE FROM employee_roles WHERE id = " . $roleIdClean);
+
+$bdaysBypassed = (strpos($outputBdays, 'bdays-controls') !== false || strpos($outputBdays, 'bdays-table') !== false);
+$resignationsBypassed = (strpos($outputResignations, 'class="table"') !== false || strpos($outputResignations, 'Weekly Resignations') !== false);
+
+if (!$bdaysBypassed && !$resignationsBypassed) {
+    echo itm_script_format_status_line("[PASS] SUCCESS: Access to Birthdays & Resignations views is correctly restricted and blocked.") . $nl;
+    $exitCode = 0;
+} else {
+    echo itm_script_format_status_line("[FAIL] FAILURE: Bypassed access to Birthdays/Resignations views!") . $nl;
+    $exitCode = 1;
+}
+
+exit($exitCode);
