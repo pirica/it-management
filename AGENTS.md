@@ -1005,7 +1005,7 @@ Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-
 | **MySQL 8.0** | `sudo mkdir -p /var/run/mysqld && sudo chown mysql:mysql /var/run/mysqld && sudo chmod 755 /var/run/mysqld && sudo mysqld --user=mysql --datadir=/var/lib/mysql &` then `sleep 5` | `mysqladmin -u root -pitmanagement ping` → `mysqld is alive` |
 | **Apache 2.4** | `sudo apachectl start` | `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` |
 
-MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 117 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
+MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 124 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
 
 ### Apache alias
 
@@ -1049,7 +1049,7 @@ playwright install chromium   # or: ~/.local/bin/playwright install chromium whe
     php -r '$c=mysqli_connect("127.0.0.1","root","itmanagement","itmanagement"); echo $c?"db ok\n":mysqli_connect_error();'
     ```
 
-    Re-run the import when the datadir is fresh; expect ~121 tables in `itmanagement`.
+    Re-run the import when the datadir is fresh; expect ~124 tables in `itmanagement``.
 
 **Capture (Roles & Permissions example — verified on Cloud Agent):**
 
