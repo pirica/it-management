@@ -6151,7 +6151,7 @@ CREATE TRIGGER `trg_rack_planner_audit_delete` AFTER DELETE ON `rack_planner` FO
 END$$
 DELIMITER ;
 SET FOREIGN_KEY_CHECKS=1;
--- Table structure for `explorer`-- Table structure for `explorer`
+-- Table structure for `explorer`
 DROP TABLE IF EXISTS `explorer`;
 CREATE TABLE `explorer` (
   `id` int NOT NULL AUTO_INCREMENT,
