@@ -9,6 +9,7 @@ define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/script_browser_nav.php';
 
 itm_script_output_begin('Verify: Birthdays & Resignations RBAC Fix');
 $nl = itm_script_output_nl();
@@ -34,47 +35,76 @@ $empId = (int)$testUser['id'];
 // Register cleanup
 itm_script_test_employee_register_teardown($conn, $empId);
 
-// 3. Simulate session
-$_SESSION['employee_id'] = $empId;
-$_SESSION['company_id'] = $companyId;
-$_SESSION['username'] = $testUser['username'];
+$session = [
+    'employee_id' => $empId,
+    'company_id' => $companyId,
+    'username' => $testUser['username'],
+];
 
-// Mock HTTP variables for including birthdays/index.php
-$_SERVER['REQUEST_METHOD'] = 'GET';
-$_SERVER['PHP_SELF'] = '/it-management/modules/birthdays/index.php';
-$_SERVER['SCRIPT_FILENAME'] = ROOT_PATH . 'modules/birthdays/index.php';
+function run_isolated_rbac($script_path, $session_data) {
+    $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+session_start();
+" . implode("\n", array_map(function($k, $v) { return "\$_SESSION['$k'] = " . var_export($v, true) . ";"; }, array_keys($session_data), $session_data)) . "
 
-// Include birthdays/index.php
-chdir(ROOT_PATH . 'modules/birthdays');
+\$_SERVER['REQUEST_METHOD'] = 'GET';
+\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+\$_SERVER['HTTP_HOST'] = 'localhost';
+\$_SERVER['PHP_SELF'] = '/it-management/modules/" . basename(dirname($script_path)) . "/" . basename($script_path) . "';
+\$_SERVER['SCRIPT_FILENAME'] = '$script_path';
+
+// Define the mock for RBAC redirection before config.php is loaded
+function itm_require_role_module_permission(\$conn, \$employeeId, \$companyId, \$moduleName, \$action) {
+    echo 'REDIRECT_TO_DASHBOARD_TRIGGERED';
+    exit(0);
+}
+
+require '" . realpath(__DIR__ . "/../config/config.php") . "';
+
+chdir(dirname('$script_path'));
 ob_start();
-include 'index.php';
-$outputBdays = ob_get_clean();
-chdir(ROOT_PATH);
+include basename('$script_path');
+echo ob_get_clean();
+?>";
 
-// Mock HTTP variables for including resignations/index.php
-$_SERVER['PHP_SELF'] = '/it-management/modules/resignations/index.php';
-$_SERVER['SCRIPT_FILENAME'] = ROOT_PATH . 'modules/resignations/index.php';
+    $tmp_file = tempnam(sys_get_temp_dir(), 'repro');
+    file_put_contents($tmp_file, $code);
+    $php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
+    $phpIni = '';
+    $mysqliSocket = ini_get('mysqli.default_socket');
+    if (is_string($mysqliSocket) && $mysqliSocket !== '') {
+        $phpIni = ' -d mysqli.default_socket=' . escapeshellarg($mysqliSocket);
+    }
+    $output = shell_exec(escapeshellarg($php_bin) . $phpIni . ' -d error_reporting=0 ' . escapeshellarg($tmp_file) . ' 2>&1');
+    unlink($tmp_file);
+    return (string)$output;
+}
 
-chdir(ROOT_PATH . 'modules/resignations');
-ob_start();
-include 'index.php';
-$outputResignations = ob_get_clean();
-chdir(ROOT_PATH);
+// Run Birthdays check
+$outputBdays = run_isolated_rbac(ROOT_PATH . 'modules/birthdays/index.php', $session);
+
+// Run Resignations check
+$outputResignations = run_isolated_rbac(ROOT_PATH . 'modules/resignations/index.php', $session);
 
 // Clean up database additions
 $roleIdClean = (int)$roleId;
 mysqli_query($conn, "DELETE FROM role_module_permissions WHERE role_id = " . $roleIdClean);
 mysqli_query($conn, "DELETE FROM employee_roles WHERE id = " . $roleIdClean);
 
-$bdaysBypassed = (strpos($outputBdays, 'bdays-controls') !== false || strpos($outputBdays, 'bdays-table') !== false);
-$resignationsBypassed = (strpos($outputResignations, 'class="table"') !== false || strpos($outputResignations, 'Weekly Resignations') !== false);
+// If the redirect was triggered, our mock outputs REDIRECT_TO_DASHBOARD_TRIGGERED
+$bdaysRedirected = (strpos($outputBdays, 'REDIRECT_TO_DASHBOARD_TRIGGERED') !== false);
+$resignationsRedirected = (strpos($outputResignations, 'REDIRECT_TO_DASHBOARD_TRIGGERED') !== false);
 
-if (!$bdaysBypassed && !$resignationsBypassed) {
-    echo itm_script_format_status_line("[PASS] SUCCESS: Access to Birthdays & Resignations views is correctly restricted and blocked.") . $nl;
+if ($bdaysRedirected && $resignationsRedirected) {
+    echo itm_script_format_status_line("[PASS] SUCCESS: Access to Birthdays & Resignations views is correctly restricted and blocked with a redirect to dashboard.php.") . $nl;
     $exitCode = 0;
 } else {
-    echo itm_script_format_status_line("[FAIL] FAILURE: Bypassed access to Birthdays/Resignations views!") . $nl;
+    echo itm_script_format_status_line("[FAIL] FAILURE: Bypassed access to Birthdays/Resignations views! Redirect to dashboard.php was not triggered.") . $nl;
     $exitCode = 1;
 }
 
-exit($exitCode);
+if (PHP_SAPI !== 'cli') {
+    itm_script_output_end();
+} else {
+    exit($exitCode);
+}
