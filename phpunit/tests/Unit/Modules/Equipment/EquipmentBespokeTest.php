@@ -144,7 +144,7 @@ class EquipmentBespokeTest extends TestCase
             $prioId = mysqli_insert_id($this->conn);
         }
 
-        $res = mysqli_query($this->conn, "INSERT INTO tickets (company_id, title, category_id, status_id, priority_id, asset_id, created_by_employee_id) VALUES ({$this->companyId}, 'Broken Server Test', $catId, $statId, $prioId, $equipmentId, $employeeId)");
+        $res = mysqli_query($this->conn, "INSERT INTO tickets (company_id, title, category_id, status_id, priority_id, equipment_id, created_by_employee_id) VALUES ({$this->companyId}, 'Broken Server Test', $catId, $statId, $prioId, $equipmentId, $employeeId)");
         $this->assertTrue($res, "Failed to insert ticket: " . mysqli_error($this->conn));
         $ticketId = mysqli_insert_id($this->conn);
 

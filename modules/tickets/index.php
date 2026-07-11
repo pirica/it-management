@@ -254,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     $seedError = '';
     $insertedRows = itm_seed_table_from_database_sql($conn, 'tickets', (int)$company_id, $seedError);
     if ($insertedRows > 0) {
-        tickets_repair_sample_asset_links($conn, (int)$company_id);
+        tickets_repair_sample_equipment_links($conn, (int)$company_id);
     }
     if ($insertedRows <= 0) {
         $_SESSION['crud_error'] = $seedError !== ''

@@ -69,13 +69,13 @@ function tickets_seed_lookup_parents(mysqli $conn, int $companyId): void
         }
     }
 
-    tickets_seed_sample_asset_equipment($conn, $companyId);
+    tickets_seed_sample_equipment($conn, $companyId);
 }
 
 /**
- * Ensure Primary File Server exists so sample ticket asset_id can link for delete/in-use tests.
+ * Ensure Primary File Server exists so sample ticket equipment_id can link for delete/in-use tests.
  */
-function tickets_seed_sample_asset_equipment(mysqli $conn, int $companyId): void
+function tickets_seed_sample_equipment(mysqli $conn, int $companyId): void
 {
     if ($companyId <= 0) {
         return;
@@ -104,7 +104,7 @@ function tickets_sample_primary_file_server_id(mysqli $conn, int $companyId): in
     $res = mysqli_query(
         $conn,
         "SELECT id FROM equipment WHERE company_id = " . (int)$companyId
-        . " AND name = 'Primary File Server' AND active = 1 ORDER BY id ASC LIMIT 1"
+        . " AND name = 'Primary File Server' AND deleted_at IS NULL ORDER BY id ASC LIMIT 1"
     );
     $row = ($res) ? mysqli_fetch_assoc($res) : null;
 
@@ -114,7 +114,7 @@ function tickets_sample_primary_file_server_id(mysqli $conn, int $companyId): in
 /**
  * Link sample tickets to Primary File Server (null, zero, stale, or wrong FK remap ids).
  */
-function tickets_repair_sample_asset_links(mysqli $conn, int $companyId): int
+function tickets_repair_sample_equipment_links(mysqli $conn, int $companyId): int
 {
     $equipmentId = tickets_sample_primary_file_server_id($conn, $companyId);
     if ($equipmentId <= 0) {
@@ -129,8 +129,8 @@ function tickets_repair_sample_asset_links(mysqli $conn, int $companyId): int
 
         $stmt = mysqli_prepare(
             $conn,
-            'UPDATE tickets SET asset_id = ? WHERE company_id = ? AND ticket_external_code = ?'
-            . ' AND (asset_id IS NULL OR asset_id = 0 OR asset_id <> ?)'
+            'UPDATE tickets SET equipment_id = ? WHERE company_id = ? AND ticket_external_code = ?'
+            . ' AND (equipment_id IS NULL OR equipment_id = 0 OR equipment_id <> ?)'
         );
         if (!$stmt) {
             continue;

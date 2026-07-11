@@ -857,7 +857,7 @@ if (!function_exists('itm_find_record_usage_supplemental_relations')) {
     function itm_find_record_usage_supplemental_relations($table, $pkColumn) {
         if ($table === 'equipment' && $pkColumn === 'id') {
             return [
-                ['table' => 'tickets', 'column' => 'asset_id'],
+                ['table' => 'tickets', 'column' => 'equipment_id'],
             ];
         }
 
@@ -870,8 +870,8 @@ if (!function_exists('itm_find_record_usage_supplemental_relations')) {
  */
 if (!function_exists('itm_format_record_usage_source_label')) {
     function itm_format_record_usage_source_label($sourceTable, $sourceColumn) {
-        if ($sourceTable === 'tickets' && $sourceColumn === 'asset_id') {
-            return 'ticket Related Asset link(s)';
+        if ($sourceTable === 'tickets' && $sourceColumn === 'equipment_id') {
+            return 'ticket Related Equipment link(s)';
         }
 
         return (string)$sourceTable;
