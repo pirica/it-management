@@ -1,0 +1,3 @@
+## 11-07-2026 - Redundant Queries in Employee Profile Stats
+**Learning:** In `user-config.php`, we identified two redundant `SELECT` queries executed against the `employees` table to retrieve `workstation_mode_id` and `assignment_type_id`. However, the initial profile query already fetches all columns of the active employee (`e.*`) and stores them in `$current_user`. Executing subsequent queries for the same fields causes unnecessary database round-trips (2 extra queries per load) and leaks statement handles.
+**Action:** Use the existing `$current_user` array properties (`workstation_mode_id` and `assignment_type_id`) to retrieve these values. Remove the redundant queries entirely.
