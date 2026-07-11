@@ -143,7 +143,7 @@ if (!isset($crud_title)) {
                     <table>
                         <tbody>
                         <tr><th style="width:220px;">ID</th><td><?php echo (int)$logRow['id']; ?></td></tr>
-                        <tr><th>Date &amp; Time</th><td><?php echo sanitize((string)$logRow['changed_at']); ?></td></tr>
+                        <tr><th>Date &amp; Time</th><td><?php echo sanitize((string)$logRow['created_at']); ?></td></tr>
                         <tr><th>Action</th><td><?php echo sanitize((string)$logRow['action']); ?></td></tr>
                         <tr><th>Module Name</th><td><?php echo sanitize((string)($logRow['module_name'] ?? '—')); ?></td></tr>
                         <tr><th>Table Name</th><td><?php echo sanitize((string)($logRow['table_name'] ?? '—')); ?></td></tr>
