@@ -3,7 +3,7 @@
  * Tickets Module - View
  * 
  * Provides a detailed overview of a single support ticket.
- * Displays all metadata, including linked assets, assignees, and 
+ * Displays all metadata, including linked equipment, assignees, and
  * a gallery of attached photos.
  */
 
@@ -55,14 +55,14 @@ if ($id > 0) {
         'SELECT t.*, tc.name AS category_name, ts.name AS status_name, ts.color AS status_color,
             tp.name AS priority_name, tp.color AS priority_color,
             assigned_user.username AS assigned_to_username, created_user.username AS created_by_username,
-            e.name AS asset_name
+            e.name AS equipment_name
         FROM tickets t
         LEFT JOIN ticket_categories tc ON tc.id = t.category_id
         LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
         LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
         LEFT JOIN employees assigned_user ON assigned_user.id = t.assigned_to_employee_id
         LEFT JOIN employees created_user ON created_user.id = t.created_by_employee_id
-        LEFT JOIN equipment e ON e.id = t.asset_id
+        LEFT JOIN equipment e ON e.id = t.equipment_id
         WHERE t.id = ? AND t.company_id = ? LIMIT 1'
     );
     if ($stmt) {
@@ -109,14 +109,14 @@ if (!isset($crud_title)) {
                             'id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title',
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_employee_id' => 'Created By',
-                            'assigned_to_employee_id' => 'Assigned To', 'asset_id' => 'Related Asset',
+                            'assigned_to_employee_id' => 'Assigned To', 'equipment_id' => 'Related Equipment',
                             'due_date' => 'Due Date', 'is_archived' => 'Archived', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
                         ];
 
                         $fieldDisplayValues = [
                             'category_id' => $item['category_name'] ?? '', 'status_id' => $item['status_name'] ?? '',
                             'priority_id' => $item['priority_name'] ?? '', 'created_by_employee_id' => $item['created_by_username'] ?? '',
-                            'assigned_to_employee_id' => $item['assigned_to_username'] ?? '', 'asset_id' => $item['asset_name'] ?? '',
+                            'assigned_to_employee_id' => $item['assigned_to_username'] ?? '', 'equipment_id' => $item['equipment_name'] ?? '',
                         ];
                         ?>
                         <?php foreach ($fieldLabels as $field => $label): ?>

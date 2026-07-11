@@ -13,11 +13,11 @@ The central helpdesk/ticketing module for managing support requests.
 - **tickets** → depends on **ticket_statuses**.
 - **tickets** → links to **employees** (Requester).
 - **tickets** → links to **users** (Assigned To).
-- **tickets** → links to **equipment** (Affected Asset).
+- **tickets** → links to **equipment** (Related Equipment).
 
 ## 4. Business Rules (Critical for Agents)
 - **Archiving**: Prefer `is_archived = 1` over hard delete — `archive.php` toggles archive state; list defaults to active tickets (`is_archived = 0`).
-- **Asset Link**: Tickets can be linked to specific equipment for asset lifecycle tracking.
+- **Equipment Link**: Tickets can be linked to specific equipment for lifecycle and maintenance tracking.
 - **Due dates**: `due_date` feeds **calendar** integration when tickets module enabled for company.
 - **Photos**: `tickets_photos` stores JSON filename list under `tickets_photos/` upload tree.
 - **Search vs archive filter**: when `?search=` is set, archive filter may include both active and archived rows (see `index.php`).

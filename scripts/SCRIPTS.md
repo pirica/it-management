@@ -624,7 +624,7 @@ Full-module browser QA runs HTTP session checks across the five seeded companies
 * `scripts/floor_plans_folder_move_test.php` (creates temporary folder hierarchy rows).
 * `scripts/idfs_sync_human_test.php` (creates temporary equipment/switch/idf rows for end-to-end sync checks).
 * `scripts/auth_register_reset_human_test.php` (creates disposable invitations and script-test employees for auth flows).
-* `scripts/tickets_related_asset_equipment_delete_test.php` (seeds sample ticket rows from `database.sql`).
+* `scripts/tickets_related_equipment_delete_test.php` (seeds sample ticket rows from `database.sql`).
 
 **Script that dumps seed SQL (no DB writes):**
 
