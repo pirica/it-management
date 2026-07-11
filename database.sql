@@ -3926,8 +3926,8 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_logs_module_name` (`module_name`),
   KEY `idx_audit_logs_table_record` (`table_name`,`record_id`),
   KEY `idx_audit_logs_action` (`action`),
-  KEY `idx_audit_logs_changed_at` (`changed_at`),
-  KEY `idx_audit_logs_company_changed` (`company_id`,`updated_at`),
+  KEY `idx_audit_logs_updated_at` (`updated_at`),
+  KEY `idx_audit_logs_company_updated` (`company_id`,`updated_at`),
   CONSTRAINT `audit_logs_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `audit_logs_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
