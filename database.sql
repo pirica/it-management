@@ -526,7 +526,6 @@ CREATE TABLE `expenses` (
   `amount` decimal(12,2) NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `invoice_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_by` int DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
