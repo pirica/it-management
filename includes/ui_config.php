@@ -20,6 +20,7 @@ function itm_sidebar_base_structure() {
             'items' => [
                 ['id' => 'dashboard_link', 'label' => '📈 Dashboard', 'href' => 'dashboard.php', 'match_page' => 'dashboard.php'],
                 ['id' => 'settings', 'label' => '⚙️ Settings', 'href' => 'modules/settings/', 'match_dir' => 'settings'],
+                ['id' => 'reports', 'label' => '📊 Reports Hub', 'href' => 'modules/reports/', 'match_dir' => 'reports'],
             ],
         ],
         [
@@ -33,6 +34,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'is_printer', 'label' => '🖨️ Is Printer', 'href' => 'modules/is_printer/', 'match_dir' => 'is_printer'],
                 ['id' => 'is_pos', 'label' => '🏧 Is POS', 'href' => 'modules/is_pos/', 'match_dir' => 'is_pos'],
                 ['id' => 'tickets', 'label' => '🎟️ Tickets', 'href' => 'modules/tickets/', 'match_dir' => 'tickets'],
+                ['id' => 'license_management', 'label' => '📄 License Management', 'href' => 'modules/license_management/', 'match_dir' => 'license_management'],
             ],
         ],
         [
@@ -60,6 +62,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'departments', 'label' => '🏢 Departments', 'href' => 'modules/departments/', 'match_dir' => 'departments'],
                 ['id' => 'employee_assignment_history', 'label' => '📝 Assignment History', 'href' => 'modules/employee_assignment_history/', 'match_dir' => 'employee_assignment_history'],
                 ['id' => 'explorer', 'label' => '🌐 Explorer', 'href' => 'modules/explorer/', 'match_dir' => 'explorer'],
+                ['id' => 'request_password', 'label' => '🔑 Request Password', 'href' => 'modules/request_password/', 'match_dir' => 'request_password'],
             ],
         ],
         [
@@ -90,6 +93,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'alerts', 'label' => '📢 Alerts', 'href' => 'modules/alerts/', 'match_dir' => 'alerts'],
                 ['id' => 'event_categories', 'label' => '🏷️ Event Categories', 'href' => 'modules/event_categories/', 'match_dir' => 'event_categories'],
                 ['id' => 'patches_updates', 'label' => '🛠️ Patches Updates', 'href' => 'modules/patches_updates/', 'match_dir' => 'patches_updates'],
+                ['id' => 'knowledge_base', 'label' => '🧩 Knowledge Base', 'href' => 'modules/knowledge_base/', 'match_dir' => 'knowledge_base'],
             ],
         ],
         [
@@ -104,6 +108,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'roles_permissions', 'label' => '🛡️ Roles & Permissions', 'href' => 'modules/roles_permissions/', 'match_dir' => 'roles_permissions'],
                 ['id' => 'emails', 'label' => '📧 Email Management', 'href' => 'modules/emails/', 'match_dir' => 'emails'],
                 ['id' => 'import', 'label' => '📥 Bulk Import', 'href' => 'modules/import/', 'match_dir' => 'import'],
+                ['id' => 'ops_report', 'label' => '📋 Ops Report', 'href' => 'modules/ops_report/', 'match_dir' => 'ops_report'],
             ],
         ],
         [
@@ -136,6 +141,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'approvers', 'label' => '✅ Approvers', 'href' => 'modules/approvers/', 'match_dir' => 'approvers'],
                 ['id' => 'audit_logs', 'label' => '🧾 Audit Logs', 'href' => 'modules/audit_logs/', 'match_dir' => 'audit_logs'],
                 ['id' => 'org_chart', 'label' => '📈 Org Chart', 'href' => 'modules/org_chart/', 'match_dir' => 'org_chart'],
+                ['id' => 'it_settings', 'label' => '⚙️ IT Settings', 'href' => 'modules/it_settings/', 'match_dir' => 'it_settings'],
             ],
         ],
     ];
@@ -186,6 +192,12 @@ function itm_sidebar_module_default_label($moduleName) {
         'modules_registry' => '🧩 Modules Registry',
         'emails' => '📧 Email Management',
         'import' => '📥 Bulk Import',
+        'knowledge_base' => '🧩 Knowledge Base',
+        'it_settings' => '⚙️ IT Settings',
+        'request_password' => '🔑 Request Password',
+        'license_management' => '📄 License Management',
+        'ops_report' => '📋 Ops Report',
+        'reports' => '📊 Reports Hub',
     ];
 
     return $labels[$moduleName] ?? null;
@@ -1703,7 +1715,7 @@ function itm_ensure_employee_sidebar_preferences_audit_triggers($conn) {
         }
         $existingTriggers[$triggerName] = $triggerMeta;
         $actionStatement = (string)($triggerMeta['Statement'] ?? '');
-        if (strpos($actionStatement, '`username`') !== false || strpos($actionStatement, '`user_email`') !== false) {
+        if (strpos($actionStatement, '`username`') !== false || strpos($actionStatement, '`user_email`') !== false || strpos($actionStatement, '\'user_id\'') !== false) {
             $needsRebuild = true;
         }
     }
@@ -1720,7 +1732,7 @@ function itm_ensure_employee_sidebar_preferences_audit_triggers($conn) {
 
     $createInsertTrigger = "CREATE TRIGGER `trg_employee_sidebar_preferences_audit_insert` AFTER INSERT ON `employee_sidebar_preferences` FOR EACH ROW BEGIN
         INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-        VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_sidebar_preferences', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`employee_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+        VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_sidebar_preferences', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
     END";
     if (!itm_run_query($conn, $createInsertTrigger)) {
         return false;
@@ -1728,7 +1740,7 @@ function itm_ensure_employee_sidebar_preferences_audit_triggers($conn) {
 
     $createUpdateTrigger = "CREATE TRIGGER `trg_employee_sidebar_preferences_audit_update` AFTER UPDATE ON `employee_sidebar_preferences` FOR EACH ROW BEGIN
         INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-        VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_sidebar_preferences', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`employee_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'user_id', NEW.`employee_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+        VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_sidebar_preferences', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'entry_type', NEW.`entry_type`, 'entry_id', NEW.`entry_id`, 'section_id', NEW.`section_id`, 'display_order', NEW.`display_order`, 'is_visible', NEW.`is_visible`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
     END";
     if (!itm_run_query($conn, $createUpdateTrigger)) {
         return false;
@@ -1736,7 +1748,7 @@ function itm_ensure_employee_sidebar_preferences_audit_triggers($conn) {
 
     $createDeleteTrigger = "CREATE TRIGGER `trg_employee_sidebar_preferences_audit_delete` AFTER DELETE ON `employee_sidebar_preferences` FOR EACH ROW BEGIN
         INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-        VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_sidebar_preferences', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'user_id', OLD.`employee_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+        VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_sidebar_preferences', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'entry_type', OLD.`entry_type`, 'entry_id', OLD.`entry_id`, 'section_id', OLD.`section_id`, 'display_order', OLD.`display_order`, 'is_visible', OLD.`is_visible`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
     END";
     if (!itm_run_query($conn, $createDeleteTrigger)) {
         return false;
