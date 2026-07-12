@@ -47,7 +47,7 @@ for ($i = 0; $i < $iterations; $i++) {
     mysqli_stmt_close($stmt);
 
     // Alerts created
-    $stmt = mysqli_prepare($conn, "SELECT COUNT(created_by_employee_id) FROM alerts WHERE created_by_employee_id = ? AND company_id = ? AND active = 1");
+    $stmt = mysqli_prepare($conn, "SELECT COUNT(created_by) FROM alerts WHERE created_by = ? AND company_id = ? AND active = 1");
     mysqli_stmt_bind_param($stmt, 'ii', $user_id, $company_id);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_bind_result($stmt, $total_alerts_created);
@@ -61,7 +61,7 @@ echo "Redundant Individual Queries (4 queries): " . number_format($redundantTime
 // --- 2. CONSOLIDATED QUERY RESULTS ---
 $stat_definitions = [
     ['table' => 'alerts', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Alerts', 'slug' => 'alerts'],
-    ['table' => 'alerts', 'field' => 'created_by_employee_id', 'label' => 'Created Alerts', 'slug' => 'alerts'],
+    ['table' => 'alerts', 'field' => 'created_by', 'label' => 'Created Alerts', 'slug' => 'alerts'],
     ['table' => 'events', 'field' => 'assigned_to_employee_id', 'label' => 'Events for Me', 'slug' => 'events'],
     ['table' => 'events', 'field' => 'created_by_employee_id', 'label' => 'Events Created', 'slug' => 'events'],
 ];
@@ -101,7 +101,7 @@ for ($i = 0; $i < $iterations; $i++) {
 
     foreach ($all_stats as $s) {
         if ($s['table'] === 'alerts' && $s['field'] === 'assigned_to_employee_id') $total_alerts_forme_opt = $s['count'];
-        if ($s['table'] === 'alerts' && $s['field'] === 'created_by_employee_id') $total_alerts_created_opt = $s['count'];
+        if ($s['table'] === 'alerts' && $s['field'] === 'created_by') $total_alerts_created_opt = $s['count'];
         if ($s['table'] === 'events' && $s['field'] === 'assigned_to_employee_id') $total_events_forme_opt = $s['count'];
         if ($s['table'] === 'events' && $s['field'] === 'created_by_employee_id') $total_events_created_opt = $s['count'];
     }

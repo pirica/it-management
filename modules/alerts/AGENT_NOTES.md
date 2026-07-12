@@ -9,7 +9,7 @@ This module manages notifications and alerts within the system. It supports both
 ## 3. Required Relationships
 - **alerts** → depends on **companies** (via `company_id`).
 - **alerts** → depends on **event_categories** (via `category_id`).
-- **alerts** → depends on **users** (via `assigned_to_employee_id` for private alerts and `created_by_employee_id`).
+- **alerts** → depends on **users** (via `assigned_to_employee_id` for private alerts and `created_by`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Visibility Logic**:
@@ -55,7 +55,7 @@ $stmt->execute();
 
 ### Safe INSERT
 ```php
-$stmt = $conn->prepare("INSERT INTO alerts (company_id, title, description, assigned_to_employee_id, created_by_employee_id) VALUES (?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO alerts (company_id, title, description, assigned_to_employee_id, created_by) VALUES (?, ?, ?, ?, ?)");
 $stmt->bind_param("issii", $companyId, $title, $description, $assignedId, $creatorId);
 $stmt->execute();
 ```

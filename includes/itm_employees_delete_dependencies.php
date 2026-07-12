@@ -101,7 +101,7 @@ if (!function_exists('itm_employees_detach_delete_dependencies')) {
                 ['UPDATE inventory_items SET last_employee_id = NULL WHERE last_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE patches_updates SET created_by = NULL WHERE created_by = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE alerts SET assigned_to_employee_id = NULL WHERE assigned_to_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
-                ['UPDATE alerts SET created_by_employee_id = NULL WHERE created_by_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
+                ['UPDATE alerts SET created_by = NULL WHERE created_by = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE events SET assigned_to_employee_id = NULL WHERE assigned_to_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE explorer SET employee_id = NULL WHERE employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE employee_onboarding_requests SET employee_id = NULL WHERE employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],

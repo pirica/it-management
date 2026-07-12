@@ -7136,35 +7136,38 @@ CREATE TABLE `alerts` (
   `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `category_id` int DEFAULT NULL,
   `assigned_to_employee_id` int DEFAULT NULL,
-  `created_by_employee_id` int DEFAULT NULL,
-  `active` tinyint NOT NULL DEFAULT '1',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `company_id_2` (`company_id`,`title`),
   KEY `company_id` (`company_id`),
   KEY `category_id` (`category_id`),
   KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
-  KEY `created_by_employee_id` (`created_by_employee_id`),
+  KEY `created_by` (`created_by`),
   CONSTRAINT `alerts_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `alerts_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `event_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `alerts_ibfk_assigned_to` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `alerts_ibfk_created_by` FOREIGN KEY (`created_by_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+  CONSTRAINT `alerts_ibfk_created_by` FOREIGN KEY (`created_by`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Triggers for `alerts`
 DELIMITER $$
 CREATE TRIGGER `trg_alerts_audit_insert` AFTER INSERT ON `alerts` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'alerts', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'location', NEW.`location`, 'category_id', NEW.`category_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'created_by_employee_id', NEW.`created_by_employee_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'alerts', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'location', NEW.`location`, 'category_id', NEW.`category_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_alerts_audit_update` AFTER UPDATE ON `alerts` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'alerts', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'location', OLD.`location`, 'category_id', OLD.`category_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'created_by_employee_id', OLD.`created_by_employee_id`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'location', NEW.`location`, 'category_id', NEW.`category_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'created_by_employee_id', NEW.`created_by_employee_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'alerts', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'location', OLD.`location`, 'category_id', OLD.`category_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'location', NEW.`location`, 'category_id', NEW.`category_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_alerts_audit_delete` AFTER DELETE ON `alerts` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'alerts', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'location', OLD.`location`, 'category_id', OLD.`category_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'created_by_employee_id', OLD.`created_by_employee_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'alerts', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'location', OLD.`location`, 'category_id', OLD.`category_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 

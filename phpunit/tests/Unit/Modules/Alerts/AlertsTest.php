@@ -72,14 +72,14 @@ class AlertsTest extends TestCase
             'description' => 'Test description',
             'start_datetime' => date('Y-m-d H:i:s'),
             'assigned_to_employee_id' => null,
-            'created_by_employee_id' => $u1,
+            'created_by' => $u1,
             'active' => 1
         ];
 
-        $sql = "INSERT INTO `alerts` (company_id, title, description, start_datetime, created_by_employee_id, active) VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `alerts` (company_id, title, description, start_datetime, created_by, active) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
-        mysqli_stmt_bind_param($stmt, 'isssii', $data['company_id'], $data['title'], $data['description'], $data['start_datetime'], $data['created_by_employee_id'], $data['active']);
+        mysqli_stmt_bind_param($stmt, 'isssii', $data['company_id'], $data['title'], $data['description'], $data['start_datetime'], $data['created_by'], $data['active']);
         $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         $publicId = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
@@ -89,20 +89,20 @@ class AlertsTest extends TestCase
             'company_id' => $this->companyId,
             'title' => 'Test Private Alert ' . uniqid(),
             'assigned_to_employee_id' => $u2,
-            'created_by_employee_id' => $u1,
+            'created_by' => $u1,
             'active' => 1
         ];
-        $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_employee_id, created_by, active) VALUES (?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
-        mysqli_stmt_bind_param($stmt, 'isiii', $dataPrivate['company_id'], $dataPrivate['title'], $dataPrivate['assigned_to_employee_id'], $dataPrivate['created_by_employee_id'], $dataPrivate['active']);
+        mysqli_stmt_bind_param($stmt, 'isiii', $dataPrivate['company_id'], $dataPrivate['title'], $dataPrivate['assigned_to_employee_id'], $dataPrivate['created_by'], $dataPrivate['active']);
         $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         $privateId = mysqli_insert_id($this->conn);
         mysqli_stmt_close($stmt);
 
         // 3. Test Visibility for User 1 (Creator of both, Assigned to neither)
         $logged_user_id = $u1;
-        $sqlView = "SELECT * FROM alerts WHERE company_id = ? AND (assigned_to_employee_id IS NULL OR assigned_to_employee_id = ? OR created_by_employee_id = ?) AND active = 1";
+        $sqlView = "SELECT * FROM alerts WHERE company_id = ? AND (assigned_to_employee_id IS NULL OR assigned_to_employee_id = ? OR created_by = ?) AND active = 1";
         $stmtView = mysqli_prepare($this->conn, $sqlView);
         mysqli_stmt_bind_param($stmtView, 'iii', $this->companyId, $logged_user_id, $logged_user_id);
         mysqli_stmt_execute($stmtView);
@@ -151,7 +151,7 @@ class AlertsTest extends TestCase
         $u3 = $this->employeeIds[2];
         $title = 'Direct Access Private Alert ' . uniqid();
 
-        $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, ?, ?, 1)";
+        $sql = "INSERT INTO `alerts` (company_id, title, assigned_to_employee_id, created_by, active) VALUES (?, ?, ?, ?, 1)";
         $stmt = mysqli_prepare($this->conn, $sql);
         if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'isii', $this->companyId, $title, $u2, $u1);
@@ -198,7 +198,7 @@ class AlertsTest extends TestCase
             $publicTitle = 'Clear Visible Public Alert ' . uniqid();
             $privateTitle = 'Clear Hidden Private Alert ' . uniqid();
 
-            $sqlPublic = "INSERT INTO `alerts` (company_id, title, created_by_employee_id, active) VALUES (?, ?, ?, 1)";
+            $sqlPublic = "INSERT INTO `alerts` (company_id, title, created_by, active) VALUES (?, ?, ?, 1)";
             $stmt = mysqli_prepare($this->conn, $sqlPublic);
             if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
             mysqli_stmt_bind_param($stmt, 'isi', $tempCompanyId, $publicTitle, $u1);
@@ -206,7 +206,7 @@ class AlertsTest extends TestCase
             $publicId = (int)mysqli_insert_id($this->conn);
             mysqli_stmt_close($stmt);
 
-            $sqlPrivate = "INSERT INTO `alerts` (company_id, title, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, ?, ?, 1)";
+            $sqlPrivate = "INSERT INTO `alerts` (company_id, title, assigned_to_employee_id, created_by, active) VALUES (?, ?, ?, ?, 1)";
             $stmt = mysqli_prepare($this->conn, $sqlPrivate);
             if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
             mysqli_stmt_bind_param($stmt, 'isii', $tempCompanyId, $privateTitle, $u2, $u1);

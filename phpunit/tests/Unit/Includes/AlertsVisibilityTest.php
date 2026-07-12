@@ -40,7 +40,7 @@ class AlertsVisibilityTest extends TestCase
         $sql = itm_alerts_visibility_sql();
         $this->assertStringContainsString('assigned_to_employee_id IS NULL', $sql);
         $this->assertStringContainsString('assigned_to_employee_id = ?', $sql);
-        $this->assertStringContainsString('created_by_employee_id = ?', $sql);
+        $this->assertStringContainsString('created_by = ?', $sql);
     }
 
     public function testVisibilitySqlWithAlias(): void
@@ -48,7 +48,7 @@ class AlertsVisibilityTest extends TestCase
         $sql = itm_alerts_visibility_sql('e');
         $this->assertStringContainsString('e.assigned_to_employee_id IS NULL', $sql);
         $this->assertStringContainsString('e.assigned_to_employee_id = ?', $sql);
-        $this->assertStringContainsString('e.created_by_employee_id = ?', $sql);
+        $this->assertStringContainsString('e.created_by = ?', $sql);
     }
 
     public function testVisibilitySqlLiteral(): void
@@ -56,7 +56,7 @@ class AlertsVisibilityTest extends TestCase
         $sql = itm_alerts_visibility_sql_literal(42, 'a');
         $this->assertStringContainsString('a.assigned_to_employee_id IS NULL', $sql);
         $this->assertStringContainsString('a.assigned_to_employee_id = 42', $sql);
-        $this->assertStringContainsString('a.created_by_employee_id = 42', $sql);
+        $this->assertStringContainsString('a.created_by = 42', $sql);
     }
 
     public function testAppendVisibilityFilter(): void
