@@ -591,6 +591,12 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
         return $itm_sidebar_cache;
     }
 
+    static $is_building = false;
+    if ($is_building) {
+        return itm_sidebar_base_structure();
+    }
+    $is_building = true;
+
     $structure = itm_sidebar_base_structure();
     $existingItemIds = [];
     foreach ($structure as $section) {
@@ -615,6 +621,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             }
 
             if (is_file($moduleDir . '/index.php')) {
+                $scaffoldEmoji = '';
                 $moduleNames[$moduleName] = ['emoji' => $scaffoldEmoji];
                 // Why: itm_module_dir_is_standard_crud_scaffold() calls file_get_contents() on every
                 // .php file in the module dir. With 140+ modules this is 800+ file reads per request.
@@ -686,6 +693,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             }
         }
     }
+    }
 
     if ($conn instanceof mysqli && function_exists('itm_merge_registry_modules_into_sidebar_discovery')) {
         itm_merge_registry_modules_into_sidebar_discovery($conn, $moduleNames, $existingItemIds);
@@ -733,6 +741,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
     }
 
     if (!$discoveredItems && !$discoveredEquipmentTypeItems) {
+        $is_building = false;
         return $structure;
     }
 
@@ -756,6 +765,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
     }
     unset($section);
 
+    $is_building = false;
     $itm_sidebar_cache = $structure;
     return $structure;
 }
