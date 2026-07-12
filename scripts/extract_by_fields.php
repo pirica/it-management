@@ -1,15 +1,39 @@
 <?php
-// docs/extract_by_fields.php
+/**
+ * Extract Table Fields by Keywords
+ *
+ * Why: Scans database.sql to extract table column definitions matching specific keywords
+ * (by, to, employee_id, employee) and outputs them in a standardized schema report.
+ *
+ * Browser: open while logged in as Admin.
+ * CLI: php scripts/extract_by_fields.php
+ */
 
-// Error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+define('ITM_CLI_SCRIPT', true);
+require_once dirname(__DIR__) . '/config/config.php';
+require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
 
-$sqlFile = __DIR__ . '/../database.sql';
-$outputFile = __DIR__ . '/fields_by.txt';
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
+}
+
+itm_script_output_begin('Extract Table Fields by Keywords');
+
+$isCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+$nl = itm_script_output_nl();
+
+if (!$isCli) {
+    echo "<h2>Extract Table Fields by Keywords</h2>";
+    echo "<p class=\"report-muted\">Scans database.sql and lists fields containing keywords: <code>by</code>, <code>to</code>, <code>employee_id</code>, <code>employee</code>.</p>";
+    echo "<pre style='background:#f4f4f4; padding:15px; border-radius:4px; overflow-x:auto; max-height: 600px;'>";
+}
+
+$sqlFile = ROOT_PATH . 'database.sql';
+$outputFile = ROOT_PATH . 'scripts/fields_by.txt';
 
 if (!file_exists($sqlFile)) {
-    die("Error: database.sql not found at " . realpath($sqlFile ?: ''));
+    die("Error: database.sql not found." . $nl);
 }
 
 $sqlContent = file_get_contents($sqlFile);
@@ -17,12 +41,6 @@ $sqlContent = file_get_contents($sqlFile);
 // Keywords to search for (case-insensitive)
 $keywords = ['by', 'to', 'employee_id', 'employee'];
 
-/**
- * Parsing logic:
- * We'll search for "CREATE TABLE `table_name` ("
- * Then we'll collect all lines until we find a line starting with ")"
- * and containing "ENGINE=" or just a semicolon.
- */
 $lines = explode("\n", $sqlContent);
 $inTable = false;
 $currentTable = "";
@@ -89,18 +107,16 @@ foreach ($tablesData as $tableName => $matchingFields) {
 
 // Save to file
 if (file_put_contents($outputFile, $output) === false) {
-    echo "Warning: Failed to write to $outputFile\n";
+    echo "Warning: Failed to write to " . $outputFile . $nl;
 }
 
-// Set header for browser viewing
-if (php_sapi_name() !== 'cli') {
-    header('Content-Type: text/plain');
-}
+echo htmlspecialchars($output, ENT_QUOTES, 'UTF-8');
 
-// Display the output
-echo $output;
-
-if (php_sapi_name() === 'cli') {
+if (!$isCli) {
+    echo "</pre>";
+} else {
     $allTablesParsed = count($tablesData);
-    echo "\nResults saved to $outputFile (Total tables parsed: $allTablesParsed)\n";
+    echo "\nResults saved to fields_by.txt (Total tables parsed: $allTablesParsed)\n";
 }
+
+itm_script_output_end();
