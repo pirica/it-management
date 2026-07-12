@@ -190,7 +190,7 @@ function cr_fk_metadata($conn, $table) {
  */
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return !in_array($c['Field'], ['id', 'created_at', 'updated_at', 'deleted_by', 'deleted_at', 'updated_by'], true);
     }));
 }
 
@@ -239,8 +239,8 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
             $catColor = sanitize((string)($row['category_color'] ?? '#3b82f6'));
             return '<div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background-color:' . $catColor . ';"></div>' . sanitize($catName) . '</div>';
         }
-        if ($field === 'assigned_to_employee_id' || $field === 'created_by_employee_id') {
-            $prefix = ($field === 'created_by_employee_id') ? 'c_' : '';
+        if ($field === 'assigned_to_employee_id' || $field === 'created_by') {
+            $prefix = ($field === 'created_by') ? 'c_' : '';
             $firstName = trim((string)($row[$prefix . 'first_name'] ?? ''));
             $lastName = trim((string)($row[$prefix . 'last_name'] ?? ''));
             $username = trim((string)($row[$prefix . 'username'] ?? ''));
@@ -251,7 +251,7 @@ function cr_render_cell_value($table, $field, $value, $row = []) {
         if ($field === 'title') {
             $title = sanitize((string)$value);
             if (!empty($row['assigned_to_employee_id'])) {
-                if ((int)$row['assigned_to_employee_id'] === (int)$logged_user_id && (int)$row['created_by_employee_id'] === (int)$logged_user_id) {
+                if ((int)$row['assigned_to_employee_id'] === (int)$logged_user_id && (int)$row['created_by'] === (int)$logged_user_id) {
                     $title .= ' ⚠️' . (($GLOBALS['crud_action'] ?? '') === 'view' ? ' <small>Visible only to you and to the person who assigned it to you</small>' : '');
                 }
             } else {
@@ -480,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
             $end_dt = $format_date($end_raw);
 
             if ($title) {
-                $sql = "INSERT INTO alerts (company_id, title, description, start_datetime, end_datetime, location, created_by_employee_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)";
+                $sql = "INSERT INTO alerts (company_id, title, description, start_datetime, end_datetime, location, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)";
                 $stmt = mysqli_prepare($conn, $sql);
                 if ($stmt) {
                     mysqli_stmt_bind_param($stmt, 'isssssi', $company_id, $title, $description, $start_dt, $end_dt, $location, $logged_user_id);
@@ -938,7 +938,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             continue;
         }
 
-        if ($name === 'created_by_employee_id' && $crud_action === 'create') {
+        if ($name === 'created_by' && $crud_action === 'create') {
             $data[$name] = $logged_user_id;
             continue;
         }
@@ -1051,6 +1051,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
         }
 
+        if ($crud_action === 'edit') {
+            $fields[] = '`updated_by`';
+            $placeholders[] = '?';
+            $params[] = $logged_user_id;
+            $types .= 'i';
+        }
+
         if ($crud_action === 'create') {
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
             $stmt = mysqli_prepare($conn, $sql);
@@ -1159,7 +1166,7 @@ $offset = ($page - 1) * $perPage;
 $rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username, uc.first_name as c_first_name, uc.last_name as c_last_name, uc.username as c_username
      FROM alerts e
      LEFT JOIN event_categories ec ON e.category_id = ec.id
-     LEFT JOIN employees u ON e.assigned_to_employee_id = u.id LEFT JOIN employees uc ON e.created_by_employee_id = uc.id
+     LEFT JOIN employees u ON e.assigned_to_employee_id = u.id LEFT JOIN employees uc ON e.created_by = uc.id
      ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
@@ -1389,8 +1396,8 @@ if (!isset($crud_title)) {
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
                             <?php continue; ?>
                         <?php endif; ?>
-                        <?php if ($name === 'created_by_employee_id'): ?>
-                            <input type="hidden" name="created_by_employee_id" value="<?php echo sanitize((string)($displayVal ?: $logged_user_id)); ?>">
+                        <?php if ($name === 'created_by'): ?>
+                            <input type="hidden" name="created_by" value="<?php echo sanitize((string)($displayVal ?: $logged_user_id)); ?>">
                             <?php continue; ?>
                         <?php endif; ?>
                         <div class="form-group">
@@ -1452,7 +1459,7 @@ if (!isset($crud_title)) {
                             $sqlExt = "SELECT ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username, uc.first_name as c_first_name, uc.last_name as c_last_name, uc.username as c_username
                                        FROM alerts e
                                        LEFT JOIN event_categories ec ON e.category_id = ec.id
-                                       LEFT JOIN employees u ON e.assigned_to_employee_id = u.id LEFT JOIN employees uc ON e.created_by_employee_id = uc.id
+                                       LEFT JOIN employees u ON e.assigned_to_employee_id = u.id LEFT JOIN employees uc ON e.created_by = uc.id
                                        WHERE e.id = ? AND " . itm_alerts_visibility_sql('e') . " LIMIT 1";
                             $stmtExt = mysqli_prepare($conn, $sqlExt);
                             if ($stmtExt) {

@@ -6,7 +6,9 @@
 
 -- alerts
  - assigned_to_employee_id
- - created_by_employee_id
+ - deleted_by
+ - created_by
+ - updated_by
 
 
 -- annual_budgets

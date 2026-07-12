@@ -194,7 +194,7 @@ $_SESSION['assignment_types'] = $assignment_types;
 $all_stats = [];
 $stat_definitions = [
     ['table' => 'alerts', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Alerts', 'slug' => 'alerts', 'use_company' => true, 'use_active' => true],
-    ['table' => 'alerts', 'field' => 'created_by_employee_id', 'label' => 'Created Alerts', 'slug' => 'alerts', 'use_company' => true, 'use_active' => true],
+    ['table' => 'alerts', 'field' => 'created_by', 'label' => 'Created Alerts', 'slug' => 'alerts', 'use_company' => true, 'use_active' => true],
     ['table' => 'approvers', 'field' => 'employee_id', 'label' => 'Approver Roles', 'slug' => 'approvers', 'use_company' => true, 'use_active' => true],
     ['table' => 'attempts', 'field' => 'employee_id', 'label' => 'Login Attempts', 'slug' => 'attempts', 'use_company' => false, 'use_active' => false],
     ['table' => 'audit_logs', 'field' => 'employee_id', 'label' => 'Audit Logs', 'slug' => 'audit_logs', 'use_company' => true, 'use_active' => false],
@@ -278,7 +278,7 @@ foreach ($all_stats as $s) {
     if ($s['table'] === 'events' && $s['field'] === 'assigned_to_employee_id') $total_events_forme = $s['count'];
     if ($s['table'] === 'events' && $s['field'] === 'created_by_employee_id') $total_events_created = $s['count'];
     if ($s['table'] === 'alerts' && $s['field'] === 'assigned_to_employee_id') $total_alerts_forme = $s['count'];
-    if ($s['table'] === 'alerts' && $s['field'] === 'created_by_employee_id') $total_alerts_created = $s['count'];
+    if ($s['table'] === 'alerts' && $s['field'] === 'created_by') $total_alerts_created = $s['count'];
     if ($s['table'] === 'equipment' && $s['field'] === 'assigned_to_employee_id') $assigned_assets_count = $s['count'];
     if ($s['table'] === 'password_entries' && $s['field'] === 'employee_id') $vault_entries_count = $s['count'];
 }

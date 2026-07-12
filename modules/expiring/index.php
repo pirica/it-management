@@ -197,7 +197,7 @@ if ($company_id > 0) {
                     a.id,
                     a.title AS name,
                     a.assigned_to_employee_id,
-                    a.created_by_employee_id,
+                    a.created_by,
                     '' AS hostname,
                     '' AS model,
                     '' AS serial_number,
@@ -210,7 +210,7 @@ if ($company_id > 0) {
                 WHERE a.company_id = ?
                   AND a.end_datetime IS NOT NULL
                   AND a.end_datetime >= '1000-01-01'
-                  AND (a.assigned_to_employee_id IS NULL OR a.assigned_to_employee_id = $logged_user_id OR a.created_by_employee_id = $logged_user_id)
+                  AND (a.assigned_to_employee_id IS NULL OR a.assigned_to_employee_id = $logged_user_id OR a.created_by = $logged_user_id)
                   AND a.active = 1
                 ORDER BY a.end_datetime ASC, a.title ASC
             ";
@@ -282,7 +282,7 @@ if ($company_id > 0) {
                 $targetRows[] = [
                     'id' => (int)($row['id'] ?? 0),
                     'assigned_to_employee_id' => $row['assigned_to_employee_id'] ?? null,
-                    'created_by_employee_id' => $row['created_by_employee_id'] ?? null,
+                    'created_by' => $row['created_by'] ?? null,
                     'equipment_title' => $equipmentTitle,
                     'hostname' => (string)($row['hostname'] ?? ''),
                     'equipment_type' => (string)($row['equipment_type'] ?? ''),
@@ -309,7 +309,7 @@ if ($company_id > 0) {
         }
 
         if ($field === 'alerts_expiry') {
-            $unknownSql = "SELECT COUNT(*) AS unknown_count FROM alerts WHERE company_id = ? AND (end_datetime IS NULL OR TRIM(end_datetime) = '' OR end_datetime IN ('0000-00-00', '0000-00-00 00:00:00')) AND (assigned_to_employee_id IS NULL OR assigned_to_employee_id = $logged_user_id OR created_by_employee_id = $logged_user_id) AND active = 1";
+            $unknownSql = "SELECT COUNT(*) AS unknown_count FROM alerts WHERE company_id = ? AND (end_datetime IS NULL OR TRIM(end_datetime) = '' OR end_datetime IN ('0000-00-00', '0000-00-00 00:00:00')) AND (assigned_to_employee_id IS NULL OR assigned_to_employee_id = $logged_user_id OR created_by = $logged_user_id) AND active = 1";
         } else {
             $unknownSql = sprintf(
                 "SELECT COUNT(*) AS unknown_count FROM equipment WHERE company_id = ? AND (%s IS NULL OR TRIM(%s) = '' OR %s IN ('0000-00-00', '0000-00-00 00:00:00'))",
@@ -496,7 +496,7 @@ if (!isset($crud_title)) {
                                                     <?php
                                                         $title = (string)$row['equipment_title'];
                                                         if (!empty($row['assigned_to_employee_id'])) {
-                                                            if ((int)$row['assigned_to_employee_id'] === (int)$logged_user_id && (int)$row['created_by_employee_id'] === (int)$logged_user_id) {
+                                                            if ((int)$row['assigned_to_employee_id'] === (int)$logged_user_id && (int)$row['created_by'] === (int)$logged_user_id) {
                                                                 echo sanitize($title) . " ⚠️";
                                                             } else {
                                                                 echo sanitize($title);
