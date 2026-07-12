@@ -686,6 +686,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             }
         }
     }
+    }
 
     if ($conn instanceof mysqli && function_exists('itm_merge_registry_modules_into_sidebar_discovery')) {
         itm_merge_registry_modules_into_sidebar_discovery($conn, $moduleNames, $existingItemIds);
