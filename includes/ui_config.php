@@ -317,9 +317,14 @@ function itm_module_php_file_delegates_to_manufacturers_module($content) {
  * True when every PHP entry file is a legacy thin delegate to standard CRUD template.
  */
 function itm_module_php_file_is_standard_crud_stub($content, $fileName) {
-    $content = str_replace(["\r\n", "\r"], "\n", (string)$content);
+    // Real stub files are < 500 bytes. Bail before any string copy on large
+    // input to avoid OOM in the sidebar scaffold scan (#ui_config-memory).
+    if (!is_string($content) || strlen($content) > 2048) {
+        return false;
+    }
+    $content = str_replace(["\r\n", "\r"], "\n", $content);
     $content = trim($content);
-    if (strpos($content, 'config/config.php') !== false) {
+    if ($content === '' || strpos($content, 'config/config.php') !== false) {
         return false;
     }
 
@@ -352,7 +357,13 @@ function itm_module_dir_is_standard_crud_scaffold($modulesRoot, $moduleDirName) 
 
     foreach ($phpFiles as $phpFile) {
         $fileName = basename($phpFile);
-        $content = @file_get_contents($phpFile);
+        // Skip anything that cannot possibly be a stub; prevents OOM when a
+        // large non-stub file (dump, export, cache) lives in modules/*/.
+        $size = @filesize($phpFile);
+        if ($size === false || $size > 2048) {
+            return false;
+        }
+        $content = @file_get_contents($phpFile, false, null, 0, 2048);
         if ($content === false || !itm_module_php_file_is_standard_crud_stub($content, $fileName)) {
             return false;
         }
