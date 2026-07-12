@@ -615,16 +615,25 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             }
 
             if (is_file($moduleDir . '/index.php')) {
-                $scaffoldEmoji = '';
-                if (itm_module_dir_is_standard_crud_scaffold($modulesRoot, $moduleName)) {
-                    $scaffoldEmoji = itm_sidebar_auto_scaffolded_module_emoji();
-                }
                 $moduleNames[$moduleName] = ['emoji' => $scaffoldEmoji];
+                // Why: itm_module_dir_is_standard_crud_scaffold() calls file_get_contents() on every
+                // .php file in the module dir. With 140+ modules this is 800+ file reads per request.
+                // The scaffold emoji is cosmetic only; skip the per-file scan entirely on sidebar renders.
+                // Scaffold detection is still available on-demand via scripts/check_*.php.
+                $moduleNames[$moduleName] = ['emoji' => ''];
             }
         }
     }
 
-    // Discover modules by scanning database tables and auto-scaffolding if needed
+    // Discover modules by scanning database tables and auto-scaffolding if needed.
+    // Why: SHOW TABLES + per-table file writes ran on every sidebar render when auto-scaffolding
+    // was unconditional, causing 512 MB+ memory exhaustion on large schemas (122+ tables).
+    // Gate behind enable_auto_scaffolding (default off) so heavy scaffold I/O only runs
+    // when an admin explicitly enables it in Settings → UI Configuration.
+    $autoScaffoldingEnabled = false;
+    if ($conn instanceof mysqli && isset($GLOBALS['ui_config']) && is_array($GLOBALS['ui_config'])) {
+        $autoScaffoldingEnabled = !empty($GLOBALS['ui_config']['enable_auto_scaffolding']);
+    }
     if ($conn instanceof mysqli) {
         $itmCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
         $itmUiConfig = itm_get_ui_configuration($conn, $itmCompanyId);
@@ -637,7 +646,9 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             while ($equipmentTypeRow = mysqli_fetch_assoc($equipmentTypeRes)) {
                 $typeName = (string)($equipmentTypeRow['name'] ?? '');
                 $typeEmoji = trim((string)($equipmentTypeRow['field_edit_emoji'] ?? ''));
-                itm_ensure_equipment_type_module_scaffold($typeName);
+                if ($autoScaffoldingEnabled) {
+                    itm_ensure_equipment_type_module_scaffold($typeName);
+                }
                 $equipmentTypeModuleName = itm_equipment_type_sidebar_item_id($typeName);
                 if ($equipmentTypeModuleName !== '') {
                     $equipmentTypeModuleIndex = $modulesRoot . '/' . $equipmentTypeModuleName . '/index.php';
@@ -651,24 +662,27 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             }
         }
 
-        $tablesRes = mysqli_query($conn, 'SHOW TABLES');
-        if ($tablesRes) {
-            while ($tableRow = mysqli_fetch_array($tablesRes)) {
-                $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
-                if ($table === '' || isset($existingItemIds[$table]) || itm_sidebar_module_is_hidden($table)) {
-                    continue;
-                }
+                if ($autoScaffoldingEnabled) {
+            // Why: SHOW TABLES + auto-scaffold file writes are only safe to run on-demand,
+            // not on every page load. Controlled by enable_auto_scaffolding in ui_configuration.
+            $tablesRes = mysqli_query($conn, 'SHOW TABLES');
+            if ($tablesRes) {
+                while ($tableRow = mysqli_fetch_array($tablesRes)) {
+                    $table = isset($tableRow[0]) ? (string)$tableRow[0] : '';
+                    if ($table === '' || isset($existingItemIds[$table]) || itm_sidebar_module_is_hidden($table)) {
+                        continue;
+                    }
 
-                $moduleIndex = $modulesRoot . '/' . $table . '/index.php';
-                $scaffoldedNow = false;
-                if (!is_file($moduleIndex) && $enableAutoScaffolding) {
-                    $scaffoldedNow = itm_auto_create_module_scaffold($table);
-                }
+                    $moduleIndex = $modulesRoot . '/' . $table . '/index.php';
+                    $scaffoldedNow = false;
+                    if (!is_file($moduleIndex)) {
+                        $scaffoldedNow = itm_auto_create_module_scaffold($table);
+                    }
 
-                if (is_file($moduleIndex)) {
-                    $scaffoldEmoji = $scaffoldedNow ? itm_sidebar_auto_scaffolded_module_emoji() : '';
-                    $moduleNames[$table] = ['emoji' => $scaffoldEmoji];
-                }
+                    if (is_file($moduleIndex)) {
+                        $scaffoldEmoji = $scaffoldedNow ? itm_sidebar_auto_scaffolded_module_emoji() : '';
+                        $moduleNames[$table] = ['emoji' => $scaffoldEmoji];
+                    }
             }
         }
     }
