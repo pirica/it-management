@@ -53,7 +53,7 @@ if (!mysqli_query($conn, $createSql)) {
 
 // 2. Test state 1: Auto-scaffolding DISABLED (default)
 echo "Setting `enable_auto_scaffolding` to 0..." . $nl;
-$updateConfigSql = "UPDATE `ui_configuration` SET `enable_auto_scaffolding` = 0 WHERE company_id = 1 AND employee_id = 1";
+$updateConfigSql = "INSERT INTO `ui_configuration` (company_id, employee_id, enable_auto_scaffolding) VALUES (1, 1, 0) ON DUPLICATE KEY UPDATE enable_auto_scaffolding = 0";
 mysqli_query($conn, $updateConfigSql);
 
 // Clear UI configuration cache
@@ -77,7 +77,7 @@ if (is_dir($dummyModulePath)) {
 
 // 3. Test state 2: Auto-scaffolding ENABLED
 echo "Setting `enable_auto_scaffolding` to 1..." . $nl;
-$updateConfigSql = "UPDATE `ui_configuration` SET `enable_auto_scaffolding` = 1 WHERE company_id = 1 AND employee_id = 1";
+$updateConfigSql = "INSERT INTO `ui_configuration` (company_id, employee_id, enable_auto_scaffolding) VALUES (1, 1, 1) ON DUPLICATE KEY UPDATE enable_auto_scaffolding = 1";
 mysqli_query($conn, $updateConfigSql);
 
 // Clear UI configuration cache

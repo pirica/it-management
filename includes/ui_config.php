@@ -645,6 +645,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
         $itmCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : 0;
         $itmUiConfig = itm_get_ui_configuration($conn, $itmCompanyId);
         $enableAutoScaffolding = (int)($itmUiConfig['enable_auto_scaffolding'] ?? 0) === 1;
+        $autoScaffoldingEnabled = $enableAutoScaffolding;
 
         $hasEquipmentTypeEditEmoji = itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji');
         $equipmentTypeSelectFields = $hasEquipmentTypeEditEmoji ? 'name, field_edit_emoji' : 'name';
