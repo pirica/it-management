@@ -10,7 +10,7 @@ Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layo
 | --- | --- |
 | **Files** | Images (JPEG, PNG, GIF, WebP), PDF, AutoCAD (DWG, DXF, DWF, DWS); 20 MB per file |
 | **Folders** | Nested folder tree; create, rename, delete (empty only), and **move** into another folder or root |
-| **Tags** | Comma-separated tags on upload; shared tag list per company |
+| **Tags** | Comma-separated tags on upload; shared tag list per company. Evaluated via a company-scoped junction table (`floor_plan_item_tags`) |
 | **IT Locations** | Optional nullable link from each file to an IT Location (`it_location_id`) |
 | **Moves** | Drag file cards onto folders (or **Unfiled**); drag folders onto another folder or **All files (root)** |
 | **Views** | Gallery index (default), table view (`list_all.php`), file detail/preview |

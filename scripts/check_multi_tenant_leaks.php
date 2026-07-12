@@ -17,7 +17,6 @@ $allowlist_file = __DIR__ . '/data/multi_tenant_leak_allowlist.json';
 function get_table_exceptions() {
     return [
         'companies' => 'No company_id column (global / system table).',
-        'floor_plan_item_tags' => 'No company_id column (global / system table).',
         'attempts' => 'No company_id column (global / system table).',
         'audit_logs' => 'Append-only log table; tenant scope UNIQUE not required.'
     ];

@@ -96,7 +96,7 @@ if (!function_exists('itm_employees_detach_delete_dependencies')) {
 
         if ($companyId > 0) {
             $detachSteps = array_merge($detachSteps, [
-                ['UPDATE floor_plans SET created_by_employee_id = NULL WHERE created_by_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
+                ['UPDATE floor_plans SET created_by = NULL WHERE created_by = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE equipment SET assigned_to_employee_id = NULL WHERE assigned_to_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE inventory_items SET last_employee_id = NULL WHERE last_employee_id = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],
                 ['UPDATE patches_updates SET created_by = NULL WHERE created_by = ? AND company_id = ?', 'ii', [$employeeId, $companyId]],

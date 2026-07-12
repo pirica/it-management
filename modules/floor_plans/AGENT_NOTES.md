@@ -4,10 +4,10 @@
 Manages physical floor plan documents, including images, PDFs, and AutoCAD files. Supports a hierarchical folder structure and tagging.
 
 ## 2. Key Tables
-- **floor_plans** — main file metadata.
+- **floor_plans** — main file metadata. Uses standard audit columns (including `created_by` to track the uploaded by user).
 - **floor_plan_folders** — folder hierarchy (`parent_folder_id` self-FK; must match PHP/SQL column name).
 - **floor_plan_tags** — available tags.
-- **floor_plan_item_tags** — mapping of tags to files.
+- **floor_plan_item_tags** — mapping of tags to files. This junction table is company-scoped (`company_id` column) and includes standard lifecycle/audit columns.
 
 ## 3. Required Relationships
 - **floor_plans** → depends on **companies**.

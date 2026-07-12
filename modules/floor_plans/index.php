@@ -271,7 +271,7 @@ function cr_humanize_field($field) {
         'mime_type' => 'MIME Type',
         'file_ext' => 'Type',
         'file_size' => 'Size',
-        'created_by_employee_id' => 'Uploaded By',
+        'created_by' => 'Uploaded By',
     ];
 
     if (isset($map[$label])) { return $map[$label]; }
@@ -295,7 +295,7 @@ function cr_is_hidden_employee_field($field) {
  * Renders cell values with appropriate formatting (badges for booleans, etc.)
  */
 function cr_floor_plan_hidden_fields(): array {
-    return ['company_id', 'stored_filename'];
+    return ['company_id', 'stored_filename', 'active', 'deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'];
 }
 
 function cr_is_hidden_floor_plan_field($field) {
@@ -684,13 +684,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
             $size = (int)$file['size'];
             $employeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
             if ($folderParam === null && $employeeId > 0) {
-                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_employee_id, active) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 1)');
+                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by, active) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 1)');
                 mysqli_stmt_bind_param($stmt, 'issssii', $company_id, $displayName, $placeholder, $mime, $ext, $size, $employeeId);
             } elseif ($folderParam === null) {
                 $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, active) VALUES (?, NULL, ?, ?, ?, ?, ?, 1)');
                 mysqli_stmt_bind_param($stmt, 'issssi', $company_id, $displayName, $placeholder, $mime, $ext, $size);
             } elseif ($employeeId > 0) {
-                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_employee_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
+                $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
                 mysqli_stmt_bind_param($stmt, 'iissssii', $company_id, $folderParam, $displayName, $placeholder, $mime, $ext, $size, $employeeId);
             } else {
                 $stmt = mysqli_prepare($conn, 'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)');

@@ -1,4 +1,5 @@
 <?php
+define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
@@ -18,7 +19,7 @@ while ($row = mysqli_fetch_row($res)) {
     $tables[] = $row[0];
 }
 
-$globalTables = ['companies', 'audit_logs', 'attempts','floor_plan_item_tags','modules_registry','password_entries','password_folders'];
+$globalTables = ['companies', 'audit_logs', 'attempts','modules_registry','password_entries','password_folders'];
 
 // Counters + lists
 $skipped = 0;

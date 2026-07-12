@@ -554,7 +554,7 @@ function fp_render_folder_move_options_from_tree(array $tree, array $blocked, ?i
 function fp_get_tags_for_plan(mysqli $conn, int $planId, int $companyId): array {
     $tags = [];
     $sql = 'SELECT t.id, t.name FROM floor_plan_tags t
-        INNER JOIN floor_plan_item_tags it ON it.tag_id=t.id
+        INNER JOIN floor_plan_item_tags it ON it.tag_id=t.id AND it.company_id=' . (int)$companyId . '
         WHERE it.floor_plan_id=' . (int)$planId . ' AND t.company_id=' . (int)$companyId . '
         ORDER BY t.name ASC';
     $res = mysqli_query($conn, $sql);
@@ -565,7 +565,7 @@ function fp_get_tags_for_plan(mysqli $conn, int $planId, int $companyId): array 
 }
 
 function fp_save_tags_for_plan(mysqli $conn, int $planId, int $companyId, array $tagNames): void {
-    mysqli_query($conn, 'DELETE FROM floor_plan_item_tags WHERE floor_plan_id=' . (int)$planId);
+    mysqli_query($conn, 'DELETE FROM floor_plan_item_tags WHERE floor_plan_id=' . (int)$planId . ' AND company_id=' . (int)$companyId);
     foreach ($tagNames as $rawName) {
         $name = trim((string)$rawName);
         if ($name === '') {
@@ -610,11 +610,21 @@ function fp_save_tags_for_plan(mysqli $conn, int $planId, int $companyId, array 
             }
         }
         if ($tagId > 0) {
-            $link = mysqli_prepare($conn, 'INSERT IGNORE INTO floor_plan_item_tags (floor_plan_id, tag_id) VALUES (?, ?)');
-            if ($link) {
-                mysqli_stmt_bind_param($link, 'ii', $planId, $tagId);
-                mysqli_stmt_execute($link);
-                mysqli_stmt_close($link);
+            $employeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null;
+            if ($employeeId !== null && $employeeId > 0) {
+                $link = mysqli_prepare($conn, 'INSERT IGNORE INTO floor_plan_item_tags (company_id, floor_plan_id, tag_id, created_by) VALUES (?, ?, ?, ?)');
+                if ($link) {
+                    mysqli_stmt_bind_param($link, 'iiii', $companyId, $planId, $tagId, $employeeId);
+                    mysqli_stmt_execute($link);
+                    mysqli_stmt_close($link);
+                }
+            } else {
+                $link = mysqli_prepare($conn, 'INSERT IGNORE INTO floor_plan_item_tags (company_id, floor_plan_id, tag_id) VALUES (?, ?, ?)');
+                if ($link) {
+                    mysqli_stmt_bind_param($link, 'iii', $companyId, $planId, $tagId);
+                    mysqli_stmt_execute($link);
+                    mysqli_stmt_close($link);
+                }
             }
         }
     }
@@ -738,7 +748,7 @@ function fp_fetch_gallery_items(mysqli $conn, int $companyId, string $searchRaw,
         FROM floor_plans fp
         LEFT JOIN floor_plan_folders f ON f.id=fp.folder_id AND f.company_id=fp.company_id
         LEFT JOIN it_locations loc ON loc.id=fp.it_location_id AND loc.company_id=fp.company_id
-        LEFT JOIN floor_plan_item_tags it ON it.floor_plan_id=fp.id
+        LEFT JOIN floor_plan_item_tags it ON it.floor_plan_id=fp.id AND it.company_id=fp.company_id
         LEFT JOIN floor_plan_tags t ON t.id=it.tag_id AND t.company_id=fp.company_id
         WHERE ' . $where . '
         GROUP BY fp.id

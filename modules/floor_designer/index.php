@@ -399,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
                 // Insert record first to get ID
                 $placeholder = 'pending';
-                $sql = "INSERT INTO floor_plans (company_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by_employee_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)";
+                $sql = "INSERT INTO floor_plans (company_id, display_name, stored_filename, mime_type, file_ext, file_size, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)";
                 $stmt = mysqli_prepare($conn, $sql);
                 mysqli_stmt_bind_param($stmt, 'issssii', $company_id, $name, $placeholder, $mime, $ext, $size, $employeeId);
 
