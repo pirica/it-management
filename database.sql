@@ -520,8 +520,8 @@ DROP TABLE IF EXISTS `expenses`;
 CREATE TABLE `expenses` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `cost_center_id` int NOT NULL,
   `gl_account_id` int NOT NULL,
+  `cost_center_id` int NOT NULL,
   `date` date NOT NULL,
   `amount` decimal(12,2) NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
