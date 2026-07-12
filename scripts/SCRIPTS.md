@@ -126,6 +126,7 @@ Catalog: `scripts/scripts.php`.
 |--------|---------|
 | `php scripts/list_boolean_integer_fields.php` | Parses both `database.sql` and the live database to list fields of Boolean, int, tinyint, and other numeric types, matching tables to modules by name. |
 | `php scripts/list_enum_fields.php` | Parses both `database.sql` and the live database to list ENUM fields, matching tables to modules by name. |
+| `php scripts/extract_by_fields.php` | Parses `database.sql` to extract column definitions containing keywords like `by`, `to`, `employee_id`, `employee`. Output is formatted and saved to `scripts/fields_by.txt`. |
 
 ### Select Options API verification
 

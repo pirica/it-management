@@ -216,6 +216,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="extract_by_fields.php" target="_blank" rel="nofollow noreferrer">extract_by_fields.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Scans database.sql and lists table fields matching keywords (by, to, employee_id, employee).</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="extract_by_fields.php">extract_by_fields.php</a>.
+                        CLI: <code>php scripts/extract_by_fields.php</code>
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="debug.php" target="_blank" rel="nofollow noreferrer">debug.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>System overview (DB, tables, PHP version, extensions, and file permissions).</td>
