@@ -172,7 +172,7 @@ function outputFieldRecord(array $row, bool $isCli): void {
             $escModuleName = htmlspecialchars($moduleName, ENT_QUOTES, 'UTF-8');
             $escModulePath = htmlspecialchars($modulePath, ENT_QUOTES, 'UTF-8');
             $escFullDef = htmlspecialchars($fullDef, ENT_QUOTES, 'UTF-8');
-            echo "{$escModuleName} with link <a href=\"../{$escModulePath}\" target=\"_blank\" rel=\"nofollow noreferrer\">{$escModulePath}</a> target blank} - {$escFullDef}\n";
+            echo "{$escModuleName} - <a href=\"../{$escModulePath}\" target=\"_blank\" rel=\"nofollow noreferrer\">{$escModulePath}</a> - {$escFullDef}\n";
         }
     } else {
         if ($isCli) {
