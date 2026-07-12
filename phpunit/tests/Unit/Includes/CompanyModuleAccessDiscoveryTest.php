@@ -18,6 +18,13 @@ class CompanyModuleAccessDiscoveryTest extends TestCase
         if (!$conn instanceof mysqli) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+
+        @session_start();
+        $_SESSION['company_id'] = 1;
+        $_SESSION['employee_id'] = 1;
+
+        mysqli_query($conn, "INSERT INTO `ui_configuration` (company_id, employee_id, enable_auto_scaffolding) VALUES (1, 1, 1) ON DUPLICATE KEY UPDATE enable_auto_scaffolding = 1");
+        itm_get_ui_configuration(null, 0, 0, true);
     }
 
     protected function tearDown(): void

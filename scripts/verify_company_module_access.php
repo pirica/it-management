@@ -5,6 +5,11 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin();
 
+// Setup session and enable auto-scaffolding for company 1 and employee 1 during verification
+$_SESSION['company_id'] = 1;
+$_SESSION['employee_id'] = 1;
+mysqli_query($conn, "INSERT INTO `ui_configuration` (company_id, employee_id, enable_auto_scaffolding) VALUES (1, 1, 1) ON DUPLICATE KEY UPDATE enable_auto_scaffolding = 1");
+itm_get_ui_configuration(null, 0, 0, true);
 
 $isCli = (php_sapi_name() === 'cli');
 $nl = itm_script_output_nl();
