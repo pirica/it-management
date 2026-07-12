@@ -120,6 +120,13 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/titles_list.php` | Scans all PHP files under the `modules/` directory to extract their `<title>` tags, listing them in a standardized path-title mapping format. |
 | `php scripts/titles_list_show.php` | Scans all PHP files under the `modules/` directory to extract their `<title>` tags, listing them with only the inner title text rendered. |
 
+### Schema fields and type listings
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/list_boolean_integer_fields.php` | Parses both `database.sql` and the live database to list fields of Boolean, int, tinyint, and other numeric types, matching tables to modules by name. |
+| `php scripts/list_enum_fields.php` | Parses both `database.sql` and the live database to list ENUM fields, matching tables to modules by name. |
+
 ### Select Options API verification
 
 | Script | Purpose |
@@ -763,6 +770,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | `php scripts/verify_company_module_access.php` | Regression: registry coverage, opt-out deny, excluded slugs in admin matrix, sidebar discovery probes (registry-only / new MySQL table / folder-only / both / neither); PHPUnit: `CompanyModuleAccessVerifyTest` |
 | `php scripts/benchmark_sidebar_module_access.php` | Read-only benchmark: MySQL `Questions` delta for live sidebar path (`itm_sidebar_structure()` + `has_module_access()` filter) vs uncached legacy N+1 simulation; median query count, timing, and reduction %; env thresholds `ITM_BSMA_MAX_FULL_QUERIES` (default 45), `ITM_BSMA_MIN_REDUCTION_PCT` (default 50) |
 | `php scripts/seed_company_module_access.php` | Optional backfill of explicit `company_module_access` rows (`enabled=1`) |
+| `php scripts/verify_auto_scaffolding.php` | Verification: dynamic auto-scaffolding toggle. Checks scaffolding behaviors when auto-scaffolding is enabled or disabled. |
 
 Run `sync_modules_registry.php` after adding module folders; run `verify_company_module_access.php` when changing `includes/itm_company_module_access.php` or enforcement hooks. Run `benchmark_sidebar_module_access.php` after sidebar discovery or module-access caching changes to confirm query reduction (expect large drop vs legacy simulation when prefetch cache is enabled; marketing figures ~417→~7 depend on module count and environment — treat this script as the authoritative local measurement).
 

@@ -94,7 +94,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
             <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report, human-readable results, <code>target="_blank"</code> relative links to <code>../modules/…</code> when a module folder exists, and table names linked only when <code>modules/&lt;table&gt;/</code> exists. <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin/</code>) is linked from this catalog page only—not inside other scripts.
         </p>
         <p class="scripts-muted">
-            <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_asset_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
+            <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
         </p>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
@@ -195,6 +195,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>
                         Browser: opens the UI. CLI:
                         <code>php scripts/detect_fk_dropdown_ui_risk.php [--company=N] [--json] [--data-only] [--code-only] [--repair-catalogs] [--help]</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="list_boolean_integer_fields.php" target="_blank" rel="nofollow noreferrer">list_boolean_integer_fields.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists all database fields that can be Boolean, int, tinyint, and others, matching tables to modules and formatting output precisely.</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="list_boolean_integer_fields.php">list_boolean_integer_fields.php</a>.
+                        CLI: <code>php scripts/list_boolean_integer_fields.php [--source=sql|db|both]</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a href="list_enum_fields.php" target="_blank" rel="nofollow noreferrer">list_enum_fields.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Lists all database fields of ENUM type, matching tables to modules and formatting output precisely.</td>
+                    <td>
+                        <strong>Log in first.</strong> Open <a href="list_enum_fields.php">list_enum_fields.php</a>.
+                        CLI: <code>php scripts/list_enum_fields.php [--source=sql|db|both]</code>
                     </td>
                 </tr>
                 <tr>
@@ -664,13 +682,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     </td>
                 </tr>
                 <tr>
-                    <td><a href="tickets_related_asset_equipment_delete_test.php" target="_blank" rel="nofollow noreferrer">tickets_related_asset_equipment_delete_test.php</a></td>
+                    <td><a href="tickets_related_equipment_delete_test.php" target="_blank" rel="nofollow noreferrer">tickets_related_equipment_delete_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         MySQL regression for tickets sample data: seeds lookup parents (including <code>equipment</code>), inserts <code>TCK-0001</code> with <code>asset_id</code> on Primary File Server, and asserts <code>equipment_delete_record()</code> is blocked with a Related Asset / in-use message. <strong>Mutates DB:</strong> seeds/updates sample ticket rows during the test.
                     </td>
                     <td>
-                        CLI: <code>php scripts/tickets_related_asset_equipment_delete_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).<br>
+                        CLI: <code>php scripts/tickets_related_equipment_delete_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).<br>
                         Browser: static checks only (no DB). MySQL regression requires CLI.
                     </td>
                 </tr>
@@ -1764,6 +1782,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Reproduction & verification script for Birthdays & Resignations RBAC View Bypass vulnerability.</td>
                     <td><code>php scripts/repro_birthdays_resignations_rbac.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_auto_scaffolding.php" target="_blank" rel="nofollow noreferrer">verify_auto_scaffolding.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Verification script for Dynamic Auto-Scaffolding toggled via <code>enable_auto_scaffolding</code>. Checks both disabled and enabled scaffolding on dummy tables.</td>
+                    <td><code>php scripts/verify_auto_scaffolding.php</code> or open in browser.</td>
                 </tr>
             </tbody>
         </table></div>
