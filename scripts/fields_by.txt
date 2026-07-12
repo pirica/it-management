@@ -1,0 +1,751 @@
+-- access_levels
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- alerts
+ - assigned_to_employee_id
+ - created_by_employee_id
+
+
+-- annual_budgets
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- approvals
+ - approved_by
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- approvals_stage
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- approver_type
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- approvers
+ - employee_id
+ - employee_position_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- assignment_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- attempts
+ - employee_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- audit_logs
+ - employee_id
+ - actor_username
+ - actor_email
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- backup_tape_log
+ - tape_to_be_used
+ - time_returned_to_safe
+ - tape_used_for_restore
+
+
+-- bookmark_folders
+ - employee_id
+
+
+-- bookmarks
+ - employee_id
+
+
+-- budget_categories
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- cable_colors
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- catalogs
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- companies
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- company_module_access
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- cost_centers
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- departments
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- email_alert_rules
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- email_smtp_configurations
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- emails
+ - to_email
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_assignment_history
+ - employee_id
+ - inventory_item_id
+ - assigned_by_employee_id
+ - received_by_employee_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_companies
+ - employee_id
+ - granted_by_employee_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_onboarding_requests
+ - employee_id
+ - employee_position_id
+ - hu_the_lobby
+ - requested_by
+ - requested_by_date
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_positions
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_roles
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_sidebar_preferences
+ - employee_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_statuses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_system_access
+ - employee_id
+ - hu_the_lobby
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employee_type
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- employees
+ - employee_code
+ - reset_token
+ - reset_token_hash
+ - reset_token_expires_at
+ - requested_by
+ - termination_requested_by
+ - hu_the_lobby
+ - employee_position_id
+ - reports_to
+ - photo
+ - employee_type_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment
+ - assigned_to_employee_id
+ - workstation_storage
+ - photo_filename
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_environment
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_fiber
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_fiber_count
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_fiber_patch
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_fiber_rack
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_poe
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_rj45
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_statuses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- equipment_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- event_categories
+
+
+-- events
+ - assigned_to_employee_id
+ - created_by_employee_id
+
+
+-- expenses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- explorer
+ - employee_id
+
+
+-- floor_designer
+
+
+-- floor_designer_points
+
+
+-- floor_plan_folders
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- floor_plan_item_tags
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- floor_plan_tags
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- floor_plans
+ - stored_filename
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- forecast_revisions
+ - submitted_by
+ - finance_reviewed_by
+ - gm_approved_by
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- forecast_revisions_status
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- gl_accounts
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- idf_device_type
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- idf_links
+ - equipment_to_idf_id
+ - equipment_to_rack_id
+ - equipment_to_location_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- idf_ports
+ - connected_to
+ - to_idf_id
+ - to_rack_id
+ - to_location_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- idf_positions
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- idfs
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- inventory_categories
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- inventory_items
+ - storage_date
+ - last_employee_id
+ - last_employee_manual
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- ip_addresses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- ip_subnets
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- it_locations
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- it_settings
+
+
+-- knowledge_base
+ - created_by
+
+
+-- license_management
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- license_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- location_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- manufacturers
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- modules_registry
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- monthly_budgets
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- note_labels
+ - employee_id
+
+
+-- notes
+ - employee_id
+
+
+-- ops_report
+ - today_shift
+ - tomorrow_shift
+ - total_pax
+ - total_revenue
+
+
+-- ops_report_butler
+
+
+-- ops_report_courtesy_call
+ - monitor
+
+
+-- ops_report_fb_outlet
+
+
+-- ops_report_guest_experience
+ - monitor
+
+
+-- ops_report_hotel_figure
+
+
+-- ops_report_night_shift
+
+
+-- ops_report_walk_round
+
+
+-- password_entries
+ - employee_id
+
+
+-- password_folders
+ - employee_id
+
+
+-- patches_updates
+ - patches_updates_photos
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- patches_updates_level
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- patches_updates_status
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- printer_device_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- private_contacts
+ - employee_id
+ - custom_field1_label
+ - custom_field1_value
+ - photo
+
+
+-- rack_planner
+
+
+-- rack_statuses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- racks
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- registration_invitations
+ - invited_by_employee_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- request_password
+ - employee_id
+ - requested_by_employee_id
+
+
+-- rj45_speed
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- role_assignment_rights
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- role_hierarchy
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- role_module_permissions
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- supplier_statuses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- suppliers
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- switch_port_numbering_layout
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- switch_port_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- switch_ports
+ - to_patch_port
+ - to_idf_id
+ - to_rack_id
+ - to_location_id
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- switch_status
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- system_access
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- system_status
+
+
+-- ticket_categories
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- ticket_priorities
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- ticket_statuses
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- tickets
+ - created_by_employee_id
+ - assigned_to_employee_id
+ - tickets_photos
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- todo
+ - assigned_to_employee_id
+ - created_by_employee_id
+
+
+-- todo_categories
+ - cat_from_employee_id
+
+
+-- ui_configuration
+ - employee_id
+ - new_button_position
+ - export_buttons_position
+ - enable_auto_scaffolding
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- visitors_access_log
+ - visitor_name
+ - pre_approved_by
+ - room_opened_by
+
+
+-- vlans
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- warranty_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- workstation_device_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- workstation_modes
+ - monitor_count
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- workstation_office
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- workstation_os_types
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- workstation_os_versions
+ - deleted_by
+ - created_by
+ - updated_by
+
+
+-- workstation_ram
+ - deleted_by
+ - created_by
+ - updated_by
+
+
