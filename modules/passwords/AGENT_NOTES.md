@@ -76,7 +76,7 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 
 ## 9. Audit Logging Requirements
 
-- Database triggers for standard audit logging are NOT present in `database.sql` for these tables. Manual application-level logging is not implemented to avoid plain text exposure in logs.
+- Database triggers for standard audit logging are present in `database.sql` for both `password_folders` and `password_entries`. These triggers log the metadata and encrypted values securely.
 
 ---
 
