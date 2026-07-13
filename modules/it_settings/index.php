@@ -8,7 +8,9 @@
 
 $crud_table = 'it_settings';
 $crud_title = 'IT Settings';
-$crud_action = 'index';
+if (!isset($crud_action)) {
+    $crud_action = 'index';
+}
 
 function cr_form_display_value($value) {
     return itm_cr_form_display_value($value);
@@ -28,7 +30,9 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
 itm_require_crud_role_module_permission($conn, 'view', $crud_table);
 
 $crud_title = ucwords(str_replace('_', ' ', $crud_table));
-$crud_action = 'index';
+if (!isset($crud_action)) {
+    $crud_action = 'index';
+}
 $pk = 'id';
 
 /**
@@ -121,7 +125,10 @@ function cr_fk_metadata($conn, $table) {
  */
 function cr_manageable_columns($columns) {
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return !in_array($c['Field'], [
+            'id', 'created_at', 'updated_at', 'active',
+            'deleted_by', 'deleted_at', 'created_by', 'updated_by'
+        ], true);
     }));
 }
 
@@ -751,6 +758,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $fields[] = cr_escape_identifier($name);
                 $values[] = $sqlValues[$name] ?? 'NULL';
             }
+            $fields[] = '`created_by`';
+            $values[] = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
+            $fields[] = '`active`';
+            $values[] = '1';
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
             $sets = [];
@@ -758,6 +769,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $name = $col['Field'];
                 $sets[] = cr_escape_identifier($name) . '=' . ($sqlValues[$name] ?? 'NULL');
             }
+            $sets[] = '`updated_by` = ' . (isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL');
             $where = ' WHERE id=' . $editId;
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
