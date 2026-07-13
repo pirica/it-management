@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['employee_id'] ?? 0;
 
     if ($id > 0) {
-        $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND employee_id = ?");
-        $stmt->bind_param("iii", $id, $company_id, $user_id);
+        $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ?");
+        $stmt->bind_param("iiii", $user_id, $id, $company_id, $user_id);
         $stmt->execute();
     }
 }

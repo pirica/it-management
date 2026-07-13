@@ -7670,9 +7670,13 @@ CREATE TABLE `notes` (
   `is_archived` TINYINT DEFAULT 0,
   `reminder_at` DATETIME DEFAULT NULL,
   `shared_with_json` JSON DEFAULT NULL,
-  `active` TINYINT DEFAULT 1,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_notes_company_scope` (`company_id`, `employee_id`, `id`),
   KEY `company_id` (`company_id`),
@@ -7710,22 +7714,22 @@ DELIMITER $$
 CREATE TRIGGER `trg_notes_audit_insert` AFTER INSERT ON `notes` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'notes', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'reminder_at', NEW.`reminder_at`, 'active', NEW.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'reminder_at', NEW.`reminder_at`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
   @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_notes_audit_update` AFTER UPDATE ON `notes` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'notes', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_important', OLD.`is_important`, 'is_archived', OLD.`is_archived`, 'reminder_at', OLD.`reminder_at`, 'active', OLD.`active`),
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'reminder_at', NEW.`reminder_at`, 'active', NEW.`active`),
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_important', OLD.`is_important`, 'is_archived', OLD.`is_archived`, 'reminder_at', OLD.`reminder_at`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'reminder_at', NEW.`reminder_at`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
   @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_notes_audit_delete` AFTER DELETE ON `notes` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'notes', OLD.`id`, 'DELETE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`),
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
   NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
