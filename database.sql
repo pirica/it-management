@@ -8004,17 +8004,23 @@ DELIMITER ;
 CREATE TABLE `knowledge_base` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
+  `employee_id` int NOT NULL DEFAULT '1' INVISIBLE,
   `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `content` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `active` tinyint(1) DEFAULT '1',
-  `created_by` int DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `active` tinyint(1) DEFAULT '1' INVISIBLE,
+  `deleted_by` int DEFAULT NULL INVISIBLE,
+  `deleted_at` timestamp NULL DEFAULT NULL INVISIBLE,
+  `created_by` int DEFAULT NULL INVISIBLE,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP INVISIBLE,
+  `updated_by` int DEFAULT NULL INVISIBLE,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP INVISIBLE,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_knowledge_base_company_scope` (`company_id`, `category`, `id`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `knowledge_base_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+  KEY `employee_id` (`employee_id`),
+  CONSTRAINT `knowledge_base_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `knowledge_base_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `it_settings` (
@@ -8041,19 +8047,19 @@ DELIMITER $$
 DROP TRIGGER IF EXISTS `trg_knowledge_base_audit_insert`$$
 CREATE TRIGGER `trg_knowledge_base_audit_insert` AFTER INSERT ON `knowledge_base` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'category', NEW.`category`, 'title', NEW.`title`, 'content', NEW.`content`, 'active', NEW.`active`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'category', NEW.`category`, 'title', NEW.`title`, 'content', NEW.`content`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 
 DROP TRIGGER IF EXISTS `trg_knowledge_base_audit_update`$$
 CREATE TRIGGER `trg_knowledge_base_audit_update` AFTER UPDATE ON `knowledge_base` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'category', OLD.`category`, 'title', OLD.`title`, 'content', OLD.`content`, 'active', OLD.`active`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'category', NEW.`category`, 'title', NEW.`title`, 'content', NEW.`content`, 'active', NEW.`active`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'category', OLD.`category`, 'title', OLD.`title`, 'content', OLD.`content`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'category', NEW.`category`, 'title', NEW.`title`, 'content', NEW.`content`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 
 DROP TRIGGER IF EXISTS `trg_knowledge_base_audit_delete`$$
 CREATE TRIGGER `trg_knowledge_base_audit_delete` AFTER DELETE ON `knowledge_base` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'category', OLD.`category`, 'title', OLD.`title`, 'content', OLD.`content`, 'active', OLD.`active`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'knowledge_base', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'category', OLD.`category`, 'title', OLD.`title`, 'content', OLD.`content`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 DROP TRIGGER IF EXISTS `trg_it_settings_audit_insert`$$
