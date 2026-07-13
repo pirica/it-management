@@ -4,7 +4,7 @@
 Secure multi-tenant file manager. Physical files under `files/{company_id}/` with metadata in **explorer** (when used).
 
 ## 2. Key Tables
-- **explorer** — file/folder metadata (optional tracking).
+- **explorer** — file/folder metadata (optional tracking). Supports standard audit columns: `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`.
 - **Physical storage:** `files/{company_id}/Common/`, `Departments/{dept_code}/`, `Private/{username}_{user_id}/`, `Trash/`.
 
 ## 3. Required Relationships
@@ -69,6 +69,7 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 
 ## 9. Audit Logging Requirements
 - Filesystem operations are not written to `audit_logs` by default; optional **explorer** table sync on `list`/`sync_db()` for metadata only.
+- Metadata table `explorer` tracks standard audit columns (`created_by`, `updated_by`, `created_at`, `updated_at`, etc.). Triggers `trg_explorer_audit_insert`, `trg_explorer_audit_update`, and `trg_explorer_audit_delete` record changes to `audit_logs` including standard audit fields in JSON payloads.
 - Trash restore/delete should preserve ACL — unauthorised paths must not leak filenames in JSON.
 
 ## 10. Common Pitfalls

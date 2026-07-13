@@ -60,7 +60,7 @@ if ($company_id <= 0) {
 // Optimized by Bolt ⚡: Redundant individual queries for events and alerts counts removed.
 // They are now extracted from the consolidated $all_stats block below.
 
-$stmt = mysqli_prepare($conn, "SELECT COUNT(file_name) AS total_files FROM explorer WHERE company_id = ? AND employee_id = ? AND file_name LIKE '%.%'");
+$stmt = mysqli_prepare($conn, "SELECT COUNT(file_name) AS total_files FROM explorer WHERE company_id = ? AND employee_id = ? AND file_name LIKE '%.%' AND active = 1");
 
 mysqli_stmt_bind_param($stmt, "ii", $company_id, $user_id); // Fixed order of parameters to match SQL: company_id, employee_id
 mysqli_stmt_execute($stmt);
