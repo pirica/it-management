@@ -86,16 +86,18 @@ function itm_system_status_cache_save($conn, string $tabKey, array $payload, int
         return false;
     }
 
+    $employeeId = isset($_SESSION['employee_id']) && (int)$_SESSION['employee_id'] > 0 ? (int)$_SESSION['employee_id'] : null;
+
     $stmt = mysqli_prepare(
         $conn,
-        'INSERT INTO system_status (company_id, tab_key, payload_json, active)
-         VALUES (?, ?, ?, 1)
-         ON DUPLICATE KEY UPDATE payload_json = VALUES(payload_json), active = 1, updated_at = CURRENT_TIMESTAMP'
+        'INSERT INTO system_status (company_id, tab_key, payload_json, active, created_by, updated_by)
+         VALUES (?, ?, ?, 1, ?, ?)
+         ON DUPLICATE KEY UPDATE payload_json = VALUES(payload_json), active = 1, updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP'
     );
     if (!$stmt) {
         return false;
     }
-    mysqli_stmt_bind_param($stmt, 'iss', $companyId, $tabKey, $json);
+    mysqli_stmt_bind_param($stmt, 'issii', $companyId, $tabKey, $json, $employeeId, $employeeId);
     if (!itm_system_status_safe_stmt_execute($stmt, [
         'fn' => 'itm_system_status_cache_save',
         'tab_key' => $tabKey,

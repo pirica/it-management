@@ -18,7 +18,7 @@ Canonical overview: `docs/system_status.md`.
 
 | Table | Role |
 |-------|------|
-| **`system_status`** | Owned cache — `tab_key`, `payload_json` (`LONGTEXT` utf8mb4), `company_id` (composite unique with `tab_key`), `active`, timestamps. Audit triggers on INSERT/UPDATE/DELETE. |
+| **`system_status`** | Owned cache — `tab_key`, `payload_json` (`LONGTEXT` utf8mb4), `company_id` (composite unique with `tab_key`). Columns `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at` are defined as `INVISIBLE` (hidden) to satisfy schema guidelines. `created_by` and `updated_by` are set from the session during cache save. Audit triggers on INSERT/UPDATE/DELETE log all columns. |
 
 Read-only queries (during Refresh collection only):
 
