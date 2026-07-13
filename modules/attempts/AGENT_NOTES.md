@@ -27,7 +27,9 @@ Tracks authentication-related attempts, including logins and password resets. It
 - **view.php** — detailed view of an attempt.
 
 ## 8. Multi-Tenant Rules
-- **Cross-Tenant Nature**: Since login attempts happen before a company is selected, some records may have NULL `employee_id` or relate to users across different companies. However, once logged in, a user should only see attempts related to their scope if applicable.
+- **Multi-Tenant Scoping**: The table now includes a `company_id` column defined as `INVISIBLE` on MySQL 8.0+.
+- Since login attempts happen before a company is selected, `company_id` may be NULL or automatically resolved via `trg_attempts_before_insert` trigger based on employee record or active session.
+- Standard queries are scoped by `company_id` when logged in.
 
 ## 9. Audit Logging Requirements
 - This module *is* a form of logging. It does not typically have its own audit triggers to avoid circularity.

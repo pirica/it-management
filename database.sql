@@ -3701,6 +3701,7 @@ INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation
 DROP TABLE IF EXISTS `attempts`;
 CREATE TABLE `attempts` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int DEFAULT NULL INVISIBLE,
   `employee_id` int DEFAULT NULL,
   `email` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -3716,10 +3717,13 @@ CREATE TABLE `attempts` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
   KEY `idx_attempts_source_type_ip_time` (`attempt_source`,`attempt_type`,`ip_address`,`created_at`),
   KEY `idx_attempts_source_type_email_time` (`attempt_source`,`attempt_type`,`email`,`created_at`),
   KEY `idx_attempts_source_type_user_time` (`attempt_source`,`attempt_type`,`employee_id`,`created_at`),
-  CONSTRAINT `fk_attempts_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `fk_attempts_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_attempts_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'login', 'success', '192.168.1.10', '2026-01-01 08:00:01');
 INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES (NULL, 'unknown@example.com', '0', 'login', 'failure', '10.0.0.55', '2026-01-01 08:05:01');
 INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '0', 'login', 'failure', '192.168.1.10', '2026-01-01 08:06:01');
@@ -3730,6 +3734,11 @@ INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `att
 INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'login', 'success', '127.0.0.1', '2026-01-03 11:00:01');
 INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES (NULL, 'guest@example.com', '0', 'login', 'failure', '172.16.0.4', '2026-01-04 14:30:01');
 INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `attempt_type`, `ip_address`, `created_at`) VALUES ('1', 'admin@techcorp.example', '1', 'login', 'success', '192.168.1.50', '2026-01-05 07:45:01');
+UPDATE `attempts` SET `company_id` = COALESCE(
+  (SELECT `company_id` FROM `employees` WHERE `id` = `employee_id` LIMIT 1),
+  (SELECT `company_id` FROM `employees` WHERE `work_email` = `email` LIMIT 1),
+  (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)
+) WHERE `company_id` IS NULL;
 -- Table structure for `employee_companies`
 DROP TABLE IF EXISTS `employee_companies`;
 CREATE TABLE `employee_companies` (
@@ -6144,21 +6153,33 @@ CREATE TRIGGER `trg_employee_roles_audit_delete` AFTER DELETE ON `employee_roles
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'employee_roles', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_attempts_before_insert`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_update`;
 DROP TRIGGER IF EXISTS `trg_attempts_audit_delete`;
 DELIMITER $$
+CREATE TRIGGER `trg_attempts_before_insert` BEFORE INSERT ON `attempts` FOR EACH ROW
+BEGIN
+  IF NEW.`company_id` IS NULL THEN
+    SET NEW.`company_id` = COALESCE(
+      @app_company_id,
+      (SELECT `company_id` FROM `employees` WHERE `id` = NEW.`employee_id` LIMIT 1),
+      (SELECT `company_id` FROM `employees` WHERE `work_email` = NEW.`email` LIMIT 1),
+      (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)
+    );
+  END IF;
+END$$
 CREATE TRIGGER `trg_attempts_audit_insert` AFTER INSERT ON `attempts` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `employees` WHERE `id` = NEW.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = NEW.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_employee_id, @app_username, @app_email, 'attempts', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'employee_id', NEW.`employee_id`, 'email', NEW.`email`, 'attempt_source', NEW.`attempt_source`, 'attempt_type', NEW.`attempt_type`, 'ip_address', NEW.`ip_address`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, (SELECT `company_id` FROM `employees` WHERE `id` = NEW.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = NEW.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_employee_id, @app_username, @app_email, 'attempts', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'email', NEW.`email`, 'attempt_source', NEW.`attempt_source`, 'attempt_type', NEW.`attempt_type`, 'ip_address', NEW.`ip_address`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_attempts_audit_update` AFTER UPDATE ON `attempts` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `employees` WHERE `id` = NEW.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `id` = OLD.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = NEW.`email` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = OLD.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_employee_id, @app_username, @app_email, 'attempts', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'employee_id', OLD.`employee_id`, 'email', OLD.`email`, 'attempt_source', OLD.`attempt_source`, 'attempt_type', OLD.`attempt_type`, 'ip_address', OLD.`ip_address`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'employee_id', NEW.`employee_id`, 'email', NEW.`email`, 'attempt_source', NEW.`attempt_source`, 'attempt_type', NEW.`attempt_type`, 'ip_address', NEW.`ip_address`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, (SELECT `company_id` FROM `employees` WHERE `id` = NEW.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `id` = OLD.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = NEW.`email` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = OLD.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_employee_id, @app_username, @app_email, 'attempts', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'email', OLD.`email`, 'attempt_source', OLD.`attempt_source`, 'attempt_type', OLD.`attempt_type`, 'ip_address', OLD.`ip_address`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'email', NEW.`email`, 'attempt_source', NEW.`attempt_source`, 'attempt_type', NEW.`attempt_type`, 'ip_address', NEW.`ip_address`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_attempts_audit_delete` AFTER DELETE ON `attempts` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, (SELECT `company_id` FROM `employees` WHERE `id` = OLD.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = OLD.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_employee_id, @app_username, @app_email, 'attempts', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'employee_id', OLD.`employee_id`, 'email', OLD.`email`, 'attempt_source', OLD.`attempt_source`, 'attempt_type', OLD.`attempt_type`, 'ip_address', OLD.`ip_address`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, (SELECT `company_id` FROM `employees` WHERE `id` = OLD.`employee_id` LIMIT 1), (SELECT `company_id` FROM `employees` WHERE `work_email` = OLD.`email` LIMIT 1), (SELECT `id` FROM `companies` ORDER BY `id` ASC LIMIT 1)), @app_employee_id, @app_username, @app_email, 'attempts', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'email', OLD.`email`, 'attempt_source', OLD.`attempt_source`, 'attempt_type', OLD.`attempt_type`, 'ip_address', OLD.`ip_address`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_employee_companies_audit_insert`;

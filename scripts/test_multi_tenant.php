@@ -19,7 +19,7 @@ while ($row = mysqli_fetch_row($res)) {
     $tables[] = $row[0];
 }
 
-$globalTables = ['companies', 'audit_logs', 'attempts','modules_registry','password_entries','password_folders'];
+$globalTables = ['companies', 'audit_logs', 'modules_registry','password_entries','password_folders'];
 
 // Counters + lists
 $skipped = 0;
