@@ -164,8 +164,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $visSql = itm_todo_visibility_sql();
         $ids = array_map("intval", $_POST["ids"]);
         foreach ($ids as $id) {
-            $stmt = $conn->prepare("UPDATE todo SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
-            $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE todo SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt->bind_param("iiiii", $logged_user_id, $id, $company_id, $logged_user_id, $logged_user_id);
             $stmt->execute();
         }
         header("Location: index.php?msg=deleted");
@@ -174,8 +174,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
 
     if ($action === "single_delete" && $editId > 0) {
         $visSql = itm_todo_visibility_sql();
-        $stmt = $conn->prepare("UPDATE todo SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
-        $stmt->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
+        $stmt = $conn->prepare("UPDATE todo SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmt->bind_param("iiiii", $logged_user_id, $editId, $company_id, $logged_user_id, $logged_user_id);
         $stmt->execute();
         header("Location: index.php?msg=deleted");
         die();
@@ -200,13 +200,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $importance = isset($_POST["importance"]) ? 1 : 0;
         $completed = isset($_POST["completed"]) ? 1 : 0;
 
+        $created_by = isset($_POST["created_by"]) ? (int)$_POST["created_by"] : $logged_user_id;
+        $updated_by = isset($_POST["updated_by"]) ? (int)$_POST["updated_by"] : $logged_user_id;
+
         if ($crud_action === "edit" && $editId > 0) {
             $visSql = itm_todo_visibility_sql();
-            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_employee_id=?, importance=?, completed=? WHERE id=? AND company_id=? AND ($visSql)");
-            $stmt->bind_param("ssssssssiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $importance, $completed, $editId, $company_id, $logged_user_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_employee_id=?, importance=?, completed=?, updated_by=? WHERE id=? AND company_id=? AND ($visSql)");
+            $stmt->bind_param("ssssssssiiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $importance, $completed, $updated_by, $editId, $company_id, $logged_user_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by_employee_id, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("issssssssiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance, $completed);
+            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("issssssssiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $created_by, $importance, $completed);
         }
 
         if ($stmt->execute()) {
@@ -238,7 +241,7 @@ if (isset($_GET["ajax_action"])) {
         $assigned_to_employee_id = isset($_POST["assigned_to_employee_id"]) ? implode(",", array_filter(array_map("intval", $_POST["assigned_to_employee_id"]))) : null;
         $importance = (int)($_POST["importance"] ?? 0);
 
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by_employee_id, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("isssssssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance);
 
         if ($stmt->execute()) {
@@ -849,6 +852,9 @@ if (!isset($crud_title)) {
                         <h1><?php echo $crud_action === "edit" ? "Edit Task" : "New Task"; ?></h1>
                         <form method="POST" class="form-grid" style="max-width: 800px;">
                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                            <input type="hidden" name="created_by" value="<?php echo sanitize((string)($data["created_by"] ?? $logged_user_id)); ?>">
+                            <input type="hidden" name="updated_by" value="<?php echo sanitize((string)$logged_user_id); ?>">
+                            <input type="hidden" name="active" value="<?php echo sanitize((string)($data["active"] ?? 1)); ?>">
                             <div class="form-group">
                                 <label>Title</label>
                                 <input type="text" name="title" value="<?php echo sanitize($data["title"] ?? ""); ?>" required autofocus>

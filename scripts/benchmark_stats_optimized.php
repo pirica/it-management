@@ -44,7 +44,7 @@ $stat_definitions = [
     ['table' => 'tickets', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Tickets', 'slug' => 'tickets'],
     ['table' => 'tickets', 'field' => 'created_by_employee_id', 'label' => 'Created Tickets', 'slug' => 'tickets'],
     ['table' => 'todo', 'field' => 'assigned_to_employee_id', 'label' => 'My Todos', 'slug' => 'todo'],
-    ['table' => 'todo', 'field' => 'created_by_employee_id', 'label' => 'My Todos', 'slug' => 'todo'],
+    ['table' => 'todo', 'field' => 'created_by', 'label' => 'My Todos', 'slug' => 'todo'],
     ['table' => 'todo_categories', 'field' => 'cat_from_employee_id', 'label' => 'Todo Categories', 'slug' => 'todo'],
     ['table' => 'ui_configuration', 'field' => 'employee_id', 'label' => 'UI Preferences', 'slug' => 'settings'],
 ];

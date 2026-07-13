@@ -4,7 +4,7 @@
 Microsoft To-Do–style task list for the company. Supports categories, departments, assignees, completion, importance, due dates, and shared/global tasks.
 
 ## 2. Key Tables
-- **todo** — main task records.
+- **todo** — main task records (tracks tracking fields: `created_by`, `created_at`, `updated_by`, `updated_at`, `deleted_by`, `deleted_at`, `active`).
 - **todo_categories** — user/company-scoped category names.
 
 ## 3. Required Relationships
@@ -13,7 +13,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 
 ## 4. Business Rules (Critical for Agents)
 - Global tasks: `assigned_to_employee_id IS NULL` (visible to company).
-- Private/assigned tasks: user must be in `assigned_to_employee_id` (comma-separated IDs via `FIND_IN_SET`) or be `created_by_employee_id`.
+- Private/assigned tasks: user must be in `assigned_to_employee_id` (comma-separated IDs via `FIND_IN_SET`) or be `created_by`.
 - **Assignee dropdown:** load active users scoped to `company_id` only (`users.company_id` or active `employee_companies` row via `COALESCE(uc.active, 1) = 1`) using `itm_mysqli_stmt_fetch_all_assoc()` (mysqlnd fallback). After tasks load, `todo_merge_assignee_users()` augments the map with inactive assignees via tenant-scoped per-id lookups (`itm_mysqli_stmt_fetch_assoc()`) so list/view labels stay visible. Do not include global `Admin` via username bypass.
 - Import resolves category names, department names/codes, and usernames to IDs.
 - Use `itm_todo_visibility_sql()` on all list queries.

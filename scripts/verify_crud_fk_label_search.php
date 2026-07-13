@@ -267,7 +267,7 @@ if ($todoCategoryId > 0) {
     $createdByAdmin = 1;
     $stmtTodo = mysqli_prepare(
         $conn,
-        'INSERT INTO todo (company_id, title, category_id, department_id, assigned_to_employee_id, created_by_employee_id, active)
+        'INSERT INTO todo (company_id, title, category_id, department_id, assigned_to_employee_id, created_by, active)
          VALUES (?, ?, ?, ?, ?, ?, 1)'
     );
     if ($stmtTodo) {
