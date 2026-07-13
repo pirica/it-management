@@ -150,14 +150,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_quick_add'])) 
         exit;
     }
 
-    $sql = "INSERT INTO visitors_access_log (company_id, visitor_name, company_department, reason_for_visit, pre_approved_by, room_opened_by, date_time_in) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $created_by = (int)($_SESSION['employee_id'] ?? 0);
+    $active = 1;
+    $sql = "INSERT INTO visitors_access_log (company_id, visitor_name, company_department, reason_for_visit, pre_approved_by, room_opened_by, date_time_in, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, 'issssss', $company_id, $visitor_name, $company_department, $reason_for_visit, $pre_approved_by, $room_opened_by, $date_time_in);
+    mysqli_stmt_bind_param($stmt, 'issssssii', $company_id, $visitor_name, $company_department, $reason_for_visit, $pre_approved_by, $room_opened_by, $date_time_in, $created_by, $active);
 
     if (mysqli_stmt_execute($stmt)) {
         $_SESSION['crud_success'] = 'Visitor logged.';
     } else {
-        $_SESSION['crud_error'] = 'Error logging visitor.';
+        $_SESSION['crud_error'] = 'Error logging visitor: ' . mysqli_error($conn);
     }
     mysqli_stmt_close($stmt);
 
@@ -269,14 +271,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        $active = isset($_POST['active']) && $_POST['active'] !== '' ? (int)$_POST['active'] : 1;
+        $deleted_by = isset($_POST['deleted_by']) && $_POST['deleted_by'] !== '' ? (int)$_POST['deleted_by'] : null;
+        $deleted_at = !empty($_POST['deleted_at']) ? $_POST['deleted_at'] : null;
+        $created_by = isset($_POST['created_by']) && $_POST['created_by'] !== '' ? (int)$_POST['created_by'] : (int)($_SESSION['employee_id'] ?? 0);
+        $created_at = !empty($_POST['created_at']) ? $_POST['created_at'] : null;
+        $updated_by = isset($_POST['updated_by']) && $_POST['updated_by'] !== '' ? (int)$_POST['updated_by'] : (int)($_SESSION['employee_id'] ?? 0);
+        $updated_at = !empty($_POST['updated_at']) ? $_POST['updated_at'] : null;
+
         if ($crud_action === 'create') {
-            $sql = "INSERT INTO visitors_access_log (company_id, visitor_name, company_department, reason_for_visit, pre_approved_by, room_opened_by, date_time_in, date_time_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO visitors_access_log (company_id, visitor_name, company_department, reason_for_visit, pre_approved_by, room_opened_by, date_time_in, date_time_out, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, 'isssssss', $company_id, $visitor_name, $company_department, $reason_for_visit, $pre_approved_by, $room_opened_by, $date_time_in, $date_time_out);
+            mysqli_stmt_bind_param($stmt, 'isssssssiisisis', $company_id, $visitor_name, $company_department, $reason_for_visit, $pre_approved_by, $room_opened_by, $date_time_in, $date_time_out, $active, $deleted_by, $deleted_at, $created_by, $created_at, $updated_by, $updated_at);
         } else {
-            $sql = "UPDATE visitors_access_log SET visitor_name = ?, company_department = ?, reason_for_visit = ?, pre_approved_by = ?, room_opened_by = ?, date_time_in = ?, date_time_out = ? WHERE id = ? AND company_id = ?";
+            $sql = "UPDATE visitors_access_log SET visitor_name = ?, company_department = ?, reason_for_visit = ?, pre_approved_by = ?, room_opened_by = ?, date_time_in = ?, date_time_out = ?, active = ?, deleted_by = ?, deleted_at = ?, created_by = ?, created_at = ?, updated_by = ?, updated_at = ? WHERE id = ? AND company_id = ?";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, 'sssssssii', $visitor_name, $company_department, $reason_for_visit, $pre_approved_by, $room_opened_by, $date_time_in, $date_time_out, $id, $company_id);
+            mysqli_stmt_bind_param($stmt, 'sssssssiisisisii', $visitor_name, $company_department, $reason_for_visit, $pre_approved_by, $room_opened_by, $date_time_in, $date_time_out, $active, $deleted_by, $deleted_at, $created_by, $created_at, $updated_by, $updated_at, $id, $company_id);
         }
 
         if (mysqli_stmt_execute($stmt)) {
@@ -566,6 +576,15 @@ if (!isset($crud_title)) {
                     <form method="POST" class="form-grid" style="max-width:980px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="id" value="<?= (int)($data['id'] ?? 0) ?>">
+
+                        <!-- Hidden metadata fields -->
+                        <input type="hidden" name="active" value="<?= sanitize((string)($data['active'] ?? 1)) ?>">
+                        <input type="hidden" name="deleted_by" value="<?= sanitize((string)($data['deleted_by'] ?? '')) ?>">
+                        <input type="hidden" name="deleted_at" value="<?= sanitize((string)($data['deleted_at'] ?? '')) ?>">
+                        <input type="hidden" name="created_by" value="<?= sanitize((string)($data['created_by'] ?? ($_SESSION['employee_id'] ?? ''))) ?>">
+                        <input type="hidden" name="created_at" value="<?= sanitize((string)($data['created_at'] ?? '')) ?>">
+                        <input type="hidden" name="updated_by" value="<?= sanitize((string)($data['updated_by'] ?? ($_SESSION['employee_id'] ?? ''))) ?>">
+                        <input type="hidden" name="updated_at" value="<?= sanitize((string)($data['updated_at'] ?? '')) ?>">
 
                         <div class="form-group">
                             <label>Visitor Name</label>
