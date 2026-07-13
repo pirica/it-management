@@ -4,10 +4,11 @@
 Manual visitor entry log for physical IT/office access with quick-add on the index and audit-friendly immutability for historical rows.
 
 ## 2. Key Tables
-- **visitors_access_log** — visitor name, host, in/out times, authorisation fields.
+- **visitors_access_log** — visitor name, host, in/out times, authorisation fields, and standard/metadata columns (`active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) which are kept as hidden fields in the form.
 
 ## 3. Required Relationships
 - **visitors_access_log** → **companies**.
+- **visitors_access_log** columns `created_by`, `updated_by`, and `deleted_by` map to employee IDs.
 
 ## 4. Business Rules (Critical for Agents)
 - **Quick Add:** index view keeps a persistent first row for logging new visitors today.

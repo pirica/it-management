@@ -6598,7 +6598,12 @@ CREATE TABLE `visitors_access_log` (
   `room_opened_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date_time_in` datetime DEFAULT NULL,
   `date_time_out` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_visitors_access_log_company_scope` (`company_id`, `visitor_name`),
@@ -6610,15 +6615,15 @@ CREATE TABLE `visitors_access_log` (
 DELIMITER //
 CREATE TRIGGER `trg_visitors_access_log_audit_insert` AFTER INSERT ON `visitors_access_log` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'visitors_access_log', NEW.`id`, 'INSERT', NULL, JSON_OBJECT('visitor_name', NEW.`visitor_name`, 'company_department', NEW.`company_department`, 'reason_for_visit', NEW.`reason_for_visit`, 'pre_approved_by', NEW.`pre_approved_by`, 'room_opened_by', NEW.`room_opened_by`, 'date_time_in', NEW.`date_time_in`, 'date_time_out', NEW.`date_time_out`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'visitors_access_log', NEW.`id`, 'INSERT', NULL, JSON_OBJECT('visitor_name', NEW.`visitor_name`, 'company_department', NEW.`company_department`, 'reason_for_visit', NEW.`reason_for_visit`, 'pre_approved_by', NEW.`pre_approved_by`, 'room_opened_by', NEW.`room_opened_by`, 'date_time_in', NEW.`date_time_in`, 'date_time_out', NEW.`date_time_out`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END//
 CREATE TRIGGER `trg_visitors_access_log_audit_update` AFTER UPDATE ON `visitors_access_log` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'visitors_access_log', NEW.`id`, 'UPDATE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'company_department', OLD.`company_department`, 'reason_for_visit', OLD.`reason_for_visit`, 'pre_approved_by', OLD.`pre_approved_by`, 'room_opened_by', OLD.`room_opened_by`, 'date_time_in', OLD.`date_time_in`, 'date_time_out', OLD.`date_time_out`), JSON_OBJECT('visitor_name', NEW.`visitor_name`, 'company_department', NEW.`company_department`, 'reason_for_visit', NEW.`reason_for_visit`, 'pre_approved_by', NEW.`pre_approved_by`, 'room_opened_by', NEW.`room_opened_by`, 'date_time_in', NEW.`date_time_in`, 'date_time_out', NEW.`date_time_out`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'visitors_access_log', NEW.`id`, 'UPDATE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'company_department', OLD.`company_department`, 'reason_for_visit', OLD.`reason_for_visit`, 'pre_approved_by', OLD.`pre_approved_by`, 'room_opened_by', OLD.`room_opened_by`, 'date_time_in', OLD.`date_time_in`, 'date_time_out', OLD.`date_time_out`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('visitor_name', NEW.`visitor_name`, 'company_department', NEW.`company_department`, 'reason_for_visit', NEW.`reason_for_visit`, 'pre_approved_by', NEW.`pre_approved_by`, 'room_opened_by', NEW.`room_opened_by`, 'date_time_in', NEW.`date_time_in`, 'date_time_out', NEW.`date_time_out`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END//
 CREATE TRIGGER `trg_visitors_access_log_audit_delete` AFTER DELETE ON `visitors_access_log` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'visitors_access_log', OLD.`id`, 'DELETE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'company_department', OLD.`company_department`, 'reason_for_visit', OLD.`reason_for_visit`, 'pre_approved_by', OLD.`pre_approved_by`, 'room_opened_by', OLD.`room_opened_by`, 'date_time_in', OLD.`date_time_in`, 'date_time_out', OLD.`date_time_out`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'visitors_access_log', OLD.`id`, 'DELETE', JSON_OBJECT('visitor_name', OLD.`visitor_name`, 'company_department', OLD.`company_department`, 'reason_for_visit', OLD.`reason_for_visit`, 'pre_approved_by', OLD.`pre_approved_by`, 'room_opened_by', OLD.`room_opened_by`, 'date_time_in', OLD.`date_time_in`, 'date_time_out', OLD.`date_time_out`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END//
 DELIMITER ;
 
