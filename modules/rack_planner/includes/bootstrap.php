@@ -4,7 +4,7 @@ $data = ['id' => 0, 'name' => '', 'rack_units' => 42, 'layout_json' => '{"versio
 if (in_array($crud_action, ['edit', 'view'])) {
     $id = (int)($_GET['id'] ?? 0);
     if ($id > 0) {
-        $stmt = mysqli_prepare($conn, "SELECT * FROM rack_planner WHERE id = ? AND company_id = ?");
+        $stmt = mysqli_prepare($conn, "SELECT * FROM rack_planner WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
