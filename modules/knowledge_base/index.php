@@ -8,7 +8,9 @@
 
 $crud_table = 'knowledge_base';
 $crud_title = 'Knowledge Base';
-$crud_action = 'index';
+if (!isset($crud_action)) {
+    $crud_action = 'index';
+}
 
 function cr_form_display_value($value) {
     return itm_cr_form_display_value($value);
