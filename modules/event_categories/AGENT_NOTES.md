@@ -20,7 +20,7 @@ Lookup table for categorizing events and alerts (e.g., "Maintenance", "Holiday",
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
-- **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+- **`active` and Metadata fields**: The standard metadata columns (`active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) are excluded from visible table UI columns and are rendered as `<input type="hidden">` in edit and create forms.
 
 - **Color Swatch**: List and view should show the selected color.
 
