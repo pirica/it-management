@@ -7777,9 +7777,13 @@ CREATE TABLE `system_status` (
   `company_id` int NOT NULL DEFAULT 1,
   `tab_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `active` tinyint NOT NULL DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `active` tinyint(1) DEFAULT '1' INVISIBLE,
+  `deleted_by` int DEFAULT NULL INVISIBLE,
+  `deleted_at` timestamp NULL DEFAULT NULL INVISIBLE,
+  `created_by` int DEFAULT NULL INVISIBLE,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP INVISIBLE,
+  `updated_by` int DEFAULT NULL INVISIBLE,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP INVISIBLE,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_system_status_company_tab` (`company_id`, `tab_key`),
   KEY `company_id` (`company_id`),
@@ -7809,7 +7813,13 @@ BEGIN
         'id', NEW.`id`,
         'company_id', NEW.`company_id`,
         'tab_key', NEW.`tab_key`,
-        'active', NEW.`active`
+        'active', NEW.`active`,
+        'deleted_by', NEW.`deleted_by`,
+        'deleted_at', NEW.`deleted_at`,
+        'created_by', NEW.`created_by`,
+        'created_at', NEW.`created_at`,
+        'updated_by', NEW.`updated_by`,
+        'updated_at', NEW.`updated_at`
       ),
       @app_ip_address,
       @app_user_agent
@@ -7836,13 +7846,25 @@ BEGIN
         'id', OLD.`id`,
         'company_id', OLD.`company_id`,
         'tab_key', OLD.`tab_key`,
-        'active', OLD.`active`
+        'active', OLD.`active`,
+        'deleted_by', OLD.`deleted_by`,
+        'deleted_at', OLD.`deleted_at`,
+        'created_by', OLD.`created_by`,
+        'created_at', OLD.`created_at`,
+        'updated_by', OLD.`updated_by`,
+        'updated_at', OLD.`updated_at`
       ),
       JSON_OBJECT(
         'id', NEW.`id`,
         'company_id', NEW.`company_id`,
         'tab_key', NEW.`tab_key`,
-        'active', NEW.`active`
+        'active', NEW.`active`,
+        'deleted_by', NEW.`deleted_by`,
+        'deleted_at', NEW.`deleted_at`,
+        'created_by', NEW.`created_by`,
+        'created_at', NEW.`created_at`,
+        'updated_by', NEW.`updated_by`,
+        'updated_at', NEW.`updated_at`
       ),
       @app_ip_address,
       @app_user_agent
@@ -7869,7 +7891,13 @@ BEGIN
         'id', OLD.`id`,
         'company_id', OLD.`company_id`,
         'tab_key', OLD.`tab_key`,
-        'active', OLD.`active`
+        'active', OLD.`active`,
+        'deleted_by', OLD.`deleted_by`,
+        'deleted_at', OLD.`deleted_at`,
+        'created_by', OLD.`created_by`,
+        'created_at', OLD.`created_at`,
+        'updated_by', OLD.`updated_by`,
+        'updated_at', OLD.`updated_at`
       ),
       NULL,
       @app_ip_address,
