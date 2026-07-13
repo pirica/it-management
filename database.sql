@@ -7737,9 +7737,13 @@ CREATE TABLE `note_labels` (
   `employee_id` INT NOT NULL,
   `note_id` INT DEFAULT NULL,
   `label` VARCHAR(100) NOT NULL,
-  `active` TINYINT DEFAULT 1,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `active` tinyint(1) DEFAULT '1' INVISIBLE,
+  `deleted_by` int DEFAULT NULL INVISIBLE,
+  `deleted_at` timestamp NULL DEFAULT NULL INVISIBLE,
+  `created_by` int DEFAULT NULL INVISIBLE,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP INVISIBLE,
+  `updated_by` int DEFAULT NULL INVISIBLE,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP INVISIBLE,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_note_labels_company_scope` (`company_id`, `employee_id`, `id`),
   KEY `note_id` (`note_id`),
@@ -7782,22 +7786,22 @@ DELIMITER $$
 CREATE TRIGGER `trg_note_labels_audit_insert` AFTER INSERT ON `note_labels` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'note_labels', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
   @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_note_labels_audit_update` AFTER UPDATE ON `note_labels` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'note_labels', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`),
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`),
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
+  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
   @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_note_labels_audit_delete` AFTER DELETE ON `note_labels` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'note_labels', OLD.`id`, 'DELETE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`),
+  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
   NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;

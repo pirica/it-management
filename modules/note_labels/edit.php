@@ -6,6 +6,7 @@ $crud_action = 'edit';
 <?php
 require '../../config/config.php';
 itm_require_crud_role_module_permission($conn, 'edit', 'note_labels');
+$logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
 
 if (($crud_table ?? '') === 'system_access') {
@@ -274,7 +275,11 @@ foreach ($fieldColumns as $c) {
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
-    if (($col['Field'] ?? '') !== 'company_id') {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (in_array($fieldName, ['deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'], true)) {
+        return false;
+    }
+    if ($fieldName !== 'company_id') {
         return true;
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
@@ -341,7 +346,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     if ($hasCompanyFilter) {
         $where .= ' AND company_id=?';
     }
-    $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+    $sql = 'SELECT *, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
         if ($hasCompanyFilter) {
@@ -366,6 +371,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
+
+        if ($name === 'created_by' && $crud_action === 'create') {
+            $data[$name] = $logged_user_id ?: null;
+            continue;
+        }
+        if ($name === 'updated_by' && $crud_action === 'edit') {
+            $data[$name] = $logged_user_id ?: null;
+            continue;
+        }
+        if (in_array($name, ['deleted_by', 'deleted_at'], true)) {
+            $data[$name] = isset($_POST[$name]) && $_POST[$name] !== '' ? $_POST[$name] : null;
+            continue;
+        }
+
         if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
             continue;
@@ -553,7 +572,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
+$rows = mysqli_query($conn, 'SELECT *, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT 200');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -637,6 +656,18 @@ if (!isset($crud_title)) {
                         $isText = str_contains($col['Type'], 'text');
                         $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
+                        <?php if (in_array($name, ['deleted_by', 'deleted_at', 'created_by', 'updated_by'], true)): ?>
+                            <?php
+                                if ($crud_action === 'create') {
+                                    if ($name === 'created_by' && $displayVal === '') { $displayVal = (string)$logged_user_id; }
+                                }
+                                if ($crud_action === 'edit') {
+                                    if ($name === 'updated_by') { $displayVal = (string)$logged_user_id; }
+                                }
+                            ?>
+                            <input type="hidden" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <?php if ($name === 'company_id'): ?>
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
                             <?php continue; ?>

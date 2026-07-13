@@ -3,21 +3,31 @@
 ## 1. Module Purpose
 Per-user label/tag lookup for the Notes module. Stores distinct label strings a user can assign when organising notes.
 
-## 2. Key Tables
+## 2. Key Tables & Columns
 - **note_labels** — label name per `employee_id` and `company_id`.
+  - Added new standard `INVISIBLE` / hidden metadata columns:
+    - `active` tinyint(1) DEFAULT '1' INVISIBLE
+    - `deleted_by` int DEFAULT NULL INVISIBLE
+    - `deleted_at` timestamp NULL DEFAULT NULL INVISIBLE
+    - `created_by` int DEFAULT NULL INVISIBLE
+    - `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP INVISIBLE
+    - `updated_by` int DEFAULT NULL INVISIBLE
+    - `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP INVISIBLE
 
 ## 3. Required Relationships
-- **note_labels** → depends on **companies**, **users**.
+- **note_labels** → depends on **companies**, **employees** / **users**.
 - **note_labels** → referenced by **notes** (tag filtering and import mapping).
 
 ## 4. Business Rules (Critical for Agents)
 - Labels are scoped to both `company_id` and `employee_id` (private to the creating user).
-
+- Metadata columns are `INVISIBLE` in the database, meaning they are excluded from wildcard `SELECT *` queries. To fetch them, PHP files explicitly name them: `SELECT *, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at FROM note_labels`.
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD via dynamic schema.
 - List/search/sort/pagination/export/import per module standards.
-- **Known gap:** list queries currently filter by `company_id` only — they do **not** filter `user_id = logged-in user` despite per-user scoping in section 8. Do not document per-user list filtering until code enforces it.
+- Hidden metadata columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) are automatically excluded from the visible `$uiColumns` to keep lists and details clean.
+- The `active` status remains visible and manageable (represented by checkbox in create/edit forms).
+- Hidden user-tracking metadata (`created_by` and `updated_by`) are populated with the active `$logged_user_id` and submitted via `<input type="hidden">` fields in forms.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — template JSON import handler as other flattened CRUD modules (`import_excel_rows` in `index.php`).
@@ -26,16 +36,17 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 - Filter by `company_id` and `employee_id` on all reads/writes.
 
 ## 9. Audit Logging Requirements
-- `trg_note_labels_audit_insert|update|delete` in `database.sql`.
+- Triggers `trg_note_labels_audit_insert`, `trg_note_labels_audit_update`, and `trg_note_labels_audit_delete` are updated in `database.sql` to capture and log the new metadata columns (`created_by`, `created_at`, `updated_by`, `updated_at`, `deleted_by`, `deleted_at`) in their JSON payloads.
 
 ## 10. Common Pitfalls
+- Since `active` and other new columns are `INVISIBLE`, omitting them from explicit `SELECT` statements will result in empty values or PHP warnings for undefined keys. Always fetch them explicitly if their values are needed.
 - Do not expose another user's labels when `employee_id` filtering is added — today list queries are company-scoped only (known gap; see section 5).
 
-
+## 11. Code Examples
 
 ### Safe per-user label query
 ```php
-$stmt = $conn->prepare('SELECT id, label FROM note_labels WHERE company_id = ? AND employee_id = ? ORDER BY label ASC');
+$stmt = $conn->prepare('SELECT id, label, active FROM note_labels WHERE company_id = ? AND employee_id = ? ORDER BY label ASC');
 $stmt->bind_param('ii', $companyId, $employeeId);
 ```
 

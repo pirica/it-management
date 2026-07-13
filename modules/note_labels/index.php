@@ -21,6 +21,7 @@ $crud_action = 'index';
 <?php
 require '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
+$logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 $pk = 'id';
 
 /**
@@ -319,7 +320,11 @@ foreach ($fieldColumns as $c) {
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
-    if (($col['Field'] ?? '') !== 'company_id') {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (in_array($fieldName, ['deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'], true)) {
+        return false;
+    }
+    if ($fieldName !== 'company_id') {
         return true;
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
@@ -595,7 +600,7 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $hasCompanyFilter = ($hasCompany && $company_id > 0);
     $where = ' WHERE id=?';
     if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
-    $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+    $sql = 'SELECT *, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
         if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'ii', $editId, $company_id); }
@@ -654,6 +659,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
         
+        if ($name === 'created_by' && $crud_action === 'create') {
+            $data[$name] = $logged_user_id ?: null;
+            continue;
+        }
+        if ($name === 'updated_by' && $crud_action === 'edit') {
+            $data[$name] = $logged_user_id ?: null;
+            continue;
+        }
+        if (in_array($name, ['deleted_by', 'deleted_at'], true)) {
+            $data[$name] = isset($_POST[$name]) && $_POST[$name] !== '' ? $_POST[$name] : null;
+            continue;
+        }
+
         // Logical Booleans
         if ($isTinyInt) {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
@@ -869,7 +887,7 @@ if ($page < 1) { $page = 1; }
 if ($page > $totalPages) { $page = $totalPages; }
 $offset = ($page - 1) * $perPage;
 
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rows = mysqli_query($conn, 'SELECT *, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
@@ -1075,6 +1093,18 @@ if (!isset($crud_title)) {
                         $val = $data[$name] ?? '';
                         $displayVal = ($val === null) ? '' : (string)$val;
                     ?>
+                        <?php if (in_array($name, ['deleted_by', 'deleted_at', 'created_by', 'updated_by'], true)): ?>
+                            <?php
+                                if ($crud_action === 'create') {
+                                    if ($name === 'created_by' && $displayVal === '') { $displayVal = (string)$logged_user_id; }
+                                }
+                                if ($crud_action === 'edit') {
+                                    if ($name === 'updated_by') { $displayVal = (string)$logged_user_id; }
+                                }
+                            ?>
+                            <input type="hidden" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
