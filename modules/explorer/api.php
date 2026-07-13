@@ -238,12 +238,12 @@ function sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $name, $t
             mysqli_stmt_close($stmt_d);
         }
 
-        $stmt = mysqli_prepare($conn, "INSERT INTO explorer (company_id, employee_id, department_id, folder_path, file_name, file_type, is_private) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP");
-        mysqli_stmt_bind_param($stmt, "iiisssi", $company_id, $user_id, $db_dept_id, $path, $name, $type, $is_private);
+        $stmt = mysqli_prepare($conn, "INSERT INTO explorer (company_id, employee_id, department_id, folder_path, file_name, file_type, is_private, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON DUPLICATE KEY UPDATE active = 1, deleted_by = NULL, deleted_at = NULL, updated_by = ?, updated_at = CURRENT_TIMESTAMP");
+        mysqli_stmt_bind_param($stmt, "iiisssiiii", $company_id, $user_id, $db_dept_id, $path, $name, $type, $is_private, $user_id, $user_id, $user_id);
         mysqli_stmt_execute($stmt);
     } elseif ($action === 'delete') {
-        $stmt = mysqli_prepare($conn, "DELETE FROM explorer WHERE company_id = ? AND folder_path = ? AND file_name = ?");
-        mysqli_stmt_bind_param($stmt, "iss", $company_id, $path, $name);
+        $stmt = mysqli_prepare($conn, "UPDATE explorer SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE company_id = ? AND folder_path = ? AND file_name = ?");
+        mysqli_stmt_bind_param($stmt, "iiss", $user_id, $company_id, $path, $name);
         mysqli_stmt_execute($stmt);
     }
 }
