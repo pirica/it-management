@@ -5,7 +5,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 2. Key Tables
 
 - `modules_registry` — global catalog of module slugs and display names
-- `company_module_access` — per-company enabled/disabled flags (`enabled` tinyint) and optional company-default sidebar emoji (`icon` varchar)
+- `company_module_access` — per-company enabled/disabled flags (`enabled` tinyint), optional company-default sidebar emoji (`icon` varchar), and active status (`active` tinyint DEFAULT 1, hidden field)
 
 ## 3. Required Relationships
 

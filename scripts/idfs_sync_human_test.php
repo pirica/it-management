@@ -787,8 +787,8 @@ function itm_test_create_temp_switch_rack_position(
         $db,
         "INSERT INTO equipment (
             company_id, equipment_type_id, status_id, idf_id, name,
-            switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id, active
-         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)",
+            switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id
+         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?)",
         'iiisiii',
         [$companyId, 37, 25, $equipmentName, $rj45EightId, $layoutVerticalId, 8]
     );
@@ -1672,8 +1672,8 @@ try {
         $db,
         "INSERT INTO equipment (
             company_id, equipment_type_id, status_id, idf_id, name,
-            switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id, active
-         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, 1)",
+            switch_rj45_id, switch_port_numbering_layout_id, switch_environment_id
+         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?)",
         'iiisiii',
         [$companyId, 37, 25, $tempEquipmentName, $rj45EightId, $layoutVerticalId, 8]
     );
