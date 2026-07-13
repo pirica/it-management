@@ -4,7 +4,7 @@
 Google Keep–style personal and shared notes for the active company. Supports pinning, importance, image attachments (`images_json`), colour, labels, and sharing via `shared_with_json`.
 
 ## 2. Key Tables
-- **notes** — main note records (`title`, `content`, `is_pinned`, `is_important`, `images_json`, `shared_with_json`, `color`, `employee_id`).
+- **notes** — main note records (`title`, `content`, `is_pinned`, `is_important`, `images_json`, `shared_with_json`, `color`, `employee_id`). Standard audit and deletion tracking columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) are supported and managed by the application code and DB triggers.
 - **note_labels** — per-user label/tag names used when filtering and importing.
 
 ## 3. Required Relationships

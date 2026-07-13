@@ -126,12 +126,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             }
 
             if ($existingId > 0) {
-                $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, reminder_at=?, is_pinned=?, is_important=?, is_archived=?, shared_with_json=? WHERE id=?");
-                $stmt->bind_param("sssiiisi", $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $existingId);
+                $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, reminder_at=?, is_pinned=?, is_important=?, is_archived=?, shared_with_json=?, updated_by=? WHERE id=?");
+                $stmt->bind_param("sssiiisii", $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $logged_user_id, $existingId);
                 if ($stmt->execute()) { $updated++; $noteId = $existingId; }
             } else {
-                $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("iisssiiis", $company_id, $logged_user_id, $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson);
+                $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("iisssiiisi", $company_id, $logged_user_id, $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $logged_user_id);
                 if ($stmt->execute()) { $inserted++; $noteId = mysqli_insert_id($conn); }
             }
 
@@ -163,8 +163,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     if ($action === "delete" && !empty($_POST["ids"])) {
         $ids = array_map("intval", $_POST["ids"]);
         foreach ($ids as $id) {
-            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND employee_id = ?");
-            $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ?");
+            $stmt->bind_param("iiii", $logged_user_id, $id, $company_id, $logged_user_id);
             $stmt->execute();
         }
         header("Location: index.php?msg=deleted");
@@ -179,10 +179,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $resCheck = $stmtCheck->get_result()->fetch_assoc();
         if ($resCheck && (int)$resCheck['active'] === 0) {
             $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt->bind_param("iiiii", $logged_user_id, $editId, $company_id, $logged_user_id, $logged_user_id);
         }
-        $stmt->bind_param("iiii", $editId, $company_id, $logged_user_id, $logged_user_id);
         $stmt->execute();
         header("Location: index.php?msg=deleted");
         die();
@@ -227,11 +228,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $checklist_json = !empty($checklist_data) ? json_encode($checklist_data) : null;
 
         if ($crud_action === "edit" && $editId > 0) {
-            $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=? WHERE id=? AND company_id=? AND employee_id=?");
-            $stmt->bind_param("ssisiiissssiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $editId, $company_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=?, updated_by=? WHERE id=? AND company_id=? AND employee_id=?");
+            $stmt->bind_param("ssisiiissssiiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id, $editId, $company_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("iissisiiissss", $company_id, $logged_user_id, $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json);
+            $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iissisiiissssi", $company_id, $logged_user_id, $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id);
         }
 
         if ($stmt->execute()) {
@@ -296,9 +297,9 @@ if (isset($_GET["ajax_action"])) {
             }
         }
         $images_json = !empty($image_files) ? json_encode($image_files) : null;
-        $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, images_json, reminder_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, images_json, reminder_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
-            $stmt->bind_param("iississ", $company_id, $logged_user_id, $title, $content, $is_checklist, $images_json, $reminder_at);
+            $stmt->bind_param("iississi", $company_id, $logged_user_id, $title, $content, $is_checklist, $images_json, $reminder_at, $logged_user_id);
             if ($stmt->execute()) echo json_encode(["ok" => true]);
             else echo json_encode(["ok" => false, "error" => $stmt->error]);
         } else {
@@ -309,22 +310,22 @@ if (isset($_GET["ajax_action"])) {
     if ($action === "toggle_pinned") {
         $id = (int)($_POST["id"] ?? 0);
         $is_pinned = (int)($_POST["is_pinned"] ?? 0);
-        $stmt = $conn->prepare("UPDATE notes SET is_pinned = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
-        $stmt->bind_param("iiii", $is_pinned, $id, $company_id, $logged_user_id);
+        $stmt = $conn->prepare("UPDATE notes SET is_pinned = ?, updated_by = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
+        $stmt->bind_param("iiiii", $is_pinned, $logged_user_id, $id, $company_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "toggle_archived") {
         $id = (int)($_POST["id"] ?? 0);
         $is_archived = (int)($_POST["is_archived"] ?? 0);
-        $stmt = $conn->prepare("UPDATE notes SET is_archived = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
-        $stmt->bind_param("iiii", $is_archived, $id, $company_id, $logged_user_id);
+        $stmt = $conn->prepare("UPDATE notes SET is_archived = ?, updated_by = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
+        $stmt->bind_param("iiiii", $is_archived, $logged_user_id, $id, $company_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "restore") {
         $id = (int)($_POST["id"] ?? 0);
         $visSql = itm_notes_visibility_sql();
-        $stmt = $conn->prepare("UPDATE notes SET active = 1 WHERE id = ? AND company_id = ? AND ($visSql)");
-        $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
+        $stmt = $conn->prepare("UPDATE notes SET active = 1, deleted_by = NULL, deleted_at = NULL, updated_by = ? WHERE id = ? AND company_id = ? AND ($visSql)");
+        $stmt->bind_param("iiiii", $logged_user_id, $id, $company_id, $logged_user_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "single_delete") {
@@ -336,17 +337,18 @@ if (isset($_GET["ajax_action"])) {
         $resCheck = $stmtCheck->get_result()->fetch_assoc();
         if ($resCheck && (int)$resCheck['active'] === 0) {
             $stmt = $conn->prepare("DELETE FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("UPDATE notes SET active = 0 WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND ($visSql)");
+            $stmt->bind_param("iiiii", $logged_user_id, $id, $company_id, $logged_user_id, $logged_user_id);
         }
-        $stmt->bind_param("iiii", $id, $company_id, $logged_user_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "toggle_important") {
         $id = (int)($_POST["id"] ?? 0);
         $is_important = (int)($_POST["is_important"] ?? 0);
-        $stmt = $conn->prepare("UPDATE notes SET is_important = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
-        $stmt->bind_param("iiii", $is_important, $id, $company_id, $logged_user_id);
+        $stmt = $conn->prepare("UPDATE notes SET is_important = ?, updated_by = ? WHERE id = ? AND company_id = ? AND employee_id = ?");
+        $stmt->bind_param("iiiii", $is_important, $logged_user_id, $id, $company_id, $logged_user_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "rename_tag") {
@@ -881,6 +883,12 @@ if (!isset($crud_title)) {
                         <h1><?php echo $crud_action === "edit" ? "Edit Note" : "New Note"; ?></h1>
                         <form method="POST" class="form-grid" style="max-width: 800px;" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                            <input type="hidden" name="deleted_by" value="<?php echo sanitize($data["deleted_by"] ?? ""); ?>">
+                            <input type="hidden" name="deleted_at" value="<?php echo sanitize($data["deleted_at"] ?? ""); ?>">
+                            <input type="hidden" name="created_by" value="<?php echo sanitize($data["created_by"] ?? ""); ?>">
+                            <input type="hidden" name="created_at" value="<?php echo sanitize($data["created_at"] ?? ""); ?>">
+                            <input type="hidden" name="updated_by" value="<?php echo sanitize($data["updated_by"] ?? ""); ?>">
+                            <input type="hidden" name="updated_at" value="<?php echo sanitize($data["updated_at"] ?? ""); ?>">
                             <div class="form-group"><label>Title</label><input type="text" name="title" value="<?php echo sanitize($data["title"] ?? ""); ?>" autofocus></div>
                             <div class="form-group" id="content-section" style="<?php echo !empty($data['is_checklist']) ? 'display: none;' : ''; ?>">
                                 <label>Content</label>
