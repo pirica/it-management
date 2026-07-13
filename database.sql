@@ -8054,7 +8054,11 @@ CREATE TABLE `request_password` (
   `hod_approval_status` enum('Waiting', 'Approved', 'Declined') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting',
   `hod_signature_date` date DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_request_password_company_scope` (`company_id`, `employee_id`, `id`),
@@ -8071,19 +8075,19 @@ DELIMITER $$
 DROP TRIGGER IF EXISTS `trg_request_password_audit_insert`$$
 CREATE TRIGGER `trg_request_password_audit_insert` AFTER INSERT ON `request_password` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'application', NEW.`application`, 'reason', NEW.`reason`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'application', NEW.`application`, 'reason', NEW.`reason`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 
 DROP TRIGGER IF EXISTS `trg_request_password_audit_update`$$
 CREATE TRIGGER `trg_request_password_audit_update` AFTER UPDATE ON `request_password` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'hr_approval_status', OLD.`hr_approval_status`, 'hod_approval_status', OLD.`hod_approval_status`), JSON_OBJECT('id', NEW.`id`, 'hr_approval_status', NEW.`hr_approval_status`, 'hod_approval_status', NEW.`hod_approval_status`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'requested_by_employee_id', OLD.`requested_by_employee_id`, 'application', OLD.`application`, 'reason', OLD.`reason`, 'applicant_signature_date', OLD.`applicant_signature_date`, 'ism_signature_date', OLD.`ism_signature_date`, 'hr_approval_status', OLD.`hr_approval_status`, 'hr_signature_date', OLD.`hr_signature_date`, 'hod_approval_status', OLD.`hod_approval_status`, 'hod_signature_date', OLD.`hod_signature_date`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'requested_by_employee_id', NEW.`requested_by_employee_id`, 'application', NEW.`application`, 'reason', NEW.`reason`, 'applicant_signature_date', NEW.`applicant_signature_date`, 'ism_signature_date', NEW.`ism_signature_date`, 'hr_approval_status', NEW.`hr_approval_status`, 'hr_signature_date', NEW.`hr_signature_date`, 'hod_approval_status', NEW.`hod_approval_status`, 'hod_signature_date', NEW.`hod_signature_date`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 
 DROP TRIGGER IF EXISTS `trg_request_password_audit_delete`$$
 CREATE TRIGGER `trg_request_password_audit_delete` AFTER DELETE ON `request_password` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'requested_by_employee_id', OLD.`requested_by_employee_id`, 'application', OLD.`application`, 'reason', OLD.`reason`, 'applicant_signature_date', OLD.`applicant_signature_date`, 'ism_signature_date', OLD.`ism_signature_date`, 'hr_approval_status', OLD.`hr_approval_status`, 'hr_signature_date', OLD.`hr_signature_date`, 'hod_approval_status', OLD.`hod_approval_status`, 'hod_signature_date', OLD.`hod_signature_date`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 DELIMITER ;
