@@ -325,7 +325,7 @@ if (!isset($crud_title)) {
                 </div>
 
                 <?php
-                $whereClause = " WHERE company_id = ?";
+                $whereClause = " WHERE company_id = ? AND deleted_at IS NULL";
                 $params = [$company_id];
                 $types = "i";
 

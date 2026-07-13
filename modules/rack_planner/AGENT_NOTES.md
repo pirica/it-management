@@ -4,11 +4,12 @@
 Visual rack elevation planner. Stores layout JSON per named rack plan and references devices from catalogs, equipment, and unlinked IDF positions.
 
 ## 2. Key Tables
-- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence).
-- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**.
+- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence), along with tracking metadata columns (`employee_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`). All tracking columns are declared as `INVISIBLE` in the MySQL schema so they remain hidden from standard `SELECT *` wildcard queries unless explicitly queried.
+- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**, **employees**.
 
 ## 3. Required Relationships
 - **rack_planner** → **companies**.
+- **rack_planner** → **employees** (via `employee_id`, `created_by`, `updated_by`, and `deleted_by`).
 - Layout device codes: `catalog:<id>`, `equipment:<id>`, `idf_unlinked:<token>`.
 
 ## 4. Business Rules (Critical for Agents)
@@ -36,21 +37,22 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - `includes/bootstrap.php`, `functions.php`, `handlers.php`, `partials/render.php`.
 
 ## 8. Multi-Tenant Rules
-- Scoped by `company_id`; unique rack plan name per company (`rack_planner_name_company`).
+- Scoped by `company_id`; unique rack plan name per company (`rack_planner_name_company`). All active plans are filtered with `deleted_at IS NULL` to support soft deletion.
 
 ## 9. Audit Logging Requirements
-- `trg_rack_planner_audit_insert|update|delete` in `database.sql`.
+- `trg_rack_planner_audit_insert|update|delete` in `database.sql` logging all fields including the invisible tracking columns.
 
 ## 10. Common Pitfalls
 - There is no `rack_equipment` mapping table — layout lives in `layout_json`.
 - Partial price sync breaks catalog/equipment/IDF reporting — always update source row.
+- Be sure to explicitly request or insert the invisible columns (`employee_id`, `created_by`, `updated_by`, `deleted_by`, etc.) when executing SELECT/INSERT/UPDATE statements because MySQL invisible columns are not fetched via wildcard queries.
 
 ## 11. Examples of Safe Code Patterns
 
-### Tenant-scoped auto-save UPDATE
+### Tenant-scoped auto-save UPDATE with updated_by
 ```php
-$stmt = mysqli_prepare($conn, 'UPDATE rack_planner SET layout_json = ? WHERE id = ? AND company_id = ?');
-mysqli_stmt_bind_param($stmt, 'sii', $layoutJson, $id, $company_id);
+$stmt = mysqli_prepare($conn, 'UPDATE rack_planner SET layout_json = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL');
+mysqli_stmt_bind_param($stmt, 'siii', $layoutJson, $updated_by, $id, $company_id);
 ```
 
 ## 12. Module Owner Notes (Optional)

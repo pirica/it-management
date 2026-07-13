@@ -39,11 +39,12 @@ $combinedCodeMeta = rack_planner_combined_code_meta_map($catalogOptions, $equipm
 // Handle Delete
 if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
 
     // Handle Clear Table Bulk Action
     if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'clear_table') {
-        $stmt = mysqli_prepare($conn, "DELETE FROM rack_planner WHERE company_id = ?");
-        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE company_id = ? AND deleted_at IS NULL");
+        mysqli_stmt_bind_param($stmt, 'ii', $logged_employee_id, $company_id);
         if (mysqli_stmt_execute($stmt)) {
             $_SESSION['crud_success'] = 'Table cleared.';
         } else {
@@ -59,9 +60,12 @@ if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $ids = $_POST['ids'] ?? [];
         if (!empty($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $stmt = mysqli_prepare($conn, "DELETE FROM rack_planner WHERE id IN ($placeholders) AND company_id = ?");
-            $types = str_repeat('i', count($ids)) . 'i';
-            $params = array_map('intval', $ids);
+            $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id IN ($placeholders) AND company_id = ? AND deleted_at IS NULL");
+            $types = 'i' . str_repeat('i', count($ids)) . 'i';
+            $params = [$logged_employee_id];
+            foreach ($ids as $val) {
+                $params[] = (int)$val;
+            }
             $params[] = $company_id;
             mysqli_stmt_bind_param($stmt, $types, ...$params);
             if (mysqli_stmt_execute($stmt)) {
@@ -78,8 +82,8 @@ if ($crud_action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Single Delete
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
-        $stmt = mysqli_prepare($conn, "DELETE FROM rack_planner WHERE id = ? AND company_id = ?");
-        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
+        mysqli_stmt_bind_param($stmt, 'iii', $logged_employee_id, $id, $company_id);
         if (mysqli_stmt_execute($stmt)) {
             $_SESSION['crud_success'] = 'Rack plan deleted.';
         } else {
@@ -113,7 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         ], 400);
     }
 
-    $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET layout_json = ? WHERE id = ? AND company_id = ?");
+    $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
+    $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET layout_json = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
     if (!$stmt) {
         itm_api_json_response([
             'success' => false,
@@ -123,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         ], 500);
     }
 
-    mysqli_stmt_bind_param($stmt, 'sii', $layoutJson, $id, $company_id);
+    mysqli_stmt_bind_param($stmt, 'siii', $layoutJson, $logged_employee_id, $id, $company_id);
     $ok = mysqli_stmt_execute($stmt);
     $updatedRows = $ok ? mysqli_stmt_affected_rows($stmt) : 0;
     mysqli_stmt_close($stmt);
@@ -176,12 +181,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
         if ($crud_action === 'create') {
-            $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, name, rack_units, layout_json, notes, active) VALUES (?, ?, ?, ?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, 'isissi', $company_id, $name, $rack_units, $layout_json, $notes, $active);
+            $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, notes, active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $logged_employee_id, $name, $rack_units, $layout_json, $notes, $active, $logged_employee_id);
         } else {
-            $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET name = ?, rack_units = ?, layout_json = ?, notes = ?, active = ? WHERE id = ? AND company_id = ?");
-            mysqli_stmt_bind_param($stmt, 'sissiii', $name, $rack_units, $layout_json, $notes, $active, $id, $company_id);
+            $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET name = ?, rack_units = ?, layout_json = ?, notes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
+            mysqli_stmt_bind_param($stmt, 'sissiiii', $name, $rack_units, $layout_json, $notes, $active, $logged_employee_id, $id, $company_id);
         }
 
         if (mysqli_stmt_execute($stmt)) {
@@ -208,8 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($crud_action === 'index' || $crud_
     $json = '{"version":1,"units":42,"devices":[]}';
     $notes = 'Sample empty rack plan.';
     $active = 1;
-    $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, name, rack_units, layout_json, notes, active) VALUES (?, ?, ?, ?, ?, ?)");
-    mysqli_stmt_bind_param($stmt, 'isissi', $company_id, $name, $units, $json, $notes, $active);
+    $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
+    $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, notes, active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $logged_employee_id, $name, $units, $json, $notes, $active, $logged_employee_id);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     header('Location: index.php');
