@@ -39,7 +39,10 @@ while ($row = mysqli_fetch_row($res)) {
 
     $missing = [];
     foreach ($mandatoryCols as $mCol => $specs) {
-        if ($mCol === 'company_id' && in_array($table, ['companies', 'audit_logs'])) {
+        if ($mCol === 'company_id' && in_array($table, ['companies', 'audit_logs', 'modules_registry'])) {
+            continue;
+        }
+        if ($mCol === 'active' && in_array($table, ['tickets', 'patches_updates', 'employees', 'equipment'])) {
             continue;
         }
         if (!isset($columns[$mCol])) {

@@ -4,7 +4,7 @@
 Stores physical cable links between IDF ports (`port_id_a` and `port_id_b`), including optional equipment-side metadata (hostname, VLAN, fibre patch, cable colour, labels). Links drive connectivity shown in the IDF rack dashboard and must stay aligned with port status on both ends.
 
 ## 2. Key Tables
-- **idf_links** — link header and equipment/cable metadata.
+- **idf_links** — link header and equipment/cable metadata, including `active` (tinyint DEFAULT 1, hidden field).
 - **idf_ports** — endpoint ports referenced by `port_id_a` / `port_id_b` (not owned by this module but always updated in sync).
 - **switch_ports** — mirrored rows for equipment-backed ports when links are created or removed via `modules/idfs/api/`.
 

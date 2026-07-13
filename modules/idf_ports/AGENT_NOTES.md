@@ -4,7 +4,7 @@
 Manages individual port rows on IDF rack positions (RJ45 and SFP), including status, VLAN, speed, PoE, colour, labels, and cross-IDF routing metadata. Rows pair with **switch_ports** when the parent position is linked to **equipment**.
 
 ## 2. Key Tables
-- **idf_ports** — port configuration per `position_id` (`port_no`, `port_type`, status, VLAN, speed, colour, notes).
+- **idf_ports** — port configuration per `position_id` (`port_no`, `port_type`, status, VLAN, speed, colour, notes), including `active` (tinyint DEFAULT 1, hidden field).
 - **idf_positions** — parent device slot (`position_id` FK).
 - **switch_ports** — mirrored numbered ports for equipment-backed positions (authoritative for many RJ45/SFP layouts).
 - **idf_links** — references ports via `port_id_a` / `port_id_b`.

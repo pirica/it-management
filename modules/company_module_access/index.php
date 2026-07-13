@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $formValues['module_name'] = trim((string)($_POST['module_name'] ?? ''));
     $formValues['icon'] = trim((string)($_POST['icon'] ?? ''));
     $formValues['is_system_module'] = !empty($_POST['is_system_module']) ? 1 : 0;
-    $formValues['active'] = !empty($_POST['active']) ? 1 : 0;
+    $formValues['active'] = isset($_POST['active']) ? (int)$_POST['active'] : 1;
     $editId = (int)($_POST['id'] ?? 0);
 
     if ($formValues['module_slug'] === '' || !preg_match('/^[a-z][a-z0-9_]*$/', $formValues['module_slug'])) {
@@ -402,7 +402,6 @@ if (!isset($crud_title)) {
                                 <th>Module</th>
                                 <th>Slug</th>
                                 <th>System</th>
-                                <th>Active</th>
                                 <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                             </tr>
                             </thead>
@@ -414,7 +413,6 @@ if (!isset($crud_title)) {
                                         <?= sanitize((string)($registryRow['module_slug'] ?? '')) ?></a>
                                     </td>
                                     <td><?= ((int)($registryRow['is_system_module'] ?? 0) === 1) ? '<span class="badge">System</span>' : '<span class="badge badge-danger">No</span>' ?></td>
-                                    <td><?= ((int)($registryRow['active'] ?? 0) === 1) ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>' ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <div class="itm-actions-wrap">
                                             <a class="btn btn-sm" href="view.php?id=<?= (int)$registryRow['id'] ?>">🔎</a>
@@ -463,13 +461,7 @@ if (!isset($crud_title)) {
                                     <span>System Module <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$formValues['is_system_module'] === 1) ? '✅' : '❌' ?></span></span>
                                 </label>
                             </div>
-                            <div class="form-group">
-                                <label><?= sanitize('Active') ?></label>
-                                <label class="itm-checkbox-control">
-                                    <input type="checkbox" name="active" value="1" <?= ((int)$formValues['active'] === 1) ? 'checked' : '' ?>>
-                                    <span>Active <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$formValues['active'] === 1) ? '✅' : '❌' ?></span></span>
-                                </label>
-                            </div>
+                            <input type="hidden" name="active" value="<?= (int)$formValues['active'] ?>">
                             <button type="submit" class="btn btn-primary" title="<?php echo $crud_action === 'create' ? 'Create' : 'Save'; ?>"><?php echo $crud_action === 'create' ? '➕' : '💾'; ?></button>
                             <a class="btn" href="list_all.php" title="Cancel">🔙</a>
                         </form>
@@ -486,7 +478,6 @@ if (!isset($crud_title)) {
                                                       <?= sanitize((string)($viewRow['module_slug'] ?? '')) ?></a></p>
                             <p><strong>Global Icon:</strong> <?= sanitize((string)($viewRow['icon'] ?? '')) !== '' ? sanitize((string)$viewRow['icon']) : '—' ?></p>
                             <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
-                            <p><strong>Active:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['active'] === 1) ? '✅' : '❌' ?></span></p>
                             <a class="btn btn-sm" href="edit.php?id=<?= (int)$viewRow['id'] ?>">✏️</a>
                             <a class="btn btn-sm" href="list_all.php">🔙</a>
                         <?php endif; ?>

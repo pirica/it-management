@@ -4,7 +4,7 @@
 Manages individual ports on a switch device, tracking connectivity, VLANs, and status.
 
 ## 2. Key Tables
-- **switch_ports** — main port data.
+- **switch_ports** — main port data, including `active` (tinyint DEFAULT 1, hidden field).
 
 ## 3. Required Relationships
 - **switch_ports** → depends on **companies**.

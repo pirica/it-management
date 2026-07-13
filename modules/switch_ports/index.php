@@ -939,6 +939,9 @@ foreach ($columns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    if (($col['Field'] ?? '') === 'active') {
+        return false;
+    }
     return !cr_is_hidden_display_field($col['Field']);
 }));
 
@@ -1722,6 +1725,7 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="active" value="<?php echo sanitize(($data['active'] ?? '') === '0' ? '0' : '1'); ?>">
                     <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');

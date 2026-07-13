@@ -103,6 +103,7 @@ if (!isset($crud_title)) {
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="id" value="<?php echo (int)$employeeId; ?>">
+                    <input type="hidden" name="active" value="1">
 
                     <div style="margin-bottom:10px;">
                         <button type="button" class="btn btn-sm" id="esa-select-all-access">Select All</button>

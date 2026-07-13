@@ -4,7 +4,7 @@
 Manages and tracks the various systems and applications an employee has access to (e.g., "Email", "VPN", "CRM").
 
 ## 2. Key Tables
-- **employee_system_access** — mapping table between employees and systems.
+- **employee_system_access** — mapping table between employees and systems, including `active` (tinyint DEFAULT 1, hidden field).
 
 ## 3. Required Relationships
 - **employee_system_access** → depends on **companies**.

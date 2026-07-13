@@ -4,7 +4,7 @@
 Defines rack-unit placement of devices within an IDF (`position_no`, device type, name, RJ45/SFP counts, optional equipment link, price, and layout). Positions are the parent of **idf_ports** and anchor sync to **equipment** and **switch_ports**.
 
 ## 2. Key Tables
-- **idf_positions** — device slot in an IDF rack (`idf_id`, `position_no`, `device_type`, `device_name`, port counts, `equipment_id`, `price`).
+- **idf_positions** — device slot in an IDF rack (`idf_id`, `position_no`, `device_type`, `device_name`, port counts, `equipment_id`, `price`), including `active` (tinyint DEFAULT 1, hidden field).
 - **idfs** — parent frame (`idf_id`, `ON DELETE CASCADE`).
 - **idf_device_type** — device type lookup (`device_type`, `ON DELETE RESTRICT`).
 - **idf_ports** — child ports generated per position (`position_id`).
