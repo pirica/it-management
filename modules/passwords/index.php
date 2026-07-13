@@ -1,6 +1,6 @@
 <?php
 
-$crud_table = 'passwords';
+$crud_table = 'password_entries';
 $crud_title = 'Passwords';
 $crud_action = 'index';
 

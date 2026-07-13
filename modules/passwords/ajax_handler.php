@@ -36,12 +36,12 @@ switch ($action) {
         $parent_id = (!empty($_POST['parent_id']) && $_POST['parent_id'] != '0') ? (int)$_POST['parent_id'] : null;
         
         if ($id) {
-            $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ? WHERE id = ? AND employee_id = ?");
-            mysqli_stmt_bind_param($stmt, 'siii', $name, $parent_id, $id, $user_id);
+            $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ?, updated_by = ? WHERE id = ? AND employee_id = ?");
+            mysqli_stmt_bind_param($stmt, 'siiii', $name, $parent_id, $user_id, $id, $user_id);
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (company_id, employee_id, name, parent_id) VALUES (?, ?, ?, ?)");
+            $stmt = mysqli_prepare($conn, "INSERT INTO password_folders (company_id, employee_id, name, parent_id, created_by) VALUES (?, ?, ?, ?, ?)");
             $company_id_val = (int)$_SESSION['company_id'];
-            mysqli_stmt_bind_param($stmt, 'iisi', $company_id_val, $user_id, $name, $parent_id);
+            mysqli_stmt_bind_param($stmt, 'iisii', $company_id_val, $user_id, $name, $parent_id, $user_id);
         }
         
         if (mysqli_stmt_execute($stmt)) {
