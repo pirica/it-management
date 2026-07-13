@@ -32,7 +32,7 @@ $stat_definitions = [
     ['table' => 'employee_sidebar_preferences', 'field' => 'employee_id', 'label' => 'Sidebar Prefs', 'slug' => 'employee_sidebar_preferences'],
     ['table' => 'equipment', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Equiments', 'slug' => 'equipment'],
     ['table' => 'events', 'field' => 'assigned_to_employee_id', 'label' => 'Events for Me', 'slug' => 'events'],
-    ['table' => 'events', 'field' => 'created_by_employee_id', 'label' => 'Events Created', 'slug' => 'events'],
+    ['table' => 'events', 'field' => 'created_by', 'label' => 'Events Created', 'slug' => 'events'],
     ['table' => 'floor_plans', 'field' => 'created_by_employee_id', 'label' => 'Floor Plans', 'slug' => 'floor_plans'],
     ['table' => 'inventory_items', 'field' => 'last_employee_id', 'label' => 'Last Handled', 'slug' => 'inventory_items'],
     ['table' => 'note_labels', 'field' => 'employee_id', 'label' => 'Note Tags', 'slug' => 'notes'],

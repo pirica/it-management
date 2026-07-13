@@ -4,12 +4,12 @@
 Manages scheduled events, meetings, and maintenance windows.
 
 ## 2. Key Tables
-- **events** — main event data.
+- **events** — main event data. Features standard audit/metadata columns: `active` (tinyint), `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Note that `created_by_employee_id` has been removed and replaced with standard `created_by`.
 
 ## 3. Required Relationships
 - **events** → depends on **companies**.
 - **events** → depends on **event_categories**.
-- **events** → links to **users** (via `assigned_to_employee_id`).
+- **events** → links to **users** (via `assigned_to_employee_id`, and metadata users `created_by`, `updated_by`, `deleted_by`).
 
 ## 4. Business Rules (Critical for Agents)
 - **Date Validation**: `start_datetime` should generally be before `end_datetime`.
@@ -21,7 +21,7 @@ Manages scheduled events, meetings, and maintenance windows.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
-- **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+- **`active` field**: Previously rendered as checkbox in create/edit, now handled as standard metadata column and rendered as `<input type="hidden">` along with `deleted_by`, `deleted_at`, `created_by`, and `updated_by`.
 
 - **ICS Export**: Often supports exporting to iCalendar format.
 
