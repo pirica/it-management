@@ -221,7 +221,7 @@ $stat_definitions = [
     ['table' => 'tickets', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Tickets', 'slug' => 'tickets', 'use_company' => true, 'use_active' => true],
     ['table' => 'tickets', 'field' => 'created_by_employee_id', 'label' => 'Created Tickets', 'slug' => 'tickets', 'use_company' => true, 'use_active' => true],
     ['table' => 'todo', 'field' => 'assigned_to_employee_id', 'label' => 'My Todos', 'slug' => 'todo', 'use_company' => true, 'use_active' => true],
-    ['table' => 'todo', 'field' => 'created_by_employee_id', 'label' => 'My Todos', 'slug' => 'todo', 'use_company' => true, 'use_active' => true],
+    ['table' => 'todo', 'field' => 'created_by', 'label' => 'My Todos', 'slug' => 'todo', 'use_company' => true, 'use_active' => true],
     ['table' => 'todo_categories', 'field' => 'cat_from_employee_id', 'label' => 'Todo Categories', 'slug' => 'todo', 'use_company' => true, 'use_active' => true],
     ['table' => 'ui_configuration', 'field' => 'employee_id', 'label' => 'UI Preferences', 'slug' => 'settings', 'use_company' => true, 'use_active' => true],
 ];

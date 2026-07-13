@@ -7441,11 +7441,14 @@ CREATE TABLE `todo` (
   `category_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `assigned_to_employee_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_by_employee_id` int DEFAULT NULL,
   `completed` tinyint NOT NULL DEFAULT '0',
   `importance` tinyint NOT NULL DEFAULT '0',
-  `active` tinyint NOT NULL DEFAULT '1',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_todo_company_scope` (`company_id`, `title`, `id`),
@@ -7453,7 +7456,7 @@ CREATE TABLE `todo` (
   KEY `category_id` (`category_id`),
   KEY `department_id` (`department_id`),
   KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
-  KEY `created_by_employee_id` (`created_by_employee_id`),
+  KEY `created_by` (`created_by`),
   CONSTRAINT `todo_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -7515,10 +7518,15 @@ BEGIN
         'category_id', NEW.`category_id`,
         'department_id', NEW.`department_id`,
         'assigned_to_employee_id', NEW.`assigned_to_employee_id`,
-        'created_by_employee_id', NEW.`created_by_employee_id`,
         'completed', NEW.`completed`,
         'importance', NEW.`importance`,
-        'active', NEW.`active`
+        'active', NEW.`active`,
+        'deleted_by', NEW.`deleted_by`,
+        'deleted_at', NEW.`deleted_at`,
+        'created_by', NEW.`created_by`,
+        'created_at', NEW.`created_at`,
+        'updated_by', NEW.`updated_by`,
+        'updated_at', NEW.`updated_at`
       ),
       @app_ip_address,
       @app_user_agent
@@ -7555,10 +7563,15 @@ BEGIN
         'category_id', OLD.`category_id`,
         'department_id', OLD.`department_id`,
         'assigned_to_employee_id', OLD.`assigned_to_employee_id`,
-        'created_by_employee_id', OLD.`created_by_employee_id`,
         'completed', OLD.`completed`,
         'importance', OLD.`importance`,
-        'active', OLD.`active`
+        'active', OLD.`active`,
+        'deleted_by', OLD.`deleted_by`,
+        'deleted_at', OLD.`deleted_at`,
+        'created_by', OLD.`created_by`,
+        'created_at', OLD.`created_at`,
+        'updated_by', OLD.`updated_by`,
+        'updated_at', OLD.`updated_at`
       ),
       JSON_OBJECT(
         'id', NEW.`id`,
@@ -7571,10 +7584,15 @@ BEGIN
         'category_id', NEW.`category_id`,
         'department_id', NEW.`department_id`,
         'assigned_to_employee_id', NEW.`assigned_to_employee_id`,
-        'created_by_employee_id', NEW.`created_by_employee_id`,
         'completed', NEW.`completed`,
         'importance', NEW.`importance`,
-        'active', NEW.`active`
+        'active', NEW.`active`,
+        'deleted_by', NEW.`deleted_by`,
+        'deleted_at', NEW.`deleted_at`,
+        'created_by', NEW.`created_by`,
+        'created_at', NEW.`created_at`,
+        'updated_by', NEW.`updated_by`,
+        'updated_at', NEW.`updated_at`
       ),
       @app_ip_address,
       @app_user_agent
@@ -7611,10 +7629,15 @@ BEGIN
         'category_id', OLD.`category_id`,
         'department_id', OLD.`department_id`,
         'assigned_to_employee_id', OLD.`assigned_to_employee_id`,
-        'created_by_employee_id', OLD.`created_by_employee_id`,
         'completed', OLD.`completed`,
         'importance', OLD.`importance`,
-        'active', OLD.`active`
+        'active', OLD.`active`,
+        'deleted_by', OLD.`deleted_by`,
+        'deleted_at', OLD.`deleted_at`,
+        'created_by', OLD.`created_by`,
+        'created_at', OLD.`created_at`,
+        'updated_by', OLD.`updated_by`,
+        'updated_at', OLD.`updated_at`
       ),
       NULL,
       @app_ip_address,

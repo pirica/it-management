@@ -27,14 +27,14 @@ class TodoVisibilityTest extends TestCase
         $sql = itm_todo_visibility_sql('t');
         $this->assertStringContainsString('t.assigned_to_employee_id IS NULL', $sql);
         $this->assertStringContainsString('FIND_IN_SET(?, t.assigned_to_employee_id)', $sql);
-        $this->assertStringContainsString('t.created_by_employee_id = ?', $sql);
+        $this->assertStringContainsString('t.created_by = ?', $sql);
     }
 
     public function testVisibilitySqlLiteral(): void
     {
         $sql = itm_todo_visibility_sql_literal(5, 't');
         $this->assertStringContainsString('FIND_IN_SET(5, t.assigned_to_employee_id)', $sql);
-        $this->assertStringContainsString('t.created_by_employee_id = 5', $sql);
+        $this->assertStringContainsString('t.created_by = 5', $sql);
     }
 
     public function testAppendVisibilityFilter(): void

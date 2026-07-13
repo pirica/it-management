@@ -62,7 +62,7 @@ class TodoTest extends TestCase
 
         // 1. Create - Public task (assigned to NULL, created by u1)
         $publicTitle = 'Test Public Task ' . uniqid();
-        $sql = "INSERT INTO `todo` (company_id, title, description, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, 'Desc', NULL, ?, 1)";
+        $sql = "INSERT INTO `todo` (company_id, title, description, assigned_to_employee_id, created_by, active) VALUES (?, ?, 'Desc', NULL, ?, 1)";
         $stmt = mysqli_prepare($this->conn, $sql);
         if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'isi', $this->companyId, $publicTitle, $u1);
@@ -72,7 +72,7 @@ class TodoTest extends TestCase
 
         // 2. Create - Private task (assigned to u2, created by u1)
         $privateTitle = 'Test Private Task ' . uniqid();
-        $sql = "INSERT INTO `todo` (company_id, title, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, ?, ?, 1)";
+        $sql = "INSERT INTO `todo` (company_id, title, assigned_to_employee_id, created_by, active) VALUES (?, ?, ?, ?, 1)";
         $stmt = mysqli_prepare($this->conn, $sql);
         if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'isii', $this->companyId, $privateTitle, $u2, $u1);
@@ -126,7 +126,7 @@ class TodoTest extends TestCase
         // 6. Test Multi-Assignment Visibility
         $multiTitle = 'Test Multi Task ' . uniqid();
         $assignedTo = $u2 . ',' . $u3;
-        $sql = "INSERT INTO `todo` (company_id, title, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, ?, ?, 1)";
+        $sql = "INSERT INTO `todo` (company_id, title, assigned_to_employee_id, created_by, active) VALUES (?, ?, ?, ?, 1)";
         $stmt = mysqli_prepare($this->conn, $sql);
         mysqli_stmt_bind_param($stmt, 'issi', $this->companyId, $multiTitle, $assignedTo, $u1);
         mysqli_stmt_execute($stmt);
@@ -154,7 +154,7 @@ class TodoTest extends TestCase
         $u1 = $this->employeeIds[0];
         $title = 'Status Task ' . uniqid();
 
-        $sql = "INSERT INTO todo (company_id, title, importance, completed, created_by_employee_id) VALUES (?, ?, 1, 1, ?)";
+        $sql = "INSERT INTO todo (company_id, title, importance, completed, created_by) VALUES (?, ?, 1, 1, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         if (!$stmt) { $this->fail(mysqli_error($this->conn)); }
         mysqli_stmt_bind_param($stmt, 'isi', $this->companyId, $title, $u1);
@@ -177,7 +177,7 @@ class TodoTest extends TestCase
         $title = 'Private Task ' . uniqid();
 
         // Create a private task for u1
-        $sql = "INSERT INTO todo (company_id, title, assigned_to_employee_id, created_by_employee_id, active) VALUES (?, ?, ?, ?, 1)";
+        $sql = "INSERT INTO todo (company_id, title, assigned_to_employee_id, created_by, active) VALUES (?, ?, ?, ?, 1)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $assignedTo = (string)$u1;
         mysqli_stmt_bind_param($stmt, 'isii', $this->companyId, $title, $assignedTo, $u1);

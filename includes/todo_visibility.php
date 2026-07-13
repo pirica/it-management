@@ -22,7 +22,7 @@ function itm_todo_visibility_sql($alias = '')
     $prefix = itm_todo_normalize_sql_alias($alias);
     return '(' . $prefix . 'assigned_to_employee_id IS NULL OR '
         . 'FIND_IN_SET(?, ' . $prefix . 'assigned_to_employee_id) OR '
-        . $prefix . 'created_by_employee_id = ?)';
+        . $prefix . 'created_by = ?)';
 }
 
 function itm_todo_visibility_sql_literal($loggedUserId, $alias = '')
@@ -31,7 +31,7 @@ function itm_todo_visibility_sql_literal($loggedUserId, $alias = '')
     $prefix = itm_todo_normalize_sql_alias($alias);
     return '(' . $prefix . 'assigned_to_employee_id IS NULL OR '
         . 'FIND_IN_SET(' . $employeeId . ', ' . $prefix . 'assigned_to_employee_id) OR '
-        . $prefix . 'created_by_employee_id = ' . $employeeId . ')';
+        . $prefix . 'created_by = ' . $employeeId . ')';
 }
 
 function itm_todo_append_visibility_filter(&$conditions, &$types, &$params, $loggedUserId, $alias = '')
