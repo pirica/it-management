@@ -6,7 +6,9 @@
  */
 $crud_table = 'request_password';
 $crud_title = 'Request Password';
-$crud_action = 'index';
+if (!isset($crud_action)) {
+    $crud_action = 'index';
+}
 
 
 require_once '../../config/config.php';
@@ -155,8 +157,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     if ($crud_action == 'delete') {
         $id = (int)$_POST['id'];
-        $stmt = mysqli_prepare($conn, "DELETE FROM request_password WHERE id = ? AND company_id = ?");
-        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        $deleted_by = (int)($_SESSION['employee_id'] ?? 0);
+        $stmt = mysqli_prepare($conn, "UPDATE request_password SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?");
+        mysqli_stmt_bind_param($stmt, 'iii', $deleted_by, $id, $company_id);
         mysqli_stmt_execute($stmt);
         header("Location: index.php");
         exit;
@@ -167,15 +170,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $application = $_POST['application'];
     $reason = $_POST['reason'];
 
+    $active = isset($_POST['active']) && $_POST['active'] !== '' ? (int)$_POST['active'] : 1;
+    $created_by = isset($_POST['created_by']) && $_POST['created_by'] !== '' ? (int)$_POST['created_by'] : (int)($_SESSION['employee_id'] ?? 0);
+    $updated_by = (int)($_SESSION['employee_id'] ?? 0);
+    $created_at = !empty($_POST['created_at']) ? $_POST['created_at'] : null;
+    $updated_at = !empty($_POST['updated_at']) ? $_POST['updated_at'] : null;
+    $deleted_by = isset($_POST['deleted_by']) && $_POST['deleted_by'] !== '' ? (int)$_POST['deleted_by'] : null;
+    $deleted_at = !empty($_POST['deleted_at']) ? $_POST['deleted_at'] : null;
+
     if ($crud_action == 'create') {
-        $sql = "INSERT INTO request_password (company_id, employee_id, requested_by_employee_id, application, reason, applicant_signature_date) VALUES (?, ?, ?, ?, ?, CURDATE())";
+        $sql = "INSERT INTO request_password (company_id, employee_id, requested_by_employee_id, application, reason, applicant_signature_date, active, deleted_by, deleted_at, created_by, created_at, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'iiiss', $company_id, $employee_id, $requested_by_employee_id, $application, $reason);
+        mysqli_stmt_bind_param($stmt, 'iiississisis', $company_id, $employee_id, $requested_by_employee_id, $application, $reason, $active, $deleted_by, $deleted_at, $created_by, $created_at, $updated_by, $updated_at);
     } else {
         $id = (int)$_POST['id'];
-        $sql = "UPDATE request_password SET employee_id = ?, requested_by_employee_id = ?, application = ?, reason = ? WHERE id = ? AND company_id = ?";
+        $sql = "UPDATE request_password SET employee_id = ?, requested_by_employee_id = ?, application = ?, reason = ?, active = ?, deleted_by = ?, deleted_at = ?, created_by = ?, created_at = ?, updated_by = ?, updated_at = ? WHERE id = ? AND company_id = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'iissii', $employee_id, $requested_by_employee_id, $application, $reason, $id, $company_id);
+        mysqli_stmt_bind_param($stmt, 'iississisiiii', $employee_id, $requested_by_employee_id, $application, $reason, $active, $deleted_by, $deleted_at, $created_by, $created_at, $updated_by, $updated_at, $id, $company_id);
     }
 
     if (mysqli_stmt_execute($stmt)) {
@@ -300,7 +311,7 @@ if (!isset($crud_title)) {
                             <tbody>
                                 <?php
                                 $search = $_GET['search'] ?? '';
-                                $where = "rp.company_id = ?";
+                                $where = "rp.company_id = ? AND rp.active = 1";
                                 $params = [$company_id];
                                 $types = 'i';
                                 if ($search) {
@@ -356,6 +367,13 @@ if (!isset($crud_title)) {
                     <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
                     <input type="hidden" name="id" value="<?php echo $data['id'] ?? ''; ?>">
                     <input type="hidden" name="employee_id" value="<?php echo $emp_id; ?>">
+                    <input type="hidden" name="active" value="<?php echo sanitize((string)($data['active'] ?? 1)); ?>">
+                    <input type="hidden" name="deleted_by" value="<?php echo sanitize((string)($data['deleted_by'] ?? '')); ?>">
+                    <input type="hidden" name="deleted_at" value="<?php echo sanitize((string)($data['deleted_at'] ?? '')); ?>">
+                    <input type="hidden" name="created_by" value="<?php echo sanitize((string)($data['created_by'] ?? ($_SESSION['employee_id'] ?? ''))); ?>">
+                    <input type="hidden" name="created_at" value="<?php echo sanitize((string)($data['created_at'] ?? '')); ?>">
+                    <input type="hidden" name="updated_by" value="<?php echo sanitize((string)($data['updated_by'] ?? ($_SESSION['employee_id'] ?? ''))); ?>">
+                    <input type="hidden" name="updated_at" value="<?php echo sanitize((string)($data['updated_at'] ?? '')); ?>">
 
                     <div class="request-header">
                         <h2>REQUEST FORM CHANGE OF PASSWORDS</h2>
@@ -391,7 +409,7 @@ if (!isset($crud_title)) {
                                 <select name="requested_by_employee_id" required>
                                     <option value="">-- Select Employee --</option>
                                     <?php
-                                    $stmt = mysqli_prepare($conn, "SELECT id, first_name, last_name FROM employees WHERE company_id = ? AND active = 1 ORDER BY first_name");
+                                    $stmt = mysqli_prepare($conn, "SELECT e.id, e.first_name, e.last_name FROM employees e LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND (es.active = 1 OR es.id IS NULL) ORDER BY e.first_name");
                                     mysqli_stmt_bind_param($stmt, 'i', $company_id);
                                     mysqli_stmt_execute($stmt);
                                     $emp_res = mysqli_stmt_get_result($stmt);

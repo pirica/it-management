@@ -4,7 +4,7 @@
 Handles user requests for password changes/resets. Requires a multi-stage approval workflow involving HR and HOD before ISM can finalize the request.
 
 ## Tables
-- `request_password`: Main table storing request details, status, and signature dates.
+- `request_password`: Main table storing request details, status, and signature dates. Includes standard metadata columns (`active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`).
 - `employees`: Linked for applicant and "requested by" details.
 - `departments`: Linked for applicant's department name.
 - `employee_system_access`: Used to populate the available applications for which a password can be requested.
@@ -25,3 +25,5 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - Authorize/Decline links use HMAC-SHA256 signed tokens to prevent tampering.
 - CSRF protection on all POST actions.
 - Multi-tenancy strictly enforced via `company_id`.
+- Soft delete pattern implemented: deleting a request password record updates `active = 0`, sets `deleted_by` and `deleted_at`, rather than hard-deleting the database row.
+- Audit triggers are defined in `database.sql` for INSERT, UPDATE, and DELETE actions on `request_password`, which capture both old and new states in the `audit_logs` table.
