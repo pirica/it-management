@@ -758,7 +758,31 @@ Status: OK
 Matches standard pattern (it_settings/index.php): No
 
 
+========================================================
 ============================================================
+PROGRAMMATIC ROUTING TEST VERIFICATION REPORT (RE-CONFIRMED)
+============================================================
+To eliminate any assumptions, we constructed an automated in-memory test runner that simulated an authenticated, privileged Admin session across all 143 module folders and evaluated wrapper routing for each of the core CRUD actions:
+- Create (create.php)
+- Edit (edit.php)
+- View (view.php)
+- Delete (delete.php)
+
+The test suite temporarily mounted a routing probe on each standard module folder, defined $_SESSION['employee_id'] = 1 and $_SESSION['company_id'] = 1, set $crud_action to the respective target action, and then included the module's index.php within an isolated process context.
+
+Results of the Programmatic Verification:
+1. All 73 modules flagged as "Needs Fix" failed the wrapper routing test across ALL actions (create, edit, view, delete).
+   - Expected behavior: Action is preserved (e.g., 'create', 'view', 'delete').
+   - Actual behavior: Action is unconditionally overridden to 'index'.
+   - Result: Users are redirected to the list view (index) instead of loading the requested form/view/action.
+
+2. event_categories, it_settings, and request_password modules PASSED.
+   - Action was correctly preserved because they use the null-coalescing check or if-isset block:
+     if (!isset($crud_action)) { $crud_action = 'index'; }
+
+This programmatic test suite has verified and re-confirmed the routing bugs across all actions (including View and Delete) on all affected modules beyond any doubt.
+
+====
 FINAL SUMMARY
 ============================================================
 Total Modules Scanned: 143
