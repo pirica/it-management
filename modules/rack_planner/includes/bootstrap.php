@@ -1,10 +1,37 @@
 <?php
 // Data Fetching
-$data = ['id' => 0, 'name' => '', 'rack_units' => 42, 'layout_json' => '{"version":1,"units":42,"devices":[]}', 'notes' => '', 'active' => 1];
+$defaultStatusId = 0;
+$statusQuery = "SELECT id FROM rack_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1";
+$stmtStatus = mysqli_prepare($conn, $statusQuery);
+if ($stmtStatus) {
+    mysqli_stmt_bind_param($stmtStatus, 'i', $company_id);
+    mysqli_stmt_execute($stmtStatus);
+    $resStatus = mysqli_stmt_get_result($stmtStatus);
+    if ($rowStatus = mysqli_fetch_assoc($resStatus)) {
+        $defaultStatusId = (int)$rowStatus['id'];
+    }
+    mysqli_stmt_close($stmtStatus);
+}
+if ($defaultStatusId === 0) {
+    $statusQuery = "SELECT id FROM rack_statuses WHERE company_id = ? ORDER BY id ASC LIMIT 1";
+    $stmtStatus = mysqli_prepare($conn, $statusQuery);
+    if ($stmtStatus) {
+        mysqli_stmt_bind_param($stmtStatus, 'i', $company_id);
+        mysqli_stmt_execute($stmtStatus);
+        $resStatus = mysqli_stmt_get_result($stmtStatus);
+        if ($rowStatus = mysqli_fetch_assoc($resStatus)) {
+            $defaultStatusId = (int)$rowStatus['id'];
+        }
+        mysqli_stmt_close($stmtStatus);
+    }
+}
+
+$data = ['id' => 0, 'name' => '', 'rack_units' => 42, 'layout_json' => '{"version":1,"units":42,"devices":[]}', 'notes' => '', 'active' => 1, 'status_id' => $defaultStatusId];
 if (in_array($crud_action, ['edit', 'view'])) {
     $id = (int)($_GET['id'] ?? 0);
     if ($id > 0) {
-        $stmt = mysqli_prepare($conn, "SELECT * FROM rack_planner WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
+        // Explicitly select active (even though it's INVISIBLE and always 1) to populate the data array correctly
+        $stmt = mysqli_prepare($conn, "SELECT *, active FROM rack_planner WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
