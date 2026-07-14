@@ -2,7 +2,7 @@
 
 $crud_table = 'rj45_speed';
 $crud_title = 'RJ45 Speed';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 function cr_form_display_value($value) {
     return itm_cr_form_display_value($value);
@@ -26,7 +26,7 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
 }
 
 $crud_title = ucwords(str_replace('_', ' ', $crud_table));
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
 /**

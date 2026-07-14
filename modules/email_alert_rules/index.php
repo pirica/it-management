@@ -14,7 +14,7 @@
 
 $crud_table = 'email_alert_rules';
 $crud_title = 'Email Alert Rules';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

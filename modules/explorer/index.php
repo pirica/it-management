@@ -12,7 +12,7 @@
 
 $crud_table = 'explorer';
 $crud_title = 'Explorer';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
 

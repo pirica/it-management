@@ -6,7 +6,7 @@
  */
 $crud_table = 'floor_designer';
 $crud_title = 'Floor Designer';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
 

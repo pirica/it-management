@@ -9,7 +9,7 @@
 $crud_table = 'it_settings';
 $crud_title = 'IT Settings';
 if (!isset($crud_action)) {
-    $crud_action = 'index';
+    $crud_action = $crud_action ?? 'index';
 }
 
 function cr_form_display_value($value) {
@@ -31,7 +31,7 @@ itm_require_crud_role_module_permission($conn, 'view', $crud_table);
 
 $crud_title = ucwords(str_replace('_', ' ', $crud_table));
 if (!isset($crud_action)) {
-    $crud_action = 'index';
+    $crud_action = $crud_action ?? 'index';
 }
 $pk = 'id';
 

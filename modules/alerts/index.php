@@ -27,7 +27,7 @@ require_once ROOT_PATH . 'includes/alerts_visibility.php';
 
 $crud_table = 'alerts';
 $crud_title = 'Alerts';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 ?>
 <?php

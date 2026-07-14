@@ -1,7 +1,7 @@
 <?php
 $crud_table = 'private_contacts';
 $crud_title = 'Private Contacts';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 require_once 'index_logic.php';
 
 ?>

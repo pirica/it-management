@@ -2,7 +2,7 @@
 
 $crud_table = 'expiring';
 $crud_title = 'Expiring';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 
 $expiring_action = $expiring_action ?? 'index';

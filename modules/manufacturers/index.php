@@ -17,7 +17,7 @@
 
 $crud_table = 'manufacturers';
 $crud_title = 'Manufacturers';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
