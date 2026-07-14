@@ -17,7 +17,7 @@
 
 $crud_table = 'ui_configuration';
 $crud_title = 'Ui Configuration';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

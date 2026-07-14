@@ -7,7 +7,7 @@ require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/notes_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 $crud_title = "Notes";
-$crud_action = "index";
+$crud_action = $crud_action ?? 'index';
 $logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
 $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 $data = [];

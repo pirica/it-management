@@ -1,7 +1,7 @@
 <?php
 $crud_table = 'vlans';
 $crud_title = 'Vlans';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
@@ -12,7 +12,7 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
 }
 
 $crud_title = ucwords(str_replace('_', ' ', $crud_table));
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
 function cr_escape_identifier($name) {

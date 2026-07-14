@@ -15,7 +15,7 @@
 
 $crud_table = 'email_smtp_configurations';
 $crud_title = 'Email Smtp Configurations';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

@@ -2,7 +2,7 @@
 
 $crud_table = 'password_entries';
 $crud_title = 'Passwords';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
 

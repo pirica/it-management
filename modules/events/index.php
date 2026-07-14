@@ -18,7 +18,7 @@
 
 $crud_table = 'events';
 $crud_title = 'Events';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';

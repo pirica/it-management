@@ -10,7 +10,7 @@
  */
 $crud_table = 'tickets';
 $crud_title = 'Tickets';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';

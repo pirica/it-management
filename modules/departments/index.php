@@ -11,7 +11,7 @@ function cr_form_display_value($value) {
 
 $crud_table = 'departments';
 $crud_title = 'Departments';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
@@ -25,7 +25,7 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
 itm_require_crud_role_module_permission($conn, 'view', $crud_table);
 
 $crud_title = ucwords(str_replace('_', ' ', $crud_table));
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
 /**

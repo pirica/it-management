@@ -7,7 +7,7 @@
 $crud_table = 'request_password';
 $crud_title = 'Request Password';
 if (!isset($crud_action)) {
-    $crud_action = 'index';
+    $crud_action = $crud_action ?? 'index';
 }
 
 

@@ -10,7 +10,7 @@ require_once '../../includes/itm_crud_fk_label_search.php';
 
 $crud_table = 'floor_designer_points';
 $crud_title = 'Floor Designer Points';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 

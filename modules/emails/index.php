@@ -5,7 +5,7 @@
 
 $crud_table = 'emails';
 $crud_title = 'Emails';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 

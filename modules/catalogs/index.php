@@ -18,7 +18,7 @@
 
 $crud_table = 'catalogs';
 $crud_title = 'Catalogs';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

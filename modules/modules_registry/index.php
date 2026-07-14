@@ -15,7 +15,7 @@
 
 $crud_table = 'modules_registry';
 $crud_title = 'Modules Registry';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

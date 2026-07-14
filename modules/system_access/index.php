@@ -11,7 +11,7 @@
  */
 $crud_table = 'system_access';
 $crud_title = 'System Access';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 

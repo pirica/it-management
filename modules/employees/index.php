@@ -13,7 +13,7 @@
 
 $crud_table = 'employees';
 $crud_title = 'Employees';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);

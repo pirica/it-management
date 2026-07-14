@@ -9,7 +9,7 @@
 $crud_table = 'knowledge_base';
 $crud_title = 'Knowledge Base';
 if (!isset($crud_action)) {
-    $crud_action = 'index';
+    $crud_action = $crud_action ?? 'index';
 }
 
 function cr_form_display_value($value) {
@@ -30,7 +30,7 @@ if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
 itm_require_crud_role_module_permission($conn, 'view', $crud_table);
 
 $crud_title = ucwords(str_replace('_', ' ', $crud_table));
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
 /**
