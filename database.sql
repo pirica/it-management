@@ -6437,6 +6437,7 @@ CREATE TABLE `rack_planner` (
   `rack_units` int NOT NULL DEFAULT '42',
   `layout_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `status_id` int NOT NULL,
   `active` tinyint(1) DEFAULT '1' INVISIBLE,
   `deleted_by` int DEFAULT NULL INVISIBLE,
   `deleted_at` timestamp NULL DEFAULT NULL INVISIBLE,
@@ -6448,29 +6449,31 @@ CREATE TABLE `rack_planner` (
   UNIQUE KEY `rack_planner_name_company` (`company_id`,`name`),
   KEY `rack_planner_company_id` (`company_id`),
   KEY `rack_planner_employee_id` (`employee_id`),
+  KEY `rack_planner_status_id` (`status_id`),
   CONSTRAINT `rack_planner_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `rack_planner_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+  CONSTRAINT `rack_planner_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rack_planner_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `rack_statuses` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `rack_planner` (`company_id`, `employee_id`, `id`, `name`, `rack_units`, `layout_json`, `notes`, `active`, `created_at`) VALUES (1, 1, 1, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 1.', 1, '2026-01-01 00:00:01'),
-(2, 2, 2, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 2.', 1, '2026-01-01 00:00:01'),
-(3, 3, 3, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 3.', 1, '2026-01-01 00:00:01'),
-(4, 4, 4, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 4.', 1, '2026-01-01 00:00:01'),
-(5, 5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 1, '2026-01-01 00:00:01');
+INSERT INTO `rack_planner` (`company_id`, `employee_id`, `id`, `name`, `rack_units`, `layout_json`, `notes`, `status_id`, `active`, `created_at`) VALUES (1, 1, 1, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 1.', 1, 1, '2026-01-01 00:00:01'),
+(2, 2, 2, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 2.', 5, 1, '2026-01-01 00:00:01'),
+(3, 3, 3, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 3.', 9, 1, '2026-01-01 00:00:01'),
+(4, 4, 4, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 4.', 13, 1, '2026-01-01 00:00:01'),
+(5, 5, 5, 'Core Rack A', 42, '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 5.', 17, 1, '2026-01-01 00:00:01');
 DROP TRIGGER IF EXISTS `trg_rack_planner_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_rack_planner_audit_update`;
 DROP TRIGGER IF EXISTS `trg_rack_planner_audit_delete`;
 DELIMITER $$
 CREATE TRIGGER `trg_rack_planner_audit_insert` AFTER INSERT ON `rack_planner` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'name', NEW.`name`, 'rack_units', NEW.`rack_units`, 'layout_json', NEW.`layout_json`, 'notes', NEW.`notes`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'name', NEW.`name`, 'rack_units', NEW.`rack_units`, 'layout_json', NEW.`layout_json`, 'notes', NEW.`notes`, 'status_id', NEW.`status_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_rack_planner_audit_update` AFTER UPDATE ON `rack_planner` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'name', NEW.`name`, 'rack_units', NEW.`rack_units`, 'layout_json', NEW.`layout_json`, 'notes', NEW.`notes`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'status_id', OLD.`status_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'name', NEW.`name`, 'rack_units', NEW.`rack_units`, 'layout_json', NEW.`layout_json`, 'notes', NEW.`notes`, 'status_id', NEW.`status_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 CREATE TRIGGER `trg_rack_planner_audit_delete` AFTER DELETE ON `rack_planner` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'rack_planner', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'name', OLD.`name`, 'rack_units', OLD.`rack_units`, 'layout_json', OLD.`layout_json`, 'notes', OLD.`notes`, 'status_id', OLD.`status_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
 -- Table structure for `explorer`

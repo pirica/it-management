@@ -9,7 +9,9 @@ require '../../config/config.php';
 
 $crud_table = 'rack_planner';
 $crud_title = 'Rack Planner';
-$crud_action = 'index';
+if (!isset($crud_action)) {
+    $crud_action = 'index';
+}
 
 require __DIR__ . '/includes/functions.php';
 require __DIR__ . '/includes/handlers.php';
