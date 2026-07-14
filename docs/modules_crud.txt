@@ -1,0 +1,847 @@
+Module: access_levels
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: alerts
+Status: Needs Fix
+  Incorrect line (Line 30): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: annual_budgets
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: approvals
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: approvals_stage
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: approver_type
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: approvers
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: assignment_types
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: attempts
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: audit_logs
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: backup_tape_log
+Status: Needs Fix
+  Incorrect line (Line 12): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: birthdays
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: bookmark_folders
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: bookmarks
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: budget_categories
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: budget_report
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: cable_colors
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 25): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: calendar
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: catalogs
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: companies
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: company_module_access
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: contacts
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: cost_centers
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: departments
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 28): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: email_alert_rules
+Status: Needs Fix
+  Incorrect line (Line 17): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: email_smtp_configurations
+Status: Needs Fix
+  Incorrect line (Line 18): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: emails
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_assignment_history
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_companies
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_onboarding_requests
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_positions
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_roles
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_sidebar_preferences
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_statuses
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 28): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_system_access
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: employee_type
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: employees
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment
+Status: Needs Fix
+  Incorrect line (Line 13): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_environment
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_fiber
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_fiber_count
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_fiber_patch
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_fiber_rack
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_poe
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 30): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_rj45
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_statuses
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 26): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: equipment_types
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: event_categories
+Status: OK
+Matches standard pattern (it_settings/index.php): Yes
+
+Module: events
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: expenses
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: expiring
+Status: Needs Fix
+  Incorrect line (Line 5): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: explorer
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: floor_designer
+Status: Needs Fix
+  Incorrect line (Line 9): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: floor_designer_points
+Status: Needs Fix
+  Incorrect line (Line 13): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: floor_plans
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 28): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: forecast_revisions
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: forecast_revisions_status
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: gl_accounts
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: idf_device_type
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 28): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: idf_links
+Status: Needs Fix
+  Incorrect line (Line 18): $crud_action = 'index';
+  Incorrect line (Line 36): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: idf_ports
+Status: Needs Fix
+  Incorrect line (Line 20): $crud_action = 'index';
+  Incorrect line (Line 38): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: idf_positions
+Status: Needs Fix
+  Incorrect line (Line 4): $crud_action = 'index';
+  Incorrect line (Line 15): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: idfs
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: import
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: inventory_categories
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: inventory_items
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ip_addresses
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 25): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ip_subnets
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Incorrect line (Line 25): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_access_point
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_cctv
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_firewall
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_other
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_phone
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_port_patch_panel
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_pos
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_printer
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_router
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_server
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_switch
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: is_workstation
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: it_locations
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: it_settings
+Status: OK
+Matches standard pattern (it_settings/index.php): Yes
+
+Module: knowledge_base
+Status: Needs Fix
+  Incorrect line (Line 33): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: license_management
+Status: Needs Fix
+  Incorrect line (Line 11): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: license_types
+Status: Needs Fix
+  Incorrect line (Line 19): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: location_types
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: manufacturers
+Status: Needs Fix
+  Incorrect line (Line 20): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: modules_registry
+Status: Needs Fix
+  Incorrect line (Line 18): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: monthly_budgets
+Status: Needs Fix
+  Incorrect line (Line 15): $crud_action = 'index';
+  Incorrect line (Line 27): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: note_labels
+Status: Needs Fix
+  Incorrect line (Line 19): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: notes
+Status: Needs Fix
+  Incorrect line (Line 10): $crud_action = "index";
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report
+Status: Needs Fix
+  Incorrect line (Line 13): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_butler
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_courtesy_call
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_fb_outlet
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_guest_experience
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_hotel_figure
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_night_shift
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: ops_report_walk_round
+Status: Needs Fix
+  Incorrect line (Line 21): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: org_chart
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: passwords
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: patches_updates
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: patches_updates_level
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: patches_updates_status
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: printer_device_types
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: private_contacts
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: rack_planner
+Status: Needs Fix
+  Incorrect line (Line 12): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: rack_statuses
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: racks
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: registration_invitations
+Status: Needs Fix
+  Incorrect line (Line 5): $crud_action = 'index';
+  Incorrect line (Line 30): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: reports
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: request_password
+Status: OK
+Matches standard pattern (it_settings/index.php): Yes
+
+Module: resignations
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: rj45_speed
+Status: Needs Fix
+  Incorrect line (Line 5): $crud_action = 'index';
+  Incorrect line (Line 29): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: role_assignment_rights
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: role_hierarchy
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: role_module_permissions
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: roles_permissions
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: settings
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: supplier_statuses
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: suppliers
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: switch_port_numbering_layout
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: switch_port_types
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: switch_ports
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: switch_status
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: system_access
+Status: Needs Fix
+  Incorrect line (Line 14): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: system_status
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: ticket_categories
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: ticket_priorities
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: ticket_statuses
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: tickets
+Status: Needs Fix
+  Incorrect line (Line 13): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: todo
+Status: Needs Fix
+  Incorrect line (Line 58): $crud_action = "index";
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: todo_categories
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: ui_configuration
+Status: Needs Fix
+  Incorrect line (Line 20): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: visitors_access_log
+Status: Needs Fix
+  Incorrect line (Line 9): $crud_action = 'index';
+  Corrected version: $crud_action = $crud_action ?? 'index';
+Matches standard pattern (it_settings/index.php): No
+
+Module: vlans
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: warranty_types
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: workstation_device_types
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: workstation_modes
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: workstation_office
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: workstation_os_types
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: workstation_os_versions
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+Module: workstation_ram
+Status: OK
+Matches standard pattern (it_settings/index.php): No
+
+
+============================================================
+FINAL SUMMARY
+============================================================
+Total Modules Scanned: 143
+Modules OK: 70
+Modules Needs Fix: 73
+
+Modules requiring fix:
+  - access_levels
+  - alerts
+  - annual_budgets
+  - approvals
+  - approvals_stage
+  - approvers
+  - assignment_types
+  - audit_logs
+  - backup_tape_log
+  - bookmark_folders
+  - budget_categories
+  - cable_colors
+  - companies
+  - cost_centers
+  - departments
+  - email_alert_rules
+  - email_smtp_configurations
+  - employee_assignment_history
+  - employee_onboarding_requests
+  - employee_positions
+  - employee_statuses
+  - employee_type
+  - equipment
+  - equipment_environment
+  - equipment_fiber
+  - equipment_fiber_count
+  - equipment_fiber_patch
+  - equipment_fiber_rack
+  - equipment_poe
+  - equipment_rj45
+  - equipment_statuses
+  - equipment_types
+  - events
+  - expenses
+  - expiring
+  - floor_designer
+  - floor_designer_points
+  - floor_plans
+  - forecast_revisions
+  - forecast_revisions_status
+  - gl_accounts
+  - idf_device_type
+  - idf_links
+  - idf_ports
+  - idf_positions
+  - inventory_categories
+  - inventory_items
+  - ip_addresses
+  - ip_subnets
+  - knowledge_base
+  - license_management
+  - license_types
+  - manufacturers
+  - modules_registry
+  - monthly_budgets
+  - note_labels
+  - notes
+  - ops_report
+  - ops_report_butler
+  - ops_report_courtesy_call
+  - ops_report_fb_outlet
+  - ops_report_guest_experience
+  - ops_report_hotel_figure
+  - ops_report_night_shift
+  - ops_report_walk_round
+  - rack_planner
+  - registration_invitations
+  - rj45_speed
+  - system_access
+  - tickets
+  - todo
+  - ui_configuration
+  - visitors_access_log
+
+Modules matching standard pattern exactly:
+  - event_categories
+  - it_settings
+  - request_password
+============================================================
