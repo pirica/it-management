@@ -10,7 +10,7 @@
  */
 $crud_table = 'equipment';
 $crud_title = 'Equipment';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_equipment_search.php';

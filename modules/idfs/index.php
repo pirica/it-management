@@ -2,7 +2,7 @@
 
 $crud_table = 'idfs';
 $crud_title = 'Idfs';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require_once __DIR__ . '/../../config/config.php';
 // Handle Excel/CSV database import requests from table-tools.js.

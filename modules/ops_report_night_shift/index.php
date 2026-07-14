@@ -18,7 +18,7 @@
 
 $crud_table = 'ops_report_night_shift';
 $crud_title = 'Ops Report Night Shift';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

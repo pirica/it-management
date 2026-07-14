@@ -9,7 +9,7 @@ require_once '../../config/config.php';
 
 $crud_table = 'backup_tape_log';
 $crud_title = 'Backup Tape Log';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);

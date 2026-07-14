@@ -18,7 +18,7 @@
 
 $crud_table = 'ops_report_fb_outlet';
 $crud_title = 'Ops Report Fb Outlet';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

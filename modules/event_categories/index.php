@@ -23,7 +23,7 @@ if (!isset($crud_title)) {
     $crud_title = 'Event Categories';
 }
 if (!isset($crud_action)) {
-    $crud_action = 'index';
+    $crud_action = $crud_action ?? 'index';
 }
 ?>
 <?php

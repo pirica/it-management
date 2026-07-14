@@ -18,7 +18,7 @@
 
 $crud_table = 'ops_report_hotel_figure';
 $crud_title = 'Ops Report Hotel Figure';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

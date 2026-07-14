@@ -2,7 +2,7 @@
 
 $crud_table = 'bookmarks';
 $crud_title = 'Bookmarks';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 require './helpers.php';

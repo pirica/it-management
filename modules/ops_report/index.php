@@ -10,7 +10,7 @@ require_once '../../config/config.php';
 
 $crud_table = 'ops_report';
 $crud_title = 'Ops Report';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);

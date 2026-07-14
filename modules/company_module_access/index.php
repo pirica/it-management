@@ -6,7 +6,7 @@ if (!isset($crud_title)) {
     $crud_title = 'Company Module Access';
 }
 if (!isset($crud_action)) {
-    $crud_action = 'index';
+    $crud_action = $crud_action ?? 'index';
 }
 
 require '../../config/config.php';
@@ -19,7 +19,7 @@ if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
 
 itm_sync_modules_registry_from_filesystem($conn);
 
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 $csrfToken = itm_get_csrf_token();
 $modulePath = dirname($_SERVER['PHP_SELF']);
 

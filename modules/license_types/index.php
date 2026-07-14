@@ -16,7 +16,7 @@
 
 $crud_table = 'license_types';
 $crud_title = 'License Types';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

@@ -6,7 +6,7 @@
  */
 $crud_table = 'visitors_access_log';
 $crud_title = 'Visitors Access Log';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
 

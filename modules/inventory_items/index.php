@@ -8,7 +8,7 @@
  */
 $crud_table = 'inventory_items';
 $crud_title = 'Inventory Items';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 // Handle Excel/CSV database import requests from table-tools.js.

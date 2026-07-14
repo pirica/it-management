@@ -8,7 +8,7 @@
 
 $crud_table = 'companies';
 $crud_title = 'Companies';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 if (!itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {

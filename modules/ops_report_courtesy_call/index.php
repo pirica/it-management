@@ -18,7 +18,7 @@
 
 $crud_table = 'ops_report_courtesy_call';
 $crud_title = 'Ops Report Courtesy Call';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

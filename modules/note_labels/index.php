@@ -16,7 +16,7 @@
 
 $crud_table = 'note_labels';
 $crud_title = 'Note Labels';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';

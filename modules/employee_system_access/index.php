@@ -8,7 +8,7 @@
  */
 $crud_table = 'employee_system_access';
 $crud_title = 'Employee System Access';
-$crud_action = 'index';
+$crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
