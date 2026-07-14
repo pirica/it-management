@@ -4,12 +4,13 @@
 Visual rack elevation planner. Stores layout JSON per named rack plan and references devices from catalogs, equipment, and unlinked IDF positions.
 
 ## 2. Key Tables
-- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence), along with tracking metadata columns (`employee_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`). All tracking columns are declared as `INVISIBLE` in the MySQL schema so they remain hidden from standard `SELECT *` wildcard queries unless explicitly queried.
-- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**, **employees**.
+- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence), `status_id` (foreign key to `rack_statuses` lookup table), along with tracking metadata columns (`employee_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`). All tracking columns (including `active`) are declared as `INVISIBLE` in the MySQL schema so they remain hidden from standard `SELECT *` wildcard queries unless explicitly queried. The `active` column is kept as a hidden internal field with value `1` (or `0` when soft-deleted).
+- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**, **employees**, **rack_statuses**.
 
 ## 3. Required Relationships
 - **rack_planner** → **companies**.
 - **rack_planner** → **employees** (via `employee_id`, `created_by`, `updated_by`, and `deleted_by`).
+- **rack_planner** → **rack_statuses** (via `status_id`).
 - Layout device codes: `catalog:<id>`, `equipment:<id>`, `idf_unlinked:<token>`.
 
 ## 4. Business Rules (Critical for Agents)
@@ -46,8 +47,17 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - There is no `rack_equipment` mapping table — layout lives in `layout_json`.
 - Partial price sync breaks catalog/equipment/IDF reporting — always update source row.
 - Be sure to explicitly request or insert the invisible columns (`employee_id`, `created_by`, `updated_by`, `deleted_by`, etc.) when executing SELECT/INSERT/UPDATE statements because MySQL invisible columns are not fetched via wildcard queries.
+- Param type string for Create/Insert statement must be `'iisiisiii'` corresponding to the exact column types: `company_id` (i), `employee_id` (i), `name` (s), `rack_units` (i), `layout_json` (s), `notes` (s), `status_id` (i), `active` (i), `created_by` (i). If name is bound as an integer, it will fail to save strings correctly and fallback to 0.
 
-## 11. Examples of Safe Code Patterns
+## 11. View Action Enhancements
+- The View screen displays a detailed info card of the rack plan above the visualizer.
+- This card includes the resolved values for:
+  - `name`: Direct string.
+  - `status_id`: Resolved to `status_name` from the `rack_statuses` table, shown as a styled status badge.
+  - `created_by`, `updated_by`, `deleted_by`: Resolved to employee full names (`first_name` + ' ' + `last_name`) from the `employees` table.
+  - `created_at`, `updated_at`, `deleted_at`: Formatted using the exact layout `DD-MM-YYYY - HH:MM:SS` (using PHP `d-m-Y - H:i:s` syntax). If the raw value is NULL, it is displayed as blank.
+
+## 12. Examples of Safe Code Patterns
 
 ### Tenant-scoped auto-save UPDATE with updated_by
 ```php
@@ -55,5 +65,5 @@ $stmt = mysqli_prepare($conn, 'UPDATE rack_planner SET layout_json = ?, updated_
 mysqli_stmt_bind_param($stmt, 'siii', $layoutJson, $updated_by, $id, $company_id);
 ```
 
-## 12. Module Owner Notes (Optional)
+## 13. Module Owner Notes (Optional)
 See `modules/rack_planner/includes/AGENT_NOTES.md` for partial/handler details.

@@ -338,7 +338,7 @@ if (!isset($crud_title)) {
                 }
 
                 // itm_is_safe_identifier check for sort column
-                $allowedSort = ['id', 'name', 'rack_units', 'active'];
+                $allowedSort = ['id', 'name', 'rack_units', 'status_id', 'active'];
                 if (!in_array($sort, $allowedSort) || !itm_is_safe_identifier($sort)) {
                     $sort = 'id';
                 }
@@ -406,8 +406,8 @@ if (!isset($crud_title)) {
                                 </th>
                                 <th>Notes</th>
                                 <th>
-                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=active&dir=<?php echo ($sort === 'active' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
-                                        Active<?php if ($sort === 'active'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=status_id&dir=<?php echo ($sort === 'status_id' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                        Status<?php if ($sort === 'status_id'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>
                                 <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
@@ -415,7 +415,7 @@ if (!isset($crud_title)) {
                         </thead>
                         <tbody>
                             <?php
-                            $sql = "SELECT * FROM rack_planner $whereClause ORDER BY $sort $dir LIMIT ?, ?";
+                            $sql = "SELECT *, (SELECT name FROM rack_statuses WHERE id = status_id) AS status_name, active FROM rack_planner $whereClause ORDER BY $sort $dir LIMIT ?, ?";
                             $stmt = mysqli_prepare($conn, $sql);
                             if ($stmt) {
                                 $currentParams = $params;
@@ -434,11 +434,18 @@ if (!isset($crud_title)) {
                                     <td><?php echo (int)$row['rack_units']; ?> U</td>
                                     <td><?php echo sanitize($row['notes']); ?></td>
                                     <td>
-                                        <?php if ($row['active']): ?>
-                                            <span class="badge badge-success">Active</span>
-                                        <?php else: ?>
-                                            <span class="badge badge-danger">Inactive</span>
-                                        <?php endif; ?>
+                                        <?php
+                                        $statusName = $row['status_name'] ?? 'Active';
+                                        $badgeClass = 'badge';
+                                        if (stripos($statusName, 'Active') !== false) {
+                                            $badgeClass = 'badge badge-success';
+                                        } elseif (stripos($statusName, 'Decommissioned') !== false) {
+                                            $badgeClass = 'badge badge-danger';
+                                        } elseif (stripos($statusName, 'Maintenance') !== false || stripos($statusName, 'Full') !== false) {
+                                            $badgeClass = 'badge badge-warning';
+                                        }
+                                        ?>
+                                        <span class="<?php echo $badgeClass; ?>"><?php echo sanitize($statusName); ?></span>
                                     </td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <div class="itm-actions-wrap">
@@ -512,11 +519,36 @@ if (!isset($crud_title)) {
                         <textarea name="notes"><?php echo sanitize($data['notes']); ?></textarea>
                     </div>
 
+                    <input type="hidden" name="active" value="1">
+
                     <div class="form-group">
-                        <label class="itm-checkbox-control">
-                            <input type="checkbox" name="active" value="1" <?php echo $data['active'] ? 'checked' : ''; ?>>
-                            <span>Active</span>
-                        </label>
+                        <label>Status</label>
+                        <select name="status_id"
+                                data-addable-select="1"
+                                data-add-table="rack_statuses"
+                                data-add-friendly="status"
+                                data-add-id-col="id"
+                                data-add-label-col="name"
+                                data-add-company-scoped="1"
+                                data-add-value-label="Name"
+                                required>
+                            <option value="">-- Select --</option>
+                            <?php
+                            $statusSql = "SELECT id, name FROM rack_statuses WHERE company_id = ? ORDER BY name ASC";
+                            $statusStmt = mysqli_prepare($conn, $statusSql);
+                            if ($statusStmt) {
+                                mysqli_stmt_bind_param($statusStmt, 'i', $company_id);
+                                mysqli_stmt_execute($statusStmt);
+                                $statusRes = mysqli_stmt_get_result($statusStmt);
+                                while ($statusRow = mysqli_fetch_assoc($statusRes)) {
+                                    $selected = ((int)$statusRow['id'] === (int)$data['status_id']) ? 'selected' : '';
+                                    echo '<option value="' . (int)$statusRow['id'] . '" ' . $selected . '>' . sanitize($statusRow['name']) . '</option>';
+                                }
+                                mysqli_stmt_close($statusStmt);
+                            }
+                            ?>
+                            <option value="__add_new__">➕</option>
+                        </select>
                     </div>
 
                     <div class="form-actions">
@@ -693,9 +725,66 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
 
-                <div class="card">
-                    <p><strong>Units:</strong> <?php echo (int)$data['rack_units']; ?> U</p>
-                    <p><strong>Notes:</strong> <?php echo sanitize($data['notes']); ?></p>
+                <div class="card" style="margin-bottom: 20px;">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th style="width:240px;">Name</th>
+                                <td><?php echo sanitize($data['name']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    <?php
+                                    $statusName = $data['status_name'] ?? '';
+                                    if ($statusName !== ''):
+                                        $badgeClass = 'badge';
+                                        if (stripos($statusName, 'Active') !== false) {
+                                            $badgeClass = 'badge badge-success';
+                                        } elseif (stripos($statusName, 'Decommissioned') !== false) {
+                                            $badgeClass = 'badge badge-danger';
+                                        } elseif (stripos($statusName, 'Maintenance') !== false || stripos($statusName, 'Full') !== false) {
+                                            $badgeClass = 'badge badge-warning';
+                                        }
+                                        ?>
+                                        <span class="<?php echo $badgeClass; ?>"><?php echo sanitize($statusName); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Units</th>
+                                <td><?php echo (int)$data['rack_units']; ?> U</td>
+                            </tr>
+                            <tr>
+                                <th>Notes</th>
+                                <td><?php echo sanitize($data['notes']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Created By</th>
+                                <td><?php echo sanitize($data['created_by_name']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Created At</th>
+                                <td><?php echo sanitize($data['formatted_created_at']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Updated By</th>
+                                <td><?php echo sanitize($data['updated_by_name']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Updated At</th>
+                                <td><?php echo sanitize($data['formatted_updated_at']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Deleted By</th>
+                                <td><?php echo sanitize($data['deleted_by_name']); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Deleted At</th>
+                                <td><?php echo sanitize($data['formatted_deleted_at']); ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 <div class="rack-visualizer-export-scope" id="rackExportScope">

@@ -20,16 +20,24 @@ class RackPlannerTest extends TestCase
 
     public function testCRUD()
     {
+        // Fetch a valid status_id for the company
+        $statusId = 0;
+        $statusRes = mysqli_query($this->conn, "SELECT id FROM rack_statuses WHERE company_id = " . (int)$this->companyId . " LIMIT 1");
+        if ($statusRow = mysqli_fetch_assoc($statusRes)) {
+            $statusId = (int)$statusRow['id'];
+        }
+
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
         $data['employee_id'] = 1; // System Admin for company 1
         $data['name'] = 'Test name';
         $data['rack_units'] = 1;
+        $data['status_id'] = $statusId;
         $data['active'] = 1;
         $data['created_by'] = 1;
 
-        $sql = "INSERT INTO `rack_planner` (company_id, employee_id, `name`, `rack_units`, `active`, created_by) VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `rack_planner` (company_id, employee_id, `name`, `rack_units`, `status_id`, `active`, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
@@ -38,9 +46,10 @@ class RackPlannerTest extends TestCase
         $bindValues[] = $data['employee_id'];
         $bindValues[] = $data['name'];
         $bindValues[] = $data['rack_units'];
+        $bindValues[] = $data['status_id'];
         $bindValues[] = $data['active'];
         $bindValues[] = $data['created_by'];
-        $bindTypes = 'iiisii';
+        $bindTypes = 'iiisiii';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt));

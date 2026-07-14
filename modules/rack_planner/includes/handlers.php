@@ -171,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $name = trim((string)($_POST['name'] ?? ''));
     $rack_units = max(1, min(100, (int)($_POST['rack_units'] ?? 42)));
     $notes = trim((string)($_POST['notes'] ?? ''));
-    $active = isset($_POST['active']) ? 1 : 0;
+    $status_id = (int)($_POST['status_id'] ?? 0);
+    $active = 1; // Always hidden 1
     $layout_raw = (string)($_POST['layout_json'] ?? '');
     $normalizedLayout = rack_planner_normalize_layout_json($layout_raw, $rack_units, $combinedCodeMeta);
     $layout_json = rack_planner_encode_layout($normalizedLayout);
@@ -179,15 +180,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     if ($name === '') {
         $errors[] = 'Name is required.';
     }
+    if ($status_id <= 0) {
+        $errors[] = 'Status is required.';
+    }
 
     if (empty($errors)) {
         $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
         if ($crud_action === 'create') {
-            $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, notes, active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $logged_employee_id, $name, $rack_units, $layout_json, $notes, $active, $logged_employee_id);
+            $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, notes, status_id, active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            mysqli_stmt_bind_param($stmt, 'iisiisiii', $company_id, $logged_employee_id, $name, $rack_units, $layout_json, $notes, $status_id, $active, $logged_employee_id);
         } else {
-            $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET name = ?, rack_units = ?, layout_json = ?, notes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
-            mysqli_stmt_bind_param($stmt, 'sissiiii', $name, $rack_units, $layout_json, $notes, $active, $logged_employee_id, $id, $company_id);
+            $stmt = mysqli_prepare($conn, "UPDATE rack_planner SET name = ?, rack_units = ?, layout_json = ?, notes = ?, status_id = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL");
+            mysqli_stmt_bind_param($stmt, 'sissiiiii', $name, $rack_units, $layout_json, $notes, $status_id, $active, $logged_employee_id, $id, $company_id);
         }
 
         if (mysqli_stmt_execute($stmt)) {
@@ -215,8 +219,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($crud_action === 'index' || $crud_
     $notes = 'Sample empty rack plan.';
     $active = 1;
     $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
-    $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, notes, active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    mysqli_stmt_bind_param($stmt, 'iiisssii', $company_id, $logged_employee_id, $name, $units, $json, $notes, $active, $logged_employee_id);
+
+    // Find default active status for sample data
+    $sampleStatusId = 0;
+    $statusQuery = "SELECT id FROM rack_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1";
+    $stmtStatus = mysqli_prepare($conn, $statusQuery);
+    if ($stmtStatus) {
+        mysqli_stmt_bind_param($stmtStatus, 'i', $company_id);
+        mysqli_stmt_execute($stmtStatus);
+        $resStatus = mysqli_stmt_get_result($stmtStatus);
+        if ($rowStatus = mysqli_fetch_assoc($resStatus)) {
+            $sampleStatusId = (int)$rowStatus['id'];
+        }
+        mysqli_stmt_close($stmtStatus);
+    }
+    if ($sampleStatusId === 0) {
+        $statusQuery = "SELECT id FROM rack_statuses WHERE company_id = ? ORDER BY id ASC LIMIT 1";
+        $stmtStatus = mysqli_prepare($conn, $statusQuery);
+        if ($stmtStatus) {
+            mysqli_stmt_bind_param($stmtStatus, 'i', $company_id);
+            mysqli_stmt_execute($stmtStatus);
+            $resStatus = mysqli_stmt_get_result($stmtStatus);
+            if ($rowStatus = mysqli_fetch_assoc($resStatus)) {
+                $sampleStatusId = (int)$rowStatus['id'];
+            }
+            mysqli_stmt_close($stmtStatus);
+        }
+    }
+
+    $stmt = mysqli_prepare($conn, "INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, notes, status_id, active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    mysqli_stmt_bind_param($stmt, 'iisiisiii', $company_id, $logged_employee_id, $name, $units, $json, $notes, $sampleStatusId, $active, $logged_employee_id);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     header('Location: index.php');
