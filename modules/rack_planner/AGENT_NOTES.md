@@ -4,12 +4,13 @@
 Visual rack elevation planner. Stores layout JSON per named rack plan and references devices from catalogs, equipment, and unlinked IDF positions.
 
 ## 2. Key Tables
-- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence), along with tracking metadata columns (`employee_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`). All tracking columns are declared as `INVISIBLE` in the MySQL schema so they remain hidden from standard `SELECT *` wildcard queries unless explicitly queried.
-- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**, **employees**.
+- **rack_planner** — `name`, `rack_units`, `layout_json`, `notes` (primary persistence), `status_id` (foreign key to `rack_statuses` lookup table), along with tracking metadata columns (`employee_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`). All tracking columns (including `active`) are declared as `INVISIBLE` in the MySQL schema so they remain hidden from standard `SELECT *` wildcard queries unless explicitly queried. The `active` column is kept as a hidden internal field with value `1` (or `0` when soft-deleted).
+- **Reads** (not owned): **catalogs**, **equipment**, **idf_positions**, **racks**, **it_locations**, **employees**, **rack_statuses**.
 
 ## 3. Required Relationships
 - **rack_planner** → **companies**.
 - **rack_planner** → **employees** (via `employee_id`, `created_by`, `updated_by`, and `deleted_by`).
+- **rack_planner** → **rack_statuses** (via `status_id`).
 - Layout device codes: `catalog:<id>`, `equipment:<id>`, `idf_unlinked:<token>`.
 
 ## 4. Business Rules (Critical for Agents)
