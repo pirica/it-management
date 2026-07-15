@@ -77,7 +77,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **perform_audit.php** — Dynamic Script Error Auditor that executes all executable PHP scripts in the `scripts/` folder in subprocesses, collecting execution exit codes and any PHP warning/notice/error logs into `/scripts/php_error_audit_results.json`.
 - **titles_list.php** — Dynamic module title extraction script that scans all PHP files under `modules/` and extracts `<title>` tags, listing them in standard `modules/{module_name}/{file}.php` format.
 - **titles_list_show.php** — Scans all PHP files under `modules/` and extracts `<title>` tags, listing them showing only the inner title text.
-- **pitfalls.php** — Aggregates common pitfalls documented under section 10 across all modules and submodules, with links to index files and auto-backfilling of missing note files. Browser-only (Admin).
+- **pitfalls.php** — Aggregates common pitfalls documented under section 10 across all modules and submodules, with links to index files and auto-backfilling of missing note files. Browser (Admin) and CLI support.
 
 ## 8. Multi-Tenant Rules
 - Maintenance scripts usually operate across all tenants or allow specifying a `company_id` via CLI arguments.

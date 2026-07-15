@@ -6,7 +6,8 @@
  * If missing, automatically copy templates/AGENT_NOTES.md to create it.
  * Extract and display pitfalls documented under '## 10. Common Pitfalls'.
  *
- * This script is browser-only and requires administrator access.
+ * This script supports both browser and CLI execution.
+ * Browser access requires administrator privileges.
  */
 
 declare(strict_types=1);
@@ -46,34 +47,6 @@ function itm_get_all_subfolders(string $dir): array
     $folders = array_unique($folders);
     sort($folders);
     return $folders;
-}
-
-// 1. Scan and backfill any missing AGENT_NOTES.md (runs in both SAPI environments for deployment & git readiness)
-$folders = itm_get_all_subfolders($modules_dir);
-$created_count = 0;
-
-foreach ($folders as $folder) {
-    $notes_file = $folder . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
-    if (!is_file($notes_file)) {
-        if (copy($template_path, $notes_file)) {
-            $created_count++;
-        }
-    }
-}
-
-if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
-    echo "Scan complete. Verified " . count($folders) . " modules/folders. Created " . $created_count . " missing AGENT_NOTES.md files.\n\n";
-    echo "To access the HTML Pitfalls report, please log in as an Admin in your browser and visit:\n";
-    echo "http://localhost/it-management/scripts/pitfalls.php\n";
-    exit(0);
-}
-
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/lib/script_browser_nav.php';
-
-if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    http_response_code(403);
-    die('Access denied. Administrator privileges required.');
 }
 
 /**
@@ -144,6 +117,90 @@ function itm_extract_pitfalls(string $notes_path): string
     }
 
     return $pitfalls_text;
+}
+
+// 1. Scan and backfill any missing AGENT_NOTES.md (runs in both SAPI environments for deployment & git readiness)
+$folders = itm_get_all_subfolders($modules_dir);
+$created_count = 0;
+
+foreach ($folders as $folder) {
+    $notes_file = $folder . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
+    if (!is_file($notes_file)) {
+        if (copy($template_path, $notes_file)) {
+            $created_count++;
+        }
+    }
+}
+
+// 2. Handle CLI Execution Mode
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    $is_json = false;
+    $module_filter = null;
+
+    if (isset($argv) && is_array($argv)) {
+        foreach ($argv as $arg) {
+            if ($arg === '--json') {
+                $is_json = true;
+            } elseif (preg_match('/^-module=(.+)$/', $arg, $matches)) {
+                $module_filter = trim($matches[1]);
+            } elseif (preg_match('/^--module=(.+)$/', $arg, $matches)) {
+                $module_filter = trim($matches[1]);
+            } elseif (preg_match('/^module=(.+)$/', $arg, $matches)) {
+                $module_filter = trim($matches[1]);
+            }
+        }
+    }
+
+    $results = [];
+    foreach ($folders as $folder) {
+        $relative_path_from_modules = str_replace($modules_dir . DIRECTORY_SEPARATOR, '', $folder);
+        $slug = str_replace(DIRECTORY_SEPARATOR, '/', $relative_path_from_modules);
+        $display_name = 'modules/' . $slug;
+
+        if ($module_filter !== null) {
+            if (strcasecmp($slug, $module_filter) !== 0 && strcasecmp(basename($folder), $module_filter) !== 0) {
+                continue;
+            }
+        }
+
+        $notes_path = $folder . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
+        $pitfalls = itm_extract_pitfalls($notes_path);
+
+        $results[] = [
+            'module' => $display_name,
+            'pitfalls' => $pitfalls
+        ];
+    }
+
+    if ($is_json) {
+        echo json_encode([
+            'scanned_count' => count($folders),
+            'created_count' => $created_count,
+            'results' => $results
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+    } else {
+        echo "Scan complete. Verified " . count($folders) . " modules/folders. Created " . $created_count . " missing AGENT_NOTES.md files.\n\n";
+        if (empty($results)) {
+            echo "No matching modules found.\n";
+        } else {
+            foreach ($results as $res) {
+                echo "Module: " . $res['module'] . "\n";
+                echo "Pitfalls:\n";
+                echo $res['pitfalls'] . "\n";
+                echo str_repeat("-", 40) . "\n\n";
+            }
+        }
+    }
+    exit(0);
+}
+
+// 3. Handle Browser Execution Mode
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_browser_nav.php';
+
+if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+    http_response_code(403);
+    die('Access denied. Administrator privileges required.');
 }
 
 $generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
