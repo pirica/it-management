@@ -600,6 +600,10 @@ if (!isset($crud_title)) {
             <?php endforeach; ?>
             <?php echo itm_render_alert_errors($errors); ?>
 
+            <p class="audit-private-data-note" style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
+                Private user data (passwords, notes, bookmarks, private contacts, to-do, and email send logs) is intentionally excluded from this audit trail.
+            </p>
+
             <?php if ($isAuditLogsAdmin): ?>
             <div class="card" style="margin-bottom:16px;">
                 <form method="POST" action="index.php" class="audit-admin-actions" data-itm-audit-logs-admin-actions="1">
