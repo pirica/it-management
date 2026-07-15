@@ -17,6 +17,8 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **No-auth script allowlist**: scripts that define `ITM_SCRIPT_NO_AUTH` before `config.php` may skip the login redirect in the browser when their basename is listed in `$itmNoAuthScripts` (currently `count_db_tables.php` only). Use only for read-only aggregate diagnostics.
 - **JSON import validation**: `itm_handle_json_table_import()` rejects invalid numeric, date/datetime, and enum column values (increments `failed`, sets `ok:false`, HTTP 400 when no rows inserted/updated). Regression: `php scripts/verify_json_import_validation.php`. On **UPDATE** operations, only fields present in the import payload (or auto-derived during normalization, such as resolved foreign keys, created departments/positions, or reclassified `personal_email`) are modified in the database. **INSERT** operations still apply defaults/auto-derived values for any missing columns as before. Empty data rows (no non-blank, non-`null` cell values after normalization) are skipped without affecting existing data. Rows that match an existing `id` but supply no writable columns increment `skipped` (not `updated`). Field tracking uses a per-row `providedFields` list filtered to columns with resolved non-`NULL` SQL literals before building the UPDATE set. Regression: `php scripts/repro_employee_dataloss.php`, `php scripts/repro_generic_dataloss.php`.
 - **System Status cache constants**: `ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID` (default `1`) and optional `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK` (env `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK=1` or define in `config.php`) control admin cache fallback when session `company_id` is missing.
+- **Session cookies (web only):** before `session_start()`, `session_set_cookie_params()` sets `httponly=true`, `samesite=Lax`, and `secure` when the request is HTTPS (including `X-Forwarded-Proto=https` / port 443). CLI skips cookie params.
+- **Error display:** `display_errors` / `error_reporting` follow `ui_configuration.enable_all_error_reporting` after UI config loads — do not hardcode them in entry pages such as `index.php`.
 
 ## 7. File Structure
 - **config.php** — the core configuration file required by every entry point.
@@ -24,6 +26,8 @@ Maintains system-wide configuration, database credentials, path constants, and c
 ## 10. Common Pitfalls
 - Committing secrets to version control. [Cursor-Valid]
 - Modifying constants without checking their global impact. [Cursor-Valid]
+- Missing HttpOnly/Secure/SameSite on the session cookie before `session_start()`. [Cursor-Fixed]
+- Hardcoding `display_errors=1` in entry scripts instead of respecting Settings / `enable_all_error_reporting`. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 

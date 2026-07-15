@@ -1,10 +1,4 @@
 <?php
-// Force enable all error reporting for maximum visibility
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/error_log.txt');
-
 /**
  * Company Selection Page
  * 
@@ -21,11 +15,9 @@ if (!isset($_SESSION['employee_id'])) {
     exit();
 }
 
-// Early error reporting for database connection issues
-// This helps diagnose connection failures before the UI is rendered
+// Early diagnostics when DB is unavailable (errors already follow ui_configuration via config.php).
 if (!$conn) {
-    error_reporting(E_ALL);
-    ini_set('display_errors', '1');
+    error_log('index.php: database connection unavailable after config bootstrap.');
 }
 
 $employeeId = (int)$_SESSION['employee_id'];

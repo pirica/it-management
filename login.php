@@ -164,6 +164,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($passwordMatches && $employeeId > 0) {
+            // Why: Prevent session fixation by rotating the id after authentication succeeds.
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+
             $successIdentifier = $resolvedEmail !== ''
                 ? itm_normalize_login_attempt_identifier($resolvedEmail)
                 : $storedAttemptIdentifier;

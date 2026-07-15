@@ -9,15 +9,22 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **Architecture**: No Composer, No NPM. Use `config/config.php` for environment setup.
 - **API rate limits**: **Free** tier — unlimited, **no API key**, **session required** (`company_id` + `employee_id` in `PHPSESSID`). **Paid** tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits (mandatory)** and `includes/itm_api_rate_limit.php`.
 - **`database.sql` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**.
+- **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification and before writing auth fields into `$_SESSION` (mitigates session fixation).
+- **Entry pages / errors:** root `index.php` must not force `display_errors`; error visibility comes from `config/config.php` via `enable_all_error_reporting`.
 
 ## 10. Common Pitfalls
 - Bypassing the session-based company isolation. [Cursor-Valid]
 - Introducing external libraries. [Cursor-Valid]
 - Forgetting to update `database.sql` when changing the schema. [Cursor-Valid]
 - Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper). [Cursor-Fixed]
+- Session fixation: reusing the pre-login session id after authentication without regeneration. [Cursor-Fixed]
+- Session cookie missing HttpOnly / SameSite / Secure (when HTTPS). [Cursor-Fixed]
+- Hardcoding `display_errors` on `index.php` instead of Settings-driven config. [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
+- **login.php** — authentication; regenerates the session id on success.
+- **index.php** — company selection after login (no forced error display).
 - **dashboard.php** — landing stats: row 1 module counts (Equipment, Tickets, Employees); row 2 **Active** and **On Leave** count `employees` by tenant-resolved `employment_status_id` (same semantics as `WHERE company_id = ? AND employment_status_id = ?`), **Online now** via session presence; distinct from Roles & Permissions sidebar **N active** counts per role.
 - **css/styles.css** — global stylesheet with responsive breakpoints and shared layout utilities (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR, `phpunit.xml`, and `tests/` tree. Runner: **`scripts/run_tests.php`**; coverage report: **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md` → PHPUnit test runner**.
