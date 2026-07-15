@@ -21,13 +21,13 @@ if (!is_file($template_path)) {
 }
 
 /**
- * Directories / path segments to skip while walking the repo.
+ * Directory basenames to prune anywhere in the tree.
  *
- * Why: Avoid .git, vendor trees, generated coverage, and QA dumps — not agent notes.
+ * Why: VCS/deps/generated trees never hold agent pitfall notes.
  *
  * @return array<int, string>
  */
-function itm_pitfalls_skip_dir_names(): array
+function itm_pitfalls_skip_dir_names_any_depth(): array
 {
     return [
         '.git',
@@ -35,6 +35,20 @@ function itm_pitfalls_skip_dir_names(): array
         'node_modules',
         'coverage',
         'qa-reports',
+    ];
+}
+
+/**
+ * Top-level runtime/upload trees only (direct children of the repo root).
+ *
+ * Why: Same basenames can exist under modules/ (e.g. modules/floor_plans) and
+ * must still be scanned — only prune the tenant upload roots at repo root.
+ *
+ * @return array<int, string>
+ */
+function itm_pitfalls_skip_dir_names_root_only(): array
+{
+    return [
         'files',
         'backups',
         'tickets_photos',
@@ -55,7 +69,7 @@ function itm_get_all_subfolders(string $dir): array
         return [];
     }
 
-    $skip = itm_pitfalls_skip_dir_names();
+    $skip_any = itm_pitfalls_skip_dir_names_any_depth();
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
         RecursiveIteratorIterator::SELF_FIRST
@@ -70,7 +84,8 @@ function itm_get_all_subfolders(string $dir): array
             continue;
         }
         $basename = $item->getFilename();
-        if (in_array($basename, $skip, true)) {
+        // Why: Under modules/, floor_plans is a CRUD module — do not treat as upload root.
+        if (in_array($basename, $skip_any, true)) {
             continue;
         }
         $folders[] = $path;
@@ -98,7 +113,8 @@ function itm_find_all_agent_notes(string $root_dir): array
         return [];
     }
 
-    $skip_names = itm_pitfalls_skip_dir_names();
+    $skip_any = itm_pitfalls_skip_dir_names_any_depth();
+    $skip_root = itm_pitfalls_skip_dir_names_root_only();
     $template_notes = $root_real . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
     $found = [];
 
@@ -108,14 +124,25 @@ function itm_find_all_agent_notes(string $root_dir): array
     );
     $filter = new RecursiveCallbackFilterIterator(
         $dir_iterator,
-        static function ($current, $key, $iterator) use ($skip_names) {
+        static function ($current, $key, $iterator) use ($skip_any, $skip_root, $root_real) {
+            if (!$current->isDir()) {
+                return true;
+            }
             $name = $current->getFilename();
-            if ($current->isDir() && in_array($name, $skip_names, true)) {
+            if (in_array($name, $skip_any, true)) {
                 return false;
             }
             // Allow .github (AGENT_NOTES) but skip other hidden dirs except that.
-            if ($current->isDir() && isset($name[0]) && $name[0] === '.' && $name !== '.github') {
+            if (isset($name[0]) && $name[0] === '.' && $name !== '.github') {
                 return false;
+            }
+            // Why: Only prune upload/runtime trees at repo root, not modules/<same-name>/.
+            if (in_array($name, $skip_root, true)) {
+                $parent = $current->getPath();
+                $parent_real = realpath($parent);
+                if ($parent_real !== false && $parent_real === $root_real) {
+                    return false;
+                }
             }
             return true;
         }
