@@ -16,6 +16,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **Permissions:** shared bookmarks read-only for regular users; admins (`itm_is_admin()`) and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
 - **Drag-and-drop:** folders reordered/reparented via DnD interactions.
+- **Folder names:** `bookmark_folders` uses `UNIQUE (company_id, employee_id, name)` in `database.sql` so private folder names are unique per employee, not per company.
 - **Import/export:** browser HTML bookmark files, CSV, and XLSX.
 - **Deletion:** single delete may require `bulk_action = 'single_delete'` for shared-handler compatibility.
 
@@ -48,8 +49,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Shared bookmarks (`shared = 1`) visible to all company users but editable only by `itm_is_admin()` or creator.
 
 ## 9. Audit Logging Requirements
-- No dedicated triggers on `bookmarks` / `bookmark_folders` in `database.sql`; rely on application logging if extended.
-- Folder/bookmark mutations should remain CSRF-protected POST handlers.
+- **Private data (no audit):** `bookmark_folders` and `bookmarks` are exempt from `audit_logs` and database audit triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add `itm_log_audit()` for bookmark/folder mutations.
 
 ## 10. Common Pitfalls
 - SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`. [Valid]-[2026-07-15]

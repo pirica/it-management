@@ -38,7 +38,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - `company_id` plus **mandatory** `employee_id` filter on every SELECT/UPDATE/DELETE.
 
 ## 9. Audit Logging Requirements
-- Follow global audit settings for INSERT/UPDATE/DELETE.
+- **Private data (no audit):** `private_contacts` is exempt from `audit_logs` and database audit triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add PHP audit hooks for contact mutations.
 
 ## 10. Common Pitfalls
 - Do not reuse company contacts visibility rules — this module is user-private only. [Valid]-[2026-07-15]

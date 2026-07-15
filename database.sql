@@ -5069,23 +5069,6 @@ CREATE TRIGGER `trg_email_smtp_configurations_audit_delete` AFTER DELETE ON `ema
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'email_smtp_configurations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'config_name', OLD.`config_name`, 'smtp_host', OLD.`smtp_host`, 'smtp_port', OLD.`smtp_port`, 'username', OLD.`username`, 'from_email', OLD.`from_email`, 'from_name', OLD.`from_name`, 'imap_port', OLD.`imap_port`, 'pop3_port', OLD.`pop3_port`, 'pop3_tls_mode', OLD.`pop3_tls_mode`, 'pop3_require_secure_connection', OLD.`pop3_require_secure_connection`, 'is_default', OLD.`is_default`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
 END$$
 DELIMITER ;
-DROP TRIGGER IF EXISTS `trg_emails_audit_insert`;
-DROP TRIGGER IF EXISTS `trg_emails_audit_update`;
-DROP TRIGGER IF EXISTS `trg_emails_audit_delete`;
-DELIMITER $$
-CREATE TRIGGER `trg_emails_audit_insert` AFTER INSERT ON `emails` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'emails', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'smtp_config_id', NEW.`smtp_config_id`, 'to_email', NEW.`to_email`, 'subject', NEW.`subject`, 'status', NEW.`status`, 'details', NEW.`details`, 'sent_at', NEW.`sent_at`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_emails_audit_update` AFTER UPDATE ON `emails` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'emails', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'smtp_config_id', OLD.`smtp_config_id`, 'to_email', OLD.`to_email`, 'subject', OLD.`subject`, 'status', OLD.`status`, 'details', OLD.`details`, 'sent_at', OLD.`sent_at`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'smtp_config_id', NEW.`smtp_config_id`, 'to_email', NEW.`to_email`, 'subject', NEW.`subject`, 'status', NEW.`status`, 'details', NEW.`details`, 'sent_at', NEW.`sent_at`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_emails_audit_delete` AFTER DELETE ON `emails` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'emails', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'smtp_config_id', OLD.`smtp_config_id`, 'to_email', OLD.`to_email`, 'subject', OLD.`subject`, 'status', OLD.`status`, 'details', OLD.`details`, 'sent_at', OLD.`sent_at`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
-END$$
-DELIMITER ;
 DROP TRIGGER IF EXISTS `trg_email_alert_rules_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_email_alert_rules_audit_update`;
 DROP TRIGGER IF EXISTS `trg_email_alert_rules_audit_delete`;
@@ -7341,7 +7324,7 @@ CREATE TABLE `bookmark_folders` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_bookmark_folders_company_scope` (`company_id`, `name`),
+  UNIQUE KEY `uq_bookmark_folders_company_scope` (`company_id`, `employee_id`, `name`),
   KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   KEY `parent_folder_id` (`parent_folder_id`),
@@ -7520,190 +7503,7 @@ CREATE TABLE `todo` (
 
 
 
--- Triggers for todo_categories
-DROP TRIGGER IF EXISTS `trg_todo_categories_audit_insert`;
-DROP TRIGGER IF EXISTS `trg_todo_categories_audit_update`;
-DROP TRIGGER IF EXISTS `trg_todo_categories_audit_delete`;
-DELIMITER $$
-CREATE TRIGGER `trg_todo_categories_audit_insert` AFTER INSERT ON `todo_categories` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'todo_categories', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'cat_from_employee_id', NEW.`cat_from_employee_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_todo_categories_audit_update` AFTER UPDATE ON `todo_categories` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'todo_categories', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cat_from_employee_id', OLD.`cat_from_employee_id`, 'name', OLD.`name`, 'active', OLD.`active`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'cat_from_employee_id', NEW.`cat_from_employee_id`, 'name', NEW.`name`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_todo_categories_audit_delete` AFTER DELETE ON `todo_categories` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'todo_categories', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'cat_from_employee_id', OLD.`cat_from_employee_id`, 'name', OLD.`name`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
-END$$
-DELIMITER ;
 
--- Triggers for todo
-DROP TRIGGER IF EXISTS `trg_todo_audit_insert`;
-DROP TRIGGER IF EXISTS `trg_todo_audit_update`;
-DROP TRIGGER IF EXISTS `trg_todo_audit_delete`;
-
-DELIMITER $$
-
-CREATE TRIGGER `trg_todo_audit_insert`
-AFTER INSERT ON `todo`
-FOR EACH ROW
-BEGIN
-  INSERT INTO `audit_logs`
-    (`company_id`, `employee_id`, `actor_username`, `actor_email`,
-     `table_name`, `record_id`, `action`,
-     `old_values`, `new_values`,
-     `ip_address`, `user_agent`)
-  VALUES
-    (
-      COALESCE(@app_company_id, NEW.`company_id`, 0),
-      @app_employee_id,
-      @app_username,
-      @app_email,
-      'todo',
-      NEW.`id`,
-      'INSERT',
-      NULL,
-      JSON_OBJECT(
-        'id', NEW.`id`,
-        'company_id', NEW.`company_id`,
-        'title', NEW.`title`,
-        'description', NEW.`description`,
-        'due_date', NEW.`due_date`,
-        'reminder_at', NEW.`reminder_at`,
-        'repeat_pattern', NEW.`repeat_pattern`,
-        'category_id', NEW.`category_id`,
-        'department_id', NEW.`department_id`,
-        'assigned_to_employee_id', NEW.`assigned_to_employee_id`,
-        'completed', NEW.`completed`,
-        'importance', NEW.`importance`,
-        'active', NEW.`active`,
-        'deleted_by', NEW.`deleted_by`,
-        'deleted_at', NEW.`deleted_at`,
-        'created_by', NEW.`created_by`,
-        'created_at', NEW.`created_at`,
-        'updated_by', NEW.`updated_by`,
-        'updated_at', NEW.`updated_at`
-      ),
-      @app_ip_address,
-      @app_user_agent
-    );
-END$$
-
-
-CREATE TRIGGER `trg_todo_audit_update`
-AFTER UPDATE ON `todo`
-FOR EACH ROW
-BEGIN
-  INSERT INTO `audit_logs`
-    (`company_id`, `employee_id`, `actor_username`, `actor_email`,
-     `table_name`, `record_id`, `action`,
-     `old_values`, `new_values`,
-     `ip_address`, `user_agent`)
-  VALUES
-    (
-      COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0),
-      @app_employee_id,
-      @app_username,
-      @app_email,
-      'todo',
-      COALESCE(NEW.`id`, OLD.`id`, 0),
-      'UPDATE',
-      JSON_OBJECT(
-        'id', OLD.`id`,
-        'company_id', OLD.`company_id`,
-        'title', OLD.`title`,
-        'description', OLD.`description`,
-        'due_date', OLD.`due_date`,
-        'reminder_at', OLD.`reminder_at`,
-        'repeat_pattern', OLD.`repeat_pattern`,
-        'category_id', OLD.`category_id`,
-        'department_id', OLD.`department_id`,
-        'assigned_to_employee_id', OLD.`assigned_to_employee_id`,
-        'completed', OLD.`completed`,
-        'importance', OLD.`importance`,
-        'active', OLD.`active`,
-        'deleted_by', OLD.`deleted_by`,
-        'deleted_at', OLD.`deleted_at`,
-        'created_by', OLD.`created_by`,
-        'created_at', OLD.`created_at`,
-        'updated_by', OLD.`updated_by`,
-        'updated_at', OLD.`updated_at`
-      ),
-      JSON_OBJECT(
-        'id', NEW.`id`,
-        'company_id', NEW.`company_id`,
-        'title', NEW.`title`,
-        'description', NEW.`description`,
-        'due_date', NEW.`due_date`,
-        'reminder_at', NEW.`reminder_at`,
-        'repeat_pattern', NEW.`repeat_pattern`,
-        'category_id', NEW.`category_id`,
-        'department_id', NEW.`department_id`,
-        'assigned_to_employee_id', NEW.`assigned_to_employee_id`,
-        'completed', NEW.`completed`,
-        'importance', NEW.`importance`,
-        'active', NEW.`active`,
-        'deleted_by', NEW.`deleted_by`,
-        'deleted_at', NEW.`deleted_at`,
-        'created_by', NEW.`created_by`,
-        'created_at', NEW.`created_at`,
-        'updated_by', NEW.`updated_by`,
-        'updated_at', NEW.`updated_at`
-      ),
-      @app_ip_address,
-      @app_user_agent
-    );
-END$$
-
-
-CREATE TRIGGER `trg_todo_audit_delete`
-AFTER DELETE ON `todo`
-FOR EACH ROW
-BEGIN
-  INSERT INTO `audit_logs`
-    (`company_id`, `employee_id`, `actor_username`, `actor_email`,
-     `table_name`, `record_id`, `action`,
-     `old_values`, `new_values`,
-     `ip_address`, `user_agent`)
-  VALUES
-    (
-      COALESCE(@app_company_id, OLD.`company_id`, 0),
-      @app_employee_id,
-      @app_username,
-      @app_email,
-      'todo',
-      OLD.`id`,
-      'DELETE',
-      JSON_OBJECT(
-        'id', OLD.`id`,
-        'company_id', OLD.`company_id`,
-        'title', OLD.`title`,
-        'description', OLD.`description`,
-        'due_date', OLD.`due_date`,
-        'reminder_at', OLD.`reminder_at`,
-        'repeat_pattern', OLD.`repeat_pattern`,
-        'category_id', OLD.`category_id`,
-        'department_id', OLD.`department_id`,
-        'assigned_to_employee_id', OLD.`assigned_to_employee_id`,
-        'completed', OLD.`completed`,
-        'importance', OLD.`importance`,
-        'active', OLD.`active`,
-        'deleted_by', OLD.`deleted_by`,
-        'deleted_at', OLD.`deleted_at`,
-        'created_by', OLD.`created_by`,
-        'created_at', OLD.`created_at`,
-        'updated_by', OLD.`updated_by`,
-        'updated_at', OLD.`updated_at`
-      ),
-      NULL,
-      @app_ip_address,
-      @app_user_agent
-    );
-END$$
-
-DELIMITER ;
 
 
 -- Table structure for `notes`
@@ -7766,55 +7566,7 @@ CREATE TABLE `note_labels` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- Triggers for `notes`
-DELIMITER $$
-CREATE TRIGGER `trg_notes_audit_insert` AFTER INSERT ON `notes` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'notes', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'reminder_at', NEW.`reminder_at`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
-  @app_ip_address, @app_user_agent);
-END$$
 
-CREATE TRIGGER `trg_notes_audit_update` AFTER UPDATE ON `notes` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'notes', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_important', OLD.`is_important`, 'is_archived', OLD.`is_archived`, 'reminder_at', OLD.`reminder_at`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'is_checklist', NEW.`is_checklist`, 'is_pinned', NEW.`is_pinned`, 'is_important', NEW.`is_important`, 'is_archived', NEW.`is_archived`, 'reminder_at', NEW.`reminder_at`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
-  @app_ip_address, @app_user_agent);
-END$$
-
-CREATE TRIGGER `trg_notes_audit_delete` AFTER DELETE ON `notes` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'notes', OLD.`id`, 'DELETE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'is_checklist', OLD.`is_checklist`, 'is_pinned', OLD.`is_pinned`, 'is_archived', OLD.`is_archived`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
-  NULL, @app_ip_address, @app_user_agent);
-END$$
-DELIMITER ;
-
--- Triggers for `note_labels`
-DELIMITER $$
-CREATE TRIGGER `trg_note_labels_audit_insert` AFTER INSERT ON `note_labels` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'note_labels', NEW.`id`, 'INSERT', NULL,
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
-  @app_ip_address, @app_user_agent);
-END$$
-
-CREATE TRIGGER `trg_note_labels_audit_update` AFTER UPDATE ON `note_labels` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'note_labels', NEW.`id`, 'UPDATE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
-  JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'note_id', NEW.`note_id`, 'label', NEW.`label`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`),
-  @app_ip_address, @app_user_agent);
-END$$
-
-CREATE TRIGGER `trg_note_labels_audit_delete` AFTER DELETE ON `note_labels` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'note_labels', OLD.`id`, 'DELETE',
-  JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'note_id', OLD.`note_id`, 'label', OLD.`label`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`),
-  NULL, @app_ip_address, @app_user_agent);
-END$$
-DELIMITER ;
 
 -- Table structure for `system_status` (admin diagnostics cache — one row per tab)
 DROP TABLE IF EXISTS `system_status`;
@@ -8174,41 +7926,6 @@ CREATE TRIGGER `trg_request_password_audit_delete` AFTER DELETE ON `request_pass
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'request_password', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'requested_by_employee_id', OLD.`requested_by_employee_id`, 'application', OLD.`application`, 'reason', OLD.`reason`, 'applicant_signature_date', OLD.`applicant_signature_date`, 'ism_signature_date', OLD.`ism_signature_date`, 'hr_approval_status', OLD.`hr_approval_status`, 'hr_signature_date', OLD.`hr_signature_date`, 'hod_approval_status', OLD.`hod_approval_status`, 'hod_signature_date', OLD.`hod_signature_date`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
-DROP TRIGGER IF EXISTS `trg_password_folders_audit_insert`$$
-CREATE TRIGGER `trg_password_folders_audit_insert` AFTER INSERT ON `password_folders` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'password_folders', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'parent_id', NEW.`parent_id`, 'name', NEW.`name`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
-END$$
-
-DROP TRIGGER IF EXISTS `trg_password_folders_audit_update`$$
-CREATE TRIGGER `trg_password_folders_audit_update` AFTER UPDATE ON `password_folders` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'password_folders', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'parent_id', OLD.`parent_id`, 'name', OLD.`name`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'parent_id', NEW.`parent_id`, 'name', NEW.`name`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
-END$$
-
-DROP TRIGGER IF EXISTS `trg_password_folders_audit_delete`$$
-CREATE TRIGGER `trg_password_folders_audit_delete` AFTER DELETE ON `password_folders` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'password_folders', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'parent_id', OLD.`parent_id`, 'name', OLD.`name`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
-END$$
-
-DROP TRIGGER IF EXISTS `trg_password_entries_audit_insert`$$
-CREATE TRIGGER `trg_password_entries_audit_insert` AFTER INSERT ON `password_entries` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'password_entries', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'folder_id', NEW.`folder_id`, 'account', NEW.`account`, 'login_name', NEW.`login_name`, 'password', NEW.`password`, 'website', NEW.`website`, 'comments', NEW.`comments`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
-END$$
-
-DROP TRIGGER IF EXISTS `trg_password_entries_audit_update`$$
-CREATE TRIGGER `trg_password_entries_audit_update` AFTER UPDATE ON `password_entries` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'password_entries', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'folder_id', OLD.`folder_id`, 'account', OLD.`account`, 'login_name', OLD.`login_name`, 'password', OLD.`password`, 'website', OLD.`website`, 'comments', OLD.`comments`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'folder_id', NEW.`folder_id`, 'account', NEW.`account`, 'login_name', NEW.`login_name`, 'password', NEW.`password`, 'website', NEW.`website`, 'comments', NEW.`comments`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
-END$$
-
-DROP TRIGGER IF EXISTS `trg_password_entries_audit_delete`$$
-CREATE TRIGGER `trg_password_entries_audit_delete` AFTER DELETE ON `password_entries` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'password_entries', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'folder_id', OLD.`folder_id`, 'account', OLD.`account`, 'login_name', OLD.`login_name`, 'password', OLD.`password`, 'website', OLD.`website`, 'comments', OLD.`comments`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
-END$$
 
 DELIMITER ;
 SET FOREIGN_KEY_CHECKS=1;

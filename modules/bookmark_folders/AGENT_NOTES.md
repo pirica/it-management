@@ -12,6 +12,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 ## 4. Business Rules (Critical for Agents)
 - **Ownership/Sharing**: A folder is either owned by a specific `employee_id` or marked as `shared = 1`.
+- **Folder names:** unique per owner within the company — `UNIQUE (company_id, employee_id, name)` in `database.sql` (private folders do not collide across employees).
 - **Recursive Deletion**: Deleting a folder sets `parent_folder_id` of subfolders to NULL (via `ON DELETE SET NULL`) or requires manual cleanup.
 - **Tenant Isolation**: Strictly scoped by `company_id`.
 
@@ -30,7 +31,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 - Queries must also consider `employee_id` and `shared` status for visibility.
 
 ## 9. Audit Logging Requirements
-- Managed via database triggers.
+- **Private data (no audit):** `bookmark_folders` and `bookmarks` are exempt from `audit_logs` and `trg_*_audit_*` triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add PHP audit hooks for folder/bookmark mutations.
 
 ## 10. Common Pitfalls
 - **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Valid]-[2026-07-15]

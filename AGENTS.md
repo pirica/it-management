@@ -239,7 +239,22 @@ Every module (excluding the Protection Zone) must implement:
 * **Navigation:** Standardized server-side pagination based on `records_per_page`. List **Previous** / **Next** controls use link text `Previous` and `Next` (preserve `search`, `sort`, `dir`, and `page` query params). **Required `title` attributes:** `title="◀️ Previous"` and `title="▶️ Next"` on pagination anchors (not `🔎 Search`). Pagination URLs include `search=`; `includes/header.php` auto-tooltips must match **visible link text** for Next/Previous and must not treat `search=` in `href` as a Search action. **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **Next** (`btn-sm`, `page=2`, `title="▶️ Next"`), then page 2 includes **Previous** (`btn-sm`, `page=1`, `title="◀️ Previous"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
-* **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center.
+* **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center — **except** private-data tables listed under **Private data — no audit trail** below (no `audit_logs` rows, no `trg_*_audit_*` triggers, no PHP `itm_log_audit()` on those tables).
+
+#### Private data — no audit trail (mandatory)
+
+Tables that store **private user content** must **not** be copied into `audit_logs` and must **not** define `trg_{table}_audit_*` triggers in `database.sql`. Do not add PHP `itm_log_audit()` / `itm_run_query()` audit hooks for mutations on these tables — keep the data private.
+
+| Table | Module / notes |
+|-------|----------------|
+| `emails` | Send log (`modules/emails/` tab) — may contain recipient/subject/body metadata; **not** `email_smtp_configurations` or `email_alert_rules` (those remain auditable). |
+| `password_entries`, `password_folders` | `modules/passwords/` — vault credentials; encrypted at rest. |
+| `private_contacts` | `modules/private_contacts/` — per-user address book. |
+| `todo_categories`, `todo` | `modules/todo/` — personal/assigned tasks. |
+| `notes`, `note_labels` | `modules/notes/` — personal/shared note content. |
+| `bookmark_folders`, `bookmarks` | `modules/bookmarks/`, `modules/bookmark_folders/` — private/shared links. |
+
+`scripts/check_audit_logs_coverage.php` treats these tables as intentionally exempt from database triggers.
 
 #### API keys and rate limits (mandatory)
 
@@ -406,7 +421,7 @@ The email management module (`modules/emails/` and `modules/email_smtp_configura
 5. **Project integration:** `send-email.php`, `forgot-password.php`, `register.php`, `modules/employee_onboarding_requests/` approval emails, and alert runner must call **`itm_send_email()`** — not MailerLite/Resend directly (Resend remains fallback when no SMTP profile exists).
 6. **Alert runner:** `php scripts/run_email_alert_rules.php` — schedule daily; respects `email_alert_rules.enabled` and `notify_emails`.
 7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_emails_module.php`.
-8. **Audit logging:** `database.sql` defines `trg_emails_audit_*`, `trg_email_smtp_configurations_audit_*`, `trg_email_alert_rules_audit_*`.
+8. **Audit logging:** `email_smtp_configurations` and `email_alert_rules` use `trg_*_audit_*` triggers in `database.sql`. The **`emails`** send log is **private-data exempt** (no audit triggers — see **Private data — no audit trail**).
 9. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
 
 #### Chatbot & Knowledge Base (mandatory)
