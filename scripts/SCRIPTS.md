@@ -119,6 +119,7 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/perform_audit.php` | Discovers and executes all executable PHP scripts in the `scripts/` folder using subprocesses. Collects execution exit codes and any logged PHP error logs. Report written to `/scripts/php_error_audit_results.json`. |
 | `php scripts/titles_list.php` | Scans all PHP files under the `modules/` directory to extract their `<title>` tags, listing them in a standardized path-title mapping format. |
 | `php scripts/titles_list_show.php` | Scans all PHP files under the `modules/` directory to extract their `<title>` tags, listing them with only the inner title text rendered. |
+| `scripts/pitfalls.php` | Aggregated pitfalls and developer traps extracted directly from the `AGENT_NOTES.md` files across all modules and submodules. Automatically creates/backfills missing note files. Browser-only (Admin). |
 
 ### Schema fields and type listings
 

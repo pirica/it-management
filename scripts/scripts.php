@@ -123,6 +123,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers. After switch-port changes also run <code>php scripts/idfs_sync_human_test.php</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="pitfalls.php" target="_blank" rel="nofollow noreferrer">pitfalls.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Aggregated pitfalls and developer traps extracted directly from the <code>AGENT_NOTES.md</code> files across all modules and submodules. Automatically creates/backfills missing note files.</td>
+                    <td>Open <code>scripts/pitfalls.php</code> in the browser (Admin only).</td>
+                </tr>
+                <tr>
                     <td><a href="SCRIPTS.md" target="_blank" rel="nofollow noreferrer">SCRIPTS.md</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
                     <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
