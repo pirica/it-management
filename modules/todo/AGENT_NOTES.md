@@ -37,7 +37,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - `company_id` on all rows; visibility rules further restrict by user.
 
 ## 9. Audit Logging Requirements
-- Database audit triggers on `todo` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- **Private data (no audit):** `todo` and `todo_categories` must not write to `audit_logs` and have no `trg_*_audit_*` triggers in `database.sql` (see `AGENTS.md` → **Private data — no audit trail**).
 
 ## 10. Common Pitfalls
 - Do not use raw `mysqli_query` with unescaped `$company_id` in new code — prefer prepared statements. [Valid]-[2026-07-15]

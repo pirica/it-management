@@ -76,7 +76,7 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 
 ## 9. Audit Logging Requirements
 
-- Database triggers for standard audit logging are present in `database.sql` for both `password_folders` and `password_entries`. These triggers log the metadata and encrypted values securely.
+- **Private data (no audit):** `password_folders` and `password_entries` must not write to `audit_logs` and have no `trg_*_audit_*` triggers in `database.sql` (see `AGENTS.md` → **Private data — no audit trail**). Do not add PHP audit hooks that would log vault metadata or ciphertext.
 
 ---
 

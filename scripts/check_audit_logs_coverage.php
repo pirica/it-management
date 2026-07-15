@@ -113,15 +113,45 @@ function audit_logs_load_database_sql_maps(string $databaseSqlPath): array
 }
 
 /**
- * Tables that intentionally have no audit triggers (audit destination, etc.).
+ * Tables that intentionally have no audit triggers (audit destination, private user data, etc.).
+ * Keep aligned with AGENTS.md → Private data — no audit trail.
  *
+ * @return array<string, bool>
+ */
+function audit_logs_private_data_tables(): array
+{
+    return [
+        'emails' => true,
+        'password_entries' => true,
+        'password_folders' => true,
+        'private_contacts' => true,
+        'todo_categories' => true,
+        'todo' => true,
+        'notes' => true,
+        'note_labels' => true,
+        'bookmark_folders' => true,
+        'bookmarks' => true,
+    ];
+}
+
+/**
  * @return array<string, bool>
  */
 function audit_logs_trigger_exempt_tables(): array
 {
-    return [
-        'audit_logs' => true,
-    ];
+    return array_merge(
+        ['audit_logs' => true],
+        audit_logs_private_data_tables()
+    );
+}
+
+/**
+ * @param string $tableName
+ * @return bool
+ */
+function audit_logs_table_is_private_data_exempt(string $tableName): bool
+{
+    return !empty(audit_logs_private_data_tables()[$tableName]);
 }
 
 /**
@@ -362,7 +392,7 @@ function audit_logs_assess_module(
 
     $uncoveredTables = [];
     foreach ($mutatedTables as $tableName) {
-        if ($tableName === 'audit_logs') {
+        if ($tableName === 'audit_logs' || audit_logs_table_is_private_data_exempt($tableName)) {
             continue;
         }
         if (empty($triggerTables[$tableName])) {
@@ -407,8 +437,20 @@ function audit_logs_assess_module(
     }
 
     $tablesNeedingTriggers = array_values(array_filter($mutatedTables, static function ($tableName) {
-        return $tableName !== 'audit_logs';
+        return $tableName !== 'audit_logs' && !audit_logs_table_is_private_data_exempt($tableName);
     }));
+
+    if ($hasMutations && empty($tablesNeedingTriggers) && !empty($mutatedTables)) {
+        return [
+            'status' => 'pass',
+            'details' => 'Private-data module: mutations on exempt tables only (no audit_logs / triggers per AGENTS.md)',
+            'crud_table' => $crudTable,
+            'php_audit' => $phpAudit,
+            'db_trigger' => $dbTrigger,
+            'mutated_tables' => $mutatedTables,
+            'uncovered_tables' => $uncoveredTables,
+        ];
+    }
 
     $allMutatedTablesHaveTriggers = true;
     foreach ($tablesNeedingTriggers as $tableName) {

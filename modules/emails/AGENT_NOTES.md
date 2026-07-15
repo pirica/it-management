@@ -41,7 +41,8 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - All queries scoped by `company_id`; `company_id` hidden from UI.
 
 ## 9. Audit Logging Requirements
-- Triggers: `trg_emails_audit_*`, `trg_email_smtp_configurations_audit_*`, `trg_email_alert_rules_audit_*` in `database.sql`.
+- **Send log (`emails`):** private-data exempt — no `trg_emails_audit_*` triggers and no `audit_logs` rows for send-log mutations (see `AGENTS.md` → **Private data — no audit trail**).
+- **SMTP / alert rules:** `email_smtp_configurations` and `email_alert_rules` remain auditable via `trg_*_audit_*` triggers in `database.sql`.
 
 ## 10. Common Pitfalls
 - Saving SMTP without default flag when multiple profiles exist — always confirm `is_default` behaviour. [Valid]-[2026-07-15]
