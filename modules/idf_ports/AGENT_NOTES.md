@@ -17,7 +17,6 @@ Manages individual port rows on IDF rack positions (RJ45 and SFP), including sta
 - **idf_links** — must be updated or removed before port delete when links reference the port.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` Protection Zone).
 - **Unique port slot:** `(company_id, position_id, port_no, port_type)` must be unique.
 - **Port numbering:** sequential `port_no` within a position; SFP numbering often follows live `switch_ports` when equipment is linked.
 - **IDF sync guardrail (mandatory):** any create/update/delete affecting ports must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` aligned. Use transactions; rollback on failure.
@@ -59,7 +58,6 @@ Manages individual port rows on IDF rack positions (RJ45 and SFP), including sta
 Triggers always write to `audit_logs` on DML (not gated by `enable_audit_logs`); actor fields come from MySQL session variables set in `config.php`.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** do not change port sync contracts without explicit request. [Valid]-[2026-07-15]
 - **Editing `idf_ports` only:** leaves `switch_ports` and the equipment switch-port manager out of date — always use sync helpers or API endpoints. [Valid]-[2026-07-15]
 - **IDF sync test:** run `php scripts/idfs_sync_human_test.php` after any port workflow change; treat `[FAIL]` as a hard stop. [Valid]-[2026-07-15]
 - **Deleting linked ports:** remove `idf_links` referencing the port first; otherwise deletes fail or leave orphan link rows. [Valid]-[2026-07-15]

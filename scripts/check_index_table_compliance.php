@@ -34,7 +34,7 @@ $argvCopy = $argv ?? [];
 $writeBaseline = in_array('--write-baseline', $argvCopy, true);
 $strictMode = in_array('--strict', $argvCopy, true);
 
-// Protection zone and bespoke screens that do not follow the standard index table contract.
+// Bespoke screens that do not follow the standard index table contract.
 $excludeModules = [
     'equipment',
     'idfs',

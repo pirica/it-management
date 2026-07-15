@@ -6,7 +6,7 @@ Module work must follow the wiki guardrails (also in repository `AGENTS.md`):
 
 - [Foreign Keys & Display](Foreign-Keys) — labels, dropdowns, tenant-safe lookups
 - [Import Excel (JSON endpoint)](Import-Excel) — `data-itm-db-import-endpoint` and `itm_handle_json_table_import`
-- [IDF Synchronization](IDF-Synchronization) — rack/port/equipment table parity (protection zone)
+- [IDF Synchronization](IDF-Synchronization) — rack/port/equipment table parity
 
 ## Standard CRUD vs non-CRUD modules
 
@@ -86,7 +86,7 @@ Related CRUD modules for maintaining source data: `annual_budgets`, `monthly_bud
 
 **Sidebar:** 🗄️ IDFs → `modules/idfs/`
 
-IDF metadata can be managed from the list screen, but the main value is the **rack workspace**. This folder is a **protection zone** in `AGENTS.md` — do not refactor to generic CRUD without an explicit request.
+IDF metadata can be managed from the list screen, but the main value is the **rack workspace**. This folder uses bespoke rack/port workflows — do not refactor to generic CRUD without an explicit request.
 
 | Entry | URL / path | Role |
 | --- | --- | --- |

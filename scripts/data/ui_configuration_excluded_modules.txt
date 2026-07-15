@@ -1,7 +1,7 @@
 # Module folder names skipped by scripts/check_ui_configuration_coverage.php (smoke step 5).
 # One slug per line. Lines starting with # are comments.
 
-# Protection zone / bespoke screens (no standard index table contract).
+# Bespoke screens (no standard index table contract).
 # Legacy or custom list UIs (non-standard action column / create chrome).
 idfs
 employees

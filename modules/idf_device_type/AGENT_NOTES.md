@@ -12,7 +12,6 @@ Maintains the company-scoped lookup of device types used on IDF rack positions (
 - **idf_device_type** → indirectly affects **idf_ports** and **switch_ports** when positions of that type are created or regenerated.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` Protection Zone).
 - **Unique name:** `idfdevicetype_name` must be unique per `company_id` (`idf_device_type_unique`).
 - **RESTRICT delete:** deleting a type that is referenced by `idf_positions.device_type` fails at the database layer; detach or reassign positions first.
 - **IDF sync guardrail:** changing types or counts on positions (elsewhere) must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` synchronized — this module alone does not perform port sync, but type changes drive downstream rack behaviour.
@@ -51,7 +50,6 @@ MySQL triggers on `idf_device_type` insert audit rows on INSERT/UPDATE/DELETE (u
 `table_name` in `audit_logs` is `idf_device_type`; `record_id` is the row `id`.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** do not refactor or extend this module unless explicitly requested. [Valid]-[2026-07-15]
 - **Deleting in-use types:** `ON DELETE RESTRICT` from `idf_positions` blocks deletion — reassign positions in `modules/idfs/` or `idf_positions` first. [Valid]-[2026-07-15]
 - **IDF sync:** adding or renaming types does not automatically fix port rows; position save/regenerate paths in `modules/idfs/api/` own port counts. After any cross-module IDF change, run `php scripts/idfs_sync_human_test.php`. [Valid]-[2026-07-15]
 - **Do not update only one entry file:** fixes in `index.php` must be mirrored in wrapper files when shared blocks change (`create.php`, `edit.php`, `view.php`, `list_all.php`, `delete.php`). [Valid]-[2026-07-15]

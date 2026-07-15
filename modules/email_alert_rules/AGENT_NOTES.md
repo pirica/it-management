@@ -24,8 +24,7 @@ Email Alert Rules manages per-company automated notification settings for the Em
 
 \## 4. Business Rules (Critical for Agents)
 
-\- This module is not in the Protection Zone.
-
+\- 
 \- Email Alert Rules is a sub-feature of \*\*Email Management\*\*. Server-side CRUD permission checks must use the parent module slug \*\*`emails`\*\*, not `email\_alert\_rules`, because `database.sql` registers Email Management in `modules\_registry` as `emails`.
 
 \- Rules are tenant-scoped by `company\_id`; do not expose or edit `company\_id` in the UI.

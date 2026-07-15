@@ -21,7 +21,7 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 - Almost all modules scope data by `company_id` from session.
 
 ## 12. Module Owner Notes (Optional)
-Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` Protection Zone / bespoke sections.
+Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` bespoke sections.
 
 ### `select_options_api.php` (module root)
 - Shared JSON endpoint for dropdown quick-add (`js/select-add-option.js`).

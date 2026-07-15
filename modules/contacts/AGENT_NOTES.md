@@ -10,7 +10,6 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 - Depends on **companies**.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Filter**: Only shows employees where `on_contacts = 1`.
 - **Status Check**: Only shows active employees (via `employee_statuses.active = 1`).
 - **Read-Only / Inline**: Primarily a read-only list, though it may support some inline editing for contact fields.

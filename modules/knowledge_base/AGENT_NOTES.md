@@ -13,31 +13,28 @@ Manage IT support articles, manuals, and procedures for the organization.
 - `updated_by` -> `employees.id`
 - `deleted_by` -> `employees.id`
 
-## 4. Protection Zone
-- None
-
-## 5. Multi-tenant Scoping
+## 4. Multi-tenant Scoping
 - Strictly scoped by `company_id`.
 
-## 6. Business Rules
+## 5. Business Rules
 - Articles are visible to the IT Support Chatbot for diagnosing issues.
 - Category field should be used to classify articles (e.g., Technical Documentation, Common Issues, etc.).
 
-## 7. UI / Layout
+## 6. UI / Layout
 - Standard flattened CRUD module (independent).
 - `employee_id`, `created_by`, `updated_by`, and `active` are automatically populated by the backend on database insertion and update.
 
-## 8. API & AJAX
+## 7. API & AJAX
 - `chat_api.php`: JSON endpoint for Chatbot search queries. Requires session and CSRF token.
 
-## 9. Search & Filtering
+## 8. Search & Filtering
 - Standard text search on title and content.
 
-## 10. Audit Coverage
+## 9. Audit Coverage
 - Triggers `trg_knowledge_base_audit_insert`, `trg_knowledge_base_audit_update`, and `trg_knowledge_base_audit_delete` handle audit logging, capturing columns in their JSON payloads.
 
-## 11. Known Pitfalls
+## 10. Known Pitfalls
 
 
-## 12. References
+## 11. References
 - `AGENTS.md`

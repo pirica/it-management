@@ -15,7 +15,6 @@ Stores physical cable links between IDF ports (`port_id_a` and `port_id_b`), inc
 - **idf_links** → created/updated/deleted in tandem with **switch_ports** and **idf_ports** status/colour/label fields from `modules/idfs/api/link_create.php` and `link_delete.php`.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` Protection Zone).
 - **Unique port pair:** `(company_id, port_id_a, port_id_b)` must be unique; duplicate links return a constraint error.
 - **Bidirectional semantics:** a link connects two IDF ports; both port rows and any mirrored `switch_ports` must reflect connected state consistently.
 - **IDF sync guardrail (mandatory):** `link_create`, `link_delete`, and related `port_update` flows must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` synchronized. Use transactions; rollback on failure.
@@ -55,7 +54,6 @@ Triggers in `database.sql` log all INSERT, UPDATE, and DELETE operations on `idf
 Actor context uses `@app_employee_id` and related session variables from `config.php`; do not overwrite them in handlers.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** no drive-by refactors or schema experiments without explicit approval. [Valid]-[2026-07-15]
 - **Updating `idf_links` alone:** rack and equipment UIs read `idf_ports` / `switch_ports` status and colour — link CRUD here must mirror the same fields or use the shared API helpers. [Valid]-[2026-07-15]
 - **IDF sync regression:** after any link workflow change, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` blocks completion. [Valid]-[2026-07-15]
 - **Orphan links:** deleting `idf_ports` without clearing links leaves broken FK references or unique-key conflicts on recreate. [Valid]-[2026-07-15]

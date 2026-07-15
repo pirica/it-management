@@ -22,7 +22,6 @@ Manages Intermediate Distribution Frames (IDFs): physical network distribution p
 - **idf_links** → connects **idf_ports** (`port_id_a`, `port_id_b`).
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` Protection Zone).
 - **IDF sync guardrail (mandatory):** all Create, Edit, Update, Delete, Copy, and Move workflows must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` fully synchronized. Use transaction boundaries; rollback on any failure. Partial cross-table updates are forbidden.
 - **Unknown reset rule:** unlink/delete flows must reset synchronised ports to tenant `Unknown` status with Gray (`#808080`) where applicable.
 - **Unique name:** `idfs.name` must be unique per `company_id` (`uq_idfs_company_scope`).
@@ -74,7 +73,6 @@ Database triggers always write to `audit_logs` on DML (not gated by `enable_audi
 Related tables (`idf_positions`, `idf_ports`, `idf_links`, `idf_device_type`) have their own triggers; rack API mutations that touch those tables are audited via the child table triggers. After schema changes, re-run `php scripts/check_audit_logs_coverage.php`.
 
 ## 10. Common Pitfalls
-- **Do not edit Protection Zone modules** without an explicit user request — includes this folder, sibling IDF CRUD modules, and `modules/equipment/` switch-port tiles. [Valid]-[2026-07-15]
 - **IDF sync drift:** updating only `idf_ports` or only `switch_ports` leaves the rack UI and equipment module inconsistent. Always follow the sync helpers in `idf_ports_sync.php` and `api/ports_sync.php`. [Valid]-[2026-07-15]
 - **Link delete/create parity:** `link_create`, `link_delete`, and `port_update` must keep status, colour, label, and notes aligned across linked `idf_ports` and mirrored `switch_ports` rows. [Valid]-[2026-07-15]
 - **Position delete ordering:** remove or update `idf_links` referencing ports on the position before deleting the position row. [Valid]-[2026-07-15]

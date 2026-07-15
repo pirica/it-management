@@ -13,7 +13,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 ## 4. Business Rules (Critical for Agents)
 - **Strict user isolation:** all queries must include `employee_id = logged-in employee`. Never show another user's private contacts.
 - Favourite toggle and delete are POST + CSRF (`index_logic.php`).
-- Distinct from `modules/contacts/` (company directory / Protection Zone).
+- Distinct from `modules/contacts/` (company directory).
 
 ## 5. UI Behavior Requirements
 - Custom list with search, favourite star (AJAX), photo thumbnails.
@@ -56,4 +56,4 @@ $stmt->execute();
 ```
 
 ## 12. Module Owner Notes (Optional)
-Not in Protection Zone — standard CRUD fixes allowed, but preserve per-user privacy on every code path.
+standard CRUD fixes allowed, but preserve per-user privacy on every code path.

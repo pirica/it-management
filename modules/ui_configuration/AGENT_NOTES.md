@@ -15,7 +15,6 @@ Manages per-company and per-employee UI layout preferences (such as action butto
 
 ## 4. Business Rules (Critical for Agents)
 
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` Protection Zone).
 - All queries must be strictly scoped to the logged-in employee (`employee_id = $_SESSION['employee_id']` / `company_id = $_SESSION['company_id']`) to maintain individual preferences and private API keys.
 - **API rate limits:** keyless requests are only allowed for active sessions on the Free tier. Paid tiers (Basic, Pro, Enterprise) require a valid `api_key` and enforce sliding-window quotas.
 

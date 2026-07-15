@@ -304,7 +304,7 @@ if (!function_exists('itm_require_role_module_permission')) {
 
 if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
     /**
-     * Modules that use alternate guards (admin gate, protection zone, custom ACL).
+     * Modules that use alternate guards (admin gate, custom ACL).
      *
      * @return string[]
      */

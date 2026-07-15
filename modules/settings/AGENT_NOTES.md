@@ -14,7 +14,6 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - API keys are stored per `company_id` + `employee_id` on `ui_configuration`.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` §3).
 - **UI Persistence**: Changes to button positions or pagination must call `collectAndSetHiddenFields()` in the UI.
 - **API Access card**: **Free** tier — no API key UI; copy states **signed-in session** is required for programmatic access and for `scripts/api.php?rate_limit=1` without `api_key`. **Paid** tiers — only `api_key` is editable (save or generate). `tier` is a **blocked** `<select>`; rate-limit counters are read-only. POST `save_api_key` / `generate_api_key` rejected on Free tier.
 - **Database Maintenance**: Allows triggering schema verification and table repairs.
