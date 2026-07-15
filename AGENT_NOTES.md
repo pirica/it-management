@@ -11,10 +11,10 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **`database.sql` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**.
 
 ## 10. Common Pitfalls
-- Bypassing the session-based company isolation. [Valid]-[2026-07-15]
-- Introducing external libraries. [Valid]-[2026-07-15]
-- Forgetting to update `database.sql` when changing the schema. [Valid]-[2026-07-15]
-- Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper). [Valid]-[2026-07-15]
+- Bypassing the session-based company isolation. [Cursor-Valid]
+- Introducing external libraries. [Cursor-Valid]
+- Forgetting to update `database.sql` when changing the schema. [Cursor-Valid]
+- Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper). [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.

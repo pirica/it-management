@@ -40,9 +40,9 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Schema column name**: `floor_plan_folders.parent_folder_id` is the parent FK (not `parent_folder_name`). Gallery helpers and `index.php` folder create/move handlers use `parent_folder_id`; `database.sql` triggers and unique key must match. [Valid]-[2026-07-15]
-- **Broken Paths**: Deleting a folder without moving its files can result in "unfiled" records. [Valid]-[2026-07-15]
-- **Large Files**: Ensure server `post_max_size` and `upload_max_filesize` accommodate larger CAD or PDF files. [Valid]-[2026-07-15]
+- **Schema column name**: `floor_plan_folders.parent_folder_id` is the parent FK (not `parent_folder_name`). Gallery helpers and `index.php` folder create/move handlers use `parent_folder_id`; `database.sql` triggers and unique key must match. [Cursor-Valid]
+- **Broken Paths**: Deleting a folder without moving its files can result in "unfiled" records. [Cursor-Valid]
+- **Large Files**: Ensure server `post_max_size` and `upload_max_filesize` accommodate larger CAD or PDF files. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

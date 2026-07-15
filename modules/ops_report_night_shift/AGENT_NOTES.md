@@ -36,8 +36,8 @@ Dynamic night-shift guest list rows (23h00 – 07h30) on a daily Ops Report. Sto
 - Triggers: `trg_ops_report_night_shift_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
-- Do not hardcode night-shift UI labels here — they are editable via parent `report_ui_json`. [Valid]-[2026-07-15]
-- Parent report delete cascades all night-shift rows. [Valid]-[2026-07-15]
+- Do not hardcode night-shift UI labels here — they are editable via parent `report_ui_json`. [Cursor-Valid]
+- Parent report delete cascades all night-shift rows. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

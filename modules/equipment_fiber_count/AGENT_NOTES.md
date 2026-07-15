@@ -32,10 +32,10 @@ Lookup table for fiber strand counts (e.g., "12", "24", "48").
 - Database triggers `trg_equipment_fiber_count_audit_insert`, `trg_equipment_fiber_count_audit_update`, `trg_equipment_fiber_count_audit_delete` on `equipment_fiber_count` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Valid]-[2026-07-15]
-- Referenced by **idf_ports** (`fiber_ports_number`). [Valid]-[2026-07-15]
-- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
-- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Valid]-[2026-07-15]
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]
+- Referenced by **idf_ports** (`fiber_ports_number`). [Cursor-Valid]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

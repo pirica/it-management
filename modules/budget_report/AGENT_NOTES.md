@@ -30,8 +30,8 @@ Provides a financial overview and comparison of actual expenses vs. budgets. It 
 - None for the report itself, as it is read-only.
 
 ## 10. Common Pitfalls
-- **Division by Zero**: Handle cases where budgets are zero when calculating variances. [Valid]-[2026-07-15]
-- **Missing Data**: Ensure the report handles missing budget or expense records for a period gracefully (displaying 0 or "—"). [Valid]-[2026-07-15]
+- **Division by Zero**: Handle cases where budgets are zero when calculating variances. [Cursor-Valid]
+- **Missing Data**: Ensure the report handles missing budget or expense records for a period gracefully (displaying 0 or "—"). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

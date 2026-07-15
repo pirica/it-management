@@ -33,8 +33,8 @@ Manages annual financial budget allocations per Cost Center and GL Account for a
 - Managed via database triggers (`trg_annual_budgets_audit_*`).
 
 ## 10. Common Pitfalls
-- **Duplicate Budgets**: Attempting to insert a budget for a combination that already exists will trigger a unique key violation. [Valid]-[2026-07-15]
-- **Cascade Deletes**: Be careful when deleting annual budgets as it removes the monthly breakdown. [Valid]-[2026-07-15]
+- **Duplicate Budgets**: Attempting to insert a budget for a combination that already exists will trigger a unique key violation. [Cursor-Valid]
+- **Cascade Deletes**: Be careful when deleting annual budgets as it removes the monthly breakdown. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

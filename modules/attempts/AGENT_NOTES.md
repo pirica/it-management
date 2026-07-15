@@ -35,8 +35,8 @@ Tracks authentication-related attempts, including logins and password resets. It
 - This module *is* a form of logging. It does not typically have its own audit triggers to avoid circularity.
 
 ## 10. Common Pitfalls
-- **High Volume**: This table can grow very large; ensure indexes are used for performance. [Valid]-[2026-07-15]
-- **False Positives**: Rate limiting logic based on this table must be carefully tuned to avoid locking out legitimate users. [Valid]-[2026-07-15]
+- **High Volume**: This table can grow very large; ensure indexes are used for performance. [Cursor-Valid]
+- **False Positives**: Rate limiting logic based on this table must be carefully tuned to avoid locking out legitimate users. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

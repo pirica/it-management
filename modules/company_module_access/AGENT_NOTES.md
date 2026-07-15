@@ -57,9 +57,9 @@ Admin-only module that manages per-company module visibility. Administrators use
 
 ## 10. Common Pitfalls
 
-- Do not hide disabled modules from the admin matrix. [Valid]-[2026-07-15]
-- Do not add per-module `has_module_access()` guards — central enforcement in `config/config.php` handles URL access. [Valid]-[2026-07-15]
-- Run `php scripts/sync_modules_registry.php` after adding new module folders. [Valid]-[2026-07-15]
+- Do not hide disabled modules from the admin matrix. [Cursor-Valid]
+- Do not add per-module `has_module_access()` guards — central enforcement in `config/config.php` handles URL access. [Cursor-Valid]
+- Run `php scripts/sync_modules_registry.php` after adding new module folders. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 

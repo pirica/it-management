@@ -37,8 +37,8 @@ Lookup table for categorizing events and alerts (e.g., "Maintenance", "Holiday",
 - Database triggers `trg_event_categories_audit_insert`, `trg_event_categories_audit_update`, `trg_event_categories_audit_delete` on `event_categories` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Deleting a category nulls `events.category_id` and `alerts.category_id` automatically (`ON DELETE SET NULL`) — no manual detach step required. [Valid]-[2026-07-15]
-- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
+- Deleting a category nulls `events.category_id` and `alerts.category_id` automatically (`ON DELETE SET NULL`) — no manual detach step required. [Cursor-Valid]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

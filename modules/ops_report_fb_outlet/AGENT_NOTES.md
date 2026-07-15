@@ -38,9 +38,9 @@ Child rows for Food & Beverage outlet cover counts on a daily Ops Report. Each r
 - Database triggers: `trg_ops_report_fb_outlet_audit_insert|update|delete` (includes `ops_report_id` in JSON payload).
 
 ## 10. Common Pitfalls
-- Do not orphan rows — deleting parent **ops_report** cascades child rows. [Valid]-[2026-07-15]
-- Prefer parent **ops_report** inline editors for hotel-user workflows; this CRUD module is secondary. [Valid]-[2026-07-15]
-- Whitelist field names if adding AJAX outside standard CRUD. [Valid]-[2026-07-15]
+- Do not orphan rows — deleting parent **ops_report** cascades child rows. [Cursor-Valid]
+- Prefer parent **ops_report** inline editors for hotel-user workflows; this CRUD module is secondary. [Cursor-Valid]
+- Whitelist field names if adding AJAX outside standard CRUD. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

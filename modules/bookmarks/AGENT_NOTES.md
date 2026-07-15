@@ -52,10 +52,10 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **Private data (no audit):** `bookmark_folders` and `bookmarks` are exempt from `audit_logs` and database audit triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add `itm_log_audit()` for bookmark/folder mutations.
 
 ## 10. Common Pitfalls
-- SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`. [Valid]-[2026-07-15]
-- URLs missing scheme — prepend `http://` or `https://` when saving. [Valid]-[2026-07-15]
-- `delete.php` expects `bulk_action=single_delete` for inline index deletes. [Valid]-[2026-07-15]
-- Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently. [Valid]-[2026-07-15]
+- SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`. [Cursor-Valid]
+- URLs missing scheme — prepend `http://` or `https://` when saving. [Cursor-Valid]
+- `delete.php` expects `bulk_action=single_delete` for inline index deletes. [Cursor-Valid]
+- Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

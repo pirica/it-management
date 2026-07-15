@@ -38,8 +38,8 @@ This module manages notifications and alerts within the system. It supports both
 - Mutations are logged via database triggers (`trg_alerts_audit_*`) into `audit_logs`.
 
 ## 10. Common Pitfalls
-- **Leaking Private Alerts**: Failing to include the `assigned_to_employee_id` check in custom queries can leak private notifications to other users. [Valid]-[2026-07-15]
-- **Date/Time Formatting**: Ensure `start_datetime` and `end_datetime` are handled correctly for SQL and UI display. [Valid]-[2026-07-15]
+- **Leaking Private Alerts**: Failing to include the `assigned_to_employee_id` check in custom queries can leak private notifications to other users. [Cursor-Valid]
+- **Date/Time Formatting**: Ensure `start_datetime` and `end_datetime` are handled correctly for SQL and UI display. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

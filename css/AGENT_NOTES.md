@@ -37,10 +37,10 @@ Contains the global application stylesheet for the IT Management system.
 Modules with substantial inline CSS must include their own `@media` rules when layout is not covered by global utilities (examples: `modules/calendar/`, `modules/todo/`, `modules/explorer/`, `modules/ops_report/`, `modules/org_chart/`, `modules/rack_planner/`). Canvas tools (org chart, floor designer, rack visualizer) rely on scroll/zoom rather than reflowing fixed artboards.
 
 ## 10. Common Pitfalls
-- Overwriting global variables without checking their impact on other modules. [Fixed]-[2026-07-15] — Floor designer scopes `--designer-width` / `--designer-height` on `.designer-wrapper`, not `:root`.
-- Fixed-width sidebars (`280px`, `320px`) without a mobile stack breakpoint. [Fixed]-[2026-07-15] — `user-config.php` `.layout-2col` stacks to one column at `max-width: 768px`; prefer `.itm-split-layout` for new dual panes.
-- `white-space: nowrap` on table headers/cells without a scroll wrapper or mobile override. [Fixed]-[2026-07-15] — Canonical pattern is horizontal scroll via `.content .card { overflow-x: auto }`, `.itm-responsive-table-wrap` / `.audit-table-wrap`, plus opt-in `.itm-nowrap-column` wrapping on mobile. Do **not** add a mobile rule that wraps all `th`/`td` then re-force `nowrap` on `.card th/td` (that undoes wrapping for every CRUD list).
-- Duplicating `.audit-table-wrap` in module CSS — define once in `styles.css`. [Fixed]-[2026-07-15] — local one-line overrides removed from audit logs / system status inline styles.
+- Overwriting global variables without checking their impact on other modules. [Cursor-Fixed] — Floor designer scopes `--designer-width` / `--designer-height` on `.designer-wrapper`, not `:root`.
+- Fixed-width sidebars (`280px`, `320px`) without a mobile stack breakpoint. [Cursor-Fixed] — `user-config.php` `.layout-2col` stacks to one column at `max-width: 768px`; prefer `.itm-split-layout` for new dual panes.
+- `white-space: nowrap` on table headers/cells without a scroll wrapper or mobile override. [Cursor-Fixed] — Canonical pattern is horizontal scroll via `.content .card { overflow-x: auto }`, `.itm-responsive-table-wrap` / `.audit-table-wrap`, plus opt-in `.itm-nowrap-column` wrapping on mobile. Do **not** add a mobile rule that wraps all `th`/`td` then re-force `nowrap` on `.card th/td` (that undoes wrapping for every CRUD list).
+- Duplicating `.audit-table-wrap` in module CSS — define once in `styles.css`. [Cursor-Fixed] — local one-line overrides removed from audit logs / system status inline styles.
 
 ## 12. Module Owner Notes (Optional)
 The system uses CSS variables (`var(--accent)`, etc.) for theme consistency. Dark mode is toggled via `[data-theme="dark"]` on `document.documentElement`.

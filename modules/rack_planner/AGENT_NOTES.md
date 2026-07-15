@@ -44,10 +44,10 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - `trg_rack_planner_audit_insert|update|delete` in `database.sql` logging all fields.
 
 ## 10. Common Pitfalls
-- There is no `rack_equipment` mapping table — layout lives in `layout_json`. [Valid]-[2026-07-15]
-- Partial price sync breaks catalog/equipment/IDF reporting — always update source row. [Valid]-[2026-07-15]
-- Be sure to explicitly request or insert columns (`employee_id`, `created_by`, `updated_by`, `deleted_by`, etc.) when executing SELECT/INSERT/UPDATE statements. [Valid]-[2026-07-15]
-- Param type string for Create/Insert statement must be `'iisiisiii'` corresponding to the exact column types: `company_id` (i), `employee_id` (i), `name` (s), `rack_units` (i), `layout_json` (s), `notes` (s), `status_id` (i), `active` (i), `created_by` (i). If name is bound as an integer, it will fail to save strings correctly and fallback to 0. [Valid]-[2026-07-15]
+- There is no `rack_equipment` mapping table — layout lives in `layout_json`. [Cursor-Valid]
+- Partial price sync breaks catalog/equipment/IDF reporting — always update source row. [Cursor-Valid]
+- Be sure to explicitly request or insert columns (`employee_id`, `created_by`, `updated_by`, `deleted_by`, etc.) when executing SELECT/INSERT/UPDATE statements. [Cursor-Valid]
+- Param type string for Create/Insert statement must be `'iisiisiii'` corresponding to the exact column types: `company_id` (i), `employee_id` (i), `name` (s), `rack_units` (i), `layout_json` (s), `notes` (s), `status_id` (i), `active` (i), `created_by` (i). If name is bound as an integer, it will fail to save strings correctly and fallback to 0. [Cursor-Valid]
 
 ## 11. View Action Enhancements
 - The View screen displays a detailed info card of the rack plan above the visualizer.

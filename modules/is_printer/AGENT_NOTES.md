@@ -46,9 +46,9 @@ A filtered view of the Equipment module specifically for printer devices. Provid
 - This façade has no local audit handlers.
 
 ## 10. Common Pitfalls
-- **Do not delete canonical wrappers:** Keep `modules/is_printer/` and sibling `is_*` folders. [Valid]-[2026-07-15]
-- **Type filter:** `$equipmentTypeNameFilter` must match `equipment_types.name` (`Printer`). [Valid]-[2026-07-15]
-- **Do not copy equipment CRUD** into this folder. [Valid]-[2026-07-15]
+- **Do not delete canonical wrappers:** Keep `modules/is_printer/` and sibling `is_*` folders. [Cursor-Valid]
+- **Type filter:** `$equipmentTypeNameFilter` must match `equipment_types.name` (`Printer`). [Cursor-Valid]
+- **Do not copy equipment CRUD** into this folder. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -34,8 +34,8 @@ Lookup table for switch port operational status (e.g. Up, Down, Unknown) with op
 - `trg_switch_status_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Showing raw `color_id` instead of colour name/hex when label row exists. [Valid]-[2026-07-15]
-- Dropping persisted FK on edit when company-scoped options incomplete. [Valid]-[2026-07-15]
+- Showing raw `color_id` instead of colour name/hex when label row exists. [Cursor-Valid]
+- Dropping persisted FK on edit when company-scoped options incomplete. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

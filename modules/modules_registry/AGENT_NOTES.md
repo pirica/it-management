@@ -32,7 +32,7 @@ CRUD UI for the global **modules_registry** catalog (module slugs, display names
 - `trg_modules_registry_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Do not confuse this module folder with **company_module_access** (matrix UI for per-company toggles). [Valid]-[2026-07-15]
+- Do not confuse this module folder with **company_module_access** (matrix UI for per-company toggles). [Cursor-Valid]
 
 
 ## 11. Examples of Safe Code Patterns

@@ -50,10 +50,10 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - Managed via database triggers (`department_id`, `supplier_id`, `assigned_to_employee_id` in equipment audit JSON payloads).
 
 ## 10. Common Pitfalls
-- **Deleting with Relations**: Deleting equipment may fail if it has active switch port assignments or is linked to tickets. [Valid]-[2026-07-15]
-- **Supplier quick-add:** `suppliers.status_id` is NOT NULL — the equipment form passes `status_id` via `data-add-extra-fields`. [Valid]-[2026-07-15]
-- **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held (see **`modules/employee_assignment_history/AGENT_NOTES.md`**). [Valid]-[2026-07-15]
-- **Assign To Employee dropdown empty:** do not filter `employees` with `active = 1` — that column was removed from the schema; scope by `company_id` only in `equipment_fetch_employee_options()`. [Valid]-[2026-07-15]
+- **Deleting with Relations**: Deleting equipment may fail if it has active switch port assignments or is linked to tickets. [Cursor-Valid]
+- **Supplier quick-add:** `suppliers.status_id` is NOT NULL — the equipment form passes `status_id` via `data-add-extra-fields`. [Cursor-Valid]
+- **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held (see **`modules/employee_assignment_history/AGENT_NOTES.md`**). [Cursor-Valid]
+- **Assign To Employee dropdown empty:** do not filter `employees` with `active = 1` — that column was removed from the schema; scope by `company_id` only in `equipment_fetch_employee_options()`. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 

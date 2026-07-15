@@ -37,8 +37,8 @@ Dynamic courtesy-call guest rows on a daily Ops Report. Tracks guest name, room,
 - Triggers: `trg_ops_report_courtesy_call_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
-- Do not bypass parent D-2 lock when adding AJAX paths on **ops_report**. [Valid]-[2026-07-15]
-- `checkout_date` and `time_reported` are stored as varchar in schema — match parent display/parsing conventions. [Valid]-[2026-07-15]
+- Do not bypass parent D-2 lock when adding AJAX paths on **ops_report**. [Cursor-Valid]
+- `checkout_date` and `time_reported` are stored as varchar in schema — match parent display/parsing conventions. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

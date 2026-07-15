@@ -73,12 +73,12 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 - Trash restore/delete should preserve ACL — unauthorised paths must not leak filenames in JSON.
 
 ## 10. Common Pitfalls
-- Path traversal if `folder_path` / `file_name` not validated against storage root. [Valid]-[2026-07-15]
-- Allowing upload in blocked roots (Home, Private root, Departments root). [Valid]-[2026-07-15]
-- Navigating to `Private` or `Departments` in JS without `resolveScopedFolderPath()` — list API returns empty after root blocking. [Valid]-[2026-07-15]
-- `restore` POST `item` must be normalized before ACL and filesystem paths (backslashes bypass segment checks). [Valid]-[2026-07-15]
-- Linking `../../files/…` in HTML after `deny_http` — images/downloads break; use `itm_files_serve_url()`. [Valid]-[2026-07-15]
-- Hand-editing `.htaccess` under `files/` — removed on next `itm_ensure_files_storage_directory()` call. [Valid]-[2026-07-15]
+- Path traversal if `folder_path` / `file_name` not validated against storage root. [Cursor-Valid]
+- Allowing upload in blocked roots (Home, Private root, Departments root). [Cursor-Valid]
+- Navigating to `Private` or `Departments` in JS without `resolveScopedFolderPath()` — list API returns empty after root blocking. [Cursor-Valid]
+- `restore` POST `item` must be normalized before ACL and filesystem paths (backslashes bypass segment checks). [Cursor-Valid]
+- Linking `../../files/…` in HTML after `deny_http` — images/downloads break; use `itm_files_serve_url()`. [Cursor-Valid]
+- Hand-editing `.htaccess` under `files/` — removed on next `itm_ensure_files_storage_directory()` call. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

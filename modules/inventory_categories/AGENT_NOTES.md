@@ -32,8 +32,8 @@ Lookup table for inventory item categories (e.g., "Cables", "Peripherals", "Supp
 - `trg_inventory_categories_audit_insert|update|delete` in `database.sql` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Deleting categories without detaching `inventory_items.category_id` first — leaves items pointing at missing FK or blocks delete silently. [Valid]-[2026-07-15]
-- Inverting bulk gate (`$perPage >= $totalRows`) hides bulk toolbar incorrectly. [Valid]-[2026-07-15]
+- Deleting categories without detaching `inventory_items.category_id` first — leaves items pointing at missing FK or blocks delete silently. [Cursor-Fixed]
+- Inverting bulk gate (`$perPage >= $totalRows`) hides bulk toolbar incorrectly. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 

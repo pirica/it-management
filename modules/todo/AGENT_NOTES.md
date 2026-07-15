@@ -40,9 +40,9 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - **Private data (no audit):** `todo` and `todo_categories` must not write to `audit_logs` and have no `trg_*_audit_*` triggers in `database.sql` (see `AGENTS.md` → **Private data — no audit trail**).
 
 ## 10. Common Pitfalls
-- Do not use raw `mysqli_query` with unescaped `$company_id` in new code — prefer prepared statements. [Valid]-[2026-07-15]
-- `assigned_to_employee_id` may hold multiple IDs — use `FIND_IN_SET`, not `=`. [Valid]-[2026-07-15]
-- Always apply `itm_todo_append_visibility_filter()` or equivalent SQL. [Valid]-[2026-07-15]
+- Do not use raw `mysqli_query` with unescaped `$company_id` in new code — prefer prepared statements. [Cursor-Valid]
+- `assigned_to_employee_id` may hold multiple IDs — use `FIND_IN_SET`, not `=`. [Cursor-Valid]
+- Always apply `itm_todo_append_visibility_filter()` or equivalent SQL. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

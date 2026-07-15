@@ -33,10 +33,10 @@ Granular RBAC: view/create/edit/delete/import/export per module and role.
 - Database triggers `trg_role_module_permissions_audit_insert`, `trg_role_module_permissions_audit_update`, `trg_role_module_permissions_audit_delete` on `role_module_permissions` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Valid]-[2026-07-15]
-- Controls CRUD access per role/module — deleting rows breaks permissions. [Valid]-[2026-07-15]
-- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
-- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Valid]-[2026-07-15]
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]
+- Controls CRUD access per role/module — deleting rows breaks permissions. [Cursor-Valid]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

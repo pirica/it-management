@@ -33,8 +33,8 @@ Manages revisions to financial forecasts for a specific month and year.
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Duplicate Forecasts**: Unique constraint violations on inserts. [Valid]-[2026-07-15]
-- **Locked Edits**: Attempting to edit a revision that has been finalized. [Valid]-[2026-07-15]
+- **Duplicate Forecasts**: Unique constraint violations on inserts. [Cursor-Valid]
+- **Locked Edits**: Attempting to edit a revision that has been finalized. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

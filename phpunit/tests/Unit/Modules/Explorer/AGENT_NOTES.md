@@ -12,9 +12,9 @@ Unit/regression tests for `modules/explorer/`.
 - `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity` uses `$employeeId`, not `$userId`); hidden listing entries (`testHiddenSystemEntries`); preview routing (`testPreviewModeRouting`).
 
 ## 10. Common Pitfalls
-- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users. [Valid]-[2026-07-15]
-- `ExplorerTest` requires DB via `config.php`; run with full PHPUnit config: `php phpunit/phpunit.phar -c phpunit/phpunit.xml --filter ExplorerTest`. [Valid]-[2026-07-15]
-- Path-logic-only checks without DB: `php scripts/test_explorer_paths.php`. [Valid]-[2026-07-15]
+- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users. [Cursor-Valid]
+- `ExplorerTest` requires DB via `config.php`; run with full PHPUnit config: `php phpunit/phpunit.phar -c phpunit/phpunit.xml --filter ExplorerTest`. [Cursor-Valid]
+- Path-logic-only checks without DB: `php scripts/test_explorer_paths.php`. [Cursor-Valid]
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing Explorer ACL or `.htaccess` hardening; list commands in PR descriptions.

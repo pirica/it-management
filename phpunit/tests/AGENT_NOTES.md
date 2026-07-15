@@ -20,15 +20,15 @@ Contains the PHPUnit test suite for validating system functionality and regressi
 - **../phpunit.phar** — PHPUnit 9.6 PHAR (no Composer).
 
 ## 10. Common Pitfalls
-- **`echo` in `*Test.php`** breaks HTML coverage report generation (headers already sent). [Valid]-[2026-07-15]
-- **Including `scripts/*.php` with `exit()`** halts the runner — use subprocess or mock; skip when DB unavailable. [Valid]-[2026-07-15]
-- **File-exists-only script stubs** — replaced by `ScriptCatalogSmokeTest.php` (catalog existence + read-only CLI smoke); keep behaviour tests in `*Test.php`, `ScriptLogic.unittest.php`, and dedicated `check_*` unittest files. [Valid]-[2026-07-15]
-- **Load support from bootstrap** — `ItmScriptCliTestCase` / traits are required in `bootstrap.php`; do not `require_once` them at file scope in test files. [Valid]-[2026-07-15]
-- **Expecting full suite without MySQL** — many module tests skip; use `ITM_SKIP_DB_TESTS=1` only when intentional. [Valid]-[2026-07-15]
-- **Expecting high headline %** — with full tree in `phpunit.xml`, totals stay under ~1% until tests load module PHP or scope is narrowed. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**. [Valid]-[2026-07-15]
-- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_employee.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4. [Valid]-[2026-07-15]
+- **`echo` in `*Test.php`** breaks HTML coverage report generation (headers already sent). [Cursor-Valid]
+- **Including `scripts/*.php` with `exit()`** halts the runner — use subprocess or mock; skip when DB unavailable. [Cursor-Valid]
+- **File-exists-only script stubs** — replaced by `ScriptCatalogSmokeTest.php` (catalog existence + read-only CLI smoke); keep behaviour tests in `*Test.php`, `ScriptLogic.unittest.php`, and dedicated `check_*` unittest files. [Cursor-Fixed]
+- **Load support from bootstrap** — `ItmScriptCliTestCase` / traits are required in `bootstrap.php`; do not `require_once` them at file scope in test files. [Cursor-Valid]
+- **Expecting full suite without MySQL** — many module tests skip; use `ITM_SKIP_DB_TESTS=1` only when intentional. [Cursor-Valid]
+- **Expecting high headline %** — with full tree in `phpunit.xml`, totals stay under ~1% until tests load module PHP or scope is narrowed. See **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**. [Cursor-Valid]
+- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_employee.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4. [Cursor-Valid]
 
-- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_employee.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4. [Valid]-[2026-07-15]
+- **Mutating seed user id 1** — PHPUnit and script repro tests must use `scripts/lib/itm_script_test_employee.php`; documented in every `phpunit/**/AGENT_NOTES.md` under section 4. [Cursor-Invalid]
 
 ## 11. Examples of Safe Code Patterns
 

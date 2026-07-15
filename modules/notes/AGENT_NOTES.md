@@ -43,12 +43,12 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - **Private data (no audit):** `notes` and `note_labels` must not write to `audit_logs` and have no `trg_*_audit_*` triggers in `database.sql` (see `AGENTS.md` → **Private data — no audit trail**).
 
 ## 10. Common Pitfalls
-- Do not list another user's private notes — always apply `itm_notes_visibility_sql()`. [Valid]-[2026-07-15]
-- View/edit GET load must use `itm_notes_fetch_visible_by_id()` — do not SELECT by `id + company_id` alone. [Valid]-[2026-07-15]
-- Do not store share targets as plain text; use `shared_with_json`. [Valid]-[2026-07-15]
-- Label import must resolve names against `note_labels` for the current user. [Valid]-[2026-07-15]
-- **`images_json` attachments:** store leaf filenames only. ZIP download (`download_all_images`) resolves paths via `itm_notes_resolve_image_path()` in `includes/notes_visibility.php` — never concatenate raw JSON values into filesystem paths. [Valid]-[2026-07-15]
-- **AJAX mutations:** visibility-scoped handlers call `itm_notes_json_mutation_response()` — return HTTP 404 with `ok:false` when `affected_rows === 0` (no misleading success on blocked delete). Regression: `php scripts/verify_notes_ajax_contract.php`. [Valid]-[2026-07-15]
+- Do not list another user's private notes — always apply `itm_notes_visibility_sql()`. [Cursor-Valid]
+- View/edit GET load must use `itm_notes_fetch_visible_by_id()` — do not SELECT by `id + company_id` alone. [Cursor-Valid]
+- Do not store share targets as plain text; use `shared_with_json`. [Cursor-Valid]
+- Label import must resolve names against `note_labels` for the current user. [Cursor-Valid]
+- **`images_json` attachments:** store leaf filenames only. ZIP download (`download_all_images`) resolves paths via `itm_notes_resolve_image_path()` in `includes/notes_visibility.php` — never concatenate raw JSON values into filesystem paths. [Cursor-Valid]
+- **AJAX mutations:** visibility-scoped handlers call `itm_notes_json_mutation_response()` — return HTTP 404 with `ok:false` when `affected_rows === 0` (no misleading success on blocked delete). Regression: `php scripts/verify_notes_ajax_contract.php`. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

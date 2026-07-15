@@ -32,7 +32,7 @@ Manages and tracks the various systems and applications an employee has access t
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Forgetting to update system access when an employee's role changes. [Valid]-[2026-07-15]
+- Forgetting to update system access when an employee's role changes. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

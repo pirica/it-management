@@ -34,8 +34,8 @@ Maps specific employees to approver types, departments, and positions to define 
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Redundant Assignments**: Trying to assign the same employee twice as an approver. [Valid]-[2026-07-15]
-- **Outdated Records**: If an employee leaves or changes position, the approver record may need manual updating or archiving. [Valid]-[2026-07-15]
+- **Redundant Assignments**: Trying to assign the same employee twice as an approver. [Cursor-Valid]
+- **Outdated Records**: If an employee leaves or changes position, the approver record may need manual updating or archiving. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

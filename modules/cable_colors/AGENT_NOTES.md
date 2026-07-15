@@ -31,7 +31,7 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Deleting a color that is actively used in the floor designer might result in missing color indicators or fallback to a default color. [Valid]-[2026-07-15]
+- Deleting a color that is actively used in the floor designer might result in missing color indicators or fallback to a default color. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

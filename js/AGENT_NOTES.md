@@ -14,10 +14,10 @@ Contains the frontend logic for the IT Management system, including UI helpers, 
 - **vendor/** — contains third-party libraries like `xlsx.full.min.js`.
 
 ## 10. Common Pitfalls
-- Attaching redundant event listeners in loops. [Fixed]-[2026-07-15]
-- Loading utility scripts after the blocks that depend on them. [Fixed]-[2026-07-15]
-- **Upload targets with inner `<label for="fileInput">`:** `itm-upload-helper.js` skips programmatic `fileInput.click()` when the click originated on the associated label — otherwise the native label activation plus the target click handler opens the file picker twice. [Fixed]-[2026-07-15]
-  - *Robust Check:* Uses standard DOM APIs (`label.control`, `label.contains`, `fileInput.labels`, and `label.htmlFor === fileInput.id`) to reliably skip programmatic clicks on all associated label click events.
+- Attaching redundant event listeners in loops. [Cursor-Fixed]
+- Loading utility scripts after the blocks that depend on them. [Cursor-Fixed]
+- **Upload targets with inner `<label for="fileInput">`:** `itm-upload-helper.js` skips programmatic `fileInput.click()` when the click originated on the associated label — otherwise the native label activation plus the target click handler opens the file picker twice. [Cursor-Fixed]
+  - *Robust Check:* Uses standard DOM APIs (`label.control`, `label.contains`, `fileInput.labels`, and `label.htmlFor === fileInput.id`) to reliably skip programmatic clicks on all associated label click events. [Cursor-Valid]
 
 ## 12. Module Owner Notes (Optional)
 Essential for the "modern" interactive feel of the legacy PHP architecture.
