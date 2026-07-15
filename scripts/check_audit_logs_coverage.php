@@ -6,7 +6,8 @@
  * Modules can satisfy that via PHP helpers (itm_run_query / itm_log_audit / bulk helpers)
  * or database triggers defined in database.sql (trg_{table}_audit_*).
  * Also compares every CREATE TABLE in database.sql against trg_{table}_audit_insert
- * (audit_logs is exempt) and exits non-zero when schema triggers are missing.
+ * (audit_logs and private-data tables per AGENTS.md are exempt) and exits non-zero
+ * when other schema tables are missing triggers.
  *
  * Usage (PHP 7.4+ with MySQLi, from repository root):
  *   php scripts/check_audit_logs_coverage.php
@@ -592,7 +593,7 @@ if ($totals['fail'] > 0) {
         }
         echo ' - ' . itm_script_format_module_link($row['module']) . ": {$row['details']}" . $nl;
     }
-    echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows." . $nl;
+    echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers write audit_logs rows for non-private tables only (see AGENTS.md → Private data — no audit trail)." . $nl;
     exit(2);
 }
 
@@ -611,11 +612,11 @@ if (!empty($schemaTablesMissingTriggers)) {
     foreach ($schemaTablesMissingTriggers as $tableName) {
         echo " - {$tableName}" . $nl;
     }
-    echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows." . $nl;
+    echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers write audit_logs rows for non-private tables only (see AGENTS.md → Private data — no audit trail)." . $nl;
     exit(2);
 }
 
-echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers always write audit_logs rows." . $nl;
+echo $nl . "Note: PHP itm_log_audit() honors ui_configuration.enable_audit_logs; database triggers write audit_logs rows for non-private tables only (see AGENTS.md → Private data — no audit trail)." . $nl;
 exit(0);
 
 itm_script_output_end();
