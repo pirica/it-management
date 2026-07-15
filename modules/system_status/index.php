@@ -129,7 +129,6 @@ if (!isset($crud_title)) {
         .info-table td:first-child, .info-table th:first-child { font-weight: 600; width: 34%; color: var(--text-secondary); padding-right: 12px; }
         .info-table td:last-child, .info-table th:last-child { word-break: break-all; overflow-wrap: anywhere; }
         .info-table .ss-path-value { display: block; font-size: 0.85rem; line-height: 1.45; }
-        .audit-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .status-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
         .status-running { background: #e8f8ee; color: #18794e; border: 1px solid #9cd8b1; }
         .status-stopped { background: #fdecec; color: #a52727; border: 1px solid #f0b6b6; }

@@ -558,7 +558,6 @@ if (!isset($crud_title)) {
         .audit-kpi .label { font-size:12px; opacity:.8; margin-bottom:4px; }
         .audit-kpi .value { font-size:18px; font-weight:700; }
         .audit-kpi select { width:100%; margin-top:4px; }
-        .audit-table-wrap { overflow-x:auto; }
         .audit-row-chip { display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; white-space:nowrap; }
         .audit-row-chip.insert { background:#e8f8ee; border-color:#9cd8b1; color:#18794e; }
         .audit-row-chip.update { background:#eef4ff; border-color:#9eb8ee; color:#1d4f91; }
