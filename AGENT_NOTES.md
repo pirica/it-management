@@ -31,5 +31,6 @@ The `user-config.php` has been upgraded to a full Employee Dashboard & Profile s
 - **Scoping**: All dashboard data is scoped to the logged-in employee via `employee_id` or relevant created/assigned fields.
 - **Stat Cards**: Displays stats from all modules using employee-related ID fields (30+ combinations tracked).
 - **Profile Management**: Integrated photo upload (circular drag-and-drop), theme selection, and emergency contact details.
+- **Layout**: `.layout-2col` uses a 280px left column on desktop and stacks to one column at `max-width: 768px`.
 - **Security**: Atomicity in Vault Master Key changes with automatic re-encryption of existing entries.
 - **Audit**: All profile and security changes are logged to `audit_logs`.

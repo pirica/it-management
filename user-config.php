@@ -845,6 +845,10 @@ $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type
         .layout-2col { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
         .col-left { display: flex; flex-direction: column; gap: 20px; }
         .col-right { display: flex; flex-direction: column; gap: 20px; }
+        /* Why: Fixed 280px sidebar collapses into a single column on phones/tablets. */
+        @media (max-width: 768px) {
+            .layout-2col { grid-template-columns: 1fr; }
+        }
         .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #f6f8fa; margin: 0 auto; overflow: hidden; position: relative; cursor: pointer; background: #eee; display: flex; align-items: center; justify-content: center; }
         .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
         .profile-pic .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; font-size: 12px; }

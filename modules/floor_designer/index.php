@@ -544,8 +544,8 @@ if (!isset($crud_title)) {
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        :root { --designer-width: 1000px; --designer-height: 800px; }
-        .designer-wrapper { position: relative; width: 100%; height: 750px; border: 2px solid #ccc; background: #f0f2f5; overflow: auto; border-radius: 8px; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
+        /* Why: Keep designer artboard size local — do not pollute :root CSS variables. */
+        .designer-wrapper { --designer-width: 1000px; --designer-height: 800px; position: relative; width: 100%; height: 750px; border: 2px solid #ccc; background: #f0f2f5; overflow: auto; border-radius: 8px; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
         .designer-container { position: relative; transform-origin: 0 0; min-width: var(--designer-width); min-height: var(--designer-height); transition: transform 0.1s ease-out; }
         .floor-shape { position: absolute; top: 0; left: 0; width: var(--designer-width); height: var(--designer-height); border: 5px solid #24292f; background-color: #fff; background-size: contain; background-repeat: no-repeat; background-position: center; pointer-events: none; z-index: 1; box-sizing: border-box; }
         .point { position: absolute; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; cursor: move; z-index: 100; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.4); transform: translate(-50%, -50%); }

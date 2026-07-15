@@ -64,7 +64,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
   - **≤575px:** info-table label column auto-width; Sub Storage summary/leaf grids stack to one column; storage meta wraps.
   - **≥768px:** `.ss-metric-span-wide` spans two grid columns; PHP extensions list uses two columns (`.ss-extensions-columns`).
   - **≥1024px:** `.ss-metric-span-full` spans three grid columns; extensions list uses three columns.
-  - **Database table:** `.audit-table-wrap` horizontal scroll on narrow viewports; numeric columns use `.ss-table-num`.
+  - **Database table:** `.audit-table-wrap` horizontal scroll on narrow viewports (use the global `css/styles.css` rule — do not redeclare `.audit-table-wrap` in this module’s inline `<style>`); numeric columns use `.ss-table-num`.
   - **Dynamic only:** disk progress bar fill width remains inline (`width: N%`) because it is computed per drive.
 
 ---

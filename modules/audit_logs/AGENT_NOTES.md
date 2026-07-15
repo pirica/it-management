@@ -24,7 +24,7 @@ Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity
 - **Detailed View**: View the JSON diff between old and new states.
 - **Admin toolbar**: Download ALL Logs, Backup ALL Logs, and Clear ALL Logs buttons (admin role only).
 - **Private-data notice:** `index.php` includes short copy that private user modules are excluded from this trail (passwords, notes, bookmarks, etc.).
-- **Responsive:** filter/KPI grids single column below 768px; audit user cells wrap on mobile.
+- **Responsive:** filter/KPI grids single column below 768px; audit user cells wrap on mobile. Table scroll uses global `.audit-table-wrap` from `css/styles.css` — do not redeclare it in the inline `<style>` block.
 
 ## 6. API Actions (If Applicable)
 - None.
