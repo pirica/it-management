@@ -16,22 +16,7 @@ require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require __DIR__ . '/sample_seed_helpers.php';
 
-/**
- * Ensure the is_archived column exists in the tickets table.
- */
-function tickets_ensure_is_archived_column(mysqli $conn): void
-{
-    static $checked = false;
-    if ($checked) {
-        return;
-    }
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM `tickets` LIKE 'is_archived'");
-    if ($res && mysqli_num_rows($res) === 0) {
-        mysqli_query($conn, "ALTER TABLE `tickets` ADD COLUMN `is_archived` tinyint(1) NOT NULL DEFAULT 0 AFTER `due_date` ");
-    }
-    $checked = true;
-}
-tickets_ensure_is_archived_column($conn);
+// Why: tickets.is_archived is defined in database.sql CREATE TABLE — no runtime ALTER.
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {

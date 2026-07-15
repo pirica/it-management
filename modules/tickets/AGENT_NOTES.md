@@ -44,7 +44,7 @@ The central helpdesk/ticketing module for managing support requests.
 ## 10. Common Pitfalls
 - Hard-deleting tickets that should be archived — breaks history and calendar due-date traces. [Cursor-Valid]
 - Listing raw `status_id` / `assigned_to_employee_id` when label rows exist. [Cursor-Valid]
-- `tickets_ensure_is_archived_column()` runtime ALTER — prefer matching `database.sql` on fresh installs. [Cursor-Valid]
+- Runtime `SHOW COLUMNS` / `ALTER TABLE` for `tickets.is_archived` — removed; column is in `database.sql` `CREATE TABLE`. Do not re-add per-request schema mutation. [Cursor-Fixed]
 - Photo paths must use `ticket_photo_public_path()` / upload helpers, not raw `../../tickets_photos/` assumptions. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
