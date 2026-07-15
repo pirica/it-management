@@ -11,6 +11,10 @@ Unit/regression tests for `modules/employees/`.
 - `SafeImportTest.php` — asserts import does not delete rows missing from payload; runs `modules/employees/index.php` import via `ItmModuleIsolatedTestTrait::runIsolatedModule()` (subprocess — avoids redeclare fatal).
 - `*Test.php` / `*.unittest.php` — other test classes for this module.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
 

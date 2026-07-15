@@ -20,6 +20,12 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 ## 8. Multi-Tenant Rules
 - Almost all modules scope data by `company_id` from session.
 
+## 10. Common Pitfalls
+
+- Do not delete `is_*` façade modules that wrap equipment — they are intentional entry points. [Cursor-Valid]
+- When fixing shared CRUD helpers, recheck duplicated entry files (`index`/`view`/`edit`/`create`/`list_all`/`delete`) for the same module. [Cursor-Valid]
+- UI action labels: emoji-only visible text (NO MIXED) — run `php scripts/check_ui_action_emoji.php`. [Cursor-Valid]
+
 ## 12. Module Owner Notes (Optional)
 Before editing any module, read its `AGENT_NOTES.md` and `AGENTS.md` bespoke sections.
 

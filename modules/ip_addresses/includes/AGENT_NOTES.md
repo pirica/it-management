@@ -13,5 +13,9 @@ Shared PHP partials and helpers for the IP Addresses module UI (list cells, form
 ## 8. Multi-Tenant Rules
 - Helpers must receive/scoped `company_id`; never render another tenant's subnet or address labels.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Read parent `modules/ip_addresses/AGENT_NOTES.md` before editing list or FK label behaviour.

@@ -8,5 +8,9 @@ Generic CRUD contract and template compliance tests.
 - Keep tests aligned with production module contracts in `AGENTS.md`.
 - Update tests when changing CSRF, SQLi, or tenant scoping in the target code.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.

@@ -26,5 +26,11 @@ Standalone reference scripts demonstrating how to interact with the system's JSO
 
 All `api-examples/*.php` scripts are auto-listed in **`scripts/api.php`** via `itmDocCollectApiExamples()`.
 
+## 10. Common Pitfalls
+
+- Reference-only samples — never wire `api-examples/` into application runtime includes. [Cursor-Valid]
+- Examples need a signed-in session and CSRF; do not invent auth bypasses. [Cursor-Valid]
+- When adding examples, keep them cataloged from `scripts/api.php`. [Cursor-Valid]
+
 ## 12. Module Owner Notes (Optional)
 Ideal starting point for developing external integrations.

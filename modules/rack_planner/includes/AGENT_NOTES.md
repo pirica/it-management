@@ -13,5 +13,10 @@ Bootstrap, handlers, and view functions for the Rack Planner bespoke module (Tie
 - `handlers.php` — POST/save/autosave handlers.
 - **partials/** — `render.php` and UI fragments.
 
+## 10. Common Pitfalls
+
+- Price edits for `catalog:`, `equipment:`, and `idf_unlinked:` devices must update source tables (`catalogs.price`, `equipment.purchase_cost`, `idf_positions.price`) — not only `layout_json`. [Cursor-Valid]
+- Keep POST/autosave handlers CSRF-protected and tenant-scoped; prefer shared JSON response helpers used by other AJAX modules. [Cursor-Valid]
+
 ## 12. Module Owner Notes (Optional)
 Tier D module — module browser QA runs navigation smoke only. Parent: `modules/rack_planner/AGENT_NOTES.md`.

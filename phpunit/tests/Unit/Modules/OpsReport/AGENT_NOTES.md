@@ -10,6 +10,10 @@ Unit tests for `modules/ops_report/` — daily report CRUD and D-2 edit-lock rul
 - `OpsReportTest.php` — insert/read/update/delete on `ops_report`.
 - `OpsReportPermissionsTest.php` — pure PHP date-window checks (today, yesterday editable; D-2 locked).
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Run: `php scripts/run_tests.php --filter OpsReport`
 

@@ -11,6 +11,10 @@ Unit/regression tests for `modules/passwords/`.
 - `PasswordsTest.php` — DB CRUD unit tests.
 - `PasswordsFunctionalTest.php` — PHPUnit class exercising `ajax_handler.php` (no top-level echo; safe with HTML coverage); session `employee_id` comes from class property `$employeeId`.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
 

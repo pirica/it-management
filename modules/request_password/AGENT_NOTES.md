@@ -27,3 +27,9 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - Multi-tenancy strictly enforced via `company_id`.
 - Soft delete pattern implemented: deleting a request password record updates `active = 0`, sets `deleted_by` and `deleted_at`, rather than hard-deleting the database row.
 - Audit triggers are defined in `database.sql` for INSERT, UPDATE, and DELETE actions on `request_password`, which capture both old and new states in the `audit_logs` table.
+
+## 10. Common Pitfalls
+
+- Soft-delete only (`active = 0` with `deleted_by` / `deleted_at`) — do not hard-DELETE request rows. [Cursor-Valid]
+- ISM final notification must wait until both HR and HOD are Approved. [Cursor-Valid]
+- Approval links use HMAC-SHA256 — verify with `hash_equals`; do not weaken token/secret handling. [Cursor-Valid]

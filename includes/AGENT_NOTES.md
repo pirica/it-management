@@ -62,6 +62,13 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 ## 8. Multi-Tenant Rules
 - Visibility helpers always take `company_id` / user context from caller; never bypass tenant filters in shared helpers.
 
+## 10. Common Pitfalls
+
+- Never skip shared visibility/search helpers (`alerts_visibility`, notes/todo filters, FK label search). [Cursor-Valid]
+- Table/column identifiers must pass `itm_is_safe_identifier()` — never concatenate untrusted names into SQL. [Cursor-Valid]
+- Upload/tenant file trees: never bare `mkdir()` — use `itm_ensure_upload_directory*` / `itm_ensure_files_storage_directory()`. [Cursor-Valid]
+- Do not set `ITM_HTTP_ENDPOINT_CONTRACT_TEST` from HTTP input. [Cursor-Valid]
+
 ## 11. Examples of Safe Code Patterns
 
 ### Using Alerts Visibility SQL

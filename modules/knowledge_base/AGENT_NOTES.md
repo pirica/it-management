@@ -33,8 +33,11 @@ Manage IT support articles, manuals, and procedures for the organization.
 ## 9. Audit Coverage
 - Triggers `trg_knowledge_base_audit_insert`, `trg_knowledge_base_audit_update`, and `trg_knowledge_base_audit_delete` handle audit logging, capturing columns in their JSON payloads.
 
-## 10. Known Pitfalls
+## 10. Common Pitfalls
 
+- Always call `itm_api_enforce_rate_limit_or_exit()` and validate CSRF (`X-CSRF-Token`) on `chat_api.php`. [Cursor-Valid]
+- Knowledge-base search must keep `AND company_id = ?` — never allow cross-tenant article leaks into the chatbot. [Cursor-Valid]
+- Chatbot UI must HTML-escape replies (`escapeHtml`); escalate flows must read contact info from `it_settings`, not hardcode. [Cursor-Valid]
 
 ## 11. References
 - `AGENTS.md`

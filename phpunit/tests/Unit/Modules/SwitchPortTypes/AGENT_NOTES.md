@@ -10,6 +10,10 @@ Unit/regression tests for `modules/switch_port_types/`.
 ## 7. File Structure
 - `*Test.php` / `*.unittest.php` — test classes for this module.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
 

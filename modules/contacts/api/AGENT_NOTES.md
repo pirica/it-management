@@ -17,5 +17,11 @@ JSON/AJAX endpoints for the Contacts module. Handles inline field updates withou
 ## 8. Multi-Tenant Rules
 - Scope all updates by `company_id` from session.
 
+## 10. Common Pitfalls
+
+- Non-admins may only inline-edit self when `type=emp`; department edits require admin. [Cursor-Valid]
+- Allowlist fields only (`email`, `dect`, `phone`, …) — reject unknown POST keys. [Cursor-Valid]
+- Always `itm_require_post_csrf()` and scope UPDATE by session `company_id`. [Cursor-Valid]
+
 ## 12. Module Owner Notes (Optional)
 Parent module docs: `modules/contacts/AGENT_NOTES.md`.
