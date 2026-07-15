@@ -36,8 +36,8 @@ Child rows for walk-round area checks on a daily Ops Report. Each row records ea
 - Triggers: `trg_ops_report_walk_round_audit_insert|update|delete` (payload includes `ops_report_id`).
 
 ## 10. Common Pitfalls
-- Do not duplicate `opr_ensure_report()` seed areas without updating parent module.
-- Deleting parent **ops_report** removes all walk-round rows (CASCADE).
+- Do not duplicate `opr_ensure_report()` seed areas without updating parent module. [Valid]-[2026-07-15]
+- Deleting parent **ops_report** removes all walk-round rows (CASCADE). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

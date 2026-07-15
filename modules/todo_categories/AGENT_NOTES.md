@@ -32,7 +32,7 @@ Lookup table for todo list categories (personal/company-scoped names used by the
 - `trg_todo_categories_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Deleting categories still referenced by todo rows may block deletes or orphan tasks — check FK usage in `todo` before clear/delete changes.
+- Deleting categories still referenced by todo rows may block deletes or orphan tasks — check FK usage in `todo` before clear/delete changes. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

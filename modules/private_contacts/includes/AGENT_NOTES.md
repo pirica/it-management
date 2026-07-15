@@ -32,4 +32,4 @@ Provides shared form widgets and file storage utilities specifically for managin
 - Adding or changing photos triggers private contact update audits.
 
 ## 10. Common Pitfalls
-- Hand-building direct relative HTTP links to the upload files on-disk—these are blocked by the `.htaccess` `deny_http` rule. Always route them through `itm_files_serve_url()`.
+- Hand-building direct relative HTTP links to the upload files on-disk—these are blocked by the `.htaccess` `deny_http` rule. Always route them through `itm_files_serve_url()`. [Valid]-[2026-07-15]

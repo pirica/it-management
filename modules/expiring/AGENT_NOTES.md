@@ -37,9 +37,9 @@ Read-only dashboard for upcoming and past expirations. Aggregates dates from **e
 - Read-only aggregator — no writes; source modules (equipment, alerts) log their own changes via triggers.
 
 ## 10. Common Pitfalls
-- Do not document or query a fictional **`expiring`** table.
-- Warranty join may fall back without `warranty_types` when join fails — preserve fallback query path.
-- Alert visibility must mirror Alerts module rules (global vs private) when counting alert expirations.
+- Do not document or query a fictional **`expiring`** table. [Valid]-[2026-07-15]
+- Warranty join may fall back without `warranty_types` when join fails — preserve fallback query path. [Valid]-[2026-07-15]
+- Alert visibility must mirror Alerts module rules (global vs private) when counting alert expirations. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

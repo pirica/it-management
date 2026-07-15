@@ -40,8 +40,8 @@ Provides a comprehensive trail of all mutations (INSERT, UPDATE, DELETE) across 
 - This module logs other modules. It does not log its own deletions typically to save space.
 
 ## 10. Common Pitfalls
-- **Performance**: Querying large `audit_logs` tables can be slow; ensure `record_id` and `table_name` are indexed.
-- **JSON Parsing**: Ensure PHP handles null or malformed JSON values in `old_values`/`new_values` gracefully.
+- **Performance**: Querying large `audit_logs` tables can be slow; ensure `record_id` and `table_name` are indexed. [Valid]-[2026-07-15]
+- **JSON Parsing**: Ensure PHP handles null or malformed JSON values in `old_values`/`new_values` gracefully. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -37,8 +37,8 @@ Dynamic suites-butler service rows on a daily Ops Report. Each row records a roo
 - Triggers: `trg_ops_report_butler_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
-- Keep parent and CRUD delete behaviour aligned (CASCADE from parent report delete).
-- `notes` is free text — sanitise on output (`sanitize()` / `htmlspecialchars`).
+- Keep parent and CRUD delete behaviour aligned (CASCADE from parent report delete). [Valid]-[2026-07-15]
+- `notes` is free text — sanitise on output (`sanitize()` / `htmlspecialchars`). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -36,9 +36,9 @@ Company-scoped lookup of IT systems and applications (e.g. ERP, Email, VPN) used
 - `trg_system_access_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Deleting systems still referenced by **employee_system_access** — single delete shows `crud_error`; bulk delete may bypass per-row check.
-- Omitting `company_id` on DELETE allows cross-tenant removal.
-- Renaming systems without updating employee assignment labels — FK id stays stable but UI labels in child module depend on this name.
+- Deleting systems still referenced by **employee_system_access** — single delete shows `crud_error`; bulk delete may bypass per-row check. [Valid]-[2026-07-15]
+- Omitting `company_id` on DELETE allows cross-tenant removal. [Valid]-[2026-07-15]
+- Renaming systems without updating employee assignment labels — FK id stays stable but UI labels in child module depend on this name. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

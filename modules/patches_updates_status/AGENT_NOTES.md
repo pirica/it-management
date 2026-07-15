@@ -33,8 +33,8 @@ Lookup table for the status of a patch installation (e.g., "Pending", "Installed
 - Database triggers `trg_patches_updates_status_audit_insert`, `trg_patches_updates_status_audit_update`, `trg_patches_updates_status_audit_delete` on `patches_updates_status` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Deleting a status nulls `patches_updates.status_id` automatically (`ON DELETE SET NULL`) — no manual detach step required.
-- Respect tenant unique constraints; duplicates fail at the database layer.
+- Deleting a status nulls `patches_updates.status_id` automatically (`ON DELETE SET NULL`) — no manual detach step required. [Valid]-[2026-07-15]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

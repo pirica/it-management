@@ -37,10 +37,10 @@ Breaks down the annual budget into monthly allocations for finer financial contr
 - Database triggers `trg_monthly_budgets_audit_insert`, `trg_monthly_budgets_audit_update`, `trg_monthly_budgets_audit_delete` on `monthly_budgets` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
-- Child of **annual_budgets** — unique per `company_id` + `annual_budget_id` + `month`.
-- Respect tenant unique constraints; duplicates fail at the database layer.
-- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Valid]-[2026-07-15]
+- Child of **annual_budgets** — unique per `company_id` + `annual_budget_id` + `month`. [Valid]-[2026-07-15]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

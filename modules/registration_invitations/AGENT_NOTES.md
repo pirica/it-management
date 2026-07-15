@@ -43,10 +43,10 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 - `trg_registration_invitations_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Allowing non-admin users to create invitations — breaks onboarding security model.
-- Import rows without `invitation_code` — must generate unique code server-side, not insert NULL.
-- Deleting invitations that are still pending without checking registration flow consumers.
-- Exposing invitation codes in audit log payloads to non-admin users.
+- Allowing non-admin users to create invitations — breaks onboarding security model. [Valid]-[2026-07-15]
+- Import rows without `invitation_code` — must generate unique code server-side, not insert NULL. [Valid]-[2026-07-15]
+- Deleting invitations that are still pending without checking registration flow consumers. [Valid]-[2026-07-15]
+- Exposing invitation codes in audit log payloads to non-admin users. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

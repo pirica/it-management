@@ -59,12 +59,12 @@ Manages individual port rows on IDF rack positions (RJ45 and SFP), including sta
 Triggers always write to `audit_logs` on DML (not gated by `enable_audit_logs`); actor fields come from MySQL session variables set in `config.php`.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** do not change port sync contracts without explicit request.
-- **Editing `idf_ports` only:** leaves `switch_ports` and the equipment switch-port manager out of date — always use sync helpers or API endpoints.
-- **IDF sync test:** run `php scripts/idfs_sync_human_test.php` after any port workflow change; treat `[FAIL]` as a hard stop.
-- **Deleting linked ports:** remove `idf_links` referencing the port first; otherwise deletes fail or leave orphan link rows.
-- **Partial fibre/RJ45 sets:** `idf_ports_sync.php` treats `switch_ports` as authoritative for SFP numbering — do not synthesise duplicate fibre rows in `idf_ports`.
-- **List/search bug:** define `$displayFieldColumns = $uiColumns` before search loops that reference `$displayFieldColumns`.
+- **Protection Zone:** do not change port sync contracts without explicit request. [Valid]-[2026-07-15]
+- **Editing `idf_ports` only:** leaves `switch_ports` and the equipment switch-port manager out of date — always use sync helpers or API endpoints. [Valid]-[2026-07-15]
+- **IDF sync test:** run `php scripts/idfs_sync_human_test.php` after any port workflow change; treat `[FAIL]` as a hard stop. [Valid]-[2026-07-15]
+- **Deleting linked ports:** remove `idf_links` referencing the port first; otherwise deletes fail or leave orphan link rows. [Valid]-[2026-07-15]
+- **Partial fibre/RJ45 sets:** `idf_ports_sync.php` treats `switch_ports` as authoritative for SFP numbering — do not synthesise duplicate fibre rows in `idf_ports`. [Valid]-[2026-07-15]
+- **List/search bug:** define `$displayFieldColumns = $uiColumns` before search loops that reference `$displayFieldColumns`. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

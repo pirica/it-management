@@ -40,9 +40,9 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - Database audit triggers on `todo` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not use raw `mysqli_query` with unescaped `$company_id` in new code — prefer prepared statements.
-- `assigned_to_employee_id` may hold multiple IDs — use `FIND_IN_SET`, not `=`.
-- Always apply `itm_todo_append_visibility_filter()` or equivalent SQL.
+- Do not use raw `mysqli_query` with unescaped `$company_id` in new code — prefer prepared statements. [Valid]-[2026-07-15]
+- `assigned_to_employee_id` may hold multiple IDs — use `FIND_IN_SET`, not `=`. [Valid]-[2026-07-15]
+- Always apply `itm_todo_append_visibility_filter()` or equivalent SQL. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

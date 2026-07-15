@@ -31,8 +31,8 @@ Manages the top-level tenant entities ("Companies") in the multi-tenant system. 
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Deleting Companies**: Highly destructive; will cascade delete almost all data in the system due to foreign key constraints.
-- **Incode Length**: Must be 6 characters or fewer.
+- **Deleting Companies**: Highly destructive; will cascade delete almost all data in the system due to foreign key constraints. [Valid]-[2026-07-15]
+- **Incode Length**: Must be 6 characters or fewer. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -38,8 +38,8 @@ Manages IP subnets (CIDR blocks), including gateways, DNS, and DHCP configuratio
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Overlapping Subnets**: Defining subnets that overlap in range (e.g., /24 and /25).
-- **Invalid Prefix**: Incorrect prefix length for the network IP.
+- **Overlapping Subnets**: Defining subnets that overlap in range (e.g., /24 and /25). [Valid]-[2026-07-15]
+- **Invalid Prefix**: Incorrect prefix length for the network IP. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

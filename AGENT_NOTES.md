@@ -10,10 +10,10 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **API rate limits**: **Free** tier — unlimited, **no API key**, **session required** (`company_id` + `employee_id` in `PHPSESSID`). **Paid** tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits (mandatory)** and `includes/itm_api_rate_limit.php`.
 
 ## 10. Common Pitfalls
-- Bypassing the session-based company isolation.
-- Introducing external libraries.
-- Forgetting to update `database.sql` when changing the schema.
-- Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper).
+- Bypassing the session-based company isolation. [Valid]-[2026-07-15]
+- Introducing external libraries. [Valid]-[2026-07-15]
+- Forgetting to update `database.sql` when changing the schema. [Valid]-[2026-07-15]
+- Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper). [Valid]-[2026-07-15]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.

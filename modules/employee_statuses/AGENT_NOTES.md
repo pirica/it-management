@@ -30,7 +30,7 @@ Lookup table for employment statuses (e.g., "Active", "Terminated", "Leave").
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Marking a status as inactive if it's currently used by employees who should still be visible.
+- Marking a status as inactive if it's currently used by employees who should still be visible. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -38,7 +38,7 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 - Triggers `trg_note_labels_audit_insert`, `trg_note_labels_audit_update`, and `trg_note_labels_audit_delete` are updated in `database.sql` to capture and log the new metadata columns (`created_by`, `created_at`, `updated_by`, `updated_at`, `deleted_by`, `deleted_at`) in their JSON payloads.
 
 ## 10. Common Pitfalls
-- Do not expose another user's labels when `employee_id` filtering is added — today list queries are company-scoped only (known gap; see section 5).
+- Do not expose another user's labels when `employee_id` filtering is added — today list queries are company-scoped only (known gap; see section 5). [Valid]-[2026-07-15]
 
 ## 11. Code Examples
 

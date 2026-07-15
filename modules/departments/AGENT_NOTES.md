@@ -30,7 +30,7 @@ Manages company departments and their contact info (email, extension, etc.).
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Deleting a department with active employees or cost centers.
+- Deleting a department with active employees or cost centers. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

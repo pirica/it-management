@@ -38,10 +38,10 @@ Maps employees (login accounts) to companies they may access after login. Drives
 - `trg_employee_companies_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Deleting admin user's last company mapping — locks admin out of tenant switcher.
-- Omitting `company_id` on DELETE — cross-tenant data loss.
-- Treating this module as per-user CRUD for regular users — typically admin-maintained.
-- Confusing with `employees.company_id` primary field — both must stay consistent for login defaults.
+- Deleting admin user's last company mapping — locks admin out of tenant switcher. [Valid]-[2026-07-15]
+- Omitting `company_id` on DELETE — cross-tenant data loss. [Valid]-[2026-07-15]
+- Treating this module as per-user CRUD for regular users — typically admin-maintained. [Valid]-[2026-07-15]
+- Confusing with `employees.company_id` primary field — both must stay consistent for login defaults. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

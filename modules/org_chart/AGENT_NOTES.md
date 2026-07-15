@@ -33,8 +33,8 @@ Interactive org chart from `employees.reports_to` reporting lines with drag-and-
 - `employees.reports_to` updates are logged via `trg_employees_audit_*` when audit logs enabled.
 
 ## 10. Common Pitfalls
-- Allowing `reports_to` loops (A→B→A or deeper cycles).
-- Showing employees with `on_orgchart = 0`.
+- Allowing `reports_to` loops (A→B→A or deeper cycles). [Valid]-[2026-07-15]
+- Showing employees with `on_orgchart = 0`. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

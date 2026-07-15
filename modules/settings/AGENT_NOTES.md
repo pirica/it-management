@@ -40,9 +40,9 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - Configuration changes should be logged.
 
 ## 10. Common Pitfalls
-- **Broken Sidebar**: Incorrectly updating sidebar JSON can hide entire modules from users.
-- **Destructive SQL**: Manual SQL imports in the settings module can overwrite entire database tables.
-- **Tier edits**: Do not accept `tier` from POST in Settings; tier is platform-managed on `ui_configuration`.
+- **Broken Sidebar**: Incorrectly updating sidebar JSON can hide entire modules from users. [Valid]-[2026-07-15]
+- **Destructive SQL**: Manual SQL imports in the settings module can overwrite entire database tables. [Valid]-[2026-07-15]
+- **Tier edits**: Do not accept `tier` from POST in Settings; tier is platform-managed on `ui_configuration`. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

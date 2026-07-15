@@ -36,10 +36,10 @@ Lookup table for categorizing support tickets (e.g., "Hardware", "Software", "Ne
 - Database triggers `trg_ticket_categories_audit_insert`, `trg_ticket_categories_audit_update`, `trg_ticket_categories_audit_delete` on `ticket_categories` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
-- Referenced by **tickets** (`category_id`).
-- Respect tenant unique constraints; duplicates fail at the database layer.
-- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Valid]-[2026-07-15]
+- Referenced by **tickets** (`category_id`). [Valid]-[2026-07-15]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

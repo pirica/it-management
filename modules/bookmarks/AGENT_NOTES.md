@@ -52,10 +52,10 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Folder/bookmark mutations should remain CSRF-protected POST handlers.
 
 ## 10. Common Pitfalls
-- SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`.
-- URLs missing scheme — prepend `http://` or `https://` when saving.
-- `delete.php` expects `bulk_action=single_delete` for inline index deletes.
-- Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently.
+- SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`. [Valid]-[2026-07-15]
+- URLs missing scheme — prepend `http://` or `https://` when saving. [Valid]-[2026-07-15]
+- `delete.php` expects `bulk_action=single_delete` for inline index deletes. [Valid]-[2026-07-15]
+- Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

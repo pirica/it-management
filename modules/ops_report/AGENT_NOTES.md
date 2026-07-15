@@ -48,9 +48,9 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - Child-row triggers include `ops_report_id` in `old_values` / `new_values` JSON for parent linkage.
 
 ## 10. Common Pitfalls
-- Do not use bare `mkdir()` for uploads — N/A (no uploads).
-- Whitelist field names in AJAX handlers (`opr_report_fields()`, `opr_child_table_map()`, `opr_is_allowed_ui_path()`).
-- Re-test D-2 lock after changing date math.
+- Do not use bare `mkdir()` for uploads — N/A (no uploads). [Valid]-[2026-07-15]
+- Whitelist field names in AJAX handlers (`opr_report_fields()`, `opr_child_table_map()`, `opr_is_allowed_ui_path()`). [Valid]-[2026-07-15]
+- Re-test D-2 lock after changing date math. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

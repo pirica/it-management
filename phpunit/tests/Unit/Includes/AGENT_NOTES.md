@@ -23,8 +23,8 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | `CompanyModuleAccessDiscoveryTest.php` | `itm_ensure_registry_rows_for_module_slugs()`, `itm_sidebar_structure()` table discovery (requires MySQL) |
 
 ## 10. Common Pitfalls
-- Do not `require` `header.php` / `sidebar.php` here — use guard tests only; partials need layout context.
-- MBQA detector tests must use strict `MBQA-{table}-{company}-{seq}-{hash}` tags, not loose `mbqa-*` prefixes.
+- Do not `require` `header.php` / `sidebar.php` here — use guard tests only; partials need layout context. [Valid]-[2026-07-15]
+- MBQA detector tests must use strict `MBQA-{table}-{company}-{seq}-{hash}` tags, not loose `mbqa-*` prefixes. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

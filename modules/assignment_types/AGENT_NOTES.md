@@ -30,7 +30,7 @@ Lookup table for types of assignments (e.g., "Permanent", "Temporary"). These ar
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Deleting an assignment type that is actively used by assignment history records will cause foreign key constraint failures if RESTRICT is applied.
+- Deleting an assignment type that is actively used by assignment history records will cause foreign key constraint failures if RESTRICT is applied. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -50,11 +50,11 @@ A filtered view of the Equipment module specifically for network switch devices.
 - This façade has no local audit handlers.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** `modules/equipment/` is in the Protection Zone — do not change its logic or structure unless explicitly requested (`AGENTS.md`).
-- **Do not delete canonical wrappers:** Keep `modules/is_switch/` and sibling `is_*` folders.
-- **Type filter:** `$equipmentTypeNameFilter` must be `Switch` for port manager UI and correct list scoping.
-- **IDF partial updates:** Never update `equipment` / `switch_ports` / `idf_ports` in isolation — use equipment transaction paths.
-- **Do not copy equipment CRUD** into this folder.
+- **Protection Zone:** `modules/equipment/` is in the Protection Zone — do not change its logic or structure unless explicitly requested (`AGENTS.md`). [Valid]-[2026-07-15]
+- **Do not delete canonical wrappers:** Keep `modules/is_switch/` and sibling `is_*` folders. [Valid]-[2026-07-15]
+- **Type filter:** `$equipmentTypeNameFilter` must be `Switch` for port manager UI and correct list scoping. [Valid]-[2026-07-15]
+- **IDF partial updates:** Never update `equipment` / `switch_ports` / `idf_ports` in isolation — use equipment transaction paths. [Valid]-[2026-07-15]
+- **Do not copy equipment CRUD** into this folder. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

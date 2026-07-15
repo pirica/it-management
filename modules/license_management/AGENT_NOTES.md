@@ -41,12 +41,12 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - Database triggers: `trg_license_management_audit_*`, `trg_license_types_audit_*` (when lookup rows are quick-added).
 
 ## 10. Common Pitfalls
-- **`modules/license_types/`** — lookup CRUD; keep **`company_id`** in `$hideCompanyIdTables` on every duplicated entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`).
-- **`license_management` seeds in `database.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5).
-- **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `database.sql`.
-- **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown.
-- **Deleting a `license_types` row** referenced by `license_management` fails (RESTRICT FK).
-- **Price import:** normalise comma decimals before `cr_validate_numeric_value()`.
+- **`modules/license_types/`** — lookup CRUD; keep **`company_id`** in `$hideCompanyIdTables` on every duplicated entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`). [Valid]-[2026-07-15]
+- **`license_management` seeds in `database.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5). [Valid]-[2026-07-15]
+- **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `database.sql`. [Valid]-[2026-07-15]
+- **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown. [Valid]-[2026-07-15]
+- **Deleting a `license_types` row** referenced by `license_management` fails (RESTRICT FK). [Valid]-[2026-07-15]
+- **Price import:** normalise comma decimals before `cr_validate_numeric_value()`. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -40,10 +40,10 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 - Read-only; no writes.
 
 ## 10. Common Pitfalls
-- Do not add CRUD scaffolding unless requested — this module is intentionally index-only.
-- PDF export must not include the month/search filter card; keep `data-itm-no-export-pdf` on the controls card.
-- Do not use `LEFT JOIN` on `employee_statuses` — the `INNER JOIN` is intentional so employees without a status never appear.
-- Month filter must use `MONTH(e.birthday)`, not `DAY()` or string formatting on the full date.
+- Do not add CRUD scaffolding unless requested — this module is intentionally index-only. [Valid]-[2026-07-15]
+- PDF export must not include the month/search filter card; keep `data-itm-no-export-pdf` on the controls card. [Valid]-[2026-07-15]
+- Do not use `LEFT JOIN` on `employee_statuses` — the `INNER JOIN` is intentional so employees without a status never appear. [Valid]-[2026-07-15]
+- Month filter must use `MONTH(e.birthday)`, not `DAY()` or string formatting on the full date. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -86,11 +86,11 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - `check_audit_logs_coverage.php` is used to verify that mutations in other modules are correctly logged.
 
 ## 10. Common Pitfalls
-- Running destructive scripts on the wrong environment.
-- Forgetting to define `ITM_CLI_SCRIPT` when running PHP scripts from the command line.
-- **Hardcoded seed user id 1:** repro/verify scripts must use `lib/itm_script_test_employee.php` for `employees` mutations — never UPDATE Admin reset tokens in place. Run `php scripts/check_script_disposable_employees.php` after changing audit repro scripts.
-- **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=4` and `employee_id=432` — change params when debugging another tenant. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)` or the row is excluded. Calendar year vs ISO year (`date('o')`) diverges at year boundaries; the script warns when bounds differ.
-- **MySQL 8 `NO_ZERO_DATE`:** do not use `<> '0000-00-00'` in resignations or verify SQL — use `itm_sql_valid_date_predicate()` from `includes/itm_date_format.php`. Symptom: `Incorrect DATE value: '0000-00-00'` on `mysqli_prepare` and an empty weekly report despite valid `termination_date` rows.
+- Running destructive scripts on the wrong environment. [Valid]-[2026-07-15]
+- Forgetting to define `ITM_CLI_SCRIPT` when running PHP scripts from the command line. [Valid]-[2026-07-15]
+- **Hardcoded seed user id 1:** repro/verify scripts must use `lib/itm_script_test_employee.php` for `employees` mutations — never UPDATE Admin reset tokens in place. Run `php scripts/check_script_disposable_employees.php` after changing audit repro scripts. [Valid]-[2026-07-15]
+- **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=4` and `employee_id=432` — change params when debugging another tenant. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)` or the row is excluded. Calendar year vs ISO year (`date('o')`) diverges at year boundaries; the script warns when bounds differ. [Valid]-[2026-07-15]
+- **MySQL 8 `NO_ZERO_DATE`:** do not use `<> '0000-00-00'` in resignations or verify SQL — use `itm_sql_valid_date_predicate()` from `includes/itm_date_format.php`. Symptom: `Incorrect DATE value: '0000-00-00'` on `mysqli_prepare` and an empty weekly report despite valid `termination_date` rows. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -42,10 +42,10 @@ The central helpdesk/ticketing module for managing support requests.
 - `trg_tickets_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Hard-deleting tickets that should be archived — breaks history and calendar due-date traces.
-- Listing raw `status_id` / `assigned_to_employee_id` when label rows exist.
-- `tickets_ensure_is_archived_column()` runtime ALTER — prefer matching `database.sql` on fresh installs.
-- Photo paths must use `ticket_photo_public_path()` / upload helpers, not raw `../../tickets_photos/` assumptions.
+- Hard-deleting tickets that should be archived — breaks history and calendar due-date traces. [Valid]-[2026-07-15]
+- Listing raw `status_id` / `assigned_to_employee_id` when label rows exist. [Valid]-[2026-07-15]
+- `tickets_ensure_is_archived_column()` runtime ALTER — prefer matching `database.sql` on fresh installs. [Valid]-[2026-07-15]
+- Photo paths must use `ticket_photo_public_path()` / upload helpers, not raw `../../tickets_photos/` assumptions. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

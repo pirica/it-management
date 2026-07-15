@@ -39,8 +39,8 @@ This module manages system-wide access level definitions (e.g., "Full", "Limited
 - Changes to `access_levels` are automatically logged via database triggers (`trg_access_levels_audit_*`) to the `audit_logs` table.
 
 ## 10. Common Pitfalls
-- **Case Sensitivity**: Be mindful of case sensitivity in names depending on the database collation.
-- **Foreign Key Constraints**: Deleting an access level may fail if it is referenced by other tables (check constraints).
+- **Case Sensitivity**: Be mindful of case sensitivity in names depending on the database collation. [Valid]-[2026-07-15]
+- **Foreign Key Constraints**: Deleting an access level may fail if it is referenced by other tables (check constraints). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

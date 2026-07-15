@@ -31,7 +31,7 @@ Manages cost centers for financial tracking and budgeting.
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Restrictive Deletes**: Cannot delete a cost center that has budget or expense records associated with it (RESTRICT).
+- **Restrictive Deletes**: Cannot delete a cost center that has budget or expense records associated with it (RESTRICT). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

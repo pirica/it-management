@@ -68,9 +68,9 @@ Legacy flat CRUD for raw tables remains under `modules/employee_roles/` and `mod
 
 ## 10. Common Pitfalls
 
-- Do not rename the seeded **Admin** role from this UI — matrix is read-only and update/create blocks Admin rows.
-- Permission `module_name` values must match `modules_registry.module_name` for RBAC lookups.
-- Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations.
+- Do not rename the seeded **Admin** role from this UI — matrix is read-only and update/create blocks Admin rows. [Valid]-[2026-07-15]
+- Permission `module_name` values must match `modules_registry.module_name` for RBAC lookups. [Valid]-[2026-07-15]
+- Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

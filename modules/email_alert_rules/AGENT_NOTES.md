@@ -86,11 +86,11 @@ Email Alert Rules manages per-company automated notification settings for the Em
 
 \## 10. Common Pitfalls
 
-\- Do not change CRUD RBAC to `$crud\_table` for this module; use the parent `emails` permission scope so Email Management role permissions continue to cover Alert Rules.
+\- Do not change CRUD RBAC to `$crud\_table` for this module; use the parent `emails` permission scope so Email Management role permissions continue to cover Alert Rules. [Valid]-[2026-07-15]
 
-\- Do not document a standalone sidebar permission unless `modules\_registry` is intentionally changed to add `email\_alert\_rules`.
+\- Do not document a standalone sidebar permission unless `modules\_registry` is intentionally changed to add `email\_alert\_rules`. [Valid]-[2026-07-15]
 
-\- Do not remove `rule\_slug` values used by scheduled alert runners without updating the runner logic and seeds.
+\- Do not remove `rule\_slug` values used by scheduled alert runners without updating the runner logic and seeds. [Valid]-[2026-07-15]
 
 
 

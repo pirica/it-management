@@ -55,12 +55,12 @@ Triggers in `database.sql` log all INSERT, UPDATE, and DELETE operations on `idf
 Actor context uses `@app_employee_id` and related session variables from `config.php`; do not overwrite them in handlers.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** no drive-by refactors or schema experiments without explicit approval.
-- **Updating `idf_links` alone:** rack and equipment UIs read `idf_ports` / `switch_ports` status and colour — link CRUD here must mirror the same fields or use the shared API helpers.
-- **IDF sync regression:** after any link workflow change, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` blocks completion.
-- **Orphan links:** deleting `idf_ports` without clearing links leaves broken FK references or unique-key conflicts on recreate.
-- **Port pair direction:** `port_id_a` and `port_id_b` are ordered in the unique key; swapping ends may duplicate if both orientations are inserted.
-- **Raw FK IDs in list/view:** resolve `port_id_a` / `port_id_b` to position/device labels; resolve equipment and VLAN FKs to names.
+- **Protection Zone:** no drive-by refactors or schema experiments without explicit approval. [Valid]-[2026-07-15]
+- **Updating `idf_links` alone:** rack and equipment UIs read `idf_ports` / `switch_ports` status and colour — link CRUD here must mirror the same fields or use the shared API helpers. [Valid]-[2026-07-15]
+- **IDF sync regression:** after any link workflow change, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` blocks completion. [Valid]-[2026-07-15]
+- **Orphan links:** deleting `idf_ports` without clearing links leaves broken FK references or unique-key conflicts on recreate. [Valid]-[2026-07-15]
+- **Port pair direction:** `port_id_a` and `port_id_b` are ordered in the unique key; swapping ends may duplicate if both orientations are inserted. [Valid]-[2026-07-15]
+- **Raw FK IDs in list/view:** resolve `port_id_a` / `port_id_b` to position/device labels; resolve equipment and VLAN FKs to names. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 
