@@ -864,7 +864,14 @@ function uploadFiles(files) {
     form.append("csrf_token", "<?= itm_get_csrf_token() ?>");
     for (let f of files) form.append("files[]", f);
     fetch("api.php", { method:"POST", body:form })
-        .then(() => loadFolder(currentPath));
+        .then((res) => res.json().catch(() => ({})))
+        .then((data) => {
+            if (data && data.error) {
+                alert(data.error);
+            }
+            loadFolder(currentPath);
+        })
+        .catch(() => loadFolder(currentPath));
 }
 
 /* DRAG & DROP */

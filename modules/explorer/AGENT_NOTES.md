@@ -25,6 +25,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Zip extraction:** `unzip` uses `explorer_extract_zip_safely()` — rejects archive entries whose resolved path escapes the target folder.
 - **Localisation:** UK English (en-GB) UI labels (Favourites, Trash, etc.).
 - **Upload hardening (`deny_http`):** never bare `mkdir()` under `files/` — use `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Every segment gets force-written `deny_http` `.htaccess` + `index.html`. Serve UI via `itm_files_serve_url()` → `file.php`. See **`docs/file_upload_modules.md`**.
+- **Upload validation:** `upload` accepts only a whitelist of extensions, checks detected MIME (`finfo` / `getimagesize`) against that extension, rejects dotfiles, and enforces `EXPLORER_MAX_FILE_SIZE` (20MB). MIME mismatch or oversize files are rejected with `error` in the JSON response.
 
 ## 5. UI Behavior Requirements
 - Breadcrumb navigation; upload, download, delete, rename, favourite.
@@ -50,7 +51,7 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 | `move` | Move item (protected items blocked) |
 | `zip` | Create ZIP (root ZIP blocked — regression script) |
 | `unzip` | Extract archive in place |
-| `upload` | Multipart upload (dotfiles blocked) |
+| `upload` | Multipart upload (dotfiles blocked; extension + MIME + size validated) |
 | `createYear` / `createMonths` / `createDays` / `createYearMonthDay` | Date-folder scaffolding helpers |
 | `listRecycle` | Trash listing with same ACL as live storage |
 | `restore` | Restore from Trash (normalise `item` path before ACL) |
@@ -75,6 +76,7 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 ## 10. Common Pitfalls
 - Path traversal if `folder_path` / `file_name` not validated against storage root. [Cursor-Valid]
 - Allowing upload in blocked roots (Home, Private root, Departments root). [Cursor-Valid]
+- Trusting only the client filename extension for Explorer uploads (no MIME/size check). [Cursor-Fixed]
 - Navigating to `Private` or `Departments` in JS without `resolveScopedFolderPath()` — list API returns empty after root blocking. [Cursor-Valid]
 - `restore` POST `item` must be normalized before ACL and filesystem paths (backslashes bypass segment checks). [Cursor-Valid]
 - Linking `../../files/…` in HTML after `deny_http` — images/downloads break; use `itm_files_serve_url()`. [Cursor-Valid]

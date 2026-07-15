@@ -19,6 +19,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **System Status cache constants**: `ITM_SYSTEM_STATUS_CACHE_GLOBAL_COMPANY_ID` (default `1`) and optional `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK` (env `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK=1` or define in `config.php`) control admin cache fallback when session `company_id` is missing.
 - **Session cookies (web only):** before `session_start()`, `session_set_cookie_params()` sets `httponly=true`, `samesite=Lax`, and `secure` when the request is HTTPS (including `X-Forwarded-Proto=https` / port 443). CLI skips cookie params.
 - **Error display:** `display_errors` / `error_reporting` follow `ui_configuration.enable_all_error_reporting` after UI config loads — do not hardcode them in entry pages such as `index.php`.
+- **Upload size constants:** `MAX_FILE_SIZE` (5MB) for ticket/patch image uploads; `EXPLORER_MAX_FILE_SIZE` (20MB) for Explorer multipart uploads; floor-plan limits remain `FLOOR_PLAN_MAX_FILE_SIZE`.
 
 ## 7. File Structure
 - **config.php** — the core configuration file required by every entry point.

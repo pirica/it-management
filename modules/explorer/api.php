@@ -214,6 +214,108 @@ function explorer_ensure_dir($absolutePath) {
 }
 
 /**
+ * Why: Detect content type from the temporary upload bytes (not the client filename).
+ */
+if (!function_exists('explorer_detect_upload_mime_type')) {
+function explorer_detect_upload_mime_type($tmpName) {
+    $tmpName = (string)$tmpName;
+    if ($tmpName === '' || !is_file($tmpName)) {
+        return '';
+    }
+    if (function_exists('finfo_open') && defined('FILEINFO_MIME_TYPE')) {
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo !== false) {
+            $mime = @finfo_file($finfo, $tmpName);
+            @finfo_close($finfo);
+            if (is_string($mime) && $mime !== '') {
+                return strtolower(trim(explode(';', $mime, 2)[0]));
+            }
+        }
+    }
+    $imageInfo = @getimagesize($tmpName);
+    if (is_array($imageInfo) && isset($imageInfo['mime']) && $imageInfo['mime'] !== '') {
+        return strtolower((string)$imageInfo['mime']);
+    }
+    return '';
+}
+}
+
+/**
+ * Why: Allowed Explorer extensions mapped to acceptable detected MIME types.
+ * Office Open XML packages often report as application/zip — accept that for docx/xlsx/pptx.
+ */
+if (!function_exists('explorer_allowed_mimes_for_extension')) {
+function explorer_allowed_mimes_for_extension($ext) {
+    $map = [
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'gif' => ['image/gif'],
+        'webp' => ['image/webp'],
+        'pdf' => ['application/pdf'],
+        'txt' => ['text/plain'],
+        'md' => ['text/plain', 'text/markdown', 'text/x-markdown'],
+        'log' => ['text/plain'],
+        'json' => ['application/json', 'text/plain', 'text/json'],
+        'xml' => ['application/xml', 'text/xml', 'text/plain'],
+        'csv' => ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'],
+        'zip' => ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip'],
+        'doc' => ['application/msword', 'application/octet-stream'],
+        'docx' => [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/zip',
+            'application/octet-stream',
+        ],
+        'xls' => ['application/vnd.ms-excel', 'application/octet-stream'],
+        'xlsx' => [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/zip',
+            'application/octet-stream',
+        ],
+        'ppt' => ['application/vnd.ms-powerpoint', 'application/octet-stream'],
+        'pptx' => [
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/zip',
+            'application/octet-stream',
+        ],
+    ];
+    $ext = strtolower((string)$ext);
+    return isset($map[$ext]) ? $map[$ext] : [];
+}
+}
+
+/**
+ * Why: Enforce whitelist extension + MIME + size before writing under files/{company_id}/.
+ */
+if (!function_exists('explorer_validate_upload_file')) {
+function explorer_validate_upload_file($tmpName, $safeName, $fileSize, &$error) {
+    $error = '';
+    $maxSize = defined('EXPLORER_MAX_FILE_SIZE') ? (int)EXPLORER_MAX_FILE_SIZE : 20971520;
+    if ((int)$fileSize <= 0 || (int)$fileSize > $maxSize) {
+        $error = 'File exceeds the maximum allowed size (20MB).';
+        return false;
+    }
+    $safeName = (string)$safeName;
+    if ($safeName === '' || $safeName[0] === '.') {
+        $error = 'Dotfiles and empty names are not allowed.';
+        return false;
+    }
+    $ext = strtolower(pathinfo($safeName, PATHINFO_EXTENSION));
+    $allowedMimes = explorer_allowed_mimes_for_extension($ext);
+    if ($allowedMimes === []) {
+        $error = 'Unsupported file extension.';
+        return false;
+    }
+    $mime = explorer_detect_upload_mime_type($tmpName);
+    if ($mime === '' || !in_array($mime, $allowedMimes, true)) {
+        $error = 'File content type does not match the allowed type for this extension.';
+        return false;
+    }
+    return true;
+}
+}
+
+/**
  * Synchronises a filesystem change to the explorer database table.
  */
 if (!function_exists('sync_db')) {
@@ -671,28 +773,45 @@ case "upload":
         break;
     }
 
+    $uploadedCount = 0;
+    $uploadErrors = [];
     if (!empty($_FILES['files']['name'])) {
         foreach ($_FILES['files']['name'] as $i => $name) {
-            $tmp = $_FILES['files']['tmp_name'][$i];
-            if (!$tmp) continue;
-            $safe_name = basename($name);
-            if ($safe_name === '' || $safe_name[0] === '.') {
+            $tmp = $_FILES['files']['tmp_name'][$i] ?? '';
+            $fileError = (int)($_FILES['files']['error'][$i] ?? UPLOAD_ERR_NO_FILE);
+            $fileSize = (int)($_FILES['files']['size'][$i] ?? 0);
+            if ($fileError === UPLOAD_ERR_NO_FILE || $tmp === '') {
                 continue;
             }
-            $ext = strtolower(pathinfo($safe_name, PATHINFO_EXTENSION));
-
-            // Why: Use a strict whitelist for allowed extensions instead of a blacklist.
-            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'md', 'log', 'json', 'xml', 'csv', 'zip', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-            if (!in_array($ext, $allowedExtensions, true)) {
+            if ($fileError !== UPLOAD_ERR_OK) {
+                $uploadErrors[] = 'Upload failed for ' . basename((string)$name) . '.';
+                continue;
+            }
+            $safe_name = basename((string)$name);
+            $fileValidateError = '';
+            if (!explorer_validate_upload_file($tmp, $safe_name, $fileSize, $fileValidateError)) {
+                $uploadErrors[] = $safe_name . ': ' . $fileValidateError;
                 continue;
             }
 
             if (@move_uploaded_file($tmp, $dir . "/" . $safe_name)) {
                 sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $safe_name, 'file');
+                $uploadedCount++;
+            } else {
+                $uploadErrors[] = 'Could not store ' . $safe_name . '.';
             }
         }
     }
-    echo json_encode(["ok" => 1]);
+    $ok = ($uploadedCount > 0 && empty($uploadErrors)) ? 1 : (($uploadedCount > 0) ? 1 : 0);
+    $payload = ["ok" => $ok, "uploaded" => $uploadedCount];
+    if (!empty($uploadErrors)) {
+        $payload["error"] = implode(' ', $uploadErrors);
+    }
+    if ($uploadedCount === 0 && empty($uploadErrors)) {
+        $payload["ok"] = 0;
+        $payload["error"] = "No files uploaded.";
+    }
+    echo json_encode($payload);
     break;
 
 /* ---------------- DATE STRUCTURES ---------------- */
