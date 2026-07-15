@@ -27,7 +27,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 - **view.php** — detailed view of an attempt.
 
 ## 8. Multi-Tenant Rules
-- **Multi-Tenant Scoping**: The table now includes a `company_id` column defined as `INVISIBLE` on MySQL 8.0+.
+- **Multi-Tenant Scoping**: The table includes a `company_id` column.
 - Since login attempts happen before a company is selected, `company_id` may be NULL or automatically resolved via `trg_attempts_before_insert` trigger based on employee record or active session.
 - Standard queries are scoped by `company_id` when logged in.
 
