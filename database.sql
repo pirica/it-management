@@ -100,9 +100,6 @@ CREATE TABLE `companies` (
   UNIQUE KEY `incode` (`incode`),
   KEY `active` (`active`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Manual migration (existing databases only — skip if import uses CREATE TABLE above):
--- ALTER TABLE `companies` ADD UNIQUE KEY `company` (`company`);
--- ALTER TABLE `companies` ADD COLUMN `unit_no` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL AFTER `vat`;
 -- Data for `companies`
 INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `unit_no`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('1', 'TechCorp Global', 'TC001', 'New York', 'USA', '+1-212-555-0101', 'info@techcorp.example', 'https://techcorp.example', 'US-TC-1001', NULL, 'Head office company profile', '1', '2026-01-01 00:00:01', NULL);
 INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `unit_no`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('2', 'DataCenter Plus', 'DCP001', 'Dallas', 'USA', '+1-972-555-0102', 'contact@datacenterplus.example', 'https://datacenterplus.example', 'US-DCP-1002', NULL, '', '1', '2026-01-01 00:00:01', NULL);
@@ -570,10 +567,6 @@ CREATE TABLE `floor_plan_folders` (
   CONSTRAINT `floor_plan_folders_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `floor_plan_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `floor_plan_folders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Manual migration (existing databases only):
--- ALTER TABLE `floor_plan_folders` CHANGE `parent_folder_name` `parent_folder_id` int DEFAULT NULL;
--- ALTER TABLE `floor_plan_folders` DROP INDEX `uq_floor_plan_folders_company_parent_name`;
--- ALTER TABLE `floor_plan_folders` ADD UNIQUE KEY `uq_floor_plan_folders_company_parent_name` (`company_id`, (IFNULL(`parent_folder_id`, 0)), `name`);
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', NULL, 'General', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '2', NULL, 'General', '1', '2026-01-01 00:00:01');
@@ -584,7 +577,6 @@ INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '4', '7', 'Level 1', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '5', NULL, 'General', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
--- Table structure for `floor_plan_tags`
 DROP TABLE IF EXISTS `floor_plan_tags`;
 CREATE TABLE `floor_plan_tags` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -602,8 +594,6 @@ CREATE TABLE `floor_plan_tags` (
   KEY `company_id` (`company_id`),
   CONSTRAINT `floor_plan_tags_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Manual migration (existing databases only):
--- ALTER TABLE `floor_plan_tags` ADD UNIQUE KEY `uq_floor_plan_tags_company_name` (`company_id`, `name`);
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', 'Ground Floor', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', 'Building A', '1', '2026-01-01 00:00:01');
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '2', 'Ground Floor', '1', '2026-01-01 00:00:01');
@@ -3562,16 +3552,6 @@ CREATE TABLE `tickets` (
   CONSTRAINT `tickets_ibfk_5` FOREIGN KEY (`created_by_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_6` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_7` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Manual migration (existing databases only — skip if import uses CREATE TABLE above):
--- ALTER TABLE `tickets` DROP INDEX `ticket_external_code`;
--- ALTER TABLE `tickets` ADD UNIQUE KEY `uq_tickets_id_company` (`id`, `company_id`);
--- ALTER TABLE `tickets` ADD COLUMN `due_date` date DEFAULT NULL;
--- Drop ui_color (order matters — pre-upgrade trg_tickets_audit_* triggers reference OLD/NEW.ui_color):
--- DROP TRIGGER IF EXISTS `trg_tickets_audit_insert`;
--- DROP TRIGGER IF EXISTS `trg_tickets_audit_update`;
--- DROP TRIGGER IF EXISTS `trg_tickets_audit_delete`;
--- ALTER TABLE `tickets` DROP COLUMN `ui_color`;
--- Recreate audit triggers (copy from trg_tickets_audit_* block near end of this file, or run lines after DROP TRIGGER there).
 -- Data for `tickets`
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-01-01 00:00:01');
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', NULL, '2026-01-01 00:00:01');
@@ -7052,7 +7032,6 @@ CREATE TRIGGER `trg_ops_report_hotel_figure_audit_delete` AFTER DELETE ON `ops_r
   NULL, @app_ip_address, @app_user_agent);
 END//
 DELIMITER ;
-
 -- Table structure for `floor_designer`
 DROP TABLE IF EXISTS `floor_designer`;
 CREATE TABLE `floor_designer` (
@@ -7079,12 +7058,7 @@ CREATE TABLE `floor_designer` (
   CONSTRAINT `floor_designer_ibfk_location` FOREIGN KEY (`it_location_id`) REFERENCES `it_locations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `floor_designer_ibfk_plan` FOREIGN KEY (`floor_plan_id`) REFERENCES `floor_plans` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table structure for `floor_designer_points`
--- Manual migration:
--- ALTER TABLE `floor_designer_points` ADD COLUMN `rotation` decimal(5,2) NOT NULL DEFAULT '0.00' AFTER `label`;
--- INSERT INTO `switch_port_types` (`company_id`, `type`) VALUES (1, 'Door'), (2, 'Door'), (3, 'Door'), (4, 'Door'), (5, 'Door');
--- INSERT INTO `switch_port_types` (`company_id`, `type`) VALUES (1, 'Access Point'), (2, 'Access Point'), (3, 'Access Point'), (4, 'Access Point'), (5, 'Access Point');
 DROP TABLE IF EXISTS `floor_designer_points`;
 CREATE TABLE `floor_designer_points` (
   `id` int NOT NULL AUTO_INCREMENT,
