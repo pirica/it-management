@@ -2,8 +2,8 @@
 /**
  * Common Pitfalls Extractor
  *
- * Why: Scan all folders and subfolders under modules/ for AGENT_NOTES.md.
- * If missing, automatically copy templates/AGENT_NOTES.md to create it.
+ * Why: Scan the whole repository for AGENT_NOTES.md (not only modules/).
+ * Backfill missing note files under modules/ from templates/AGENT_NOTES.md.
  * Extract and display pitfalls documented under '## 10. Common Pitfalls'.
  *
  * This script supports both browser and CLI execution.
@@ -21,7 +21,32 @@ if (!is_file($template_path)) {
 }
 
 /**
- * Recursively find all folders under a directory.
+ * Directories / path segments to skip while walking the repo.
+ *
+ * Why: Avoid .git, vendor trees, generated coverage, and QA dumps — not agent notes.
+ *
+ * @return array<int, string>
+ */
+function itm_pitfalls_skip_dir_names(): array
+{
+    return [
+        '.git',
+        'vendor',
+        'node_modules',
+        'coverage',
+        'qa-reports',
+        'files',
+        'backups',
+        'tickets_photos',
+        'floor_plans',
+        'images',
+    ];
+}
+
+/**
+ * Recursively find all folders under a directory (legacy helper for modules/ backfill).
+ *
+ * @return array<int, string>
  */
 function itm_get_all_subfolders(string $dir): array
 {
@@ -30,23 +55,103 @@ function itm_get_all_subfolders(string $dir): array
         return [];
     }
 
+    $skip = itm_pitfalls_skip_dir_names();
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
         RecursiveIteratorIterator::SELF_FIRST
     );
 
     foreach ($iterator as $item) {
-        if ($item->isDir()) {
-            $path = $item->getRealPath();
-            if ($path !== false && strpos($path, '.git') === false && strpos($path, '.github') === false) {
-                $folders[] = $path;
-            }
+        if (!$item->isDir()) {
+            continue;
         }
+        $path = $item->getRealPath();
+        if ($path === false) {
+            continue;
+        }
+        $basename = $item->getFilename();
+        if (in_array($basename, $skip, true)) {
+            continue;
+        }
+        $folders[] = $path;
     }
 
     $folders = array_unique($folders);
     sort($folders);
     return $folders;
+}
+
+/**
+ * Find every AGENT_NOTES.md under the repository root (UTF-8 paths).
+ *
+ * Why: Pitfalls live in config/, includes/, scripts/, phpunit/, root, .github/,
+ * and modules/ — not only under modules/.
+ *
+ * Skips templates/AGENT_NOTES.md (outline only) and pruned runtime/generated trees.
+ *
+ * @return array<int, array{path: string, display: string, folder: string}>
+ */
+function itm_find_all_agent_notes(string $root_dir): array
+{
+    $root_real = realpath($root_dir);
+    if ($root_real === false) {
+        return [];
+    }
+
+    $skip_names = itm_pitfalls_skip_dir_names();
+    $template_notes = $root_real . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
+    $found = [];
+
+    $dir_iterator = new RecursiveDirectoryIterator(
+        $root_real,
+        FilesystemIterator::SKIP_DOTS
+    );
+    $filter = new RecursiveCallbackFilterIterator(
+        $dir_iterator,
+        static function ($current, $key, $iterator) use ($skip_names) {
+            $name = $current->getFilename();
+            if ($current->isDir() && in_array($name, $skip_names, true)) {
+                return false;
+            }
+            // Allow .github (AGENT_NOTES) but skip other hidden dirs except that.
+            if ($current->isDir() && isset($name[0]) && $name[0] === '.' && $name !== '.github') {
+                return false;
+            }
+            return true;
+        }
+    );
+    $iterator = new RecursiveIteratorIterator($filter, RecursiveIteratorIterator::SELF_FIRST);
+
+    foreach ($iterator as $item) {
+        if (!$item->isFile() || $item->getFilename() !== 'AGENT_NOTES.md') {
+            continue;
+        }
+        $path = $item->getRealPath();
+        if ($path === false) {
+            continue;
+        }
+        if ($path === $template_notes) {
+            continue;
+        }
+        $folder = dirname($path);
+        $rel = substr($path, strlen($root_real) + 1);
+        $rel = str_replace('\\', '/', $rel);
+        $display = ($rel === 'AGENT_NOTES.md') ? '(repo root)' : dirname($rel);
+        if ($display === '.') {
+            $display = '(repo root)';
+        }
+        $found[] = [
+            'path' => $path,
+            'display' => $display,
+            'folder' => $folder,
+        ];
+    }
+
+    usort($found, static function ($a, $b) {
+        return strcasecmp($a['display'], $b['display']);
+    });
+
+    return $found;
 }
 
 /**
@@ -119,11 +224,65 @@ function itm_extract_pitfalls(string $notes_path): string
     return $pitfalls_text;
 }
 
-// 1. Scan and backfill any missing AGENT_NOTES.md (runs in both SAPI environments for deployment & git readiness)
-$folders = itm_get_all_subfolders($modules_dir);
+/**
+ * Whether a notes entry matches -module= / path filter (exact path, basename, or modules/<slug>).
+ *
+ * Why: Avoid substring false positives (`config` must not match `ui_configuration`).
+ */
+function itm_pitfalls_matches_filter(array $entry, ?string $module_filter): bool
+{
+    if ($module_filter === null || $module_filter === '') {
+        return true;
+    }
+    $filter = strtolower(str_replace('\\', '/', trim($module_filter, "/ \t")));
+    $display = strtolower(str_replace('\\', '/', $entry['display']));
+    $basename = strtolower(basename($entry['folder']));
+    if ($display === $filter || $basename === $filter) {
+        return true;
+    }
+    // Prefix path match: scripts matches scripts and scripts/lib
+    if ($filter !== '' && strpos($display, $filter . '/') === 0) {
+        return true;
+    }
+    // Allow modules/<slug> and bare <slug> for module folders
+    if ($display === 'modules/' . $filter || strpos($display, 'modules/' . $filter . '/') === 0) {
+        return true;
+    }
+    if (strpos($filter, 'modules/') === 0) {
+        return $display === $filter || strpos($display, $filter . '/') === 0;
+    }
+    return false;
+}
+
+/**
+ * Browser href for a notes folder relative to scripts/.
+ */
+function itm_pitfalls_browser_href(string $root_dir, string $folder): string
+{
+    $root_real = realpath($root_dir);
+    $folder_real = realpath($folder);
+    if ($root_real === false || $folder_real === false) {
+        return '../';
+    }
+    $rel = substr($folder_real, strlen($root_real) + 1);
+    $rel = str_replace('\\', '/', $rel);
+    if ($rel === false || $rel === '') {
+        return '../index.php';
+    }
+    if (is_file($folder_real . DIRECTORY_SEPARATOR . 'index.php')) {
+        return '../' . $rel . '/index.php';
+    }
+    if (is_file($folder_real . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md')) {
+        return '../' . $rel . '/AGENT_NOTES.md';
+    }
+    return '../' . $rel . '/';
+}
+
+// 1. Backfill missing AGENT_NOTES.md under modules/ only (not whole-repo — avoids filling upload trees)
+$module_folders = itm_get_all_subfolders($modules_dir);
 $created_count = 0;
 
-foreach ($folders as $folder) {
+foreach ($module_folders as $folder) {
     $notes_file = $folder . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
     if (!is_file($notes_file)) {
         if (copy($template_path, $notes_file)) {
@@ -131,6 +290,9 @@ foreach ($folders as $folder) {
         }
     }
 }
+
+// 2. Discover all AGENT_NOTES.md repo-wide for extraction
+$notes_entries = itm_find_all_agent_notes($root_dir);
 
 // 2. Handle CLI Execution Mode
 if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
@@ -152,39 +314,33 @@ if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
     }
 
     $results = [];
-    foreach ($folders as $folder) {
-        $relative_path_from_modules = str_replace($modules_dir . DIRECTORY_SEPARATOR, '', $folder);
-        $slug = str_replace(DIRECTORY_SEPARATOR, '/', $relative_path_from_modules);
-        $display_name = 'modules/' . $slug;
-
-        if ($module_filter !== null) {
-            if (strcasecmp($slug, $module_filter) !== 0 && strcasecmp(basename($folder), $module_filter) !== 0) {
-                continue;
-            }
+    foreach ($notes_entries as $entry) {
+        if (!itm_pitfalls_matches_filter($entry, $module_filter)) {
+            continue;
         }
 
-        $notes_path = $folder . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
-        $pitfalls = itm_extract_pitfalls($notes_path);
+        $pitfalls = itm_extract_pitfalls($entry['path']);
 
         $results[] = [
-            'module' => $display_name,
+            'module' => $entry['display'],
+            'path' => str_replace('\\', '/', substr($entry['path'], strlen(realpath($root_dir)) + 1)),
             'pitfalls' => $pitfalls
         ];
     }
 
     if ($is_json) {
         echo json_encode([
-            'scanned_count' => count($folders),
+            'scanned_count' => count($notes_entries),
             'created_count' => $created_count,
             'results' => $results
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
     } else {
-        echo "Scan complete. Verified " . count($folders) . " modules/folders. Created " . $created_count . " missing AGENT_NOTES.md files.\n\n";
+        echo "Scan complete. Found " . count($notes_entries) . " AGENT_NOTES.md files repo-wide. Created " . $created_count . " missing modules/ AGENT_NOTES.md files.\n\n";
         if (empty($results)) {
-            echo "No matching modules found.\n";
+            echo "No matching AGENT_NOTES.md entries found.\n";
         } else {
             foreach ($results as $res) {
-                echo "Module: " . $res['module'] . "\n";
+                echo "Path: " . $res['module'] . "\n";
                 echo "Pitfalls:\n";
                 echo $res['pitfalls'] . "\n";
                 echo str_repeat("-", 40) . "\n\n";
@@ -275,34 +431,21 @@ $generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
     <div class="scripts-card">
         <h1 style="margin: 0 0 8px;">Common Pitfalls Directory</h1>
         <p class="scripts-muted">
-            Aggregated pitfalls and developer traps extracted directly from the <code>AGENT_NOTES.md</code> files across all modules and submodules.
+            Aggregated pitfalls and developer traps extracted from every <code>AGENT_NOTES.md</code> in the repository (modules, config, includes, scripts, phpunit, css, js, root, <code>.github</code>, and other in-scope folders). Missing notes under <code>modules/</code> are backfilled from the template.
         </p>
         <p class="scripts-muted" style="margin-bottom: 0; font-size: 0.85rem;">
-            Total modules/folders scanned: <strong><?= count($folders); ?></strong> |
-            Newly initialized AGENT_NOTES: <strong><?= $created_count; ?></strong> |
+            Total AGENT_NOTES.md scanned: <strong><?= count($notes_entries); ?></strong> |
+            Newly initialized modules/ AGENT_NOTES: <strong><?= $created_count; ?></strong> |
             Generated at: <strong><?= htmlspecialchars($generated_at, ENT_QUOTES, 'UTF-8'); ?></strong>
         </p>
     </div>
 
     <div class="scripts-card pitfalls-container">
         <?php
-        foreach ($folders as $folder) {
-            // Get path relative to the modules directory for display
-            $relative_path_from_modules = str_replace($modules_dir . DIRECTORY_SEPARATOR, '', $folder);
-            $display_name = 'modules/' . str_replace(DIRECTORY_SEPARATOR, '/', $relative_path_from_modules);
-
-            // Generate link. Check if index.php exists in that folder
-            $has_index = is_file($folder . DIRECTORY_SEPARATOR . 'index.php');
-            if ($has_index) {
-                // Link to index.php relative to scripts/
-                $href = '../modules/' . str_replace(DIRECTORY_SEPARATOR, '/', $relative_path_from_modules) . '/index.php';
-            } else {
-                // Link to directory
-                $href = '../modules/' . str_replace(DIRECTORY_SEPARATOR, '/', $relative_path_from_modules) . '/';
-            }
-
-            $notes_path = $folder . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';
-            $pitfalls = itm_extract_pitfalls($notes_path);
+        foreach ($notes_entries as $entry) {
+            $display_name = $entry['display'];
+            $href = itm_pitfalls_browser_href($root_dir, $entry['folder']);
+            $pitfalls = itm_extract_pitfalls($entry['path']);
 
             $is_empty = ($pitfalls === 'No pitfalls documented');
             ?>

@@ -32,8 +32,8 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 - Mutation actions (if any) log to source tables (Employees).
 
 ## 10. Common Pitfalls
-- **Missing Contacts**: Forgetting to set `on_contacts = 1` in the Employees module will hide them here. [Valid]-[2026-07-15]
-- **Privacy**: Be mindful of displaying personal vs. work numbers. [Valid]-[2026-07-15]
+- **Missing Contacts**: Forgetting to set `on_contacts = 1` in the Employees module will hide them here. [Cursor-Valid]
+- **Privacy**: Be mindful of displaying personal vs. work numbers. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

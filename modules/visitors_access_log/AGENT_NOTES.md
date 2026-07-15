@@ -37,8 +37,8 @@ Manual visitor entry log for physical IT/office access with quick-add on the ind
 - Database triggers `trg_visitors_access_log_audit_*`.
 
 ## 10. Common Pitfalls
-- Allowing edit/delete on historical (non-today) rows. [Valid]-[2026-07-15]
-- Using only `date_time_in` for "today" check when `created_at` is the reliable fallback. [Valid]-[2026-07-15]
+- Allowing edit/delete on historical (non-today) rows. [Cursor-Valid]
+- Using only `date_time_in` for "today" check when `created_at` is the reliable fallback. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

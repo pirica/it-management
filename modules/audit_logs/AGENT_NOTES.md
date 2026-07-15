@@ -42,9 +42,9 @@ Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity
 - `scripts/check_audit_logs_coverage.php` skips this module (`audit_logs` table is trigger-exempt).
 
 ## 10. Common Pitfalls
-- **Performance**: Querying large `audit_logs` tables can be slow; ensure `record_id` and `table_name` are indexed. [Valid]-[2026-07-15]
-- **JSON Parsing**: Ensure PHP handles null or malformed JSON values in `old_values`/`new_values` gracefully. [Valid]-[2026-07-15]
-- **Expecting private-module history**: Do not add triggers or `itm_log_audit()` for private-data tables — compliance requires they stay out of `audit_logs`. [Valid]-[2026-07-15]
+- **Performance**: Querying large `audit_logs` tables can be slow; ensure `record_id` and `table_name` are indexed. [Cursor-Valid]
+- **JSON Parsing**: Ensure PHP handles null or malformed JSON values in `old_values`/`new_values` gracefully. [Cursor-Valid]
+- **Expecting private-module history**: Do not add triggers or `itm_log_audit()` for private-data tables — compliance requires they stay out of `audit_logs`. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

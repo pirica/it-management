@@ -41,10 +41,10 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - **Private data (no audit):** `private_contacts` is exempt from `audit_logs` and database audit triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add PHP audit hooks for contact mutations.
 
 ## 10. Common Pitfalls
-- Do not reuse company contacts visibility rules — this module is user-private only. [Valid]-[2026-07-15]
-- Photo paths must stay inside the user's Private explorer segment. [Valid]-[2026-07-15]
-- Do not drop `employee_id` from DELETE/WHERE clauses. [Valid]-[2026-07-15]
-- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; **PNG only** (unlike employees, which accepts PNG and JPG). Type resolution uses `pc_contact_photo_resolve_png_extension()`. Upload failures surface `photo_error` on create/edit redirects. [Valid]-[2026-07-15]
+- Do not reuse company contacts visibility rules — this module is user-private only. [Cursor-Valid]
+- Photo paths must stay inside the user's Private explorer segment. [Cursor-Valid]
+- Do not drop `employee_id` from DELETE/WHERE clauses. [Cursor-Valid]
+- Profile photo upload: use `includes/profile_photo_fields.php` + `pc_contact_photo_store_upload()`; **PNG only** (unlike employees, which accepts PNG and JPG). Type resolution uses `pc_contact_photo_resolve_png_extension()`. Upload failures surface `photo_error` on create/edit redirects. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

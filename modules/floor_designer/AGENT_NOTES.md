@@ -44,8 +44,8 @@ Provides an interactive tool for designing and visualizing floor plans, includin
 - Managed via database triggers for both designer and points.
 
 ## 10. Common Pitfalls
-- **Mismatched IDs**: Ensure `switch_port_id` belongs to the selected `switch_id`. [Valid]-[2026-07-15]
-- **Coordinate Drift**: Be careful when modifying container sizes as it might affect point placement if not handled relatively. [Valid]-[2026-07-15]
+- **Mismatched IDs**: Ensure `switch_port_id` belongs to the selected `switch_id`. [Cursor-Valid]
+- **Coordinate Drift**: Be careful when modifying container sizes as it might affect point placement if not handled relatively. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

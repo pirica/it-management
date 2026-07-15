@@ -13,4 +13,4 @@ Static data files consumed by audit and compliance scripts (allowlists, baseline
 - `index.html` blocks directory listing.
 
 ## 10. Common Pitfalls
-- JSON must be UTF-8 without BOM for `json_decode()` in scripts. [Valid]-[2026-07-15]
+- JSON must be UTF-8 without BOM for `json_decode()` in scripts. [Cursor-Valid]

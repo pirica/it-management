@@ -12,10 +12,10 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 - **tests/Unit/Scripts/** — CLI audit script tests; disposable user helper coverage (`ItmScriptTestUserTest`, `ReproAuditDisclosureTest`, `check_script_disposable_employees.unittest.php`).
 
 ## 10. Common Pitfalls
-- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users. [Valid]-[2026-07-15]
-- Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu). [Valid]-[2026-07-15]
-- **Coverage paths in docs** must say `phpunit/coverage/html/coverage.html`, not `index.html`. [Valid]-[2026-07-15]
-- **Interpreting low totals (~0.4% lines)** — expected with wide `<coverage><include>` and DB-only module tests; see **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**. [Valid]-[2026-07-15]
+- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users. [Cursor-Valid]
+- Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu). [Cursor-Valid]
+- **Coverage paths in docs** must say `phpunit/coverage/html/coverage.html`, not `index.html`. [Cursor-Valid]
+- **Interpreting low totals (~0.4% lines)** — expected with wide `<coverage><include>` and DB-only module tests; see **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -32,7 +32,7 @@ Helper module to manage the individual points/elements placed within the Floor D
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Coordinate Reset**: Updating point metadata must preserve its spatial coordinates (`x`, `y`). [Valid]-[2026-07-15]
+- **Coordinate Reset**: Updating point metadata must preserve its spatial coordinates (`x`, `y`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

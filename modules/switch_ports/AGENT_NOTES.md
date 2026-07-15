@@ -49,7 +49,7 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - IDF-linked port changes may also appear in **idf_ports** audit triggers — keep both tables in sync.
 
 ## 10. Common Pitfalls
-- **Mismatched IDs**: Ensure the port belongs to the correct switch and company. [Valid]-[2026-07-15]
+- **Mismatched IDs**: Ensure the port belongs to the correct switch and company. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

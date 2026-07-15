@@ -45,9 +45,9 @@ A filtered view of the Equipment module specifically for wireless access points 
 - This façade has no local audit handlers.
 
 ## 10. Common Pitfalls
-- **Do not delete canonical wrappers:** Keep `modules/is_access_point/` and sibling `is_*` folders; they are deliberate sidebar entry points. [Valid]-[2026-07-15]
-- **Type filter:** `$equipmentTypeNameFilter` must match `equipment_types.name` (`Access Point`); a typo hides all rows or shows the wrong subset. [Valid]-[2026-07-15]
-- **Do not copy equipment CRUD** into this folder — set wrapper variables or change `modules/equipment/` when authorised. [Valid]-[2026-07-15]
+- **Do not delete canonical wrappers:** Keep `modules/is_access_point/` and sibling `is_*` folders; they are deliberate sidebar entry points. [Cursor-Valid]
+- **Type filter:** `$equipmentTypeNameFilter` must match `equipment_types.name` (`Access Point`); a typo hides all rows or shows the wrong subset. [Cursor-Valid]
+- **Do not copy equipment CRUD** into this folder — set wrapper variables or change `modules/equipment/` when authorised. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

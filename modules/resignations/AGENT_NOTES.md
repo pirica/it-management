@@ -41,10 +41,10 @@ Read-only weekly resignation report for the active company. Data is sourced from
 - Read-only; no writes.
 
 ## 10. Common Pitfalls
-- Do not add CRUD scaffolding unless requested — this module is intentionally index-only. [Valid]-[2026-07-15]
-- Week filter uses ISO Monday–Sunday bounds from `itm_iso_week_bounds($year, $week)`; month still filters `MONTH(termination_date)` so cross-month ISO weeks respect the selected calendar month. [Valid]-[2026-07-15]
-- Do not use `YEAR()` + `WEEK(..., 3)` together — PHP `date('W')` and MySQL `WEEK()` can disagree on some dates; date-range filtering matches the week selector and regression probe. [Valid]-[2026-07-15]
-- Do not filter dates with `<> '0000-00-00'` in SQL — use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` (MySQL 8 strict mode raises `Incorrect DATE value: '0000-00-00'`). [Valid]-[2026-07-15]
+- Do not add CRUD scaffolding unless requested — this module is intentionally index-only. [Cursor-Valid]
+- Week filter uses ISO Monday–Sunday bounds from `itm_iso_week_bounds($year, $week)`; month still filters `MONTH(termination_date)` so cross-month ISO weeks respect the selected calendar month. [Cursor-Valid]
+- Do not use `YEAR()` + `WEEK(..., 3)` together — PHP `date('W')` and MySQL `WEEK()` can disagree on some dates; date-range filtering matches the week selector and regression probe. [Cursor-Valid]
+- Do not filter dates with `<> '0000-00-00'` in SQL — use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` (MySQL 8 strict mode raises `Incorrect DATE value: '0000-00-00'`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

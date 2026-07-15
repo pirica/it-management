@@ -38,4 +38,4 @@ Hosts the individual PHP view files that render the tab panes (Send Logs, SMTP c
 - State changes (like editing alert rules or SMTP configurations) trigger unconditional database audit logging.
 
 ## 10. Common Pitfalls
-- Hand-coding independent database queries inside tab partials that forget to filter by the tenant's `company_id`. [Valid]-[2026-07-15]
+- Hand-coding independent database queries inside tab partials that forget to filter by the tenant's `company_id`. [Cursor-Valid]

@@ -80,9 +80,9 @@ None
 
 ## 10. Common Pitfalls
 
-- **Argument mismatch:** `has_module_access()` requires 3 arguments (`$conn`, `$company_id`, `$module_slug`). [Valid]-[2026-07-15]
-- **Path errors:** `itm_ensure_upload_directory_chain()` requires a string path, not an array. [Valid]-[2026-07-15]
-- **SQL Scoping:** Ensure any new report helper correctly uses `$company_id` and prepared statements. [Valid]-[2026-07-15]
+- **Argument mismatch:** `has_module_access()` requires 3 arguments (`$conn`, `$company_id`, `$module_slug`). [Cursor-Valid]
+- **Path errors:** `itm_ensure_upload_directory_chain()` requires a string path, not an array. [Cursor-Valid]
+- **SQL Scoping:** Ensure any new report helper correctly uses `$company_id` and prepared statements. [Cursor-Valid]
 
 ---
 

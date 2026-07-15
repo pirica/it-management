@@ -34,8 +34,8 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 - **Private data (no audit):** `bookmark_folders` and `bookmarks` are exempt from `audit_logs` and `trg_*_audit_*` triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add PHP audit hooks for folder/bookmark mutations.
 
 ## 10. Common Pitfalls
-- **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Valid]-[2026-07-15]
-- **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Valid]-[2026-07-15]
+- **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Cursor-Valid]
+- **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -29,7 +29,7 @@ Lookup table for different stages in the approval workflow (e.g., "Finance Revie
 - Managed via database triggers (`trg_approvals_stage_audit_*`).
 
 ## 10. Common Pitfalls
-- **Deleting In-Use Stages**: Deleting a stage that is currently referenced by an approval record may cause issues or be blocked by FK constraints. [Valid]-[2026-07-15]
+- **Deleting In-Use Stages**: Deleting a stage that is currently referenced by an approval record may cause issues or be blocked by FK constraints. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

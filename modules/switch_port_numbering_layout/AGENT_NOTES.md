@@ -34,10 +34,10 @@ Defines the visual numbering layout for switch ports (e.g., "Left to Right", "To
 - Database triggers `trg_switch_port_numbering_layout_audit_insert`, `trg_switch_port_numbering_layout_audit_update`, `trg_switch_port_numbering_layout_audit_delete` on `switch_port_numbering_layout` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Valid]-[2026-07-15]
-- Referenced by **equipment**, **idf_ports**, **idf_positions**. [Valid]-[2026-07-15]
-- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
-- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Valid]-[2026-07-15]
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]
+- Referenced by **equipment**, **idf_ports**, **idf_positions**. [Cursor-Valid]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

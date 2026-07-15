@@ -29,8 +29,8 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 - Cross-platform env vars: parent scripts use `putenv()`, not `VAR=val php …` inline.
 
 ## 10. Common Pitfalls
-- Do not link phpMyAdmin from libs — only from `scripts/scripts.php`. [Valid]-[2026-07-15]
-- `index.html` prevents directory listing; keep it when adding folders. [Valid]-[2026-07-15]
+- Do not link phpMyAdmin from libs — only from `scripts/scripts.php`. [Cursor-Valid]
+- `index.html` prevents directory listing; keep it when adding folders. [Cursor-Valid]
 
 ## 12. Module Owner Notes (Optional)
 Full catalog and checklist: `scripts/SCRIPTS.md`.

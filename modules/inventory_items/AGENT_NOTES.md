@@ -34,7 +34,7 @@ Manages inventory of consumables and spare parts. Tracks quantities on hand and 
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Negative Stock**: Ensure `quantity_on_hand` does not fall below zero (unless backorders allowed). [Valid]-[2026-07-15]
+- **Negative Stock**: Ensure `quantity_on_hand` does not fall below zero (unless backorders allowed). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

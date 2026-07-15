@@ -44,10 +44,10 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - None on calendar itself; source modules log changes.
 
 ## 10. Common Pitfalls
-- Timezone/date formatting mismatches with grid library. [Valid]-[2026-07-15]
-- Omitting equipment or ticket due dates from sync when adding new calendar sources. [Valid]-[2026-07-15]
-- Including alerts without `end_datetime` — calendar query requires end date for multi-day span rendering. [Valid]-[2026-07-15]
-- Fetching integrated sources when `company_module_access` has disabled the parent module — always gate with `has_module_access()`. [Valid]-[2026-07-15]
+- Timezone/date formatting mismatches with grid library. [Cursor-Valid]
+- Omitting equipment or ticket due dates from sync when adding new calendar sources. [Cursor-Valid]
+- Including alerts without `end_datetime` — calendar query requires end date for multi-day span rendering. [Cursor-Invalid]
+- Fetching integrated sources when `company_module_access` has disabled the parent module — always gate with `has_module_access()`. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

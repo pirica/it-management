@@ -34,4 +34,4 @@ Contains the HTML/PHP partial templates representing the sub-panels (Monitoring,
 - None on view (writes/refreshes trigger parent audit updates).
 
 ## 10. Common Pitfalls
-- Writing inline HTML styles inside templates instead of relying on the global variables and utility classes defined in `css/styles.css` and `modules/system_status/index.php`. [Valid]-[2026-07-15]
+- Writing inline HTML styles inside templates instead of relying on the global variables and utility classes defined in `css/styles.css` and `modules/system_status/index.php`. [Cursor-Valid]

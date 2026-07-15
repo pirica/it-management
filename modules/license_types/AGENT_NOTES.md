@@ -32,8 +32,8 @@ Tenant-scoped lookup for license categories used by **License Management** (`Per
 - `trg_license_types_audit_insert|update|delete` on `license_types`.
 
 ## 10. Common Pitfalls
-- **view.php** missing `license_types` in `$hideCompanyIdTables` or missing active badge in `cr_render_cell_value()` shows Company and raw Active `1`. [Valid]-[2026-07-15]
-- Omitting `$name === 'active'` boolean handling on **index.php** create (schema uses `tinyint`, not always `tinyint(1)`) renders Active as a text field. [Valid]-[2026-07-15]
+- **view.php** missing `license_types` in `$hideCompanyIdTables` or missing active badge in `cr_render_cell_value()` shows Company and raw Active `1`. [Cursor-Fixed]
+- Omitting `$name === 'active'` boolean handling on **index.php** create (schema uses `tinyint`, not always `tinyint(1)`) renders Active as a text field. [Cursor-Fixed]
 
 
 ## 11. Examples of Safe Code Patterns
