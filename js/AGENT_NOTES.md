@@ -17,6 +17,7 @@ Contains the frontend logic for the IT Management system, including UI helpers, 
 - Attaching redundant event listeners in loops. [Valid]-[2026-07-15]
 - Loading utility scripts after the blocks that depend on them. [Valid]-[2026-07-15]
 - **Upload targets with inner `<label for="fileInput">`:** `itm-upload-helper.js` skips programmatic `fileInput.click()` when the click originated on the associated label — otherwise the native label activation plus the target click handler opens the file picker twice. [Valid]-[2026-07-15]
+  - *Robust Check:* Uses standard DOM APIs (`label.control`, `label.contains`, `fileInput.labels`, and `label.htmlFor === fileInput.id`) to reliably skip programmatic clicks on all associated label click events.
 
 ## 12. Module Owner Notes (Optional)
 Essential for the "modern" interactive feel of the legacy PHP architecture.

@@ -51,8 +51,25 @@ var itmUploadHelper = (function() {
             }
             // Why: <label for="input"> already opens the picker; bubbling would double-open.
             var label = e.target.closest("label");
-            if (label && label.htmlFor === fileInput.id) {
-                return;
+            if (label) {
+                var isAssociated = false;
+                if (fileInput.id && label.htmlFor === fileInput.id) {
+                    isAssociated = true;
+                } else if (label.control === fileInput) {
+                    isAssociated = true;
+                } else if (label.contains(fileInput)) {
+                    isAssociated = true;
+                } else if (fileInput.labels) {
+                    for (var k = 0; k < fileInput.labels.length; k++) {
+                        if (fileInput.labels[k] === label) {
+                            isAssociated = true;
+                            break;
+                        }
+                    }
+                }
+                if (isAssociated) {
+                    return;
+                }
             }
             fileInput.click();
         });
