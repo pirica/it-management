@@ -37,10 +37,10 @@ Contains the global application stylesheet for the IT Management system.
 Modules with substantial inline CSS must include their own `@media` rules when layout is not covered by global utilities (examples: `modules/calendar/`, `modules/todo/`, `modules/explorer/`, `modules/ops_report/`, `modules/org_chart/`, `modules/rack_planner/`). Canvas tools (org chart, floor designer, rack visualizer) rely on scroll/zoom rather than reflowing fixed artboards.
 
 ## 10. Common Pitfalls
-- Overwriting global variables without checking their impact on other modules. [Valid]-[2026-07-15]
-- Fixed-width sidebars (`280px`, `320px`) without a mobile stack breakpoint. [Valid]-[2026-07-15]
-- `white-space: nowrap` on table headers/cells without a scroll wrapper or mobile override. [Valid]-[2026-07-15]
-- Duplicating `.audit-table-wrap` in module CSS — define once in `styles.css`. [Valid]-[2026-07-15]
+- Overwriting global variables without checking their impact on other modules. [Fixed]-[2026-07-15]
+- Fixed-width sidebars (`280px`, `320px`) without a mobile stack breakpoint. [Fixed]-[2026-07-15]
+- `white-space: nowrap` on table headers/cells without a scroll wrapper or mobile override. [Fixed]-[2026-07-15]
+- Duplicating `.audit-table-wrap` in module CSS — define once in `styles.css`. [Fixed]-[2026-07-15]
 
 ## 12. Module Owner Notes (Optional)
 The system uses CSS variables (`var(--accent)`, etc.) for theme consistency. Dark mode is toggled via `[data-theme="dark"]` on `document.documentElement`.

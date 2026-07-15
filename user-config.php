@@ -383,10 +383,10 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 
 /* 2) Excluir colunas fixas e montar a consulta SELECT */
-$fixed = ['id', 'company_id', 'employee_id', 'changed_at', 'updated_at', 'created_at'];
+$fixed = ['id', 'company_id', 'employee_id', 'changed_at', 'updated_at', 'created_at', 'deleted_at', 'deleted_by', 'created_by', 'updated_by', 'active'];
 $dynamic_columns = array_diff($columns, $fixed);
 
-$all_columns = array_unique(array_merge($fixed, $dynamic_columns));
+$all_columns = array_values(array_intersect($columns, array_unique(array_merge($fixed, $dynamic_columns))));
 $select_list = implode(", ", array_map(fn($c) => "`$c`", $all_columns));
 
 $sql = "SELECT $select_list FROM employee_system_access WHERE employee_id = ? AND company_id = ?";

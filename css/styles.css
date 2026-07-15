@@ -1581,6 +1581,29 @@ input[type="submit"] {
         word-break: break-word;
     }
 
+    /* Mobile override for table headers/cells when not in a scroll wrapper */
+    th,
+    td {
+        white-space: normal;
+    }
+
+    /* Preserve nowrap inside scroll wrappers, cards, or explicit nowrap classes */
+    .itm-responsive-table-wrap th,
+    .itm-responsive-table-wrap td,
+    .audit-table-wrap th,
+    .audit-table-wrap td,
+    .report-table-scroll th,
+    .report-table-scroll td,
+    .card th,
+    .card td,
+    .itm-actions-cell,
+    [style*="overflow:auto"] th,
+    [style*="overflow:auto"] td,
+    [style*="overflow-x:auto"] th,
+    [style*="overflow-x:auto"] td {
+        white-space: nowrap;
+    }
+
     .itm-page-toolbar {
         align-items: flex-start;
     }
