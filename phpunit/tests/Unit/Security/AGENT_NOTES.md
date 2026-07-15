@@ -19,5 +19,9 @@ CSRF, SQLi, and security guardrail tests.
 - **SecurityFixesTest.php** — subprocess verification of fixed security paths; role-escalation and sensitive-import cases seed attackers via `itm_script_test_employee_create()` (no `employees.active` column).
 - **CrossTenantScopingTest.php** — tenant isolation for Todo and Employees; Employees list check uses `runIsolatedModule()` instead of in-process `include` (subprocess).
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.

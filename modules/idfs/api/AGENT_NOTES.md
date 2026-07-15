@@ -13,5 +13,11 @@ AJAX API for IDF rack/position/port/link operations. Keeps `idf_ports`, `switch_
 - `*.php` — one action per file.
 - `index.html` — directory listing guard.
 
+## 10. Common Pitfalls
+
+- No partial multi-table writes — use transactions and rollback on any sync failure. [Cursor-Valid]
+- Unlink/delete must reset synchronized ports to tenant Unknown + Gray (`#808080`) defaults. [Cursor-Valid]
+- After Create/Edit/Delete/Copy/Move changes run `php scripts/idfs_sync_human_test.php` (hard-fail on `[FAIL]`). [Cursor-Valid]
+
 ## 12. Module Owner Notes (Optional)
 Parent: `modules/idfs/AGENT_NOTES.md`. Human-flow regression is mandatory per `AGENTS.md`.

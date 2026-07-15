@@ -37,6 +37,9 @@ Lookup table for equipment and inventory manufacturers (e.g., "Dell", "Cisco", "
 
 ## 10. Common Pitfalls
 
+- Deleting a manufacturer still referenced by `equipment` or `inventory_items` fails or leaves orphans when FKs are RESTRICT — clear/detach `manufacturer_id` for the active `company_id` before delete/clear. [Cursor-Valid]
+- `(company_id, name)` unique — duplicate names fail at the database. [Cursor-Valid]
+- Hide `company_id`; scope all CRUD by the session tenant. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 
@@ -53,6 +56,7 @@ $stmt = $conn->prepare("INSERT INTO manufacturers (company_id, name, active) VAL
 $stmt->bind_param("isi", $companyId, $name, $active);
 $stmt->execute();
 ```
+
 
 ## 12. Module Owner Notes (Optional)
 Central lookup for asset branding; provides the code blueprint for the standard CRUD materialization helpers in `includes/ui_config.php`.

@@ -10,6 +10,10 @@ Unit/regression tests for `modules/employee_companies/`.
 ## 7. File Structure
 - `UserCompaniesTest.php` — CRUD on `employee_companies`; `getOrCreateUser()` uses `itm_script_test_employee_create()` when no unlinked employee exists (never `employees.email` / `employees.active`).
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
 

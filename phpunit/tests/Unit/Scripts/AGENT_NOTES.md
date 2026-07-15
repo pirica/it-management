@@ -17,5 +17,9 @@ Tests for maintenance/audit scripts under `scripts/`.
 - **ReproAuditDisclosureTest.php** — subprocess `scripts/repro_audit_disclosure.php`; asserts seed Admin `reset_token*` unchanged and no leftover `script-*` users. Output guard uses `\buser ID 1\b` so disposable IDs like 108 do not false-fail.
 - **check_script_disposable_employees.unittest.php** — subprocess `scripts/check_script_disposable_employees.php` static guard (exit 0).
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/Unit/AGENT_NOTES.md`. Run suite via `php scripts/run_tests.php`.

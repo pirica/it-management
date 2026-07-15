@@ -11,6 +11,10 @@ Unit/regression tests for `modules/floor_plans/`.
 - `FloorPlansTest.php` — CRUD on `floor_plans` and folder create via `parent_folder_id`.
 - `*Test.php` / `*.unittest.php` — other test classes for this module.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
 

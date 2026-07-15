@@ -31,8 +31,11 @@ Manage IT department contact information, hours, and escalation rules for the or
 ## 9. Audit Coverage
 - Triggers `trg_it_settings_audit_insert`, `trg_it_settings_audit_update`, and `trg_it_settings_audit_delete` handle audit logging, capturing all visible metadata/tracking columns in JSON payloads.
 
-## 10. Known Pitfalls
+## 10. Common Pitfalls
 
+- `UNIQUE(company_id)` — one row per tenant; a second insert fails. [Cursor-Valid]
+- Chatbot escalation reads this table — empty or inactive rows break escalate contact copy. [Cursor-Valid]
+- Do not invent a second “default” IT settings row per company. [Cursor-Valid]
 
 ## 11. References
 - `AGENTS.md`

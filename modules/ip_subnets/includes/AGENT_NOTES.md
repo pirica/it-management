@@ -12,3 +12,7 @@ Shared PHP partials and helpers for the IP Subnets module.
 
 ## 8. Multi-Tenant Rules
 - Company-scoped queries only.
+
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented

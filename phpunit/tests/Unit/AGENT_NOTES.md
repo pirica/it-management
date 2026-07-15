@@ -20,6 +20,10 @@ PHPUnit and procedural unit tests organised by concern (Config, CRUD, Database, 
 - **Scripts/** — script/audit tool tests (`BypassLoginTest`, `ItmScriptTestUserTest`, `ReproAuditDisclosureTest`, `check_script_disposable_employees.unittest.php`, etc.).
 - **Security/** — CSRF/SQLi-related tests.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 11. Examples of Safe Code Patterns
 
 ### Run

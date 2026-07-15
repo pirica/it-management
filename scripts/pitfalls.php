@@ -209,6 +209,11 @@ function itm_extract_pitfalls(string $notes_path): string
         return 'No pitfalls documented';
     }
 
+    // Why: Reviewed empty §10 may explicitly record confirmation so agents do not re-open gaps.
+    if (preg_match('/^\[Confirmed\]\s*No pitfalls documented\.?\s*$/iu', $pitfalls_text)) {
+        return '[Confirmed] No pitfalls documented';
+    }
+
     // Check if the pitfalls text is exactly the original outline placeholder from templates/AGENT_NOTES.md
     $cleaned_text = str_replace(["\r", "\n", "\t", " "], '', $pitfalls_text);
     $template_placeholder = "Mistakesagentsmustavoid.VerifyFKdeletebehaviourin`database.sql`:|ChildFK|Pitfalltext||----------|----------------||`ONDELETESETNULL`|ChildFKsnulloutautomatically—nomanualdetach||`ONDELETECASCADE`|Parentdeleteremoveschildren||NoCASCADE/noSETNULL|DetachorclearchildFKsforactive`company_id`**before**parentdelete|Otherexamples:-Donotdeleterowsstillreferencedwhenschemablocksdelete.-Donotcopygeneric“detachfirst”textwithoutchecking`information_schema`/`database.sql`.-Bespokeorsensitivemodules:changeonlywhenexplicitlyrequested.-Document**knowngaps**(missing`employee_id`filter,unguardededitURLs)ratherthanidealbehaviour.";
@@ -448,6 +453,7 @@ $generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
             $pitfalls = itm_extract_pitfalls($entry['path']);
 
             $is_empty = ($pitfalls === 'No pitfalls documented');
+            $is_confirmed = ($pitfalls === '[Confirmed] No pitfalls documented');
             ?>
             <div class="pitfall-item">
                 <p style="margin: 0; font-weight: 500;">
@@ -456,6 +462,8 @@ $generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
                 <div class="pitfalls-text-box <?= $is_empty ? 'pitfalls-empty' : ''; ?>">
                     <?php if ($is_empty): ?>
                         No pitfalls documented
+                    <?php elseif ($is_confirmed): ?>
+                        [Confirmed] No pitfalls documented
                     <?php else: ?>
                         <?php
                         // To preserve formatting nicely, we output HTML-escaped text.

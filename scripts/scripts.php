@@ -125,9 +125,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="pitfalls.php" target="_blank" rel="nofollow noreferrer">pitfalls.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Aggregated pitfalls and developer traps from every <code>AGENT_NOTES.md</code> in the repository (not only <code>modules/</code>). Backfills missing note files under <code>modules/</code> only.</td>
-                    <td>Open <code>scripts/pitfalls.php</code> in the browser (Admin only). CLI: <code>php scripts/pitfalls.php [-module=&lt;slug&#124;path&gt;] [--json]</code></td>
-                </tr>
+                    <td>Aggregated pitfalls and developer traps from every <code>AGENT_NOTES.md</code> in the repository (not only <code>modules/</code>). Backfills missing note files under <code>modules/</code> only. Reviewed empty §10 sections may use <code>[Confirmed] No pitfalls documented</code>.</td>
+                    <td>Open <code>scripts/pitfalls.php</code> in the browser (Admin only). CLI: <code>php scripts/pitfalls.php [-module=&lt;slug&#124;path&gt;] [--json]</code></td>                </tr>
                 <tr>
                     <td><a href="SCRIPTS.md" target="_blank" rel="nofollow noreferrer">SCRIPTS.md</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>

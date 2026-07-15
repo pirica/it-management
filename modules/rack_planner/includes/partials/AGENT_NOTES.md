@@ -10,5 +10,9 @@ View partials for rack canvas rendering (`render.php`) and related markup.
 - Preserve drag/drop and autosave hooks wired from parent `index.php`.
 - Disable default `table-tools.js` exports on custom layouts when redundant.
 
+## 10. Common Pitfalls
+
+[Confirmed] No pitfalls documented
+
 ## 12. Module Owner Notes (Optional)
 See `modules/rack_planner/includes/AGENT_NOTES.md` for price-sync rules.
