@@ -205,6 +205,7 @@ Each module must maintain a flat structure with these specific files:
 
 ### 2. Database & Schema Rules
 * **Schema Updates:** If a field/table is deleted or a header renamed, update `database.sql`.
+* **No live `ALTER TABLE` in `database.sql`:** put keys, indexes, and foreign keys inside each table’s `CREATE TABLE`. Import already runs with `FOREIGN_KEY_CHECKS=0`, so FKs may reference tables created later in the file. Commented `-- ALTER TABLE …` lines are historical notes for existing databases only — do not add new executable `ALTER` statements.
 * **Company Scoping:**
     * **Hide** `company_id` from all UI views.
     * Add safe inline FK creation logic to create referenced rows automatically.
@@ -215,6 +216,12 @@ Each module must maintain a flat structure with these specific files:
     * `active` TINYINT DEFAULT '1'
     * `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     * `updated_at` TIMESTAMP DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+* **Multi-company seed admins (mandatory):** Fresh import seeds five companies and one Admin employee per company. Role / access / status FKs and related grants must be **tenant-correct** (subqueries or `INSERT … SELECT` by `company_id` + name — never hardcode `role_id = 1` / `access_level_id = 1` for every company, and never hardcode `employee_roles.id` values that fight auto-increment).
+    * Usernames: company 1 → `Admin`; companies 2–5 → `Admin2` … `Admin5` (login is global by username/`LIMIT 1`, so duplicate `admin` usernames are unsafe). Password for all seed admins: `Admin` (bcrypt in `database.sql`).
+    * `employee_companies`: each seed admin → home `company_id`; TechCorp `Admin` (company 1) also granted companies 2–5 for the tenant switcher / MBQA.
+    * `ui_configuration`: one row per company bound to **that company’s** seed Admin `employee_id` (not `employee_id = 1` for every company).
+    * After `employee_roles` seeds, `UPDATE employees … SET role_id` joins Admin role by `company_id` + name for the five seed admins.
+    * Late `@replicate_source_company_id` block: `employee_companies` only upserts **home** grants (`company_id = employees.company_id`). `ui_configuration` copies source defaults onto other tenants by matching **`username`** on the target company (and `favicon_path` → `company_{id}`) — never reuse the source `employee_id` on a foreign `company_id`.
 
 ### 3. Dynamic UI Configuration (Settings)
 Modules must read/validate settings via `itm_get_ui_configuration()`:
@@ -1097,7 +1104,7 @@ For rapid development or testing, you can bypass the login screen and pre-authen
 
 ### App login
 
-Default credentials: username `Admin`, password `Admin`. After login, select a company (e.g. TechCorp Global) to access modules.
+Default credentials (company 1 TechCorp Global): username `Admin`, password `Admin`. Per-company seed admins: `Admin2` … `Admin5` (same password) for companies 2–5; or use each admin’s `admin@techcorp.example{N}.com` work email. After login, select a company the account can access (`employee_companies`).
 
 ### Gotchas
 

@@ -8,6 +8,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **Multi-Tenancy**: All data (except Companies and certain maintenance logs) must be scoped by `company_id` from the session.
 - **Architecture**: No Composer, No NPM. Use `config/config.php` for environment setup.
 - **API rate limits**: **Free** tier — unlimited, **no API key**, **session required** (`company_id` + `employee_id` in `PHPSESSID`). **Paid** tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits (mandatory)** and `includes/itm_api_rate_limit.php`.
+- **`database.sql` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**.
 
 ## 10. Common Pitfalls
 - Bypassing the session-based company isolation. [Valid]-[2026-07-15]

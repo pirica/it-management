@@ -1370,15 +1370,16 @@ CREATE TABLE `employees` (
   CONSTRAINT `employees_ibfk_9` FOREIGN KEY (`reports_to`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employees_ibfk_10` FOREIGN KEY (`employee_type_id`) REFERENCES `employee_type` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employees_ibfk_role` FOREIGN KEY (`role_id`) REFERENCES `employee_roles` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `employees_ibfk_access_level` FOREIGN KEY (`access_level_id`) REFERENCES `access_levels` (`id`) ON DELETE SET NULL
+  CONSTRAINT `employees_ibfk_access_level` FOREIGN KEY (`access_level_id`) REFERENCES `access_levels` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `employees_ibfk_workstation_mode` FOREIGN KEY (`workstation_mode_id`) REFERENCES `workstation_modes` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `employees` (`id`, `duplicate`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `personal_email`, `theme`, `emergency_contact_name`, `emergency_contact_relationship`, `emergency_contact_phone`, `mobile_phone`, `external_number`, `dect`, `extension`, `employee_code`, `external_id`, `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, `reset_token_expires_at`, `role_id`, `access_level_id`, `username`, `department_id`, `job_code`, `comments`, `request_date`, `start_date`, `requested_by`, `termination_requested_by`, `termination_date`, `network_access`, `micros_emc`, `opera_username`, `micros_card`, `pms_id`, `synergy_mms`, `hu_the_lobby`, `navision`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_department_id`, `workstation_mode_id`, `assignment_type_id`, `location_id`, `employment_status_id`, `employee_position_id`, `reports_to`, `on_contacts`, `on_orgchart`, `photo`, `employee_type_id`, `birthday`, `hide_year`, `is_hidden`, `raw_status_code`, `created_at`, `updated_at`) VALUES
-(NULL, 0, 1, 'System', 'Admin', 'System Admin1', 'admin@techcorp.example1.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, 1, 1, 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', '2026-06-21 00:18:31'),
-(NULL, 0, 2, 'System', 'Admin', 'System Admin2', 'admin@techcorp.example2.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, 1, 1, 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', '2026-06-20 23:02:23'),
-(NULL, 0, 3, 'System', 'Admin', 'System Admin3', 'admin@techcorp.example3.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, 1, 1, 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', '2026-06-20 23:02:23'),
-(NULL, 0, 4, 'System', 'Admin', 'System Admin4', 'admin@techcorp.example4.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, 1, 1, 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', '2026-06-20 23:02:23'),
-(NULL, 0, 5, 'System', 'Admin', 'System Admin5', 'admin@techcorp.example5.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, 1, 1, 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', '2026-06-21 00:19:07');
+(NULL, 0, 1, 'System', 'Admin', 'System Admin1', 'admin@techcorp.example1.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 1 AND `name` = 'Full' LIMIT 1), 'Admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 1 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 2, 'System', 'Admin', 'System Admin2', 'admin@techcorp.example2.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 2 AND `name` = 'Full' LIMIT 1), 'Admin2', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 2 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 3, 'System', 'Admin', 'System Admin3', 'admin@techcorp.example3.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 3 AND `name` = 'Full' LIMIT 1), 'Admin3', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 3 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 4, 'System', 'Admin', 'System Admin4', 'admin@techcorp.example4.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 4 AND `name` = 'Full' LIMIT 1), 'Admin4', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 4 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 5, 'System', 'Admin', 'System Admin5', 'admin@techcorp.example5.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 5 AND `name` = 'Full' LIMIT 1), 'Admin5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 5 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL);
 
 
 -- Table structure for `equipment`
@@ -1697,7 +1698,17 @@ CREATE TABLE `idf_ports` (
   KEY `idf_ports_management_idx` (`management_id`),
   KEY `idf_ports_poe_idx` (`poe_id`),
   CONSTRAINT `idf_ports_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `idf_ports_ibfk_position` FOREIGN KEY (`position_id`) REFERENCES `idf_positions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed_id`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_ports_ibfk_fiber_ports_number` FOREIGN KEY (`fiber_ports_number`) REFERENCES `equipment_fiber_count` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_ports_ibfk_layout` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_ports_ibfk_management` FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe_id`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_ports_ibfk_rj45_speed` FOREIGN KEY (`rj45_speed_id`) REFERENCES `rj45_speed` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`),
+  CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`),
+  CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Table structure for `equipment_poe`
 DROP TABLE IF EXISTS `equipment_poe`;
 CREATE TABLE `equipment_poe` (
@@ -1731,12 +1742,6 @@ INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `cre
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('3', '9', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('4', '12', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('5', '15', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
-ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_speed` FOREIGN KEY (`speed_id`) REFERENCES `equipment_fiber` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `idf_ports_ibfk_fiber_ports_number` FOREIGN KEY (`fiber_ports_number`) REFERENCES `equipment_fiber_count` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `idf_ports_ibfk_layout` FOREIGN KEY (`switch_port_numbering_layout_id`) REFERENCES `switch_port_numbering_layout` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `idf_ports_ibfk_management` FOREIGN KEY (`management_id`) REFERENCES `equipment_environment` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `idf_ports_ibfk_poe` FOREIGN KEY (`poe_id`) REFERENCES `equipment_poe` (`id`) ON DELETE SET NULL;
 -- Table structure for `equipment_rj45`
 DROP TABLE IF EXISTS `equipment_rj45`;
 CREATE TABLE `equipment_rj45` (
@@ -1826,8 +1831,6 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('28', '5', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1', '2026-01-01 00:00:01');
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('29', '5', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1', '2026-01-01 00:00:01');
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('30', '5', 'Cat8', '25-40 Gbps', '2000 MHz', '30 m', 'Data centers; short-run high-speed links.', '1', '2026-01-01 00:00:01');
-ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_rj45_speed` FOREIGN KEY (`rj45_speed_id`) REFERENCES `rj45_speed` (`id`) ON DELETE SET NULL;
 -- Table structure for `equipment_statuses`
 DROP TABLE IF EXISTS `equipment_statuses`;
 CREATE TABLE `equipment_statuses` (
@@ -3152,8 +3155,6 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUE
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '19', 'Access Point', '2026-01-01 00:00:01');
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '20', 'Access Point', '2026-01-01 00:00:01');
 
-ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_port_type` FOREIGN KEY (`port_type`) REFERENCES `switch_port_types` (`id`);
 -- Table structure for `switch_ports`
 DROP TABLE IF EXISTS `switch_ports`;
 CREATE TABLE `switch_ports` (
@@ -3288,8 +3289,6 @@ INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '27', 'Up', '16', '2026-01-01 00:00:01');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '36', 'Up', '26', '2026-01-01 00:00:01');
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '45', 'Up', '46', '2026-01-01 00:00:01');
-ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `switch_status` (`id`);
 -- Table structure for `system_access`
 DROP TABLE IF EXISTS `system_access`;
 CREATE TABLE `system_access` (
@@ -3618,11 +3617,11 @@ CREATE TABLE `ui_configuration` (
   CONSTRAINT `fk_ui_configuration_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `ui_configuration`
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (1, 1, 1, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (2, 2, 1, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_2.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (3, 3, 1, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_3.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (4, 4, 1, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_4.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
-INSERT INTO `ui_configuration` (`id`, `company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`) VALUES (5, 5, 1, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_5.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', '2026-03-28 19:43:17');
+-- Why: Per-company UI defaults belong to that tenant's seed Admin employee (not employee_id=1 for every company).
+INSERT INTO `ui_configuration` (`company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`)
+SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', CONCAT('images/favicons/company_', e.`company_id`, '.ico'), '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', NULL
+FROM `employees` e
+WHERE e.`work_email` LIKE 'admin@techcorp.example%.com';
 -- Table structure for `employee_roles`
 DROP TABLE IF EXISTS `employee_roles`;
 CREATE TABLE `employee_roles` (
@@ -3640,32 +3639,39 @@ CREATE TABLE `employee_roles` (
   UNIQUE KEY `name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `employee_roles_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Admin', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', 'Admin', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', 'Admin', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', 'Admin', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '21', 'Admin', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Helpdesk', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', 'Helpdesk', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', 'Helpdesk', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '17', 'Helpdesk', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '22', 'Helpdesk', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'IT Assistant', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'IT Assistant', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '13', 'IT Assistant', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '18', 'IT Assistant', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '23', 'IT Assistant', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'IT Manager', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', 'IT Manager', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '14', 'IT Manager', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '19', 'IT Manager', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '24', 'IT Manager', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'User', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'User', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '15', 'User', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '20', 'User', '2026-01-01 00:00:01');
-INSERT INTO `employee_roles` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '25', 'User', '2026-01-01 00:00:01');
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Admin', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT Manager', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT Assistant', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Helpdesk', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'User', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'Admin', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'IT Manager', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'IT Assistant', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'Helpdesk', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'User', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'Admin', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'IT Manager', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'IT Assistant', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'Helpdesk', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'User', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'Admin', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'IT Manager', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'IT Assistant', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'Helpdesk', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'User', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'Admin', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'IT Manager', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'IT Assistant', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'Helpdesk', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'User', '2026-01-01 00:00:01');
+
+-- Why: Seed admins insert before employee_roles; bind tenant-correct Admin role_id by name.
+UPDATE `employees` e
+INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
+SET e.`role_id` = er.`id`
+WHERE e.`work_email` LIKE 'admin@techcorp.example%.com';
+
 -- Table structure for `registration_invitations`
 DROP TABLE IF EXISTS `registration_invitations`;
 CREATE TABLE `registration_invitations` (
@@ -3767,11 +3773,19 @@ CREATE TABLE `employee_companies` (
   CONSTRAINT `fk_employee_companies_user` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_employee_companies_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_employee_companies_granted_by` FOREIGN KEY (`granted_by_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`) VALUES ('1', '1', NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`) VALUES ('1', '2', NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`) VALUES ('1', '3', NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`) VALUES ('1', '4', NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`) VALUES ('1', '5', NULL, '1', '2026-01-01 00:00:01');
+-- Why: Each seed admin gets home-company access; TechCorp Admin (company 1) also gets companies 2–5 for tenant switcher / MBQA.
+INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`)
+SELECT e.`id`, e.`company_id`, NULL, 1, '2026-01-01 00:00:01'
+FROM `employees` e
+WHERE e.`work_email` LIKE 'admin@techcorp.example%.com';
+INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`)
+SELECT e.`id`, c.`id`, NULL, 1, '2026-01-01 00:00:01'
+FROM `employees` e
+CROSS JOIN `companies` c
+WHERE e.`company_id` = 1
+  AND e.`username` = 'Admin'
+  AND c.`id` BETWEEN 2 AND 5;
+
 -- Table structure for `role_hierarchy`
 DROP TABLE IF EXISTS `role_hierarchy`;
 CREATE TABLE `role_hierarchy` (
@@ -3790,31 +3804,18 @@ CREATE TABLE `role_hierarchy` (
   UNIQUE KEY `uq_role_hierarchy_company_scope` (`company_id`,`role_id`),
   CONSTRAINT `fk_role_hierarchy_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_hierarchy_role` FOREIGN KEY (`role_id`) REFERENCES `employee_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('2', '6', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('3', '11', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('4', '16', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('5', '21', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('1', '2', '2', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('2', '9', '2', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('3', '14', '2', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('4', '19', '2', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('5', '24', '2', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('1', '3', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('2', '8', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('3', '13', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('4', '18', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('5', '23', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('1', '4', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('2', '7', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('3', '12', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('4', '17', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('5', '22', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('1', '5', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('2', '10', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('3', '15', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('4', '20', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`) VALUES ('5', '25', '5', '2026-01-01 00:00:01');
+-- Why: Hierarchy uses role name lookups (no hardcoded role ids).
+INSERT INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`, `created_at`)
+SELECT er.`company_id`, er.`id`, ord.`hierarchy_order`, '2026-01-01 00:00:01'
+FROM (
+  SELECT 'Admin' AS `name`, 1 AS `hierarchy_order`
+  UNION ALL SELECT 'IT Manager', 2
+  UNION ALL SELECT 'IT Assistant', 3
+  UNION ALL SELECT 'Helpdesk', 4
+  UNION ALL SELECT 'User', 5
+) ord
+INNER JOIN `employee_roles` er ON er.`name` = ord.`name`;
+
 -- Table structure for `role_module_permissions`
 DROP TABLE IF EXISTS `role_module_permissions`;
 CREATE TABLE `role_module_permissions` (
@@ -3839,21 +3840,16 @@ CREATE TABLE `role_module_permissions` (
   UNIQUE KEY `uq_role_module_permissions` (`company_id`,`role_id`,`module_name`),
   CONSTRAINT `fk_role_module_permissions_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_module_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `employee_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('1', '1', 'ALL', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('2', '6', 'ALL', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('3', '11', 'ALL', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('4', '16', 'ALL', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('5', '21', 'ALL', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('1', '4', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('2', '7', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('3', '12', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('4', '17', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('5', '22', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('1', '5', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('2', '10', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('3', '15', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('4', '20', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) VALUES ('5', '25', 'Tickets', '1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
+-- Why: Permission seeds resolve role_id by tenant + role name (no hardcoded ids).
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`)
+SELECT er.`company_id`, er.`id`, 'ALL', 1, 1, 1, 1, 1, 1, '2026-01-01 00:00:01'
+FROM `employee_roles` er
+WHERE er.`name` = 'Admin';
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`)
+SELECT er.`company_id`, er.`id`, 'Tickets', 1, 1, 1, 1, 1, 1, '2026-01-01 00:00:01'
+FROM `employee_roles` er
+WHERE er.`name` IN ('Helpdesk', 'User');
+
 -- Table structure for `role_assignment_rights`
 DROP TABLE IF EXISTS `role_assignment_rights`;
 CREATE TABLE `role_assignment_rights` (
@@ -3873,51 +3869,23 @@ CREATE TABLE `role_assignment_rights` (
   CONSTRAINT `fk_role_assignment_rights_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_assignment_rights_role` FOREIGN KEY (`role_id`) REFERENCES `employee_roles` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_assignment_rights_target_role` FOREIGN KEY (`can_assign_role_id`) REFERENCES `employee_roles` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '1', '2', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '6', '9', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '11', '14', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '16', '19', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '21', '24', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '1', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '6', '8', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '11', '13', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '16', '18', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '21', '23', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '1', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '6', '7', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '11', '12', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '16', '17', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '21', '22', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '1', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '6', '10', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '11', '15', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '16', '20', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '21', '25', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '2', '3', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '9', '8', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '14', '13', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '19', '18', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '24', '23', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '2', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '9', '7', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '14', '12', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '19', '17', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '24', '22', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '2', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '9', '10', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '14', '15', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '19', '20', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '24', '25', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '3', '4', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '8', '7', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '13', '12', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '18', '17', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '23', '22', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('1', '3', '5', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('2', '8', '10', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('3', '13', '15', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('4', '18', '20', '2026-01-01 00:00:01');
-INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) VALUES ('5', '23', '25', '2026-01-01 00:00:01');
+-- Why: Assignment rights resolve both sides by role name within the same company_id.
+INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`)
+SELECT src.`company_id`, src.`id`, tgt.`id`, '2026-01-01 00:00:01'
+FROM `employee_roles` src
+INNER JOIN `employee_roles` tgt ON tgt.`company_id` = src.`company_id`
+INNER JOIN (
+  SELECT 'Admin' AS `role_name`, 'IT Manager' AS `target_name`
+  UNION ALL SELECT 'Admin', 'IT Assistant'
+  UNION ALL SELECT 'Admin', 'Helpdesk'
+  UNION ALL SELECT 'Admin', 'User'
+  UNION ALL SELECT 'IT Manager', 'IT Assistant'
+  UNION ALL SELECT 'IT Manager', 'Helpdesk'
+  UNION ALL SELECT 'IT Manager', 'User'
+  UNION ALL SELECT 'IT Assistant', 'Helpdesk'
+  UNION ALL SELECT 'IT Assistant', 'User'
+) map ON map.`role_name` = src.`name` AND map.`target_name` = tgt.`name`;
+
 -- Table structure for `audit_logs`
 DROP TABLE IF EXISTS `audit_logs`;
 CREATE TABLE `audit_logs` (
@@ -3983,8 +3951,6 @@ INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('3', '3', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('4', '4', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('5', '5', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
-ALTER TABLE `idf_ports`
-  ADD CONSTRAINT `idf_ports_ibfk_vlan` FOREIGN KEY (`vlan_id`) REFERENCES `vlans` (`id`) ON DELETE SET NULL;
 -- Table structure for `ip_subnets`
 DROP TABLE IF EXISTS `ip_addresses`;
 DROP TABLE IF EXISTS `ip_subnets`;
@@ -4229,8 +4195,6 @@ INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '33', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '44', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '55', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
-ALTER TABLE `employees`
-  ADD CONSTRAINT `employees_ibfk_workstation_mode` FOREIGN KEY (`workstation_mode_id`) REFERENCES `workstation_modes` (`id`);
 -- Table structure for `workstation_office`
 DROP TABLE IF EXISTS `workstation_office`;
 CREATE TABLE `workstation_office` (
@@ -4731,15 +4695,14 @@ INSERT IGNORE INTO `role_hierarchy` (`company_id`, `role_id`, `hierarchy_order`,
 INSERT IGNORE INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`) SELECT c.`id`, ur_target.`id`, rmp.`module_name`, rmp.`can_view`, rmp.`can_create`, rmp.`can_edit`, rmp.`can_delete`, rmp.`can_import`, rmp.`can_export`, '2026-01-01 00:00:01' FROM `role_module_permissions` rmp JOIN `companies` c ON c.`id` <> rmp.`company_id` JOIN `employee_roles` ur_source ON ur_source.`id` = rmp.`role_id` JOIN `employee_roles` ur_target ON ur_target.`company_id` = c.`id` AND ur_target.`name` = ur_source.`name` WHERE rmp.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`) SELECT c.`id`, ur_granter_target.`id`, ur_target_target.`id`, '2026-01-01 00:00:01' FROM `role_assignment_rights` rar JOIN `companies` c ON c.`id` <> rar.`company_id` JOIN `employee_roles` ur_granter_source ON ur_granter_source.`id` = rar.`role_id` JOIN `employee_roles` ur_target_source ON ur_target_source.`id` = rar.`can_assign_role_id` JOIN `employee_roles` ur_granter_target ON ur_granter_target.`company_id` = c.`id` AND ur_granter_target.`name` = ur_granter_source.`name` JOIN `employee_roles` ur_target_target ON ur_target_target.`company_id` = c.`id` AND ur_target_target.`name` = ur_target_source.`name` WHERE rar.`company_id` = @replicate_source_company_id;
 INSERT IGNORE INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `created_at`)
-SELECT e.`id`, c.`id`, NULL, '2026-01-01 00:00:01'
+SELECT e.`id`, e.`company_id`, NULL, '2026-01-01 00:00:01'
 FROM `employees` e
-JOIN `companies` c ON c.`active` = 1
 WHERE e.`password` IS NOT NULL
   AND NOT EXISTS (
     SELECT 1
     FROM `employee_companies` uc
-    WHERE uc.`employee_id` = e.`id` AND uc.`company_id` = c.`id`
-);
+    WHERE uc.`employee_id` = e.`id` AND uc.`company_id` = e.`company_id`
+  );
 INSERT IGNORE INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `created_at`)
 SELECT
     c.`id`,
@@ -4793,7 +4756,7 @@ INSERT IGNORE INTO `ui_configuration` (
 )
 SELECT
     c.`id`,
-    t.`employee_id`,
+    e_target.`id`,
     t.`table_actions_position`,
     t.`new_button_position`,
     t.`export_buttons_position`,
@@ -4802,19 +4765,24 @@ SELECT
     t.`enable_audit_logs`,
     t.`records_per_page`,
     t.`app_name`,
-    t.`favicon_path`,
+    CONCAT('images/favicons/company_', c.`id`, '.ico'),
     t.`equipment_type_sidebar_visibility`,
     '2026-01-01 00:00:01',
     t.`updated_at`
 FROM `ui_configuration` t
 JOIN `companies` c
     ON c.`id` <> t.`company_id`
+JOIN `employees` e_source
+    ON e_source.`id` = t.`employee_id`
+JOIN `employees` e_target
+    ON e_target.`company_id` = c.`id`
+   AND e_target.`username` = e_source.`username`
 WHERE t.`company_id` = @replicate_source_company_id
   AND NOT EXISTS (
       SELECT 1
       FROM `ui_configuration` u
       WHERE u.`company_id` = c.`id`
-        AND u.`employee_id` = t.`employee_id`
+        AND u.`employee_id` = e_target.`id`
   );
 INSERT IGNORE INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active`, '2026-01-01 00:00:01' FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 -- Why: Remove catalog rows whose FK parents belong to another company (legacy replicate row or partial import).
@@ -6479,6 +6447,8 @@ CREATE TABLE `explorer` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_explorer_company_path_name` (`company_id`,`folder_path`(191),`file_name`(191)),
+  UNIQUE KEY `uq_explorer_user_path_name` (`company_id`,`employee_id`,`folder_path`(191),`file_name`(191)),
   KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   KEY `department_id` (`department_id`),
@@ -6486,9 +6456,6 @@ CREATE TABLE `explorer` (
   CONSTRAINT `explorer_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `explorer_ibfk_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-ALTER TABLE explorer
-  ADD UNIQUE KEY uq_explorer_company_path_name (company_id, folder_path(191), file_name(191)),
-  ADD UNIQUE KEY uq_explorer_user_path_name (company_id, employee_id, folder_path(191), file_name(191));
 -- Triggers for `explorer`
 DROP TRIGGER IF EXISTS `trg_explorer_audit_insert`;
 DROP TRIGGER IF EXISTS `trg_explorer_audit_update`;
