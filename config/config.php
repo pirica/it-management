@@ -324,6 +324,24 @@ if ($conn) {
 
 // Initialize Session
 if (session_status() === PHP_SESSION_NONE) {
+    // Why: Harden session cookies before the first session_start (fixation/XSS defenses).
+    if (PHP_SAPI !== 'cli') {
+        $itmSessionSecure = (
+            (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+            || (
+                !empty($_SERVER['HTTP_X_FORWARDED_PROTO'])
+                && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'
+            )
+        );
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $itmSessionSecure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
     if (PHP_SAPI === 'cli') {
         @session_start();
     } else {

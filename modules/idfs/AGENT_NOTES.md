@@ -48,7 +48,7 @@ Manages Intermediate Distribution Frames (IDFs): physical network distribution p
 ## 7. File Structure
 - **index.php** — IDF list, create handler, Excel import, select refresh JSON.
 - **create.php**, **edit.php**, **delete.php**, **view.php**, **list_all.php** — CRUD and detail routes.
-- **device.php** — device-level management inside an IDF.
+- **device.php** — device-level management inside an IDF (must stay UTF-8 without BOM so PHP does not emit a BOM before headers).
 - **port_visualizer_helper.php** — port grid rendering and colour/status resolution.
 - **idf_ports_sync.php** — shared sync helpers between `idf_ports` and `switch_ports`.
 - **idf_positions_schema.php** — position schema helpers for the rack UI.
@@ -79,6 +79,7 @@ Related tables (`idf_positions`, `idf_ports`, `idf_links`, `idf_device_type`) ha
 - **Equipment ID alignment:** stale `equipment.idf_id` or `switch_ports.idf_id` breaks port visualiser fallbacks in `view.php`. [Cursor-Valid]
 - **Regression gate:** after any IDF workflow change, run `php scripts/idfs_sync_human_test.php` (hard fail if any `[FAIL]`). On Windows Laragon use the full PHP 7.4.33 binary path documented in `AGENTS.md`. [Cursor-Valid]
 - **Configuration complexity:** creating or deleting an IDF cascades to positions; ensure related ports, links, and equipment references are handled in one transaction. [Cursor-Valid]
+- **UTF-8 BOM on `device.php`:** a leading BOM breaks header/session behaviour; keep the file UTF-8 without BOM. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 
