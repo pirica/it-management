@@ -16,7 +16,7 @@ $crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
 
-// Why: Protection Zone - User needs to be logged in and have a company selected.
+// Why: User must be logged in with a company selected.
 if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
     die();

@@ -60,7 +60,7 @@ Example:
 
 ## 4. Business Rules (Critical for Agents)
 
-Rules that must never be violated. Include Protection Zone status when applicable (`AGENTS.md` §3).
+Rules that must never be violated. Document module-specific constraints from `AGENTS.md` when applicable.
 
 Examples:
 
@@ -175,7 +175,7 @@ Other examples:
 
 - Do not delete rows still referenced when schema blocks delete.
 - Do not copy generic “detach first” text without checking `information_schema` / `database.sql`.
-- Protection Zone modules: no logic changes unless explicitly requested.
+- Bespoke or sensitive modules: change only when explicitly requested.
 - Document **known gaps** (missing `employee_id` filter, unguarded edit URLs) rather than ideal behaviour.
 
 ---
@@ -209,7 +209,7 @@ Rules:
 
 ## 12. Module Owner Notes (Optional)
 
-Regression scripts, related `AGENT_NOTES.md` files, Protection Zone reminders, or follow-up hardening (document only — do not cite numbered PRs).
+Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (document only — do not cite numbered PRs).
 
 Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
 

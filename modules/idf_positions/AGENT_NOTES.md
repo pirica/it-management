@@ -20,7 +20,6 @@ Defines rack-unit placement of devices within an IDF (`position_no`, device type
 - **idf_positions** → referenced by **idf_ports**; deleting a position cascades port cleanup only when handlers also clear **idf_links** and sync **switch_ports**.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` Protection Zone).
 - **Unique rack slot:** `(company_id, idf_id, position_no)` must be unique (`idf_pos_unique`).
 - **No overlap:** one device per rack unit per IDF; move/reorder uses temporary offsets (1000) for batch updates in API handlers.
 - **High-density:** supports up to **250** positions per rack validation paths in `modules/idfs/`.
@@ -64,7 +63,6 @@ Defines rack-unit placement of devices within an IDF (`position_no`, device type
 Triggers always write to `audit_logs` with `table_name = 'idf_positions'` on DML (not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- **Protection Zone:** no structural changes without explicit user request. [Valid]-[2026-07-15]
 - **Deleting positions with links:** remove `idf_links` on child ports first; API `position_delete.php` encodes the correct order — do not bypass with bare SQL. [Valid]-[2026-07-15]
 - **IDF sync:** after position create/copy/move/delete changes, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` means the task is incomplete. [Valid]-[2026-07-15]
 - **Port regeneration:** changing `rj45_count` / `sfp_count` in flat CRUD without `ports_regen` leaves `idf_ports` and `switch_ports` counts wrong. [Valid]-[2026-07-15]

@@ -37,7 +37,7 @@ This document defines the rules for creating and updating tools within the `scri
 **Mandatory before any scripts work** — aligns with **`AGENTS.md` → Agent compliance workflow → step 4**. Do **not** add, edit, run, or catalog scripts until you have produced, for the task scope:
 
 - **Architectural map** — target script(s), `scripts/lib/` helpers, consumers (modules, CI, MBQA), and whether the tool is browser, CLI, or both.
-- **Module summary** — what the script verifies or mutates, protection-zone modules it must not touch, and relevant facts from `scripts/AGENT_NOTES.md` plus any affected module `AGENT_NOTES.md`.
+- **Module summary** — what the script verifies or mutates, bespoke modules it skips or special-cases, and relevant facts from `scripts/AGENT_NOTES.md` plus any affected module `AGENT_NOTES.md`.
 - **Dependency analysis** — `scripts/scripts.php` catalog row, smoke/MBQA impact, shared libs (`script_browser_nav.php`, `script_cli_output.php`, MBQA libs), DB tables, auth/CSRF requirements, and downstream docs (`AGENTS.md`, `docs/`, module notes) that must ship in the same PR.
 
 State the map, summary, and analysis in the agent reply before the first implementation step. Exceptions match **`AGENTS.md` step 4** (read-only/exploratory sessions; documentation-only edits to `SCRIPTS.md` when that is the whole task; single known script with no cross-module impact).
@@ -699,7 +699,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 **Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php`** (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `employee_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
 
-**Checklist per standard module (Tier A, including Protection Zone folders)** — step order (runner slug = table name unless a step exception applies):
+**Checklist per standard module (Tier A, including bespoke folders)** — step order (runner slug = table name unless a step exception applies):
 
 | # | Step | What it checks |
 |---|------|----------------|
@@ -741,7 +741,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 **FK-aware clear / delete:**
 
 * **Tenant clear** walks inbound FKs (`information_schema`), deletes child rows for the active `company_id`, then clears the module table. MySQL **1451** retries parse the **child table** from the error text (`` `schema`.`child_table` ``), not the schema name.
-* **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries — **including Protection Zone tables** when required to unblock the delete.
+* **`single_delete`** POSTs `delete.php`; on “in use by: `employee_positions` (1)” it clears parsed blocker tables (or `itm_find_record_usage`) and retries — **including blocker tables on bespoke modules** when required to unblock the delete.
 * **Never auto-clear** during FK prep or delete retry: **`companies`** and **`employees`** only (shared auth).
 * **Skip destructive clear** on `companies` and `employees` at the start of each module (same as before).
 
@@ -754,7 +754,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 **Tiers (do not treat all failures alike):**
 
-* **Tier A** — standard flattened CRUD (`modules/<slug>/index.php`), **including Protection Zone** modules (full checklist; module *code* in Protection Zone is still edit-only per AGENTS unless requested).
+* **Tier A** — standard flattened CRUD (`modules/<slug>/index.php`), including modules with bespoke UI that still follow the Tier A checklist.
 * **Tier C** — `is_*` façades (including `is_switch`): routing smoke on `list` / `search` / `sort`; other steps **N/A routing** in `mbqa_runner_module_step_exceptions()`.
 * **Tier D** — `$bespokeSmoke` modules (`budget_report`, `expiring`, `rack_planner`, `floor_plans`, `companies`): navigation smoke only.
 

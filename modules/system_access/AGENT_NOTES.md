@@ -8,7 +8,7 @@ Company-scoped lookup of IT systems and applications (e.g. ERP, Email, VPN) used
 
 ## 3. Required Relationships
 - **system_access** → depends on **companies**.
-- **system_access** → referenced by **employee_system_access** (Protection Zone module).
+- **system_access** → referenced by **employee_system_access**.
 
 ## 4. Business Rules (Critical for Agents)
 - **Tenant scope:** all queries and writes filter by `company_id`.
@@ -52,4 +52,4 @@ if (!itm_can_delete_record($conn, 'system_access', 'id', $id, $company_id, $usag
 ```
 
 ## 12. Module Owner Notes (Optional)
-Defines the catalogue of applications managed for access control. Coordinate schema/label changes with `modules/employee_system_access/` (Protection Zone).
+Defines the catalogue of applications managed for access control. Coordinate schema/label changes with `modules/employee_system_access/`.

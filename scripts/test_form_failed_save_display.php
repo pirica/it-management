@@ -155,7 +155,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
         <p class="itm-fst-muted">
             Finds modules that may show SQL-quoted values (e.g. <code>'USA'</code>) after a failed save,
             and optionally POSTs to each <code>modules/*/create.php</code> to trigger a controlled error and
-            inspect the re-rendered HTML. All modules are scanned, including AGENTS.md protection-zone folders.
+            inspect the re-rendered HTML. All modules are scanned, including bespoke module folders.
         </p>
         <p class="itm-fst-muted">
             Probe string: <code><?= itm_form_failed_save_display_escape(itm_form_failed_save_test_probe()); ?></code>

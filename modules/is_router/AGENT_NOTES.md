@@ -45,7 +45,6 @@ A filtered view of the Equipment module specifically for router devices. Provide
 - This façade has no local audit handlers.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** `modules/equipment/` is in the Protection Zone — do not change its logic or structure unless explicitly requested (`AGENTS.md`). [Valid]-[2026-07-15]
 - **Do not delete canonical wrappers:** Keep `modules/is_router/` and sibling `is_*` folders. [Valid]-[2026-07-15]
 - **Type filter:** `$equipmentTypeNameFilter` must match `equipment_types.name` (`Router`). [Valid]-[2026-07-15]
 - **Do not copy equipment CRUD** into this folder. [Valid]-[2026-07-15]

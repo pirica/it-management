@@ -7,7 +7,7 @@ Rack planner and IDF workflows must keep multiple tables consistent. These rules
 - `modules/equipment/`
 - `modules/switch_ports/`
 
-> **Protection zone:** Do not modify IDF/equipment core logic unless explicitly requested. This page documents required behavior for authorized changes.
+> This page documents required IDF/equipment synchronization behavior for authorized changes.
 
 ## Tables that must stay in sync
 

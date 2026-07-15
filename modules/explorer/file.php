@@ -8,7 +8,7 @@
 
 require_once '../../config/config.php';
 
-// Why: Protection Zone - User needs to be logged in and have a company selected.
+// Why: User must be logged in with a company selected.
 if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
     http_response_code(403);
     exit("Access denied.");

@@ -15,7 +15,7 @@ Before making any change, replying, running commands, editing files, or proposin
 3. **Stop and ask clarification questions** if any part of `AGENTS.md` or `scripts/SCRIPTS.md` (when in scope) is unclear, ambiguous, missing, conflicting, or not fully understood — do not guess or proceed on assumptions.
 4. **Pre-implementation discovery (mandatory — no code yet):** do **not** begin implementation — editing files, running mutating commands, or proposing concrete patches — until you have produced, for the task scope:
    - **Architectural map** — folders, entry files, shared helpers (`includes/`, `config/`, `js/`), scripts, and DB/API boundaries the work touches.
-   - **Module summary** — purpose, business rules, protection-zone status, and relevant facts from each affected folder's `AGENT_NOTES.md` (read those files first).
+   - **Module summary** — purpose, business rules, and relevant facts from each affected folder's `AGENT_NOTES.md` (read those files first).
    - **Dependency analysis** — FKs and table relations, tenant scoping (`company_id`), shared UI/JS contracts, audit paths, and downstream consumers that must stay aligned.
 
    State the map, summary, and analysis in the agent reply before the first implementation step (or note explicitly when resuming the same scoped task and the analysis is unchanged). Exceptions: read-only or exploratory sessions; documentation-only deliverables when editing `AGENTS.md` / `scripts/SCRIPTS.md` is the whole task; or a user request already limited to one known file with no cross-module impact.
@@ -52,7 +52,7 @@ Before making any change, replying, running commands, editing files, or proposin
 
    Ship on a **fresh branch + new PR**; do not fold unrelated feature work into the same PR (see **Change Hygiene → PR review**).
 6. **Always create and update `AGENT_NOTES.md` (hard fail):** for every in-scope folder you read or change, **read** that folder's `AGENT_NOTES.md` first (and the parent folder's file when editing a subfolder). **Create** the file from `templates/AGENT_NOTES.md` when it is missing. **Update** it in the **same PR** whenever your work changes purpose, tables, FKs, business rules, UI behaviour, API actions, file layout, tenant rules, audit coverage, or known pitfalls. Do not mark a deliverable complete while notes are missing, empty, or stale for a folder you touched.
-7. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (pre-implementation discovery, architecture, Protection Zone, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
+7. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (pre-implementation discovery, architecture, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
 8. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, ship via **FRESH PR only**: **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. **Do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). There is **no** push to update PR #N. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
 9. **Never push to an existing PR branch (hard fail):** agents **do not** `git push` (including `git push`, `git push origin <branch>`, or force-push) to any branch that already has **open or merged PR #N** for this work. Follow-ups, review fixes, and corrections use a **new branch name** + **new push** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to an existing PR URL”, “updated the open PR”, “added commits to the open PR”, “you can push after the diff check”.
 10. **Never local-only commits (hard fail):** `git commit` without the **first-publish** **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” — **you** complete the fresh-PR sequence in the same turn.
@@ -216,11 +216,7 @@ Each module must maintain a flat structure with these specific files:
     * `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     * `updated_at` TIMESTAMP DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 
-### 3. Protection Zone (STRICT: No Auto-Changes)
-Do **not** modify logic or structure unless explicitly requested:
-`/modules/equipment/`, `/modules/idfs/`, `/modules/idf_links/`, `/modules/idf_positions/`, `/modules/idf_ports/`, `/modules/audit_logs/`, `/modules/employees/, /modules/contacts/`, `/modules/settings/`, `/modules/employee_companies/`, `modules/employee_system_access/`, `modules/cable_colors/`, `ui_configuration`.
-
-### 4. Dynamic UI Configuration (Settings)
+### 3. Dynamic UI Configuration (Settings)
 Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Button Positions:** Render refresh/add controls based on `new_button_position`.
 * **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`ui_check`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
@@ -228,8 +224,8 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
 * **API keys and rate limits:** See **API keys and rate limits (mandatory)** below.
 
-### 5. Standard Feature Set
-Every module (excluding the Protection Zone) must implement:
+### 4. Standard Feature Set
+Every module must implement:
 * **Hide** `company_id` from all UI views.
 * **Bulk Actions:** "Select to Delete" and "Clear Table" (visible when row count >= `records_per_page`). Use shared **`js/bulk-delete-selection.js`** (loaded from `includes/header.php`) — see **Bulk delete toolbar and Cancel button** below.
 * **Search:** Comprehensive search across all visible fields — see **List/search visible columns** below.
@@ -610,7 +606,7 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
 | `php scripts/check_fk_label_search_coverage.php` | Static 100% gate: every searchable module matches FK/label columns (smoke step 4) |
 | `php scripts/verify_crud_fk_label_search.php` | After changing list search, FK label helpers, or bespoke module search (`employees`, `license_management`, `switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `bookmarks`, `passwords`); CI **database-import** job |
 
-### 6. Empty-State Sample Data Process
+### 5. Empty-State Sample Data Process
 * **UI:** Add "Add sample data" button at the bottom of `index.php` if the result set is empty for the active company.
 * **Handler:** Implement a `POST` handler for `add_sample_data` in `index.php` that:
     * validates CSRF (`itm_require_post_csrf()`),
@@ -619,7 +615,7 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
 * **Source:** Seed rows must match `INSERT INTO` entries in `database.sql` for that module table.
 * **Tenant Safety:** Always write seeded rows with active `company_id`; never expose/edit `company_id` in UI.
 
-### 7. Module Consistency Guardrail (Mandatory)
+### 6. Module Consistency Guardrail (Mandatory)
 When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
 * **Apply critical behavior fixes consistently** across all module entry files when they share the same helper blocks (rendering, CSRF validation, FK option loading).
 * **Incomplete implementation is not acceptable:** if a fix is made in one duplicated entry file, you must recheck and apply it to all matching duplicated files before finishing.

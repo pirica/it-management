@@ -11,7 +11,6 @@ Maps employees (login accounts) to companies they may access after login. Drives
 - **employee_companies** → referenced by session `company_id` selection and `itm_user_has_company_access()` helpers.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see `AGENTS.md` §3).
 - **Administrator gate:** every entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`) calls `itm_require_admin()` immediately after `config.php`; `delete.php` routes through `index.php`. Non-admins are redirected away on GET and receive HTTP 403 on POST mutations.
 - **Primary link:** rows determine which companies appear in the company selection list.
 - **Admin row guard:** delete/import flows check `cr_is_admin_user_company_row()` — prevents removing last admin access without confirmation (`itmConfirmUserCompanyDelete()`).

@@ -20,7 +20,6 @@ The central module for managing employee records, including contact info, hierar
 - **employees** → referenced by **employee_companies**, **employee_sidebar_preferences**, session auth (`$_SESSION['employee_id']`), and audit `@app_employee_id`.
 
 ## 4. Business Rules (Critical for Agents)
-- **Protection Zone:** Do not modify logic or structure unless explicitly requested (see AGENTS.md §3).
 - **Org Chart Visibility:** Only employees with `on_orgchart = 1` and an active employment status are shown on the Org Chart.
 - **Contact Visibility:** Only employees with `on_contacts = 1` and an active employment status are shown in the Contacts module.
 - **Login eligibility (mandatory):** use `employment_status_id` → `employee_statuses.name` = **Active** (case-insensitive) via `includes/itm_employee_employment_status.php`. Do **not** use a deprecated `employees.active` column — `emp_drop_active_column_if_exists()` removes it on index load.
