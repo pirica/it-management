@@ -252,8 +252,10 @@ define('FLOOR_PLAN_ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'p
 define('FLOOR_PLAN_CAD_EXTENSIONS', ['dwg', 'dxf', 'dwf', 'dws']);
 
 // Upload Restrictions
-define('MAX_FILE_SIZE', 5242880); // 5MB limit
+define('MAX_FILE_SIZE', 5242880); // 5MB limit (tickets / patches photo uploads)
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
+// Why: Explorer allows office/PDF/zip payloads larger than photo screenshots.
+define('EXPLORER_MAX_FILE_SIZE', 20971520); // 20MB
 
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';

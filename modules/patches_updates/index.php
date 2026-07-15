@@ -492,7 +492,7 @@ function cr_detect_upload_mime_type(string $tmpName): string {
             $mime = @finfo_file($finfo, $tmpName);
             @finfo_close($finfo);
             if (is_string($mime) && $mime !== '') {
-                return strtolower($mime);
+                return strtolower(trim(explode(';', $mime, 2)[0]));
             }
         }
     }
@@ -503,6 +503,18 @@ function cr_detect_upload_mime_type(string $tmpName): string {
     }
 
     return '';
+}
+
+/**
+ * Why: Never trust the client filename extension for stored photos — map from detected MIME only.
+ */
+function cr_upload_extension_from_mime(string $mime): string {
+    $map = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+    ];
+    return $map[strtolower(trim($mime))] ?? '';
 }
 
 function cr_resolve_upload_record_id(mysqli $conn, string $table, bool $isEdit, int $editId): int {
@@ -876,15 +888,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
 
             $tmpName = (string)($_FILES['photo']['tmp_name'][$index] ?? '');
-            $name = (string)($_FILES['photo']['name'][$index] ?? '');
-            if (!in_array(cr_detect_upload_mime_type($tmpName), ALLOWED_TYPES, true)) {
+            $fileSize = (int)($_FILES['photo']['size'][$index] ?? 0);
+            if ($fileSize <= 0 || $fileSize > (int)MAX_FILE_SIZE) {
+                $errors[] = 'Photo exceeds the maximum allowed size (5MB).';
+                break;
+            }
+
+            $mime = cr_detect_upload_mime_type($tmpName);
+            if (!in_array($mime, ALLOWED_TYPES, true)) {
                 $errors[] = 'Only image files are allowed for photo uploads.';
                 break;
             }
 
-            $ext = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
+            $ext = cr_upload_extension_from_mime($mime);
             if ($ext === '') {
-                $ext = 'jpg';
+                $errors[] = 'Only image files are allowed for photo uploads.';
+                break;
             }
             $photoFilename = 'patch_update_' . $uploadRecordId . '_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
             if (move_uploaded_file($tmpName, TICKET_UPLOAD_PATH . $photoFilename)) {

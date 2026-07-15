@@ -24,7 +24,7 @@ Tracks software patches, security updates, and system upgrades across equipment.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
 - **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
 
-- **Photo Upload**: Supports screenshots of patch confirmation or errors.
+- **Photo Upload**: Supports screenshots of patch confirmation or errors. Stored under `tickets_photos/` with names `patch_update_{id}_{time}_{rand}.{ext}`. Extension is derived from detected MIME via `cr_upload_extension_from_mime()` (never from the client filename). MIME must be in `ALLOWED_TYPES`; size must be ≤ `MAX_FILE_SIZE` (5MB).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
@@ -40,6 +40,7 @@ Tracks software patches, security updates, and system upgrades across equipment.
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]
+- Storing photo files using the client-supplied filename extension (e.g. `.php` on an image MIME). [Cursor-Fixed]
 - Links to **equipment** and patch status/level lookups. [Cursor-Valid]
 - Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]
 - Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Cursor-Valid]
