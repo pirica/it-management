@@ -8030,7 +8030,7 @@ CREATE TABLE `knowledge_base` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_knowledge_base_company_scope` (`company_id`, `category`, `id`),
+  UNIQUE KEY `uq_knowledge_base_company_scope` (`company_id`, `title`),
   KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   CONSTRAINT `knowledge_base_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,

@@ -42,6 +42,10 @@ if (!function_exists('itm_database_sql_unique_audit_resolve_scope_column')) {
             return 'name';
         }
 
+        if (in_array('title', $columns, true)) {
+            return 'title';
+        }
+
         $companyIdx = array_search('company_id', $columns, true);
         if ($companyIdx !== false && isset($columns[$companyIdx + 1])) {
             return $columns[$companyIdx + 1];
@@ -358,7 +362,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
         ];
 
         $auditExemptTables = [
-            'audit_logs', 'explorer', 'employees', 'it_settings', 'todo_categories',
+            'audit_logs', 'explorer', 'employees', 'it_settings', 'todo_categories', 'attempts', 'bookmarks', 'notes', 'private_contacts',
         ];
 
         foreach ($parsed as $tableRow) {
