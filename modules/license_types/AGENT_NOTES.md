@@ -32,6 +32,9 @@ Tenant-scoped lookup for license categories used by **License Management** (`Per
 - `trg_license_types_audit_insert|update|delete` on `license_types`.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **view.php** missing `license_types` in `$hideCompanyIdTables` or missing active badge in `cr_render_cell_value()` shows Company and raw Active `1`. [Cursor-Fixed]
 - Omitting `$name === 'active'` boolean handling on **index.php** create (schema uses `tinyint`, not always `tinyint(1)`) renders Active as a text field. [Cursor-Fixed]
 

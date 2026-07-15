@@ -38,6 +38,9 @@ Manages scheduled events, meetings, and maintenance windows.
 - Database triggers `trg_events_audit_insert`, `trg_events_audit_update`, `trg_events_audit_delete` on `events` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]
 - Integrated into **calendar**; uses **event_categories**. [Cursor-Valid]
 - Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]

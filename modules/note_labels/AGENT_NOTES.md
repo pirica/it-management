@@ -38,6 +38,9 @@ Per-user label/tag lookup for the Notes module. Stores distinct label strings a 
 - Triggers `trg_note_labels_audit_insert`, `trg_note_labels_audit_update`, and `trg_note_labels_audit_delete` are updated in `database.sql` to capture and log the new metadata columns (`created_by`, `created_at`, `updated_by`, `updated_at`, `deleted_by`, `deleted_at`) in their JSON payloads.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Do not expose another user's labels when `employee_id` filtering is added — today list queries are company-scoped only (known gap; see section 5). [Cursor-Valid]
 
 ## 11. Code Examples

@@ -260,6 +260,7 @@ define('EXPLORER_MAX_FILE_SIZE', 20971520); // 20MB
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
+require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';

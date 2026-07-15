@@ -34,6 +34,9 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 - **Private data (no audit):** `bookmark_folders` and `bookmarks` are exempt from `audit_logs` and `trg_*_audit_*` triggers per `AGENTS.md` → **Private data — no audit trail**. Do not add PHP audit hooks for folder/bookmark mutations.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Cursor-Valid]
 - **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Cursor-Valid]
 

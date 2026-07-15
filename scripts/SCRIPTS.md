@@ -509,7 +509,15 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
-Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
+Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
+
+#### Scaffold audit columns + soft-delete
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/apply_crud_audit_soft_delete.php` | Dry-run by default; `--apply` patches modules listed in `docs/list_soft-delete.txt` (list hide meta, view show meta, soft-delete SQL, stamps). |
+| `php scripts/check_crud_audit_soft_delete.php` | Static gate: list hide helper / `$viewColumns` / `deleted_at IS NULL` / soft-delete helper present for in-scope modules. |
+| Inventory | `docs/list_soft-delete.txt` (in scope), `docs/list_bespoke_UI.txt` (deferred). Helpers: `includes/itm_crud_audit_fields.php`. |
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 

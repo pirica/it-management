@@ -85,8 +85,9 @@ function cr_fk_metadata($conn, $table) {
 }
 
 function cr_manageable_columns($columns) {
+    // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return ($c['Field'] ?? '') !== 'id';
     }));
 }
 
@@ -130,7 +131,13 @@ function cr_is_hidden_employee_field($field) {
 }
 
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === 'active') {
+    if (function_exists('itm_crud_render_audit_cell_value')) {
+        $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
+        if ($auditHtml !== null) {
+            return $auditHtml;
+        }
+    }
+if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
@@ -255,7 +262,11 @@ foreach ($fieldColumns as $c) {
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'approver_type', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
-    if (($col['Field'] ?? '') !== 'company_id') {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if ($fieldName !== 'company_id') {
         return true;
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
@@ -263,6 +274,15 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
+
+// Why: View shows create/update/delete audit stamps while list hides them.
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName !== 'company_id') {
+        return true;
+    }
+    return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
+}));
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -426,7 +446,12 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+            $where = itm_crud_append_not_deleted_predicate($where);
+        }
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
@@ -452,7 +477,9 @@ if ($crud_action === 'delete') {
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
@@ -469,7 +496,9 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
@@ -638,6 +667,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     if (empty($errors)) {
         if ($crud_action === 'create') {
+            if (function_exists('itm_crud_stamp_create_audit')) {
+                itm_crud_stamp_create_audit($data, $sqlValues);
+            }
             $fields = [];
             $values = [];
             foreach ($fieldColumns as $col) {
@@ -647,6 +679,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             }
             $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
+            if (function_exists('itm_crud_stamp_update_audit')) {
+                itm_crud_stamp_update_audit($data, $sqlValues, $data);
+            }
             $sets = [];
             foreach ($fieldColumns as $col) {
                 $name = $col['Field'];
@@ -787,7 +822,9 @@ if (!isset($crud_title)) {
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    
+                                                                                <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
+<button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
@@ -864,7 +901,12 @@ if (!isset($crud_title)) {
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                                                <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+<button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
                         </form>
                     </div>
                 <?php endif; ?>
@@ -946,7 +988,7 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>

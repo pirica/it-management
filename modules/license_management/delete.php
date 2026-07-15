@@ -61,8 +61,9 @@ function cr_fk_map($conn, $table) {
  * Filters manageable columns
  */
 function cr_manageable_columns($columns) {
+    // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return ($c['Field'] ?? '') !== 'id';
     }));
 }
 
@@ -99,7 +100,11 @@ foreach ($fieldColumns as $c) {
 
 $hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'license_management', 'license_types'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
-    if (($col['Field'] ?? '') !== 'company_id') {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if ($fieldName !== 'company_id') {
         return true;
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
@@ -128,7 +133,12 @@ if ($bulkAction === 'clear_table') {
     if ($hasCompany && $company_id > 0) {
         $where = ' WHERE company_id=' . (int)$company_id;
     }
-    $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+            $where = itm_crud_append_not_deleted_predicate($where);
+        }
+    $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
     if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
         $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
@@ -151,7 +161,9 @@ if ($bulkAction === 'bulk_delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
@@ -177,7 +189,9 @@ if ($id > 0) {
     if ($hasCompany && $company_id > 0) {
         $where .= ' AND company_id=' . (int)$company_id;
     }
-    $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+    $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
+        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
     if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
         $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }

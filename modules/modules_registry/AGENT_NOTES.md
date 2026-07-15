@@ -32,6 +32,9 @@ CRUD UI for the global **modules_registry** catalog (module slugs, display names
 - `trg_modules_registry_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Do not confuse this module folder with **company_module_access** (matrix UI for per-company toggles). [Cursor-Valid]
 
 

@@ -37,6 +37,9 @@ Lookup table for equipment and inventory manufacturers (e.g., "Dell", "Cisco", "
 
 ## 10. Common Pitfalls
 
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+
 - Deleting a manufacturer still referenced by `equipment` or `inventory_items` fails or leaves orphans when FKs are RESTRICT — clear/detach `manufacturer_id` for the active `company_id` before delete/clear. [Cursor-Valid]
 - `(company_id, name)` unique — duplicate names fail at the database. [Cursor-Valid]
 - Hide `company_id`; scope all CRUD by the session tenant. [Cursor-Valid]

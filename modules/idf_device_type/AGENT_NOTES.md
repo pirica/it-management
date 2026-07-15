@@ -50,6 +50,9 @@ MySQL triggers on `idf_device_type` insert audit rows on INSERT/UPDATE/DELETE (u
 `table_name` in `audit_logs` is `idf_device_type`; `record_id` is the row `id`.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Deleting in-use types:** `ON DELETE RESTRICT` from `idf_positions` blocks deletion — reassign positions in `modules/idfs/` or `idf_positions` first. [Cursor-Valid]
 - **IDF sync:** adding or renaming types does not automatically fix port rows; position save/regenerate paths in `modules/idfs/api/` own port counts. After any cross-module IDF change, run `php scripts/idfs_sync_human_test.php`. [Cursor-Valid]
 - **Do not update only one entry file:** fixes in `index.php` must be mirrored in wrapper files when shared blocks change (`create.php`, `edit.php`, `view.php`, `list_all.php`, `delete.php`). [Cursor-Valid]

@@ -46,7 +46,7 @@ if (!function_exists('itm_is_datetime_field_name')) {
         if (substr($field, -9) === '_datetime') {
             return true;
         }
-        return in_array($field, ['created_at', 'updated_at', 'approved_at', 'end_datetime', 'start_datetime'], true);
+        return in_array($field, ['created_at', 'updated_at', 'deleted_at', 'approved_at', 'end_datetime', 'start_datetime'], true);
     }
 }
 
@@ -194,6 +194,36 @@ if (!function_exists('itm_format_datetime_display')) {
         }
 
         return $dt->format('d/m/Y H:i');
+    }
+}
+
+if (!function_exists('itm_format_audit_timestamp_display')) {
+    /**
+     * Display audit stamps (created_at / updated_at / deleted_at) as DD-MM-YYYY - HH:MM:SS.
+     * NULL or empty → blank.
+     */
+    function itm_format_audit_timestamp_display($rawValue)
+    {
+        $raw = trim((string)($rawValue ?? ''));
+        if ($raw === '' || $raw === '0000-00-00' || $raw === '0000-00-00 00:00:00') {
+            return '';
+        }
+
+        $canonical = function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($raw) : null;
+        if ($canonical === null) {
+            $ts = strtotime($raw);
+            if ($ts === false) {
+                return '';
+            }
+            return date('d-m-Y - H:i:s', $ts);
+        }
+
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $canonical);
+        if (!$dt instanceof DateTimeImmutable) {
+            return '';
+        }
+
+        return $dt->format('d-m-Y - H:i:s');
     }
 }
 

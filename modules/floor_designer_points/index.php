@@ -132,8 +132,9 @@ function cr_fk_metadata($conn, $table) {
  * Filters out system-managed columns.
  */
 function cr_manageable_columns($columns) {
+    // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return ($c['Field'] ?? '') !== 'id';
     }));
 }
 
@@ -208,7 +209,11 @@ $fieldColumns = cr_manageable_columns($columns);
 
 $hideCompanyIdTables = ['floor_designer_points'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
-    if (($col['Field'] ?? '') !== 'company_id') {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if ($fieldName !== 'company_id') {
         return true;
     }
     return !in_array('floor_designer_points', $hideCompanyIdTables, true);
@@ -217,6 +222,15 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 // Why: Search and list share visible columns.
 $displayFieldColumns = $uiColumns;
 
+// Why: View shows create/update/delete audit stamps while list hides them.
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName !== 'company_id') {
+        return true;
+    }
+    return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
+}));
+
 $csrfToken = itm_get_csrf_token();
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -224,6 +238,9 @@ $listUrl = $modulePath . '/index.php';
 // SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $where = " WHERE company_id = $company_id";
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
 if ($searchRaw !== '') {
     $searchEsc = mysqli_real_escape_string($conn, '%' . $searchRaw . '%');
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
@@ -299,9 +316,10 @@ if ($crud_action === 'delete') {
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 
     if ($bulkAction === 'clear_table') {
-        $sql = "DELETE FROM floor_designer_points WHERE company_id = ?";
+        $empId = (int)($_SESSION['employee_id'] ?? 0);
+        $sql = "UPDATE floor_designer_points SET deleted_at=NOW(), deleted_by=? WHERE company_id = ? AND deleted_at IS NULL";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_bind_param($stmt, 'ii', $empId, $company_id);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         header('Location: ' . $listUrl);
@@ -312,11 +330,11 @@ if ($crud_action === 'delete') {
         $ids = $_POST['ids'] ?? [];
         if (!empty($ids) && is_array($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $sql = "DELETE FROM floor_designer_points WHERE id IN ($placeholders) AND company_id = ?";
+            $empId = (int)($_SESSION['employee_id'] ?? 0);
+            $sql = "UPDATE floor_designer_points SET deleted_at=NOW(), deleted_by=? WHERE id IN ($placeholders) AND company_id = ? AND deleted_at IS NULL";
             $stmt = mysqli_prepare($conn, $sql);
-            $types = str_repeat('i', count($ids)) . 'i';
-            $params = array_map('intval', $ids);
-            $params[] = $company_id;
+            $types = 'i' . str_repeat('i', count($ids)) . 'i';
+            $params = array_merge([$empId], array_map('intval', $ids), [$company_id]);
             mysqli_stmt_bind_param($stmt, $types, ...$params);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
@@ -327,9 +345,10 @@ if ($crud_action === 'delete') {
 
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
-        $sql = "DELETE FROM floor_designer_points WHERE id = ? AND company_id = ?";
+        $empId = (int)($_SESSION['employee_id'] ?? 0);
+        $sql = "UPDATE floor_designer_points SET deleted_at=NOW(), deleted_by=? WHERE id = ? AND company_id = ? AND deleted_at IS NULL";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_bind_param($stmt, 'iii', $empId, $id, $company_id);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
@@ -477,7 +496,9 @@ if (!isset($crud_title)) {
                 <div class="card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        
+                                                                                <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
+<button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                         <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
@@ -548,7 +569,12 @@ if (!isset($crud_title)) {
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                                                <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+<button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
                         </form>
                     </div>
                 <?php endif; ?>
@@ -634,7 +660,7 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
                                 <td><?php echo cr_render_cell_value($conn, $crud_table, $f, $data[$f] ?? '', $fkMap); ?></td>

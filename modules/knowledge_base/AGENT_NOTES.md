@@ -35,6 +35,9 @@ Manage IT support articles, manuals, and procedures for the organization.
 
 ## 10. Common Pitfalls
 
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+
 - Always call `itm_api_enforce_rate_limit_or_exit()` and validate CSRF (`X-CSRF-Token`) on `chat_api.php`. [Cursor-Valid]
 - Knowledge-base search must keep `AND company_id = ?` — never allow cross-tenant article leaks into the chatbot. [Cursor-Valid]
 - Chatbot UI must HTML-escape replies (`escapeHtml`); escalate flows must read contact info from `it_settings`, not hardcode. [Cursor-Valid]

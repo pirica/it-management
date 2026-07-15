@@ -43,6 +43,9 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 - `trg_registration_invitations_audit_insert|update|delete` in `database.sql`.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Allowing non-admin users to create invitations — breaks onboarding security model. [Cursor-Valid]
 - Import rows without `invitation_code` — must generate unique code server-side, not insert NULL. [Cursor-Valid]
 - Deleting invitations that are still pending without checking registration flow consumers. [Cursor-Valid]

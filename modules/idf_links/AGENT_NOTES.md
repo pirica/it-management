@@ -54,6 +54,9 @@ Triggers in `database.sql` log all INSERT, UPDATE, and DELETE operations on `idf
 Actor context uses `@app_employee_id` and related session variables from `config.php`; do not overwrite them in handlers.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Updating `idf_links` alone:** rack and equipment UIs read `idf_ports` / `switch_ports` status and colour — link CRUD here must mirror the same fields or use the shared API helpers. [Cursor-Valid]
 - **IDF sync regression:** after any link workflow change, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` blocks completion. [Cursor-Valid]
 - **Orphan links:** deleting `idf_ports` without clearing links leaves broken FK references or unique-key conflicts on recreate. [Cursor-Valid]

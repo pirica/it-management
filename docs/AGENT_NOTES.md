@@ -1,6 +1,14 @@
 # AGENT_NOTES.md - docs
 
+## 1. Module Purpose
+Canonical documentation that is not source code: upload maps, README assets, module inventory lists for agents.
+
+## 7. File Structure
+- **list_soft-delete.txt** — scaffold CRUD module slugs in scope for soft-delete + audit-column UI (`$uiColumns` + `cr_manageable_columns`). Authoritative input for `scripts/apply_crud_audit_soft_delete.php` and related checks. Explicitly excludes `employees`, `equipment`, `patches_updates`, `tickets` for now.
+- **list_bespoke_UI.txt** — non-scaffold / bespoke module slugs deferred from that rollout.
+
 ## 10. Common Pitfalls
 
 - Register new or renamed canonical docs in this notes file and the `AGENTS.md` documentation table. [Cursor-Valid]
 - Do not cite numbered pull requests or `/pull/<digits>` URLs in docs prose. [Cursor-Valid]
+- Keep `list_soft-delete.txt` and `list_bespoke_UI.txt` in sync when adding modules or changing scaffold vs bespoke classification. [Cursor-Valid]

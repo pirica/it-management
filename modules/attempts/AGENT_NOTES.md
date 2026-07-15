@@ -35,6 +35,9 @@ Tracks authentication-related attempts, including logins and password resets. It
 - This module *is* a form of logging. It does not typically have its own audit triggers to avoid circularity.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **High Volume**: This table can grow very large; ensure indexes are used for performance. [Cursor-Valid]
 - **False Positives**: Rate limiting logic based on this table must be carefully tuned to avoid locking out legitimate users. [Cursor-Valid]
 

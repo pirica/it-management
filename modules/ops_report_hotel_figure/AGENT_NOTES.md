@@ -37,6 +37,9 @@ Dynamic extra Hotel Figures & Revenue fields on a daily Ops Report. Each row is 
 - Triggers: `trg_ops_report_hotel_figure_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Do not move core hotel KPIs into this table — they belong on **ops_report** header row. [Cursor-Valid]
 - Label/value pairs export with parent report Excel/PDF, not via this CRUD list alone. [Cursor-Valid]
 

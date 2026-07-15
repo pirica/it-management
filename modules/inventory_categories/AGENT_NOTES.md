@@ -32,6 +32,9 @@ Lookup table for inventory item categories (e.g., "Cables", "Peripherals", "Supp
 - `trg_inventory_categories_audit_insert|update|delete` in `database.sql` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Deleting categories without detaching `inventory_items.category_id` first — leaves items pointing at missing FK or blocks delete silently. [Cursor-Fixed]
 - Inverting bulk gate (`$perPage >= $totalRows`) hides bulk toolbar incorrectly. [Cursor-Fixed]
 

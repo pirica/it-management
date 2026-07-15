@@ -63,6 +63,9 @@ Defines rack-unit placement of devices within an IDF (`position_no`, device type
 Triggers always write to `audit_logs` with `table_name = 'idf_positions'` on DML (not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Deleting positions with links:** remove `idf_links` on child ports first; API `position_delete.php` encodes the correct order — do not bypass with bare SQL. [Cursor-Valid]
 - **IDF sync:** after position create/copy/move/delete changes, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` means the task is incomplete. [Cursor-Valid]
 - **Port regeneration:** changing `rj45_count` / `sfp_count` in flat CRUD without `ports_regen` leaves `idf_ports` and `switch_ports` counts wrong. [Cursor-Valid]

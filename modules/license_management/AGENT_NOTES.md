@@ -41,6 +41,9 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - Database triggers: `trg_license_management_audit_*`, `trg_license_types_audit_*` (when lookup rows are quick-added).
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **`modules/license_types/`** — lookup CRUD; keep **`company_id`** in `$hideCompanyIdTables` on every duplicated entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`). [Cursor-Valid]
 - **`license_management` seeds in `database.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5). [Cursor-Valid]
 - **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `database.sql`. [Cursor-Valid]

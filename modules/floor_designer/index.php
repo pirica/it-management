@@ -122,8 +122,9 @@ function cr_fk_metadata($conn, $table) {
  * Filters out system-managed columns
  */
 function cr_manageable_columns($columns) {
+    // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
-        return !in_array($c['Field'], ['id', 'created_at', 'updated_at'], true);
+        return ($c['Field'] ?? '') !== 'id';
     }));
 }
 
@@ -154,7 +155,13 @@ function cr_humanize_field($field) {
  * Renders a specific table cell value
  */
 function cr_render_cell_value($table, $field, $value) {
-    if ($field === 'active') {
+    if (function_exists('itm_crud_render_audit_cell_value')) {
+        $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
+        if ($auditHtml !== null) {
+            return $auditHtml;
+        }
+    }
+if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
@@ -231,13 +238,26 @@ foreach ($fieldColumns as $c) {
 
 $hideCompanyIdTables = ['floor_designer', 'floor_designer_points'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables, $crud_table) {
-    if (($col['Field'] ?? '') !== 'company_id') {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if ($fieldName !== 'company_id') {
         return true;
     }
     return !in_array((string)$crud_table, $hideCompanyIdTables, true);
 }));
 
 $displayFieldColumns = $uiColumns;
+
+// Why: View shows create/update/delete audit stamps while list hides them.
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName !== 'company_id') {
+        return true;
+    }
+    return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
+}));
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
@@ -441,9 +461,10 @@ if ($crud_action === 'delete') {
     cr_require_valid_csrf_token();
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
-        $sql = "DELETE FROM floor_designer WHERE id=? AND company_id=?";
+        $empId = (int)($_SESSION['employee_id'] ?? 0);
+        $sql = "UPDATE floor_designer SET deleted_at=NOW(), deleted_by=? WHERE id=? AND company_id=? AND deleted_at IS NULL";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+        mysqli_stmt_bind_param($stmt, 'iii', $empId, $id, $company_id);
         mysqli_stmt_execute($stmt);
     }
     header('Location: ' . $listUrl);
@@ -500,6 +521,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
 // Fetch Data for List
 $where = " WHERE company_id=$company_id";
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
 $sort = $_GET['sort'] ?? 'id';
 $dir = (isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC') ? 'ASC' : 'DESC';
 $rows = mysqli_query($conn, "SELECT * FROM floor_designer $where ORDER BY " . cr_escape_identifier($sort) . " $dir");
@@ -650,7 +674,12 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New' : 'Edit'; ?> Floor Plan</h1>
                 <form method="POST" class="form-grid">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                                        <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+<input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
                     <?php foreach ($uiColumns as $col):
                         $name = $col['Field'];
                         $displayVal = cr_form_display_value($data[$name] ?? '');

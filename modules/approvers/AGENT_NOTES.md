@@ -34,6 +34,9 @@ Maps specific employees to approver types, departments, and positions to define 
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Redundant Assignments**: Trying to assign the same employee twice as an approver. [Cursor-Valid]
 - **Outdated Records**: If an employee leaves or changes position, the approver record may need manual updating or archiving. [Cursor-Valid]
 

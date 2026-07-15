@@ -25,8 +25,9 @@ Before making any change, replying, running commands, editing files, or proposin
    |------------------------|------------------|
    | Repo-wide rules, Explorer/upload hardening, `.htaccess` policies, agent workflow | **`AGENTS.md`** |
    | Scripts, backfill runners, regression/PoC tools | **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** (when adding/changing scripts) |
-   | Upload storage paths, managed `.htaccess` bodies, module → folder map | **`docs/file_upload_modules.md`** |
-   | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
+ | Upload storage paths, managed `.htaccess` bodies, module → folder map | **`docs/file_upload_modules.md`** |
+ | Scaffold soft-delete / bespoke inventory lists | **`docs/list_soft-delete.txt`**, **`docs/list_bespoke_UI.txt`** |
+ | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
    | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
 
    **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands. The following are **forbidden** in all docs and comments:
@@ -214,8 +215,18 @@ Each module must maintain a flat structure with these specific files:
 * **Standard Fields:** Every new table in `database.sql` must include:
     * `company_id` INT NOT NULL
     * `active` TINYINT DEFAULT '1'
+    * `deleted_by` INT NULL
+    * `deleted_at` TIMESTAMP NULL
+    * `created_by` INT NULL
     * `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    * `updated_at` TIMESTAMP DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+    * `updated_by` INT NULL
+    * `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
+* **Audit columns + soft-delete (mandatory for scaffold CRUD):** see inventory lists `docs/list_soft-delete.txt` (in scope) and `docs/list_bespoke_UI.txt` (deferred). Helpers: `includes/itm_crud_audit_fields.php`, `itm_format_audit_timestamp_display()` in `includes/itm_date_format.php`.
+    * **List:** show `active` with badges (`badge-success` Active / `badge-danger` Inactive, no emoji). **Hide** `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Filter live rows with `deleted_at IS NULL`.
+    * **View:** show `active` badges plus all six meta fields. `*_by` → employee full name (`first_name` + `last_name`, username fallback). `*_at` → `d-m-Y - H:i:s` (blank when NULL). Soft-deleted rows remain reachable by `view.php?id=` so delete audit can display.
+    * **Create/Edit:** `active` checkbox with ✅/❌ double-label. `created_by`, `created_at`, `updated_by`, `updated_at` as **hidden** inputs (server-stamped — not dropdowns). Do not expose `deleted_*` on create/edit forms.
+    * **Delete / bulk / clear:** soft-delete via `UPDATE` setting `deleted_by` (session employee) and `deleted_at` (NOW); never hard `DELETE` for in-scope scaffold tables. Include `deleted_by` / `deleted_at` hidden inputs on delete forms when present; server still re-stamps from session.
+    * Rollout apply/check: `php scripts/apply_crud_audit_soft_delete.php`, `php scripts/check_crud_audit_soft_delete.php`.
 * **Multi-company seed admins (mandatory):** Fresh import seeds five companies and one Admin employee per company. Role / access / status FKs and related grants must be **tenant-correct** (subqueries or `INSERT … SELECT` by `company_id` + name — never hardcode `role_id = 1` / `access_level_id = 1` for every company, and never hardcode `employee_roles.id` values that fight auto-increment).
     * Usernames: company 1 → `Admin`; companies 2–5 → `Admin2` … `Admin5` (login is global by username/`LIMIT 1`, so duplicate `admin` usernames are unsafe). Password for all seed admins: `Admin` (bcrypt in `database.sql`).
     * `employee_companies`: each seed admin → home `company_id`; TechCorp `Admin` (company 1) also granted companies 2–5 for the tenant switcher / MBQA.
@@ -648,8 +659,9 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Keep tenant-safe lookup order: `company_id` scoped lookup first, then id-only fallback only for legacy/shared references when scoped rows are missing.
   * If a related human-readable label exists but any visible screen still shows raw FK IDs, the task is not complete.
 * **Created-by UX guardrail (hard fail):**
-  * For fields such as `created_by`, `updated_by`, `approved_by`, and `*_by_user_id`, list/detail screens must never show raw numeric IDs when a user row exists.
-  * In `create.php`/`edit.php`, these fields must render as user dropdowns (human-readable labels), not free-text numeric inputs.
+  * **Standard audit actors** (`created_by`, `updated_by`, `deleted_by` on scaffold CRUD): **view** shows employee full names; **create/edit** use **hidden** inputs stamped server-side (not user dropdowns); **delete** stamps `deleted_by` on soft-delete. See **Audit columns + soft-delete**.
+  * For other actor FKs such as `approved_by` and `*_by_user_id` (non-standard audit meta): list/detail screens must never show raw numeric IDs when a user row exists.
+  * In `create.php`/`edit.php`, those non-audit actor fields must render as user dropdowns (human-readable labels), not free-text numeric inputs.
   * User labels must prefer `first_name + last_name`; use `username` only as fallback when full name is empty.
   * If a persisted user ID is missing from company-scoped options, append/load the saved value so edit forms do not reset to `-- Select --`.
 * **Testing/reporting guardrail (mandatory):**

@@ -34,6 +34,9 @@ Tenant-scoped lookup for employee classification labels (`Team member`, `Interns
 - Database triggers: `trg_employee_type_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - Do not rename `name_type` to `name` — FK helpers and employee selects rely on `name_type`. [Cursor-Valid]
 - Clearing `employee_type_id` on employees is allowed; resignations report still includes rows when type filter allows NULL. [Cursor-Valid]
 

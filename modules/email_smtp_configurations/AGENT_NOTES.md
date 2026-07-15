@@ -74,6 +74,9 @@ This module manages SMTP profiles used for outbound email delivery. It allows te
 
 ## 10. Common Pitfalls
 
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+
 - **Password Encryption**: Ensure passwords are encrypted before storage; never store plain text. [Cursor-Valid]
 - **Default Flag**: Manually setting `is_default` for multiple rows via SQL can lead to ambiguous delivery behavior. [Cursor-Valid]
 - Critical for system communications. [Cursor-Invalid]
