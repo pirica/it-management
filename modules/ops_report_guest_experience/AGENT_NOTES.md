@@ -37,8 +37,8 @@ Dynamic guest-experience feedback rows on a daily Ops Report. Stores reference i
 - Triggers: `trg_ops_report_guest_experience_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
-- Do not show raw `ops_report_id` when parent report date label can be resolved.
-- Long `feedback` text must not be truncated in audit JSON triggers (DB handles full row).
+- Do not show raw `ops_report_id` when parent report date label can be resolved. [Valid]-[2026-07-15]
+- Long `feedback` text must not be truncated in audit JSON triggers (DB handles full row). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

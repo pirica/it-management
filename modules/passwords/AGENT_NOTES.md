@@ -82,9 +82,9 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 
 ## 10. Common Pitfalls
 
-- **Losing the Master Key**: Data is unrecoverable if the master key is lost.
-- **Plain Text Exposure**: Ensure logs do not capture unencrypted passwords.
-- **Session Timeout**: If `$_SESSION['vault_key']` is lost, the vault locks immediately.
+- **Losing the Master Key**: Data is unrecoverable if the master key is lost. [Valid]-[2026-07-15]
+- **Plain Text Exposure**: Ensure logs do not capture unencrypted passwords. [Valid]-[2026-07-15]
+- **Session Timeout**: If `$_SESSION['vault_key']` is lost, the vault locks immediately. [Valid]-[2026-07-15]
 
 ---
 

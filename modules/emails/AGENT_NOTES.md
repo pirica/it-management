@@ -44,9 +44,9 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - Triggers: `trg_emails_audit_*`, `trg_email_smtp_configurations_audit_*`, `trg_email_alert_rules_audit_*` in `database.sql`.
 
 ## 10. Common Pitfalls
-- Saving SMTP without default flag when multiple profiles exist — always confirm `is_default` behaviour.
-- Public pages (forgot-password) must pass resolved `company_id` into `itm_send_email()`.
-- Onboarding approval emails must use `cr_onboarding_send_approval_email_via_api(..., $companyId)` not MailerLite.
+- Saving SMTP without default flag when multiple profiles exist — always confirm `is_default` behaviour. [Valid]-[2026-07-15]
+- Public pages (forgot-password) must pass resolved `company_id` into `itm_send_email()`. [Valid]-[2026-07-15]
+- Onboarding approval emails must use `cr_onboarding_send_approval_email_via_api(..., $companyId)` not MailerLite. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

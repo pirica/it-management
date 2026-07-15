@@ -31,7 +31,7 @@ Manages physical locations where IT equipment or infrastructure is housed (e.g.,
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Restrictive Deletes**: Deleting a location that is referenced by equipment or IDFs will typically fail due to FK constraints.
+- **Restrictive Deletes**: Deleting a location that is referenced by equipment or IDFs will typically fail due to FK constraints. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

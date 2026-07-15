@@ -34,8 +34,8 @@ Tenant-scoped lookup for employee classification labels (`Team member`, `Interns
 - Database triggers: `trg_employee_type_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
-- Do not rename `name_type` to `name` — FK helpers and employee selects rely on `name_type`.
-- Clearing `employee_type_id` on employees is allowed; resignations report still includes rows when type filter allows NULL.
+- Do not rename `name_type` to `name` — FK helpers and employee selects rely on `name_type`. [Valid]-[2026-07-15]
+- Clearing `employee_type_id` on employees is allowed; resignations report still includes rows when type filter allows NULL. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

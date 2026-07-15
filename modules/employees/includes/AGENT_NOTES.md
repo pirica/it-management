@@ -43,4 +43,4 @@ Contains modular PHP files included by `create.php` and `edit.php` to render spe
 - Changes to any fields inside these inputs are logged unconditionally to `audit_logs` via the `employees` triggers.
 
 ## 10. Common Pitfalls
-- Forgetting that `edit.php` and `create.php` both include these files. Ensure modifications do not cause undefined variable warnings in either flow.
+- Forgetting that `edit.php` and `create.php` both include these files. Ensure modifications do not cause undefined variable warnings in either flow. [Valid]-[2026-07-15]

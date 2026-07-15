@@ -74,9 +74,9 @@ This module manages SMTP profiles used for outbound email delivery. It allows te
 
 ## 10. Common Pitfalls
 
-- **Password Encryption**: Ensure passwords are encrypted before storage; never store plain text.
-- **Default Flag**: Manually setting `is_default` for multiple rows via SQL can lead to ambiguous delivery behavior.
-- **Protection Zone**: This module is NOT in the Protection Zone, but it is critical for system communications.
+- **Password Encryption**: Ensure passwords are encrypted before storage; never store plain text. [Valid]-[2026-07-15]
+- **Default Flag**: Manually setting `is_default` for multiple rows via SQL can lead to ambiguous delivery behavior. [Valid]-[2026-07-15]
+- **Protection Zone**: This module is NOT in the Protection Zone, but it is critical for system communications. [Valid]-[2026-07-15]
 
 ---
 

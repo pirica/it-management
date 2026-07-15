@@ -29,7 +29,7 @@ Lookup table for job titles and positions (e.g., "Developer", "Manager").
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Deleting a position that is still assigned to active employees.
+- Deleting a position that is still assigned to active employees. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

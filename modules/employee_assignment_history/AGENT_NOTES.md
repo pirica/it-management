@@ -48,10 +48,10 @@ Tracks asset custody per employee: which **equipment** or **inventory item** (op
 - Database triggers: `trg_employee_assignment_history_audit_insert`, `trg_employee_assignment_history_audit_update`, `trg_employee_assignment_history_audit_delete` on `employee_assignment_history` in `database.sql` (JSON includes `equipment_id`, `assigned_date`, `returned_date`, `asset_description`, user FKs, etc.).
 
 ## 10. Common Pitfalls
-- **Stale template references:** there is no `assignment_types` FK or `notes`-only insert shape — use real columns from `database.sql`.
-- **Deleting history** to end an assignment — prefer setting `returned_date` (equipment unassign/delete closes rows automatically).
-- **Duplicate employees:** unique `(company_id, employee_id)` rejects a second row; use UPDATE/UPSERT semantics.
-- **Equipment sync vs manual edit:** changing `equipment_id` here without updating `equipment.assigned_to_employee_id` desynchronises custody; prefer assignee changes on the equipment form.
+- **Stale template references:** there is no `assignment_types` FK or `notes`-only insert shape — use real columns from `database.sql`. [Valid]-[2026-07-15]
+- **Deleting history** to end an assignment — prefer setting `returned_date` (equipment unassign/delete closes rows automatically). [Valid]-[2026-07-15]
+- **Duplicate employees:** unique `(company_id, employee_id)` rejects a second row; use UPDATE/UPSERT semantics. [Valid]-[2026-07-15]
+- **Equipment sync vs manual edit:** changing `equipment_id` here without updating `equipment.assigned_to_employee_id` desynchronises custody; prefer assignee changes on the equipment form. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -33,7 +33,7 @@ Maintains a product catalog for IT equipment, including models, prices, images, 
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Duplicate entries for the same model across different suppliers (if not intentional).
+- Duplicate entries for the same model across different suppliers (if not intentional). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

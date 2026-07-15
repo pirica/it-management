@@ -45,10 +45,10 @@ A filtered view of the Equipment module specifically for CCTV devices. Provides 
 - This façade has no local audit handlers.
 
 ## 10. Common Pitfalls
-- **Protection Zone:** `modules/equipment/` is in the Protection Zone — do not change its logic or structure unless explicitly requested (`AGENTS.md`).
-- **Do not delete canonical wrappers:** Keep `modules/is_cctv/` and sibling `is_*` folders.
-- **Type filter:** Use `CCTV` (not `Cctv`) — must match `equipment_types.name` case-insensitively via `LOWER(TRIM(et.name))`.
-- **Do not copy equipment CRUD** into this folder.
+- **Protection Zone:** `modules/equipment/` is in the Protection Zone — do not change its logic or structure unless explicitly requested (`AGENTS.md`). [Valid]-[2026-07-15]
+- **Do not delete canonical wrappers:** Keep `modules/is_cctv/` and sibling `is_*` folders. [Valid]-[2026-07-15]
+- **Type filter:** Use `CCTV` (not `Cctv`) — must match `equipment_types.name` case-insensitively via `LOWER(TRIM(et.name))`. [Valid]-[2026-07-15]
+- **Do not copy equipment CRUD** into this folder. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

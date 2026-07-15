@@ -29,7 +29,7 @@ Lookup table for categories of approvers (e.g., "GM Approval", "HOD Approval").
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Similar to other lookup tables, avoid deleting records that are currently in use.
+- Similar to other lookup tables, avoid deleting records that are currently in use. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

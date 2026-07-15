@@ -40,8 +40,8 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Server Selection**: Ensure `server_id` is valid and belongs to the correct company.
-- **Date Overlap**: Ensure only one record exists per server, company, and date.
+- **Server Selection**: Ensure `server_id` is valid and belongs to the correct company. [Valid]-[2026-07-15]
+- **Date Overlap**: Ensure only one record exists per server, company, and date. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

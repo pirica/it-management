@@ -34,7 +34,7 @@ Manages requests for setting up new employees, including system access and equip
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Failing to update the status when all tasks are finished.
+- Failing to update the status when all tasks are finished. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

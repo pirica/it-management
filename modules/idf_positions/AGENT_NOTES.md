@@ -64,13 +64,13 @@ Defines rack-unit placement of devices within an IDF (`position_no`, device type
 Triggers always write to `audit_logs` with `table_name = 'idf_positions'` on DML (not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- **Protection Zone:** no structural changes without explicit user request.
-- **Deleting positions with links:** remove `idf_links` on child ports first; API `position_delete.php` encodes the correct order — do not bypass with bare SQL.
-- **IDF sync:** after position create/copy/move/delete changes, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` means the task is incomplete.
-- **Port regeneration:** changing `rj45_count` / `sfp_count` in flat CRUD without `ports_regen` leaves `idf_ports` and `switch_ports` counts wrong.
-- **Equipment link drift:** stale `equipment.idf_id` or missing `switch_ports.idf_id` breaks port tiles in `modules/equipment/`.
-- **RESTRICT on device type:** cannot delete `idf_device_type` rows still referenced by `device_type`.
-- **Module consistency:** propagate renderer and FK fallback fixes across `index.php`, `view.php`, `edit.php`, `create.php`, and `list_all.php`.
+- **Protection Zone:** no structural changes without explicit user request. [Valid]-[2026-07-15]
+- **Deleting positions with links:** remove `idf_links` on child ports first; API `position_delete.php` encodes the correct order — do not bypass with bare SQL. [Valid]-[2026-07-15]
+- **IDF sync:** after position create/copy/move/delete changes, run `php scripts/idfs_sync_human_test.php`; any `[FAIL]` means the task is incomplete. [Valid]-[2026-07-15]
+- **Port regeneration:** changing `rj45_count` / `sfp_count` in flat CRUD without `ports_regen` leaves `idf_ports` and `switch_ports` counts wrong. [Valid]-[2026-07-15]
+- **Equipment link drift:** stale `equipment.idf_id` or missing `switch_ports.idf_id` breaks port tiles in `modules/equipment/`. [Valid]-[2026-07-15]
+- **RESTRICT on device type:** cannot delete `idf_device_type` rows still referenced by `device_type`. [Valid]-[2026-07-15]
+- **Module consistency:** propagate renderer and FK fallback fixes across `index.php`, `view.php`, `edit.php`, `create.php`, and `list_all.php`. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

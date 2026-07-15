@@ -34,10 +34,10 @@ Stores the custom order and visibility of sidebar modules for each user.
 - Database triggers `trg_employee_sidebar_preferences_audit_insert`, `trg_employee_sidebar_preferences_audit_update`, `trg_employee_sidebar_preferences_audit_delete` on `employee_sidebar_preferences` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
-- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first.
-- Per-user sidebar order/visibility — unique per `company_id` + `employee_id` + entry.
-- Respect tenant unique constraints; duplicates fail at the database layer.
-- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI.
+- Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Valid]-[2026-07-15]
+- Per-user sidebar order/visibility — unique per `company_id` + `employee_id` + entry. [Valid]-[2026-07-15]
+- Respect tenant unique constraints; duplicates fail at the database layer. [Valid]-[2026-07-15]
+- Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -19,8 +19,8 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 | `ItmModuleIsolatedTestTrait.php` | `runIsolatedModule()` — subprocess include for module entry files |
 
 ## 10. Common Pitfalls
-- Including audit scripts at file scope halts PHPUnit — subprocess only.
-- Deleting the temp file after `require_once` is safe; the function stays loaded for the request.
+- Including audit scripts at file scope halts PHPUnit — subprocess only. [Valid]-[2026-07-15]
+- Deleting the temp file after `require_once` is safe; the function stays loaded for the request. [Valid]-[2026-07-15]
 
 ## 12. Module Owner Notes (Optional)
 Parent: `phpunit/tests/AGENT_NOTES.md`. Consumers: `phpunit/tests/Unit/Scripts/check_*`, `ScriptCatalogSmokeTest.php`, `ReproAuditDisclosureTest.php`, `OrgChartTest.php`, `ExplorerTest.php`.

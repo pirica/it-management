@@ -34,8 +34,8 @@ Manages individual IP address assignments within subnets.
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Mismatched Subnets**: Ensure the IP address actually belongs to the CIDR range of the selected subnet.
-- **Double Assignment**: Trying to assign the same IP to multiple devices.
+- **Mismatched Subnets**: Ensure the IP address actually belongs to the CIDR range of the selected subnet. [Valid]-[2026-07-15]
+- **Double Assignment**: Trying to assign the same IP to multiple devices. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

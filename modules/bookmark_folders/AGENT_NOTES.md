@@ -33,8 +33,8 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Circular References**: Avoid setting a folder's parent to itself or one of its children.
-- **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`).
+- **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Valid]-[2026-07-15]
+- **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

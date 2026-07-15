@@ -31,5 +31,5 @@ Aggregates metrics from:
 - None (read-only queries).
 
 ## 10. Common Pitfalls
-- Bypassing the `$company_id` parameter or using hardcoded company identifiers.
-- Failing to handle NULL values or division-by-zero scenarios gracefully when calculating ratios (e.g., occupancy percentage or budget execution).
+- Bypassing the `$company_id` parameter or using hardcoded company identifiers. [Valid]-[2026-07-15]
+- Failing to handle NULL values or division-by-zero scenarios gracefully when calculating ratios (e.g., occupancy percentage or budget execution). [Valid]-[2026-07-15]

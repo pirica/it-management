@@ -28,7 +28,7 @@ Lookup table for categorizing budgets and expenses (e.g., "Hardware", "Software 
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- Deleting a category that is referenced by budget reports or expenses.
+- Deleting a category that is referenced by budget reports or expenses. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

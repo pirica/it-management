@@ -37,8 +37,8 @@ Dynamic extra Hotel Figures & Revenue fields on a daily Ops Report. Each row is 
 - Triggers: `trg_ops_report_hotel_figure_audit_insert|update|delete`.
 
 ## 10. Common Pitfalls
-- Do not move core hotel KPIs into this table — they belong on **ops_report** header row.
-- Label/value pairs export with parent report Excel/PDF, not via this CRUD list alone.
+- Do not move core hotel KPIs into this table — they belong on **ops_report** header row. [Valid]-[2026-07-15]
+- Label/value pairs export with parent report Excel/PDF, not via this CRUD list alone. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

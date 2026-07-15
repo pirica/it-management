@@ -74,13 +74,13 @@ Database triggers always write to `audit_logs` on DML (not gated by `enable_audi
 Related tables (`idf_positions`, `idf_ports`, `idf_links`, `idf_device_type`) have their own triggers; rack API mutations that touch those tables are audited via the child table triggers. After schema changes, re-run `php scripts/check_audit_logs_coverage.php`.
 
 ## 10. Common Pitfalls
-- **Do not edit Protection Zone modules** without an explicit user request — includes this folder, sibling IDF CRUD modules, and `modules/equipment/` switch-port tiles.
-- **IDF sync drift:** updating only `idf_ports` or only `switch_ports` leaves the rack UI and equipment module inconsistent. Always follow the sync helpers in `idf_ports_sync.php` and `api/ports_sync.php`.
-- **Link delete/create parity:** `link_create`, `link_delete`, and `port_update` must keep status, colour, label, and notes aligned across linked `idf_ports` and mirrored `switch_ports` rows.
-- **Position delete ordering:** remove or update `idf_links` referencing ports on the position before deleting the position row.
-- **Equipment ID alignment:** stale `equipment.idf_id` or `switch_ports.idf_id` breaks port visualiser fallbacks in `view.php`.
-- **Regression gate:** after any IDF workflow change, run `php scripts/idfs_sync_human_test.php` (hard fail if any `[FAIL]`). On Windows Laragon use the full PHP 7.4.33 binary path documented in `AGENTS.md`.
-- **Configuration complexity:** creating or deleting an IDF cascades to positions; ensure related ports, links, and equipment references are handled in one transaction.
+- **Do not edit Protection Zone modules** without an explicit user request — includes this folder, sibling IDF CRUD modules, and `modules/equipment/` switch-port tiles. [Valid]-[2026-07-15]
+- **IDF sync drift:** updating only `idf_ports` or only `switch_ports` leaves the rack UI and equipment module inconsistent. Always follow the sync helpers in `idf_ports_sync.php` and `api/ports_sync.php`. [Valid]-[2026-07-15]
+- **Link delete/create parity:** `link_create`, `link_delete`, and `port_update` must keep status, colour, label, and notes aligned across linked `idf_ports` and mirrored `switch_ports` rows. [Valid]-[2026-07-15]
+- **Position delete ordering:** remove or update `idf_links` referencing ports on the position before deleting the position row. [Valid]-[2026-07-15]
+- **Equipment ID alignment:** stale `equipment.idf_id` or `switch_ports.idf_id` breaks port visualiser fallbacks in `view.php`. [Valid]-[2026-07-15]
+- **Regression gate:** after any IDF workflow change, run `php scripts/idfs_sync_human_test.php` (hard fail if any `[FAIL]`). On Windows Laragon use the full PHP 7.4.33 binary path documented in `AGENTS.md`. [Valid]-[2026-07-15]
+- **Configuration complexity:** creating or deleting an IDF cascades to positions; ensure related ports, links, and equipment references are handled in one transaction. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

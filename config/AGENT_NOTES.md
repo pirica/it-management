@@ -22,8 +22,8 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **config.php** — the core configuration file required by every entry point.
 
 ## 10. Common Pitfalls
-- Committing secrets to version control.
-- Modifying constants without checking their global impact.
+- Committing secrets to version control. [Valid]-[2026-07-15]
+- Modifying constants without checking their global impact. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

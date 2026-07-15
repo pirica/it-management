@@ -138,13 +138,13 @@ Collected metrics are **system-wide** (hardware, PHP, MySQL) — not filtered by
 
 ## 10. Common Pitfalls
 
-- **Stale tabs after deploy:** re-import `database.sql` (or create `system_status`) before Refresh works.
-- **PowerShell on Linux:** hardware Refresh uses native `/proc` paths; never call `powershell.exe`.
-- **`shell_exec` disabled on Windows:** Monitoring Refresh may record partial errors; PHP Settings and Database cache paths still work.
-- **phpinfo link:** always live — not cached.
-- **Storage parent totals:** nodes with children must include direct files in that folder — do not sum only child bytes.
-- **System file exclusions:** Sub Storage file/byte totals skip `.htaccess`, `index.html`, and `AGENT_NOTES.md` (managed placeholders and agent docs, not user content).
-- **README screenshot:** wait for `#system-info-content` populated (cached data) before capture.
+- **Stale tabs after deploy:** re-import `database.sql` (or create `system_status`) before Refresh works. [Valid]-[2026-07-15]
+- **PowerShell on Linux:** hardware Refresh uses native `/proc` paths; never call `powershell.exe`. [Valid]-[2026-07-15]
+- **`shell_exec` disabled on Windows:** Monitoring Refresh may record partial errors; PHP Settings and Database cache paths still work. [Valid]-[2026-07-15]
+- **phpinfo link:** always live — not cached. [Valid]-[2026-07-15]
+- **Storage parent totals:** nodes with children must include direct files in that folder — do not sum only child bytes. [Valid]-[2026-07-15]
+- **System file exclusions:** Sub Storage file/byte totals skip `.htaccess`, `index.html`, and `AGENT_NOTES.md` (managed placeholders and agent docs, not user content). [Valid]-[2026-07-15]
+- **README screenshot:** wait for `#system-info-content` populated (cached data) before capture. [Valid]-[2026-07-15]
 
 ---
 

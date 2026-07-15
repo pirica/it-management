@@ -77,9 +77,9 @@ The central module for managing employee records, including contact info, hierar
 - Managed via database triggers.
 
 ## 10. Common Pitfalls
-- **Circular Reporting**: Avoid setting an employee to report to themselves or creating a loop.
-- **Profile photo upload on edit:** `emp_profile_photo_store_upload()` needs `username` and `id` on the employee array; omitting `id` in `edit.php` shows a misleading username error.
-- **Resignations report:** after setting `termination_date`, confirm the active company matches `employees.company_id`. If the row is missing from the weekly report, run `php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026`.
+- **Circular Reporting**: Avoid setting an employee to report to themselves or creating a loop. [Valid]-[2026-07-15]
+- **Profile photo upload on edit:** `emp_profile_photo_store_upload()` needs `username` and `id` on the employee array; omitting `id` in `edit.php` shows a misleading username error. [Valid]-[2026-07-15]
+- **Resignations report:** after setting `termination_date`, confirm the active company matches `employees.company_id`. If the row is missing from the weekly report, run `php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026`. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

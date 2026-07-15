@@ -71,9 +71,9 @@ This module provides a centralized interface for importing Assets (Equipment) an
 
 ## 10. Common Pitfalls
 
-- **Direct CSV Handling:** Procedural CSV parsing in PHP was removed in favor of unified AJAX/JSON processing. Do not re-introduce it.
-- **Permissions:** Ensure `itm_require_admin` is called at the top of the entry file.
-- **File Size:** Large imports may hit PHP `memory_limit` or `max_execution_time` if processed synchronously; the AJAX approach helps mitigate UI blocking but server-side limits still apply.
+- **Direct CSV Handling:** Procedural CSV parsing in PHP was removed in favor of unified AJAX/JSON processing. Do not re-introduce it. [Valid]-[2026-07-15]
+- **Permissions:** Ensure `itm_require_admin` is called at the top of the entry file. [Valid]-[2026-07-15]
+- **File Size:** Large imports may hit PHP `memory_limit` or `max_execution_time` if processed synchronously; the AJAX approach helps mitigate UI blocking but server-side limits still apply. [Valid]-[2026-07-15]
 
 ---
 

@@ -47,8 +47,8 @@ Unconditional database triggers log DML actions to `audit_logs`:
 
 ## 10. Common Pitfalls
 
-- Hardcoding a fallback company ID instead of using the active session.
-- Displaying the raw `api_key` or `active` fields in visible list screens when they are meant to be secured or hidden.
+- Hardcoding a fallback company ID instead of using the active session. [Valid]-[2026-07-15]
+- Displaying the raw `api_key` or `active` fields in visible list screens when they are meant to be secured or hidden. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 

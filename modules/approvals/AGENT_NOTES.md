@@ -33,8 +33,8 @@ Manages the approval workflow for forecast revisions. It tracks the stage, statu
 - Managed via database triggers (`trg_approvals_audit_*`).
 
 ## 10. Common Pitfalls
-- **Mismatched Stages**: Ensure the `stage` ID corresponds to a valid record in `approvals_stage`.
-- **Approved Date**: Ensure `approved_at` is updated only when the status changes to an approved state.
+- **Mismatched Stages**: Ensure the `stage` ID corresponds to a valid record in `approvals_stage`. [Valid]-[2026-07-15]
+- **Approved Date**: Ensure `approved_at` is updated only when the status changes to an approved state. [Valid]-[2026-07-15]
 
 ## 11. Examples of Safe Code Patterns
 
