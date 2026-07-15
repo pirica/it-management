@@ -25,6 +25,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Only `itm_is_admin()` users may create/edit roles or save matrix changes (non-admins see a read-only matrix; AJAX mutations return HTTP 403).
 - Tenant scope: all reads/writes use session `company_id` via `itm_resolve_active_company_id()`.
 - The seeded **Admin** role (name match, case-insensitive) uses the `ALL` wildcard row in `role_module_permissions`; its matrix is read-only.
+- **Fresh-import seeds:** `employee_roles`, `role_hierarchy`, `role_module_permissions`, and `role_assignment_rights` use name-based `INSERT … SELECT` (no hardcoded role ids). Role order per company: Admin, IT Manager, IT Assistant, Helpdesk, User.
 - Matrix columns: **View**, **Add** (`can_create`), **Edit**, **Delete**, **Import**, **Export** — six flags aligned with RBAC enforcement.
 - Effective flags: per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
 - Saving permissions upserts `(company_id, role_id, module_name)` rows; never overwrites the `ALL` wildcard via the matrix save path.

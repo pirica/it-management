@@ -52,3 +52,5 @@ $stmt->bind_param('ii', $id, $companyId);
 
 ## 12. Module Owner Notes (Optional)
 Critical for multi-tenant access control. Coordinate with `modules/employees/` and login flow in `login.php` when changing assignment rules.
+
+**Fresh-import seeds:** each company Admin gets a home-company row; TechCorp `Admin` (company 1) is also granted companies 2–5 for the tenant switcher / full-module QA. Prefer `INSERT … SELECT` from `employees` / `companies` over hardcoded `employee_id = 1` only. The late replicate block only upserts home grants (`company_id = employees.company_id`) — it does not attach every passworded employee to every company.
