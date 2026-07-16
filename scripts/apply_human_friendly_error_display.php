@@ -2,39 +2,31 @@
 /**
  * Replace duplicated alert-error blocks with itm_render_alert_errors().
  *
- * CLI: php scripts/apply_human_friendly_error_display.php [--dry-run] [--module=name]
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
+ * Optional filter: --module=name (CLI) or ?module=name (browser).
  */
 
 declare(strict_types=1);
 
-if (!defined('ITM_CLI_SCRIPT')) {
-    define('ITM_CLI_SCRIPT', true);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-// Why: In a browser $argv is absent and $dryRun defaults false, which would rewrite module PHP files.
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:720px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This script writes module PHP files. Use <code>--dry-run</code> first:</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/apply_human_friendly_error_display.php --dry-run</pre>';
-    echo '</body></html>';
-    exit(1);
-}
+$boot = itm_apply_script_bootstrap('Apply Human-Friendly Error Display');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$argv = $boot['argv'];
+$dryRun = !$apply;
 
-require_once dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
-
-$nl = itm_script_output_nl();
-
-
-$dryRun = in_array('--dry-run', $argv ?? [], true);
 $onlyModules = [];
-foreach ($argv ?? [] as $arg) {
-    if (strpos($arg, '--module=') === 0) {
-        $onlyModules[] = substr($arg, 9);
+if ($boot['is_cli']) {
+    foreach ($argv as $arg) {
+        if (strpos($arg, '--module=') === 0) {
+            $onlyModules[] = substr($arg, 9);
+        }
+    }
+} else {
+    $moduleFilter = itm_apply_script_arg_value($argv, false, 'module', '');
+    if ($moduleFilter !== '') {
+        $onlyModules[] = $moduleFilter;
     }
 }
 
@@ -107,6 +99,7 @@ function itm_collect_module_php_files($moduleDir) {
 }
 
 $changedFiles = 0;
+$changedList = [];
 
 foreach (glob(ROOT_PATH . 'modules/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
     $module = basename($moduleDir);
@@ -137,7 +130,9 @@ foreach (glob(ROOT_PATH . 'modules/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
         if ($result['changed']) {
             $changedFiles++;
             $rel = str_replace(ROOT_PATH, '', $path);
-            fwrite(STDOUT, ($dryRun ? '[dry-run] ' : '') . str_replace('\\', '/', $rel) . ': ' . implode(', ', $result['notes']) . "\n");
+            $rel = str_replace('\\', '/', $rel);
+            $changedList[] = $rel;
+            echo ($dryRun ? '[dry-run] ' : '[apply] ') . $rel . ': ' . implode(', ', $result['notes']) . $nl;
         }
     }
 }
@@ -163,11 +158,16 @@ foreach ($includePaths as $path) {
     if ($result['changed']) {
         $changedFiles++;
         $rel = str_replace(ROOT_PATH, '', $path);
-        fwrite(STDOUT, ($dryRun ? '[dry-run] ' : '') . str_replace('\\', '/', $rel) . ': ' . implode(', ', $result['notes']) . "\n");
+        $rel = str_replace('\\', '/', $rel);
+        $changedList[] = $rel;
+        echo ($dryRun ? '[dry-run] ' : '[apply] ') . $rel . ': ' . implode(', ', $result['notes']) . $nl;
     }
 }
 
-fwrite(STDOUT, "\nDone. Files updated: {$changedFiles}\n");
-exit(0);
+$modeLabel = $apply ? 'Updated' : 'Would update';
+echo $nl . $modeLabel . ' ' . $changedFiles . ' file(s).' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' files', $changedList);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], $changedFiles, $nl, 'apply_human_friendly_error_display.php');
 
 itm_script_output_end();
+exit(0);

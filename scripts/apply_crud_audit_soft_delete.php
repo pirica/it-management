@@ -31,6 +31,7 @@ if ($itmIsCli) {
 }
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 itm_script_output_begin('Apply CRUD audit soft-delete');
 
 $nl = itm_script_output_nl();
@@ -171,16 +172,7 @@ exit(0);
  */
 function itm_apply_crud_echo_module_list($heading, array $slugs)
 {
-    // Why: itm_script_output_nl() is <br><br> in browser; that balloons 90+ module lines.
-    echo (string)$heading . ":\n";
-    if ($slugs === []) {
-        echo "  (none)\n\n";
-        return;
-    }
-    foreach ($slugs as $slug) {
-        echo '  - ' . $slug . "\n";
-    }
-    echo "\n";
+    itm_apply_script_echo_list($heading, $slugs);
 }
 
 /**

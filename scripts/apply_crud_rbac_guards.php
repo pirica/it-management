@@ -1,32 +1,26 @@
 <?php
 /**
- * CLI-only: insert itm_require_crud_role_module_permission() on flattened CRUD index.php handlers.
+ * Insert itm_require_crud_role_module_permission() on flattened CRUD index.php handlers.
+ *
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/apply_crud_rbac_guards.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-define('ITM_CLI_SCRIPT', true);
-putenv('ITM_SKIP_DB_TESTS=1');
-require_once dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-
-$nl = itm_script_output_nl();
-itm_script_output_begin('Apply CRUD RBAC Guards');
+$boot = itm_apply_script_bootstrap('Apply CRUD RBAC Guards');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 
 $guardDelete = "    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).\n    itm_require_crud_role_module_permission(\$conn, 'delete', '%s');\n\n";
 $guardCreateEdit = "    // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).\n    itm_require_crud_role_module_permission(\$conn, \$crud_action, '%s');\n";
 
 $changed = [];
+$exempt = [];
 
-foreach (glob(dirname(__DIR__) . '/modules/*/index.php') as $path) {
+foreach (glob($root . '/modules/*/index.php') as $path) {
     $slug = basename(dirname($path));
     if (in_array($slug, itm_crud_rbac_exempt_module_slugs(), true)) {
+        $exempt[] = $slug;
         continue;
     }
 
@@ -78,14 +72,18 @@ foreach (glob(dirname(__DIR__) . '/modules/*/index.php') as $path) {
     }
 
     if ($content !== $original) {
-        file_put_contents($path, $content);
+        if ($apply) {
+            file_put_contents($path, $content);
+        }
         $changed[] = 'modules/' . $slug . '/index.php';
     }
 }
 
-echo 'Updated ' . count($changed) . " module index.php file(s).\n";
-foreach ($changed as $rel) {
-    echo "  - {$rel}" . $nl;
-}
+$modeLabel = $apply ? 'Updated' : 'Would update';
+echo $nl . $modeLabel . ' ' . count($changed) . ' module index.php file(s).' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' files', $changed);
+itm_apply_script_echo_list('RBAC exempt (skipped)', $exempt);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changed), $nl, 'apply_crud_rbac_guards.php');
 
 itm_script_output_end();
+exit(0);

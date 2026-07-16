@@ -2,43 +2,35 @@
 /**
  * Apply cr_form_display_value + $sqlValues POST fix across CRUD module entry files.
  *
- * Why: Bulk-fix static failures from test_form_failed_save_display.php without
- * hand-editing hundreds of duplicated module files.
- *
- * CLI: php scripts/apply_form_failed_save_display_fix.php [--dry-run] [--module=name]
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
+ * Optional filter: --module=name (CLI) or ?module=name (browser).
  */
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:720px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This script writes PHP module files. Use <code>--dry-run</code> first:</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/apply_form_failed_save_display_fix.php --dry-run</pre>';
-    echo '</body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-if (!defined('ITM_CLI_SCRIPT')) {
-    define('ITM_CLI_SCRIPT', true);
-}
-require_once dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+$boot = itm_apply_script_bootstrap('Apply Form Failed Save Display Fix');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$argv = $boot['argv'];
+$dryRun = !$apply;
 
-$nl = itm_script_output_nl();
-
-require_once dirname(__DIR__) . '/includes/form_failed_save_test.php';
-
-$dryRun = in_array('--dry-run', $argv ?? [], true);
 $onlyModules = [];
-foreach ($argv ?? [] as $arg) {
-    if (strpos($arg, '--module=') === 0) {
-        $onlyModules[] = substr($arg, 9);
+if ($boot['is_cli']) {
+    foreach ($argv as $arg) {
+        if (strpos($arg, '--module=') === 0) {
+            $onlyModules[] = substr($arg, 9);
+        }
+    }
+} else {
+    $moduleFilter = itm_apply_script_arg_value($argv, false, 'module', '');
+    if ($moduleFilter !== '') {
+        $onlyModules[] = $moduleFilter;
     }
 }
+
+require_once dirname(__DIR__) . '/includes/form_failed_save_test.php';
 
 $helperFn = <<<'PHP'
 function cr_form_display_value($value) {
@@ -580,6 +572,8 @@ function itm_apply_form_display_fix_to_file(string $path, bool $dryRun): array
 
 $changedFiles = 0;
 $skipped = 0;
+$changedList = [];
+$manualList = [];
 
 foreach (glob(ROOT_PATH . 'modules/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
     $module = basename($moduleDir);
@@ -602,25 +596,29 @@ foreach (glob(ROOT_PATH . 'modules/*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
         if ($result['changed']) {
             $changedFiles++;
             $rel = 'modules/' . $module . '/' . $entry;
-            fwrite(STDOUT, ($dryRun ? '[dry-run] ' : '') . $rel . ': ' . implode(', ', $result['notes']) . "\n");
+            $changedList[] = $rel;
+            echo ($dryRun ? '[dry-run] ' : '[apply] ') . $rel . ': ' . implode(', ', $result['notes']) . $nl;
         } else {
             $skipped++;
-            fwrite(STDOUT, "[manual] modules/{$module}/{$entry}: {$scan['notes']}\n");
+            $manualList[] = 'modules/' . $module . '/' . $entry . ': ' . $scan['notes'];
+            echo '[manual] modules/' . $module . '/' . $entry . ': ' . $scan['notes'] . $nl;
         }
     }
 }
 
-fwrite(STDOUT, "\nDone. Files updated: {$changedFiles}, need manual review: {$skipped}\n");
+$modeLabel = $apply ? 'Updated' : 'Would update';
+echo $nl . $modeLabel . ' ' . $changedFiles . ' file(s); need manual review: ' . $skipped . '.' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' files', $changedList);
+itm_apply_script_echo_list('Need manual review', $manualList);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], $changedFiles, $nl, 'apply_form_failed_save_display_fix.php');
 
-if (!$dryRun && $changedFiles > 0) {
+if ($apply && $changedFiles > 0) {
     $verify = itm_form_failed_save_test_run(ROOT_PATH . 'modules', ['static' => true, 'runtime' => false]);
-    fwrite(
-        STDOUT,
-        "Static re-scan: static_fail={$verify['summary']['static_fail']}, modules={$verify['summary']['modules']}\n"
-    );
+    echo 'Static re-scan: static_fail=' . (int)$verify['summary']['static_fail']
+        . ', modules=' . (int)$verify['summary']['modules'] . $nl;
+    itm_script_output_end();
     exit($verify['summary']['static_fail'] > 0 ? 1 : 0);
 }
 
-exit(0);
-
 itm_script_output_end();
+exit(0);

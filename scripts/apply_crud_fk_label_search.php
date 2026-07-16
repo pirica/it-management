@@ -1,25 +1,16 @@
 <?php
 /**
- * CLI-only: extend flattened CRUD index search with FK label EXISTS predicates.
+ * Extend flattened CRUD index search with FK label EXISTS predicates.
  *
- * Why: List cells render FK labels via cr_render_cell_value(), but search only matched raw IDs.
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/apply_crud_fk_label_search.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/lib/script_cli_output.php';
+$boot = itm_apply_script_bootstrap('Apply CRUD FK Label Search');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 
-$nl = itm_script_output_nl();
-itm_script_output_begin('Apply CRUD FK Label Search');
-
-$root = dirname(__DIR__);
 $marker = 'itm_crud_fk_label_search_conditions';
 $skipModules = ['employees'];
 $requireLine = "require_once '../../includes/itm_crud_fk_label_search.php';\n";
@@ -123,20 +114,19 @@ foreach (glob($root . '/modules/*/index.php') as $path) {
         continue;
     }
 
-    file_put_contents($path, $content);
+    if ($apply) {
+        file_put_contents($path, $content);
+    }
     $changed[] = $slug;
 }
 
-echo 'FK label search apply complete.' . $nl;
-echo 'Changed: ' . count($changed) . $nl;
-foreach ($changed as $slug) {
-    echo '  - ' . $slug . $nl;
-}
-echo 'Already patched: ' . count($already) . $nl;
-echo 'Skipped: ' . count($skipped) . $nl;
-foreach ($skipped as $line) {
-    echo '  - ' . $line . $nl;
-}
+$modeLabel = $apply ? 'Changed' : 'Would change';
+echo $nl . 'FK label search apply complete.' . $nl;
+echo $modeLabel . ' ' . count($changed) . ' module(s).' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' modules', $changed);
+itm_apply_script_echo_list('Already patched', $already);
+itm_apply_script_echo_list('Skipped', $skipped);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changed), $nl, 'apply_crud_fk_label_search.php');
 
 itm_script_output_end();
 exit(0);

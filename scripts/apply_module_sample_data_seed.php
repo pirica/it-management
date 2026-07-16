@@ -10,20 +10,11 @@
  *   php scripts/apply_module_sample_data_seed.php --module=idf_device_type --dry-run
  *   php scripts/apply_module_sample_data_seed.php --table=equipment_poe --value-column=name --sample=POE+ --sample=POE++
  *
- * Windows Laragon when php is not on PATH:
- *   C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\apply_module_sample_data_seed.php --module=idf_device_type
+ * Browser: scripts/apply_module_sample_data_seed.php?module=idf_device_type (dry-run default)
+ * Browser apply: scripts/apply_module_sample_data_seed.php?module=idf_device_type&apply=1
  */
 
 declare(strict_types=1);
-
-require_once __DIR__ . '/lib/script_cli_output.php';
-
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    itm_script_output_begin('Sample Data Seed Application');
-    echo '<p><strong>CLI only.</strong> This script rewrites <code>database.sql</code>. Run from project root:</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/apply_module_sample_data_seed.php --module=idf_device_type --dry-run</pre>';
-    exit(1);
-}
 
 /**
  * @return array{module:string,table:string,value_column:string,emoji_column:string,dry_run:bool,samples:array<int,array{value:string,emoji:string}>}
@@ -93,6 +84,34 @@ function itm_seed_parse_args(array $argv): array
     }
 
     return $result;
+}
+
+/**
+ * Build pseudo-argv from browser query string for itm_seed_parse_args().
+ *
+ * @return array<int, string>
+ */
+function itm_seed_browser_argv(): array
+{
+    $args = [];
+    foreach (['module', 'table', 'value-column', 'emoji-column'] as $key) {
+        if (isset($_GET[$key]) && trim((string)$_GET[$key]) !== '') {
+            $args[] = '--' . $key . '=' . trim((string)$_GET[$key]);
+        }
+    }
+    if (isset($_GET['sample'])) {
+        $samples = $_GET['sample'];
+        if (!is_array($samples)) {
+            $samples = [$samples];
+        }
+        foreach ($samples as $sample) {
+            $sample = trim((string)$sample);
+            if ($sample !== '') {
+                $args[] = '--sample=' . $sample;
+            }
+        }
+    }
+    return $args;
 }
 
 function itm_seed_usage(): string
@@ -421,7 +440,15 @@ function itm_seed_assert_supported_template_columns(string $table, array $templa
     }
 }
 
-$args = itm_seed_parse_args($argv);
+$boot = (function () {
+    require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+    return itm_apply_script_bootstrap('Sample Data Seed Application');
+})();
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$parseArgv = $boot['is_cli'] ? $boot['argv'] : array_merge([$boot['argv'][0] ?? 'apply_module_sample_data_seed.php'], itm_seed_browser_argv());
+$args = itm_seed_parse_args($parseArgv);
+$args['dry_run'] = !$apply;
 
 $module = $args['module'];
 $table = $args['table'] !== '' ? $args['table'] : $module;
@@ -654,11 +681,14 @@ echo "Table: {$table}" . itm_script_output_nl();
 echo "Value column: {$valueColumn}" . itm_script_output_nl();
 echo "Emoji column: " . ($emojiColumn !== '' ? $emojiColumn : '(none)') . itm_script_output_nl();
 echo 'Companies: ' . implode(', ', $companyIds) . itm_script_output_nl();
-echo "New rows to add: {$addedCount}" . itm_script_output_nl();
-echo "AUTO_INCREMENT target: {$nextAutoIncrement}" . itm_script_output_nl();
+echo 'New rows to add: ' . $addedCount . $nl;
+echo 'AUTO_INCREMENT target: ' . $nextAutoIncrement . $nl;
+itm_apply_script_echo_list('New INSERT statements', $newInsertLines);
 
-if ($args['dry_run']) {
-    echo "[DRY-RUN] database.sql was not modified." . itm_script_output_nl();
+if (!$apply) {
+    echo '[DRY-RUN] database.sql was not modified.' . $nl;
+    itm_apply_script_finish_hint(false, $boot['is_cli'], $addedCount, $nl, 'apply_module_sample_data_seed.php');
+    itm_script_output_end();
     exit(0);
 }
 
@@ -667,6 +697,7 @@ if (file_put_contents($schemaPath, $newSql) === false) {
     exit(2);
 }
 
-echo colorText("[OK] database.sql updated successfully.", 'pass') . itm_script_output_nl();
+echo colorText('[OK] database.sql updated successfully.', 'pass') . $nl;
+itm_apply_script_finish_hint(true, $boot['is_cli'], $addedCount, $nl, 'apply_module_sample_data_seed.php');
 
 itm_script_output_end();

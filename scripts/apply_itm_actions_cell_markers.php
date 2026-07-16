@@ -1,26 +1,15 @@
 <?php
 /**
- * CLI-only: add itm-actions-cell + data-itm-actions-origin="1" on Actions header/body cells.
+ * Add itm-actions-cell + data-itm-actions-origin="1" on Actions header/body cells.
  *
- * Why: Module browser QA ui_check and the global table-actions layout engine require both markers
- * on the Actions column header and at least one tbody data row.
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/apply_itm_actions_cell_markers.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/lib/script_cli_output.php';
-
-$nl = itm_script_output_nl();
-itm_script_output_begin('Apply ITM Actions Cell Markers');
-
-$root = dirname(__DIR__);
+$boot = itm_apply_script_bootstrap('Apply ITM Actions Cell Markers');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 
 /**
  * @param string $attrs Existing attribute string (leading space optional)
@@ -73,7 +62,6 @@ function itm_apply_actions_cell_markers(string $content): string
         $content
     ) ?? $content;
 
-    // Actions column immediately after the list column loop (avoids matching unrelated <td> cells).
     $content = preg_replace_callback(
         '/(<\?php endforeach; \?>\s*<td)((?![^>]*\bitm-actions-cell\b)[^>]*)(>\s*<div class="itm-actions-wrap")/i',
         static function (array $m): string {
@@ -94,6 +82,7 @@ function itm_apply_actions_cell_markers(string $content): string
 }
 
 $changed = [];
+$unchanged = [];
 
 $paths = array_merge(
     glob($root . '/modules/*/index.php') ?: [],
@@ -101,21 +90,27 @@ $paths = array_merge(
 );
 
 foreach ($paths as $path) {
-    $rel = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
+    $rel = itm_apply_script_rel_path($root, $path);
     $content = file_get_contents($path);
     if ($content === false) {
         continue;
     }
     $updated = itm_apply_actions_cell_markers($content);
     if ($updated !== $content) {
-        file_put_contents($path, $updated);
+        if ($apply) {
+            file_put_contents($path, $updated);
+        }
         $changed[] = $rel;
+    } else {
+        $unchanged[] = $rel;
     }
 }
 
-echo 'Updated ' . count($changed) . " module list file(s).\n";
-foreach ($changed as $rel) {
-    echo "  - {$rel}" . $nl;
-}
+$modeLabel = $apply ? 'Updated' : 'Would update';
+echo $nl . $modeLabel . ' ' . count($changed) . ' module list file(s).' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' files', $changed);
+itm_apply_script_echo_list('Unchanged (markers already present or no Actions column)', $unchanged);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changed), $nl, 'apply_itm_actions_cell_markers.php');
 
 itm_script_output_end();
+exit(0);
