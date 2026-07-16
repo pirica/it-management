@@ -3,27 +3,32 @@
  * Apply soft-delete + audit-column UI patches to scaffold CRUD modules listed in
  * docs/list_soft-delete.txt.
  *
- * CLI-only (repo-writing). Dry-run by default; --apply writes.
+ * Browser + CLI. Default run is always dry-run; writes only with explicit apply.
  *
  * Usage:
  *   php scripts/apply_crud_audit_soft_delete.php
  *   php scripts/apply_crud_audit_soft_delete.php --apply
+ *   Browser: scripts/apply_crud_audit_soft_delete.php (dry-run)
+ *   Browser apply: scripts/apply_crud_audit_soft_delete.php?apply=1 (Admin)
  */
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> Dry-run default; <code>--apply</code> writes module patches.</p>';
-    echo '<pre>php scripts/apply_crud_audit_soft_delete.php
-php scripts/apply_crud_audit_soft_delete.php --apply
-php scripts/check_crud_audit_soft_delete.php</pre></body></html>';
-    exit(1);
-}
-
-define('ITM_CLI_SCRIPT', true);
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 putenv('ITM_SKIP_DB_TESTS=1');
+
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+    require_once __DIR__ . '/../config/config.php';
+} else {
+    // Why: Browser path requires a signed-in Admin (no ITM_CLI_SCRIPT auth bypass).
+    require_once __DIR__ . '/../config/config.php';
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    if (!function_exists('itm_is_admin') || !itm_is_admin($conn, $employeeId)) {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Forbidden: administrator login required.\n";
+        exit(1);
+    }
+}
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin('Apply CRUD audit soft-delete');
@@ -32,7 +37,16 @@ $nl = itm_script_output_nl();
 $root = dirname(__DIR__) . '/';
 require_once $root . 'includes/itm_crud_audit_fields.php';
 
-$apply = in_array('--apply', $argv ?? [], true);
+// Why: Default is dry-run; writes only when CLI --apply or browser ?apply=1.
+$apply = false;
+if ($itmIsCli) {
+    $apply = in_array('--apply', $argv ?? [], true);
+} else {
+    $apply = isset($_GET['apply']) && (string)$_GET['apply'] === '1';
+}
+
+echo colorText($apply ? 'Mode: APPLY (writing files)' : 'Mode: DRY-RUN (default — no files written)', $apply ? 'fail' : 'info') . $nl;
+
 $slugs = itm_crud_load_soft_delete_module_slugs($root);
 if ($slugs === []) {
     echo colorText('No slugs loaded from docs/list_soft-delete.txt', 'fail') . $nl;
@@ -97,7 +111,13 @@ $modeLabel = $apply ? 'Applied' : 'Would change';
 echo $modeLabel . ' ' . $changed . ' file(s); scanned ' . $scanned
     . '; skipped status-driven modules: ' . $skippedStatusDriven . '.' . $nl;
 if (!$apply && $changed > 0) {
-    echo 'Re-run with --apply to write. Then: php scripts/check_crud_audit_soft_delete.php' . $nl;
+    if ($itmIsCli) {
+        echo 'Re-run with --apply to write. Then: php scripts/check_crud_audit_soft_delete.php' . $nl;
+    } else {
+        echo 'Open with ?apply=1 to write (Admin). Then run check_crud_audit_soft_delete.php.' . $nl;
+    }
+} elseif (!$apply) {
+    echo 'Dry-run complete — nothing to change.' . $nl;
 }
 
 itm_script_output_end();
