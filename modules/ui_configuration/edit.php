@@ -675,7 +675,7 @@ if (!isset($crud_title)) {
                         itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
                     }
                     ?>
-<?php foreach ($fieldColumns as $col): $name = $col['Field'];
+<?php foreach ($uiColumns as $col): $name = $col['Field'];
                         if ($name === 'active') {
                             $val = $data[$name] ?? '';
                             $displayVal = ($val === null || (string)$val === '') ? '1' : (string)$val;

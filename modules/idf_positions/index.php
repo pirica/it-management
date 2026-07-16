@@ -1077,7 +1077,7 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         if ($name === 'active') {
                             $val = $data[$name] ?? '';
                             $displayVal = ($val === null || (string)$val === '') ? '1' : (string)$val;

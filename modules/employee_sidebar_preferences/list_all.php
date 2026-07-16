@@ -675,13 +675,25 @@ if (!isset($crud_title)) {
                 <h1>Edit <?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                                        <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+<?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = (strpos((string)$col['Type'], 'text') !== false);
                         $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
+                        <?php
+                        // Why: Audit meta is stamped via hidden inputs; never show as editable widgets.
+                        if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($name)) {
+                            continue;
+                        }
+                        ?>
+
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>

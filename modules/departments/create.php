@@ -630,13 +630,20 @@ if (!isset($crud_title)) {
                         itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
                     }
                     ?>
-<?php foreach ($fieldColumns as $col): $name = $col['Field'];
+<?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
                         $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
+                        <?php
+                        // Why: Audit meta is stamped via hidden inputs; never show as editable widgets.
+                        if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($name)) {
+                            continue;
+                        }
+                        ?>
+
                         <?php if ($name === 'company_id'): ?>
                             <input type="hidden" name="company_id" value="<?php echo sanitize((string)($company_id > 0 ? (int)$company_id : $displayVal)); ?>">
                             <?php continue; ?>
