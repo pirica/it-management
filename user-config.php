@@ -1234,7 +1234,7 @@ foreach ($access_fields as $f):
                                     ?>
                                         <label class="itm-checkbox-control">
                                             <input type="checkbox" name="sidebar_items[]" value="<?php echo sanitize($id); ?>" <?php echo ($sidebar_prefs[$id]??1)?'checked':''; ?>>
-                                            <span><a href="<?php echo sanitize($sidebarItemHref); ?>" target="_blank" rel="noopener noreferrer" style="text-decoration:none;"><?php echo sanitize($item['label']); ?></a></span>
+                                            <span><a class="itm-user-config-sidebar-link" href="<?php echo sanitize($sidebarItemHref); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($item['label']); ?></a></span>
                                         </label>
                                     <?php endforeach; ?>
                                 </div>

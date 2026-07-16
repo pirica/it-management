@@ -1048,6 +1048,16 @@ input[type="color"] {
     margin: 0;
 }
 
+/* Why: Personalized Sidebar module links open in a new tab but must look like plain labels (no blue underline). */
+.itm-user-config-sidebar-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.itm-user-config-sidebar-link:hover {
+    text-decoration: underline;
+}
+
 .role-flag-option {
     display: inline-flex;
     align-items: center;
