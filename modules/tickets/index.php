@@ -271,7 +271,7 @@ if ($searchRaw !== '') {
 }
 
 // Sorting logic
-$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'active'];
+$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date'];
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
 
@@ -283,7 +283,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $orderByMap = [
     'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
     'title' => 't.title', 'status_name' => 'ts.name',
-    'priority_name' => 'tp.name', 'due_date' => 't.due_date', 'active' => 't.active',
+    'priority_name' => 'tp.name', 'due_date' => 't.due_date',
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -307,14 +307,13 @@ if ($searchRaw !== '') {
         OR t.title LIKE ?
         OR ts.name LIKE ?
         OR tp.name LIKE ?
-        OR CASE WHEN t.active = 1 THEN 'Active' ELSE 'Inactive' END LIKE ?
     )";
 }
 
 // Count total rows
 $countStmt = mysqli_prepare($conn, "SELECT COUNT(*) AS total " . $sqlBase);
 if ($searchRaw !== '') {
-    mysqli_stmt_bind_param($countStmt, 'issssss', $company_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
+    mysqli_stmt_bind_param($countStmt, 'isssss', $company_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
 } else {
     mysqli_stmt_bind_param($countStmt, 'i', $company_id);
 }
@@ -343,7 +342,7 @@ $dataStmt = mysqli_prepare($conn, "
 ");
 
 if ($searchRaw !== '') {
-    mysqli_stmt_bind_param($dataStmt, 'issssssii', $company_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $perPage, $offset);
+    mysqli_stmt_bind_param($dataStmt, 'isssssii', $company_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $perPage, $offset);
 } else {
     mysqli_stmt_bind_param($dataStmt, 'iii', $company_id, $perPage, $offset);
 }
@@ -421,7 +420,7 @@ if (!isset($crud_title)) {
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
-                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'due_date' => 'Due Date', 'active' => 'Active'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'due_date' => 'Due Date'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -438,13 +437,6 @@ if (!isset($crud_title)) {
                             <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
                             <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
-                            <td>
-                                <?php if ((int)($t['active'] ?? 0) === 1): ?>
-                                    <span class="badge badge-success">Active</span>
-                                <?php else: ?>
-                                    <span class="badge badge-danger">Inactive</span>
-                                <?php endif; ?>
-                            </td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>

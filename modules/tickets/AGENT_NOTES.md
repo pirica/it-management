@@ -17,7 +17,7 @@ The central helpdesk/ticketing module for managing support requests.
 
 ## 4. Business Rules (Critical for Agents)
 - **Archiving**: Prefer `is_archived = 1` for hide-from-default-list without destroying the row — `archive.php` toggles archive state; list defaults to non-archived tickets (`is_archived = 0`). Soft-delete (delete/bulk/clear) is separate: sets `deleted_at` / `deleted_by` / `active=0` and removes the row from lists while keeping `view.php?id=` reachable.
-- **Soft-delete + hidden active:** Business status stays on `status_id` → `ticket_statuses`. Row `active` is create/edit hidden `active=1` only; soft-delete flips `active=0`. List filters `deleted_at IS NULL`. View lists `active` badges plus `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`.
+- **Soft-delete + hidden active:** Business status stays on `status_id` → `ticket_statuses` and is shown on **list/view as status badges**. Row `active` is create/edit hidden `active=1` only (not shown on list/view); soft-delete flips `active=0`. List filters `deleted_at IS NULL`. View lists `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`.
 - **Equipment Link**: Tickets can be linked to specific equipment for lifecycle and maintenance tracking.
 - **Due dates**: `due_date` feeds **calendar** integration when tickets module enabled for company.
 - **Photos**: `tickets_photos` stores JSON filename list under `tickets_photos/` upload tree.

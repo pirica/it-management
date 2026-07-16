@@ -311,11 +311,14 @@ function cr_render_cell_value($table, $field, $value) {
             if ($fkOption && isset($fkOption['color']) && preg_match('/^#[A-Fa-f0-9]{6}$/', (string)$fkOption['color'])) {
                 $color = strtoupper((string)$fkOption['color']);
             }
-            $square = $color !== ''
-                ? '<span title="' . sanitize($color) . '" style="display:inline-block;width:10px;height:10px;border:1px solid #999;border-radius:2px;vertical-align:middle;margin-right:6px;background:' . sanitize($color) . ';"></span>'
-                : '';
             $statusLabel = (string)($fkOption['label'] ?? '');
-            return $square . sanitize($statusLabel !== '' ? $statusLabel : (string)$value);
+            if ($statusLabel === '') {
+                $statusLabel = (string)$value;
+            }
+            if (function_exists('itm_crud_render_status_label_badge')) {
+                return itm_crud_render_status_label_badge($statusLabel, (string)$color);
+            }
+            return sanitize($statusLabel);
         }
 
         if ($fkOption && isset($fkOption['label']) && (string)$fkOption['label'] !== '') {
@@ -326,7 +329,7 @@ function cr_render_cell_value($table, $field, $value) {
     if ($table === 'patches_updates' && $field === 'patches_updates_photos') {
         $photos = cr_parse_photo_filenames((string)$value);
         if (empty($photos)) {
-            return '—';
+            return 'â€”';
         }
 
         $html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
@@ -341,15 +344,15 @@ function cr_render_cell_value($table, $field, $value) {
         return $html;
     }
 
+    // Why: Row active is soft-delete mirror only — never show on list/view for status-driven modules.
     if ($field === 'active') {
-        $isActive = ((int)$value === 1);
-        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+        return '';
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
-            return ((int)$value === 1) ? '✅' : '❌';
+            return ((int)$value === 1) ? 'âœ…' : 'âŒ';
         }
     }
 
@@ -509,7 +512,7 @@ function cr_detect_upload_mime_type(string $tmpName): string {
 }
 
 /**
- * Why: Never trust the client filename extension for stored photos — map from detected MIME only.
+ * Why: Never trust the client filename extension for stored photos â€” map from detected MIME only.
  */
 function cr_upload_extension_from_mime(string $mime): string {
     $map = [
@@ -556,6 +559,10 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
         return false;
     }
+    // Why: Soft-delete mirror only — business Active/Inactive is status_id badges.
+    if ($fieldName === 'active') {
+        return false;
+    }
     if ($fieldName !== 'company_id') {
         return true;
     }
@@ -565,7 +572,11 @@ $formColumns = array_values(array_filter($uiColumns, function ($col) {
     return (string)($col['Field'] ?? '') !== 'active';
 }));
 $viewColumns = array_values(array_filter($fieldColumns, function ($col) {
-    return (string)($col['Field'] ?? '') !== 'company_id';
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName === 'company_id' || $fieldName === 'active') {
+        return false;
+    }
+    return true;
 }));
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
@@ -897,7 +908,7 @@ if (!isset($crud_title)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($crud_title); ?></h1>
-                    <a href="create.php" class="btn btn-primary">➕</a>
+                    <a href="create.php" class="btn btn-primary">âž•</a>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
@@ -910,7 +921,7 @@ if (!isset($crud_title)) {
                                     <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
-                                            <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
+                                            <?php echo $dir === 'ASC' ? 'â–²' : 'â–¼'; ?>
                                         <?php endif; ?>
                                     </a>
                                 </th>
@@ -925,13 +936,13 @@ if (!isset($crud_title)) {
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">ðŸ”Ž</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">âœï¸</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                        <button class="btn btn-sm btn-danger" type="submit">ðŸ—‘ï¸</button>
                                     </form>
                                 </td>
                             </tr>
@@ -974,7 +985,7 @@ if (!isset($crud_title)) {
                             <?php if ($isTinyInt || $name === 'active'): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? 'âœ…' : 'âŒ'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
@@ -998,7 +1009,7 @@ if (!isset($crud_title)) {
                                     <?php foreach ($opts as $opt): ?>
                                         <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?> <?php echo ($name === 'status_id' && isset($opt['color'])) ? ('data-status-color="' . sanitize((string)$opt['color']) . '"') : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
-                                    <option value="__add_new__">➕</option>
+                                    <option value="__add_new__">âž•</option>
                                 </select>
                                 <?php if ($name === 'status_id'): ?>
                                     <?php $statusColor = cr_status_color_by_id((int)$displayVal); ?>
@@ -1037,8 +1048,8 @@ if (!isset($crud_title)) {
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions itm-form-actions itm-align-left">
-                        <button class="btn btn-primary" type="submit">💾</button>
-                        <a href="index.php" class="btn">🔙</a>
+                        <button class="btn btn-primary" type="submit">ðŸ’¾</button>
+                        <a href="index.php" class="btn">ðŸ”™</a>
                     </div>
                 </form>
 
@@ -1055,7 +1066,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">ðŸ”™</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">âœï¸</a></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -1082,7 +1093,7 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? '✅' : '❌';
+        indicator.textContent = event.target.checked ? 'âœ…' : 'âŒ';
     }
 });
 </script>
