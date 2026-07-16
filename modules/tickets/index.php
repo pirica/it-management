@@ -224,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         exit;
     }
 
-    $companyCountResult = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id);
+    $companyCountResult = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id . " AND deleted_at IS NULL");
     $companyCountRow = $companyCountResult ? mysqli_fetch_assoc($companyCountResult) : null;
     $companyTotalRows = (int)($companyCountRow['total'] ?? 0);
 
@@ -271,7 +271,7 @@ if ($searchRaw !== '') {
 }
 
 // Sorting logic
-$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'created_at'];
+$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'active'];
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
 
@@ -283,7 +283,7 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $orderByMap = [
     'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
     'title' => 't.title', 'status_name' => 'ts.name',
-    'priority_name' => 'tp.name', 'due_date' => 't.due_date', 'created_at' => 't.created_at',
+    'priority_name' => 'tp.name', 'due_date' => 't.due_date', 'active' => 't.active',
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -295,7 +295,7 @@ $sqlBase = "
     FROM tickets t
     LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
     LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
-    WHERE t.company_id = ? $archiveFilterSql
+    WHERE t.company_id = ? AND t.deleted_at IS NULL $archiveFilterSql
 ";
 
 // Use prepared statement for main data fetch and count
@@ -307,7 +307,7 @@ if ($searchRaw !== '') {
         OR t.title LIKE ?
         OR ts.name LIKE ?
         OR tp.name LIKE ?
-        OR CAST(t.created_at AS CHAR) LIKE ?
+        OR CASE WHEN t.active = 1 THEN 'Active' ELSE 'Inactive' END LIKE ?
     )";
 }
 
@@ -324,7 +324,7 @@ $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
 $totalRows = (int)($countRow['total'] ?? 0);
 mysqli_stmt_close($countStmt);
 
-$companyCountQuery = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id);
+$companyCountQuery = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id . " AND deleted_at IS NULL");
 $companyCountRow = $companyCountQuery ? mysqli_fetch_assoc($companyCountQuery) : null;
 $companyTotalRows = (int)($companyCountRow['total'] ?? 0);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
@@ -407,6 +407,7 @@ if (!isset($crud_title)) {
                 <div class="card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                        <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                         <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all tickets? This cannot be undone.');">Clear Table</button>
@@ -420,7 +421,7 @@ if (!isset($crud_title)) {
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
-                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'due_date' => 'Due Date', 'created_at' => 'Created'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'due_date' => 'Due Date', 'active' => 'Active'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -437,7 +438,13 @@ if (!isset($crud_title)) {
                             <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
                             <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
-                            <td><?php echo sanitize($t['created_at']); ?></td>
+                            <td>
+                                <?php if ((int)($t['active'] ?? 0) === 1): ?>
+                                    <span class="badge badge-success">Active</span>
+                                <?php else: ?>
+                                    <span class="badge badge-danger">Inactive</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
@@ -464,6 +471,7 @@ if (!isset($crud_title)) {
                                     <?php endif; ?>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete ticket?');">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                        <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                                         <input type="hidden" name="id" value="<?php echo (int)$t['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
                                         <button type="submit" class="btn btn-sm btn-danger">🗑️</button>

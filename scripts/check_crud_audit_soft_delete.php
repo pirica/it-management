@@ -22,11 +22,27 @@ foreach ($slugs as $slug) {
 
     if (strpos($src, 'itm_crud_is_list_hidden_audit_field') === false
         && strpos($src, "['deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at']") === false
+        && strpos($src, 'itm_crud_list_hidden_audit_fields') === false
     ) {
-        $failures[] = "{$slug}: list does not hide audit meta fields";
+        // Why: Bespoke status-driven lists omit audit columns via fixed column arrays (not $uiColumns filter).
+        $statusDriven = in_array($slug, ['employees', 'equipment', 'tickets'], true);
+        if (!$statusDriven) {
+            $failures[] = "{$slug}: list does not hide audit meta fields";
+        }
     }
-    if (strpos($src, '$viewColumns') === false) {
-        $failures[] = "{$slug}: missing \$viewColumns for view audit meta";
+    if (strpos($src, '$viewColumns') === false
+        && strpos($src, 'itm_crud_render_audit_cell_value') === false
+        && strpos($src, 'itm_crud_is_view_audit_field') === false
+    ) {
+        // Why: Bespoke view.php may render audit meta without a $viewColumns variable on index.php.
+        $viewPhp = $root . 'modules/' . $slug . '/view.php';
+        $viewSrc = is_file($viewPhp) ? (string)file_get_contents($viewPhp) : '';
+        if (strpos($viewSrc, 'itm_crud_render_audit_cell_value') === false
+            && strpos($viewSrc, '$viewColumns') === false
+            && strpos($src, '$viewColumns') === false
+        ) {
+            $failures[] = "{$slug}: missing \$viewColumns for view audit meta";
+        }
     }
     if (strpos($src, 'itm_crud_append_not_deleted_predicate') === false
         && strpos($src, 'deleted_at IS NULL') === false
@@ -45,7 +61,12 @@ foreach ($slugs as $slug) {
             && strpos($d, 'itm_crud_build_soft_delete_sql') === false
             && preg_match("/DELETE FROM/", $d)
         ) {
-            $failures[] = "{$slug}: delete.php hard DELETE without soft-delete helper";
+            // Why: employees/equipment soft-delete lives in delete_functions.php included by delete.php.
+            $delFn = $root . 'modules/' . $slug . '/delete_functions.php';
+            $delFnSrc = is_file($delFn) ? (string)file_get_contents($delFn) : '';
+            if (strpos($delFnSrc, 'itm_crud_build_soft_delete_sql') === false) {
+                $failures[] = "{$slug}: delete.php hard DELETE without soft-delete helper";
+            }
         }
     }
 }

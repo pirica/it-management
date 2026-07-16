@@ -2,7 +2,7 @@
 /**
  * Employees Module - Delete
  *
- * Handles single, bulk, and clear-table deletion with employee_system_access cleanup.
+ * Handles tenant-scoped single, bulk, and clear-table soft deletion.
  */
 
 require '../../config/config.php';
@@ -28,12 +28,7 @@ if ($bulkAction === 'clear_table') {
         exit;
     }
 
-    if (mysqli_query($conn, 'ALTER TABLE employees AUTO_INCREMENT = 1')) {
-        $_SESSION['crud_success'] = 'All employees were deleted for this company, and ID numbering was reset.';
-    } else {
-        $_SESSION['crud_success'] = 'All employees were deleted for this company.';
-        $_SESSION['crud_error'] = 'Employees were deleted, but resetting ID numbering failed: ' . mysqli_error($conn);
-    }
+    $_SESSION['crud_success'] = 'All visible employees were soft-deleted for this company.';
 
     header('Location: index.php');
     exit;

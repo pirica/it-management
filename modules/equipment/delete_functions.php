@@ -149,7 +149,7 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
         return 'Invalid equipment ID.';
     }
 
-    $checkStmt = mysqli_prepare($conn, 'SELECT id FROM equipment WHERE id = ? AND company_id = ? LIMIT 1');
+    $checkStmt = mysqli_prepare($conn, 'SELECT id FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
     if (!$checkStmt) {
         return 'Unable to check record before delete: ' . mysqli_error($conn);
     }
@@ -181,8 +181,15 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
             throw new RuntimeException($assignmentCloseError);
         }
 
-        $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
-        $deleteStmt = mysqli_prepare($conn, "UPDATE equipment SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $currentEmployeeId WHERE id = ? AND company_id = ? LIMIT 1");
+        equipment_delete_idf_data($conn, (string)$companyId, $id);
+        if (!$isSwitchEquipment) {
+            equipment_delete_switch_port_data($conn, $companyId, $id);
+        }
+
+        $currentEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+        $softDeleteSql = itm_crud_build_soft_delete_sql('equipment', '', $currentEmployeeId)
+            . ' AND id = ? AND company_id = ?';
+        $deleteStmt = mysqli_prepare($conn, $softDeleteSql);
         if (!$deleteStmt) {
             throw new RuntimeException('Delete failed: ' . mysqli_error($conn));
         }
@@ -193,11 +200,6 @@ function equipment_delete_record(mysqli $conn, int $companyId, int $id): ?string
             throw new RuntimeException('Nothing was deleted.');
         }
         mysqli_stmt_close($deleteStmt);
-
-        equipment_delete_idf_data($conn, (string)$companyId, $id);
-        if (!$isSwitchEquipment) {
-            equipment_delete_switch_port_data($conn, $companyId, $id);
-        }
 
         mysqli_commit($conn);
     } catch (Throwable $e) {
@@ -221,7 +223,10 @@ function equipment_clear_table_for_company(mysqli $conn, int $companyId): ?strin
     }
 
     $idList = [];
-    $listResult = mysqli_query($conn, 'SELECT id FROM equipment WHERE company_id = ' . $companyId);
+    $listResult = mysqli_query(
+        $conn,
+        'SELECT id FROM equipment WHERE company_id = ' . $companyId . ' AND deleted_at IS NULL'
+    );
     if ($listResult === false) {
         return 'Unable to load equipment records for clear table: ' . mysqli_error($conn);
     }

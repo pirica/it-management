@@ -126,6 +126,7 @@ function equipment_field_label($key) {
         'workstation_storage' => 'Storage (GB/TB)',
         'workstation_os_installed_on' => 'Workstation OS Installed On',
         'switch_fiber_port_label' => 'Fiber Port Label',
+        'active' => 'Active',
         'notes' => 'Notes',
     ];
 
@@ -133,7 +134,7 @@ function equipment_field_label($key) {
 }
 
 function equipment_field_value($key, $value) {
-    if (in_array($key, ['printer_scan', 'active'], true)) {
+    if ($key === 'printer_scan') {
         return (int)$value === 1 ? 'Yes' : 'No';
     }
 
@@ -145,7 +146,11 @@ function equipment_field_is_populated($key, $value) {
         return false;
     }
 
-    if (in_array($key, ['printer_scan', 'active'], true)) {
+    if ($key === 'active') {
+        return true;
+    }
+
+    if ($key === 'printer_scan') {
         return (int)$value === 1;
     }
 
@@ -199,10 +204,19 @@ if (!isset($crud_title)) {
 <?php foreach ($item as $k => $v): ?>
     <?php if (!equipment_field_should_display($k)) { continue; } ?>
     <?php if (!equipment_field_matches_context($k, $item)) { continue; } ?>
-    <?php if (!equipment_field_is_populated($k, $v)) { continue; } ?>
+    <?php $isAuditField = function_exists('itm_crud_is_view_audit_field') && itm_crud_is_view_audit_field($k); ?>
+    <?php if (!$isAuditField && !equipment_field_is_populated($k, $v)) { continue; } ?>
     <tr>
         <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
-        <td><?php echo sanitize(equipment_field_value($k, $v)); ?></td>
+        <td>
+            <?php if ($k === 'active'): ?>
+                <span class="badge <?php echo (int)$v === 1 ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$v === 1 ? 'Active' : 'Inactive'; ?></span>
+            <?php elseif ($isAuditField): ?>
+                <?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, $k, $v); ?>
+            <?php else: ?>
+                <?php echo sanitize(equipment_field_value($k, $v)); ?>
+            <?php endif; ?>
+        </td>
     </tr>
 <?php endforeach; ?>
 <?php $photoFilenames = equipment_parse_photo_filenames($item['photo_filename'] ?? ''); ?>

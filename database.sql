@@ -1323,6 +1323,7 @@ CREATE TABLE `employees` (
   `hide_year` tinyint(1) NOT NULL DEFAULT '0',
   `is_hidden` tinyint(1) NOT NULL DEFAULT '0',
   `raw_status_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,
@@ -1421,6 +1422,7 @@ CREATE TABLE `equipment` (
   `switch_environment_id` int DEFAULT NULL,
   `notes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `photo_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,
@@ -2619,6 +2621,7 @@ CREATE TABLE `patches_updates` (
   `status_id` int DEFAULT NULL,
   `level_id` int DEFAULT NULL,
   `due_date` date DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,
@@ -3530,6 +3533,7 @@ CREATE TABLE `tickets` (
   `due_date` date DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
   `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,
@@ -3552,6 +3556,11 @@ CREATE TABLE `tickets` (
   CONSTRAINT `tickets_ibfk_5` FOREIGN KEY (`created_by_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_6` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_7` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Historical note for existing DBs (do not run on fresh import — columns are in CREATE TABLE above):
+-- ALTER TABLE `employees` ADD COLUMN `active` tinyint(1) DEFAULT '1' AFTER `raw_status_code`;
+-- ALTER TABLE `equipment` ADD COLUMN `active` tinyint(1) DEFAULT '1' AFTER `photo_filename`;
+-- ALTER TABLE `patches_updates` ADD COLUMN `active` tinyint(1) DEFAULT '1' AFTER `due_date`;
+-- ALTER TABLE `tickets` ADD COLUMN `active` tinyint(1) DEFAULT '1' AFTER `tickets_photos`;
 -- Data for `tickets`
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-01-01 00:00:01');
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('2', '2', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '9', '5', '7', '1', '1', '2', NULL, '2026-01-01 00:00:01');

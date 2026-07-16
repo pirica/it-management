@@ -83,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($form as $key => $default) {
         $form[$key] = trim((string)($_POST[$key] ?? ''));
     }
+    itm_crud_force_active_live($form);
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
 
     // Validation
@@ -135,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hideYear = (int)$form['hide_year'];
         $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
         $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
+        $active = (int)$form['active'];
 
         if ($roleId !== 'NULL') {
             $currentUserRoleId = itm_get_employee_role_id($conn, (int)($_SESSION['employee_id'] ?? 0));
@@ -149,13 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             department_id, location_id, job_code, comments, mobile_phone, external_number, dect, extension, on_contacts, on_orgchart, raw_status_code, employment_status_id,
             employee_position_id, reports_to, office_key_card_department_id, workstation_mode_id, assignment_type_id,
             request_date, requested_by, termination_requested_by,
-            start_date, employee_type_id, termination_date, birthday, hide_year, role_id, access_level_id
+            start_date, employee_type_id, termination_date, birthday, hide_year, role_id, access_level_id, active
         ) VALUES (
             " . (int)$company_id . ", '{$firstName}', '{$lastName}', {$displayName}, {$fullName}, {$workEmail}, {$personalEmail}, {$externalId}, {$insuranceN}, {$username}, {$employeeCode},
             {$departmentId}, {$locationId}, {$jobCode}, {$comments}, {$mobilePhone}, {$externalNumber}, {$dect}, {$extension}, {$onContacts}, {$onOrgchart}, {$rawStatusCode}, {$employmentStatusId},
             {$employeePositionId}, {$reportsTo}, {$officeDeptId}, {$workstationModeId}, {$assignmentTypeId},
             {$requestDate}, {$requestedBy}, {$terminationRequestedBy},
-            {$startDate}, {$employeeTypeId}, {$terminationDate}, {$birthday}, {$hideYear}, {$roleId}, {$accessLevelId}
+            {$startDate}, {$employeeTypeId}, {$terminationDate}, {$birthday}, {$hideYear}, {$roleId}, {$accessLevelId}, {$active}
         )";
 
         if (mysqli_query($conn, $sql)) {
@@ -224,6 +226,8 @@ if (!isset($crud_title)) {
             <div class="card">
                 <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php itm_crud_render_form_hidden_active_input(); ?>
+                    <?php itm_crud_render_form_hidden_audit_inputs($form, 'create'); ?>
                     <?php include __DIR__ . '/includes/profile_fields.php'; ?>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
                         <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="<?php echo sanitize($form['first_name']); ?>" required></div>

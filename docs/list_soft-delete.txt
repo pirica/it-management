@@ -1,6 +1,7 @@
 # Scaffold CRUD modules in scope for soft-delete + audit column UI.
-# Classifier: modules/{slug}/index.php has both $uiColumns and cr_manageable_columns.
-# Explicitly skipped for now (not in apply list): employees, equipment, patches_updates, tickets.
+# Classifier: modules/{slug}/index.php has both $uiColumns and cr_manageable_columns,
+# plus status-driven modules employees, equipment, patches_updates, tickets
+# (row active is soft-delete mirror; business Active/Inactive stays on *_statuses FKs).
 # One module slug per line. Lines starting with # and blank lines are ignored.
 
 access_levels
@@ -26,6 +27,8 @@ employee_roles
 employee_sidebar_preferences
 employee_statuses
 employee_type
+employees
+equipment
 equipment_environment
 equipment_fiber
 equipment_fiber_count
@@ -66,6 +69,7 @@ ops_report_guest_experience
 ops_report_hotel_figure
 ops_report_night_shift
 ops_report_walk_round
+patches_updates
 patches_updates_level
 patches_updates_status
 printer_device_types
@@ -84,6 +88,7 @@ switch_status
 ticket_categories
 ticket_priorities
 ticket_statuses
+tickets
 todo_categories
 ui_configuration
 warranty_types

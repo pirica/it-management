@@ -4,7 +4,7 @@
 Canonical documentation that is not source code: upload maps, README assets, module inventory lists for agents.
 
 ## 7. File Structure
-- **list_soft-delete.txt** — scaffold CRUD module slugs in scope for soft-delete + audit-column UI (`$uiColumns` + `cr_manageable_columns`). Authoritative input for `scripts/apply_crud_audit_soft_delete.php` and related checks. Explicitly excludes `employees`, `equipment`, `patches_updates`, `tickets` for now.
+- **list_soft-delete.txt** — scaffold CRUD module slugs in scope for soft-delete + audit-column UI (`$uiColumns` + `cr_manageable_columns`), plus status-driven modules `employees`, `equipment`, `patches_updates`, `tickets` (row `active` soft-delete mirror; business state on `*_statuses` FKs). Authoritative input for `scripts/apply_crud_audit_soft_delete.php` and related checks.
 - **list_bespoke_UI.txt** — non-scaffold / bespoke module slugs deferred from that rollout.
 
 ## 10. Common Pitfalls

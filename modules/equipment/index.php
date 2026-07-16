@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         exit;
     }
 
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM `equipment` WHERE company_id=' . (int)$company_id;
+    $countSql = 'SELECT COUNT(*) AS total_rows FROM `equipment` WHERE company_id=' . (int)$company_id . ' AND deleted_at IS NULL';
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
     if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
@@ -302,6 +302,7 @@ if (!empty($_SESSION['crud_success'])) {
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($equipmentCsrfToken); ?>">
+                    <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all equipment records for this company? Switches will also remove related switch port data. This cannot be undone.');">Clear Table</button>
                 </form>
@@ -414,6 +415,7 @@ if (!empty($_SESSION['crud_success'])) {
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($equipmentCsrfToken); ?>">
+                                        <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
 

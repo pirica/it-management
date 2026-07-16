@@ -343,7 +343,7 @@ $data = [
     'category_id' => '', 'status_id' => '', 'priority_id' => '',
     'created_by_employee_id' => (int)($_SESSION['employee_id'] ?? 0),
     'assigned_to_employee_id' => '', 'equipment_id' => '', 'due_date' => '',
-    'tickets_photos' => '', 'created_at' => date('Y-m-d\TH:i')
+    'tickets_photos' => '', 'active' => 1, 'created_at' => date('Y-m-d\TH:i')
 ];
 
 // Load existing ticket for editing
@@ -365,6 +365,7 @@ if ($is_edit) {
 // HANDLE FORM SUBMISSION
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    itm_crud_force_active_live($data);
 
     // Extraction and sanitization
     $ticket_external_code = escape_sql($_POST['ticket_external_code'] ?? '', $conn);
@@ -452,13 +453,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         category_id=$category_id, status_id=$status_id, priority_id=$priority_id,
                         created_by_employee_id=$created_by_employee_id, assigned_to_employee_id=$assigned_to_employee_id, equipment_id=$equipment_id,
                         due_date=$due_date_sql,
-                        tickets_photos=$photos_sql, created_at=$created_at_val
+                        tickets_photos=$photos_sql, active=1, created_at=$created_at_val
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO tickets
-                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_employee_id, assigned_to_employee_id, equipment_id, due_date, tickets_photos, created_at)
+                    (company_id, ticket_external_code, title, description, category_id, status_id, priority_id, created_by_employee_id, assigned_to_employee_id, equipment_id, due_date, tickets_photos, active, created_at)
                     VALUES
-                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_employee_id, $assigned_to_employee_id, $equipment_id, $due_date_sql, $photos_sql, $created_at_val)";
+                    ($company_id, '$ticket_external_code', '$title', '$description', $category_id, $status_id, $priority_id, $created_by_employee_id, $assigned_to_employee_id, $equipment_id, $due_date_sql, $photos_sql, 1, $created_at_val)";
         }
 
         if (!$error && itm_run_query($conn, $sql)) {
@@ -559,6 +560,7 @@ if (!isset($crud_title)) {
             <div class="card">
                 <form id="ticketForm" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php itm_crud_render_form_hidden_active_input(); ?>
 
                     <div class="form-row">
                         <div class="form-group"><label>Title *</label><input required name="title" value="<?php echo sanitize($data['title']); ?>"></div>

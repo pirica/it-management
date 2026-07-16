@@ -209,18 +209,6 @@ function emp_ensure_duplicate_column($conn) {
 }
 
 /**
- * Removes deprecated employees.active column if still present
- */
-if (!function_exists("emp_drop_active_column_if_exists")) {
-function emp_drop_active_column_if_exists($conn) {
-    $res = mysqli_query($conn, "SHOW COLUMNS FROM employees LIKE 'active'");
-    if ($res && mysqli_num_rows($res) === 1) {
-        mysqli_query($conn, 'ALTER TABLE employees DROP COLUMN `active`');
-    }
-}
-}
-
-/**
  * Generates a helpful label for identify skipped rows during import
  */
 if (!function_exists("emp_import_identity_label")) {
@@ -331,7 +319,6 @@ $messages = [];
 $errors = [];
 $skippedDetails = [];
 $csrfToken = itm_get_csrf_token();
-emp_drop_active_column_if_exists($conn);
 
 // --- ACTION: IMPORT EMPLOYEES ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'import_employees')) {
@@ -667,6 +654,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
 emp_ensure_duplicate_column($conn);
 emp_ensure_is_hidden_column($conn);
 $where = ' WHERE e.company_id=' . (int)$company_id . itm_employees_sql_visible_only_predicate('e');
+$where = itm_crud_append_not_deleted_predicate($where, 'e');
 $showDuplicatesOnly = (($_GET['show'] ?? '') === 'duplicates');
 if ($showDuplicatesOnly) { $where .= ' AND e.duplicate=1'; }
 
@@ -684,6 +672,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
 
 $preferredOrder = ['id','duplicate','external_id','insurance_n','employee_code','username','display_name','full_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','role_id','access_level_id','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
 $hiddenColumns = array_merge(['company_id', 'location'], itm_employees_hidden_account_column_names());
+$hiddenColumns = array_merge($hiddenColumns, itm_crud_list_hidden_audit_fields());
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()), itm_employees_auth_sensitive_field_names());
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
 
@@ -860,6 +849,7 @@ if (!isset($crud_title)) {
             <div class="card" style="margin-bottom:16px;">
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all employees for this company? This cannot be undone.');">Clear Table</button>
                 </form>
@@ -937,6 +927,8 @@ if (!isset($crud_title)) {
                                         <?php else: ?>—<?php endif; ?>
                                     <?php elseif ($col === 'workstation_mode_id'): ?><?php echo sanitize((string)($row['workstation_mode_name'] ?? '')); ?>
                                     <?php elseif ($col === 'assignment_type_id'): ?><?php echo sanitize((string)($row['assignment_type_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'active'): ?>
+                                        <span class="badge <?php echo ((int)($row[$col] ?? 0) === 1) ? 'badge-success' : 'badge-danger'; ?>"><?php echo ((int)($row[$col] ?? 0) === 1) ? 'Active' : 'Inactive'; ?></span>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
@@ -957,6 +949,7 @@ if (!isset($crud_title)) {
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
+                                        <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                                         <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                                     </form>
                                 </div>
