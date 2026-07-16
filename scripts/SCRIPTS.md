@@ -848,6 +848,14 @@ Catalog: `scripts/scripts.php`.
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
 
+### Reports Hub scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_reports_hub.php` | Regression for `modules/reports/`: all `api/helpers.php` chart payloads, Hotel Operations MTD metrics (`ops_report` / `ops_report_fb_outlet`), budget vs actual / YoY totals, `modules_registry` slug `reports`, and core Chart.js canvas ids in `index.php`. Optional `ITM_TEST_COMPANY_ID` (default 1). Requires `database.sql` Reports Hub sample seeds (ops_report daily trend, F&B covers, expanded budgets/expenses). Browser + CLI. |
+
+Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/api/helpers.php`, or Reports Hub-related seeds in `database.sql`.
+
 ### Email Management scripts
 
 | Script | Purpose |

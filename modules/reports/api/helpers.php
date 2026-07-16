@@ -73,7 +73,7 @@ function get_hr_statistics() {
     $sql = "SELECT COALESCE(d.name, 'Unassigned') as dept_name, COUNT(*) as count
             FROM employees e
             LEFT JOIN departments d ON e.department_id = d.id
-            WHERE e.company_id = ?
+            WHERE e.company_id = ? AND e.deleted_at IS NULL
             GROUP BY dept_name
             ORDER BY count DESC";
 
@@ -494,7 +494,7 @@ function get_employee_growth_trend() {
 
     $sql = "SELECT DATE_FORMAT(start_date, '%Y-%m') as month_str, COUNT(*) as count
             FROM employees
-            WHERE company_id = ? AND start_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
+            WHERE company_id = ? AND deleted_at IS NULL AND start_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
             GROUP BY month_str";
 
     $stmt = mysqli_prepare($conn, $sql);
