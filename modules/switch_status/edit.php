@@ -377,6 +377,17 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
+// Why: View shows create/update/delete audit stamps while list hides them.
+$viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if ($fieldName !== 'company_id') {
+        return true;
+    }
+    return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
+}));
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
