@@ -118,4 +118,20 @@ if (!function_exists('itm_script_cli_is_cli')) {
                 return $text;
         }
     }
+
+    /** Print a headed list with real newlines (readable inside browser <pre>). */
+    function itm_script_echo_list($heading, array $items)
+    {
+        $items = array_values(array_unique(array_map('strval', $items)));
+        sort($items, SORT_STRING);
+        echo (string)$heading . ":\n";
+        if ($items === []) {
+            echo "  (none)\n\n";
+            return;
+        }
+        foreach ($items as $item) {
+            echo '  - ' . $item . "\n";
+        }
+        echo "\n";
+    }
 }
