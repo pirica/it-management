@@ -486,6 +486,7 @@ if (!isset($crud_title)) {
                                     data-rp-readonly="<?= $matrixReadOnly ? '1' : '0' ?>"
                                     data-itm-no-export-excel="1"
                                     data-itm-no-export-pdf="1"
+                                    data-itm-no-import-excel="1"
                                 >
                                     <thead>
                                     <tr>
