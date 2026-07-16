@@ -188,7 +188,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS: HTTP 403 message + row retained). Seeds via a free `cost_centers` slot (`uq_expenses_company_scope` is one row per company + cost center). Do not stub `cr_require_valid_csrf_token()` in subprocess harnesses (fatal redeclare). |
+| `php scripts/repro_rbac_bypass.php` | PoC — read-only Expenses user must not delete via `delete.php` (expects PASS: HTTP 403 message + row retained, or permission-helper fallback when browser subprocess hits login redirect). Seeds via a free `cost_centers` slot (`uq_expenses_company_scope` is one row per company + cost center). Subprocess uses Laragon CLI `php.exe`, restores `$_SESSION` before `config.php`, and sets `SCRIPT_NAME` / `DOCUMENT_ROOT`. |
 | `php scripts/repro_employee_companies_bac.php` | PoC — non-admin must not access `employee_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
 | `php scripts/repro_employee_companies_leak.php` | PoC — multi-tenant leak checks for Employees module. |
 | `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
