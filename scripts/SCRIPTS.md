@@ -21,6 +21,7 @@
       - HTML coverage guardrails (PHPUnit)
       - Interpreting HTML coverage percentages
       - Full-module browser QA (5 companies, Laragon)
+      - Full scripts test matrix (`scripts/SCRIPTS_TEST_MATRIX.md`)
       - 5. Pre-merge verification (scripts)
       - 6. File Upload Modules
 
@@ -907,6 +908,21 @@ Run `verify_employee_type_resignations.php` when changing `modules/employee_type
 Run `employee_fields_missing.php` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
 
 **MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
+
+#### Full scripts test matrix (`scripts/SCRIPTS_TEST_MATRIX.md`)
+
+Canonical map of **all cataloged** `scripts/scripts.php` entries into execution tiers (0 docs, 1 CI baseline, 2 static `check_*`, 3 runtime `verify_*`/`repro_*`, 4 MBQA/human-flow, 5 excluded destructive/maintenance).
+
+| Artifact | Purpose |
+|----------|---------|
+| `scripts/SCRIPTS_TEST_MATRIX.md` | Tier counts, runner coverage map, command batches, full catalog classification table, Tier 5 exclusion summary |
+| `scripts/data/scripts-matrix-destroy-log.md` | Append-only log when a script forces a fresh DB clone |
+
+**Do not** use `perform_audit.php` as a blanket quality gate. Prefer Tier 1 runners first, then Tier 2/3 batches, then Tier 4 on a healthy clone.
+
+**Destroy -> document -> fresh clone:** if a script wrecks `itmanagement` or critical trees, record the culprit in `scripts/data/scripts-matrix-destroy-log.md` (status `DESTROYED_ENV`), re-import `database.sql` (or `bash scripts/verify_database_sql_import.sh`), sanity-check, then resume. Full protocol lives in `SCRIPTS_TEST_MATRIX.md`.
+
+When adding a catalog row, update `SCRIPTS_TEST_MATRIX.md` in the same PR.
 
 #### 5. Pre-merge verification (scripts)
 

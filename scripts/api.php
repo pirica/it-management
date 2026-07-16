@@ -532,6 +532,13 @@ function itmDocProjectJsonEndpoints(): array
         [
             'group' => 'Scripts / tooling',
             'method' => 'GET',
+            'path' => 'scripts/SCRIPTS_TEST_MATRIX.md',
+            'params' => '—',
+            'purpose' => 'Full catalog scripts verification matrix (tiers 0-5, runner coverage, destroy->fresh database.sql clone protocol). Destroy log: scripts/data/scripts-matrix-destroy-log.md.',
+        ],
+        [
+            'group' => 'Scripts / tooling',
+            'method' => 'GET',
             'path' => 'scripts/apply_crud_fk_label_search.php',
             'params' => '—',
             'purpose' => 'Maintenance: bulk-patch flattened CRUD index.php search blocks with itm_crud_fk_label_search_conditions().',
