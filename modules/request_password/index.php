@@ -629,7 +629,7 @@ if (!isset($crud_title)) {
                     <div class="form-actions" style="margin-top: 40px;">
                         <a href="index.php" class="btn" title="Back">🔙</a>
                         <a href="edit.php?id=<?php echo (int)$data['id']; ?>" class="btn" title="Edit">✏️</a>
-                        <?php if (rp_can_delete_request($data, (int)($_SESSION['employee_id'] ?? 0))): ?>
+                        <?php if (!empty($data) && rp_can_delete_request($data, (int)($_SESSION['employee_id'] ?? 0))): ?>
                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this request?');">
                             <input type="hidden" name="id" value="<?php echo (int)$data['id']; ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">

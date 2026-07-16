@@ -285,8 +285,9 @@ function itc_check_module(string $module, string $content): array
     }
 
     if (itc_has_actions_column($content)) {
+        // Why: attribute order on <th>/<td> varies; require the marker anywhere in the opening tag.
         $hasActionsHeader = preg_match(
-            '/<th[^>]*data-itm-actions-origin\s*=\s*(["\'])1\1[^>]*>/i',
+            '/<th\b(?=[^>]*\bdata-itm-actions-origin\s*=\s*(["\'])1\1)[^>]*>/i',
             $content
         ) === 1;
 
@@ -295,7 +296,7 @@ function itc_check_module(string $module, string $content): array
         }
 
         $hasActionsCell = preg_match(
-            '/<td[^>]*data-itm-actions-origin\s*=\s*(["\'])1\1[^>]*>/i',
+            '/<td\b(?=[^>]*\bdata-itm-actions-origin\s*=\s*(["\'])1\1)[^>]*>/i',
             $content
         ) === 1;
 
