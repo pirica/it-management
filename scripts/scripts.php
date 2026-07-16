@@ -1654,9 +1654,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 </tr>
                 <tr>
                     <td><a href="repro_attempts_data_leak_v2.php" target="_blank" rel="nofollow noreferrer">repro_attempts_data_leak_v2.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression — password-like login identifiers redacted in <code>attempts.email</code>.</td>
-                    <td><code>php scripts/repro_attempts_data_leak_v2.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression — password-like login identifiers redacted in <code>attempts.email</code> (disposable secret per run; checks only the row inserted by this request).</td>
+                    <td>Browser: <a href="repro_attempts_data_leak_v2.php">run</a>. CLI: <code>php scripts/repro_attempts_data_leak_v2.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_explorer_zip_slip_v2.php" target="_blank" rel="nofollow noreferrer">repro_explorer_zip_slip_v2.php</a></td>
