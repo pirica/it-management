@@ -64,6 +64,81 @@ function vupzr_lookup_tenant_id(mysqli $conn, int $companyId, string $sql, strin
     return (int)($row['id'] ?? 0);
 }
 
+/**
+ * @param string $path
+ * @return bool
+ */
+function vupzr_is_cli_php_binary($path)
+{
+    $normalized = strtolower(str_replace('\\', '/', (string)$path));
+    if ($normalized === '' || !is_file($path)) {
+        return false;
+    }
+    if (strpos($normalized, 'php-cgi') !== false) {
+        return false;
+    }
+    if (substr($normalized, -4) === '.dll') {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @return string
+ */
+function vupzr_resolve_php_binary()
+{
+    $laragonPhp = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
+    if (is_file($laragonPhp)) {
+        return $laragonPhp;
+    }
+    if (defined('PHP_BINARY') && PHP_BINARY !== '' && vupzr_is_cli_php_binary(PHP_BINARY)) {
+        return (string)PHP_BINARY;
+    }
+
+    return 'php';
+}
+
+/**
+ * @param string $output
+ * @return array<string,mixed>|null
+ */
+function vupzr_decode_json_wrapper_from_cli_output($output)
+{
+    $text = trim((string)$output);
+    if ($text === '') {
+        return null;
+    }
+
+    $decoded = json_decode($text, true);
+    if (is_array($decoded) && array_key_exists('http_status', $decoded)) {
+        return $decoded;
+    }
+
+    $lines = preg_split('/\r\n|\n/', $text);
+    for ($i = count($lines) - 1; $i >= 0; $i--) {
+        $line = trim($lines[$i]);
+        if ($line === '' || $line[0] !== '{') {
+            continue;
+        }
+        $decoded = json_decode($line, true);
+        if (is_array($decoded) && array_key_exists('http_status', $decoded)) {
+            return $decoded;
+        }
+    }
+
+    if (preg_match('/\{"http_status"\s*:/', $text, $match, PREG_OFFSET_CAPTURE)) {
+        $start = (int)$match[0][1];
+        $decoded = json_decode(substr($text, $start), true);
+        if (is_array($decoded) && array_key_exists('http_status', $decoded)) {
+            return $decoded;
+        }
+    }
+
+    return null;
+}
+
 function vupzr_count_idf_ports(mysqli $conn, int $companyId): int
 {
     $stmt = $conn->prepare('SELECT COUNT(*) AS c FROM idf_ports WHERE company_id = ?');
@@ -256,7 +331,7 @@ echo json_encode([
             return ['http_status' => 0, 'body' => '', 'error' => 'file_put_contents() failed'];
         }
 
-        $phpBin = (defined('PHP_BINARY') && PHP_BINARY !== '') ? PHP_BINARY : 'php';
+        $phpBin = vupzr_resolve_php_binary();
 
         $output = null;
         if (function_exists('proc_open')) {
@@ -292,7 +367,7 @@ echo json_encode([
             }
         }
 
-        $wrapper = json_decode(trim((string)$output), true);
+        $wrapper = vupzr_decode_json_wrapper_from_cli_output($output);
         if (!is_array($wrapper)) {
             return [
                 'http_status' => 0,

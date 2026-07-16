@@ -376,7 +376,7 @@ php scripts/idfs_sync_human_test.php
 php scripts/auth_register_reset_human_test.php
 ```
 
-**`verify_update_port_zero_row.php`:** asserts HTTP `404` on zero-row `update_port.php` before IDF auto-sync. Creates disposable probe equipment + `switch_ports` row when the tenant has none (transaction-wrapped). Subprocess seeds `$_SESSION['company_id']` before `config.php`, stubs `itm_api_json_response()` to capture HTTP status, and sets `$company_id` before including `update_port.php`. Optional env: `ITM_TEST_COMPANY_ID` (default `1`).
+**`verify_update_port_zero_row.php`:** asserts HTTP `404` on zero-row `update_port.php` before IDF auto-sync. Creates disposable probe equipment + `switch_ports` row when the tenant has none (transaction-wrapped). Subprocess seeds `$_SESSION['company_id']` before `config.php`, stubs `itm_api_json_response()` to capture HTTP status, sets `$company_id` before including `update_port.php`, uses CLI `php.exe`, and decodes the JSON status wrapper after CLI `header()` output lines. Optional env: `ITM_TEST_COMPANY_ID` (default `1`).
 
 **`verify_metadata_column_cache.php`:** asserts table-level caching in `itm_table_has_column()` / `itm_table_column_is_nullable()` (`includes/bootstrap_helpers.php`). Cold batch on `switch_ports` (15 checks matching `update_port.php`) expects schema `Questions` delta 1–2; warm repeat expects schema delta 0 (measurement excludes trailing `SHOW STATUS`). Optional env: `ITM_META_CACHE_TABLE` (default `switch_ports`).
 
