@@ -290,12 +290,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td>Browser: <a href="apply_form_failed_save_display_fix.php">dry-run</a> / <a href="apply_form_failed_save_display_fix.php?apply=1">apply=1</a> · <a href="apply_form_failed_save_display_fix.php?module=manufacturers">?module=manufacturers</a>. CLI: <code>php scripts/apply_form_failed_save_display_fix.php</code> then <code>php scripts/apply_form_failed_save_display_fix.php --apply</code> · <code>--module=manufacturers</code></td>
                 </tr>
                 <tr>
-                    <td>test_db_error_messages.php</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Asserts human-friendly output from <code>itm_format_db_constraint_error()</code>, <code>itm_render_alert_errors()</code>, and <code>itm_humanize_api_error_message()</code> (e.g. NOT NULL → “Please select a value for Employee”; strips <code>Database error:</code> / <code>DB error:</code> prefixes).</td>
-                    <td>
-                        <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code>, <code>includes/ui_alert_helpers.php</code>, or IDF/header flash paths.
-                    </td>
+                    <td><a href="test_db_error_messages.php" target="_blank" rel="nofollow noreferrer">test_db_error_messages.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Read-only assertion harness for <code>itm_format_db_constraint_error()</code>, <code>itm_render_alert_errors()</code>, and <code>itm_humanize_api_error_message()</code> (e.g. NOT NULL → “Please select a value for Employee”; strips <code>Database error:</code> / <code>DB error:</code> prefixes). Lists passed/failed assertion labels.</td>
+                    <td>Browser: <a href="test_db_error_messages.php">run</a>. CLI: <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code>, <code>includes/ui_alert_helpers.php</code>, or IDF/header flash paths.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_human_friendly_error_display.php" target="_blank" rel="nofollow noreferrer">apply_human_friendly_error_display.php</a></td>
