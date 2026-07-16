@@ -141,7 +141,7 @@ Run after changes to `modules/select_options_api.php` or `includes/itm_select_op
 |--------|---------|
 | `php scripts/repro_select_options_unauthorized_v2.php` | Regression — regular users cannot quick-add `companies` rows via Select Options API |
 | `php scripts/repro_attempts_data_leak_v2.php` | Regression — password-like login identifiers are redacted before `attempts.email` persistence |
-| `php scripts/repro_vault_corruption.php` | Regression — vault master key re-encryption rolls back on failure; entries stay decryptable with the old key |
+| `php scripts/repro_vault_corruption.php` | Regression — vault master key re-encryption rolls back on failure; entries stay decryptable with the old key. Seeds disposable user + `password_entries` rows with `company_id` (NOT NULL). Browser-safe errors (no `STDERR`). |
 
 Run after login/forgot-password attempt logging changes, Select Options policy updates, or vault master key change logic in `user-config.php` / `includes/itm_vault_master_key.php`.
 
