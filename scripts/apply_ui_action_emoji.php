@@ -2,19 +2,16 @@
 /**
  * One-time/maintenance bulk replace for simple NO MIXED markup.
  *
- * Why: Safe mechanical fixes for >💾 Save< style controls; PHP ternaries and JS templates stay manual.
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
  */
 declare(strict_types=1);
 
-$root = dirname(__DIR__);
-require_once __DIR__ . '/lib/script_cli_output.php';
-$nl = itm_script_output_nl();
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-
-$apply = in_array('--apply', $argv ?? [], true);
-$dryRun = !$apply;
-
-itm_script_output_begin('Apply UI action emoji (NO MIXED)');
+$boot = itm_apply_script_bootstrap('Apply UI action emoji (NO MIXED)');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 
 $scanExtensions = ['php', 'js', 'html'];
 $excludePathFragments = [
@@ -69,7 +66,7 @@ $iterator = new RecursiveIteratorIterator(
 );
 
 $rules = itm_ui_action_apply_rules();
-$changedFiles = 0;
+$changedFiles = [];
 $totalReplacements = 0;
 
 foreach ($iterator as $fileInfo) {
@@ -87,8 +84,8 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
-    $rel = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
-    if (in_array(str_replace('\\', '/', $rel), $skipRelative, true)) {
+    $rel = itm_apply_script_rel_path($root, $path);
+    if (in_array($rel, $skipRelative, true)) {
         continue;
     }
 
@@ -113,24 +110,24 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
-    $changedFiles++;
     $totalReplacements += $fileHits;
-    echo ($dryRun ? '[dry-run] ' : '[apply] ') . "{$rel} ({$fileHits} replacement(s))\n";
+    $changedFiles[] = $rel . ' (' . $fileHits . ' replacement(s))';
+    echo ($apply ? '[apply] ' : '[dry-run] ') . "{$rel} ({$fileHits} replacement(s))\n";
 
-    if (!$dryRun) {
+    if ($apply) {
         file_put_contents($path, $content);
     }
 }
 
-if ($changedFiles === 0) {
-    echo "No simple mixed markup found to replace." . $nl;
-    exit(0);
+$modeLabel = $apply ? 'Apply complete' : 'Would change';
+echo $nl;
+if ($changedFiles === []) {
+    echo 'No simple mixed markup found to replace.' . $nl;
+} else {
+    echo $modeLabel . ': ' . count($changedFiles) . " file(s), {$totalReplacements} replacement(s)." . $nl . $nl;
+    itm_apply_script_echo_list($modeLabel . ' files', $changedFiles);
 }
-
-echo ($dryRun ? 'Dry-run complete' : 'Apply complete') . ": {$changedFiles} file(s), {$totalReplacements} replacement(s).\n";
-if ($dryRun) {
-    echo "Re-run with --apply to write changes." . $nl;
-}
-exit(0);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changedFiles), $nl, 'apply_ui_action_emoji.php');
 
 itm_script_output_end();
+exit(0);

@@ -1,26 +1,22 @@
 <?php
 /**
- * CLI-only: ensure $displayFieldColumns is defined before list/search use in CRUD index.php files.
+ * Ensure $displayFieldColumns is defined before list/search use in CRUD index.php files.
  *
- * Why: Many flattened modules copied a search loop using $displayFieldColumns without assigning it
- * (only $uiColumns exists). Module browser QA search step logged hundreds of notices otherwise.
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
+ *
+ * Usage:
+ *   php scripts/apply_display_field_columns_search_alias.php
+ *   php scripts/apply_display_field_columns_search_alias.php --apply
+ *   Browser: scripts/apply_display_field_columns_search_alias.php
+ *   Browser apply: scripts/apply_display_field_columns_search_alias.php?apply=1
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/apply_display_field_columns_search_alias.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/lib/script_cli_output.php';
+$boot = itm_apply_script_bootstrap('Apply Display Field Columns Search Alias');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 
-$nl = itm_script_output_nl();
-itm_script_output_begin('Apply Display Field Columns Search Alias');
-
-$root = dirname(__DIR__);
 $aliasUi = "// Why: Search and list share visible columns; alias matches role/ui_configuration modules.\n\$displayFieldColumns = \$uiColumns;\n\n";
 $aliasVisible = "// Why: Search uses the same visible column set as the list table.\n\$displayFieldColumns = \$visibleFieldColumns;\n\n";
 $moduleMarker = "\n\$modulePath = dirname(\$_SERVER['PHP_SELF']);";
@@ -29,9 +25,10 @@ $searchLoopNew = "    \$searchConditions = [\"CAST(`id` AS CHAR) LIKE '{\$search
 $searchInlineAssign = "    \$displayFieldColumns = \$uiColumns;\n    foreach (\$displayFieldColumns as \$col) {";
 
 $changed = [];
+$unchanged = [];
 
 foreach (glob($root . '/modules/*/index.php') as $path) {
-    $rel = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
+    $rel = itm_apply_script_rel_path($root, $path);
     $content = file_get_contents($path);
     if ($content === false) {
         continue;
@@ -60,14 +57,20 @@ foreach (glob($root . '/modules/*/index.php') as $path) {
     }
 
     if ($content !== $original) {
-        file_put_contents($path, $content);
+        if ($apply) {
+            file_put_contents($path, $content);
+        }
         $changed[] = $rel;
+    } else {
+        $unchanged[] = $rel;
     }
 }
 
-echo 'Updated ' . count($changed) . " module index.php file(s).\n";
-foreach ($changed as $rel) {
-    echo "  - {$rel}" . $nl;
-}
+$modeLabel = $apply ? 'Updated' : 'Would update';
+echo $nl . $modeLabel . ' ' . count($changed) . ' module index.php file(s).' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' modules', $changed);
+itm_apply_script_echo_list('Unchanged (no patch needed)', $unchanged);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changed), $nl, 'apply_display_field_columns_search_alias.php');
 
 itm_script_output_end();
+exit(0);

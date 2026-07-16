@@ -1,27 +1,23 @@
 <?php
 /**
- * CLI-only: replace legacy user_id entries in CRUD $hidden column arrays with employee_id.
+ * Replace legacy user_id entries in CRUD $hidden column arrays with employee_id.
  *
- * Why: Flattened module scaffolds copied a dead user_id hide key after the employees merge.
+ * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
  */
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('CLI only');
-    echo '<p>CLI only: <code>php scripts/apply_crud_hidden_employee_id_alias.php</code></p>';
-    itm_script_output_end();
-    exit(0);
-}
-
-itm_script_output_begin();
-
-$root = dirname(__DIR__);
+$boot = itm_apply_script_bootstrap('Apply CRUD Hidden employee_id Alias');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 $modulesDir = $root . '/modules';
 $changed = [];
+$unchanged = [];
 
 if (!is_dir($modulesDir)) {
-    echo "No modules directory found.\n";
-    exit(0);
+    echo colorText('No modules directory found.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
 }
 
 $iterator = new RecursiveIteratorIterator(
@@ -54,12 +50,17 @@ foreach ($iterator as $fileInfo) {
     }
 
     if ($updated) {
-        file_put_contents($path, implode('', $lines));
+        if ($apply) {
+            file_put_contents($path, implode('', $lines));
+        }
         $changed[] = $relative;
     }
 }
 
-echo 'Updated ' . count($changed) . " module PHP file(s).\n";
-foreach ($changed as $rel) {
-    echo "  - {$rel}\n";
-}
+$modeLabel = $apply ? 'Updated' : 'Would update';
+echo $nl . $modeLabel . ' ' . count($changed) . ' module PHP file(s).' . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' files', $changed);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changed), $nl, 'apply_crud_hidden_employee_id_alias.php');
+
+itm_script_output_end();
+exit(0);

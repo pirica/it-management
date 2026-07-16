@@ -191,7 +191,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_employee_companies_bac.php` | PoC — non-admin must not access `employee_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
 | `php scripts/repro_employee_companies_leak.php` | PoC — multi-tenant leak checks for Employees module. |
 | `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
-| `php scripts/apply_crud_rbac_guards.php` | CLI repair — bulk-insert CRUD RBAC guards on flattened index handlers (idempotent; skips exempt modules and files that already have guards). |
+| `php scripts/apply_crud_rbac_guards.php` | **Browser + CLI.** Default dry-run; `--apply` / `?apply=1` (Admin). Lists changed files and RBAC-exempt modules. Bulk-insert CRUD RBAC guards on flattened index handlers (idempotent). |
 | `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, and role-module permission access. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
@@ -441,7 +441,8 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** from **`AGENTS.md` → Setup & Debugging → PHP CLI tests**.
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **`AGENTS.md` → Setup & Debugging → PHP CLI tests**).
 * **`PHP_BINARY` for sub-processes:** When a script needs to execute another PHP script, prefer using the **`PHP_BINARY`** constant to ensure the same PHP version is used.
-* **Destructive or repo-writing tools** (`normalize_database_sql_created_at.php`, `apply_module_sample_data_seed.php`, `apply_*_fix.php`, `repair_table_from_schema.php`, `fix_sql*.php`, `ensure_equipment_type_modules.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and use `itm_script_output_begin()` from `scripts/lib/script_cli_output.php` to show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
+* **Repo-writing maintenance (`scripts/apply*.php`):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes). Writes only with CLI `--apply` or browser `?apply=1` (Admin session). Each apply script prints named target lists (changed / skipped / compliant) using real newlines inside browser `<pre>`. Legacy `--dry-run` (CLI) and `?dry-run=1` (browser) force preview-only.
+* **Other destructive repo writers** (`normalize_database_sql_created_at.php`, `repair_table_from_schema.php`, `fix_sql*.php`, `ensure_equipment_type_modules.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and use `itm_script_output_begin()` from `scripts/lib/script_cli_output.php` to show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
 #### 4. Shared libraries (do not duplicate ad hoc)
@@ -455,7 +456,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/mbqa_runner_tiers.php` | Canonical `$bespokeSmoke` (Tier D) and `$skipClear` lists; tier reference markdown/HTML for build reports |
 | `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
-| `scripts/lib/equipment_type_modules.php` | Canonical `modules/is_*` allowlist (`is_switch`, `is_server`, …); safe removal of regression-test scaffold dirs only (`*_itm_eqdct_*`, `*_itm_edct_*`) |
+| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, Admin gate, `itm_apply_script_echo_list()` |
 
 #### Equipment-type façade modules (`modules/is_*`) and clear-table tests
 
@@ -523,7 +524,7 @@ Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_cover
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
-Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...] [--dry-run]`. Use this to automate per-company lookup seed additions (updates inserts only).
+Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes). Browser: `?module=idf_device_type`. Lists new INSERT statements before apply.
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 
@@ -974,7 +975,7 @@ bash scripts/smoke_test.sh
 
 **Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; pagination Previous/Next; bulk Select to Delete / Clear Table; submit Search; descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment.
 
-**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default); `--apply` for simple mixed markup. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
+**Bulk fix:** `php scripts/apply_ui_action_emoji.php` — **Browser + CLI**, dry-run default; `--apply` / `?apply=1` writes; lists changed files. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 
 ---
 

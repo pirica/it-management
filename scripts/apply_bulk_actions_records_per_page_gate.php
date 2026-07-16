@@ -11,26 +11,13 @@
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-$nl = itm_script_output_nl();
-
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong></p><pre>php scripts/apply_bulk_actions_records_per_page_gate.php [--dry-run]</pre></body></html>';
-    exit(1);
-}
-
-define('ITM_CLI_SCRIPT', true);
-
-$root = dirname(__DIR__);
+$boot = itm_apply_script_bootstrap('Apply Bulk Actions records_per_page Gate');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/');
 $modulesDir = $root . '/modules';
-$dryRun = in_array('--dry-run', $argv ?? [], true);
 $excludeModulesFile = __DIR__ . '/data/ui_configuration_excluded_modules.txt';
 $excludePrefixesFile = __DIR__ . '/data/ui_configuration_excluded_prefixes.txt';
 
@@ -56,7 +43,7 @@ function itm_bulk_gate_load_list(string $path): array
 /**
  * @return array{status:string,detail:string}
  */
-function itm_bulk_gate_patch_index(string $path, bool $dryRun): array
+function itm_bulk_gate_patch_index(string $path, bool $apply): array
 {
     $content = file_get_contents($path);
     if (!is_string($content) || $content === '') {
@@ -147,20 +134,22 @@ function itm_bulk_gate_patch_index(string $path, bool $dryRun): array
         return ['status' => 'fail', 'detail' => 'no changes produced'];
     }
 
-    if (!$dryRun) {
+    if ($apply) {
         if (file_put_contents($path, $content) === false) {
             return ['status' => 'fail', 'detail' => 'write failed'];
         }
     }
 
-    return ['status' => 'ok', 'detail' => $dryRun ? 'would patch' : 'patched'];
+    return ['status' => 'ok', 'detail' => $apply ? 'patched' : 'would patch'];
 }
 
 $excludeModules = itm_bulk_gate_load_list($excludeModulesFile);
 $excludePrefixes = itm_bulk_gate_load_list($excludePrefixesFile);
 
 $stats = ['ok' => 0, 'skip' => 0, 'fail' => 0];
-$failures = [];
+$okModules = [];
+$skipModules = [];
+$failModules = [];
 
 foreach (scandir($modulesDir) ?: [] as $module) {
     if ($module === '.' || $module === '..') {
@@ -185,20 +174,27 @@ foreach (scandir($modulesDir) ?: [] as $module) {
         continue;
     }
 
-    $result = itm_bulk_gate_patch_index($indexPath, $dryRun);
+    $result = itm_bulk_gate_patch_index($indexPath, $apply);
     $stats[$result['status']] = ($stats[$result['status']] ?? 0) + 1;
     $line = '[' . strtoupper($result['status']) . '] ' . $module . ' — ' . $result['detail'];
-    fwrite(STDOUT, $line . PHP_EOL);
-    if ($result['status'] === 'fail') {
-        $failures[] = $module;
+    echo $line . $nl;
+    if ($result['status'] === 'ok') {
+        $okModules[] = $module;
+    } elseif ($result['status'] === 'skip') {
+        $skipModules[] = $module . ' — ' . $result['detail'];
+    } elseif ($result['status'] === 'fail') {
+        $failModules[] = $module . ' — ' . $result['detail'];
     }
 }
 
-fwrite(STDOUT, PHP_EOL . 'Summary: ok=' . (int)($stats['ok'] ?? 0)
+$modeLabel = $apply ? 'Patched' : 'Would patch';
+echo $nl . 'Summary: ok=' . (int)($stats['ok'] ?? 0)
     . ' skip=' . (int)($stats['skip'] ?? 0)
-    . ' fail=' . (int)($stats['fail'] ?? 0)
-    . ($dryRun ? ' (dry-run)' : '') . PHP_EOL);
-
-exit($failures !== [] ? 1 : 0);
+    . ' fail=' . (int)($stats['fail'] ?? 0) . $nl . $nl;
+itm_apply_script_echo_list($modeLabel . ' modules', $okModules);
+itm_apply_script_echo_list('Skipped', $skipModules);
+itm_apply_script_echo_list('Failed', $failModules);
+itm_apply_script_finish_hint($apply, $boot['is_cli'], (int)($stats['ok'] ?? 0), $nl, 'apply_bulk_actions_records_per_page_gate.php');
 
 itm_script_output_end();
+exit($failModules !== [] ? 1 : 0);
