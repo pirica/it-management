@@ -148,6 +148,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
 if (($GLOBALS['crud_table'] ?? '') === 'workstation_modes') {
         $workstationModeBoolFields = ['has_keyboard_mouse', 'active'];
         if (in_array($field, $workstationModeBoolFields, true)) {

@@ -136,6 +136,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
 if ($field === 'color') {
         $color = (string)($value ?? '');
         if (preg_match('/^#[A-Fa-f0-9]{6}$/', $color)) {
