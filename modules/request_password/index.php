@@ -225,6 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 mysqli_stmt_close($stmt);
             }
         }
+        $_SESSION['crud_success'] = 'Request deleted.';
         header('Location: index.php');
         exit;
     }
@@ -352,6 +353,9 @@ if (!isset($crud_title)) {
         <div class="content">
             <?php if ($successMessage): ?><div class="alert alert-success"><?php echo sanitize($successMessage); ?></div><?php endif; ?>
             <?php if ($errorMessage): ?><div class="alert alert-danger"><?php echo sanitize($errorMessage); ?></div><?php endif; ?>
+            <?php if ($errorMessage !== '' && stripos($errorMessage, 'created this request') !== false): ?>
+            <script>alert(<?php echo json_encode($errorMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>);</script>
+            <?php endif; ?>
 
             <?php if ($crud_action == 'index' || $crud_action == 'list_all'): ?>
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -418,6 +422,8 @@ if (!isset($crud_title)) {
                                                 <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                                 <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
                                             </form>
+                                            <?php else: ?>
+                                            <button type="button" class="btn btn-sm btn-danger" title="Delete" onclick="alert('Only the employee who created this request can delete it.');">🗑️</button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -636,6 +642,8 @@ if (!isset($crud_title)) {
                             <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                             <button class="btn btn-danger" type="submit" title="Delete">🗑️</button>
                         </form>
+                        <?php elseif (!empty($data)): ?>
+                        <button type="button" class="btn btn-danger" title="Delete" onclick="alert('Only the employee who created this request can delete it.');">🗑️</button>
                         <?php endif; ?>
                     </div>
                 </div>
