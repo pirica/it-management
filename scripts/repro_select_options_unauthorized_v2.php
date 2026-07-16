@@ -23,18 +23,64 @@ itm_script_output_begin('Select Options Companies Block Verification');
 $nl = itm_script_output_nl();
 
 /**
+ * @param string $path
+ * @return bool
+ */
+function itm_repro_select_options_is_cli_php_binary($path)
+{
+    $normalized = strtolower(str_replace('\\', '/', (string)$path));
+    if ($normalized === '' || !is_file($path)) {
+        return false;
+    }
+    // Why: Apache SAPI often exposes php-cgi.exe as PHP_BINARY; subprocess must be CLI for ITM_CLI_SCRIPT auth skip.
+    if (strpos($normalized, 'php-cgi') !== false) {
+        return false;
+    }
+    if (substr($normalized, -4) === '.dll') {
+        return false;
+    }
+    return true;
+}
+
+/**
  * @return string
  */
 function itm_repro_select_options_resolve_php_binary()
 {
-    if (defined('PHP_BINARY') && PHP_BINARY !== '' && is_file(PHP_BINARY)) {
-        return (string)PHP_BINARY;
-    }
     $laragonPhp = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
     if (is_file($laragonPhp)) {
         return $laragonPhp;
     }
+    if (defined('PHP_BINARY') && PHP_BINARY !== '' && itm_repro_select_options_is_cli_php_binary(PHP_BINARY)) {
+        return (string)PHP_BINARY;
+    }
     return 'php';
+}
+
+/**
+ * @param string $script_path
+ * @return array{script_name:string,document_root:string}
+ */
+function itm_repro_select_options_subprocess_server_paths($script_path)
+{
+    $script_path = str_replace('\\', '/', (string)$script_path);
+    $project_root = str_replace('\\', '/', realpath(dirname(__DIR__)) ?: '');
+    $document_root = str_replace('\\', '/', realpath(dirname(__DIR__, 2)) ?: '');
+    $base_path = '';
+
+    if ($project_root !== '' && $document_root !== '' && strpos($project_root, $document_root) === 0) {
+        $base_path = substr($project_root, strlen($document_root));
+    }
+
+    $base_path = '/' . trim((string)$base_path, '/');
+    if ($base_path === '/') {
+        $base_path = '';
+    }
+
+    return [
+        'script_name' => $base_path . '/modules/' . basename($script_path),
+        'document_root' => $document_root,
+    ];
 }
 
 /**
@@ -63,14 +109,21 @@ function itm_repro_select_options_run_request($script_path, array $session_data,
     $session_str = serialize($session_data);
     $scriptPathLit = var_export($script_path, true);
     $configPathLit = var_export($config_path, true);
+    $serverPaths = itm_repro_select_options_subprocess_server_paths($script_path);
+    $scriptNameLit = var_export($serverPaths['script_name'], true);
+    $documentRootLit = var_export($serverPaths['document_root'], true);
 
     $code = '<?php
 define(\'ITM_CLI_SCRIPT\', true);
 $_SERVER[\'REQUEST_METHOD\'] = \'POST\';
 $_SERVER[\'REMOTE_ADDR\'] = \'127.0.0.1\';
 $_SERVER[\'HTTP_HOST\'] = \'localhost\';
-$_SERVER[\'PHP_SELF\'] = \'/it-management/modules/select_options_api.php\';
+$_SERVER[\'SCRIPT_NAME\'] = ' . $scriptNameLit . ';
+$_SERVER[\'PHP_SELF\'] = ' . $scriptNameLit . ';
 $_SERVER[\'SCRIPT_FILENAME\'] = ' . $scriptPathLit . ';
+if (' . $documentRootLit . ' !== \'\') {
+    $_SERVER[\'DOCUMENT_ROOT\'] = ' . $documentRootLit . ';
+}
 
 require ' . $configPathLit . ';
 
@@ -229,6 +282,10 @@ function itm_repro_select_options_emit_verdict(array $result, $api_output = '')
 
     if (trim((string)$api_output) !== '' && (int)$result['exit_code'] === 0 && ($result['kind'] ?? '') === 'policy_fallback') {
         echo 'Subprocess output: ' . trim((string)$api_output) . $nl;
+    }
+
+    if ((int)$result['exit_code'] === 0 && ($result['kind'] ?? '') === 'api_policy_block') {
+        echo 'Verdict: live API policy block (subprocess JSON).' . $nl;
     }
 }
 
