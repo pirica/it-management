@@ -54,23 +54,35 @@ if ($slugs === []) {
     exit(1);
 }
 
+sort($slugs, SORT_STRING);
+echo 'Inventory: docs/list_soft-delete.txt — ' . count($slugs) . ' module(s)' . $nl;
+foreach ($slugs as $slug) {
+    echo '  - ' . $slug . $nl;
+}
+echo $nl;
+
 $changed = 0;
 $scanned = 0;
-$skippedStatusDriven = 0;
+$skippedStatusDriven = [];
+$missingDirs = [];
+$processedOk = [];
+$wouldChangeModules = [];
 
 foreach ($slugs as $slug) {
     $dir = $root . 'modules/' . $slug;
     if (!is_dir($dir)) {
+        $missingDirs[] = $slug;
         echo colorText('[SKIP] missing module dir: ' . $slug, 'info') . $nl;
         continue;
     }
 
     // Why: Status-driven modules use bespoke list/view/delete paths; mechanical patches are unsafe.
     if (itm_apply_crud_audit_is_status_driven_slug($slug)) {
-        $skippedStatusDriven++;
+        $skippedStatusDriven[] = $slug;
         continue;
     }
 
+    $moduleHadChange = false;
     foreach (glob($dir . '/*.php') ?: [] as $file) {
         $scanned++;
         $original = file_get_contents($file);
@@ -92,6 +104,7 @@ foreach ($slugs as $slug) {
         if ($updated === $original) {
             continue;
         }
+        $moduleHadChange = true;
         $rel = str_replace('\\', '/', str_replace($root, '', $file));
         if ($apply) {
             if (file_put_contents($file, $updated) === false) {
@@ -105,11 +118,44 @@ foreach ($slugs as $slug) {
         }
         $changed++;
     }
+
+    if ($moduleHadChange) {
+        $wouldChangeModules[] = $slug;
+    } else {
+        $processedOk[] = $slug;
+    }
 }
 
 $modeLabel = $apply ? 'Applied' : 'Would change';
+echo $nl;
 echo $modeLabel . ' ' . $changed . ' file(s); scanned ' . $scanned
-    . '; skipped status-driven modules: ' . $skippedStatusDriven . '.' . $nl;
+    . '; skipped status-driven modules: ' . count($skippedStatusDriven) . '.' . $nl;
+
+if ($skippedStatusDriven !== []) {
+    echo 'Skipped status-driven (' . count($skippedStatusDriven) . '):' . $nl;
+    foreach ($skippedStatusDriven as $slug) {
+        echo '  - ' . $slug . $nl;
+    }
+}
+if ($missingDirs !== []) {
+    echo 'Missing module dirs (' . count($missingDirs) . '):' . $nl;
+    foreach ($missingDirs as $slug) {
+        echo '  - ' . $slug . $nl;
+    }
+}
+if ($wouldChangeModules !== []) {
+    echo ($apply ? 'Changed modules' : 'Modules needing patch') . ' (' . count($wouldChangeModules) . '):' . $nl;
+    foreach ($wouldChangeModules as $slug) {
+        echo '  - ' . $slug . $nl;
+    }
+}
+if ($processedOk !== []) {
+    echo 'Already compliant / no patch (' . count($processedOk) . '):' . $nl;
+    foreach ($processedOk as $slug) {
+        echo '  - ' . $slug . $nl;
+    }
+}
+
 if (!$apply && $changed > 0) {
     if ($itmIsCli) {
         echo 'Re-run with --apply to write. Then: php scripts/check_crud_audit_soft_delete.php' . $nl;
