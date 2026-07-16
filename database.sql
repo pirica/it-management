@@ -480,6 +480,8 @@ INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '3', '7', '8', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '4', '10', '11', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
 INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '5', '13', '14', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '1', '1', '1', '2025', '45000.00', '1', '1', '2025-01-01 00:00:01');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '1', '1', '2', '2025', '33000.00', '1', '1', '2025-01-01 00:00:01');
 -- Table structure for `monthly_budgets`
 DROP TABLE IF EXISTS `monthly_budgets`;
 CREATE TABLE `monthly_budgets` (
@@ -509,6 +511,18 @@ INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, 
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '4', '7', '1', '4000.00', '1', '2026-01-01 00:00:01');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '5', '9', '1', '4000.00', '1', '2026-01-01 00:00:01');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '1', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '2', '4000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '3', '4000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '4', '4000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '5', '4000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '6', '4000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '7', '4000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '2', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '3', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '4', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '5', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '6', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '7', '3000.00', '1', '2026-01-01 00:00:01');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '2', '4', '1', '3000.00', '1', '2026-01-01 00:00:01');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '3', '6', '1', '3000.00', '1', '2026-01-01 00:00:01');
 INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '4', '8', '1', '3000.00', '1', '2026-01-01 00:00:01');
@@ -542,6 +556,13 @@ CREATE TABLE `expenses` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`) VALUES
 (NULL, 1, 1, 1, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-02-12', 2450.00, 'Network switch refresh spares', 'INV-IT-2026-0002', 1, 1, '2026-02-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-03-18', 3125.50, 'Endpoint security subscription', 'INV-IT-2026-0003', 1, 1, '2026-03-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-04-09', 1980.00, 'UPS battery replacement', 'INV-IT-2026-0004', 1, 1, '2026-04-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-05-22', 4275.00, 'Wi-Fi controller licence renewal', 'INV-IT-2026-0005', 1, 1, '2026-05-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-06-11', 2650.00, 'Helpdesk tooling annual fee', 'INV-IT-2026-0006', 1, 1, '2026-06-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-07-08', 3510.00, 'Server rack PDU upgrade', 'INV-IT-2026-0007', 1, 1, '2026-07-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2025-07-14', 2990.00, 'Prior-year July infrastructure spend', 'INV-IT-2025-0007', 1, 1, '2025-07-01 00:00:01', NULL),
 (NULL, 2, 4, 4, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
 (NULL, 3, 7, 7, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
 (NULL, 4, 10, 10, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
@@ -6887,6 +6908,68 @@ CREATE TABLE `ops_report_hotel_figure` (
   CONSTRAINT `ops_report_hotel_figure_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ops_report_hotel_figure_ibfk_report` FOREIGN KEY (`ops_report_id`) REFERENCES `ops_report` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Reports Hub sample data: ops_report daily trend + YoY anchors (company 1)
+INSERT INTO `ops_report` (`company_id`, `report_date`, `occupancy_pct`, `average_daily_rate`, `revpar`, `room_revenue`, `fb_revenue`, `spa_revenue`, `kids_club_revenue`, `hsk_revenue`, `fo_upgrade_rooms`, `total_revenue`, `active`, `created_at`) VALUES
+(1, '2025-01-15', '70.0', 165.00, 115.50, 32798.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 52900.00, 1, '2025-01-15 08:00:00'),
+(1, '2025-02-15', '70.0', 165.00, 115.50, 33356.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 53800.00, 1, '2025-02-15 08:00:00'),
+(1, '2025-03-15', '70.0', 165.00, 115.50, 33914.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 54700.00, 1, '2025-03-15 08:00:00'),
+(1, '2025-04-15', '70.0', 165.00, 115.50, 34472.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 55600.00, 1, '2025-04-15 08:00:00'),
+(1, '2025-05-15', '70.0', 165.00, 115.50, 35030.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 56500.00, 1, '2025-05-15 08:00:00'),
+(1, '2025-06-15', '70.0', 165.00, 115.50, 35588.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 57400.00, 1, '2025-06-15 08:00:00'),
+(1, '2025-07-15', '70.0', 165.00, 115.50, 36146.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 58300.00, 1, '2025-07-15 08:00:00'),
+(1, '2025-08-15', '70.0', 165.00, 115.50, 36704.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 59200.00, 1, '2025-08-15 08:00:00'),
+(1, '2025-09-15', '70.0', 165.00, 115.50, 37262.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 60100.00, 1, '2025-09-15 08:00:00'),
+(1, '2025-10-15', '70.0', 165.00, 115.50, 37820.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 61000.00, 1, '2025-10-15 08:00:00'),
+(1, '2025-11-15', '70.0', 165.00, 115.50, 38378.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 61900.00, 1, '2025-11-15 08:00:00'),
+(1, '2025-12-15', '70.0', 165.00, 115.50, 38936.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 62800.00, 1, '2025-12-15 08:00:00'),
+(1, '2026-01-15', '74.0', 172.00, 127.28, 35168.00, 10200.00, 2600.00, 700.00, 1250.00, 850.00, 54950.00, 1, '2026-01-15 08:00:00'),
+(1, '2026-02-15', '74.0', 172.00, 127.28, 35776.00, 10200.00, 2600.00, 700.00, 1250.00, 850.00, 55900.00, 1, '2026-02-15 08:00:00'),
+(1, '2026-03-15', '74.0', 172.00, 127.28, 36384.00, 10200.00, 2600.00, 700.00, 1250.00, 850.00, 56850.00, 1, '2026-03-15 08:00:00'),
+(1, '2026-04-15', '74.0', 172.00, 127.28, 36992.00, 10200.00, 2600.00, 700.00, 1250.00, 850.00, 57800.00, 1, '2026-04-15 08:00:00'),
+(1, '2026-05-15', '74.0', 172.00, 127.28, 37600.00, 10200.00, 2600.00, 700.00, 1250.00, 850.00, 58750.00, 1, '2026-05-15 08:00:00'),
+(1, '2026-06-17', '72.0', 175.00, 126.00, 38000.00, 11000.00, 2800.00, 650.00, 1200.00, 900.00, 54550.00, 1, '2026-06-17 08:00:00'),
+(1, '2026-06-18', '73.0', 178.00, 129.94, 38150.00, 11040.00, 2815.00, 655.00, 1210.00, 908.00, 54778.00, 1, '2026-06-18 08:00:00'),
+(1, '2026-06-19', '74.0', 181.00, 133.94, 38300.00, 11080.00, 2830.00, 660.00, 1220.00, 916.00, 55006.00, 1, '2026-06-19 08:00:00'),
+(1, '2026-06-20', '75.0', 184.00, 138.00, 38450.00, 11120.00, 2845.00, 665.00, 1230.00, 924.00, 55234.00, 1, '2026-06-20 08:00:00'),
+(1, '2026-06-21', '76.0', 187.00, 142.12, 38600.00, 11160.00, 2860.00, 670.00, 1240.00, 932.00, 55462.00, 1, '2026-06-21 08:00:00'),
+(1, '2026-06-22', '77.0', 175.00, 134.75, 38750.00, 11200.00, 2875.00, 675.00, 1250.00, 940.00, 55690.00, 1, '2026-06-22 08:00:00'),
+(1, '2026-06-23', '78.0', 178.00, 138.84, 38900.00, 11240.00, 2890.00, 680.00, 1260.00, 948.00, 55918.00, 1, '2026-06-23 08:00:00'),
+(1, '2026-06-24', '79.0', 181.00, 142.99, 39050.00, 11280.00, 2905.00, 685.00, 1270.00, 956.00, 56146.00, 1, '2026-06-24 08:00:00'),
+(1, '2026-06-25', '80.0', 184.00, 147.20, 39200.00, 11320.00, 2920.00, 690.00, 1280.00, 964.00, 56374.00, 1, '2026-06-25 08:00:00'),
+(1, '2026-06-26', '81.0', 187.00, 151.47, 39350.00, 11360.00, 2935.00, 695.00, 1290.00, 972.00, 56602.00, 1, '2026-06-26 08:00:00'),
+(1, '2026-06-27', '82.0', 175.00, 143.50, 39500.00, 11400.00, 2950.00, 700.00, 1300.00, 980.00, 56830.00, 1, '2026-06-27 08:00:00'),
+(1, '2026-06-28', '83.0', 178.00, 147.74, 39650.00, 11440.00, 2965.00, 705.00, 1310.00, 988.00, 57058.00, 1, '2026-06-28 08:00:00'),
+(1, '2026-06-29', '72.0', 181.00, 130.32, 39800.00, 11480.00, 2980.00, 710.00, 1320.00, 996.00, 57286.00, 1, '2026-06-29 08:00:00'),
+(1, '2026-06-30', '73.0', 184.00, 134.32, 39950.00, 11520.00, 2995.00, 715.00, 1330.00, 1004.00, 57514.00, 1, '2026-06-30 08:00:00'),
+(1, '2026-07-01', '74.0', 187.00, 138.38, 40100.00, 11560.00, 3010.00, 720.00, 1340.00, 1012.00, 57742.00, 1, '2026-07-01 08:00:00'),
+(1, '2026-07-02', '75.0', 175.00, 131.25, 40250.00, 11600.00, 3025.00, 725.00, 1350.00, 1020.00, 57970.00, 1, '2026-07-02 08:00:00'),
+(1, '2026-07-03', '76.0', 178.00, 135.28, 40400.00, 11640.00, 3040.00, 730.00, 1360.00, 1028.00, 58198.00, 1, '2026-07-03 08:00:00'),
+(1, '2026-07-04', '77.0', 181.00, 139.37, 40550.00, 11680.00, 3055.00, 735.00, 1370.00, 1036.00, 58426.00, 1, '2026-07-04 08:00:00'),
+(1, '2026-07-05', '78.0', 184.00, 143.52, 40700.00, 11720.00, 3070.00, 740.00, 1380.00, 1044.00, 58654.00, 1, '2026-07-05 08:00:00'),
+(1, '2026-07-06', '79.0', 187.00, 147.73, 40850.00, 11760.00, 3085.00, 745.00, 1390.00, 1052.00, 58882.00, 1, '2026-07-06 08:00:00'),
+(1, '2026-07-07', '80.0', 175.00, 140.00, 41000.00, 11800.00, 3100.00, 750.00, 1400.00, 1060.00, 59110.00, 1, '2026-07-07 08:00:00'),
+(1, '2026-07-08', '81.0', 178.00, 144.18, 41150.00, 11840.00, 3115.00, 755.00, 1410.00, 1068.00, 59338.00, 1, '2026-07-08 08:00:00'),
+(1, '2026-07-09', '82.0', 181.00, 148.42, 41300.00, 11880.00, 3130.00, 760.00, 1420.00, 1076.00, 59566.00, 1, '2026-07-09 08:00:00'),
+(1, '2026-07-10', '83.0', 184.00, 152.72, 41450.00, 11920.00, 3145.00, 765.00, 1430.00, 1084.00, 59794.00, 1, '2026-07-10 08:00:00'),
+(1, '2026-07-11', '72.0', 187.00, 134.64, 41600.00, 11960.00, 3160.00, 770.00, 1440.00, 1092.00, 60022.00, 1, '2026-07-11 08:00:00'),
+(1, '2026-07-12', '73.0', 175.00, 127.75, 41750.00, 12000.00, 3175.00, 775.00, 1450.00, 1100.00, 60250.00, 1, '2026-07-12 08:00:00'),
+(1, '2026-07-13', '74.0', 178.00, 131.72, 41900.00, 12040.00, 3190.00, 780.00, 1460.00, 1108.00, 60478.00, 1, '2026-07-13 08:00:00'),
+(1, '2026-07-14', '75.0', 181.00, 135.75, 42050.00, 12080.00, 3205.00, 785.00, 1470.00, 1116.00, 60706.00, 1, '2026-07-14 08:00:00'),
+(1, '2026-07-15', '76.0', 184.00, 139.84, 42200.00, 12120.00, 3220.00, 790.00, 1480.00, 1124.00, 60934.00, 1, '2026-07-15 08:00:00'),
+(1, '2026-07-16', '77.0', 187.00, 143.99, 42350.00, 12160.00, 3235.00, 795.00, 1490.00, 1132.00, 61162.00, 1, '2026-07-16 08:00:00');
+INSERT INTO `ops_report_fb_outlet` (`company_id`, `ops_report_id`, `outlet_name`, `covers_breakfast`, `covers_lunch`, `covers_dinner`, `sort_order`, `active`)
+SELECT 1, r.id, 'OLIVEIRA BRASSERIE', '40', '55', '70', 0, 1
+FROM `ops_report` r
+WHERE r.company_id = 1 AND r.report_date BETWEEN '2026-07-01' AND '2026-07-16' AND r.active = 1;
+INSERT INTO `ops_report_fb_outlet` (`company_id`, `ops_report_id`, `outlet_name`, `covers_breakfast`, `covers_lunch`, `covers_dinner`, `sort_order`, `active`)
+SELECT 1, r.id, 'IN-ROOM DINING', '45', '62', '79', 1, 1
+FROM `ops_report` r
+WHERE r.company_id = 1 AND r.report_date BETWEEN '2026-07-01' AND '2026-07-16' AND r.active = 1;
+INSERT INTO `ops_report_fb_outlet` (`company_id`, `ops_report_id`, `outlet_name`, `covers_breakfast`, `covers_lunch`, `covers_dinner`, `sort_order`, `active`)
+SELECT 1, r.id, 'THE NEST COCKTAILS & BAR', '50', '69', '88', 2, 1
+FROM `ops_report` r
+WHERE r.company_id = 1 AND r.report_date BETWEEN '2026-07-01' AND '2026-07-16' AND r.active = 1;
 
 -- Audit Triggers for `ops_report` and child tables
 DELIMITER //
