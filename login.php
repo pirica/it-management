@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $activePredicate = itm_employee_active_employment_status_predicate_sql('es');
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT e.id, e.password, e.work_email, e.personal_email, e.username, er.name AS role_name
+            'SELECT e.id, e.password, e.work_email, e.personal_email, e.username, e.theme, er.name AS role_name
              FROM employees e'
             . $join .
             ' LEFT JOIN employee_roles er ON e.role_id = er.id
@@ -184,6 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['username'] = (string)($user['username'] ?? 'User');
             $_SESSION['email'] = $resolvedEmail;
             $_SESSION['role_name'] = (string)($user['role_name'] ?? '');
+            // Why: seed theme for header/js from employees.theme so profile Dark persists after login.
+            $_SESSION['ui_theme'] = (strtolower(trim((string)($user['theme'] ?? 'light'))) === 'dark') ? 'dark' : 'light';
             unset($_SESSION['company_id'], $_SESSION['company_name']);
 
             $isAdmin = itm_is_admin($conn, $employeeId);

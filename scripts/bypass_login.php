@@ -32,7 +32,7 @@ $password = 'Admin'; // Default password for seeding/development
 // Fetch User details (match login.php role join)
 $stmt = mysqli_prepare(
     $conn,
-    'SELECT u.id, u.username, u.work_email, ur.name AS role_name
+    'SELECT u.id, u.username, u.work_email, u.theme, ur.name AS role_name
      FROM employees u
      LEFT JOIN employee_roles ur ON u.role_id = ur.id'
     . itm_employee_active_employment_status_join_sql('u', 'es') .
@@ -78,6 +78,7 @@ $_SESSION['role_name'] = strtolower((string)($user['role_name'] ?? '')) === 'adm
 $_SESSION['company_id'] = (int)$company['id'];
 $_SESSION['company_name'] = (string)$company['company'];
 $_SESSION['read_only_user_config'] = 0;
+$_SESSION['ui_theme'] = (strtolower(trim((string)($user['theme'] ?? 'light'))) === 'dark') ? 'dark' : 'light';
 
 // Set Vault Key for Passwords module
 $_SESSION['vault_key'] = hash('sha256', $password);
