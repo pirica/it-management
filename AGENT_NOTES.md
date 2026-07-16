@@ -20,6 +20,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - Session fixation: reusing the pre-login session id after authentication without regeneration. [Cursor-Fixed]
 - Session cookie missing HttpOnly / SameSite / Secure (when HTTPS). [Cursor-Fixed]
 - Hardcoding `display_errors` on `index.php` instead of Settings-driven config. [Cursor-Fixed]
+- `user-config.php` System Access SELECT must not `array_merge` hardcoded meta names absent from `employee_system_access` (e.g. inventing `changed_at` → prepare failure). [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
@@ -41,3 +42,4 @@ The `user-config.php` has been upgraded to a full Employee Dashboard & Profile s
 - **Layout**: `.layout-2col` uses a 280px left column on desktop and stacks to one column at `max-width: 768px`.
 - **Security**: Atomicity in Vault Master Key changes with automatic re-encryption of existing entries.
 - **Audit**: All profile and security changes are logged to `audit_logs`.
+- **System Access Overview:** loads `employee_system_access` via `DESCRIBE` then `SELECT` of **existing** columns only (never invents `changed_at`). Meta/audit fields (`id`, `company_id`, `employee_id`, `active`, `created_*`, `updated_*`, `deleted_*`, legacy `changed_at` name in skip lists) are excluded from ✅/❌ flag counts and the overview UI.
