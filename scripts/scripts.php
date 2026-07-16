@@ -1667,7 +1667,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="repro_select_options_unauthorized_v2.php" target="_blank" rel="nofollow noreferrer">repro_select_options_unauthorized_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression — <code>companies</code> quick-add blocked for regular employees. Embedded scenario matrix then live API subprocess; browser falls back to policy whitelist + no inserted row.</td>
+                    <td>Regression — <code>companies</code> quick-add blocked for regular employees. Scenario matrix + live API subprocess (browser uses Laragon CLI <code>php.exe</code>, not <code>php-cgi</code>); policy fallback if harness still fails.</td>
                     <td>Browser: <a href="repro_select_options_unauthorized_v2.php">run</a>. CLI: <code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
                 </tr>
                 <tr>

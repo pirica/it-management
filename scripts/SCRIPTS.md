@@ -139,7 +139,7 @@ Run after changes to `modules/select_options_api.php` or `includes/itm_select_op
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/repro_select_options_unauthorized_v2.php` | Regression — regular users cannot quick-add `companies` via Select Options API. Embedded scenario matrix (302/login redirect, auth harness failure, JSON quick-add block, row-insert regression) then live subprocess. Browser falls back to policy whitelist + no-row check. |
+| `php scripts/repro_select_options_unauthorized_v2.php` | Regression — regular users cannot quick-add `companies` via Select Options API. Embedded scenario matrix then live subprocess (browser prefers Laragon CLI `php.exe`, not Apache `php-cgi`). Policy fallback when subprocess still unusable. |
 | `php scripts/repro_attempts_data_leak_v2.php` | Regression — password-like login identifiers are redacted before `attempts.email` persistence |
 | `php scripts/repro_vault_corruption.php` | Regression — vault master key re-encryption rolls back on failure; entries stay decryptable with the old key. Seeds disposable user + `password_entries` rows with `company_id` (NOT NULL). Browser-safe errors (no `STDERR`). |
 
