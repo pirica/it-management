@@ -141,7 +141,7 @@ Run after changes to `modules/select_options_api.php` or `includes/itm_select_op
 |--------|---------|
 | `php scripts/repro_select_options_unauthorized_v2.php` | Regression — regular users cannot quick-add `companies` via Select Options API. Embedded scenario matrix then live subprocess (browser prefers Laragon CLI `php.exe`, not Apache `php-cgi`). Policy fallback when subprocess still unusable. |
 | `php scripts/repro_attempts_data_leak_v2.php` | Regression — password-like login identifiers are redacted before `attempts.email` persistence. Disposable secret per run; verifies only the row inserted by this request (no brittle `ip_address` filter; ignores proxy headers during simulation). Browser + CLI. |
-| `php scripts/repro_destructive_import.php` | Repro — employees import must not delete rows missing from payload (company 1). **Browser + CLI dry-run default**; `--apply` / `?apply=1` (Admin) runs DELETE/seed/import. |
+| `php scripts/repro_destructive_import.php` | Repro — employees import must not delete rows missing from payload (company 1). **Browser + CLI dry-run default**; `--apply` / `?apply=1` (Admin) seeds two disposable employees via `itm_script_test_employee_create()`, imports only Keep Me, asserts Delete Me survives, then tears down disposable rows. |
 | `php scripts/repro_vault_corruption.php` | Regression — vault master key re-encryption rolls back on failure; entries stay decryptable with the old key. Seeds disposable user + `password_entries` rows with `company_id` (NOT NULL). Browser-safe errors (no `STDERR`). |
 
 Run after login/forgot-password attempt logging changes, Select Options policy updates, vault master key change logic in `user-config.php` / `includes/itm_vault_master_key.php`, or employees import changes.
