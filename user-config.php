@@ -722,6 +722,8 @@ $activity_list = array_slice($activity_list, 0, 10);
 // --- 2. HANDLE POST UPDATES ---
 $message = '';
 $message_type = 'info';
+// Why: after a successful theme save, sync employees.theme into localStorage for js/theme.js.
+$syncThemeToClient = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -733,28 +735,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_profile') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $theme = $_POST['theme'] ?? 'light';
+        $theme = strtolower(trim((string)($_POST['theme'] ?? 'light')));
+        // Why: only light/dark are valid employees.theme values for the profile selector.
+        if ($theme !== 'dark') {
+            $theme = 'light';
+        }
         $ec_name = trim($_POST['emergency_contact_name'] ?? '');
         $ec_rel = trim($_POST['emergency_contact_relationship'] ?? '');
         $ec_phone = trim($_POST['emergency_contact_phone'] ?? '');
+        // Why: accept type=date (Y-m-d) or dd/mm/yyyy; empty clears birthday.
+        $birthday = itm_parse_date_input($_POST['birthday'] ?? '');
+        $hide_year = !empty($_POST['hide_year']) ? 1 : 0;
 
-        $sql = "UPDATE employees SET work_email = ?, mobile_phone = ?, theme = ?, emergency_contact_name = ?, emergency_contact_relationship = ?, emergency_contact_phone = ? WHERE id = ? AND company_id = ?";
+        $sql = 'UPDATE employees SET work_email = ?, mobile_phone = ?, theme = ?, emergency_contact_name = ?, emergency_contact_relationship = ?, emergency_contact_phone = ?, birthday = ?, hide_year = ? WHERE id = ? AND company_id = ?';
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'ssssssii', $email, $phone, $theme, $ec_name, $ec_rel, $ec_phone, $user_id, $company_id);
-        if (mysqli_stmt_execute($stmt)) {
-            $message = 'Profile updated successfully!';
-            $message_type = 'success';
-            $stmt_refresh = mysqli_prepare($conn, "SELECT * FROM employees WHERE id = ?");
-            mysqli_stmt_bind_param($stmt_refresh, "i", $user_id);
-            mysqli_stmt_execute($stmt_refresh);
-            $updated_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_refresh));
-            mysqli_stmt_close($stmt_refresh);
-            itm_log_audit($conn, 'employees', $user_id, 'UPDATE', $current_user, $updated_user);
-        } else {
-            $message = 'Error updating profile.';
+        if (!$stmt) {
+            $message = 'Error preparing profile update.';
             $message_type = 'error';
+        } else {
+            mysqli_stmt_bind_param(
+                $stmt,
+                'sssssssiii',
+                $email,
+                $phone,
+                $theme,
+                $ec_name,
+                $ec_rel,
+                $ec_phone,
+                $birthday,
+                $hide_year,
+                $user_id,
+                $company_id
+            );
+            if (mysqli_stmt_execute($stmt)) {
+                $message = 'Profile updated successfully!';
+                $message_type = 'success';
+                $syncThemeToClient = true;
+                $stmt_refresh = mysqli_prepare($conn, 'SELECT * FROM employees WHERE id = ? AND company_id = ?');
+                if ($stmt_refresh) {
+                    mysqli_stmt_bind_param($stmt_refresh, 'ii', $user_id, $company_id);
+                    mysqli_stmt_execute($stmt_refresh);
+                    $updated_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_refresh));
+                    mysqli_stmt_close($stmt_refresh);
+                    if (is_array($updated_user)) {
+                        itm_log_audit($conn, 'employees', $user_id, 'UPDATE', $current_user, $updated_user);
+                    }
+                }
+            } else {
+                $message = 'Error updating profile.';
+                $message_type = 'error';
+            }
+            mysqli_stmt_close($stmt);
         }
-        mysqli_stmt_close($stmt);
     } elseif ($action === 'change_password') {
         $curr_pw = $_POST['current_password'] ?? '';
         $new_pw = $_POST['new_password'] ?? '';
@@ -985,28 +1017,38 @@ $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                                 <input type="hidden" name="action" value="update_profile">
                                 <div class="form-row">
-                                    <div class="form-group"><label>Full Name</label><input type="text" value="<?php echo sanitize($current_user['first_name'].' '.$current_user['last_name']); ?>" readonly></div>
-                                    <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize($current_user['work_email']); ?>" required></div>
+                                    <div class="form-group"><label>Full Name</label><input type="text" value="<?php echo sanitize(trim(($current_user['first_name'] ?? '') . ' ' . ($current_user['last_name'] ?? ''))); ?>" readonly title="Name is managed in Employees"></div>
+                                    <div class="form-group"><label>Email</label><input type="email" name="email" value="<?php echo sanitize((string)($current_user['work_email'] ?? '')); ?>" required></div>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo sanitize($current_user['mobile_phone']); ?>"></div>
-                                    <div class="form-group"><label>Theme</label><select name="theme"><option value="light" <?php if($current_user['theme']=='light')echo'selected';?>>Light</option><option value="dark" <?php if($current_user['theme']=='dark')echo'selected';?>>Dark</option></select></div>
+                                    <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo sanitize((string)($current_user['mobile_phone'] ?? '')); ?>"></div>
+                                    <div class="form-group"><label>Theme</label><select name="theme"><option value="light" <?php if (($current_user['theme'] ?? '') === 'light') echo 'selected'; ?>>Light</option><option value="dark" <?php if (($current_user['theme'] ?? '') === 'dark') echo 'selected'; ?>>Dark</option></select></div>
                                 </div>
-								<div class="form-row">
-                                    <div class="form-group"><label>Birthday</label><input type="date" name="birthday" value=""></div>
-                                    <div class="form-group"><label></label><div class="form-group">
-    <label>Hide Year</label>
-    <label class="itm-checkbox-control">
-        <input type="checkbox" name="hide_year" value="1" >
-        <span class="itm-check-indicator" aria-hidden="true">❌</span>
-    </label>
-</div></div>
+                                <div class="form-row">
+                                    <?php
+                                    $profileBirthday = (string)($current_user['birthday'] ?? '');
+                                    if ($profileBirthday === '0000-00-00') {
+                                        $profileBirthday = '';
+                                    }
+                                    $profileHideYear = ((int)($current_user['hide_year'] ?? 0) === 1);
+                                    ?>
+                                    <div class="form-group">
+                                        <label>Birthday</label>
+                                        <input type="date" name="birthday" value="<?php echo sanitize($profileBirthday); ?>">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Hide Year</label>
+                                        <label class="itm-checkbox-control">
+                                            <input type="checkbox" name="hide_year" value="1" <?php echo $profileHideYear ? 'checked' : ''; ?>>
+                                            <span>Hide Year <span class="itm-check-indicator" aria-hidden="true"><?php echo $profileHideYear ? '✅' : '❌'; ?></span></span>
+                                        </label>
+                                    </div>
                                 </div>
                                 <div class="card-header" style="background:none; border:none; padding:10px 0;"><strong>Emergency Contact</strong></div>
                                 <div class="form-row">
-                                    <div class="form-group"><label>Name</label><input type="text" name="emergency_contact_name" value="<?php echo sanitize($current_user['emergency_contact_name']); ?>"></div>
-                                    <div class="form-group"><label>Relationship</label><input type="text" name="emergency_contact_relationship" value="<?php echo sanitize($current_user['emergency_contact_relationship']); ?>"></div>
-                                    <div class="form-group"><label>Phone</label><input type="text" name="emergency_contact_phone" value="<?php echo sanitize($current_user['emergency_contact_phone']); ?>"></div>
+                                    <div class="form-group"><label>Name</label><input type="text" name="emergency_contact_name" value="<?php echo sanitize((string)($current_user['emergency_contact_name'] ?? '')); ?>"></div>
+                                    <div class="form-group"><label>Relationship</label><input type="text" name="emergency_contact_relationship" value="<?php echo sanitize((string)($current_user['emergency_contact_relationship'] ?? '')); ?>"></div>
+                                    <div class="form-group"><label>Phone</label><input type="text" name="emergency_contact_phone" value="<?php echo sanitize((string)($current_user['emergency_contact_phone'] ?? '')); ?>"></div>
                                 </div>
                                 <button type="submit" class="btn btn-primary" title="Save">💾</button>
                             </form>
@@ -1200,6 +1242,26 @@ foreach ($access_fields as $f):
 </div>
 <script src="js/theme.js"></script>
 <script>
+<?php if (!empty($syncThemeToClient)): ?>
+(function () {
+    // Why: employees.theme is the profile source of truth; theme.js reads localStorage.
+    var theme = <?php echo json_encode((($current_user['theme'] ?? '') === 'dark') ? 'dark' : 'light', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    try { localStorage.setItem('theme', theme); } catch (e) {}
+    document.documentElement.setAttribute('data-theme', theme);
+    if (typeof updateThemeButton === 'function') { updateThemeButton(); }
+})();
+<?php endif; ?>
+(function () {
+    // Why: keep Hide Year indicator aligned with checkbox without waiting for reload.
+    var hideYear = document.querySelector('input[name="hide_year"]');
+    if (!hideYear) return;
+    hideYear.addEventListener('change', function () {
+        var indicator = hideYear.parentNode ? hideYear.parentNode.querySelector('.itm-check-indicator') : null;
+        if (indicator) {
+            indicator.textContent = hideYear.checked ? '✅' : '❌';
+        }
+    });
+})();
     const pic = document.querySelector('.profile-pic');
     pic.addEventListener('dragover', e=>{ e.preventDefault(); pic.style.borderColor='#0366d6'; });
     pic.addEventListener('dragleave', ()=>{ pic.style.borderColor='#f6f8fa'; });
