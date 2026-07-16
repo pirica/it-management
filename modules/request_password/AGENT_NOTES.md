@@ -12,7 +12,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 
 ## Business Rules
 - **Non-editable fields**: Name, Department, Username are pulled from the logged-in employee record.
-- **Applications**: Only systems marked as '1' (Active) in `employee_system_access` for the employee are shown.
+- **Applications**: Only systems marked as '1' in `employee_system_access` for the employee are shown. Application discovery skips identity/audit/soft-delete meta columns (`id`, `company_id`, `employee_id`, `active`, `created_*`, `updated_*`, `deleted_*`, and legacy `changed_at` if present).
 - **Workflow**:
   1. Applicant submits request (Applicant Signature Date saved).
   2. Emails sent to HR/HOD via "Submit Email" buttons in View mode.
@@ -33,3 +33,4 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - Soft-delete only (`active = 0` with `deleted_by` / `deleted_at`) — do not hard-DELETE request rows. [Cursor-Valid]
 - ISM final notification must wait until both HR and HOD are Approved. [Cursor-Valid]
 - Approval links use HMAC-SHA256 — verify with `hash_equals`; do not weaken token/secret handling. [Cursor-Valid]
+- Application dropdown built from `employee_system_access` must skip audit/meta columns or non-system flags appear as apps. [Cursor-Fixed]

@@ -382,12 +382,20 @@ while ($row = mysqli_fetch_assoc($res)) {
     $columns[] = $row['Field'];
 }
 
-/* 2) Excluir colunas fixas e montar a consulta SELECT */
-$fixed = ['id', 'company_id', 'employee_id', 'changed_at', 'updated_at', 'created_at'];
-$dynamic_columns = array_diff($columns, $fixed);
-
-$all_columns = array_unique(array_merge($fixed, $dynamic_columns));
-$select_list = implode(", ", array_map(fn($c) => "`$c`", $all_columns));
+/* 2) Excluir colunas meta e montar SELECT apenas com colunas reais (DESCRIBE).
+ * Why: never merge invented names like changed_at into SELECT — employee_system_access
+ * has created_at/updated_at (and audit soft-delete cols) but not changed_at. */
+$fixed = [
+    'id', 'company_id', 'employee_id', 'active',
+    'changed_at', 'created_at', 'updated_at', 'deleted_at',
+    'created_by', 'updated_by', 'deleted_by',
+];
+$dynamic_columns = array_values(array_diff($columns, $fixed));
+// Why: SELECT only columns that exist on the live table.
+$all_columns = $columns;
+$select_list = implode(', ', array_map(static function ($c) {
+    return '`' . str_replace('`', '``', (string)$c) . '`';
+}, $all_columns));
 
 $sql = "SELECT $select_list FROM employee_system_access WHERE employee_id = ? AND company_id = ?";
 
@@ -457,9 +465,10 @@ if (empty($system_access_overview)) {
 if (!empty($system_access_overview)) {
     $access_row = $system_access_overview[0];
 
-    // Remove campos de controlo antes da contagem
-    unset($access_row['id'], $access_row['company_id'], $access_row['employee_id'],
-          $access_row['changed_at'], $access_row['updated_at'], $access_row['created_at']);
+    // Remove meta/audit columns before counting access flags
+    foreach ($fixed as $metaCol) {
+        unset($access_row[$metaCol]);
+    }
 
     // Converte os dados reais da BD para inteiros (garante 0 ou 1 numéricos)
     $access_row = array_map('intval', $access_row);
@@ -1014,7 +1023,12 @@ $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type
 $sa = $system_access_overview ? $system_access_overview[0] : [];
 //print_r($sa);
 // Colunas que NÃO devem aparecer
-$exclude = ['id','company_id','employee_id','changed_at','updated_at','created_at'];
+// Why: hide identity + audit/soft-delete meta; only system flag columns render as ✅/❌.
+$exclude = [
+    'id', 'company_id', 'employee_id', 'active',
+    'changed_at', 'created_at', 'updated_at', 'deleted_at',
+    'created_by', 'updated_by', 'deleted_by',
+];
 
 // Descobrir automaticamente todos os campos de acesso
 $access_fields = array_diff(array_keys($sa), $exclude);

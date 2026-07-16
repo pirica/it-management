@@ -224,9 +224,14 @@ function get_employee_applications($conn, $employee_id, $company_id) {
     $access = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 
     if ($access) {
-        $skip = ['id', 'company_id', 'employee_id', 'changed_at', 'updated_at', 'created_at'];
+        // Why: skip identity/audit/soft-delete meta; only live system flags are applications.
+        $skip = [
+            'id', 'company_id', 'employee_id', 'active',
+            'changed_at', 'created_at', 'updated_at', 'deleted_at',
+            'created_by', 'updated_by', 'deleted_by',
+        ];
         foreach ($access as $key => $val) {
-            if (!in_array($key, $skip) && $val == 1) {
+            if (!in_array($key, $skip, true) && $val == 1) {
                 $apps[] = ucwords(str_replace('_', ' ', $key));
             }
         }
