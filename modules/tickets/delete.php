@@ -2,9 +2,7 @@
 /**
  * Tickets Module - Delete
  *
- * Handles deletion of a single ticket record.
- * Validates CSRF tokens and performs a safety check using itm_can_delete_record
- * before executing the DELETE query to ensure no orphan records are created.
+ * Handles tenant-scoped soft deletion for single, bulk, and clear actions.
  */
 
 require '../../config/config.php';
@@ -22,6 +20,7 @@ itm_require_post_csrf();
 
 $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
 $id = (int)($_POST['id'] ?? 0);
+$employeeId = (int)($_SESSION['employee_id'] ?? 0);
 
 if ($bulkAction === 'clear_table') {
     $tenantCompanyId = (int)$company_id;
@@ -31,11 +30,13 @@ if ($bulkAction === 'clear_table') {
         exit;
     }
 
-    $stmtClear = mysqli_prepare($conn, 'DELETE FROM tickets WHERE company_id = ?');
-    if ($stmtClear) {
-        mysqli_stmt_bind_param($stmtClear, 'i', $tenantCompanyId);
-        mysqli_stmt_execute($stmtClear);
-        mysqli_stmt_close($stmtClear);
+    $softDeleteSql = itm_crud_build_soft_delete_sql(
+        'tickets',
+        ' WHERE company_id = ' . $tenantCompanyId,
+        $employeeId
+    );
+    if ($softDeleteSql !== '') {
+        itm_run_query($conn, $softDeleteSql);
     }
     header('Location: index.php');
     exit;
@@ -44,17 +45,19 @@ if ($bulkAction === 'clear_table') {
 if ($bulkAction === 'bulk_delete') {
     $ids = $_POST['ids'] ?? [];
     if (is_array($ids) && $ids) {
-        $stmtBulk = mysqli_prepare($conn, 'DELETE FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
-        if ($stmtBulk) {
-            foreach ($ids as $rawId) {
-                $bulkId = (int)$rawId;
-                if ($bulkId <= 0) {
-                    continue;
-                }
-                mysqli_stmt_bind_param($stmtBulk, 'ii', $bulkId, $company_id);
-                mysqli_stmt_execute($stmtBulk);
+        foreach ($ids as $rawId) {
+            $bulkId = (int)$rawId;
+            if ($bulkId <= 0) {
+                continue;
             }
-            mysqli_stmt_close($stmtBulk);
+            $softDeleteSql = itm_crud_build_soft_delete_sql(
+                'tickets',
+                ' WHERE id = ' . $bulkId . ' AND company_id = ' . (int)$company_id,
+                $employeeId
+            );
+            if ($softDeleteSql !== '') {
+                itm_run_query($conn, $softDeleteSql . ' LIMIT 1');
+            }
         }
     }
     header('Location: index.php');
@@ -62,19 +65,13 @@ if ($bulkAction === 'bulk_delete') {
 }
 
 if ($id > 0) {
-    $usageError = '';
-    // Use the generic safety check to verify the ID belongs to the current company
-    // and isn't being referenced in a way that prevents deletion.
-    if (!itm_can_delete_record($conn, 'tickets', 'id', $id, $company_id, $usageError)) {
-        $_SESSION['crud_error'] = $usageError;
-    } else {
-        // Execute the delete query using prepared statements for safety.
-        $stmt = mysqli_prepare($conn, 'DELETE FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
-        }
+    $softDeleteSql = itm_crud_build_soft_delete_sql(
+        'tickets',
+        ' WHERE id = ' . $id . ' AND company_id = ' . (int)$company_id,
+        $employeeId
+    );
+    if ($softDeleteSql !== '') {
+        itm_run_query($conn, $softDeleteSql . ' LIMIT 1');
     }
 }
 

@@ -40,7 +40,7 @@ if ($id <= 0) {
 }
 
 // Load existing employee record
-$employeeSql = 'SELECT * FROM employees WHERE id=' . $id . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
+$employeeSql = 'SELECT * FROM employees WHERE id=' . $id . ' AND company_id=' . (int)$company_id . ' AND deleted_at IS NULL LIMIT 1';
 $employeeRes = mysqli_query($conn, $employeeSql);
 $employee = ($employeeRes && mysqli_num_rows($employeeRes) === 1) ? mysqli_fetch_assoc($employeeRes) : null;
 if (!$employee) {
@@ -138,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($form as $key => $default) {
         $form[$key] = trim((string)($_POST[$key] ?? ''));
     }
+    itm_crud_force_active_live($form);
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
 
     // Validation
@@ -187,6 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hideYear = (int)$form['hide_year'];
         $roleId = $form['role_id'] === '' ? 'NULL' : (string)(int)$form['role_id'];
         $accessLevelId = $form['access_level_id'] === '' ? 'NULL' : (string)(int)$form['access_level_id'];
+        $active = (int)$form['active'];
 
         if ($roleId !== 'NULL' && (int)$roleId !== (int)($employee['role_id'] ?? 0)) {
             $currentUserRoleId = itm_get_employee_role_id($conn, (int)($_SESSION['employee_id'] ?? 0));
@@ -223,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             request_date={$requestDate}, requested_by={$requestedBy}, termination_requested_by={$terminationRequestedBy},
             start_date={$startDate}, employee_type_id={$employeeTypeId}, termination_date={$terminationDate},
             comments={$comments}, birthday={$birthday}, hide_year={$hideYear}, photo='{$photoValue}',
-            role_id={$roleId}, access_level_id={$accessLevelId}
+            role_id={$roleId}, access_level_id={$accessLevelId}, active={$active}
             WHERE id={$id} AND company_id=" . (int)$company_id . " AND is_hidden=0 LIMIT 1";
 
         if (mysqli_query($conn, $sql)) {
@@ -277,6 +279,8 @@ if (!isset($crud_title)) {
                 <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="id" value="<?php echo (int)$id; ?>">
+                    <?php itm_crud_render_form_hidden_active_input(); ?>
+                    <?php itm_crud_render_form_hidden_audit_inputs($employee, 'edit'); ?>
                     <?php $employee = $employee ?? []; include __DIR__ . '/includes/profile_fields.php'; ?>
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
                         <div class="form-group"><label>First Name *</label><input type="text" name="first_name" value="<?php echo sanitize($form['first_name']); ?>" required></div>

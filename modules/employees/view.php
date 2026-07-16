@@ -94,6 +94,7 @@ $profileFields = [
     'Reports To' => (string)($employee['manager_name'] ?? ''),
     'Raw Status Code' => (string)($employee['raw_status_code'] ?? ''),
     'Employment Status' => (string)($employee['employment_status_name'] ?? ''),
+    'Active' => (string)($employee['active'] ?? 0),
     'Request Date' => itm_format_date_display($employee['request_date'] ?? ''),
     'Requested By' => (string)($employee['requested_by'] ?? ''),
     'Termination Requested By' => (string)($employee['termination_requested_by'] ?? ''),
@@ -106,7 +107,14 @@ $profileFields = [
     'Assignment Type' => (string)($employee['assignment_type_name'] ?? ''),
     'Comments' => (string)($employee['comments'] ?? ''),
     'Duplicate Flag' => emp_view_bool_icon($employee['duplicate'] ?? 0),
+    'Deleted By' => itm_crud_render_audit_cell_value($conn, (int)$company_id, 'deleted_by', $employee['deleted_by'] ?? null),
+    'Deleted At' => itm_crud_render_audit_cell_value($conn, (int)$company_id, 'deleted_at', $employee['deleted_at'] ?? null),
+    'Created By' => itm_crud_render_audit_cell_value($conn, (int)$company_id, 'created_by', $employee['created_by'] ?? null),
+    'Created At' => itm_crud_render_audit_cell_value($conn, (int)$company_id, 'created_at', $employee['created_at'] ?? null),
+    'Updated By' => itm_crud_render_audit_cell_value($conn, (int)$company_id, 'updated_by', $employee['updated_by'] ?? null),
+    'Updated At' => itm_crud_render_audit_cell_value($conn, (int)$company_id, 'updated_at', $employee['updated_at'] ?? null),
 ];
+$auditProfileLabels = ['Deleted By', 'Deleted At', 'Created By', 'Created At', 'Updated By', 'Updated At'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -140,7 +148,9 @@ if (!isset($crud_title)) {
                 </div>
                 <div style="display:flex;gap:8px;">
                     <a href="index.php" class="btn">🔙</a>
-                    <a href="edit.php?id=<?php echo (int)$employeeId; ?>" class="btn btn-primary">✏️</a>
+                    <?php if (empty($employee['deleted_at'])): ?>
+                        <a href="edit.php?id=<?php echo (int)$employeeId; ?>" class="btn btn-primary">✏️</a>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -155,6 +165,10 @@ if (!isset($crud_title)) {
                                 <td>
                                     <?php if (($label === 'Work Email' || $label === 'Personal Email') && $value !== ''): ?>
                                         <a href="mailto:<?php echo sanitize($value); ?>"><?php echo sanitize($value); ?></a>
+                                    <?php elseif ($label === 'Active'): ?>
+                                        <span class="badge <?php echo ((int)$value === 1) ? 'badge-success' : 'badge-danger'; ?>"><?php echo ((int)$value === 1) ? 'Active' : 'Inactive'; ?></span>
+                                    <?php elseif (in_array($label, $auditProfileLabels, true)): ?>
+                                        <?php echo $value === '' ? '—' : $value; ?>
                                     <?php else: ?>
                                         <?php echo ($label === 'Duplicate Flag') ? $value : emp_view_value($value); ?>
                                     <?php endif; ?>

@@ -110,7 +110,10 @@ if (!isset($crud_title)) {
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_employee_id' => 'Created By',
                             'assigned_to_employee_id' => 'Assigned To', 'equipment_id' => 'Related Equipment',
-                            'due_date' => 'Due Date', 'is_archived' => 'Archived', 'tickets_photos' => 'Photos', 'created_at' => 'Created At',
+                            'due_date' => 'Due Date', 'is_archived' => 'Archived', 'tickets_photos' => 'Photos',
+                            'active' => 'Active', 'created_by' => 'Created By (Audit)', 'created_at' => 'Created At',
+                            'updated_by' => 'Updated By', 'updated_at' => 'Updated At',
+                            'deleted_by' => 'Deleted By', 'deleted_at' => 'Deleted At',
                         ];
 
                         $fieldDisplayValues = [
@@ -153,6 +156,19 @@ if (!isset($crud_title)) {
                                 </tr>
                                 <?php continue; ?>
                             <?php endif; ?>
+                            <?php if ($field === 'active'): ?>
+                                <tr>
+                                    <th style="width:220px;"><?php echo sanitize($label); ?></th>
+                                    <td>
+                                        <?php if ((int)($item['active'] ?? 0) === 1): ?>
+                                            <span class="badge badge-success">Active</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-danger">Inactive</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
                             <?php if ($field === 'status_id'): ?>
                                 <tr>
                                     <th style="width:220px;"><?php echo sanitize($label); ?></th>
@@ -165,6 +181,11 @@ if (!isset($crud_title)) {
                                     <th style="width:220px;"><?php echo sanitize($label); ?></th>
                                     <td><?php echo ticket_render_lookup_badge((string)($item['priority_name'] ?? ''), (string)($item['priority_color'] ?? '')); ?></td>
                                 </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php $auditValueHtml = itm_crud_render_audit_cell_value($conn, (int)$company_id, $field, $value); ?>
+                            <?php if ($auditValueHtml !== null): ?>
+                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo $auditValueHtml; ?></td></tr>
                                 <?php continue; ?>
                             <?php endif; ?>
                             

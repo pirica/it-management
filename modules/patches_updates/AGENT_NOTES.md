@@ -22,7 +22,7 @@ Tracks software patches, security updates, and system upgrades across equipment.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
-- **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+- **Status vs row active:** Business Active/Inactive is `status_id` → `patches_updates_status` (dropdown). Row `active` is a soft-delete mirror — create/edit use hidden `active=1` (not the Active checkbox); soft-delete sets `active=0` with `deleted_by` / `deleted_at`. List hides the six audit meta fields and filters `deleted_at IS NULL`; list/view show `active` as badges (no emoji). View lists `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at` (employee names / `d-m-Y - H:i:s`). Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`.
 
 - **Photo Upload**: Supports screenshots of patch confirmation or errors. Stored under `tickets_photos/` with names `patch_update_{id}_{time}_{rand}.{ext}`. Extension is derived from detected MIME via `cr_upload_extension_from_mime()` (never from the client filename). MIME must be in `ALLOWED_TYPES`; size must be ≤ `MAX_FILE_SIZE` (5MB).
 
@@ -56,8 +56,8 @@ $stmt->execute();
 
 ### Safe INSERT
 ```php
-$stmt = $conn->prepare("INSERT INTO patches_updates (company_id, hostname, active) VALUES (?, ?, ?)");
-$stmt->bind_param("isi", $companyId, $hostname, $active);
+$stmt = $conn->prepare("INSERT INTO patches_updates (company_id, hostname, status_id, active) VALUES (?, ?, ?, 1)");
+$stmt->bind_param("isi", $companyId, $hostname, $statusId);
 $stmt->execute();
 ```
 

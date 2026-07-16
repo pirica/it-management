@@ -218,7 +218,8 @@ if (!function_exists('itm_crud_build_soft_delete_sql')) {
             return '';
         }
         $emp = (int)$employeeId;
-        $set = '`deleted_at`=NOW(), `deleted_by`=' . ($emp > 0 ? (string)$emp : 'NULL');
+        // Why: Soft-delete mirrors inactive for status-driven modules; scaffold tables with active also flip to 0.
+        $set = '`deleted_at`=NOW(), `deleted_by`=' . ($emp > 0 ? (string)$emp : 'NULL') . ', `active`=0';
         $whereSql = trim((string)$whereSql);
         if ($whereSql === '') {
             $whereSql = ' WHERE deleted_at IS NULL';
@@ -226,6 +227,32 @@ if (!function_exists('itm_crud_build_soft_delete_sql')) {
             $whereSql .= ' AND deleted_at IS NULL';
         }
         return 'UPDATE `' . $table . '` SET ' . $set . $whereSql;
+    }
+}
+
+if (!function_exists('itm_crud_render_form_hidden_active_input')) {
+    /**
+     * Emit hidden active=1 for status-driven modules (business Active/Inactive lives on *_statuses FKs).
+     */
+    function itm_crud_render_form_hidden_active_input()
+    {
+        echo '<input type="hidden" name="active" value="1">' . "\n";
+    }
+}
+
+if (!function_exists('itm_crud_force_active_live')) {
+    /**
+     * Server-stamp row active=1 on create/edit so soft-delete is the only path to active=0.
+     *
+     * @param array $data
+     * @param array|null $sqlValues
+     */
+    function itm_crud_force_active_live(array &$data, &$sqlValues = null)
+    {
+        $data['active'] = 1;
+        if (is_array($sqlValues)) {
+            $sqlValues['active'] = '1';
+        }
     }
 }
 

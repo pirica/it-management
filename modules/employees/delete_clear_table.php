@@ -1,17 +1,15 @@
 <?php
 /**
- * Transactional clear-table delete for employees (tenant-scoped).
+ * Tenant-scoped clear-table soft-delete for employees.
  *
- * Why: Employees have many dependencies (passwords, bookmarks, etc.) that
- * must be detached or deleted to maintain referential integrity. Reusing
- * the single-record delete helper ensures all application-level cleanup
- * rules are executed consistently for every record in the batch.
+ * Why: Employee relationships remain intact while every visible row receives
+ * the same inactive mirror and delete audit stamps as single/bulk deletion.
  */
 
 /**
  * @param mysqli $conn Active database connection.
  * @param int $companyId The tenant ID to clear.
- * @return string|null Combined error message, or null when every row deleted successfully.
+ * @return string|null Combined error message, or null when every row was soft-deleted.
  */
 function employees_clear_table_for_company(mysqli $conn, int $companyId): ?string
 {
@@ -20,9 +18,8 @@ function employees_clear_table_for_company(mysqli $conn, int $companyId): ?strin
     }
 
     $idList = [];
-    // Why: Use a prepared statement to prevent SQL injection and load IDs into an
-    // array first to avoid keeping a result set open during subsequent per-row transactions.
-    $stmt = mysqli_prepare($conn, 'SELECT id FROM employees WHERE company_id = ? AND is_hidden = 0');
+    // Why: Load IDs first so each row can receive the shared soft-delete treatment.
+    $stmt = mysqli_prepare($conn, 'SELECT id FROM employees WHERE company_id = ? AND is_hidden = 0 AND deleted_at IS NULL');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $companyId);
         mysqli_stmt_execute($stmt);
@@ -39,9 +36,7 @@ function employees_clear_table_for_company(mysqli $conn, int $companyId): ?strin
     }
 
     $deleteErrors = [];
-    // Why: Iterate through unique IDs and call the specialized single-delete helper.
-    // This allows the system to handle individual Foreign Key blockers and
-    // perform atomic detachment of child rows for each employee.
+    // Why: Reuse the single-row helper so clear-table applies identical audit stamps.
     foreach ($idList as $employeeId) {
         $deleteError = employees_delete_record($conn, $companyId, $employeeId);
         if ($deleteError !== null) {
