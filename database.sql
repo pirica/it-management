@@ -7274,7 +7274,6 @@ CREATE TABLE `bookmark_folders` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_bookmark_folders_company_scope` (`company_id`, `employee_id`, `name`),
   KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   KEY `parent_folder_id` (`parent_folder_id`),
@@ -7282,6 +7281,7 @@ CREATE TABLE `bookmark_folders` (
   CONSTRAINT `bookmark_folders_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmark_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Existing databases that still have uq_bookmark_folders_company_scope: DROP INDEX uq_bookmark_folders_company_scope ON bookmark_folders;
 
 -- Table structure for `bookmarks`
 DROP TABLE IF EXISTS `bookmarks`;

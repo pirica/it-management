@@ -13,6 +13,9 @@
  * - floor_plans & explorer: (`company_id`, IFNULL(`folder_id`, 0), `display_name`)
  *   Do not use UNIQUE (`company_id`, `folder_id`) alone — that allows only one file per folder.
  *
+ * Tables without `company_id` (and exempt tables such as `audit_logs`,
+ * `bookmark_folders`, `floor_plan_item_tags`) are skipped.
+ *
  * Browser: open while logged in (read-only audit; results on load).
  * CLI: php scripts/check_database_sql_company_name_uniques.php
  */
@@ -136,7 +139,8 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
             <strong>Pass:</strong> exactly <strong>2</strong> uniques — <code>PRIMARY KEY</code> (<code>id</code>) plus one business
             <code>UNIQUE</code> led by <code>(company_id, scope_column)</code> (wider composites are OK).<br>
             <strong>Fail:</strong> missing scope unique, only one unique, or extra uniques.<br>
-            Tables without <code>company_id</code> (and exempt tables such as <code>audit_logs</code>) are skipped.
+            Tables without <code>company_id</code> (and exempt tables such as <code>audit_logs</code>,
+            <code>bookmark_folders</code>, <code>floor_plan_item_tags</code>) are skipped.
         </p>
         <p class="itm-dsu-muted">
             <strong>Explorer & Floor plan gallery (required shape):</strong>

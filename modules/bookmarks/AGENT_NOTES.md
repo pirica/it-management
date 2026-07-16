@@ -16,7 +16,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **Permissions:** shared bookmarks read-only for regular users; admins (`itm_is_admin()`) and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
 - **Drag-and-drop:** folders reordered/reparented via DnD interactions.
-- **Folder names:** `bookmark_folders` uses `UNIQUE (company_id, employee_id, name)` in `database.sql` so private folder names are unique per employee, not per company.
+- **Folder names:** duplicate names are allowed; identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Tenant unique-key audit skips `bookmark_folders`.
 - **Import/export:** browser HTML bookmark files, CSV, and XLSX.
 - **Deletion:** single delete may require `bulk_action = 'single_delete'` for shared-handler compatibility.
 

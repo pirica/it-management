@@ -361,15 +361,28 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'skip' => 0,
         ];
 
+        // Why: Tables where duplicate display names (or junction identity) are intentional — no name/scope UNIQUE gate.
         $auditExemptTables = [
-            'audit_logs', 'explorer', 'employees', 'it_settings', 'todo_categories', 'attempts', 'bookmarks', 'notes', 'private_contacts',
+            'audit_logs' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'explorer' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'employees' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'it_settings' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'todo_categories' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'attempts' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'bookmarks' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'notes' => 'Append-only log table; tenant scope UNIQUE not required.',
+            'private_contacts' => 'Append-only log table; tenant scope UNIQUE not required.',
+            // Why: Folder names may duplicate intentionally; identity is PRIMARY KEY (id) only.
+            'bookmark_folders' => 'Duplicate folder names allowed; identity is PRIMARY KEY (id) only.',
+            // Why: Junction of plan+tag; PK (floor_plan_id, tag_id) is the identity — not a name UNIQUE.
+            'floor_plan_item_tags' => 'Junction table; identity is PRIMARY KEY (floor_plan_id, tag_id), not a name UNIQUE.',
         ];
 
         foreach ($parsed as $tableRow) {
             $table = (string) $tableRow['table'];
             $scopeColumn = (string) $tableRow['scope_column'];
 
-            if (in_array($table, $auditExemptTables, true)) {
+            if (isset($auditExemptTables[$table])) {
                 $summary['skip']++;
                 $lines[] = [
                     'table' => $table,
@@ -378,7 +391,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
                     'scope_column' => $scopeColumn,
                     'scope_unique' => '',
                     'has_scope_unique' => false,
-                    'message' => 'Append-only log table; tenant scope UNIQUE not required.',
+                    'message' => $auditExemptTables[$table],
                     'alter_sql' => '',
                 ];
                 continue;
