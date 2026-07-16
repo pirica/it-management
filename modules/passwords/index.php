@@ -221,7 +221,7 @@ if (!isset($crud_title)) {
                                 </div>
                             </div>
                             <div style="overflow-x: auto;">
-                                <table class="table">
+                                <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                                     <thead><tr><th style="width: 100px; text-align: center;" class="itm-actions-cell" data-itm-actions-origin="1">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
                                     <tbody id="entries-body"><tr><td colspan="5" class="text-center">Loading entries...</td></tr></tbody>
                                 </table>
@@ -461,7 +461,7 @@ function loadEntries() {
         data.forEach(e => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="text-align: center;"><button class="btn btn-sm btn-outline-primary" onclick="openEntryModal(${e.id})">✏️</button> <button class="btn btn-sm btn-outline-danger" onclick="deleteEntry(${e.id})">🗑️</button></td>
+                <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;"><div class="itm-actions-wrap"><button class="btn btn-sm btn-outline-primary" onclick="openEntryModal(${e.id})" title="Edit">✏️</button> <button class="btn btn-sm btn-outline-danger" onclick="deleteEntry(${e.id})" title="Delete">🗑️</button></div></td>
                 <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
                 <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
                 <td><div class="input-group input-group-sm" style="width: 140px;"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')">👁️</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('${addslashes(e.password)}')">🗐</button></div></div></td>

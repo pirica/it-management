@@ -413,7 +413,7 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Privacy Scoping:** Data is filtered by `employee_id` for private bookmarks and `company_id` for shared ones.
 - **Dual-Pane UI:** A left sidebar with an emoji-enhanced folder tree (📁/📂) and a main list view.
 - **Drag-and-Drop:** Folders can be reordered or reparented via drag-and-drop interactions.
-- **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
+- **Import/Export:** Dual-pane uses custom Tools (HTML `import.php`, `exportBookmarks` / `export.php`). Flattened `list_all.php` keeps `data-itm-db-import-endpoint="list_all.php"` for table-tools; dual-pane list table opts out with `data-itm-no-import-excel` / `data-itm-no-export-*`.
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
 - **Folder names:** duplicate `bookmark_folders.name` values are allowed; identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Do not re-add company/employee name UNIQUEs. Tenant unique-key audit skips `bookmark_folders` and `bookmarks`.
 
@@ -425,6 +425,7 @@ The Passwords module provides a secure, private manager for user credentials.
 3. **Vault State**: If the `$_SESSION['vault_key']` is absent, the module MUST prompt for the master key and hide all decrypted data.
 4. **Master Key Change**: Re-encryption of all entries during a master key change must be atomic via database transactions.
 5. **UI behavior**: Password fields MUST be masked by default with a toggle visibility button. Always provide a 🗐 icon for copying fields to the clipboard.
+6. **Special import/export:** Tools menu (CSV/Excel modals + `exportVault` / `export_handler.php`), not table-tools. Entry list table uses `data-itm-no-import-excel` / `data-itm-no-export-*`; Actions cells (including JS rows) keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
 
 #### Email Management (mandatory)
 
