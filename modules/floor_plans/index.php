@@ -726,7 +726,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fp_action']) && ($cru
             $storedFilename = 'floor_plan_' . $planId . '_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
             $dest = fp_absolute_path((int)$company_id, $storedFilename);
             if (!move_uploaded_file((string)$file['tmp_name'], $dest)) {
-                mysqli_query($conn, 'DELETE FROM floor_plans WHERE id=' . (int)$planId . ' AND company_id=' . (int)$company_id . ' LIMIT 1');
+                $rollbackEmp = (int)($_SESSION['employee_id'] ?? 0);
+                mysqli_query($conn, 'UPDATE floor_plans SET deleted_at=NOW(), deleted_by=' . (int)$rollbackEmp . ' WHERE id=' . (int)$planId . ' AND company_id=' . (int)$company_id . ' AND deleted_at IS NULL LIMIT 1');
                 $uploadErrors[] = 'Could not store ' . $displayName . ' on disk.';
                 continue;
             }
@@ -1496,6 +1497,7 @@ if (!isset($crud_title)) {
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
                                     </div>

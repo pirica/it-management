@@ -31,7 +31,7 @@ Provides an interactive tool for designing and visualizing floor plans, includin
 
 ## 6. API Actions (If Applicable)
 - **save_point** — (AJAX) updates point coordinates or metadata.
-- **delete_point** — (AJAX) removes a point.
+- **delete_point** — (AJAX) soft-deletes a point (`deleted_at`/`deleted_by`); live canvas loads only `deleted_at IS NULL` points.
 
 ## 7. File Structure
 - Standard CRUD for `floor_designer` (`index.php`, `edit.php`, etc.).
@@ -45,7 +45,7 @@ Provides an interactive tool for designing and visualizing floor plans, includin
 
 ## 10. Common Pitfalls
 
-- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. AJAX `delete_point` and failed save-as floor_plan rollback also soft-delete. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Mismatched IDs**: Ensure `switch_port_id` belongs to the selected `switch_id`. [Cursor-Valid]
 - **Coordinate Drift**: Be careful when modifying container sizes as it might affect point placement if not handled relatively. [Cursor-Valid]

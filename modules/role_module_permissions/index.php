@@ -247,6 +247,12 @@ function cr_module_name_options($conn, $company_id) {
 }
 
 function cr_render_cell_value($table, $field, $value, $displayValue = null) {
+    if (function_exists('itm_crud_render_audit_cell_value')) {
+        $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
+        if ($auditHtml !== null) {
+            return $auditHtml;
+        }
+    }
     if ($field === 'color') {
         $color = (string)($value ?? '');
         if (preg_match('/^#[A-Fa-f0-9]{6}$/', $color)) {
@@ -1010,6 +1016,7 @@ if (!isset($crud_title)) {
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                     </div>

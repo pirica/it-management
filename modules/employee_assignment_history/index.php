@@ -283,6 +283,12 @@ function cr_is_hidden_employee_field($field) {
  * Renders a specific table cell value with formatting based on field type/module
  */
 function cr_render_cell_value($table, $field, $value, $fkMap = [], $conn = null, $company_id = 0) {
+    if (function_exists('itm_crud_render_audit_cell_value')) {
+        $auditHtml = itm_crud_render_audit_cell_value($conn instanceof mysqli ? $conn : ($GLOBALS['conn'] ?? null), (int)$company_id, $field, $value);
+        if ($auditHtml !== null) {
+            return $auditHtml;
+        }
+    }
     if (isset($fkMap[$field]) && $conn instanceof mysqli) {
         $label = cr_fk_label_for_id($conn, $fkMap[$field], $value, (int)$company_id);
         if ($label !== null && $label !== '') {
@@ -1085,6 +1091,7 @@ if (!isset($crud_title)) {
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
                                     </div>

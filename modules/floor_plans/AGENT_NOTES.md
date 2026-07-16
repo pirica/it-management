@@ -41,7 +41,7 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 
 ## 10. Common Pitfalls
 
-- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Failed upload disk-store rollback soft-deletes the incomplete `floor_plans` row. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Schema column name**: `floor_plan_folders.parent_folder_id` is the parent FK (not `parent_folder_name`). Gallery helpers and `index.php` folder create/move handlers use `parent_folder_id`; `database.sql` triggers and unique key must match. [Cursor-Valid]
 - **Broken Paths**: Deleting a folder without moving its files can result in "unfiled" records. [Cursor-Valid]
