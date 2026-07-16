@@ -509,7 +509,7 @@ The `roles_permissions` module (`modules/roles_permissions/`) provides a unified
 6. **Role sidebar active counts:** Count employees where `employees.company_id = er.company_id`, `employees.role_id = er.id`, and HR employment status **Active** (via `itm_employee_active_employment_status_join_sql()` + predicate — not hardcoded `employment_status_id`). Distinct from dashboard **Online now** (session presence) and dashboard **On Leave** (HR status).
 7. **Company gate first:** `company_module_access` remains the first visibility gate; this module configures the second RBAC layer.
 8. **RBAC exempt:** Keep `roles_permissions` in `itm_crud_rbac_exempt_module_slugs()` — the module uses its own admin gate for mutations.
-9. **UI:** Dual-pane layout patterned after Company Module Access — role sidebar, toolbar card, permission matrix (`js/roles-permissions-matrix.js`).
+9. **UI:** Dual-pane layout patterned after Company Module Access — role sidebar, toolbar card, permission matrix (`js/roles-permissions-matrix.js`). Matrix table uses `data-itm-no-import-excel="1"` (and export opt-outs); do not require `data-itm-db-import-endpoint`.
 10. **AJAX actions:** `save_permissions`, `create_role`, `update_role` — all require CSRF and administrator access.
 11. **Sidebar:** Admin → **🛡️ Roles & Permissions** in `includes/ui_config.php`.
 12. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_roles_permissions.php`.

@@ -39,7 +39,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Role cards show name, **active employee count** (`N active`, SQL alias `active_count`), and **System** badge for Admin.
 - Toolbar: Check All, Uncheck All, Save (💾, admins only), module filter.
 - Add role (➕) and edit role (✏️) modals update `employee_roles.name` via AJAX (admins only).
-- Matrix table disables exports (`data-itm-no-export-excel="1"`).
+- Matrix table disables Excel/PDF export and Import Excel (`data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"`, `data-itm-no-import-excel="1"`). Index table compliance honors the import opt-out (no `data-itm-db-import-endpoint` required — this is a permission matrix, not a CRUD row list).
 - Action buttons follow emoji-only visible labels with descriptive `title` attributes.
 
 ## 6. API Actions (If Applicable)
