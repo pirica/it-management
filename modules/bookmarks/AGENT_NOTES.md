@@ -4,8 +4,8 @@
 Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — URL records (`title`, `url`, `shared`, `employee_id`, `folder_id`).
-- **bookmark_folders** — folder tree (emoji icons in sidebar).
+- **bookmarks** — URL records (`title`, `url`, `shared`, `employee_id`, `folder_id`). Duplicate titles are allowed; row identity is `id`.
+- **bookmark_folders** — folder tree (emoji icons in sidebar). **Duplicate folder names are allowed** (same employee / company / parent). Identity is `PRIMARY KEY (id)` only — there is **no** UNIQUE on `name` (and no `uq_bookmark_folders_company_scope`).
 
 ## 3. Required Relationships
 - **bookmarks** → **companies**, **employees**, **bookmark_folders**.
@@ -16,7 +16,10 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **Permissions:** shared bookmarks read-only for regular users; admins (`itm_is_admin()`) and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
 - **Drag-and-drop:** folders reordered/reparented via DnD interactions.
-- **Folder names:** duplicate names are allowed; identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Tenant unique-key audit skips `bookmark_folders`.
+- **Folder / bookmark naming (no uniqueness):**
+  - Do **not** re-add `UNIQUE (company_id, …, name)` on `bookmark_folders` or name UNIQUEs on `bookmarks`.
+  - UI and import may create multiple folders or bookmarks with the same display name; distinguish rows by `id`.
+  - Tenant unique-key audit (`php scripts/check_database_sql_company_name_uniques.php` / `includes/database_sql_unique_audit.php`) **skips** `bookmark_folders` and `bookmarks`.
 - **Import/export:** browser HTML bookmark files, CSV, and XLSX.
 - **Deletion:** single delete may require `bulk_action = 'single_delete'` for shared-handler compatibility.
 
@@ -56,6 +59,8 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - URLs missing scheme — prepend `http://` or `https://` when saving. [Cursor-Valid]
 - `delete.php` expects `bulk_action=single_delete` for inline index deletes. [Cursor-Valid]
 - Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently. [Cursor-Valid]
+- Do not enforce unique folder names in PHP validation — the schema allows duplicates. [Cursor-Valid]
+- Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `database.sql`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

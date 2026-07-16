@@ -4,7 +4,8 @@
 Manages hierarchical folders for organizing bookmarks. Folders can be private to a user or shared within a company.
 
 ## 2. Key Tables
-- **bookmark_folders** — stores folder metadata and hierarchy.
+- **bookmark_folders** — folder metadata and hierarchy (`company_id`, `employee_id`, `parent_folder_id`, `name`, `position`, `shared`, soft-delete/audit columns).
+- **Keys:** `PRIMARY KEY (id)` only for business identity. **No** UNIQUE on `name` (duplicates allowed for any owner/parent/company). Non-unique KEYs remain on `company_id`, `employee_id`, `parent_folder_id`.
 
 ## 3. Required Relationships
 - **bookmark_folders** → depends on **companies**, **employees**.
@@ -12,7 +13,11 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 ## 4. Business Rules (Critical for Agents)
 - **Ownership/Sharing**: A folder is either owned by a specific `employee_id` or marked as `shared = 1`.
-- **Folder names:** duplicate names are allowed intentionally — identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Soft-deleted rows do not block recreating the same name. Tenant unique-key audit skips this table (`includes/database_sql_unique_audit.php`).
+- **Folder names (duplicates OK):**
+  - Multiple folders may share the same `name` (same employee, same parent, or across the company).
+  - Do **not** add `UNIQUE (company_id, name)`, `UNIQUE (company_id, employee_id, name)`, or parent-scoped name UNIQUEs unless product rules change.
+  - Soft-delete does not block recreating a folder with the same name (no unique collision).
+  - Tenant unique-key audit skips this table — see `includes/database_sql_unique_audit.php` and `scripts/check_database_sql_company_name_uniques.php`.
 - **Recursive Deletion**: Deleting a folder sets `parent_folder_id` of subfolders to NULL (via `ON DELETE SET NULL`) or requires manual cleanup.
 - **Tenant Isolation**: Strictly scoped by `company_id`.
 
@@ -37,6 +42,8 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows remain until purged; folder names may be reused immediately (no UNIQUE on `name`). [Cursor-Valid]
+- Do not add PHP “name already exists” guards for folders unless intentionally changing product rules. [Cursor-Valid]
+- Legacy installs: drop `uq_bookmark_folders_company_scope` if still present (`database.sql` comment under `CREATE TABLE bookmark_folders`). [Cursor-Valid]
 - **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Cursor-Valid]
 - **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Cursor-Valid]
 
