@@ -196,49 +196,140 @@ if ($failures === 0) {
     emails_verify_pass('Email delivery test scripts present.');
 }
 
+/**
+ * Count company warranty + license rows inside the default 30-day alert window.
+ *
+ * @param mysqli $conn
+ * @param int $companyId
+ * @param string $today
+ * @param string $cutoff
+ * @return int
+ */
+function emails_verify_alert_window_count($conn, $companyId, $today, $cutoff)
+{
+    $alertSeedCount = 0;
+    $warrantyStmt = mysqli_prepare(
+        $conn,
+        'SELECT COUNT(*) FROM equipment
+         WHERE company_id = ? AND active = 1 AND deleted_at IS NULL
+           AND warranty_expiry IS NOT NULL
+           AND warranty_expiry >= ? AND warranty_expiry <= ?'
+    );
+    if ($warrantyStmt) {
+        mysqli_stmt_bind_param($warrantyStmt, 'iss', $companyId, $today, $cutoff);
+        mysqli_stmt_execute($warrantyStmt);
+        mysqli_stmt_bind_result($warrantyStmt, $warrantyCount);
+        mysqli_stmt_fetch($warrantyStmt);
+        mysqli_stmt_close($warrantyStmt);
+        $alertSeedCount += (int)$warrantyCount;
+    }
+
+    $licenseStmt = mysqli_prepare(
+        $conn,
+        'SELECT COUNT(*) FROM license_management
+         WHERE company_id = ? AND active = 1 AND deleted_at IS NULL
+           AND expiry_date IS NOT NULL
+           AND expiry_date >= ? AND expiry_date <= ?'
+    );
+    if ($licenseStmt) {
+        mysqli_stmt_bind_param($licenseStmt, 'iss', $companyId, $today, $cutoff);
+        mysqli_stmt_execute($licenseStmt);
+        mysqli_stmt_bind_result($licenseStmt, $licenseCount);
+        mysqli_stmt_fetch($licenseStmt);
+        mysqli_stmt_close($licenseStmt);
+        $alertSeedCount += (int)$licenseCount;
+    }
+
+    return $alertSeedCount;
+}
+
 $today = date('Y-m-d');
 $cutoff = date('Y-m-d', strtotime('+30 days'));
-$alertSeedCount = 0;
-$warrantyStmt = mysqli_prepare(
-    $conn,
-    'SELECT COUNT(*) FROM equipment
-     WHERE company_id = ? AND active = 1 AND warranty_expiry IS NOT NULL
-       AND warranty_expiry >= ? AND warranty_expiry <= ?'
-);
-if ($warrantyStmt) {
-    mysqli_stmt_bind_param($warrantyStmt, 'iss', $companyId, $today, $cutoff);
-    mysqli_stmt_execute($warrantyStmt);
-    mysqli_stmt_bind_result($warrantyStmt, $warrantyCount);
-    mysqli_stmt_fetch($warrantyStmt);
-    mysqli_stmt_close($warrantyStmt);
-    $alertSeedCount += (int)$warrantyCount;
+$alertSeedCount = emails_verify_alert_window_count($conn, $companyId, $today, $cutoff);
+$disposableLicenseId = 0;
+
+// Why: Hard fail when the window is empty — insert disposable sample license (not skip),
+// then re-assert so run_email_alert_rules always has company-1 seed coverage on stale DBs.
+if ($alertSeedCount < 1) {
+    $licenseTypeId = 0;
+    $typeStmt = mysqli_prepare(
+        $conn,
+        'SELECT id FROM license_types WHERE company_id = ? ORDER BY id ASC LIMIT 1'
+    );
+    if ($typeStmt) {
+        mysqli_stmt_bind_param($typeStmt, 'i', $companyId);
+        if (mysqli_stmt_execute($typeStmt)) {
+            mysqli_stmt_bind_result($typeStmt, $licenseTypeId);
+            mysqli_stmt_fetch($typeStmt);
+        }
+        mysqli_stmt_close($typeStmt);
+    }
+    $licenseTypeId = (int)$licenseTypeId;
+
+    if ($licenseTypeId <= 0) {
+        emails_verify_fail('Cannot seed alert-window sample: no license_types row for company 1.');
+    } else {
+        $seedName = 'ITM Email Alert Seed ' . bin2hex(random_bytes(4));
+        $seedKey = 'ITM-ALERT-' . strtoupper(bin2hex(random_bytes(3)));
+        $seedExpiry = date('Y-m-d', strtotime('+14 days'));
+        $seedNotes = 'Disposable verify_emails_module.php alert-window sample';
+        $insertStmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO license_management
+                (company_id, name, license_key, license_type_id, quantity, supplier_id,
+                 purchase_date, expiry_date, price, active, notes)
+             VALUES (?, ?, ?, ?, 1, NULL, CURDATE(), ?, 1.00, 1, ?)'
+        );
+        if ($insertStmt) {
+            mysqli_stmt_bind_param(
+                $insertStmt,
+                'ississ',
+                $companyId,
+                $seedName,
+                $seedKey,
+                $licenseTypeId,
+                $seedExpiry,
+                $seedNotes
+            );
+            if (mysqli_stmt_execute($insertStmt)) {
+                $disposableLicenseId = (int)mysqli_insert_id($conn);
+                emails_verify_pass('Inserted disposable license sample id ' . $disposableLicenseId . ' in 30-day alert window.');
+            } else {
+                emails_verify_fail('Failed to insert disposable alert-window license sample: ' . mysqli_stmt_error($insertStmt));
+            }
+            mysqli_stmt_close($insertStmt);
+        } else {
+            emails_verify_fail('Failed to prepare disposable alert-window license insert.');
+        }
+    }
+
+    $alertSeedCount = emails_verify_alert_window_count($conn, $companyId, $today, $cutoff);
 }
-$licenseStmt = mysqli_prepare(
-    $conn,
-    'SELECT COUNT(*) FROM license_management
-     WHERE company_id = ? AND active = 1 AND expiry_date IS NOT NULL
-       AND expiry_date >= ? AND expiry_date <= ?'
-);
-if ($licenseStmt) {
-    mysqli_stmt_bind_param($licenseStmt, 'iss', $companyId, $today, $cutoff);
-    mysqli_stmt_execute($licenseStmt);
-    mysqli_stmt_bind_result($licenseStmt, $licenseCount);
-    mysqli_stmt_fetch($licenseStmt);
-    mysqli_stmt_close($licenseStmt);
-    $alertSeedCount += (int)$licenseCount;
-}
+
 if ($alertSeedCount < 1) {
     emails_verify_fail('No warranty/license rows in the 30-day alert window for company 1 (run_email_alert_rules needs seed data).');
 } else {
     emails_verify_pass('Alert runner seed data present for company 1 (' . $alertSeedCount . ' row(s) in 30-day window).');
 }
 
+if ($disposableLicenseId > 0) {
+    $cleanupStmt = mysqli_prepare($conn, 'DELETE FROM license_management WHERE id = ? AND company_id = ? LIMIT 1');
+    if ($cleanupStmt) {
+        mysqli_stmt_bind_param($cleanupStmt, 'ii', $disposableLicenseId, $companyId);
+        mysqli_stmt_execute($cleanupStmt);
+        mysqli_stmt_close($cleanupStmt);
+        emails_verify_pass('Removed disposable alert-window license sample id ' . $disposableLicenseId . '.');
+    } else {
+        emails_verify_fail('Could not clean up disposable alert-window license id ' . $disposableLicenseId . '.');
+    }
+}
+
 if ($failures > 0) {
     echo colorText('Verification finished with ' . $failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 echo colorText('All email module checks passed.', 'pass') . $nl;
-exit(0);
-
 itm_script_output_end();
+exit(0);

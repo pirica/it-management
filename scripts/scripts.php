@@ -338,8 +338,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_emails_module.php" target="_blank" rel="nofollow noreferrer">verify_emails_module.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, and <code>itm_send_email()</code> helper.</td>
-                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> tables in <code>database.sql</code>.</td>
+                    <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, <code>itm_send_email()</code>, and company 1 30-day warranty/license alert window (hard fail; disposable sample insert when empty).</td>
+                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> / alert-window seed rows in <code>database.sql</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="run_email_alert_rules.php" target="_blank" rel="nofollow noreferrer">run_email_alert_rules.php</a></td>

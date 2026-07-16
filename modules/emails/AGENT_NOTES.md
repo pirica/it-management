@@ -18,7 +18,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - `itm_send_email($to, $subject, $html, $companyId)` logs every attempt to **emails** when `company_id` resolves.
 - Fragment HTML bodies are auto-wrapped in the login-style transactional template (`itm_email_build_transactional_html()`). Pass `email_template` (array with `subtitle`, `button_text`, `button_url`, `footer_text`) or `email_template => false` to skip wrapping.
 - Fallback: if no SMTP profile exists, `itm_send_email()` tries Resend (`RESEND_API_KEY` env).
-- Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron). Company 1 seeds include warranty/license rows inside the default 30-day window; other tenants need enabled rules plus `notify_emails`. Use `--verbose` when dispatched count is 0.
+- Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron). Company 1 `database.sql` seeds use relative warranty/license expiry (`DATE_ADD(CURDATE(), …)`) so rows stay inside the default 30-day window after import. `verify_emails_module.php` **fails** (does not skip) when the window is empty; it inserts a disposable company-1 license sample, re-asserts, then deletes it. Other tenants need enabled rules plus `notify_emails`. Use `--verbose` when dispatched count is 0.
 - Manual delivery tests: `php scripts/test_email_forgot.php email=… [--company=1]`, `php scripts/test_register_mail.php email=… [--company=1]`. Forgot-password emails include a **Reset password** CTA button plus the full reset URL in the body for copy/paste. The forgot test script stores a **real 24-hour reset token** for the matching employee (not a fixed placeholder).
 
 ## 5. UI Behavior Requirements

@@ -849,7 +849,7 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper |
+| `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper; company 1 warranty/license **30-day alert window is a hard fail** (script inserts disposable license sample when empty, then deletes it). `database.sql` uses relative `DATE_ADD(CURDATE(), …)` expiry seeds so fresh imports stay in-window |
 | `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`) |
 | `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
