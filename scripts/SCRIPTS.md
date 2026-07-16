@@ -517,7 +517,7 @@ Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_cover
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/apply_crud_audit_soft_delete.php` | Dry-run by default; `--apply` patches modules listed in `docs/list_soft-delete.txt` (list hide meta, view show meta, soft-delete SQL, stamps). |
+| `php scripts/apply_crud_audit_soft_delete.php` | **CLI-only** repo writer. Dry-run by default; `--apply` patches scaffold modules in `docs/list_soft-delete.txt` (list hide meta, view show meta, soft-delete SQL, stamps). Idempotent when modules already comply. Skips status-driven slugs (`employees`, `equipment`, `patches_updates`, `tickets`). Browser opens show CLI instructions only. |
 | `php scripts/check_crud_audit_soft_delete.php` | Static gate: list hide helper / `$viewColumns` (or bespoke `itm_crud_render_audit_cell_value` on `view.php`) / `deleted_at IS NULL` / soft-delete helper for in-scope modules (including status-driven `employees`, `equipment`, `patches_updates`, `tickets`). |
 | Inventory | `docs/list_soft-delete.txt` (in scope), `docs/list_bespoke_UI.txt` (deferred). Helpers: `includes/itm_crud_audit_fields.php` (soft-delete also sets `active=0`; status-driven forms use hidden `active=1`). |
 
