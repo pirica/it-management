@@ -228,7 +228,7 @@ if (!isset($crud_title)) {
         </div>
     <?php else: ?>
 
-        <table style="width:100%; border-collapse:collapse;">
+        <table style="width:100%; border-collapse:collapse;" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
 <thead>
     <tr style="background:var(--bg-secondary);">
 
@@ -237,7 +237,6 @@ if (!isset($crud_title)) {
         </th>
         <th style="padding:8px;">
             Favicon
-        </th>
         </th>
         <th style="padding:8px; cursor:pointer;" onclick="sortTable(5, this)">
             URL <span class="sort-arrow"></span>
@@ -302,13 +301,14 @@ if (!isset($crud_title)) {
     </td>
 
     <!-- Actions -->
-    <td style="padding:8px;">
+    <td class="itm-actions-cell" data-itm-actions-origin="1" style="padding:8px;">
+        <div class="itm-actions-wrap">
         <button class="btn btn-sm copy-btn"
                 onclick="copyUrl('<?php echo addslashes($b['url']); ?>')"
                 title="Copy URL">🗐</button>
 
         <?php if (bkm_can_edit_bookmark($b, $user_id, $is_admin)): ?>
-            <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm">✏️</a>
+            <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm" title="Edit">✏️</a>
 
             <form method="POST" action="delete.php"
                   style="display:inline;"
@@ -316,9 +316,10 @@ if (!isset($crud_title)) {
                 <input type="hidden" name="id" value="<?php echo $b['id']; ?>">
                 <input type="hidden" name="bulk_action" value="single_delete">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
             </form>
         <?php endif; ?>
+        </div>
     </td>
 
 </tr>
