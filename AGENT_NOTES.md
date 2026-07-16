@@ -23,6 +23,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - `user-config.php` System Access SELECT must not `array_merge` hardcoded meta names absent from `employee_system_access` (e.g. inventing `changed_at` → prepare failure). [Cursor-Fixed]
 - `user-config.php` profile form must save and re-display `birthday` / `hide_year` (not only email/phone/theme/emergency); blank birthday inputs and unchecked hide_year must clear / persist correctly. [Cursor-Fixed]
 - `user-config.php` profile UPDATE must use the employee home `company_id`, not the tenant-switcher session company — otherwise Admin users see “Profile updated successfully!” with 0 rows changed. Theme must set `<html data-theme>` + CSS variables (hardcoded `#fff` cards hide dark mode). [Cursor-Fixed]
+- `user-config.php` profile photo: “Photo updated!” with broken image (alt text “Profile”) means `emp_profile_photo_url()` used module-relative `../../modules/explorer/file.php` from the app root — must be app-absolute under `BASE_URL`. [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
@@ -42,6 +43,7 @@ The `user-config.php` has been upgraded to a full Employee Dashboard & Profile s
 - **Stat Cards**: Displays stats from all modules using employee-related ID fields (30+ combinations tracked).
 - **Profile Management**: Integrated photo upload (circular drag-and-drop), theme selection, and emergency contact details.
 - **Profile save (`action=update_profile`):** persists `work_email`, `mobile_phone`, `theme` (light/dark), emergency contact fields, `birthday` (via `itm_parse_date_input`), and `hide_year` (checkbox). Full Name is **readonly** (managed in Employees). Birthday uses `<input type="date">` with `Y-m-d` value; Hide Year follows the double-label checkbox pattern. Profile UPDATEs use the employee **home** `company_id` (not the tenant switcher session company) so multi-company admins still save. Theme applies via `<html data-theme>`, early `localStorage` + `window.ITM_PREFERRED_THEME`, `$_SESSION['ui_theme']`, and CSS variables (no hardcoded light `#fff` cards).
+- **Profile photo:** upload stores under `files/{home_company_id}/Private/{username}_{employee_id}/profile/`; display uses `emp_profile_photo_url()` → app-absolute `modules/explorer/file.php?path=…` (root `user-config.php` must not use `../../modules/…`). Regression: `php scripts/verify_user_config_profile.php`.
 - **Layout**: `.layout-2col` uses a 280px left column on desktop and stacks to one column at `max-width: 768px`.
 - **Security**: Atomicity in Vault Master Key changes with automatic re-encryption of existing entries.
 - **Audit**: All profile and security changes are logged to `audit_logs`.

@@ -35,10 +35,30 @@ if ($relative_path === null) {
     exit("Invalid path.");
 }
 
-$full_path = $storage_root . ($relative_path !== '' ? '/' . $relative_path : '');
-
 // Why: Access control logic (mirroring api.php) with segment-boundary checks.
 $isEmployeeProfilePhotoPath = (bool)preg_match('#^Private/[^/]+/profile/#', $relative_path);
+
+// Why: profile photos are stored under the employee's home company_id; session
+// company_id is the tenant switcher and often differs for multi-company admins.
+if ($isEmployeeProfilePhotoPath && preg_match('#^Private/[^/]+_([0-9]+)/profile/#', $relative_path, $photoOwnerMatch)) {
+    $photoOwnerEmployeeId = (int)$photoOwnerMatch[1];
+    if ($photoOwnerEmployeeId > 0) {
+        $photoCompanyStmt = mysqli_prepare($conn, 'SELECT company_id FROM employees WHERE id = ? LIMIT 1');
+        if ($photoCompanyStmt) {
+            mysqli_stmt_bind_param($photoCompanyStmt, 'i', $photoOwnerEmployeeId);
+            mysqli_stmt_execute($photoCompanyStmt);
+            $photoCompanyRow = itm_mysqli_stmt_fetch_assoc($photoCompanyStmt);
+            mysqli_stmt_close($photoCompanyStmt);
+            $photoHomeCompanyId = (int)($photoCompanyRow['company_id'] ?? 0);
+            if ($photoHomeCompanyId > 0) {
+                $storage_root = ROOT_PATH . 'files/' . $photoHomeCompanyId;
+            }
+        }
+    }
+}
+
+$full_path = $storage_root . ($relative_path !== '' ? '/' . $relative_path : '');
+
 if (!$isEmployeeProfilePhotoPath && ($relative_path === 'Private' || str_starts_with($relative_path, 'Private/'))) {
     // Forbidden to access the 'Private' root itself.
     if ($relative_path === 'Private') {

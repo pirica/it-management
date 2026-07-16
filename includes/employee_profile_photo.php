@@ -78,7 +78,10 @@ function emp_profile_photo_url(array $employee) {
     if ($relative === '') {
         return '';
     }
-    return itm_files_serve_url($relative);
+    // Why: default itm_files_serve_url prefix is module-relative (../../modules/...).
+    // Root pages like user-config.php need an app-absolute Explorer proxy URL.
+    $endpoint = (defined('BASE_URL') ? rtrim((string)BASE_URL, '/') . '/' : '') . 'modules/explorer/file.php';
+    return itm_files_serve_url($relative, $endpoint);
 }
 }
 
