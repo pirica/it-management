@@ -1741,8 +1741,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="repro_contacts_idor.php" target="_blank" rel="nofollow noreferrer">repro_contacts_idor.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction script for IDOR vulnerability in contacts API inline edit.</td>
-                    <td><code>php scripts/repro_contacts_idor.php</code></td>
+                    <td>Reproduction script for IDOR in contacts API inline edit; disposable employees via shared helper (clears stale audit actor before INSERT).</td>
+                    <td><code>php scripts/repro_contacts_idor.php</code> — expects PASS when IDOR is blocked. Clears <code>@app_employee_id</code> before create to avoid <code>audit_logs</code> FK failures.</td>
                 </tr>
                 <tr>
                     <td><a href="repro_select_options.php" target="_blank" rel="nofollow noreferrer">repro_select_options.php</a></td>

@@ -111,6 +111,10 @@ if (!function_exists('itm_script_test_employee_create')) {
         $firstName = isset($options['first_name']) ? trim((string)$options['first_name']) : 'Script';
         $lastName = isset($options['last_name']) ? trim((string)$options['last_name']) : 'Test';
 
+        // Why: Stale/nonexistent @app_employee_id (incl. session 0) makes employees INSERT audit triggers
+        // fail FK audit_logs_ibfk_employee. Clear actor before creating disposable rows.
+        itm_script_test_employee_clear_audit_context($conn);
+
         mysqli_stmt_bind_param($stmt, 'isssssiii', $companyId, $firstName, $lastName, $username, $email, $password, $roleId, $accessLevelId, $employmentStatusId);
         if (!mysqli_stmt_execute($stmt)) {
             mysqli_stmt_close($stmt);
@@ -247,6 +251,9 @@ if (!function_exists('itm_script_test_employee_delete')) {
             return false;
         }
 
+        // Why: DELETE audit triggers also write audit_logs.employee_id from @app_*; clear stale actors.
+        itm_script_test_employee_clear_audit_context($conn);
+
         $stmt = mysqli_prepare($conn, 'DELETE FROM employees WHERE id = ? LIMIT 1');
         if (!$stmt) {
             return false;
@@ -260,6 +267,25 @@ if (!function_exists('itm_script_test_employee_delete')) {
     }
 }
 
+if (!function_exists('itm_script_test_employee_clear_audit_context')) {
+    /**
+     * Clear MySQL audit session vars so INSERT/DELETE triggers do not write a bogus employee_id FK.
+     */
+    function itm_script_test_employee_clear_audit_context($conn)
+    {
+        if (!($conn instanceof mysqli)) {
+            return false;
+        }
+
+        mysqli_query($conn, 'SET @app_employee_id = NULL');
+        mysqli_query($conn, 'SET @app_company_id = NULL');
+        mysqli_query($conn, "SET @app_username = ''");
+        mysqli_query($conn, "SET @app_email = NULL");
+
+        return true;
+    }
+}
+
 if (!function_exists('itm_script_test_employee_set_audit_context')) {
     function itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)
     {
@@ -269,10 +295,14 @@ if (!function_exists('itm_script_test_employee_set_audit_context')) {
 
         $employeeId = (int)$employeeId;
         $companyId = (int)$companyId;
+        // Why: Never set @app_employee_id to 0 / negative — audit_logs FK rejects nonexistent ids.
+        if ($employeeId <= 0) {
+            return itm_script_test_employee_clear_audit_context($conn);
+        }
         $username = mysqli_real_escape_string($conn, (string)$username);
 
         mysqli_query($conn, 'SET @app_employee_id = ' . $employeeId);
-        mysqli_query($conn, 'SET @app_company_id = ' . $companyId);
+        mysqli_query($conn, 'SET @app_company_id = ' . ($companyId > 0 ? $companyId : 'NULL'));
         mysqli_query($conn, "SET @app_username = '" . $username . "'");
 
         return true;

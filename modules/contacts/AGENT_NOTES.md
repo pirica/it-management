@@ -20,7 +20,7 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 - **No standard CRUD Actions column** and **no Excel import** — directory table uses `data-itm-no-import-excel="1"`; index compliance audit must not require `data-itm-db-import-endpoint` or Actions markers.
 
 ## 6. API Actions (If Applicable)
-- **api/inline_edit.php**: Handles inline updates for contact fields. Restricted to the employee themselves or administrators (IDOR protection).
+- **api/inline_edit.php**: Handles inline updates for contact fields. Restricted to the employee themselves or administrators (IDOR protection). Regression PoC: `php scripts/repro_contacts_idor.php`.
 
 ## 7. File Structure
 - **index.php** — main contact directory logic.

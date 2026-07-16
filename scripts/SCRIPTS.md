@@ -163,12 +163,13 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | Helper | Purpose |
 |--------|---------|
 | `itm_script_test_employee_username($scriptSlug)` | Unique username `script-{slug}-{hex}` |
-| `itm_script_test_employee_create($conn, $companyId, $options)` | INSERT disposable `employees` row |
+| `itm_script_test_employee_create($conn, $companyId, $options)` | INSERT disposable `employees` row (clears stale `@app_employee_id` first) |
 | `itm_script_test_employee_snapshot($conn, $employeeId, $columns)` | Read sensitive columns before mutation |
 | `itm_script_test_employee_restore($conn, $employeeId, $snapshot)` | Restore prior values |
-| `itm_script_test_employee_delete($conn, $employeeId)` | DELETE row (disposable prefix only) |
+| `itm_script_test_employee_delete($conn, $employeeId)` | DELETE row (disposable prefix only; clears audit actor first) |
 | `itm_script_test_employee_register_teardown($conn, $employeeId, $snapshot)` | Shutdown restore + delete |
-| `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` |
+| `itm_script_test_employee_clear_audit_context($conn)` | `SET @app_employee_id` / `@app_company_id` to NULL (avoids `audit_logs` FK failures) |
+| `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` (rejects id ≤ 0) |
 
 **Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_employees.unittest.php`.
 
@@ -197,7 +198,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_employee.php`; prepared `UPDATE employees` for token fields. |
 | `php scripts/repro_employee_dataloss.php` | Regression — generic `itm_handle_json_table_import()` UPDATE must not NULL-out omitted columns on `employees` (expects exit `0`; seeds/disposable row in transaction). |
 | `php scripts/repro_generic_dataloss.php` | Regression — generic JSON import UPDATE must not NULL-out omitted columns (e.g. `departments.code`; expects exit `0`; seeds/disposable row in transaction). |
-| `php scripts/repro_contacts_idor.php` | PoC — IDOR vulnerability in contacts API inline edit. |
+| `php scripts/repro_contacts_idor.php` | PoC — IDOR in contacts API inline edit; disposable attacker/victim via `itm_script_test_employee_*` (clears audit actor before INSERT to avoid `audit_logs` FK failures) |
 | `php scripts/repro_select_options.php` | PoC — RBAC bypass in select options API. Standardized with `itm_script_output_begin()`. |
 | `php scripts/repro_status_leak.php` | PoC — cross-tenant employee status leak. |
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
