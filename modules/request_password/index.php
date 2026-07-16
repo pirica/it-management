@@ -150,18 +150,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
 }
 
 /**
+ * Whether the logged-in employee may soft-delete this request (creator only).
+ *
+ * @param array<string,mixed> $row
+ */
+function rp_can_delete_request(array $row, $employeeId)
+{
+    $employeeId = (int)$employeeId;
+    if ($employeeId <= 0) {
+        return false;
+    }
+    $createdBy = (int)($row['created_by'] ?? 0);
+    if ($createdBy > 0) {
+        return $createdBy === $employeeId;
+    }
+    // Why: legacy rows may lack created_by; fall back to applicant employee_id.
+    return (int)($row['employee_id'] ?? 0) === $employeeId;
+}
+
+/**
  * Handle CRUD Actions
  */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit', 'delete'])) {
     itm_require_post_csrf();
 
     if ($crud_action == 'delete') {
-        $id = (int)$_POST['id'];
-        $deleted_by = (int)($_SESSION['employee_id'] ?? 0);
-        $stmt = mysqli_prepare($conn, "UPDATE request_password SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?");
-        mysqli_stmt_bind_param($stmt, 'iii', $deleted_by, $id, $company_id);
-        mysqli_stmt_execute($stmt);
-        header("Location: index.php");
+        $id = (int)($_POST['id'] ?? 0);
+        $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+
+        $lookupStmt = mysqli_prepare(
+            $conn,
+            'SELECT id, created_by, employee_id FROM request_password WHERE id = ? AND company_id = ? AND active = 1 AND deleted_at IS NULL LIMIT 1'
+        );
+        $row = null;
+        if ($lookupStmt) {
+            mysqli_stmt_bind_param($lookupStmt, 'ii', $id, $company_id);
+            mysqli_stmt_execute($lookupStmt);
+            $lookupRes = mysqli_stmt_get_result($lookupStmt);
+            $row = $lookupRes ? mysqli_fetch_assoc($lookupRes) : null;
+            mysqli_stmt_close($lookupStmt);
+        }
+
+        if (!$row || !rp_can_delete_request($row, $sessionEmployeeId)) {
+            $_SESSION['crud_error'] = 'Only the employee who created this request can delete it.';
+            header('Location: index.php');
+            exit;
+        }
+
+        $where = 'WHERE id = ? AND company_id = ?';
+        if (function_exists('itm_crud_build_soft_delete_sql')) {
+            $deleteSql = itm_crud_build_soft_delete_sql('request_password', $where, $sessionEmployeeId);
+            $stmt = mysqli_prepare($conn, $deleteSql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        } else {
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE request_password SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'iii', $sessionEmployeeId, $id, $company_id);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        }
+        header('Location: index.php');
         exit;
     }
 
@@ -340,11 +396,22 @@ if (!isset($crud_title)) {
                                 $res = mysqli_stmt_get_result($stmt);
                                 while ($row = mysqli_fetch_assoc($res)):
                                     $ism_status = $row['ism_signature_date'] ? 'PROCESSED' : 'WAITING';
+                                    $canDelete = rp_can_delete_request($row, (int)($_SESSION['employee_id'] ?? 0));
                                 ?>
                                 <tr>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                        <a href="view.php?id=<?php echo $row['id']; ?>" class="btn btn-sm" title="View">🔎</a>
-                                        <a href="edit.php?id=<?php echo $row['id']; ?>" class="btn btn-sm" title="Edit">✏️</a>
+                                        <div class="itm-actions-wrap">
+                                            <a href="view.php?id=<?php echo (int)$row['id']; ?>" class="btn btn-sm" title="View">🔎</a>
+                                            <a href="edit.php?id=<?php echo (int)$row['id']; ?>" class="btn btn-sm" title="Edit">✏️</a>
+                                            <?php if ($canDelete): ?>
+                                            <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this request?');">
+                                                <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                                <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                                                <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
+                                                <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+                                            </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td><?php echo sanitize($row['first_name'] . ' ' . $row['last_name']); ?></td>
                                     <td><?php echo sanitize($row['department_name']); ?></td>
@@ -553,7 +620,15 @@ if (!isset($crud_title)) {
 
                     <div class="form-actions" style="margin-top: 40px;">
                         <a href="index.php" class="btn" title="Back">🔙</a>
-                        <a href="edit.php?id=<?php echo $data['id']; ?>" class="btn" title="Edit">✏️</a>
+                        <a href="edit.php?id=<?php echo (int)$data['id']; ?>" class="btn" title="Edit">✏️</a>
+                        <?php if (rp_can_delete_request($data, (int)($_SESSION['employee_id'] ?? 0))): ?>
+                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this request?');">
+                            <input type="hidden" name="id" value="<?php echo (int)$data['id']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                            <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
+                            <button class="btn btn-danger" type="submit" title="Delete">🗑️</button>
+                        </form>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endif; ?>
