@@ -21,6 +21,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - Session cookie missing HttpOnly / SameSite / Secure (when HTTPS). [Cursor-Fixed]
 - Hardcoding `display_errors` on `index.php` instead of Settings-driven config. [Cursor-Fixed]
 - `user-config.php` System Access SELECT must not `array_merge` hardcoded meta names absent from `employee_system_access` (e.g. inventing `changed_at` → prepare failure). [Cursor-Fixed]
+- `user-config.php` profile form must save and re-display `birthday` / `hide_year` (not only email/phone/theme/emergency); blank birthday inputs and unchecked hide_year must clear / persist correctly. [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
@@ -39,6 +40,7 @@ The `user-config.php` has been upgraded to a full Employee Dashboard & Profile s
 - **Scoping**: All dashboard data is scoped to the logged-in employee via `employee_id` or relevant created/assigned fields.
 - **Stat Cards**: Displays stats from all modules using employee-related ID fields (30+ combinations tracked).
 - **Profile Management**: Integrated photo upload (circular drag-and-drop), theme selection, and emergency contact details.
+- **Profile save (`action=update_profile`):** persists `work_email`, `mobile_phone`, `theme` (light/dark), emergency contact fields, `birthday` (via `itm_parse_date_input`), and `hide_year` (checkbox). Full Name is **readonly** (managed in Employees). Birthday uses `<input type="date">` with `Y-m-d` value; Hide Year follows the double-label checkbox pattern. After a successful theme save, `localStorage.theme` is synced for `js/theme.js`.
 - **Layout**: `.layout-2col` uses a 280px left column on desktop and stacks to one column at `max-width: 768px`.
 - **Security**: Atomicity in Vault Master Key changes with automatic re-encryption of existing entries.
 - **Audit**: All profile and security changes are logged to `audit_logs`.
