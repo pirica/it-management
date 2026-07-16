@@ -1,6 +1,6 @@
 <?php
 /**
- * Regression tests for employees clear_table transactional delete.
+ * Regression tests for employees clear_table soft-delete + detach.
  *
  * Usage (Laragon PHP 7.4+, repository root):
  *   php scripts/employees_delete_clear_table_test.php
@@ -68,6 +68,18 @@ function edct_count_for_company(mysqli $conn, string $table, int $companyId): in
     return (int)($row['c'] ?? 0);
 }
 
+/** Live (list-visible) employees for a tenant. */
+function edct_count_live_employees(mysqli $conn, int $companyId): int
+{
+    $sql = 'SELECT COUNT(*) AS c FROM employees WHERE company_id=' . (int)$companyId . ' AND deleted_at IS NULL';
+    $res = mysqli_query($conn, $sql);
+    if (!$res) {
+        return -1;
+    }
+    $row = mysqli_fetch_assoc($res);
+    return (int)($row['c'] ?? 0);
+}
+
 /**
  * @return int
  */
@@ -103,7 +115,17 @@ function edct_delete_company(mysqli $conn, int $companyId)
     if ($companyId <= 0) {
         return;
     }
-    mysqli_query($conn, 'DELETE FROM companies WHERE id=' . (int)$companyId . ' LIMIT 1');
+    $cid = (int)$companyId;
+    // Why: Soft-deleted employees remain until teardown; wipe tenant children before company.
+    mysqli_query($conn, 'DELETE FROM approvers WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM employee_system_access WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM employee_companies WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM employee_positions WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM departments WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM approver_types WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM employees WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM employee_statuses WHERE company_id=' . $cid);
+    mysqli_query($conn, 'DELETE FROM companies WHERE id=' . $cid . ' LIMIT 1');
 }
 
 /**
@@ -311,17 +333,16 @@ function edct_run_static_checks()
     edct_assert(stripos($deleteSource, 'delete_clear_table.php') !== false, 'delete.php loads clear-table helper');
     edct_assert(stripos($deleteSource, 'delete_functions.php') !== false, 'delete.php loads delete_functions.php');
     edct_assert(stripos($deleteSource, 'employees_clear_table_for_company') !== false, 'delete.php calls employees_clear_table_for_company');
-    edct_assert(stripos($functionsSource, 'itm_employees_detach_delete_dependencies') !== false, 'delete_functions.php detaches dependencies before usage check');
+    edct_assert(stripos($functionsSource, 'itm_employees_detach_delete_dependencies') !== false, 'delete_functions.php detaches dependencies before soft-delete');
+    edct_assert(stripos($functionsSource, 'itm_crud_build_soft_delete_sql') !== false, 'delete_functions.php soft-deletes via shared helper');
+    edct_assert(stripos($functionsSource, 'mysqli_begin_transaction') !== false, 'delete_functions.php uses mysqli_begin_transaction');
+    edct_assert(stripos($functionsSource, 'mysqli_rollback') !== false, 'delete_functions.php uses mysqli_rollback on failure');
+    edct_assert(stripos($functionsSource, 'mysqli_commit') !== false, 'delete_functions.php commits on success');
+    edct_assert(stripos($functionsSource, 'DELETE FROM employees') === false, 'delete_functions.php does not hard-delete employees');
+    edct_assert(stripos($helperSource, 'deleted_at IS NULL') !== false, 'clear_table selects live rows only');
+    edct_assert(stripos($helperSource, 'employees_delete_record') !== false, 'clear_table reuses employees_delete_record');
     edct_assert(stripos($dependenciesSource, 'DELETE FROM attempts WHERE employee_id = ?') !== false, 'dependency helper clears attempts rows');
     edct_assert(stripos($dependenciesSource, 'DELETE FROM employee_companies WHERE employee_id = ?') !== false, 'dependency helper clears employee_companies rows');
-    edct_assert(stripos($helperSource, 'mysqli_begin_transaction') !== false, 'helper uses mysqli_begin_transaction');
-    edct_assert(stripos($helperSource, 'mysqli_rollback') !== false, 'helper uses mysqli_rollback on failure');
-    edct_assert(stripos($helperSource, 'mysqli_commit') !== false, 'helper commits on success');
-
-    $accessPos = stripos($helperSource, 'employee_system_access');
-    $employeesPos = stripos($helperSource, 'DELETE FROM employees WHERE company_id');
-    edct_assert($accessPos !== false && $employeesPos !== false, 'helper deletes access then employees');
-    edct_assert($accessPos < $employeesPos, 'access DELETE runs before employees DELETE');
 }
 
 function edct_run_db_integration(mysqli $conn)
@@ -331,6 +352,13 @@ function edct_run_db_integration(mysqli $conn)
         $bootstrapCompanyId = 1;
     }
     edct_set_audit_context($conn, $bootstrapCompanyId);
+
+    // Why: Soft-delete stamps deleted_by from $_SESSION['employee_id'].
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+    $_SESSION['employee_id'] = 1;
+    $_SESSION['company_id'] = $bootstrapCompanyId;
 
     $suffix = 'itm_edct_' . gmdate('YmdHis') . '_' . mt_rand(1000, 9999);
     $companyName = 'ITM ClearTable Test ' . $suffix;
@@ -353,26 +381,25 @@ function edct_run_db_integration(mysqli $conn)
 
         $clearError = employees_clear_table_for_company($conn, $companyId);
         edct_assert($clearError === null, 'clear_table succeeds without FK blockers: ' . (string)$clearError);
-        edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 0, 'employees cleared for test company');
+        edct_assert(edct_count_live_employees($conn, $companyId) === 0, 'live employees cleared for test company');
+        edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 1, 'soft-deleted employee row remains');
         edct_assert(edct_count_for_company($conn, 'employee_system_access', $companyId) === 0, 'access cleared for test company');
 
-        $blockedEmployeeId = edct_insert_employee($conn, $companyId, $statusId, 'Clear', 'TableRollback');
-        edct_assert($blockedEmployeeId > 0, 'inserted employee for rollback test');
-        edct_assert(edct_insert_access($conn, $companyId, $blockedEmployeeId), 'inserted access for rollback test');
+        // Why: Approvers are detached before soft-delete, so clear_table must succeed
+        // (no hard-delete FK rollback). Soft-deleted rows stay for audit view.
+        $withApproverId = edct_insert_employee($conn, $companyId, $statusId, 'Clear', 'WithApprover');
+        edct_assert($withApproverId > 0, 'inserted employee with approver child');
+        edct_assert(edct_insert_access($conn, $companyId, $withApproverId), 'inserted access for approver case');
         edct_assert(
-            edct_insert_approver($conn, $companyId, $blockedEmployeeId, $positionId, $departmentId, $approverTypeId),
-            'inserted approver FK blocking employee delete'
+            edct_insert_approver($conn, $companyId, $withApproverId, $positionId, $departmentId, $approverTypeId),
+            'inserted approver row detached during soft-delete'
         );
 
-        $rollbackError = employees_clear_table_for_company($conn, $companyId);
-        edct_assert($rollbackError !== null && $rollbackError !== '', 'clear_table returns error when employees DELETE is blocked');
-        edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 1, 'rollback keeps employee row');
-        edct_assert(edct_count_for_company($conn, 'employee_system_access', $companyId) === 1, 'rollback keeps access row (no partial wipe)');
-
-        mysqli_query($conn, 'DELETE FROM approvers WHERE company_id=' . (int)$companyId);
-        $finalError = employees_clear_table_for_company($conn, $companyId);
-        edct_assert($finalError === null, 'clear_table succeeds after removing approver blocker');
-        edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 0, 'employees cleared after cleanup');
+        $approverClearError = employees_clear_table_for_company($conn, $companyId);
+        edct_assert($approverClearError === null, 'clear_table soft-deletes after detaching approvers: ' . (string)$approverClearError);
+        edct_assert(edct_count_live_employees($conn, $companyId) === 0, 'no live employees after approver clear');
+        edct_assert(edct_count_for_company($conn, 'employee_system_access', $companyId) === 0, 'access cleared after approver clear');
+        edct_assert(edct_count_for_company($conn, 'approvers', $companyId) === 0, 'approvers detached during soft-delete');
 
         $statusId2 = edct_insert_status($conn, $companyId, 'Active single ' . $suffix);
         edct_assert($statusId2 > 0, 'seeded status for single-delete test');
@@ -393,7 +420,10 @@ function edct_run_db_integration(mysqli $conn)
 
         $singleDeleteError = employees_delete_record($conn, $companyId, $singleEmployeeId);
         edct_assert($singleDeleteError === null, 'single delete succeeds with dependency rows: ' . (string)$singleDeleteError);
-        edct_assert(edct_count_for_company($conn, 'employees', $companyId) === 0, 'employee removed after single delete');
+        edct_assert(edct_count_live_employees($conn, $companyId) === 0, 'employee soft-deleted after single delete');
+        $softRow = mysqli_query($conn, 'SELECT active, deleted_at FROM employees WHERE id=' . (int)$singleEmployeeId . ' LIMIT 1');
+        $softAssoc = $softRow ? mysqli_fetch_assoc($softRow) : null;
+        edct_assert(is_array($softAssoc) && (int)($softAssoc['active'] ?? 1) === 0 && !empty($softAssoc['deleted_at']), 'soft-delete stamps active=0 and deleted_at');
         edct_assert(edct_count_attempts_for_employee($conn, $singleEmployeeId) === 0, 'attempts detached during single delete');
     } finally {
         edct_delete_company($conn, $companyId);

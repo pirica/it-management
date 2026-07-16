@@ -732,7 +732,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="employees_delete_clear_table_test.php" target="_blank" rel="nofollow noreferrer">employees_delete_clear_table_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>MySQL regression for employees <code>clear_table</code> transactional delete (access rows roll back when employee delete is blocked by FK). <strong>Mutates DB:</strong> creates temporary tenant/reference/employee rows, then cleans them up.</td>
+                    <td>MySQL regression for employees <code>clear_table</code> soft-delete (detach + <code>active=0</code>/<code>deleted_at</code>; live rows cleared, audit rows remain). <strong>Mutates DB:</strong> creates temporary tenant/reference/employee rows, then cleans them up.</td>
                     <td>
                         CLI: <code>php scripts/employees_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code>.<br>
                         Browser: static checks only (no DB mutations). MySQL regression requires CLI: <code>php scripts/employees_delete_clear_table_test.php</code>.
@@ -1010,7 +1010,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="check_employees_clear_table_transaction.php" target="_blank" rel="nofollow noreferrer">check_employees_clear_table_transaction.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static guard: employees <code>clear_table</code> uses a MySQL transaction (access delete + employees delete with rollback).</td>
+                    <td>Static guard: employees <code>clear_table</code> uses soft-delete via <code>employees_delete_record()</code> (detach + transaction + <code>itm_crud_build_soft_delete_sql</code>).</td>
                     <td><code>php scripts/check_employees_clear_table_transaction.php</code> — run manually after employees <code>clear_table</code> changes (AGENTS.md).</td>
                 </tr>
                 <tr>
@@ -1776,7 +1776,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_clear_table_fix.php" target="_blank" rel="nofollow noreferrer">verify_clear_table_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification script for employees clear table fix navigating FK dependencies.</td>
+                    <td>Verification script for employees clear-table soft-delete (employee audit row remains; bookmarks detached).</td>
                     <td><code>php scripts/verify_clear_table_fix.php</code></td>
                 </tr>
                 <tr>

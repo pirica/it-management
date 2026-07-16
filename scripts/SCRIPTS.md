@@ -245,7 +245,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/generate_reassignment.php` | Generates UPDATE SQL to reassign data from an old employee to a new one before deletion. |
 | `php scripts/transfer_data_from_employee.php` | Clones an employee and copies their related data to the new record (Copy Mode). |
 | `php scripts/delete_clone_employee.php` | Reverses an employee clone by deleting the employee and their related data. |
-| `php scripts/verify_clear_table_fix.php` | Verification — employees clear table fix navigating FK dependencies. |
+| `php scripts/verify_clear_table_fix.php` | Verification — employees clear-table soft-delete + bookmark detach. |
 
 ### Equipment & Audit verification scripts
 
@@ -466,9 +466,9 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 | `scripts/ensure_equipment_type_modules.php` | Verify or recreate missing canonical `modules/is_*/index.php` wrappers (CLI) |
 | `scripts/cleanup_equipment_test_module_artifacts.php` | **CLI-only** cleanup utility: remove test `equipment_types` rows (incl. `MBQA-equipment_types-…`), ITM test companies, junk `is_*_itm_eqdct_*` / `is_mbqa_equipment_types_*` folders, sidebar prefs, then re-ensure canonical façades |
 | `scripts/equipment_delete_clear_table_test.php` | DB regression for equipment `clear_table` + transactional single delete (use type names **`Switch`** / **`Server`**, not suffixed names) |
-| `scripts/employees_delete_clear_table_test.php` | DB regression for employees `clear_table` transaction rollback |
+| `scripts/employees_delete_clear_table_test.php` | DB regression for employees `clear_table` soft-delete + detach |
 | `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table helpers (run manually after equipment delete/clear-table changes) |
-| `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table transaction (run manually after employees `clear_table` changes) |
+| `scripts/check_employees_clear_table_transaction.php` | Static guard for employees clear-table soft-delete helper (run manually after employees `clear_table` changes) |
 
 **Why tests must not invent new `is_*` folder names:** inserting `equipment_types` named like `Switch itm_eqdct_*` or QA tags `MBQA-equipment_types-…` triggers `itm_ensure_equipment_type_module_scaffold()` in `includes/ui_config.php` and pollutes the sidebar. In the browser, **`module_browser_qa_runner.php`** now runs **`module_clean_tests_qa_runner.php` silently before and after** **Run QA**; for other equipment DB tests, run `php scripts/cleanup_equipment_test_module_artifacts.php` manually.
 
