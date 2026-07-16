@@ -8,6 +8,7 @@ Static data files consumed by audit and compliance scripts (allowlists, baseline
 - **multi_tenant_leak_allowlist.json** — known exceptions for tenant leak audits.
 - **ui_configuration_excluded_modules.txt** / **ui_configuration_excluded_prefixes.txt** — modules skipped by UI configuration coverage script.
 - **scripts-matrix-destroy-log.md** — append-only destroy→fresh-clone log for blanket `scripts/*` verification (`SCRIPTS_TEST_MATRIX.md` protocol).
+- **scripts_errors.txt** — latest safe scripts matrix run report (tiers 1–3): counts plus A–Z lists for Passed, Skipped, Excluded, Covered, and Failures with root-cause notes. Regenerated after a matrix run; not a product runtime file.
 
 ## 4. Business Rules (Critical for Agents)
 - Update these files when intentionally excluding a module from an audit — do not silence checks by editing the checker alone.

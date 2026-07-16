@@ -24,7 +24,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 
 ## 7. File Structure
 - **smoke_test.sh** — main shell script for linting and security coverage (steps 1–4: syntax lint, CSRF, SQLi, FK label search static audit).
-- **SCRIPTS_TEST_MATRIX.md** — full catalog test matrix (tiers 0–5, runner coverage, destroy→fresh-clone protocol). Destroy log template: **`data/scripts-matrix-destroy-log.md`**. See **`scripts/SCRIPTS.md` → Full scripts test matrix**.
+- **SCRIPTS_TEST_MATRIX.md** — full catalog test matrix (tiers 0–5, runner coverage, destroy→fresh-clone protocol). Destroy log template: **`data/scripts-matrix-destroy-log.md`**. Latest safe-matrix run report (A–Z Passed/Skipped/Excluded/Covered + Failures): **`data/scripts_errors.txt`**. See **`scripts/SCRIPTS.md` → Full scripts test matrix**.
 - **verify_database_sql_import.sh** — full `database.sql` import + table-count assertion (derived from `CREATE TABLE` lines, currently 117); CI job **database-import** in `.github/workflows/smoke.yml` (also runs `verify_crud_fk_label_search.php`).
 - **check_fk_label_search_coverage.php** — static audit that every module with server-side list search matches visible FK/label columns; smoke step 4; universal pass rules only (shared FK helpers, EXISTS/JOIN label LIKE, employee JOIN/CONCAT, or scalar-only fields) — no per-module N/A allowlist.
 - **verify_crud_fk_label_search.php** — MySQL regression for FK label list search (employees, license_management, switch_ports, todo, notes, private_contacts, ip_subnets, bookmarks, passwords); CI **database-import** job after schema import.

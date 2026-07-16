@@ -917,6 +917,7 @@ Canonical map of **all cataloged** `scripts/scripts.php` entries into execution 
 |----------|---------|
 | `scripts/SCRIPTS_TEST_MATRIX.md` | Tier counts, runner coverage map, command batches, full catalog classification table, Tier 5 exclusion summary |
 | `scripts/data/scripts-matrix-destroy-log.md` | Append-only log when a script forces a fresh DB clone |
+| `scripts/data/scripts_errors.txt` | Latest safe-matrix run report (A–Z Passed / Skipped / Excluded / Covered + Failures root cause) |
 
 **Do not** use `perform_audit.php` as a blanket quality gate. Prefer Tier 1 runners first, then Tier 2/3 batches, then Tier 4 on a healthy clone.
 

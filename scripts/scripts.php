@@ -136,7 +136,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="SCRIPTS_TEST_MATRIX.md" target="_blank" rel="nofollow noreferrer">SCRIPTS_TEST_MATRIX.md</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Full catalog verification matrix: tiers 0–5, runner coverage map, Tier 5 exclusion list, destroy→document→fresh <code>database.sql</code> clone protocol. Companion log: <code>data/scripts-matrix-destroy-log.md</code>.</td>
+                    <td>Full catalog verification matrix: tiers 0–5, runner coverage map, Tier 5 exclusion list, destroy→document→fresh <code>database.sql</code> clone protocol. Companion logs: <code>data/scripts-matrix-destroy-log.md</code>, <code>data/scripts_errors.txt</code> (latest safe-matrix run).</td>
                     <td>Read before blanket <code>scripts/*</code> verification. Update in the same PR when adding catalog rows. Do not use <code>perform_audit.php</code> as a quality gate.</td>
                 </tr>
             </tbody>

@@ -534,7 +534,7 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'GET',
             'path' => 'scripts/SCRIPTS_TEST_MATRIX.md',
             'params' => '—',
-            'purpose' => 'Full catalog scripts verification matrix (tiers 0-5, runner coverage, destroy->fresh database.sql clone protocol). Destroy log: scripts/data/scripts-matrix-destroy-log.md.',
+            'purpose' => 'Full catalog scripts verification matrix (tiers 0-5, runner coverage, destroy->fresh database.sql clone protocol). Destroy log: scripts/data/scripts-matrix-destroy-log.md. Safe-matrix run report: scripts/data/scripts_errors.txt.',
         ],
         [
             'group' => 'Scripts / tooling',

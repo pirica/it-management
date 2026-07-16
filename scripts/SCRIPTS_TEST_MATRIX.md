@@ -108,6 +108,7 @@ tier=N batch=<name> finished=<iso> pass=X fail=Y skip=Z destroyed=W
 ```
 
 Optional destroy append-only log: `scripts/data/scripts-matrix-destroy-log.md`.
+Latest safe-matrix run report (A–Z lists): `scripts/data/scripts_errors.txt`.
 
 ## Tier 1 commands (always)
 
