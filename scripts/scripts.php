@@ -952,10 +952,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
                         Index list tables: <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF, form <code>csrf_token</code>.
+                        Skips import when <code>data-itm-no-import-excel="1"</code>; skips Actions markers when the index has no Actions column.
                         Baseline: <code>scripts/data/index_table_compliance_baseline.txt</code>. Skips bespoke modules and <code>rack_planner</code>.
                     </td>
                     <td>
-                        Browser: HTML report in <code>&lt;pre&gt;</code>. CLI: <code>php scripts/check_index_table_compliance.php</code> — run manually when index-table contract changes; exit <code>1</code> on new violations.<br>
+                        Browser: HTML-escaped report in <code>&lt;pre&gt;</code> (vertical list). CLI: <code>php scripts/check_index_table_compliance.php</code> — run manually when index-table contract changes; exit <code>1</code> on new violations.<br>
                         <code>--strict</code> · <code>--write-baseline</code>
                     </td>
                 </tr>

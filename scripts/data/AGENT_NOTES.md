@@ -4,7 +4,7 @@
 Static data files consumed by audit and compliance scripts (allowlists, baselines, excluded module lists).
 
 ## 7. File Structure
-- **index_table_compliance_baseline.txt** — baseline for index table compliance checks.
+- **index_table_compliance_baseline.txt** — grandfather list for `check_index_table_compliance.php` (legacy gaps until fixed). Intentional no-import / no-Actions modules are handled by the checker (`data-itm-no-import-excel`, no Actions column) — do not baseline those as failures.
 - **multi_tenant_leak_allowlist.json** — known exceptions for tenant leak audits.
 - **ui_configuration_excluded_modules.txt** / **ui_configuration_excluded_prefixes.txt** — modules skipped by UI configuration coverage script.
 - **scripts-matrix-destroy-log.md** — append-only destroy→fresh-clone log for blanket `scripts/*` verification (`SCRIPTS_TEST_MATRIX.md` protocol).

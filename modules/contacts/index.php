@@ -97,7 +97,7 @@ if (!isset($crud_title)) {
         <div class="content">
             <h1>Contacts 📓</h1>
             <div class="card">
-                <table class="table">
+                <table class="table" data-itm-no-import-excel="1">
                     <thead><tr><th>Name</th><th>Extension</th><th>Dect</th><th>Mobile Phone</th><th>External Number</th><th>Job Role</th></tr></thead>
                     <tbody>
                         <?php foreach ($departments as $dept): $did = (int)$dept['id']; ?>
