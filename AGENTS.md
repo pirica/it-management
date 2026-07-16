@@ -478,7 +478,7 @@ The Request Password module (`modules/request_password/`) handles user requests 
 3. **Notifications:** Automated email requests are sent to HR and HOD for approval; a final notification is sent to the Applicant and ISM once both are secured.
 4. **Multi-tenancy:** Strictly scoped by `company_id`.
 5. **Index list contract:** list `<table>` must keep `data-itm-db-import-endpoint="index.php"` and Actions `th`/`td` must keep `class="itm-actions-cell"` + `data-itm-actions-origin="1"`.
-6. **Delete:** soft-delete only; **only the creating employee** (`created_by` = session `employee_id`) may delete. Enforce in list/view UI and again on the delete POST.
+6. **Delete:** soft-delete only; **only the creating employee** (`created_by` = session `employee_id`) may delete. Non-owners who click Delete get a browser alert; crafted POSTs are rejected with the same flash + alert. Enforce again on the delete POST.
 
 #### Company module access (mandatory)
 
