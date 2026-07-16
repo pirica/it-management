@@ -1,9 +1,9 @@
 <?php
 /**
- * Main Dashboard Page (Optimized by Bolt ⚡)
+ * Main Dashboard Page
  *
  * Displays key statistics and overview information for the selected company.
- * Consolidates multiple count queries into a single database round-trip.
+ * Module totals use one round-trip; Active / On Leave use employment-status helpers.
  */
 
 require 'config/config.php';
@@ -13,23 +13,8 @@ $companyId = (int)($_SESSION['company_id'] ?? 0);
 $employeeId = (int)($_SESSION['employee_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 
-// Determine if the current user can access all companies
-$isAdmin = false;
-$adminStmt = mysqli_prepare(
-    $conn,
-    'SELECT 1
-     FROM employees u
-     LEFT JOIN employee_roles ur ON ur.id = u.role_id
-     WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
-     LIMIT 1'
-);
-if ($adminStmt) {
-    mysqli_stmt_bind_param($adminStmt, 'i', $employeeId);
-    mysqli_stmt_execute($adminStmt);
-    $adminRes = mysqli_stmt_get_result($adminStmt);
-    $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
-    mysqli_stmt_close($adminStmt);
-}
+// Why: Shared helper (role name Admin or username admin) — do not duplicate role JOIN SQL.
+$isAdmin = itm_is_admin($conn, $employeeId);
 
 // Allow switching company directly from the dashboard information card
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
@@ -67,25 +52,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
         }
     }
 
-if ($selectedCompany) {
-    // Busca o ID do employee nessa empresa nova
-    $empStmt = mysqli_prepare($conn, 'SELECT id FROM employees WHERE username = ? AND company_id = ? LIMIT 1');
-    $currentUsername = $_SESSION['username'] ?? '';
-    mysqli_stmt_bind_param($empStmt, 'si', $currentUsername, $requestedCompanyId);
-    mysqli_stmt_execute($empStmt);
-    $empRes = mysqli_stmt_get_result($empStmt);
-    $newEmployee = mysqli_fetch_assoc($empRes);
-    mysqli_stmt_close($empStmt);
+    if ($selectedCompany) {
+        // Busca o ID do employee nessa empresa nova
+        $empStmt = mysqli_prepare($conn, 'SELECT id FROM employees WHERE username = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+        if ($empStmt) {
+            $currentUsername = $_SESSION['username'] ?? '';
+            mysqli_stmt_bind_param($empStmt, 'si', $currentUsername, $requestedCompanyId);
+            mysqli_stmt_execute($empStmt);
+            $empRes = mysqli_stmt_get_result($empStmt);
+            $newEmployee = $empRes ? mysqli_fetch_assoc($empRes) : null;
+            mysqli_stmt_close($empStmt);
 
-    if ($newEmployee) {
-        $_SESSION['employee_id'] = (int)$newEmployee['id'];
+            if ($newEmployee) {
+                $_SESSION['employee_id'] = (int)$newEmployee['id'];
+            }
+        }
+
+        $_SESSION['company_id'] = $requestedCompanyId;
+        $_SESSION['company_name'] = (string)$selectedCompany['company'];
+        header('Location: dashboard.php');
+        exit();
     }
-
-    $_SESSION['company_id'] = $requestedCompanyId;
-    $_SESSION['company_name'] = (string)$selectedCompany['company'];
-    header('Location: dashboard.php');
-    exit();
-}
 }
 
 // Fetch company options for the dashboard switcher
@@ -120,7 +107,9 @@ if ($companyStmt) {
     mysqli_stmt_close($companyStmt);
 }
 
-// Optimized by Bolt ⚡: Consolidate stats into a single query
+// Why: Equipment / tickets / employees stay in one round-trip; Active / On Leave use the
+// shared employment-status helper (resolve status id by name, then COUNT by FK) so HR
+// filters stay aligned with login and other modules. Soft-deleted rows are excluded.
 $equipment_count = 0;
 $tickets_count = 0;
 $employees_count = 0;
@@ -128,33 +117,26 @@ $active_employees_count = 0;
 $on_leave_count = 0;
 
 if ($companyId > 0) {
-    // Why: Consolidate stats into a single query to reduce database round-trips.
-    // Note: 'active' column check removed as it is not present in the current 'equipment' schema.
-    $statsSql = "SELECT
-        (SELECT COUNT(*) FROM equipment WHERE company_id = ?) AS equipment_count,
-        (SELECT COUNT(*) FROM tickets WHERE company_id = ?) AS tickets_count,
-        (SELECT COUNT(*) FROM employees WHERE company_id = ?) AS employees_count,
-        (SELECT COUNT(e.id) FROM employees e
-         INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id
-         WHERE e.company_id = ? AND LOWER(TRIM(es.name)) = 'active') AS active_count,
-        (SELECT COUNT(e.id) FROM employees e
-         INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id
-         WHERE e.company_id = ? AND LOWER(TRIM(es.name)) = 'on leave') AS on_leave_count";
+    $statsSql = 'SELECT
+        (SELECT COUNT(*) FROM equipment WHERE company_id = ? AND deleted_at IS NULL) AS equipment_count,
+        (SELECT COUNT(*) FROM tickets WHERE company_id = ? AND deleted_at IS NULL) AS tickets_count,
+        (SELECT COUNT(*) FROM employees WHERE company_id = ? AND deleted_at IS NULL) AS employees_count';
 
     $statsStmt = mysqli_prepare($conn, $statsSql);
     if ($statsStmt) {
-        mysqli_stmt_bind_param($statsStmt, 'iiiii', $companyId, $companyId, $companyId, $companyId, $companyId);
+        mysqli_stmt_bind_param($statsStmt, 'iii', $companyId, $companyId, $companyId);
         mysqli_stmt_execute($statsStmt);
         $statsRes = mysqli_stmt_get_result($statsStmt);
         if ($statsRes && ($counts = mysqli_fetch_assoc($statsRes))) {
             $equipment_count = (int)$counts['equipment_count'];
             $tickets_count = (int)$counts['tickets_count'];
             $employees_count = (int)$counts['employees_count'];
-            $active_employees_count = (int)$counts['active_count'];
-            $on_leave_count = (int)$counts['on_leave_count'];
         }
         mysqli_stmt_close($statsStmt);
     }
+
+    $active_employees_count = itm_employee_count_by_employment_status_name($conn, $companyId, 'Active');
+    $on_leave_count = itm_employee_count_by_employment_status_name($conn, $companyId, 'On Leave');
 }
 
 require_once ROOT_PATH . 'includes/itm_active_sessions.php';
@@ -165,14 +147,21 @@ $userDisplayName = '';
 $userEmail = '';
 
 if ($employeeId > 0) {
-    $userStmt = mysqli_prepare($conn, 'SELECT username, email FROM employees WHERE id = ? LIMIT 1');
+    // Why: employees has work_email / personal_email — no bare `email` column.
+    $userStmt = mysqli_prepare(
+        $conn,
+        'SELECT username, work_email, personal_email FROM employees WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+    );
     if ($userStmt) {
         mysqli_stmt_bind_param($userStmt, 'i', $employeeId);
         if (mysqli_stmt_execute($userStmt)) {
             $userRes = mysqli_stmt_get_result($userStmt);
             $userData = $userRes ? mysqli_fetch_assoc($userRes) : null;
             $userDisplayName = trim((string)($userData['username'] ?? ''));
-            $userEmail = trim((string)($userData['email'] ?? ''));
+            $userEmail = trim((string)($userData['work_email'] ?? ''));
+            if ($userEmail === '') {
+                $userEmail = trim((string)($userData['personal_email'] ?? ''));
+            }
         }
         mysqli_stmt_close($userStmt);
     }
@@ -279,14 +268,14 @@ if ($userDisplayName !== '' && $userEmail !== '') {
 
                         <?php if ($companies && mysqli_num_rows($companies) > 0): ?>
                             <form method="POST" style="margin-top:20px;">
-                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                                 <div style="margin-bottom: 12px;">
                                     <label for="company" style="display:block;margin-bottom:8px;"><strong>Switch Company:</strong></label>
                                     <select name="company_id" id="company" required onchange="updateName()">
                                         <option value="">-- Select a Company --</option>
                                         <?php while ($c = mysqli_fetch_assoc($companies)): ?>
-                                            <option value="<?php echo $c['id']; ?>" data-name="<?php echo htmlspecialchars($c['company']); ?>" <?php echo ((int)$c['id'] === $companyId) ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($c['company']); ?>
+                                            <option value="<?php echo (int)$c['id']; ?>" data-name="<?php echo htmlspecialchars((string)$c['company'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo ((int)$c['id'] === $companyId) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars((string)$c['company'], ENT_QUOTES, 'UTF-8'); ?>
                                             </option>
                                         <?php endwhile; ?>
                                     </select>
