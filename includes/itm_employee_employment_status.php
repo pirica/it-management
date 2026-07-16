@@ -146,9 +146,11 @@ if (!function_exists('itm_employee_count_by_employment_status_name')) {
             return 0;
         }
 
+        // Why: Soft-deleted employees must not inflate dashboard HR cards.
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT COUNT(*) FROM employees WHERE company_id = ? AND employment_status_id = ?'
+            'SELECT COUNT(*) FROM employees
+             WHERE company_id = ? AND employment_status_id = ? AND deleted_at IS NULL'
         );
         if (!$stmt) {
             return 0;

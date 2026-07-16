@@ -29,7 +29,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
 - **login.php** — authentication; regenerates the session id on success.
 - **index.php** — company selection after login (no forced error display).
-- **dashboard.php** — landing stats: row 1 module counts (Equipment, Tickets, Employees); row 2 **Active** and **On Leave** count `employees` by tenant-resolved `employment_status_id` (same semantics as `WHERE company_id = ? AND employment_status_id = ?`), **Online now** via session presence; distinct from Roles & Permissions sidebar **N active** counts per role.
+- **dashboard.php** — landing stats: row 1 module totals (Equipment, Tickets, Employees) exclude soft-deleted rows; row 2 **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()` (`company_id` + resolved `employment_status_id` + `deleted_at IS NULL`); **Online now** via session presence; welcome uses `work_email` / `personal_email`; company switch uses `itm_is_admin()`. Distinct from Roles & Permissions sidebar **N active** counts per role. Regression: `php scripts/verify_dashboard_active_employees.php`.
 - **css/styles.css** — global stylesheet with responsive breakpoints and shared layout utilities (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR, `phpunit.xml`, and `tests/` tree. Runner: **`scripts/run_tests.php`**; coverage report: **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 
