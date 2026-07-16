@@ -1110,7 +1110,7 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');

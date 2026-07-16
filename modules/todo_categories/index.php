@@ -991,7 +991,7 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         if ($name === 'cat_from_employee_id') {
                             $val = (string)($data[$name] ?? '');
                             if ($crud_action === 'create') {
