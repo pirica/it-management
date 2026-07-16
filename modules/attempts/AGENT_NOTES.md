@@ -11,7 +11,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 
 ## 4. Business Rules (Critical for Agents)
 - **Log Source/Type**: Must distinguish between 'login' and 'password_reset' sources and 'success', 'failure', 'request', or 'reset' types.
-- **Privacy**: IP addresses and emails are stored for auditing; handle according to local data protection laws. Login identifiers are normalized via `itm_normalize_login_attempt_identifier()` before insert — valid emails and simple usernames persist verbatim; password-like values (including `@` strings that are not valid emails) are stored as `[redacted:{hash}]`.
+- **Privacy**: IP addresses and emails are stored for auditing; handle according to local data protection laws. Login identifiers are normalized via `itm_normalize_login_attempt_identifier()` before insert — valid emails and simple usernames persist verbatim; password-like values (invalid `@` strings, special characters, mixed-case+digit secrets such as `Password123`) are stored as `[redacted:{hash}]`.
 
 ## 5. UI Behavior Requirements
 - **Read-Only mostly**: UI typically allows viewing and deleting (for cleanup) but not manual "creation" or "editing" through a standard form.

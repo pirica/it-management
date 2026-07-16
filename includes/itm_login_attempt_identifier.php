@@ -16,6 +16,29 @@ if (!function_exists('itm_login_attempt_identifier_redacted')) {
     }
 }
 
+if (!function_exists('itm_login_attempt_identifier_looks_like_password')) {
+    /**
+     * Heuristic for secrets mistyped into the email/username field.
+     */
+    function itm_login_attempt_identifier_looks_like_password(string $rawIdentifier): bool
+    {
+        if (preg_match('/[^a-zA-Z0-9_\-\.]/', $rawIdentifier)) {
+            return true;
+        }
+
+        $hasLower = (bool)preg_match('/[a-z]/', $rawIdentifier);
+        $hasUpper = (bool)preg_match('/[A-Z]/', $rawIdentifier);
+        $hasDigit = (bool)preg_match('/[0-9]/', $rawIdentifier);
+
+        // Why: Mistyped passwords often mix case and digits; plain usernames rarely do all three at length.
+        if ($hasLower && $hasUpper && $hasDigit && strlen($rawIdentifier) >= 8) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_normalize_login_attempt_identifier')) {
     /**
      * Returns a safe value for attempts.email storage and rate-limit keys.
@@ -33,6 +56,10 @@ if (!function_exists('itm_normalize_login_attempt_identifier')) {
 
         // Why: Passwords mistyped into the email field often contain @ but are not valid emails.
         if (strpos($rawIdentifier, '@') !== false) {
+            return itm_login_attempt_identifier_redacted($rawIdentifier);
+        }
+
+        if (itm_login_attempt_identifier_looks_like_password($rawIdentifier)) {
             return itm_login_attempt_identifier_redacted($rawIdentifier);
         }
 
