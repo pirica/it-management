@@ -1666,9 +1666,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 </tr>
                 <tr>
                     <td><a href="repro_select_options_unauthorized_v2.php" target="_blank" rel="nofollow noreferrer">repro_select_options_unauthorized_v2.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression — <code>companies</code> quick-add blocked for regular employees.</td>
-                    <td><code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression — <code>companies</code> quick-add blocked for regular employees. API subprocess when available; browser falls back to policy whitelist + no inserted row. Reports <code>[PASS] companies quick-add blocked for regular users.</code> when block confirmed.</td>
+                    <td>Browser: <a href="repro_select_options_unauthorized_v2.php">run</a>. CLI: <code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_vault_corruption.php" target="_blank" rel="nofollow noreferrer">repro_vault_corruption.php</a></td>
