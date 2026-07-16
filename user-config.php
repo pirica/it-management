@@ -1228,10 +1228,13 @@ foreach ($access_fields as $f):
                             <form method="POST">
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="update_sidebar">
                                 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px;">
-                                    <?php foreach(itm_sidebar_item_catalog() as $id=>$item): if($id==='dashboard_link')continue; ?>
+                                    <?php foreach(itm_sidebar_item_catalog() as $id=>$item): if($id==='dashboard_link')continue;
+                                        // Why: Open module in a new tab from the prefs grid without underline chrome.
+                                        $sidebarItemHref = !empty($item['href']) ? (string)$item['href'] : ('modules/' . $id . '/');
+                                    ?>
                                         <label class="itm-checkbox-control">
-                                            <input type="checkbox" name="sidebar_items[]" value="<?php echo $id; ?>" <?php echo ($sidebar_prefs[$id]??1)?'checked':''; ?>>
-                                            <span><?php echo sanitize($item['label']); ?></span>
+                                            <input type="checkbox" name="sidebar_items[]" value="<?php echo sanitize($id); ?>" <?php echo ($sidebar_prefs[$id]??1)?'checked':''; ?>>
+                                            <span><a href="<?php echo sanitize($sidebarItemHref); ?>" target="_blank" rel="noopener noreferrer" style="text-decoration:none;"><?php echo sanitize($item['label']); ?></a></span>
                                         </label>
                                     <?php endforeach; ?>
                                 </div>
