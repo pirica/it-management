@@ -17,6 +17,7 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 ## 5. UI Behavior Requirements
 - **Categorized View**: Grouped by Department.
 - **Searchable**: Fast lookup for names and numbers.
+- **No standard CRUD Actions column** and **no Excel import** — directory table uses `data-itm-no-import-excel="1"`; index compliance audit must not require `data-itm-db-import-endpoint` or Actions markers.
 
 ## 6. API Actions (If Applicable)
 - **api/inline_edit.php**: Handles inline updates for contact fields. Restricted to the employee themselves or administrators (IDOR protection).

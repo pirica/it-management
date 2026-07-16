@@ -21,9 +21,11 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 
 ## 5. UI Behavior Requirements
 - **Grid View**: A custom interactive grid instead of a standard list.
+- **No Excel import:** table uses `data-itm-no-import-excel="1"` (and export opt-outs); `check_index_table_compliance.php` does not require `data-itm-db-import-endpoint`.
 - **Time Punch**: A "⌛" icon is used to auto-fill the current time into timestamp fields.
 - **AJAX Updates**: Supports inline editing via POST requests.
 - **Responsive:** monthly grid table scrolls horizontally below 768px (card uses `overflow:auto`).
+- Actions column uses `itm-actions-cell` + `data-itm-actions-origin="1"`.
 
 ## 6. API Actions (If Applicable)
 - **ajax_inline_edit** — Handles async updates to status and timestamps.

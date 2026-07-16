@@ -6,6 +6,14 @@
  * layout engine action-column mapping, and POST CSRF on state-changing handlers. This
  * script provides a single CI-friendly gate similar to check_csrf_coverage.php.
  *
+ * Intentional non-failures:
+ *   - data-itm-no-import-excel="1" → Import Excel / data-itm-db-import-endpoint not required
+ *     (e.g. backup_tape_log, birthdays, contacts, resignations, ops_report).
+ *   - No Actions column → data-itm-actions-origin / itm-actions-cell not required
+ *     (e.g. birthdays, contacts read-only directories).
+ *
+ * Browser output is HTML-escaped inside <pre> so violation text cannot inject tags.
+ *
  * Usage (repository root):
  *   php scripts/check_index_table_compliance.php
  *   php scripts/check_index_table_compliance.php --write-baseline
@@ -214,6 +222,44 @@ function itc_has_csrf_guard(string $content): bool
 }
 
 /**
+ * Whether index sources intentionally opt out of Excel import (table-tools hide Import).
+ */
+function itc_has_import_opt_out(string $content): bool
+{
+    return preg_match('/data-itm-no-import-excel\s*=\s*(["\'])1\1/i', $content) === 1;
+}
+
+/**
+ * Whether the index markup includes an Actions column that layout mapping must mark.
+ */
+function itc_has_actions_column(string $content): bool
+{
+    if (preg_match('/<th\b[^>]*>[^<]*\bActions\b[^<]*<\/th>/i', $content) === 1) {
+        return true;
+    }
+    if (preg_match('/\bitm-actions-cell\b/i', $content) === 1) {
+        return true;
+    }
+
+    return preg_match('/data-itm-actions-origin\s*=/i', $content) === 1;
+}
+
+/**
+ * Echo one report line. Browser output stays inside <pre>: use real newlines and escape
+ * HTML so messages mentioning th/td attributes cannot break the page layout.
+ */
+function itc_echo_line(string $text): void
+{
+    global $nl;
+    if (itm_script_cli_is_cli()) {
+        echo $text . $nl;
+        return;
+    }
+
+    echo htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n";
+}
+
+/**
  * @return array<int, string>
  */
 function itc_check_module(string $module, string $content): array
@@ -233,26 +279,33 @@ function itc_check_module(string $module, string $content): array
         $content
     ) === 1;
 
-    if (!$hasImportEndpoint) {
+    // Why: bespoke grids (backup_tape_log, birthdays, resignations, …) opt out of Import Excel.
+    if (!$hasImportEndpoint && !itc_has_import_opt_out($content)) {
         $violations[] = 'missing data-itm-db-import-endpoint on index list table';
     }
 
-    $hasActionsHeader = preg_match(
-        '/<th[^>]*data-itm-actions-origin\s*=\s*(["\'])1\1[^>]*>/i',
-        $content
-    ) === 1;
+    if (itc_has_actions_column($content)) {
+        $hasActionsHeader = preg_match(
+            '/<th[^>]*data-itm-actions-origin\s*=\s*(["\'])1\1[^>]*>/i',
+            $content
+        ) === 1;
 
-    if (!$hasActionsHeader) {
-        $violations[] = 'missing data-itm-actions-origin="1" on Actions <th>';
-    }
+        if (!$hasActionsHeader) {
+            $violations[] = 'missing data-itm-actions-origin="1" on Actions header (th)';
+        }
 
-    $hasActionsCell = preg_match(
-        '/<td[^>]*data-itm-actions-origin\s*=\s*(["\'])1\1[^>]*>/i',
-        $content
-    ) === 1;
+        $hasActionsCell = preg_match(
+            '/<td[^>]*data-itm-actions-origin\s*=\s*(["\'])1\1[^>]*>/i',
+            $content
+        ) === 1;
 
-    if (!$hasActionsCell) {
-        $violations[] = 'missing data-itm-actions-origin="1" on Actions <td>';
+        if (!$hasActionsCell) {
+            $violations[] = 'missing data-itm-actions-origin="1" on Actions body cell (td)';
+        }
+
+        if (stripos($content, 'itm-actions-cell') === false) {
+            $violations[] = 'Actions column present but missing itm-actions-cell class';
+        }
     }
 
     $postSurface = preg_match(
@@ -279,10 +332,6 @@ function itc_check_module(string $module, string $content): array
 
     if (stripos($content, 'add_sample_data') !== false && $postSurface && !itc_has_csrf_guard($content)) {
         $violations[] = 'add_sample_data handler without CSRF guard';
-    }
-
-    if (stripos($content, 'itm-actions-cell') === false && stripos($content, 'Actions') !== false) {
-        $violations[] = 'Actions column present but missing itm-actions-cell class';
     }
 
     return $violations;
@@ -348,15 +397,18 @@ foreach ($baseline as $module) {
     }
 }
 
-echo "Index table compliance audit" . $nl;
-echo "Modules scanned (with list table): {$scanned}" . $nl;
-echo "Excluded modules: " . implode(', ', $excludeModules) . $nl;
-echo "Baseline entries: " . count($baseline) . ($strictMode ? ' (ignored — --strict)' : '') . $nl;
-echo "Skipped (no index.php): {$skippedNoIndex}" . $nl;
-echo "Skipped (no <table>): {$skippedNoTable}" . $nl . $nl;
+itc_echo_line('Index table compliance audit');
+itc_echo_line('Modules scanned (with list table): ' . $scanned);
+itc_echo_line('Excluded modules: ' . implode(', ', $excludeModules));
+itc_echo_line('Baseline entries: ' . count($baseline) . ($strictMode ? ' (ignored — --strict)' : ''));
+itc_echo_line('Skipped (no index.php): ' . $skippedNoIndex);
+itc_echo_line('Skipped (no table markup): ' . $skippedNoTable);
+itc_echo_line('Import endpoint not required when data-itm-no-import-excel="1" is present.');
+itc_echo_line('Actions markers not required when the index has no Actions column.');
+itc_echo_line('');
 
 if ($newViolations === [] && $staleBaseline === []) {
-    echo "Index table compliance check passed." . $nl;
+    itc_echo_line('Index table compliance check passed.');
     exit(0);
 }
 
@@ -364,30 +416,27 @@ $exitCode = 0;
 
 if ($newViolations !== []) {
     $exitCode = 1;
-    echo "Compliance violations";
-    echo ($strictMode ? " (--strict, all modules):" : " (not in baseline):") . $nl;
+    itc_echo_line('Compliance violations' . ($strictMode ? ' (--strict, all modules):' : ' (not in baseline):'));
     foreach ($newViolations as $module => $violations) {
-        echo " - {$module}" . $nl;
+        itc_echo_line(' - ' . $module);
         foreach ($violations as $violation) {
-            echo "     * {$violation}" . $nl;
+            itc_echo_line('     * ' . $violation);
         }
     }
-    echo $nl;
+    itc_echo_line('');
 }
 
 if ($staleBaseline !== [] && !$strictMode) {
-    echo "Baseline entries with no remaining violations (safe to remove):" . $nl;
+    itc_echo_line('Baseline entries with no remaining violations (safe to remove):');
     foreach ($staleBaseline as $module) {
-        echo " - {$module}" . $nl;
+        itc_echo_line(' - ' . $module);
     }
-    echo $nl;
+    itc_echo_line('');
 }
 
 if ($exitCode !== 0) {
-    echo "Fix violations or run --write-baseline only when intentionally grandfathering legacy modules." . $nl;
-    echo "Remove fixed modules from scripts/data/index_table_compliance_baseline.txt." . $nl;
+    itc_echo_line('Fix violations or run --write-baseline only when intentionally grandfathering legacy modules.');
+    itc_echo_line('Remove fixed modules from scripts/data/index_table_compliance_baseline.txt.');
 }
 
 exit($exitCode);
-
-itm_script_output_end();
