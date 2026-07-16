@@ -415,6 +415,7 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Drag-and-Drop:** Folders can be reordered or reparented via drag-and-drop interactions.
 - **Import/Export:** Supports standard browser HTML bookmark files, CSV, and XLSX exports.
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
+- **Folder names:** duplicate `bookmark_folders.name` values are allowed; identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Do not re-add company/employee name UNIQUEs. Tenant unique-key audit skips `bookmark_folders` and `bookmarks`.
 
 #### Passwords module (mandatory)
 

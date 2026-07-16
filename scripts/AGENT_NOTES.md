@@ -33,6 +33,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **verify_audit_columns.php** — schema gate for mandatory audit columns including soft-delete fields.
 - **run_tests.php** — central test runner; browser menu (standard vs HTML coverage); detects Xdebug/PCOV; post-run link to `phpunit/coverage/html/coverage.html`. Browser coverage URL: `run_tests.php?run=1&mode=coverage`. Full docs: **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 - **check_csrf_coverage.php** / **check_sql_injection_coverage.php** / **check_stale_user_id_sql.php** / **check_stale_user_terminology.php** — security and merge audit tools.
+- **check_database_sql_company_name_uniques.php** — tenant UNIQUE audit over `database.sql` (via `includes/database_sql_unique_audit.php`). Skips intentional duplicate-name / junction tables including `bookmark_folders` and `floor_plan_item_tags` (see module `AGENT_NOTES.md`).
 - **verify_select_options_escalation.php** — regression for Select Options API table whitelist (`includes/itm_select_options_policy.php`); see **`scripts/SCRIPTS.md` → Select Options API verification**.
 - **verify_notes_ajax_contract.php** — Notes AJAX blocked mutations return HTTP 404 with `ok:false` when `affected_rows === 0`.
 - **verify_metadata_column_cache.php** — table-level `information_schema` cache in `itm_table_has_column()` / `itm_table_column_is_nullable()`; cold schema Questions delta 1–2, warm repeat schema delta 0 (measurement excludes trailing `SHOW STATUS`).
