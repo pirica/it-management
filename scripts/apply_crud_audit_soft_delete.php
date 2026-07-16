@@ -55,11 +55,6 @@ if ($slugs === []) {
 }
 
 sort($slugs, SORT_STRING);
-echo 'Inventory: docs/list_soft-delete.txt — ' . count($slugs) . ' module(s)' . $nl;
-foreach ($slugs as $slug) {
-    echo '  - ' . $slug . $nl;
-}
-echo $nl;
 
 $changed = 0;
 $scanned = 0;
@@ -126,35 +121,33 @@ foreach ($slugs as $slug) {
     }
 }
 
+// Why: Print counts then named lists. List items use "\n" (not browser $nl=<br><br>) so <pre> stays readable.
 $modeLabel = $apply ? 'Applied' : 'Would change';
 echo $nl;
 echo $modeLabel . ' ' . $changed . ' file(s); scanned ' . $scanned
     . '; skipped status-driven modules: ' . count($skippedStatusDriven) . '.' . $nl;
+echo $nl;
 
-if ($skippedStatusDriven !== []) {
-    echo 'Skipped status-driven (' . count($skippedStatusDriven) . '):' . $nl;
-    foreach ($skippedStatusDriven as $slug) {
-        echo '  - ' . $slug . $nl;
-    }
-}
-if ($missingDirs !== []) {
-    echo 'Missing module dirs (' . count($missingDirs) . '):' . $nl;
-    foreach ($missingDirs as $slug) {
-        echo '  - ' . $slug . $nl;
-    }
-}
-if ($wouldChangeModules !== []) {
-    echo ($apply ? 'Changed modules' : 'Modules needing patch') . ' (' . count($wouldChangeModules) . '):' . $nl;
-    foreach ($wouldChangeModules as $slug) {
-        echo '  - ' . $slug . $nl;
-    }
-}
-if ($processedOk !== []) {
-    echo 'Already compliant / no patch (' . count($processedOk) . '):' . $nl;
-    foreach ($processedOk as $slug) {
-        echo '  - ' . $slug . $nl;
-    }
-}
+itm_apply_crud_echo_module_list(
+    'Inventory: docs/list_soft-delete.txt — ' . count($slugs) . ' module(s)',
+    $slugs
+);
+itm_apply_crud_echo_module_list(
+    'Skipped status-driven (' . count($skippedStatusDriven) . ')',
+    $skippedStatusDriven
+);
+itm_apply_crud_echo_module_list(
+    'Missing module dirs (' . count($missingDirs) . ')',
+    $missingDirs
+);
+itm_apply_crud_echo_module_list(
+    ($apply ? 'Changed modules' : 'Modules needing patch') . ' (' . count($wouldChangeModules) . ')',
+    $wouldChangeModules
+);
+itm_apply_crud_echo_module_list(
+    'Already compliant / no patch (' . count($processedOk) . ')',
+    $processedOk
+);
 
 if (!$apply && $changed > 0) {
     if ($itmIsCli) {
@@ -168,6 +161,27 @@ if (!$apply && $changed > 0) {
 
 itm_script_output_end();
 exit(0);
+
+/**
+ * Print a headed slug list using real newlines (readable inside browser <pre>).
+ *
+ * @param string $heading
+ * @param array $slugs
+ * @return void
+ */
+function itm_apply_crud_echo_module_list($heading, array $slugs)
+{
+    // Why: itm_script_output_nl() is <br><br> in browser; that balloons 90+ module lines.
+    echo (string)$heading . ":\n";
+    if ($slugs === []) {
+        echo "  (none)\n\n";
+        return;
+    }
+    foreach ($slugs as $slug) {
+        echo '  - ' . $slug . "\n";
+    }
+    echo "\n";
+}
 
 /**
  * @param string $slug
