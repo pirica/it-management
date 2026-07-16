@@ -32,7 +32,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - Quick Access sidebar opens scoped Private/Department folders, not blocked roots.
 - **Hidden system files:** `index.html` and `.htaccess` are always omitted from Explorer listings (`explorer_is_hidden_system_entry()` in `api.php` `list` / `listRecycle`).
 - **Preview routing:** `open` returns `preview: image|pdf|text|unsupported`. Images and PDFs load via `file.php` (not text `file_get_contents`). `.htaccess` `deny_http` blocks direct `/files/` URLs only; `file.php` reads from disk with ACL checks.
-- **Employee profile photos (`file.php`):** paths matching `Private/*/profile/` are readable by any authenticated user in the active company (employee list/view/birthdays thumbnails). Other `Private/` paths remain owner-scoped.
+- **Employee profile photos (`file.php`):** paths matching `Private/*/profile/` are readable by any authenticated user. Storage root is resolved from the **photo owner’s home `company_id`** (parsed from `Private/{username}_{employee_id}/…`), not the tenant-switcher session company — otherwise multi-company admins get 404 after upload. Other `Private/` paths remain owner-scoped under the active session company.
 - **Responsive:** topbar/search/tabs adapt below 768px; file grid uses smaller tiles on mobile (`index.php` inline CSS).
 - **Employee sidebar (index.php):** `🌐 Employees` links to `modules/employees/`; `🎉 Birthdays` links to `modules/birthdays/`; **Profile Storage** opens `Private/{username}_{user_id}/profile` via `openEmployeeProfileFolder()` (employee profile photos from the employees module).
 - `api.php` for async operations; `file.php` for authorised file delivery (required after `deny_http`).
