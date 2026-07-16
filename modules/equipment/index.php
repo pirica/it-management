@@ -381,17 +381,10 @@ if (!empty($_SESSION['crud_success'])) {
                                 <td>
                                     <?php
                                     $statusText = trim((string)($row['status_name'] ?? ''));
-                                    $statusLower = strtolower($statusText);
-                                    $statusBadgeClass = 'badge-warning';
-                                    if ($statusLower === '' || $statusLower === '-') {
-                                        $statusText = '-';
-                                    } elseif (strpos($statusLower, 'active') !== false || strpos($statusLower, 'online') !== false || strpos($statusLower, 'up') !== false) {
-                                        $statusBadgeClass = 'badge-success';
-                                    } elseif (strpos($statusLower, 'inactive') !== false || strpos($statusLower, 'offline') !== false || strpos($statusLower, 'down') !== false || strpos($statusLower, 'fail') !== false || strpos($statusLower, 'error') !== false) {
-                                        $statusBadgeClass = 'badge-danger';
-                                    }
+                                    echo function_exists('itm_crud_render_status_label_badge')
+                                        ? itm_crud_render_status_label_badge($statusText)
+                                        : sanitize($statusText !== '' ? $statusText : '-');
                                     ?>
-                                    <span class="badge <?php echo $statusBadgeClass; ?>"><?php echo sanitize($statusText); ?></span>
                                 </td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>

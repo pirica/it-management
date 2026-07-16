@@ -671,7 +671,7 @@ while ($columnsRes && ($c = mysqli_fetch_assoc($columnsRes))) {
 }
 
 $preferredOrder = ['id','duplicate','external_id','insurance_n','employee_code','username','display_name','full_name','work_email','personal_email','mobile_phone','external_number','dect','extension','raw_status_code','first_name','last_name','job_code','role_id','access_level_id','employee_position_id','reports_to','on_contacts','on_orgchart','department_id','location_id','request_date','start_date','requested_by','termination_requested_by','employment_status_id','employee_type_id','termination_date','birthday','hide_year','photo','workstation_mode_id','assignment_type_id','comments'];
-$hiddenColumns = array_merge(['company_id', 'location'], itm_employees_hidden_account_column_names());
+$hiddenColumns = array_merge(['company_id', 'location', 'active'], itm_employees_hidden_account_column_names());
 $hiddenColumns = array_merge($hiddenColumns, itm_crud_list_hidden_audit_fields());
 $hiddenColumns = array_merge($hiddenColumns, array_keys(esa_ability_fields()), itm_employees_auth_sensitive_field_names());
 $columns = array_values(array_filter($columns, function ($c) use ($hiddenColumns) { return !in_array($c, $hiddenColumns, true); }));
@@ -915,7 +915,7 @@ if (!isset($crud_title)) {
                                     <?php elseif ($col === 'location_id'): ?><?php echo sanitize((string)($row['location_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employee_position_id'): ?><?php echo sanitize((string)($row['position_name'] ?? '')); ?>
                                     <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($row['manager_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'employment_status_id'): ?><?php echo sanitize((string)($row['employment_status_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'employment_status_id'): ?><?php echo function_exists('itm_crud_render_status_label_badge') ? itm_crud_render_status_label_badge((string)($row['employment_status_name'] ?? '')) : sanitize((string)($row['employment_status_name'] ?? '')); ?>
                                     <?php elseif ($col === 'employee_type_id'): ?><?php echo sanitize((string)($row['employee_type_name'] ?? '')); ?>
                                     <?php elseif ($col === 'role_id'): ?><?php echo sanitize((string)($row['role_name'] ?? '')); ?>
                                     <?php elseif ($col === 'access_level_id'): ?><?php echo sanitize((string)($row['access_level_name'] ?? '')); ?>
@@ -927,8 +927,6 @@ if (!isset($crud_title)) {
                                         <?php else: ?>—<?php endif; ?>
                                     <?php elseif ($col === 'workstation_mode_id'): ?><?php echo sanitize((string)($row['workstation_mode_name'] ?? '')); ?>
                                     <?php elseif ($col === 'assignment_type_id'): ?><?php echo sanitize((string)($row['assignment_type_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'active'): ?>
-                                        <span class="badge <?php echo ((int)($row[$col] ?? 0) === 1) ? 'badge-success' : 'badge-danger'; ?>"><?php echo ((int)($row[$col] ?? 0) === 1) ? 'Active' : 'Inactive'; ?></span>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>

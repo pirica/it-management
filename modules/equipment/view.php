@@ -126,7 +126,6 @@ function equipment_field_label($key) {
         'workstation_storage' => 'Storage (GB/TB)',
         'workstation_os_installed_on' => 'Workstation OS Installed On',
         'switch_fiber_port_label' => 'Fiber Port Label',
-        'active' => 'Active',
         'notes' => 'Notes',
     ];
 
@@ -166,6 +165,10 @@ function equipment_field_should_display($key) {
         return true;
     }
     if ($key === 'photo_filename') {
+        return false;
+    }
+    // Why: Soft-delete mirror only — business status is status_name badges.
+    if ($key === 'active') {
         return false;
     }
     if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
@@ -209,8 +212,10 @@ if (!isset($crud_title)) {
     <tr>
         <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
         <td>
-            <?php if ($k === 'active'): ?>
-                <span class="badge <?php echo (int)$v === 1 ? 'badge-success' : 'badge-danger'; ?>"><?php echo (int)$v === 1 ? 'Active' : 'Inactive'; ?></span>
+            <?php if ($k === 'status_name'): ?>
+                <?php echo function_exists('itm_crud_render_status_label_badge')
+                    ? itm_crud_render_status_label_badge((string)$v)
+                    : sanitize((string)$v); ?>
             <?php elseif ($isAuditField): ?>
                 <?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, $k, $v); ?>
             <?php else: ?>

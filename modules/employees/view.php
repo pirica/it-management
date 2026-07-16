@@ -94,7 +94,6 @@ $profileFields = [
     'Reports To' => (string)($employee['manager_name'] ?? ''),
     'Raw Status Code' => (string)($employee['raw_status_code'] ?? ''),
     'Employment Status' => (string)($employee['employment_status_name'] ?? ''),
-    'Active' => (string)($employee['active'] ?? 0),
     'Request Date' => itm_format_date_display($employee['request_date'] ?? ''),
     'Requested By' => (string)($employee['requested_by'] ?? ''),
     'Termination Requested By' => (string)($employee['termination_requested_by'] ?? ''),
@@ -165,8 +164,8 @@ if (!isset($crud_title)) {
                                 <td>
                                     <?php if (($label === 'Work Email' || $label === 'Personal Email') && $value !== ''): ?>
                                         <a href="mailto:<?php echo sanitize($value); ?>"><?php echo sanitize($value); ?></a>
-                                    <?php elseif ($label === 'Active'): ?>
-                                        <span class="badge <?php echo ((int)$value === 1) ? 'badge-success' : 'badge-danger'; ?>"><?php echo ((int)$value === 1) ? 'Active' : 'Inactive'; ?></span>
+                                    <?php elseif ($label === 'Employment Status'): ?>
+                                        <?php echo function_exists('itm_crud_render_status_label_badge') ? itm_crud_render_status_label_badge((string)$value) : emp_view_value($value); ?>
                                     <?php elseif (in_array($label, $auditProfileLabels, true)): ?>
                                         <?php echo $value === '' ? '—' : $value; ?>
                                     <?php else: ?>

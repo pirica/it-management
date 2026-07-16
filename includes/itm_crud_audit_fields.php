@@ -256,6 +256,52 @@ if (!function_exists('itm_crud_force_active_live')) {
     }
 }
 
+if (!function_exists('itm_crud_is_status_driven_row_active_field')) {
+    /**
+     * Row active on status-driven modules is soft-delete only — hide from list/view UI.
+     */
+    function itm_crud_is_status_driven_row_active_field($fieldName)
+    {
+        return (string)$fieldName === 'active';
+    }
+}
+
+if (!function_exists('itm_crud_render_status_label_badge')) {
+    /**
+     * Badge for *_statuses labels on list/view (not the row active boolean).
+     *
+     * @param string $label Status name
+     * @param string $color Optional #RRGGBB from status lookup
+     */
+    function itm_crud_render_status_label_badge($label, $color = '')
+    {
+        $label = trim((string)$label);
+        if ($label === '') {
+            return '—';
+        }
+        $color = trim((string)$color);
+        if ($color !== '' && preg_match('/^#[A-Fa-f0-9]{6}$/', $color)) {
+            $safeColor = strtoupper($color);
+            return '<span class="badge" title="' . sanitize($safeColor) . '" style="background:' . sanitize($safeColor) . ';color:#fff;">'
+                . sanitize($label) . '</span>';
+        }
+        $lower = strtolower($label);
+        $class = 'badge-warning';
+        if (strpos($lower, 'active') !== false || strpos($lower, 'open') !== false || strpos($lower, 'online') !== false) {
+            $class = 'badge-success';
+        } elseif (
+            strpos($lower, 'inactive') !== false
+            || strpos($lower, 'closed') !== false
+            || strpos($lower, 'terminat') !== false
+            || strpos($lower, 'offline') !== false
+            || strpos($lower, 'fail') !== false
+        ) {
+            $class = 'badge-danger';
+        }
+        return '<span class="badge ' . $class . '">' . sanitize($label) . '</span>';
+    }
+}
+
 if (!function_exists('itm_crud_render_audit_cell_value')) {
     /**
      * Render audit meta for list/view cells. Returns null when $field is not an audit meta column.
