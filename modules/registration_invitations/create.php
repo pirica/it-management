@@ -868,6 +868,7 @@ if (!isset($crud_title)) {
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
                                     </div>

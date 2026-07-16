@@ -483,6 +483,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        if ($crud_action === 'create' && function_exists('itm_crud_stamp_create_audit')) {
+            $sqlValuesStamp = null;
+            itm_crud_stamp_create_audit($data, $sqlValuesStamp);
+        } elseif ($crud_action === 'edit' && function_exists('itm_crud_stamp_update_audit')) {
+            $sqlValuesStamp = null;
+            itm_crud_stamp_update_audit($data, $sqlValuesStamp, $data);
+        }
         $fields = [];
         $placeholders = [];
         $params = [];
@@ -631,6 +638,7 @@ if (!isset($crud_title)) {
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>

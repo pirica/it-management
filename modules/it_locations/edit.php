@@ -223,6 +223,12 @@ function cr_it_location_type_name($conn, $companyId, $typeId) {
 }
 
 function cr_render_cell_value($table, $field, $value, $conn = null, $companyId = 0) {
+    if (function_exists('itm_crud_render_audit_cell_value')) {
+        $auditHtml = itm_crud_render_audit_cell_value($conn instanceof mysqli ? $conn : ($GLOBALS['conn'] ?? null), (int)$companyId, $field, $value);
+        if ($auditHtml !== null) {
+            return $auditHtml;
+        }
+    }
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
@@ -634,6 +640,7 @@ if (!isset($crud_title)) {
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                         <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>

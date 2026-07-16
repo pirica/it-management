@@ -370,9 +370,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
     if ($ajax_action === 'delete_point') {
         $point_id = (int)($_POST['point_id'] ?? 0);
-        $sql = "DELETE FROM floor_designer_points WHERE id=? AND company_id=?";
+        $empId = (int)($_SESSION['employee_id'] ?? 0);
+        // Why: Soft-delete designer points so audit meta remains; list filters deleted_at IS NULL.
+        $sql = "UPDATE floor_designer_points SET deleted_at=NOW(), deleted_by=? WHERE id=? AND company_id=? AND deleted_at IS NULL";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, 'ii', $point_id, $company_id);
+        mysqli_stmt_bind_param($stmt, 'iii', $empId, $point_id, $company_id);
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['ok' => true]);
         } else {
@@ -439,7 +441,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
                         echo json_encode(['ok' => true, 'id' => $planId]);
                     } else {
-                        mysqli_query($conn, "DELETE FROM floor_plans WHERE id=$planId");
+                        $rollbackEmp = (int)($_SESSION['employee_id'] ?? 0);
+                        mysqli_query($conn, "UPDATE floor_plans SET deleted_at=NOW(), deleted_by=" . (int)$rollbackEmp . " WHERE id=" . (int)$planId . " AND company_id=" . (int)$company_id . " AND deleted_at IS NULL");
                         echo json_encode(['ok' => false, 'error' => 'Failed to write file to disk.']);
                     }
                 } else {
@@ -544,7 +547,7 @@ if ($editId > 0) {
             LEFT JOIN cable_colors cc ON cc.id = p.cable_color_id
             LEFT JOIN equipment e ON e.id = p.switch_id
             LEFT JOIN switch_ports sp ON sp.id = p.switch_port_id
-            WHERE p.floor_designer_id=$editId AND p.company_id=$company_id");
+            WHERE p.floor_designer_id=$editId AND p.company_id=$company_id AND p.deleted_at IS NULL");
         while ($p = mysqli_fetch_assoc($pq)) {
             $points[] = $p;
         }
@@ -658,6 +661,7 @@ if (!isset($crud_title)) {
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
                                     </div>
