@@ -384,6 +384,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
 global $fkMap, $conn, $company_id;
 
     if (isset($fkMap[$field]) && $value !== null && $value !== '' && strtoupper((string)$value) !== 'NULL') {

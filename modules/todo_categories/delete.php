@@ -143,6 +143,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
+    if ($field === 'active') {
+        $isActive = ((int)$value === 1);
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
 if ($field === 'cat_from_employee_id' && $value > 0) {
         $conn = $GLOBALS['conn'] ?? null;
         if ($conn) {
