@@ -48,7 +48,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - Do not store share targets as plain text; use `shared_with_json`. [Cursor-Valid]
 - Label import must resolve names against `note_labels` for the current user. [Cursor-Valid]
 - **`images_json` attachments:** store leaf filenames only. ZIP download (`download_all_images`) resolves paths via `itm_notes_resolve_image_path()` in `includes/notes_visibility.php` — never concatenate raw JSON values into filesystem paths. [Cursor-Valid]
-- **AJAX mutations:** visibility-scoped handlers call `itm_notes_json_mutation_response()` — return HTTP 404 with `ok:false` when `affected_rows === 0` (no misleading success on blocked delete). Regression: `php scripts/verify_notes_ajax_contract.php`. [Cursor-Valid]
+- **AJAX mutations:** visibility-scoped handlers call `itm_notes_json_mutation_response()` — return HTTP 404 with `ok:false` when `affected_rows === 0` (no misleading success on blocked delete). **`single_delete`** soft-deletes live rows (`active=0`, `deleted_by`, `deleted_at`); hard `DELETE` only when already inactive. Regression: `php scripts/verify_notes_ajax_contract.php` (attacker blocked; owner note stays `active=1` with `deleted_at IS NULL`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 
