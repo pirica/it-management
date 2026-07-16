@@ -17,7 +17,7 @@ Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity
 - **JSON Metadata**: Old and new values are stored as JSON strings.
 - **Automatic triggering:** Most **audited** tables use MySQL triggers (`trg_{table}_audit_insert|update|delete`) in `database.sql`. PHP modules may also call `itm_log_audit()` when `ui_configuration.enable_audit_logs` is on.
 - **Private data exclusion:** These tables must **not** have audit triggers and must **not** receive `audit_logs` rows — `emails`, `password_entries`, `password_folders`, `private_contacts`, `todo_categories`, `todo`, `notes`, `note_labels`, `bookmark_folders`, `bookmarks`. The list view shows an informational note; absence of rows for those tables is expected.
-- **Employees trigger redaction:** `trg_employees_audit_*` in `database.sql` must not log `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, or `reset_token_expires_at`.
+- **Employees trigger redaction:** `trg_employees_audit_*` in `database.sql` must not log `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, or `reset_token_expires_at`. Regression: `php scripts/verify_audit_logs_disclosure.php` (static trigger scan + live disposable employee probe + retro scan).
 
 ## 5. UI Behavior Requirements
 - **Searchable**: Search by table name, record ID, user, or action. List search matches employee full name, username, and email via `LEFT JOIN employees` (not only raw `employee_id`).

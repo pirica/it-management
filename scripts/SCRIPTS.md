@@ -205,6 +205,7 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
 | `php scripts/verify_audit_updated.php` | Verification — audit log redaction of sensitive fields. |
+| `php scripts/verify_audit_logs_disclosure.php` | Three-step employees audit disclosure regression: static `database.sql` trigger scan, live disposable employee UPDATE probe, retro scan of recent `employees` audit rows. Prints each step; optional `ITM_TEST_COMPANY_ID`. |
 | `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
 | `php scripts/verify_visitors_bac_fix.php` | Verification — blocked unauthorized visitor log additions (against live module). |
 | `php scripts/verify_visitors_sqli_fix.php` | Verification — fixed SQL Injection in visitors access log. |

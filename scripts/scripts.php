@@ -1493,7 +1493,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_audit_logs_disclosure.php" target="_blank" rel="nofollow noreferrer">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verification script for sensitive info disclosure in audit logs (passwords/reset tokens). Read-only scan of existing logs; repro scripts use disposable employees via <code>itm_script_test_employee.php</code>.</td>
+                    <td>Three-step regression for employees audit disclosure: (1) static <code>database.sql</code> trigger scan — <code>trg_employees_audit_*</code> must omit <code>password</code>, <code>vault_key_hash</code>, <code>reset_token*</code>; (2) live disposable employee UPDATE probe via <code>itm_script_test_employee.php</code>; (3) retro scan of last 25 <code>employees</code> audit rows. Prints each step with <code>[PASS]</code>/<code>[FAIL]</code>. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
                 </tr>
                 <tr>
