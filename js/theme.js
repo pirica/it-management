@@ -1,7 +1,15 @@
 // Theme Management
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    // Why: server-preferred theme (profile/session) wins over stale localStorage.
+    var preferred = (typeof window.ITM_PREFERRED_THEME === 'string') ? window.ITM_PREFERRED_THEME : '';
+    var savedTheme = (preferred === 'dark' || preferred === 'light')
+        ? preferred
+        : (localStorage.getItem('theme') || 'light');
+    if (savedTheme !== 'dark') {
+        savedTheme = 'light';
+    }
     document.documentElement.setAttribute('data-theme', savedTheme);
+    try { localStorage.setItem('theme', savedTheme); } catch (e) {}
     updateThemeButton();
 }
 

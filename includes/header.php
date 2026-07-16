@@ -54,6 +54,16 @@ if (!empty($_SESSION['crud_success'])) {
 <?php if ($chatbotEnabled): ?>
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/chatbot.css">
 <?php endif; ?>
+<?php
+// Why: persist profile theme across modules; header moon toggle still updates localStorage.
+$itmPreferredTheme = strtolower(trim((string)($_SESSION['ui_theme'] ?? '')));
+if ($itmPreferredTheme !== 'dark' && $itmPreferredTheme !== 'light') {
+    $itmPreferredTheme = '';
+}
+?>
+<script>
+window.ITM_PREFERRED_THEME = <?php echo json_encode($itmPreferredTheme !== '' ? $itmPreferredTheme : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+</script>
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-ui-action-labels.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-user-errors.js"></script>

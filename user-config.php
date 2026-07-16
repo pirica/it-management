@@ -26,6 +26,13 @@ $user_id = (int)$_SESSION['employee_id'];
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 
+/**
+ * Why: employees.theme is light|dark only; anything else falls back to light.
+ */
+$profile_normalize_theme = static function ($theme) {
+    return (strtolower(trim((string)$theme)) === 'dark') ? 'dark' : 'light';
+};
+
 // --- 1. GATHER ALL REQUIRED DATA ---
 
 // Fetch current employee profile data
@@ -46,9 +53,13 @@ if (!$current_user) {
     die('User not found.');
 }
 
+// Why: profile self-updates must use the employee home company_id — session
+// company_id is the active tenant switcher and often differs for multi-company admins.
+$home_company_id = (int)($current_user['company_id'] ?? 0);
+
 // Ensure company_id is set from user record if missing in session
 if ($company_id <= 0) {
-    $company_id = (int)$current_user['company_id'];
+    $company_id = $home_company_id;
     $_SESSION['company_id'] = $company_id;
 }
 
@@ -735,11 +746,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_profile') {
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
-        $theme = strtolower(trim((string)($_POST['theme'] ?? 'light')));
-        // Why: only light/dark are valid employees.theme values for the profile selector.
-        if ($theme !== 'dark') {
-            $theme = 'light';
-        }
+        $theme = $profile_normalize_theme($_POST['theme'] ?? 'light');
         $ec_name = trim($_POST['emergency_contact_name'] ?? '');
         $ec_rel = trim($_POST['emergency_contact_relationship'] ?? '');
         $ec_phone = trim($_POST['emergency_contact_phone'] ?? '');
@@ -765,15 +772,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $birthday,
                 $hide_year,
                 $user_id,
-                $company_id
+                $home_company_id
             );
             if (mysqli_stmt_execute($stmt)) {
                 $message = 'Profile updated successfully!';
                 $message_type = 'success';
                 $syncThemeToClient = true;
+                $_SESSION['ui_theme'] = $theme;
                 $stmt_refresh = mysqli_prepare($conn, 'SELECT * FROM employees WHERE id = ? AND company_id = ?');
                 if ($stmt_refresh) {
-                    mysqli_stmt_bind_param($stmt_refresh, 'ii', $user_id, $company_id);
+                    mysqli_stmt_bind_param($stmt_refresh, 'ii', $user_id, $home_company_id);
                     mysqli_stmt_execute($stmt_refresh);
                     $updated_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_refresh));
                     mysqli_stmt_close($stmt_refresh);
@@ -795,7 +803,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($new_pw === $confirm_pw) {
                 $hash = password_hash($new_pw, PASSWORD_DEFAULT);
                 $stmt = mysqli_prepare($conn, "UPDATE employees SET password = ? WHERE id = ? AND company_id = ?");
-                mysqli_stmt_bind_param($stmt, 'sii', $hash, $user_id, $company_id);
+                mysqli_stmt_bind_param($stmt, 'sii', $hash, $user_id, $home_company_id);
                 mysqli_stmt_execute($stmt);
                 mysqli_stmt_close($stmt);
                 itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action'=>'password_change'], ['action'=>'password_change_success']);
@@ -820,7 +828,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         $vk_hash = password_hash($new_vk, PASSWORD_DEFAULT);
                         $stmt = mysqli_prepare($conn, "UPDATE employees SET vault_key_hash = ? WHERE id = ? AND company_id = ?");
-                        mysqli_stmt_bind_param($stmt, 'sii', $vk_hash, $user_id, $company_id);
+                        mysqli_stmt_bind_param($stmt, 'sii', $vk_hash, $user_id, $home_company_id);
                         mysqli_stmt_execute($stmt); mysqli_stmt_close($stmt);
                         mysqli_commit($conn);
                         itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action'=>'vault_key_change'], ['action'=>'vault_key_change_success']);
@@ -846,10 +854,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Sidebar updated!'; $message_type = 'success';
     } elseif ($action === 'upload_photo') {
         if (isset($_FILES['photo'])) {
-            $res = emp_profile_photo_store_upload($company_id, $current_user, $_FILES['photo']);
+            $res = emp_profile_photo_store_upload($home_company_id, $current_user, $_FILES['photo']);
             if ($res['ok']) {
                 $stmt = mysqli_prepare($conn, "UPDATE employees SET photo = ? WHERE id = ? AND company_id = ?");
-                mysqli_stmt_bind_param($stmt, 'sii', $res['filename'], $user_id, $company_id);
+                mysqli_stmt_bind_param($stmt, 'sii', $res['filename'], $user_id, $home_company_id);
                 mysqli_stmt_execute($stmt); mysqli_stmt_close($stmt);
                 itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action'=>'photo_upload'], ['action'=>'photo_upload_success']);
                 $message = 'Photo updated!'; $message_type = 'success';
@@ -869,20 +877,31 @@ foreach ($pc_fields as $f) if (!empty($current_user[$f])) $pc_filled++;
 $pc_percent = round(($pc_filled / count($pc_fields)) * 100);
 
 $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type === 'error') ? 'crud_error' : '');
+$profileTheme = $profile_normalize_theme($current_user['theme'] ?? ($_SESSION['ui_theme'] ?? 'light'));
+$_SESSION['ui_theme'] = $profileTheme;
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - <?php echo sanitize($current_user['display_name'] ?: $current_user['username']); ?></title>
     <link rel="stylesheet" href="css/styles.css">
+    <script>
+    // Why: apply employees.theme before paint; theme.js later reads localStorage.
+    (function () {
+        var theme = <?php echo json_encode($profileTheme, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+        window.ITM_PREFERRED_THEME = theme;
+        try { localStorage.setItem('theme', theme); } catch (e) {}
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>
     <style>
         .emp-dashboard { display: flex; flex-direction: column; gap: 20px; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-        .stat-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e1e4e8; text-decoration: none; color: inherit; transition: all 0.2s; }
-        .stat-card:hover { transform: translateY(-3px); border-color: #0366d6; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .stat-val { font-size: 22px; font-weight: 700; display: block; }
-        .stat-lbl { font-size: 12px; color: #586069; }
+        .stat-card { background: var(--bg-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow-lg); }
+        .stat-val { font-size: 22px; font-weight: 700; display: block; color: var(--text-primary); }
+        .stat-lbl { font-size: 12px; color: var(--text-secondary); }
         .layout-2col { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
         .col-left { display: flex; flex-direction: column; gap: 20px; }
         .col-right { display: flex; flex-direction: column; gap: 20px; }
@@ -890,21 +909,21 @@ $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type
         @media (max-width: 768px) {
             .layout-2col { grid-template-columns: 1fr; }
         }
-        .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #f6f8fa; margin: 0 auto; overflow: hidden; position: relative; cursor: pointer; background: #eee; display: flex; align-items: center; justify-content: center; }
+        .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--bg-secondary); margin: 0 auto; overflow: hidden; position: relative; cursor: pointer; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; }
         .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
         .profile-pic .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; font-size: 12px; }
         .profile-pic:hover .overlay { opacity: 1; }
-        .org-path { position: relative; padding-left: 20px; border-left: 2px solid #e1e4e8; list-style: none; margin: 0; font-size: 13px; }
+        .org-path { position: relative; padding-left: 20px; border-left: 2px solid var(--border); list-style: none; margin: 0; font-size: 13px; }
         .org-path li { margin-bottom: 10px; position: relative; }
-        .org-path li::before { content: ''; position: absolute; left: -26px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #0366d6; }
-        .progress { height: 6px; background: #e1e4e8; border-radius: 3px; overflow: hidden; margin: 5px 0; }
-        .progress-bar { height: 100%; background: #28a745; }
-        .access-item { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin: 2px; border: 1px solid #e1e4e8; }
-        .access-on { background: #e6ffed; color: #22863a; }
-        .access-off { background: #ffeef0; color: #cb2431; opacity: 0.7; }
+        .org-path li::before { content: ''; position: absolute; left: -26px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-primary); border: 2px solid var(--accent); }
+        .progress { height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; margin: 5px 0; }
+        .progress-bar { height: 100%; background: var(--success); }
+        .access-item { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin: 2px; border: 1px solid var(--border); }
+        .access-on { background: rgba(46, 160, 67, 0.15); color: var(--success); }
+        .access-off { background: rgba(248, 81, 73, 0.12); color: var(--danger); opacity: 0.85; }
         .timeline { list-style: none; padding: 0; font-size: 13px; }
-        .timeline-item { padding-bottom: 12px; border-left: 2px solid #eee; padding-left: 15px; position: relative; }
-        .timeline-item::after { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #0366d6; }
+        .timeline-item { padding-bottom: 12px; border-left: 2px solid var(--border); padding-left: 15px; position: relative; color: var(--text-primary); }
+        .timeline-item::after { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
     </style>
 </head>
 <body>
@@ -1022,7 +1041,7 @@ $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group"><label>Phone</label><input type="text" name="phone" value="<?php echo sanitize((string)($current_user['mobile_phone'] ?? '')); ?>"></div>
-                                    <div class="form-group"><label>Theme</label><select name="theme"><option value="light" <?php if (($current_user['theme'] ?? '') === 'light') echo 'selected'; ?>>Light</option><option value="dark" <?php if (($current_user['theme'] ?? '') === 'dark') echo 'selected'; ?>>Dark</option></select></div>
+                                    <div class="form-group"><label>Theme</label><select name="theme"><option value="light" <?php if ($profileTheme === 'light') echo 'selected'; ?>>Light</option><option value="dark" <?php if ($profileTheme === 'dark') echo 'selected'; ?>>Dark</option></select></div>
                                 </div>
                                 <div class="form-row">
                                     <?php
@@ -1242,15 +1261,13 @@ foreach ($access_fields as $f):
 </div>
 <script src="js/theme.js"></script>
 <script>
-<?php if (!empty($syncThemeToClient)): ?>
 (function () {
-    // Why: employees.theme is the profile source of truth; theme.js reads localStorage.
-    var theme = <?php echo json_encode((($current_user['theme'] ?? '') === 'dark') ? 'dark' : 'light', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    // Why: re-assert DB/session theme after theme.js load (header may also load theme.js).
+    var theme = window.ITM_PREFERRED_THEME || <?php echo json_encode($profileTheme, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     try { localStorage.setItem('theme', theme); } catch (e) {}
     document.documentElement.setAttribute('data-theme', theme);
     if (typeof updateThemeButton === 'function') { updateThemeButton(); }
 })();
-<?php endif; ?>
 (function () {
     // Why: keep Hide Year indicator aligned with checkbox without waiting for reload.
     var hideYear = document.querySelector('input[name="hide_year"]');
