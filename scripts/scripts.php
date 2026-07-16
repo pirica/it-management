@@ -1709,10 +1709,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
 				    <td><code>php scripts/verify_audit_columns.php</code></td>
 				</tr>
 				<tr>
-				    <td>apply_crud_audit_soft_delete.php</td>
-				    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-				    <td><strong>CLI-only</strong> apply soft-delete + audit meta UI patches to scaffold modules in <code>docs/list_soft-delete.txt</code>. Dry-run default; <code>--apply</code> writes. Idempotent; skips status-driven modules.</td>
-				    <td><code>php scripts/apply_crud_audit_soft_delete.php</code> then <code>php scripts/apply_crud_audit_soft_delete.php --apply</code>. Browser shows CLI instructions only.</td>
+				    <td><a href="apply_crud_audit_soft_delete.php" target="_blank" rel="nofollow noreferrer">apply_crud_audit_soft_delete.php</a></td>
+				    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+				    <td>Apply soft-delete + audit meta UI patches to scaffold modules in <code>docs/list_soft-delete.txt</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Idempotent; skips status-driven modules.</td>
+				    <td>Browser: <a href="apply_crud_audit_soft_delete.php">dry-run</a> / <a href="apply_crud_audit_soft_delete.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_audit_soft_delete.php</code> then <code>php scripts/apply_crud_audit_soft_delete.php --apply</code>.</td>
 				</tr>
 				<tr>
 				    <td><a href="check_crud_audit_soft_delete.php" target="_blank" rel="nofollow noreferrer">check_crud_audit_soft_delete.php</a></td>
