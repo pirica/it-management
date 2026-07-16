@@ -14,6 +14,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - **Non-editable fields**: Name, Department, Username are pulled from the logged-in employee record.
 - **Applications**: Only systems marked as '1' in `employee_system_access` for the employee are shown. Application discovery skips identity/audit/soft-delete meta columns (`id`, `company_id`, `employee_id`, `active`, `created_*`, `updated_*`, `deleted_*`, and legacy `changed_at` if present).
 - **Create/Edit UI:** matches standard CRUD create layout — emoji-only `h1` (➕/✏️), policy banner (`.request-header`), then `form.form-grid` with stacked `.form-group` fields, reason radios via `.itm-checkbox-control.rp-reason-option`, and a leaf `.form-actions` Save/Back bar (no wrapping `.card` around fields+buttons). `js/ui-layout.js` `back_save_position` must only restyle that action bar.
+- **Index list table:** `data-itm-db-import-endpoint="index.php"` on the list `<table>`; Actions header and body cells use `class="itm-actions-cell"` + `data-itm-actions-origin="1"` (body wraps controls in `.itm-actions-wrap`). JSON Import Excel is handled via `itm_handle_json_table_import($conn, 'request_password', …)` on POST.
 - **Workflow**:
   1. Applicant submits request (Applicant Signature Date saved).
   2. Emails sent to HR/HOD via "Submit Email" buttons in View mode.
