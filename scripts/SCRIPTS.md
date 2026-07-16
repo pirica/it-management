@@ -1280,3 +1280,9 @@ Standardized output handling using `scripts/lib/script_cli_output.php` has been 
 
 ### System-Wide Path & Include Verification
 Performed a rigorous audit of all file path and `require`/`include` context behaviors. Confirmed that relative file references correctly resolve using parent/child directories (via proper `chdir()` context switches where relevant). Verified complete removal of obsolete `fixed_files/` directory, cementing `modules/` as the sole authoritative code target for reproduction and verification scripts.
+
+### MySQL Environment & Test Alignment
+To ensure full PHPUnit test pass and reliable local execution, verify that:
+- The entire database is imported from `database.sql` (exactly 124 tables are expected).
+- The `/var/run/mysqld` socket directory permissions allow the PHP CLI and PHPUnit test runners to connect (`chmod 755 /var/run/mysqld`).
+- A `.env` file exists in the repo root containing correct credentials.
