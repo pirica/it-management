@@ -442,7 +442,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** from **`AGENTS.md` → Setup & Debugging → PHP CLI tests**.
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **`AGENTS.md` → Setup & Debugging → PHP CLI tests**).
 * **`PHP_BINARY` for sub-processes:** When a script needs to execute another PHP script, prefer using the **`PHP_BINARY`** constant to ensure the same PHP version is used.
-* **Repo-writing maintenance (`scripts/apply*.php`):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes). Writes only with CLI `--apply` or browser `?apply=1` (Admin session). Each apply script prints named target lists (changed / skipped / compliant) using real newlines inside browser `<pre>`. Legacy `--dry-run` (CLI) and `?dry-run=1` (browser) force preview-only.
+* **Repo-writing maintenance (`scripts/apply*.php`):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes; browser dry-run needs a signed-in session only). Writes only with CLI `--apply` or browser `?apply=1` (**Admin** session required for browser apply). Each apply script prints named target lists (changed / skipped / compliant) using real newlines inside browser `<pre>`. Legacy `--dry-run` (CLI) and `?dry-run=1` (browser) force preview-only.
 * **Other destructive repo writers** (`normalize_database_sql_created_at.php`, `repair_table_from_schema.php`, `fix_sql*.php`, `ensure_equipment_type_modules.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and use `itm_script_output_begin()` from `scripts/lib/script_cli_output.php` to show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
 * List exact commands and outcomes in the PR description when checks ran.
 
@@ -457,7 +457,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/mbqa_runner_tiers.php` | Canonical `$bespokeSmoke` (Tier D) and `$skipClear` lists; tier reference markdown/HTML for build reports |
 | `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
-| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, Admin gate, `itm_apply_script_echo_list()` |
+| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, Admin gate for browser apply only, `itm_apply_script_echo_list()` |
 
 #### Equipment-type façade modules (`modules/is_*`) and clear-table tests
 

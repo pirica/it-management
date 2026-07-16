@@ -21,7 +21,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_script_test_employee.php` | Disposable `employees` rows for repro/verify scripts (`script-{slug}-{hex}`), snapshot/restore of sensitive columns, audit `@app_*` context, shutdown teardown. `itm_script_test_employee_create()` / `delete()` clear stale `@app_employee_id` via `itm_script_test_employee_clear_audit_context()` so `audit_logs` FK does not fail on INSERT/DELETE triggers. Returns `id`, `username`, `email`, `company_id`, `role_id`, `access_level_id`, `employment_status_id` (no deprecated `employees.active`). |
 | `itm_force_delete_company.php` | Shared tenant wipe used by `scripts/force_delete_company.php` and PHPUnit teardown (`itm_force_delete_company()` deletes all `company_id` rows then the `companies` row). |
 | `itm_email_script_helpers.php` | Shared `itm_email_script_resolve_company_id()` for email test scripts and browser/CLI `--company=` parsing (session fallback, default company `1`). |
-| `itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php` (dry-run default, Admin browser gate, target lists) |
+| `itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php` (dry-run default, Admin browser gate on `?apply=1` only, target lists) |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.
