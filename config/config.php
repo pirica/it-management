@@ -356,6 +356,10 @@ if (session_status() === PHP_SESSION_NONE) {
 // Capture user context for database-level audit triggers
 $itmAuditUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : null;
 $itmAuditCompanyId = isset($_SESSION['company_id']) ? (int)$_SESSION['company_id'] : null;
+// Why: @app_employee_id / @app_company_id feed audit_logs FKs — 0 or negative must be NULL, not a bogus id.
+if ($itmAuditUserId !== null && $itmAuditUserId <= 0) {
+    $itmAuditUserId = null;
+}
 if ($itmAuditCompanyId !== null && $itmAuditCompanyId <= 0) {
     $itmAuditCompanyId = null;
 }
