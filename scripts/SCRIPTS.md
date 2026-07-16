@@ -934,6 +934,10 @@ When adding or changing anything under `scripts/`:
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
 
+**Tenant unique keys (`database.sql`):** after changing `CREATE TABLE` uniques or exempt skips in `includes/database_sql_unique_audit.php`, run `php scripts/check_database_sql_company_name_uniques.php`. Intentional skips include `bookmark_folders` / `bookmarks` (duplicate display names allowed) and `floor_plan_item_tags` (junction identity is `PRIMARY KEY (floor_plan_id, tag_id)` only — never add `UNIQUE (company_id, floor_plan_id)`). Module notes: `modules/bookmarks/`, `modules/bookmark_folders/`, `modules/floor_plans/`.
+
+**Tenant unique keys (`database.sql`):** after changing `CREATE TABLE` uniques or exempt skips in `includes/database_sql_unique_audit.php`, run `php scripts/check_database_sql_company_name_uniques.php`. Intentional skips include `bookmark_folders` / `bookmarks` (duplicate display names allowed) and `floor_plan_item_tags` (junction identity is `PRIMARY KEY (floor_plan_id, tag_id)` only — never add `UNIQUE (company_id, floor_plan_id)`). Module notes: `modules/bookmarks/`, `modules/bookmark_folders/`, `modules/floor_plans/`.
+
 **List search FK labels:** after changing flattened CRUD list search, FK display, bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `ip_addresses`, `bookmarks`, `passwords`), or adding a new searchable module:
 
 ```bash
