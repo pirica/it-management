@@ -1601,8 +1601,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="repro_destructive_import.php" target="_blank" rel="nofollow noreferrer">repro_destructive_import.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction script for destructive employee import.</td>
-                    <td><code>php scripts/repro_destructive_import.php</code></td>
+                    <td>Reproduction — destructive employee import scenario for company 1. <strong>Browser + CLI dry-run default</strong>; <code>--apply</code> / <code>?apply=1</code> (Admin) runs DELETE/seed/import.</td>
+                    <td>Browser: <a href="repro_destructive_import.php">dry-run</a>, <a href="repro_destructive_import.php?apply=1">apply</a>. CLI: <code>php scripts/repro_destructive_import.php</code>, <code>php scripts/repro_destructive_import.php --apply</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_todo_user_leak.php" target="_blank" rel="nofollow noreferrer">repro_todo_user_leak.php</a></td>
