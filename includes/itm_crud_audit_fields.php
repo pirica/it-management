@@ -222,11 +222,12 @@ if (!function_exists('itm_crud_build_soft_delete_sql')) {
         $set = '`deleted_at`=NOW(), `deleted_by`=' . ($emp > 0 ? (string)$emp : 'NULL') . ', `active`=0';
         $whereSql = trim((string)$whereSql);
         if ($whereSql === '') {
-            $whereSql = ' WHERE deleted_at IS NULL';
+            $whereSql = 'WHERE deleted_at IS NULL';
         } elseif (stripos($whereSql, 'deleted_at') === false) {
             $whereSql .= ' AND deleted_at IS NULL';
         }
-        return 'UPDATE `' . $table . '` SET ' . $set . $whereSql;
+        // Why: trim() removes the leading space before WHERE; always re-insert a separator before the clause.
+        return 'UPDATE `' . $table . '` SET ' . $set . ' ' . $whereSql;
     }
 }
 
