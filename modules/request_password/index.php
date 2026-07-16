@@ -14,13 +14,21 @@ if (!isset($crud_action)) {
 require_once '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
 
-
-
 // WHY: Enforce RBAC permissions for the request_password module.
 if (function_exists('itm_require_crud_role_module_permission')) {
     $check_action = ($crud_action == 'index' || $crud_action == 'list_all') ? 'view' : $crud_action;
     itm_require_crud_role_module_permission($conn, $check_action, 'request_password');
-}																 
+}
+
+// Handle Excel/CSV database import requests from table-tools.js.
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = (string)@file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        itm_handle_json_table_import($conn, 'request_password', (int)($company_id ?? 0));
+    }
+}
+
 $pk = 'id';
 
 // Multi-tenancy check
@@ -359,10 +367,10 @@ if (!isset($crud_title)) {
                     </form>
 
                     <div class="table-responsive">
-                        <table>
+                        <table data-itm-db-import-endpoint="index.php">
                             <thead>
                                 <tr>
-                                    <th>Actions</th>
+                                    <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                                     <th>Name</th>
                                     <th>Department</th>
                                     <th>Application</th>
