@@ -32,7 +32,7 @@ Contains the global application stylesheet for the IT Management system.
 | `.itm-page-toolbar` | Flex toolbar with wrap |
 | `.itm-canvas-scroll` | Overflow scroll for canvas/visualizer shells |
 | `.itm-nowrap-column` | Table nowrap on desktop; wraps on mobile (768px) |
-| `.itm-user-config-sidebar-link` | Personalized Sidebar module links in `user-config.php` — `color: inherit` + no underline (hover underline only) |
+| `.itm-user-config-sidebar-link` | `user-config.php` Personalized Sidebar labels and Recent Activity `{table_name}` links — `color: inherit` + no underline (hover underline only) |
 
 ### Module-specific responsive CSS
 Modules with substantial inline CSS must include their own `@media` rules when layout is not covered by global utilities (examples: `modules/calendar/`, `modules/todo/`, `modules/explorer/`, `modules/ops_report/`, `modules/org_chart/`, `modules/rack_planner/`). Canvas tools (org chart, floor designer, rack visualizer) rely on scroll/zoom rather than reflowing fixed artboards.

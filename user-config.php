@@ -1247,7 +1247,31 @@ foreach ($access_fields as $f):
                             <ul class="timeline">
                                 <?php foreach($activity_list as $act): ?>
                                     <li class="timeline-item">
-                                        <?php if($act['type']=='audit'):?><strong><?php echo sanitize($act['action']);?></strong> in <?php echo sanitize($act['table_name']);?>
+                                        <?php if($act['type']=='audit'):
+                                            // Why: Match Personalized Sidebar — open modules/{table}/ in a new tab without blue underline chrome.
+                                            $activityTable = (string)($act['table_name'] ?? '');
+                                            $activityModuleHref = '';
+                                            if ($activityTable !== '' && function_exists('itm_is_safe_identifier') && itm_is_safe_identifier($activityTable)) {
+                                                foreach (itm_sidebar_item_catalog() as $catalogId => $catalogItem) {
+                                                    if ($catalogId === $activityTable || (($catalogItem['match_dir'] ?? '') === $activityTable)) {
+                                                        if (!empty($catalogItem['href'])) {
+                                                            $activityModuleHref = (string)$catalogItem['href'];
+                                                        }
+                                                        break;
+                                                    }
+                                                }
+                                                if ($activityModuleHref === '') {
+                                                    $activityModuleHref = 'modules/' . $activityTable . '/';
+                                                }
+                                            }
+                                        ?>
+                                            <strong><?php echo sanitize($act['action']);?></strong> in <?php
+                                            if ($activityModuleHref !== ''):
+                                            ?><a class="itm-user-config-sidebar-link" href="<?php echo sanitize($activityModuleHref); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($activityTable); ?></a><?php
+                                            else:
+                                                echo sanitize($activityTable);
+                                            endif;
+                                            ?>
                                         <?php else:?><strong>Login</strong> <?php echo sanitize($act['attempt_type']);?> (<?php echo sanitize($act['attempt_source']);?>)<?php endif;?>
                                         <div style="color:#586069; font-size:11px;"><?php echo date('d M Y, H:i', strtotime($act['created_at']));?></div>
                                     </li>
