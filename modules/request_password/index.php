@@ -263,6 +263,8 @@ if (!isset($crud_title)) {
     <style>
         .request-header { background: #f6f8fa; padding: 20px; border: 1px solid #d0d7de; border-radius: 6px; margin-bottom: 20px; }
         .request-header h2 { margin-top: 0; text-align: center; }
+        .rp-reason-option { display: flex; margin-bottom: 10px; }
+        .rp-reason-option input[type="radio"] { width: auto; margin: 0; }
         .signature-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; }
         .signature-box { border-top: 1px solid #333; margin-top: 40px; padding-top: 10px; position: relative; }
         .signature-box .label { font-weight: bold; position: absolute; top: -30px; left: 0; }
@@ -367,8 +369,17 @@ if (!isset($crud_title)) {
                 $e_res = mysqli_stmt_get_result($stmt);
                 $subject_emp = mysqli_fetch_assoc($e_res);
                 $apps = get_employee_applications($conn, $emp_id, $company_id);
+                $isEdit = ($crud_action === 'edit');
                 ?>
-                <form method="POST">
+                <h1 title="<?php echo $isEdit ? 'Edit request password' : 'New request password'; ?>"><?php echo $isEdit ? '✏️' : '➕'; ?></h1>
+
+                <div class="request-header">
+                    <h2>REQUEST FORM CHANGE OF PASSWORDS</h2>
+                    <p><strong>Information Security Policy</strong></p>
+                    <p>[Access Management] G-Authentication and Password : Password must be securely delivered to any user and kept secured at all times.</p>
+                </div>
+
+                <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
                     <input type="hidden" name="id" value="<?php echo $data['id'] ?? ''; ?>">
                     <input type="hidden" name="employee_id" value="<?php echo $emp_id; ?>">
@@ -380,76 +391,65 @@ if (!isset($crud_title)) {
                     <input type="hidden" name="updated_by" value="<?php echo sanitize((string)($data['updated_by'] ?? ($_SESSION['employee_id'] ?? ''))); ?>">
                     <input type="hidden" name="updated_at" value="<?php echo sanitize((string)($data['updated_at'] ?? '')); ?>">
 
-                    <div class="request-header">
-                        <h2>REQUEST FORM CHANGE OF PASSWORDS</h2>
-                        <p><strong>Information Security Policy</strong></p>
-                        <p>[Access Management] G-Authentication and Password : Password must be securely delivered to any user and kept secured at all times.</p>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="<?php echo sanitize(($subject_emp['first_name'] ?? '') . ' ' . ($subject_emp['last_name'] ?? '')); ?>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Department</label>
+                        <input type="text" value="<?php echo sanitize($subject_emp['department_name'] ?? ''); ?>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" value="<?php echo sanitize($subject_emp['username'] ?? ''); ?>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Application</label>
+                        <select name="application" required>
+                            <option value="">-- Select Application --</option>
+                            <?php foreach ($apps as $app): ?>
+                                <option value="<?php echo sanitize($app); ?>" <?php echo (isset($data['application']) && $data['application'] == $app) ? 'selected' : ''; ?>><?php echo sanitize($app); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Requested by</label>
+                        <select name="requested_by_employee_id" required>
+                            <option value="">-- Select Employee --</option>
+                            <?php
+                            $stmt = mysqli_prepare($conn, "SELECT e.id, e.first_name, e.last_name FROM employees e LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND (es.active = 1 OR es.id IS NULL) ORDER BY e.first_name");
+                            mysqli_stmt_bind_param($stmt, 'i', $company_id);
+                            mysqli_stmt_execute($stmt);
+                            $emp_res = mysqli_stmt_get_result($stmt);
+                            while ($emp = mysqli_fetch_assoc($emp_res)):
+                            ?>
+                                <option value="<?php echo $emp['id']; ?>" <?php echo (($data['requested_by_employee_id'] ?? $_SESSION['employee_id']) == $emp['id']) ? 'selected' : ''; ?>>
+                                    <?php echo sanitize($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason for request</label>
+                        <?php
+                        $reasons = [
+                            'Cannot recall password',
+                            'Password expired',
+                            'Account locked',
+                            'Security reasons (3rd party may know password)'
+                        ];
+                        foreach ($reasons as $r):
+                        ?>
+                            <label class="itm-checkbox-control rp-reason-option">
+                                <input type="radio" name="reason" value="<?php echo sanitize($r); ?>" <?php echo (isset($data['reason']) && $data['reason'] == $r) ? 'checked' : ''; ?> required>
+                                <span><?php echo sanitize($r); ?></span>
+                            </label>
+                        <?php endforeach; ?>
                     </div>
 
-                    <div class="card">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Name</label>
-                                <input type="text" value="<?php echo sanitize(($subject_emp['first_name'] ?? '') . ' ' . ($subject_emp['last_name'] ?? '')); ?>" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Department</label>
-                                <input type="text" value="<?php echo sanitize($subject_emp['department_name'] ?? ''); ?>" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Username</label>
-                                <input type="text" value="<?php echo sanitize($subject_emp['username'] ?? ''); ?>" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Application</label>
-                                <select name="application" required>
-                                    <option value="">-- Select Application --</option>
-                                    <?php foreach ($apps as $app): ?>
-                                        <option value="<?php echo sanitize($app); ?>" <?php echo (isset($data['application']) && $data['application'] == $app) ? 'selected' : ''; ?>><?php echo sanitize($app); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Requested by</label>
-                                <select name="requested_by_employee_id" required>
-                                    <option value="">-- Select Employee --</option>
-                                    <?php
-                                    $stmt = mysqli_prepare($conn, "SELECT e.id, e.first_name, e.last_name FROM employees e LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.company_id = ? AND (es.active = 1 OR es.id IS NULL) ORDER BY e.first_name");
-                                    mysqli_stmt_bind_param($stmt, 'i', $company_id);
-                                    mysqli_stmt_execute($stmt);
-                                    $emp_res = mysqli_stmt_get_result($stmt);
-                                    while ($emp = mysqli_fetch_assoc($emp_res)):
-                                    ?>
-                                        <option value="<?php echo $emp['id']; ?>" <?php echo (($data['requested_by_employee_id'] ?? $_SESSION['employee_id']) == $emp['id']) ? 'selected' : ''; ?>>
-                                            <?php echo sanitize($emp['first_name'] . ' ' . $emp['last_name']); ?>
-                                        </option>
-                                    <?php endwhile; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 20px;">
-                            <label>Reason for request:</label>
-                            <?php
-                            $reasons = [
-                                'Cannot recall password',
-                                'Password expired',
-                                'Account locked',
-                                'Security reasons (3rd party may know password)'
-                            ];
-                            foreach ($reasons as $r):
-                            ?>
-                                <label class="radio-label" style="display: block; margin-bottom: 10px;">
-                                    <input type="radio" name="reason" value="<?php echo sanitize($r); ?>" <?php echo (isset($data['reason']) && $data['reason'] == $r) ? 'checked' : ''; ?> required>
-                                    <?php echo sanitize($r); ?>
-                                </label>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary" title="Save">💾</button>
-                            <a href="index.php" class="btn" title="Back">🔙</a>
-                        </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
                     </div>
                 </form>
 

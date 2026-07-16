@@ -181,11 +181,35 @@
     }
 
     function detectFormActionRow(form) {
-        return Array.from(form.querySelectorAll('div, p')).find((el) => {
-            const hasSubmit = !!el.querySelector('button[type="submit"], input[type="submit"]');
-            const hasBack = !!el.querySelector('a.btn[href*="index.php"], a.btn[href$="index.php"], a.btn[href*="list"], a.btn[href*="view"], a.btn[href*="javascript:history.back"], button[type="button"]');
+        // Why: only match the Save/Back bar itself. Ancestor wrappers (e.g. .card) also
+        // contain submit+back via descendants; treating them as the action row adds
+        // .itm-form-actions { display:flex } and flattens the entire create form.
+        const backSelector = [
+            'a.btn[href*="index.php"]',
+            'a.btn[href$="index.php"]',
+            'a.btn[href*="list"]',
+            'a.btn[href*="view"]',
+            'a.btn[href*="javascript:history.back"]',
+            'button[type="button"]'
+        ].join(', ');
+        const submitSelector = 'button[type="submit"], input[type="submit"]';
+
+        const isActionBar = (el) => {
+            const children = Array.from(el.children);
+            if (children.length === 0) {
+                return false;
+            }
+            const hasSubmit = children.some((child) => child.matches(submitSelector));
+            const hasBack = children.some((child) => child.matches(backSelector));
             return hasSubmit && hasBack;
-        }) || null;
+        };
+
+        const explicit = Array.from(form.querySelectorAll('.form-actions')).find(isActionBar);
+        if (explicit) {
+            return explicit;
+        }
+
+        return Array.from(form.querySelectorAll('div, p')).find(isActionBar) || null;
     }
 
     function makeRowClone(row) {

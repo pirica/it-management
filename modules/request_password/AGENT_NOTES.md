@@ -13,6 +13,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 ## Business Rules
 - **Non-editable fields**: Name, Department, Username are pulled from the logged-in employee record.
 - **Applications**: Only systems marked as '1' in `employee_system_access` for the employee are shown. Application discovery skips identity/audit/soft-delete meta columns (`id`, `company_id`, `employee_id`, `active`, `created_*`, `updated_*`, `deleted_*`, and legacy `changed_at` if present).
+- **Create/Edit UI:** matches standard CRUD create layout — emoji-only `h1` (➕/✏️), policy banner (`.request-header`), then `form.form-grid` with stacked `.form-group` fields, reason radios via `.itm-checkbox-control.rp-reason-option`, and a leaf `.form-actions` Save/Back bar (no wrapping `.card` around fields+buttons). `js/ui-layout.js` `back_save_position` must only restyle that action bar.
 - **Workflow**:
   1. Applicant submits request (Applicant Signature Date saved).
   2. Emails sent to HR/HOD via "Submit Email" buttons in View mode.
@@ -34,3 +35,4 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - ISM final notification must wait until both HR and HOD are Approved. [Cursor-Valid]
 - Approval links use HMAC-SHA256 — verify with `hash_equals`; do not weaken token/secret handling. [Cursor-Valid]
 - Application dropdown built from `employee_system_access` must skip audit/meta columns or non-system flags appear as apps. [Cursor-Fixed]
+- Do not wrap create fields and Save/Back in one `.card` that `ui-layout.js` can mistake for the action bar — keep a dedicated `.form-actions` row. [Cursor-Fixed]
