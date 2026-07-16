@@ -5,6 +5,8 @@
  * Browser + CLI. Prefers an isolated CLI subprocess against select_options_api.php.
  * When subprocess output is unusable (browser / shell_exec), falls back to policy
  * whitelist + DB row check and still reports [PASS] when the block is confirmed.
+ *
+ * Embedded scenario matrix exercises parse + verdict logic before the live API run.
  */
 
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
@@ -129,6 +131,195 @@ function itm_repro_select_options_parse_api_output($output)
     return ['usable' => true, 'decoded' => $decoded, 'reason' => ''];
 }
 
+/**
+ * @param mixed $decoded
+ * @return bool
+ */
+function itm_repro_select_options_is_blocked_by_policy_json($decoded)
+{
+    return is_array($decoded)
+        && empty($decoded['ok'])
+        && stripos((string)($decoded['error'] ?? ''), 'quick-add') !== false;
+}
+
+/**
+ * @param array{usable:bool,decoded:?array,reason:string} $parsed
+ * @param bool $policy_blocks_companies
+ * @param bool $row_inserted
+ * @return array{exit_code:int,headline:string,kind:string,detail_lines:array<int,string>}
+ */
+function itm_repro_select_options_evaluate(array $parsed, $policy_blocks_companies, $row_inserted)
+{
+    $decoded = $parsed['decoded'];
+    $blocked_by_policy = $parsed['usable'] && itm_repro_select_options_is_blocked_by_policy_json($decoded);
+    $expected_policy_error = 'This list cannot be updated from quick-add.';
+
+    if ($row_inserted) {
+        return [
+            'exit_code' => 1,
+            'headline' => '[FAIL] companies quick-add still permitted (row inserted).',
+            'kind' => 'security_regression',
+            'detail_lines' => [],
+        ];
+    }
+
+    if ($blocked_by_policy) {
+        return [
+            'exit_code' => 0,
+            'headline' => '[PASS] companies quick-add blocked for regular users.',
+            'kind' => 'api_policy_block',
+            'detail_lines' => ['API: ' . (string)($decoded['error'] ?? $expected_policy_error)],
+        ];
+    }
+
+    if ($policy_blocks_companies && !$parsed['usable']) {
+        $detail_lines = [
+            'Policy: companies is not on the select-options quick-add whitelist.',
+            'Note: API subprocess unavailable (' . $parsed['reason'] . '). No company row was inserted.',
+        ];
+        return [
+            'exit_code' => 0,
+            'headline' => '[PASS] companies quick-add blocked for regular users.',
+            'kind' => 'policy_fallback',
+            'detail_lines' => $detail_lines,
+        ];
+    }
+
+    if (!$parsed['usable']) {
+        return [
+            'exit_code' => 1,
+            'headline' => '[FAIL] Harness: could not verify API response (' . $parsed['reason'] . ').',
+            'kind' => 'harness_failure',
+            'detail_lines' => ['CLI: php scripts/repro_select_options_unauthorized_v2.php'],
+        ];
+    }
+
+    $detail_lines = [];
+    if (is_array($decoded) && !empty($decoded['error'])) {
+        $detail_lines[] = 'API error: ' . (string)$decoded['error'];
+    }
+
+    return [
+        'exit_code' => 1,
+        'headline' => '[FAIL] Unexpected API response (policy block not detected).',
+        'kind' => 'unexpected_api',
+        'detail_lines' => $detail_lines,
+    ];
+}
+
+/**
+ * @param array $result
+ * @param string $api_output
+ * @return void
+ */
+function itm_repro_select_options_emit_verdict(array $result, $api_output = '')
+{
+    global $nl;
+
+    $tone = ((int)$result['exit_code'] === 0) ? 'pass' : 'fail';
+    echo colorText((string)$result['headline'], $tone) . $nl;
+
+    if (trim((string)$api_output) !== '' && (int)$result['exit_code'] !== 0) {
+        echo 'API output: ' . trim((string)$api_output) . $nl;
+    }
+
+    foreach ($result['detail_lines'] as $line) {
+        echo $line . $nl;
+    }
+
+    if (trim((string)$api_output) !== '' && (int)$result['exit_code'] === 0 && ($result['kind'] ?? '') === 'policy_fallback') {
+        echo 'Subprocess output: ' . trim((string)$api_output) . $nl;
+    }
+}
+
+/**
+ * @return int Number of failed scenario cases.
+ */
+function itm_repro_select_options_run_scenario_tests()
+{
+    global $nl;
+
+    $cases = [
+        [
+            'id' => 'login_redirect_302',
+            'label' => '302 + login.php',
+            'output' => "HTTP/1.1 302 Found\r\nLocation: http://localhost/it-management/login.php\r\n\r\n",
+            'policy_blocks' => true,
+            'row_inserted' => false,
+            'expect_exit' => 0,
+            'expect_kind' => 'policy_fallback',
+        ],
+        [
+            'id' => 'auth_setup_failure',
+            'label' => 'Auth/test setup failure',
+            'output' => '',
+            'policy_blocks' => true,
+            'row_inserted' => false,
+            'expect_exit' => 0,
+            'expect_kind' => 'policy_fallback',
+        ],
+        [
+            'id' => 'policy_json_quick_add',
+            'label' => 'JSON with quick-add in error — policy blocks correctly',
+            'output' => json_encode(
+                ['ok' => false, 'error' => 'This list cannot be updated from quick-add.'],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            ),
+            'policy_blocks' => true,
+            'row_inserted' => false,
+            'expect_exit' => 0,
+            'expect_kind' => 'api_policy_block',
+        ],
+        [
+            'id' => 'security_regression_row',
+            'label' => 'JSON ok:true + row in companies — real FAIL security regression',
+            'output' => json_encode(['ok' => true, 'id' => 42], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'policy_blocks' => false,
+            'row_inserted' => true,
+            'expect_exit' => 1,
+            'expect_kind' => 'security_regression',
+        ],
+    ];
+
+    echo 'Scenario matrix:' . $nl;
+    $failed = 0;
+
+    foreach ($cases as $case) {
+        $parsed = itm_repro_select_options_parse_api_output($case['output']);
+        $result = itm_repro_select_options_evaluate($parsed, (bool)$case['policy_blocks'], (bool)$case['row_inserted']);
+
+        $ok = ((int)$result['exit_code'] === (int)$case['expect_exit'])
+            && ((string)$result['kind'] === (string)$case['expect_kind']);
+
+        if ($ok) {
+            echo colorText('[PASS] scenario: ' . $case['label'], 'pass') . $nl;
+            continue;
+        }
+
+        $failed++;
+        echo colorText(
+            '[FAIL] scenario: ' . $case['label']
+            . ' (expected exit ' . (int)$case['expect_exit'] . ' / ' . $case['expect_kind']
+            . ', got ' . (int)$result['exit_code'] . ' / ' . $result['kind'] . ')',
+            'fail'
+        ) . $nl;
+    }
+
+    if ($failed === 0) {
+        echo colorText('[PASS] all scenario matrix cases.', 'pass') . $nl;
+    }
+
+    return $failed;
+}
+
+$scenarioFailures = itm_repro_select_options_run_scenario_tests();
+if ($scenarioFailures > 0) {
+    itm_script_output_end();
+    exit(1);
+}
+
+echo $nl . 'Live regression:' . $nl;
+
 $employee = itm_script_test_employee_create($conn, 1, [
     'role_id' => 2,
     'script_slug' => 'select-options-bypass',
@@ -142,7 +333,6 @@ itm_script_test_employee_register_teardown($conn, (int)$employee['id']);
 
 $csrfToken = itm_get_csrf_token();
 $newCompanyName = 'Unauthorized POC Company ' . bin2hex(random_bytes(4));
-$expectedPolicyError = 'This list cannot be updated from quick-add.';
 
 $modulePath = realpath(__DIR__ . '/../modules/select_options_api.php');
 if ($modulePath === false) {
@@ -180,52 +370,12 @@ if ($stmt) {
 }
 
 $policyBlocksCompanies = !itm_select_options_is_table_allowed('companies');
-$decoded = $parsed['decoded'];
-$blockedByPolicy = $parsed['usable']
-    && is_array($decoded)
-    && empty($decoded['ok'])
-    && stripos((string)($decoded['error'] ?? ''), 'quick-add') !== false;
+$result = itm_repro_select_options_evaluate($parsed, $policyBlocksCompanies, $row !== null);
 
 if ($row) {
-    echo colorText('[FAIL] companies quick-add still permitted (row inserted).', 'fail') . $nl;
-    echo 'API output: ' . trim((string)$output) . $nl;
     mysqli_query($conn, 'DELETE FROM companies WHERE id = ' . (int)$row['id']);
-    itm_script_output_end();
-    exit(1);
 }
 
-if ($blockedByPolicy) {
-    echo colorText('[PASS] companies quick-add blocked for regular users.', 'pass') . $nl;
-    echo 'API: ' . (string)($decoded['error'] ?? $expectedPolicyError) . $nl;
-    itm_script_output_end();
-    exit(0);
-}
-
-if ($policyBlocksCompanies && !$parsed['usable']) {
-    echo colorText('[PASS] companies quick-add blocked for regular users.', 'pass') . $nl;
-    echo 'Policy: companies is not on the select-options quick-add whitelist.' . $nl;
-    echo 'Note: API subprocess unavailable (' . $parsed['reason'] . '). No company row was inserted.' . $nl;
-    if (trim((string)$output) !== '') {
-        echo 'Subprocess output: ' . trim((string)$output) . $nl;
-    }
-    itm_script_output_end();
-    exit(0);
-}
-
-if (!$parsed['usable']) {
-    echo colorText('[FAIL] Harness: could not verify API response (' . $parsed['reason'] . ').', 'fail') . $nl;
-    if (trim((string)$output) !== '') {
-        echo 'API output: ' . trim((string)$output) . $nl;
-    }
-    echo 'CLI: php scripts/repro_select_options_unauthorized_v2.php' . $nl;
-    itm_script_output_end();
-    exit(1);
-}
-
-echo colorText('[FAIL] Unexpected API response (policy block not detected).', 'fail') . $nl;
-echo 'API output: ' . trim((string)$output) . $nl;
-if (is_array($decoded) && !empty($decoded['error'])) {
-    echo 'API error: ' . (string)$decoded['error'] . $nl;
-}
+itm_repro_select_options_emit_verdict($result, $output);
 itm_script_output_end();
-exit(1);
+exit((int)$result['exit_code']);
