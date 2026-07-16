@@ -2,69 +2,6 @@
 # Classifier: no $uiColumns + cr_manageable_columns pair in modules/{slug}/index.php.
 # One module slug per line. Lines starting with # and blank lines are ignored.
 
-read/if needed update AGENTS.md 
-Update modules/*/AGENT_NOTES.md
-
-I have added manualy to the database.sql:
-
- `active` 
-  `deleted_by` 
-  `deleted_at` 
-  `created_by` 
-  `created_at`
-  `updated_by` 
-  `updated_at`
-
-Now modules/*/* need to be udated! For now 
-
-skip modules: 
-equipment, tickets, employees and patches_updates.
-
-----------------------------------
-index.php List View 
-**Active field use badges for status (index.php/view.php).
-Booleans (List View): Use badges for status (must NOT contain emojis):
-<span class="badge badge-success">Active</span>
-<span class="badge badge-danger">Inactive</span>
-
-Hide fields:
-  `deleted_by` 
-  `deleted_at` 
-  `created_by` 
-  `created_at`
-  `updated_by` 
-  `updated_at`
--------------------------------------------------
-View 
-need to show 
-  `active` 
-**Active field use badges for status (index.php/view.php).
-Booleans (List View): Use badges for status (must NOT contain emojis):
-<span class="badge badge-success">Active</span>
-<span class="badge badge-danger">Inactive</span>
-  `created_by` 
-  `created_at`
-  `updated_by` 
-  `updated_at`
-------------------------------------------------------
-Edit/Create 
-active (Edit Mode): Use icons: 1 = ✅, 0 = ❌.
-
-values must be added as hidden <input type="hidden"> :
-  `created_by` 
-  `created_at`
-  `updated_by` 
-  `updated_at`
------------------------------------------------------------------
-delete.php
-values must be added as hidden <input type="hidden"> :
-  `deleted_by` 
-  `deleted_at` 
----------------------------------------------------------------------------------------------
-
-  - `created_by`, `updated_by`, `deleted_by`: Resolved to employee full names (`first_name` + ' ' + `last_name`) from the `employees` table.
-  - `created_at`, `updated_at`, `deleted_at`: Formatted using the exact layout `DD-MM-YYYY - HH:MM:SS` (using PHP `d-m-Y - H:i:s` syntax). If the raw value is NULL or empty, it is displayed as blank.
-
 audit_logs
 backup_tape_log
 birthdays
