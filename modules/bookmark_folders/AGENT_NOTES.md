@@ -12,7 +12,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 ## 4. Business Rules (Critical for Agents)
 - **Ownership/Sharing**: A folder is either owned by a specific `employee_id` or marked as `shared = 1`.
-- **Folder names:** unique per owner within the company — `UNIQUE (company_id, employee_id, name)` in `database.sql` (private folders do not collide across employees).
+- **Folder names:** duplicate names are allowed intentionally — identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Soft-deleted rows do not block recreating the same name. Tenant unique-key audit skips this table (`includes/database_sql_unique_audit.php`).
 - **Recursive Deletion**: Deleting a folder sets `parent_folder_id` of subfolders to NULL (via `ON DELETE SET NULL`) or requires manual cleanup.
 - **Tenant Isolation**: Strictly scoped by `company_id`.
 
@@ -36,7 +36,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 ## 10. Common Pitfalls
 
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
-- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+- Soft-deleted rows remain until purged; folder names may be reused immediately (no UNIQUE on `name`). [Cursor-Valid]
 - **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Cursor-Valid]
 - **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Cursor-Valid]
 
