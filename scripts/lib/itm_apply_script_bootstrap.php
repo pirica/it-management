@@ -5,7 +5,8 @@
  * Contract (SCRIPTS.md → apply* tools):
  * - Browser + CLI
  * - Default run is always dry-run (no writes)
- * - Writes only with CLI --apply or browser ?apply=1 (Admin session required in browser)
+ * - Writes only with CLI --apply or browser ?apply=1 (Admin session required in browser for apply)
+ * - Browser dry-run: any signed-in session (config.php login gate); apply still requires Admin
  * - Callers should list scanned / skipped / changed targets
  */
 
@@ -21,7 +22,7 @@ if (!function_exists('itm_apply_script_is_cli')) {
 
 if (!function_exists('itm_apply_script_bootstrap')) {
     /**
-     * Load config, enforce Admin in browser, start script output, resolve apply flag.
+     * Load config, enforce Admin in browser when apply=1, start script output, resolve apply flag.
      *
      * @param string $title
      * @param array $options Keys: skip_db_tests (bool, default true)
@@ -41,15 +42,7 @@ if (!function_exists('itm_apply_script_bootstrap')) {
             }
             require_once dirname(__DIR__) . '/../config/config.php';
         } else {
-            // Why: Browser must not use ITM_CLI_SCRIPT — require signed-in Admin for apply tools.
             require_once dirname(__DIR__) . '/../config/config.php';
-            $employeeId = (int)($_SESSION['employee_id'] ?? 0);
-            if (!function_exists('itm_is_admin') || !itm_is_admin($GLOBALS['conn'] ?? null, $employeeId)) {
-                http_response_code(403);
-                header('Content-Type: text/plain; charset=utf-8');
-                echo "Forbidden: administrator login required.\n";
-                exit(1);
-            }
         }
 
         require_once __DIR__ . '/script_cli_output.php';
@@ -67,6 +60,18 @@ if (!function_exists('itm_apply_script_bootstrap')) {
             $apply = isset($_GET['apply']) && (string)$_GET['apply'] === '1';
             if (isset($_GET['dry-run']) && (string)$_GET['dry-run'] === '1') {
                 $apply = false;
+            }
+        }
+
+        if (!$isCli && $apply) {
+            // Why: Browser file writes require Admin; dry-run preview is read-only for any signed-in user.
+            $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+            if (!function_exists('itm_is_admin') || !itm_is_admin($GLOBALS['conn'] ?? null, $employeeId)) {
+                http_response_code(403);
+                header('Content-Type: text/plain; charset=utf-8');
+                echo "Forbidden: administrator login required.\n";
+                itm_script_output_end();
+                exit(1);
             }
         }
 
