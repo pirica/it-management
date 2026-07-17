@@ -205,8 +205,10 @@ if ($isAdmin) {
                 </div>
                 <button type="submit">Enter System</button>
             </form>
+        <?php elseif ($companies === false): ?>
+            <p style="text-align: center; color: #999;">Unable to load companies. Check the database connection and try again.</p>
         <?php else: ?>
-            <p style="text-align: center; color: #999;">No companies available.</p>
+            <p style="text-align: center; color: #999;">No companies available for this account.</p>
         <?php endif; ?>
     </div>
 
