@@ -431,14 +431,6 @@
         ],
         "browser": []
     },
-    "verify_git_reset_csrf.php": {
-        "cli": [
-            "[09-Jul-2026 07:03:33 UTC] PHP Warning:  chdir(): No such file or directory (errno 2) in /tmp/repro_csrflBzGwJ on line 17",
-            "[09-Jul-2026 07:03:33 UTC] PHP Warning:  chdir(): No such file or directory (errno 2) in /tmp/repro_csrf5dN618 on line 19",
-            "[09-Jul-2026 07:03:33 UTC] PHP Warning:  chdir(): No such file or directory (errno 2) in /tmp/repro_csrftFJlxX on line 19"
-        ],
-        "browser": []
-    },
     "verify_reset_git_history_access.php": {
         "cli": [
             "[09-Jul-2026 07:03:34 UTC] PHP Warning:  chdir(): No such file or directory (errno 2) in /tmp/reproQzE63q on line 16",

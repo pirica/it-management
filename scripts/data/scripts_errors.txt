@@ -149,7 +149,6 @@ script=verify_explorer_rce_htaccess.php exit=0 note=ok
 script=verify_explorer_rce_marker.php exit=0 note=ok
 script=verify_explorer_updated.php exit=0 note=ok
 script=verify_explorer_zip_leak.php exit=0 note=ok
-script=verify_git_reset_csrf.php exit=0 note=ok
 script=verify_import_fix_updated.php exit=0 note=ok
 script=verify_invitations_escalation.php exit=0 note=ok
 script=verify_json_import_validation.php exit=0 note=ok

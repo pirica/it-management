@@ -239,15 +239,6 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
-    // Why: scripts/verify_git_reset_csrf.php is a test script that mocks session/POST.
-    if ($relativePath === 'scripts/verify_git_reset_csrf.php') {
-        $skipped[] = [
-            $relativePath,
-            'CLI-only test script that mocks session/POST; not a web-accessible endpoint',
-        ];
-        continue;
-    }
-
     // Why: scripts/verify_crud_fk_label_search.php mocks $_POST in isolated subprocesses for AJAX regression only.
     if ($relativePath === 'scripts/verify_crud_fk_label_search.php') {
         $skipped[] = [

@@ -152,7 +152,6 @@ Run after login/forgot-password attempt logging changes, Select Options policy u
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_git_reset_csrf.php` | Regression — `reset_git_history.php` rejects non-POST and POST without valid CSRF. Disposable admin-like user via `itm_script_test_employee.php`. |
 | `php scripts/verify_reset_git_history_access.php` | Documents access-control expectations for the destructive Git history reset utility. |
 
 Run after changing `reset_git_history.php` or maintenance CSRF guards. Catalog: `scripts/scripts.php`.

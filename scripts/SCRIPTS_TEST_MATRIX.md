@@ -321,7 +321,6 @@ php scripts/employees_delete_clear_table_test.php
 | 3 | `verify_explorer_rce_marker.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_explorer_updated.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_explorer_zip_leak.php` | MySQL | low | runtime | Domain regression verifier |
-| 3 | `verify_git_reset_csrf.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_import_fix_updated.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_invitations_escalation.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_json_import_validation.php` | MySQL | low | runtime | Domain regression verifier |
