@@ -17,6 +17,11 @@ if (defined('ITM_CONFIG_LOADED')) {
 }
 define('ITM_CONFIG_LOADED', true);
 
+// Why: CLI subprocess audits include module entry files that read $_SERVER['REQUEST_METHOD'].
+if (PHP_SAPI === 'cli' && !isset($_SERVER['REQUEST_METHOD'])) {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+}
+
 /**
  * Why: Local `.env` keeps API keys out of git while remaining optional for Laragon/dev installs.
  */

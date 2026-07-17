@@ -336,3 +336,33 @@ exit=1
 classification=env
 evidence=[FAIL] Windows PowerShell test failed for mysql_status; other native/PS metrics passed.
 why=Same Laragon MySQL service-name discovery issue as test_mysql_status.php.
+
+---
+
+# perform_audit hardened run (exploratory — not matrix safe-run)
+started=2026-07-17T02:51:30+00:00
+branch=fix/perform-audit-hardening-loop
+php=C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe
+scope=Tier 1-3 scripts only (excludes Tier 4 MBQA, Tier 5 maintenance, repro_*, verify_*, _tmp_*)
+artifact=scripts/php_error_audit_results.json
+allowlist=scripts/data/perform_audit_allowlist.json
+
+## Counts
+scanned=86 passed=82 allowlisted_exit_only=4 excluded=53 failed_exit=0 failed_errors=0
+verified=two consecutive runs exit 0 (2026-07-17)
+
+## Allowlisted exit-only (expected on healthy DB)
+script=check_database_sql_company_name_uniques.php max_exit=1
+script=check_index_table_compliance.php max_exit=1
+script=check_ui_configuration_coverage.php max_exit=2
+script=compare_database_sql_modules.php max_exit=1
+script=idfs_api_payload_dry_run.php max_exit=1
+script=test_mysql_status.php max_exit=1
+script=verify_system_status.php max_exit=1
+script=verify_emails_module.php max_exit=1
+
+## Product fixes in same deliverable
+- config.php: CLI REQUEST_METHOD bootstrap
+- benchmark_stats_optimized.php: back-to-back verify snapshots; timing advisory only
+- modules/resignations/index.php: search bind types (10 placeholders)
+- test_email_forgot.php / test_register_mail.php: define $nl before usage

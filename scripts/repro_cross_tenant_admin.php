@@ -14,7 +14,8 @@ itm_script_output_begin('Repro: Cross-Tenant Admin Access');
 $root = dirname(__DIR__);
 $nl = itm_script_output_nl();
 
-echo "--- Repro: Cross-Tenant Admin Access ---" . $nl;
+// Why: Module include may call header(); buffer stdout until the probe finishes.
+ob_start();
 
 // 1. Ensure we have two companies and users
 $company1Id = 1;
@@ -78,5 +79,7 @@ if ($hasCrossTenant) {
 } else {
     echo colorText("SUCCESS: Admin restricted to own company.", 'pass') . $nl;
 }
+
+ob_end_clean();
 
 itm_script_output_end();

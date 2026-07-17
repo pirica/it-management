@@ -21,6 +21,7 @@ if (PHP_SAPI !== 'cli') {
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin();
+$nl = itm_script_output_nl();
 
 require_once __DIR__ . '/lib/itm_email_script_helpers.php';
 
