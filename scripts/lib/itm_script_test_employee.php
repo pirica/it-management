@@ -140,6 +140,155 @@ if (!function_exists('itm_script_test_employee_create')) {
     }
 }
 
+if (!function_exists('itm_script_test_employee_resolve_role_id')) {
+    function itm_script_test_employee_resolve_role_id($conn, $companyId, $asAdmin)
+    {
+        if (!($conn instanceof mysqli)) {
+            return 0;
+        }
+
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $roleSql = $asAdmin
+            ? "SELECT id FROM employee_roles WHERE company_id = ? AND LOWER(name) = 'admin' LIMIT 1"
+            : "SELECT id FROM employee_roles WHERE company_id = ? AND LOWER(name) != 'admin' ORDER BY id ASC LIMIT 1";
+        $roleStmt = mysqli_prepare($conn, $roleSql);
+        if (!$roleStmt) {
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($roleStmt, 'i', $companyId);
+        mysqli_stmt_execute($roleStmt);
+        $roleRes = mysqli_stmt_get_result($roleStmt);
+        $roleRow = $roleRes ? mysqli_fetch_assoc($roleRes) : null;
+        mysqli_stmt_close($roleStmt);
+
+        return is_array($roleRow) ? (int)$roleRow['id'] : 0;
+    }
+}
+
+if (!function_exists('itm_script_test_employee_resolve_access_level_id')) {
+    function itm_script_test_employee_resolve_access_level_id($conn, $companyId)
+    {
+        if (!($conn instanceof mysqli)) {
+            return 0;
+        }
+
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $accessStmt = mysqli_prepare($conn, 'SELECT id FROM access_levels WHERE company_id = ? ORDER BY id ASC LIMIT 1');
+        if (!$accessStmt) {
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($accessStmt, 'i', $companyId);
+        mysqli_stmt_execute($accessStmt);
+        $accessRes = mysqli_stmt_get_result($accessStmt);
+        $accessRow = $accessRes ? mysqli_fetch_assoc($accessRes) : null;
+        mysqli_stmt_close($accessStmt);
+
+        return is_array($accessRow) ? (int)$accessRow['id'] : 0;
+    }
+}
+
+if (!function_exists('itm_script_test_employee_resolve_employment_status_id')) {
+    function itm_script_test_employee_resolve_employment_status_id($conn, $companyId)
+    {
+        if (!($conn instanceof mysqli)) {
+            return 0;
+        }
+
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM employee_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1"
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($stmt);
+            if (is_array($row) && (int)$row['id'] > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        $fallback = mysqli_prepare($conn, 'SELECT id FROM employee_statuses WHERE company_id = ? LIMIT 1');
+        if (!$fallback) {
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($fallback, 'i', $companyId);
+        mysqli_stmt_execute($fallback);
+        $res = mysqli_stmt_get_result($fallback);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($fallback);
+
+        return is_array($row) ? (int)$row['id'] : 0;
+    }
+}
+
+if (!function_exists('itm_script_test_employee_create_session_actor')) {
+    /**
+     * Disposable session actor for PHPUnit, browser script isolation, and subprocess harnesses.
+     *
+     * @return array|null Same keys as itm_script_test_employee_create()
+     */
+    function itm_script_test_employee_create_session_actor($conn, $companyId, array $options = [])
+    {
+        if (!($conn instanceof mysqli)) {
+            return null;
+        }
+
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return null;
+        }
+
+        $asAdmin = !empty($options['as_admin']);
+        $scriptSlug = isset($options['script_slug']) ? (string)$options['script_slug'] : 'script';
+
+        $roleId = itm_script_test_employee_resolve_role_id($conn, $companyId, $asAdmin);
+        $accessLevelId = itm_script_test_employee_resolve_access_level_id($conn, $companyId);
+        $employmentStatusId = itm_script_test_employee_resolve_employment_status_id($conn, $companyId);
+
+        $testUser = itm_script_test_employee_create($conn, $companyId, [
+            'script_slug' => $scriptSlug,
+            'role_id' => $roleId > 0 ? $roleId : 2,
+            'access_level_id' => $accessLevelId > 0 ? $accessLevelId : 2,
+            'employment_status_id' => $employmentStatusId > 0 ? $employmentStatusId : 1,
+            'last_name' => $asAdmin ? 'TestAdmin' : 'TestEmployee',
+        ]);
+        if (!is_array($testUser) || (int)($testUser['id'] ?? 0) <= 0) {
+            return null;
+        }
+
+        $testEmployeeId = (int)$testUser['id'];
+        $grantStmt = mysqli_prepare(
+            $conn,
+            'INSERT IGNORE INTO employee_companies (employee_id, company_id, active) VALUES (?, ?, 1)'
+        );
+        if ($grantStmt) {
+            mysqli_stmt_bind_param($grantStmt, 'ii', $testEmployeeId, $companyId);
+            mysqli_stmt_execute($grantStmt);
+            mysqli_stmt_close($grantStmt);
+        }
+
+        return $testUser;
+    }
+}
+
 if (!function_exists('itm_script_test_employee_snapshot')) {
     /**
      * @param array<int,string> $columns

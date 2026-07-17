@@ -6,8 +6,11 @@ use PHPUnit\Framework\TestCase;
 
 class EmployeesBespokeTest extends TestCase
 {
+    use ItmPhpunitTestSessionTrait;
+
     private $conn;
     private $companyId;
+    private $sessionActorId = 0;
 
     protected function setUp(): void
     {
@@ -21,14 +24,12 @@ class EmployeesBespokeTest extends TestCase
         require_once ROOT_PATH . 'modules/employees/delete_clear_table.php';
 
         // Why: Soft-delete stamps deleted_by from the session actor.
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
-        }
-        $_SESSION['employee_id'] = 1;
+        $actor = $this->itmPhpunitBeginTestSession($this->conn, 1, true, 'employees-bespoke');
+        $this->sessionActorId = (int)$actor['id'];
 
         // Create a temporary company (unique name — companies.company is UNIQUE)
-        mysqli_query($this->conn, "SET @app_company_id = 1;");
-        mysqli_query($this->conn, "SET @app_employee_id = 1;");
+        mysqli_query($this->conn, 'SET @app_company_id = 1;');
+        mysqli_query($this->conn, 'SET @app_employee_id = ' . $this->sessionActorId . ';');
         $companyName = 'Test Company Bespoke Employees ' . bin2hex(random_bytes(4));
         $companyNameEsc = mysqli_real_escape_string($this->conn, $companyName);
         $ins = mysqli_query($this->conn, "INSERT INTO companies (company, active) VALUES ('{$companyNameEsc}', 1)");
@@ -53,6 +54,8 @@ class EmployeesBespokeTest extends TestCase
             mysqli_query($this->conn, "DELETE FROM employee_statuses WHERE company_id = {$cid}");
             mysqli_query($this->conn, "DELETE FROM companies WHERE id = {$cid}");
         }
+
+        $this->itmPhpunitEndTestSession();
     }
 
     public function testClearTableTransactional()
@@ -79,7 +82,7 @@ class EmployeesBespokeTest extends TestCase
         $this->assertNotNull($row, 'Soft-deleted employee row must remain');
         $this->assertEquals(0, (int)$row['active']);
         $this->assertNotEmpty($row['deleted_at']);
-        $this->assertEquals(1, (int)$row['deleted_by']);
+        $this->assertEquals($this->sessionActorId, (int)$row['deleted_by']);
 
         $res = mysqli_query($this->conn, "SELECT COUNT(*) as count FROM employee_system_access WHERE company_id = {$this->companyId}");
         $this->assertEquals(0, (int)mysqli_fetch_assoc($res)['count']);

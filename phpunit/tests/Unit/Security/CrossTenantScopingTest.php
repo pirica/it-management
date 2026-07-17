@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 class CrossTenantScopingTest extends TestCase
 {
     use ItmModuleIsolatedTestTrait;
+    use ItmPhpunitTestSessionTrait;
 
     private $conn;
 
@@ -17,6 +18,11 @@ class CrossTenantScopingTest extends TestCase
         if (!$this->conn instanceof mysqli) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+    }
+
+    protected function tearDown(): void
+    {
+        $this->itmPhpunitEndTestSession();
     }
 
     public function testTodoUserListIsScoped()
@@ -34,7 +40,7 @@ class CrossTenantScopingTest extends TestCase
         $leakId = mysqli_insert_id($this->conn);
 
         // Access Todo as Company 1
-        $_SESSION['employee_id'] = 1;
+        $this->itmPhpunitBeginTestSession($this->conn, $company1Id, true, 'todo-cross-tenant');
         $_SESSION['company_id'] = $company1Id;
         global $company_id;
         $company_id = $company1Id;
