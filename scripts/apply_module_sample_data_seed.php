@@ -17,6 +17,25 @@
 declare(strict_types=1);
 
 /**
+ * Write error output in CLI (STDERR) or browser (<pre> from apply bootstrap).
+ */
+function itm_seed_fwrite_stderr(string $message): void
+{
+    if (defined('STDERR') && is_resource(STDERR)) {
+        itm_seed_fwrite_stderr($message);
+        return;
+    }
+
+    $line = rtrim($message, "\r\n");
+    if (function_exists('colorText') && function_exists('itm_script_output_nl')) {
+        echo colorText($line, 'fail') . itm_script_output_nl();
+        return;
+    }
+
+    echo $line . (PHP_SAPI === 'cli' ? PHP_EOL : "<br>\n");
+}
+
+/**
  * @return array{module:string,table:string,value_column:string,emoji_column:string,dry_run:bool,samples:array<int,array{value:string,emoji:string}>}
  */
 function itm_seed_parse_args(array $argv): array
@@ -58,7 +77,7 @@ function itm_seed_parse_args(array $argv): array
         if (strpos($arg, '--sample=') === 0) {
             $raw = trim(substr($arg, 9));
             if ($raw === '') {
-                fwrite(STDERR, "Empty --sample value is not allowed.\n");
+                itm_seed_fwrite_stderr("Empty --sample value is not allowed.\n");
                 exit(2);
             }
 
@@ -70,7 +89,7 @@ function itm_seed_parse_args(array $argv): array
                 $emoji = trim(substr($raw, $sepPos + 1));
             }
             if ($name === '') {
-                fwrite(STDERR, "Invalid --sample format. Use --sample=name or --sample=name:emoji\n");
+                itm_seed_fwrite_stderr("Invalid --sample format. Use --sample=name or --sample=name:emoji\n");
                 exit(2);
             }
 
@@ -78,8 +97,8 @@ function itm_seed_parse_args(array $argv): array
             continue;
         }
 
-        fwrite(STDERR, "Unknown option: {$arg}\n");
-        fwrite(STDERR, itm_seed_usage());
+        itm_seed_fwrite_stderr("Unknown option: {$arg}\n");
+        itm_seed_fwrite_stderr(itm_seed_usage());
         exit(2);
     }
 
@@ -354,7 +373,7 @@ function itm_seed_pick_value_column(array $tableColumns, string $preferred): str
                 return $column;
             }
         }
-        fwrite(STDERR, "Value column '{$preferred}' not found in target table.\n");
+        itm_seed_fwrite_stderr("Value column '{$preferred}' not found in target table.\n");
         exit(2);
     }
 
@@ -366,7 +385,7 @@ function itm_seed_pick_value_column(array $tableColumns, string $preferred): str
         }
     }
 
-    fwrite(STDERR, "Unable to auto-detect value column. Use --value-column=<column>.\n");
+    itm_seed_fwrite_stderr("Unable to auto-detect value column. Use --value-column=<column>.\n");
     exit(2);
 }
 
@@ -381,7 +400,7 @@ function itm_seed_pick_emoji_column(array $tableColumns, string $preferred): str
                 return $column;
             }
         }
-        fwrite(STDERR, "Emoji column '{$preferred}' not found in target table.\n");
+        itm_seed_fwrite_stderr("Emoji column '{$preferred}' not found in target table.\n");
         exit(2);
     }
 
@@ -434,8 +453,8 @@ function itm_seed_assert_supported_template_columns(string $table, array $templa
     }
 
     if ($unsupportedRequired !== []) {
-        fwrite(STDERR, "[ERROR] Unsupported required columns for table '{$table}': " . implode(', ', $unsupportedRequired) . "\n");
-        fwrite(STDERR, "This script only auto-populates lookup-safe columns. Add explicit mappings before seeding this table.\n");
+        itm_seed_fwrite_stderr("[ERROR] Unsupported required columns for table '{$table}': " . implode(', ', $unsupportedRequired) . "\n");
+        itm_seed_fwrite_stderr("This script only auto-populates lookup-safe columns. Add explicit mappings before seeding this table.\n");
         exit(2);
     }
 }
@@ -453,13 +472,13 @@ $args['dry_run'] = !$apply;
 $module = $args['module'];
 $table = $args['table'] !== '' ? $args['table'] : $module;
 if ($table === '') {
-    fwrite(STDERR, "Missing --module or --table.\n");
-    fwrite(STDERR, itm_seed_usage());
+    itm_seed_fwrite_stderr("Missing --module or --table.\n");
+    itm_seed_fwrite_stderr(itm_seed_usage());
     exit(2);
 }
 
 if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
-    fwrite(STDERR, "Unsafe table/module name '{$table}'. Use letters, numbers, underscore only.\n");
+    itm_seed_fwrite_stderr("Unsafe table/module name '{$table}'. Use letters, numbers, underscore only.\n");
     exit(2);
 }
 
@@ -477,7 +496,7 @@ if ($samples === [] && strcasecmp($module, 'idf_device_type') === 0) {
     ];
 }
 if ($samples === []) {
-    fwrite(STDERR, "No sample values supplied. Use --sample=<name> (repeatable).\n");
+    itm_seed_fwrite_stderr("No sample values supplied. Use --sample=<name> (repeatable).\n");
     exit(2);
 }
 
@@ -497,26 +516,26 @@ foreach ($samples as $sample) {
     $normalizedSamples[] = ['value' => $sampleValue, 'emoji' => $sampleEmoji];
 }
 if ($normalizedSamples === []) {
-    fwrite(STDERR, "No valid sample values after normalization.\n");
+    itm_seed_fwrite_stderr("No valid sample values after normalization.\n");
     exit(2);
 }
 
 $root = dirname(__DIR__);
 $schemaPath = $root . DIRECTORY_SEPARATOR . 'database.sql';
 if (!is_file($schemaPath)) {
-    fwrite(STDERR, "database.sql not found.\n");
+    itm_seed_fwrite_stderr("database.sql not found.\n");
     exit(2);
 }
 
 $sql = (string)file_get_contents($schemaPath);
 if ($sql === '') {
-    fwrite(STDERR, "database.sql is empty.\n");
+    itm_seed_fwrite_stderr("database.sql is empty.\n");
     exit(2);
 }
 
 $meta = itm_seed_find_table_metadata($sql, $table);
 if ($meta === null) {
-    fwrite(STDERR, "Table '{$table}' not found in database.sql CREATE TABLE blocks.\n");
+    itm_seed_fwrite_stderr("Table '{$table}' not found in database.sql CREATE TABLE blocks.\n");
     exit(2);
 }
 
@@ -528,7 +547,7 @@ foreach ($tableColumns as $column) {
 }
 
 if (!isset($columnMap['id']) || !isset($columnMap['company_id'])) {
-    fwrite(STDERR, "Table '{$table}' must include id and company_id columns.\n");
+    itm_seed_fwrite_stderr("Table '{$table}' must include id and company_id columns.\n");
     exit(2);
 }
 
@@ -537,14 +556,14 @@ $emojiColumn = itm_seed_pick_emoji_column($tableColumns, $args['emoji_column']);
 
 $companyIds = itm_seed_extract_company_ids($sql);
 if ($companyIds === []) {
-    fwrite(STDERR, "No company ids found in database.sql companies seed rows.\n");
+    itm_seed_fwrite_stderr("No company ids found in database.sql companies seed rows.\n");
     exit(2);
 }
 
 $insertData = itm_seed_collect_insert_rows($sql, $table);
 $insertRows = $insertData['rows'];
 if ($insertRows === []) {
-    fwrite(STDERR, "No existing single-row INSERT statements found for '{$table}'. This script expects lookup-style inserts.\n");
+    itm_seed_fwrite_stderr("No existing single-row INSERT statements found for '{$table}'. This script expects lookup-style inserts.\n");
     exit(2);
 }
 
@@ -673,7 +692,7 @@ $newSql = preg_replace(
 );
 
 if (!is_string($newSql) || $newSql === '') {
-    fwrite(STDERR, "Failed to rebuild SQL content.\n");
+    itm_seed_fwrite_stderr("Failed to rebuild SQL content.\n");
     exit(2);
 }
 
@@ -693,7 +712,7 @@ if (!$apply) {
 }
 
 if (file_put_contents($schemaPath, $newSql) === false) {
-    fwrite(STDERR, "Failed to write database.sql\n");
+    itm_seed_fwrite_stderr("Failed to write database.sql\n");
     exit(2);
 }
 
