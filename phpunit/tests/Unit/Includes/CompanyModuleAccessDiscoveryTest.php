@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Tests\Unit\Support\ItmPhpunitTestSessionTrait;
 
 /**
  * In-process sidebar discovery helpers for company module access.
