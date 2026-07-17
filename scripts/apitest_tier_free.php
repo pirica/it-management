@@ -25,33 +25,7 @@ $row = itm_apitest_seed_configuration($conn, $companyId, $employeeId, 'Free', [
 
 if ($row === null) {
     itm_apitest_output_line('[FAIL] Unable to seed disposable Free-tier configuration row.', 'fail');
-
-    // VERBOSE DEBUGGING INFORMATION ON FAILURE
-    itm_apitest_output_line('[DEBUG] Failure diagnostic checks:', 'warn');
-    if (!$conn || !($conn instanceof mysqli)) {
-        itm_apitest_output_line('  -> Connection is invalid or not connected.', 'fail');
-    } else {
-        itm_apitest_output_line('  -> Database connection is valid.', 'pass');
-        itm_apitest_output_line('  -> Recent MySQL Error: ' . mysqli_error($conn), 'fail');
-        itm_apitest_output_line('  -> Recent MySQL Error Code: ' . mysqli_errno($conn), 'fail');
-
-        // Double-check the Foreign Key reference
-        $checkEmp = mysqli_query($conn, "SELECT 1 FROM employees WHERE id = $employeeId LIMIT 1");
-        if ($checkEmp && mysqli_num_rows($checkEmp) > 0) {
-            itm_apitest_output_line('  -> Target employee ID ' . $employeeId . ' exists in employees table.', 'pass');
-        } else {
-            itm_apitest_output_line('  -> Target employee ID ' . $employeeId . ' DOES NOT exist in employees table. This triggers an FK violation on ui_configuration.employee_id constraint.', 'fail');
-        }
-
-        // Double-check target company existence
-        $checkComp = mysqli_query($conn, "SELECT 1 FROM companies WHERE id = $companyId LIMIT 1");
-        if ($checkComp && mysqli_num_rows($checkComp) > 0) {
-            itm_apitest_output_line('  -> Target company ID ' . $companyId . ' exists in companies table.', 'pass');
-        } else {
-            itm_apitest_output_line('  -> Target company ID ' . $companyId . ' DOES NOT exist in companies table. This triggers an FK violation on ui_configuration.company_id constraint.', 'fail');
-        }
-    }
-
+    itm_apitest_report_seed_failure($conn, $companyId, $employeeId);
     exit(1);
 }
 
