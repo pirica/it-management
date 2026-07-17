@@ -90,6 +90,7 @@ if (!function_exists('itm_perform_audit_static_exclusions')) {
             'fix_sql_departments.php',
             'force_delete_company.php',
             'generate_tests.php',
+            'health.php',
             'identify_modules.php',
             'normalize_database_sql_created_at.php',
             'repair_table_from_schema.php',
@@ -111,6 +112,7 @@ if (!function_exists('itm_perform_audit_static_exclusions')) {
             'module_browser_qa_runner.php',
             'module_clean_tests_qa_runner.php',
             'tickets_related_equipment_delete_test.php',
+            'test_ajax.php',
             'test_edit.php',
         ];
     }

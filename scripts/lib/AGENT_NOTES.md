@@ -28,6 +28,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_repro_floor_designer_rce.php` | Floor Designer `save_as_floor_plan` repro: sample PNG from `images/switch_port_icons/`, isolated **CLI** subprocess (`itm_repro_floor_designer_resolve_php_binary()` skips `php-cgi` on Laragon), JSON parse, gallery cleanup |
 | `itm_repro_idfs_bac.php` | IDFs `position_delete` BAC repro: seeds `idf_device_type` + `idf_positions` (required `device_type` FK), cross-tenant delete attempt, isolated CLI subprocess, JSON parse |
 | `itm_repro_vulnerabilities.php` | `repro_vulnerabilities.php` isolated CLI subprocess helpers (Laragon `php.exe`, session before `config.php`, CSRF mock) |
+| `itm_perform_audit.php` | `perform_audit.php` subprocess discovery/exclusions; skips `health.php` (shell bootstrap), session-mock harnesses (`test_ajax.php`, `test_edit.php`), Tier 4/5 maintenance, `repro_*`, `verify_*`, `_tmp_*` |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.

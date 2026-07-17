@@ -258,9 +258,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="health.php" target="_blank" rel="nofollow noreferrer">health.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Lightweight health check endpoint for monitoring.</td>
-                    <td>Open in browser or use with monitoring tools.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>Shell bootstrap that provisions a JSON health-check endpoint for monitoring (not a PHP entry script).</td>
+                    <td>Deployment host only. Excluded from <code>perform_audit.php</code>. See <code>scripts/SCRIPTS.md</code> → Browser scripts → <code>health.php</code>.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -405,15 +405,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td>test_ajax.php</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Test utility for AJAX endpoints.</td>
-                    <td>CLI: <code>php scripts/test_ajax.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>CLI harness that mocks session/POST for Notes <code>quick_add</code> AJAX.</td>
+                    <td>CLI: <code>php scripts/test_ajax.php &lt;PHPSESSID&gt; &lt;title&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
                 </tr>
                 <tr>
                     <td>test_edit.php</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Test utility for record editing logic.</td>
-                    <td>CLI: <code>php scripts/test_edit.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td>CLI harness that mocks session/POST for Notes edit.</td>
+                    <td>CLI: <code>php scripts/test_edit.php &lt;PHPSESSID&gt; &lt;title&gt; &lt;note_id&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
                 </tr>
                 <tr>
                     <td>test_session.php</td>
