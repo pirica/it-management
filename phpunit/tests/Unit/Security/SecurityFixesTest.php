@@ -1,5 +1,7 @@
 <?php
+
 use PHPUnit\Framework\TestCase;
+use Tests\Unit\Support\ItmPhpunitTestSessionTrait;
 
 /**
  * Functional security tests for identified vulnerabilities.

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Modules\Employees;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Unit\Support\ItmPhpunitTestSessionTrait;
 
 class EmployeesBespokeTest extends TestCase
 {

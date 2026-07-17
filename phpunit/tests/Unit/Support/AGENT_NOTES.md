@@ -18,7 +18,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 | `ItmScriptCliTestCase.php` | Base class for audit `check_*` unittest files |
 | `ItmExtractFunctionTestTrait.php` | `requireExtractedFunction()`, `itmExtractFunctionSource()` (brace-balanced) for Org Chart / Explorer tests |
 | `ItmModuleIsolatedTestTrait.php` | `runIsolatedModule()` — subprocess include for module entry files |
-| `ItmPhpunitTestSessionTrait.php` | Disposable PHPUnit `$_SESSION` actors (`itmPhpunitBeginTestSession`, `itmPhpunitEndTestSession`) |
+| `ItmPhpunitTestSessionTrait.php` | Namespace `Tests\Unit\Support` — disposable PHPUnit `$_SESSION` actors (`itmPhpunitBeginTestSession`, `itmPhpunitEndTestSession`) |
 
 ## 10. Common Pitfalls
 - Including audit scripts at file scope halts PHPUnit — subprocess only. [Cursor-Valid]

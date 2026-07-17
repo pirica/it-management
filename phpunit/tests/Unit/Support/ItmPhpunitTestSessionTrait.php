@@ -1,4 +1,7 @@
 <?php
+
+namespace Tests\Unit\Support;
+
 /**
  * Disposable test-user sessions for PHPUnit — never seed Admin employee id 1.
  *
@@ -10,7 +13,7 @@ trait ItmPhpunitTestSessionTrait
     /** @var array<string,mixed>|null */
     private $itmPhpunitTestSessionBackup = null;
 
-    /** @var mysqli|null */
+    /** @var \mysqli|null */
     private $itmPhpunitTestSessionConn = null;
 
     /** @var int[] */
@@ -19,7 +22,7 @@ trait ItmPhpunitTestSessionTrait
     /**
      * @return array<string,mixed>
      */
-    protected function itmPhpunitBeginTestSession(mysqli $conn, int $companyId = 1, bool $asAdmin = true, string $scriptSlug = 'phpunit'): array
+    protected function itmPhpunitBeginTestSession(\mysqli $conn, int $companyId = 1, bool $asAdmin = true, string $scriptSlug = 'phpunit'): array
     {
         $row = $this->itmPhpunitCreateDisposableSessionActor($conn, $companyId, $asAdmin, $scriptSlug);
         if ($this->itmPhpunitTestSessionBackup === null) {
@@ -44,7 +47,7 @@ trait ItmPhpunitTestSessionTrait
     /**
      * @return array<string,mixed>
      */
-    protected function itmPhpunitCreateDisposableSessionActor(mysqli $conn, int $companyId = 1, bool $asAdmin = true, string $scriptSlug = 'phpunit'): array
+    protected function itmPhpunitCreateDisposableSessionActor(\mysqli $conn, int $companyId = 1, bool $asAdmin = true, string $scriptSlug = 'phpunit'): array
     {
         require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
@@ -83,7 +86,7 @@ trait ItmPhpunitTestSessionTrait
 
     protected function itmPhpunitEndTestSession(): void
     {
-        if ($this->itmPhpunitTestSessionConn instanceof mysqli) {
+        if ($this->itmPhpunitTestSessionConn instanceof \mysqli) {
             require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
             foreach (array_unique($this->itmPhpunitDisposableEmployeeIds) as $employeeId) {
                 if ($employeeId > 0) {
@@ -96,7 +99,7 @@ trait ItmPhpunitTestSessionTrait
 
         if ($this->itmPhpunitTestSessionBackup !== null && session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION = $this->itmPhpunitTestSessionBackup;
-            if ($this->itmPhpunitTestSessionConn instanceof mysqli) {
+            if ($this->itmPhpunitTestSessionConn instanceof \mysqli) {
                 if (!function_exists('itm_script_sync_audit_session_from_php_session')) {
                     require_once ROOT_PATH . 'scripts/lib/itm_script_bootstrap.php';
                 }
