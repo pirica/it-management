@@ -241,7 +241,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/repro_bug.php` | Bug reproduction and verification script for Todo module visibility and security. |
 | `php scripts/repro_rce.php` | PoC for RCE in Floor Designer via `save_as_floor_plan` (subprocess + `images/switch_port_icons/*.png` sample; `[PASS]` when ext=php is coerced to png). |
 | `php scripts/repro_sqli.php` | PoC for SQL Injection in Floor Designer via 'dir' parameter. |
-| `php scripts/repro_bac.php` | PoC for Broken Access Control in IDFs API. |
+| `php scripts/repro_bac.php` | PoC for cross-tenant BAC in IDFs API `position_delete` (company 1 user vs company 2 position). |
 | `php scripts/repro_birthdays_resignations_rbac.php` | PoC & verification — unprivileged users cannot bypass Birthdays and Resignations view controls. Executable in both Browser and CLI environments (redirects to `dashboard.php` if accessed directly in the browser, or checks redirect status gracefully using isolated subprocesses). |
 
 Repro and verify runners that spawn temporary PHP subprocesses use `escapeshellarg()` on the PHP binary and temp file path. Stderr discard uses `itm_script_shell_stderr_discard()` from `scripts/lib/script_cli_output.php` (`2>/dev/null` on Unix, `2>NUL` on Windows). Catalog: `scripts/scripts.php`. PHPUnit mirror: `VulnerabilityVerificationTest.php`.
