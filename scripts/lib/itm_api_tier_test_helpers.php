@@ -74,6 +74,27 @@ function itm_apitest_disposable_username($employeeId) {
     return 'apitest-user-' . (int)$employeeId;
 }
 
+function itm_apitest_is_disposable_slot_employee_id($employeeId) {
+    $employeeId = (int)$employeeId;
+    return $employeeId >= 999901 && $employeeId <= 999999;
+}
+
+/**
+ * Run a callback with temporary disposable test-user session context; restores prior $_SESSION after.
+ */
+function itm_apitest_run_with_session_context($companyId, $employeeId, callable $callback) {
+    if (!function_exists('itm_script_with_test_session_context')) {
+        require_once __DIR__ . '/itm_script_bootstrap.php';
+    }
+
+    return itm_script_with_test_session_context(
+        $companyId,
+        $employeeId,
+        itm_apitest_disposable_username($employeeId),
+        $callback
+    );
+}
+
 function itm_apitest_resolve_employment_status_id($conn, $companyId) {
     if (!($conn instanceof mysqli)) {
         return 0;
@@ -501,42 +522,14 @@ function itm_apitest_probe_rate_limit_http($apiKey, $baseUrl = '', $phpSessionId
     return $decoded;
 }
 
-/**
- * Persists the active CLI session so Apache can read it for keyless Free-tier HTTP probes.
- */
 function itm_apitest_publish_http_session($companyId, $employeeId) {
-    $companyId = (int)$companyId;
-    $employeeId = (int)$employeeId;
-    if ($companyId <= 0 || $employeeId <= 0) {
-        return '';
+    if (!function_exists('itm_script_publish_isolated_http_session')) {
+        require_once __DIR__ . '/itm_script_bootstrap.php';
     }
 
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        return '';
-    }
-
-    $_SESSION['company_id'] = $companyId;
-    $_SESSION['employee_id'] = $employeeId;
-    if (!isset($_SESSION['username']) || trim((string)$_SESSION['username']) === '') {
-        $_SESSION['username'] = 'apitest-user';
-    }
-
-    session_write_close();
-
-    $sessionId = session_id();
-    if ($sessionId === '') {
-        return '';
-    }
-
-    $savePath = (string)ini_get('session.save_path');
-    if ($savePath === '') {
-        return $sessionId;
-    }
-
-    $sessionFile = rtrim($savePath, '/\\') . '/sess_' . $sessionId;
-    if (is_file($sessionFile)) {
-        @chmod($sessionFile, 0644);
-    }
-
-    return $sessionId;
+    return itm_script_publish_isolated_http_session(
+        $companyId,
+        $employeeId,
+        itm_apitest_disposable_username($employeeId)
+    );
 }

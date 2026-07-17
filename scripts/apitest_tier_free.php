@@ -3,18 +3,13 @@
  * Regression: Free tier API keys remain unlimited even with high counters.
  */
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/itm_script_cli_entry.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_api_tier_test_helpers.php';
-
-itm_script_output_begin('API Tier Free Test (Diagnostics)');
 
 $companyId = ITM_APITEST_COMPANY_ID;
 $employeeId = itm_apitest_disposable_user_id(1);
 $allPassed = true;
-
-itm_apitest_output_line('[INFO] Seeding disposable Free-tier ui_configuration row…', 'info');
 
 $row = itm_apitest_seed_configuration($conn, $companyId, $employeeId, 'Free', [
     'api_key' => '',
@@ -22,6 +17,13 @@ $row = itm_apitest_seed_configuration($conn, $companyId, $employeeId, 'Free', [
     'rate_limit_window_start' => time(),
     'rate_limit_request_count' => 50000,
 ]);
+
+// Why: Isolated probe session must be written before script_cli_output sends headers.
+$httpSessionId = $row !== null ? itm_apitest_publish_http_session($companyId, $employeeId) : '';
+
+itm_script_output_begin('API Tier Free Test (Diagnostics)');
+
+itm_apitest_output_line('[INFO] Seeding disposable Free-tier ui_configuration row…', 'info');
 
 if ($row === null) {
     itm_apitest_output_line('[FAIL] Unable to seed disposable Free-tier configuration row.', 'fail');
@@ -31,9 +33,9 @@ if ($row === null) {
 
 itm_apitest_print_probe_links('', 'Free-tier', true);
 
-$_SESSION['company_id'] = $companyId;
-$_SESSION['employee_id'] = $employeeId;
-$resolvedWithoutKey = itm_api_resolve_rate_limit_row($conn);
+$resolvedWithoutKey = itm_apitest_run_with_session_context($companyId, $employeeId, function () use ($conn) {
+    return itm_api_resolve_rate_limit_row($conn);
+});
 $allPassed = itm_apitest_assert(
     'Free resolve without API key via session',
     is_array($resolvedWithoutKey) && (string)($resolvedWithoutKey['tier'] ?? '') === 'Free'
@@ -88,7 +90,6 @@ $allPassed = itm_apitest_assert(
     is_array($probePayload) && !array_key_exists('user_id', $probePayload)
 ) && $allPassed;
 
-$httpSessionId = itm_apitest_publish_http_session($companyId, $employeeId);
 $probe = itm_apitest_probe_rate_limit_http('', '', $httpSessionId);
 if (is_array($probe)) {
     if (!empty($probe['ok'])) {
