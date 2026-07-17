@@ -162,6 +162,11 @@ Defaults:
   For --module=idf_device_type with no --sample options, the script applies:
     other:📦, server:🖥️, ups:🔋, patch_panel:➿, switch:🔀, firewall:🛡️, router:📡, pdu:🔌
 
+Mirror INSERT … SELECT (e.g. knowledge_base):
+  When database.sql copies tenant rows via SELECT N, cols FROM table WHERE company_id = 1,
+  new samples are added only to the source company VALUES block; other tenants replicate on import.
+  Use --sample=title or --sample=title:content for tables with a title/content pair.
+
 TXT;
 }
 
@@ -551,6 +556,102 @@ function itm_seed_collect_insert_rows(string $sql, string $table): array
 }
 
 /**
+ * Detect knowledge_base-style mirror blocks:
+ * INSERT INTO `t` (cols) SELECT {target_id}, col2, ... FROM `t` WHERE company_id = {source_id};
+ *
+ * @return array{source_company_id:int,target_company_ids:array<int,int>,insert_columns:array<int,string>}|null
+ */
+function itm_seed_detect_mirror_selects(string $sql, string $table): ?array
+{
+    $escaped = preg_quote($table, '/');
+    $pattern = '/INSERT\s+INTO\s+`' . $escaped . '`\s*\(([^)]+)\)\s*SELECT\s+(\d+)\s*,\s*([^;]+?)\s+FROM\s+`?' . $escaped . '`?\s+WHERE\s+company_id\s*=\s*(\d+)\s*;/is';
+
+    if (!preg_match_all($pattern, $sql, $matches, PREG_SET_ORDER)) {
+        return null;
+    }
+
+    $sourceCompanyId = null;
+    $targetCompanyIds = [];
+    $insertColumns = null;
+
+    foreach ($matches as $match) {
+        $columns = array_map(static function ($column): string {
+            return trim(str_replace('`', '', $column));
+        }, explode(',', (string)$match[1]));
+
+        $targetId = (int)$match[2];
+        $selectTail = trim((string)$match[3]);
+        $sourceId = (int)$match[4];
+
+        if ($columns === [] || strcasecmp($columns[0], 'company_id') !== 0) {
+            return null;
+        }
+
+        $expectedSelectCols = array_slice($columns, 1);
+        $actualSelectCols = array_map('trim', explode(',', $selectTail));
+        if ($actualSelectCols !== $expectedSelectCols) {
+            return null;
+        }
+
+        if ($insertColumns === null) {
+            $insertColumns = $columns;
+        } elseif ($insertColumns !== $columns) {
+            return null;
+        }
+
+        if ($sourceCompanyId === null) {
+            $sourceCompanyId = $sourceId;
+        } elseif ($sourceCompanyId !== $sourceId) {
+            return null;
+        }
+
+        $targetCompanyIds[$targetId] = $targetId;
+    }
+
+    if ($sourceCompanyId === null || $insertColumns === null || $targetCompanyIds === []) {
+        return null;
+    }
+
+    ksort($targetCompanyIds);
+
+    return [
+        'source_company_id' => $sourceCompanyId,
+        'target_company_ids' => array_values($targetCompanyIds),
+        'insert_columns' => $insertColumns,
+    ];
+}
+
+/**
+ * @param array<int, array{columns:array<int,string>,values:array<int,string>}> $insertRows
+ * @return array<string, string>|null
+ */
+function itm_seed_first_source_row_token_map(array $insertRows, int $sourceCompanyId): ?array
+{
+    foreach ($insertRows as $insertRow) {
+        if (count($insertRow['columns']) !== count($insertRow['values'])) {
+            continue;
+        }
+        $rowAssoc = array_combine($insertRow['columns'], $insertRow['values']);
+        if (!is_array($rowAssoc) || !isset($rowAssoc['company_id'])) {
+            continue;
+        }
+        $companyId = (int)itm_seed_sql_unquote((string)$rowAssoc['company_id']);
+        if ($companyId !== $sourceCompanyId) {
+            continue;
+        }
+
+        $tokenMap = [];
+        foreach ($insertRow['columns'] as $index => $columnName) {
+            $tokenMap[$columnName] = $insertRow['values'][$index];
+        }
+
+        return $tokenMap;
+    }
+
+    return null;
+}
+
+/**
  * @param array<int,string> $templateColumns
  * @param array<string,bool> $unquotedNumericColumns
  * @param array<string,bool> $nullTokenColumns
@@ -562,6 +663,7 @@ function itm_seed_build_row_tokens(
     string $value,
     string $emojiColumn,
     string $emoji,
+    string $contentColumn,
     string $activeColumn,
     string $createdAtColumn,
     string $updatedAtColumn,
@@ -569,7 +671,8 @@ function itm_seed_build_row_tokens(
     bool $idUsesNull,
     int &$nextId,
     array $unquotedNumericColumns,
-    array $nullTokenColumns
+    array $nullTokenColumns,
+    array $templateDefaults = []
 ): array {
     $rowTokens = [];
     foreach ($templateColumns as $columnName) {
@@ -596,6 +699,10 @@ function itm_seed_build_row_tokens(
                 : 'NULL';
             continue;
         }
+        if ($contentColumn !== '' && $columnName === $contentColumn && $emoji !== '') {
+            $rowTokens[] = itm_seed_format_sql_token($emoji, false);
+            continue;
+        }
         if ($activeColumn !== '' && $columnName === $activeColumn) {
             $rowTokens[] = itm_seed_format_sql_token('1', $unquotedNumericColumns[$activeColumn] ?? false);
             continue;
@@ -611,6 +718,11 @@ function itm_seed_build_row_tokens(
 
         if ($nullTokenColumns[$columnName] ?? false) {
             $rowTokens[] = 'NULL';
+            continue;
+        }
+
+        if (isset($templateDefaults[$columnName])) {
+            $rowTokens[] = $templateDefaults[$columnName];
             continue;
         }
 
@@ -635,7 +747,7 @@ function itm_seed_pick_value_column(array $tableColumns, string $preferred): str
         exit(2);
     }
 
-    foreach (['idfdevicetype_name', 'name'] as $candidate) {
+    foreach (['idfdevicetype_name', 'name', 'title'] as $candidate) {
         foreach ($tableColumns as $column) {
             if (strcasecmp($column, $candidate) === 0) {
                 return $column;
@@ -825,11 +937,15 @@ if ($insertRows === []) {
     exit(2);
 }
 
+$mirrorConfig = itm_seed_detect_mirror_selects($sql, $table);
+$mirrorMode = $mirrorConfig !== null;
+
 $maxId = 0;
 $existingByCompanyAndValue = [];
-$templateColumns = $insertRows[0]['columns'];
+$templateColumns = $mirrorMode ? $mirrorConfig['insert_columns'] : $insertRows[0]['columns'];
 $hasIdColumn = in_array('id', $templateColumns, true);
 $idUsesNull = $hasIdColumn && itm_seed_column_uses_null_tokens($insertRows, 'id');
+$sourceCompanyId = $mirrorMode ? (int)$mirrorConfig['source_company_id'] : 0;
 
 foreach ($insertRows as $insertRow) {
     $columns = $insertRow['columns'];
@@ -842,6 +958,11 @@ foreach ($insertRows as $insertRow) {
         continue;
     }
 
+    $companyId = isset($rowAssoc['company_id']) ? (int)itm_seed_sql_unquote((string)$rowAssoc['company_id']) : 0;
+    if ($mirrorMode && $companyId !== $sourceCompanyId) {
+        continue;
+    }
+
     if ($hasIdColumn && !$idUsesNull && isset($rowAssoc['id'])) {
         $id = (int)itm_seed_sql_unquote((string)$rowAssoc['id']);
         if ($id > $maxId) {
@@ -849,7 +970,6 @@ foreach ($insertRows as $insertRow) {
         }
     }
 
-    $companyId = isset($rowAssoc['company_id']) ? (int)itm_seed_sql_unquote((string)$rowAssoc['company_id']) : 0;
     $value = isset($rowAssoc[$valueColumn]) ? trim(itm_seed_sql_unquote((string)$rowAssoc[$valueColumn])) : '';
     if ($companyId > 0 && $value !== '') {
         $existingByCompanyAndValue[$companyId . '|' . strtolower($value)] = true;
@@ -858,6 +978,26 @@ foreach ($insertRows as $insertRow) {
 
 if ($emojiColumn === '' && isset($columnMap['color']) && in_array($columnMap['color'], $templateColumns, true)) {
     $emojiColumn = $columnMap['color'];
+}
+
+$contentColumn = '';
+if ($mirrorMode && isset($columnMap['content']) && in_array($columnMap['content'], $templateColumns, true)) {
+    $contentColumn = $columnMap['content'];
+}
+
+$templateDefaults = [];
+if ($mirrorMode) {
+    $sourceTokenMap = itm_seed_first_source_row_token_map($insertRows, $sourceCompanyId);
+    if ($sourceTokenMap === null) {
+        itm_seed_fwrite_stderr("Mirror SELECT mode requires at least one VALUES row for source company_id {$sourceCompanyId}.\n");
+        exit(2);
+    }
+    foreach ($sourceTokenMap as $columnName => $token) {
+        if ($columnName === 'company_id' || $columnName === $valueColumn) {
+            continue;
+        }
+        $templateDefaults[$columnName] = $token;
+    }
 }
 
 $unquotedNumericColumns = [];
@@ -882,6 +1022,12 @@ if ($hasIdColumn) {
 if ($emojiColumn !== '') {
     $handledColumns[] = $emojiColumn;
 }
+if ($contentColumn !== '') {
+    $handledColumns[] = $contentColumn;
+}
+foreach (array_keys($templateDefaults) as $defaultColumn) {
+    $handledColumns[] = $defaultColumn;
+}
 if ($activeColumn !== '') {
     $handledColumns[] = $activeColumn;
 }
@@ -895,8 +1041,9 @@ if ($updatedAtColumn !== '') {
 itm_seed_assert_supported_template_columns($table, $templateColumns, $tableColumnSpecs, $handledColumns);
 
 $appendToMultiBlock = is_array($insertData['last_block']) && ($insertData['last_block']['multi'] ?? false);
+$insertCompanyIds = $mirrorMode ? [$sourceCompanyId] : $companyIds;
 
-foreach ($companyIds as $companyId) {
+foreach ($insertCompanyIds as $companyId) {
     foreach ($normalizedSamples as $sample) {
         $value = $sample['value'];
         $emoji = $sample['emoji'];
@@ -912,6 +1059,7 @@ foreach ($companyIds as $companyId) {
             $value,
             $emojiColumn,
             $emoji,
+            $contentColumn,
             $activeColumn,
             $createdAtColumn,
             $updatedAtColumn,
@@ -919,7 +1067,8 @@ foreach ($companyIds as $companyId) {
             $idUsesNull,
             $nextId,
             $unquotedNumericColumns,
-            $nullTokenColumns
+            $nullTokenColumns,
+            $templateDefaults
         );
 
         if ($appendToMultiBlock) {
@@ -936,7 +1085,11 @@ foreach ($companyIds as $companyId) {
 
 if ($addedCount === 0) {
     echo colorText("[OK] No missing sample rows for table '{$table}'. Nothing to update.", 'pass') . itm_script_output_nl();
-    echo 'Companies checked: ' . count($companyIds) . itm_script_output_nl();
+    if ($mirrorMode) {
+        echo 'Source company: ' . $sourceCompanyId . '; mirrored to: ' . implode(', ', $mirrorConfig['target_company_ids']) . itm_script_output_nl();
+    } else {
+        echo 'Companies checked: ' . count($companyIds) . itm_script_output_nl();
+    }
     exit(0);
 }
 
@@ -975,7 +1128,11 @@ if (!is_string($newSql) || $newSql === '') {
 echo "Table: {$table}" . itm_script_output_nl();
 echo "Value column: {$valueColumn}" . itm_script_output_nl();
 echo "Emoji column: " . ($emojiColumn !== '' ? $emojiColumn : '(none)') . itm_script_output_nl();
-echo 'Companies: ' . implode(', ', $companyIds) . itm_script_output_nl();
+if ($mirrorMode) {
+    echo 'Replication: mirror INSERT … SELECT from company ' . $sourceCompanyId . ' to ' . implode(', ', $mirrorConfig['target_company_ids']) . itm_script_output_nl();
+} else {
+    echo 'Companies: ' . implode(', ', $companyIds) . itm_script_output_nl();
+}
 echo 'New rows to add: ' . $addedCount . $nl;
 if ($nextAutoIncrement > 0) {
     echo 'AUTO_INCREMENT target: ' . $nextAutoIncrement . $nl;
