@@ -558,7 +558,7 @@ Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_cover
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
-Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes). Browser: `?module=idf_device_type`. Lists new INSERT statements before apply.
+Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes). Parses single-row and multi-row `INSERT … VALUES` blocks; adds one row per seeded `company_id` when a sample value is missing for that tenant. Browser dry-run: `scripts/apply_module_sample_data_seed.php?module=idf_device_type`; apply (Admin): `...?module=idf_device_type&apply=1`. Error paths use `itm_seed_fwrite_stderr()` (not raw `fwrite(STDERR)` — undefined in browser SAPI).
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 

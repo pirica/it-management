@@ -22,7 +22,7 @@ declare(strict_types=1);
 function itm_seed_fwrite_stderr(string $message): void
 {
     if (defined('STDERR') && is_resource(STDERR)) {
-        itm_seed_fwrite_stderr($message);
+        fwrite(STDERR, $message);
         return;
     }
 
@@ -147,8 +147,16 @@ Options:
   --emoji-column=<name>   Optional column for emoji/value metadata (default: field_edit_emoji when present).
   --sample=<name>         Sample value to add for every company (repeatable).
   --sample=<name:emoji>   Sample value plus emoji in one option (repeatable).
-  --dry-run               Preview changes; do not write database.sql.
+  --dry-run               Preview changes; do not write database.sql (default).
+  --apply                 Write database.sql (CLI only; browser uses ?apply=1, Admin required).
   --help                  Show this help.
+
+How to use it in the browser:
+  Dry-run (preview):
+    http://localhost/it-management/scripts/apply_module_sample_data_seed.php?module=idf_device_type
+
+  Apply (Admin, writes database.sql):
+    http://localhost/it-management/scripts/apply_module_sample_data_seed.php?module=idf_device_type&apply=1
 
 Defaults:
   For --module=idf_device_type with no --sample options, the script applies:
@@ -327,39 +335,289 @@ function itm_seed_find_table_metadata(string $sql, string $table): ?array
 }
 
 /**
- * @return array{rows:array<int,array{columns:array<int,string>,values:array<int,string>,offset:int,length:int}>,last_insert_end:int}
+ * Find the terminating semicolon for an INSERT … VALUES block (not inside a string).
+ */
+function itm_seed_find_values_statement_end(string $sql, int $valuesStart): ?int
+{
+    $len = strlen($sql);
+    $inString = false;
+
+    for ($i = $valuesStart; $i < $len; $i++) {
+        $ch = $sql[$i];
+        if ($inString) {
+            if ($ch === "'") {
+                if ($i + 1 < $len && $sql[$i + 1] === "'") {
+                    $i++;
+                    continue;
+                }
+                $inString = false;
+            }
+            continue;
+        }
+
+        if ($ch === "'") {
+            $inString = true;
+            continue;
+        }
+
+        if ($ch === ';') {
+            return $i;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @return array<int, string>
+ */
+function itm_seed_split_value_tuples(string $valuesPart): array
+{
+    $valuesPart = trim($valuesPart);
+    if ($valuesPart === '') {
+        return [];
+    }
+
+    $tuples = [];
+    $current = '';
+    $depth = 0;
+    $inString = false;
+    $len = strlen($valuesPart);
+
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $valuesPart[$i];
+
+        if ($inString) {
+            $current .= $ch;
+            if ($ch === "'") {
+                if ($i + 1 < $len && $valuesPart[$i + 1] === "'") {
+                    $current .= $valuesPart[++$i];
+                    continue;
+                }
+                $inString = false;
+            }
+            continue;
+        }
+
+        if ($ch === "'") {
+            $inString = true;
+            $current .= $ch;
+            continue;
+        }
+
+        if ($ch === '(') {
+            $depth++;
+            $current .= $ch;
+            continue;
+        }
+
+        if ($ch === ')') {
+            $depth--;
+            $current .= $ch;
+            if ($depth === 0) {
+                $trimmed = trim($current);
+                if ($trimmed !== '' && $trimmed[0] === '(' && substr($trimmed, -1) === ')') {
+                    $tuples[] = substr($trimmed, 1, -1);
+                }
+                $current = '';
+            }
+            continue;
+        }
+
+        if ($depth > 0) {
+            $current .= $ch;
+        }
+    }
+
+    return $tuples;
+}
+
+/**
+ * @param array<int, array{columns:array<int,string>,values:array<int,string>}> $insertRows
+ */
+function itm_seed_column_uses_unquoted_numeric_tokens(array $insertRows, string $columnName): bool
+{
+    foreach ($insertRows as $insertRow) {
+        $columnIndex = array_search($columnName, $insertRow['columns'], true);
+        if ($columnIndex === false) {
+            continue;
+        }
+        $token = trim((string)$insertRow['values'][$columnIndex]);
+        if ($token === '' || strcasecmp($token, 'NULL') === 0) {
+            continue;
+        }
+        if ($token[0] !== "'" && $token[0] !== '`') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param array<int, array{columns:array<int,string>,values:array<int,string>}> $insertRows
+ */
+function itm_seed_column_uses_null_tokens(array $insertRows, string $columnName): bool
+{
+    foreach ($insertRows as $insertRow) {
+        $columnIndex = array_search($columnName, $insertRow['columns'], true);
+        if ($columnIndex === false) {
+            continue;
+        }
+        if (strcasecmp(trim((string)$insertRow['values'][$columnIndex]), 'NULL') === 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function itm_seed_format_sql_token($value, bool $unquotedNumeric): string
+{
+    if ($value === null) {
+        return 'NULL';
+    }
+    $stringValue = (string)$value;
+    if ($stringValue === '') {
+        return 'NULL';
+    }
+    if ($unquotedNumeric && is_numeric($stringValue)) {
+        return (string)(int)$stringValue;
+    }
+
+    return itm_seed_sql_quote($stringValue);
+}
+
+/**
+ * @return array{
+ *   rows:array<int,array{columns:array<int,string>,values:array<int,string>}>,
+ *   last_insert_end:int,
+ *   last_block:array{columns:array<int,string>,values_end:int,multi:bool}|null
+ * }
  */
 function itm_seed_collect_insert_rows(string $sql, string $table): array
 {
     $rows = [];
     $lastInsertEnd = -1;
-    $pattern = '/^INSERT INTO `' . preg_quote($table, '/') . '` \(([^)]+)\) VALUES \((.+)\);\s*$/m';
+    $lastBlock = null;
+    $pattern = '/INSERT INTO `' . preg_quote($table, '/') . '` \(([^)]+)\) VALUES\s*/i';
+    $offset = 0;
 
-    if (!preg_match_all($pattern, $sql, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
-        return ['rows' => [], 'last_insert_end' => -1];
-    }
-
-    foreach ($matches as $match) {
-        $fullText = (string)$match[0][0];
-        $fullOffset = (int)$match[0][1];
+    while (preg_match($pattern, $sql, $match, PREG_OFFSET_CAPTURE, $offset)) {
+        $blockStart = (int)$match[0][1];
         $columnsRaw = (string)$match[1][0];
-        $valuesRaw = (string)$match[2][0];
+        $valuesStart = $blockStart + strlen((string)$match[0][0]);
+        $statementEnd = itm_seed_find_values_statement_end($sql, $valuesStart);
+        if ($statementEnd === null) {
+            break;
+        }
 
         $columns = array_map(static function ($column): string {
             return trim(str_replace('`', '', $column));
         }, explode(',', $columnsRaw));
-        $values = itm_seed_split_csv_values($valuesRaw);
 
-        $rows[] = [
+        $valuesPart = substr($sql, $valuesStart, $statementEnd - $valuesStart);
+        $tuples = itm_seed_split_value_tuples((string)$valuesPart);
+        if ($tuples === []) {
+            $offset = $statementEnd + 1;
+            continue;
+        }
+
+        foreach ($tuples as $tuple) {
+            $values = itm_seed_split_csv_values($tuple);
+            if (count($columns) !== count($values)) {
+                continue;
+            }
+            $rows[] = [
+                'columns' => $columns,
+                'values' => $values,
+            ];
+        }
+
+        $lastInsertEnd = $statementEnd + 1;
+        $lastBlock = [
             'columns' => $columns,
-            'values' => $values,
-            'offset' => $fullOffset,
-            'length' => strlen($fullText),
+            'values_end' => $statementEnd,
+            'multi' => count($tuples) > 1 || strpos((string)$valuesPart, "\n") !== false,
         ];
-        $lastInsertEnd = $fullOffset + strlen($fullText);
+        $offset = $statementEnd + 1;
     }
 
-    return ['rows' => $rows, 'last_insert_end' => $lastInsertEnd];
+    return [
+        'rows' => $rows,
+        'last_insert_end' => $lastInsertEnd,
+        'last_block' => $lastBlock,
+    ];
+}
+
+/**
+ * @param array<int,string> $templateColumns
+ * @param array<string,bool> $unquotedNumericColumns
+ * @param array<string,bool> $nullTokenColumns
+ */
+function itm_seed_build_row_tokens(
+    array $templateColumns,
+    int $companyId,
+    string $valueColumn,
+    string $value,
+    string $emojiColumn,
+    string $emoji,
+    string $activeColumn,
+    string $createdAtColumn,
+    string $updatedAtColumn,
+    string $createdAtDefault,
+    bool $idUsesNull,
+    int &$nextId,
+    array $unquotedNumericColumns,
+    array $nullTokenColumns
+): array {
+    $rowTokens = [];
+    foreach ($templateColumns as $columnName) {
+        if ($columnName === 'id') {
+            if ($idUsesNull) {
+                $rowTokens[] = 'NULL';
+            } else {
+                $nextId++;
+                $rowTokens[] = itm_seed_format_sql_token((string)$nextId, $unquotedNumericColumns['id'] ?? false);
+            }
+            continue;
+        }
+        if ($columnName === 'company_id') {
+            $rowTokens[] = itm_seed_format_sql_token((string)$companyId, $unquotedNumericColumns['company_id'] ?? false);
+            continue;
+        }
+        if ($columnName === $valueColumn) {
+            $rowTokens[] = itm_seed_format_sql_token($value, $unquotedNumericColumns[$valueColumn] ?? false);
+            continue;
+        }
+        if ($emojiColumn !== '' && $columnName === $emojiColumn) {
+            $rowTokens[] = $emoji !== ''
+                ? itm_seed_format_sql_token($emoji, $unquotedNumericColumns[$emojiColumn] ?? false)
+                : 'NULL';
+            continue;
+        }
+        if ($activeColumn !== '' && $columnName === $activeColumn) {
+            $rowTokens[] = itm_seed_format_sql_token('1', $unquotedNumericColumns[$activeColumn] ?? false);
+            continue;
+        }
+        if ($createdAtColumn !== '' && $columnName === $createdAtColumn) {
+            $rowTokens[] = itm_seed_format_sql_token($createdAtDefault, false);
+            continue;
+        }
+        if ($updatedAtColumn !== '' && $columnName === $updatedAtColumn) {
+            $rowTokens[] = 'NULL';
+            continue;
+        }
+
+        if ($nullTokenColumns[$columnName] ?? false) {
+            $rowTokens[] = 'NULL';
+            continue;
+        }
+
+        $rowTokens[] = 'NULL';
+    }
+
+    return $rowTokens;
 }
 
 /**
@@ -546,8 +804,8 @@ foreach ($tableColumns as $column) {
     $columnMap[strtolower($column)] = $column;
 }
 
-if (!isset($columnMap['id']) || !isset($columnMap['company_id'])) {
-    itm_seed_fwrite_stderr("Table '{$table}' must include id and company_id columns.\n");
+if (!isset($columnMap['company_id'])) {
+    itm_seed_fwrite_stderr("Table '{$table}' must include company_id column.\n");
     exit(2);
 }
 
@@ -563,13 +821,15 @@ if ($companyIds === []) {
 $insertData = itm_seed_collect_insert_rows($sql, $table);
 $insertRows = $insertData['rows'];
 if ($insertRows === []) {
-    itm_seed_fwrite_stderr("No existing single-row INSERT statements found for '{$table}'. This script expects lookup-style inserts.\n");
+    itm_seed_fwrite_stderr("No INSERT … VALUES seed rows found for '{$table}' in database.sql.\n");
     exit(2);
 }
 
 $maxId = 0;
 $existingByCompanyAndValue = [];
 $templateColumns = $insertRows[0]['columns'];
+$hasIdColumn = in_array('id', $templateColumns, true);
+$idUsesNull = $hasIdColumn && itm_seed_column_uses_null_tokens($insertRows, 'id');
 
 foreach ($insertRows as $insertRow) {
     $columns = $insertRow['columns'];
@@ -582,9 +842,11 @@ foreach ($insertRows as $insertRow) {
         continue;
     }
 
-    $id = isset($rowAssoc['id']) ? (int)itm_seed_sql_unquote((string)$rowAssoc['id']) : 0;
-    if ($id > $maxId) {
-        $maxId = $id;
+    if ($hasIdColumn && !$idUsesNull && isset($rowAssoc['id'])) {
+        $id = (int)itm_seed_sql_unquote((string)$rowAssoc['id']);
+        if ($id > $maxId) {
+            $maxId = $id;
+        }
     }
 
     $companyId = isset($rowAssoc['company_id']) ? (int)itm_seed_sql_unquote((string)$rowAssoc['company_id']) : 0;
@@ -594,14 +856,29 @@ foreach ($insertRows as $insertRow) {
     }
 }
 
+if ($emojiColumn === '' && isset($columnMap['color']) && in_array($columnMap['color'], $templateColumns, true)) {
+    $emojiColumn = $columnMap['color'];
+}
+
+$unquotedNumericColumns = [];
+$nullTokenColumns = [];
+foreach ($templateColumns as $columnName) {
+    $unquotedNumericColumns[$columnName] = itm_seed_column_uses_unquoted_numeric_tokens($insertRows, $columnName);
+    $nullTokenColumns[$columnName] = itm_seed_column_uses_null_tokens($insertRows, $columnName);
+}
+
 $newInsertLines = [];
+$newMultiTuples = [];
 $addedCount = 0;
 $nextId = $maxId;
 $activeColumn = $columnMap['active'] ?? '';
 $createdAtColumn = $columnMap['created_at'] ?? '';
 $updatedAtColumn = $columnMap['updated_at'] ?? '';
 $createdAtDefault = '2026-01-01 00:00:01';
-$handledColumns = ['id', 'company_id', $valueColumn];
+$handledColumns = ['company_id', $valueColumn];
+if ($hasIdColumn) {
+    $handledColumns[] = 'id';
+}
 if ($emojiColumn !== '') {
     $handledColumns[] = $emojiColumn;
 }
@@ -617,6 +894,8 @@ if ($updatedAtColumn !== '') {
 
 itm_seed_assert_supported_template_columns($table, $templateColumns, $tableColumnSpecs, $handledColumns);
 
+$appendToMultiBlock = is_array($insertData['last_block']) && ($insertData['last_block']['multi'] ?? false);
+
 foreach ($companyIds as $companyId) {
     foreach ($normalizedSamples as $sample) {
         $value = $sample['value'];
@@ -626,44 +905,30 @@ foreach ($companyIds as $companyId) {
             continue;
         }
 
-        $nextId++;
-        $rowTokens = [];
-        foreach ($templateColumns as $columnName) {
-            if ($columnName === 'id') {
-                $rowTokens[] = itm_seed_sql_quote((string)$nextId);
-                continue;
-            }
-            if ($columnName === 'company_id') {
-                $rowTokens[] = itm_seed_sql_quote((string)$companyId);
-                continue;
-            }
-            if ($columnName === $valueColumn) {
-                $rowTokens[] = itm_seed_sql_quote($value);
-                continue;
-            }
-            if ($emojiColumn !== '' && $columnName === $emojiColumn) {
-                $rowTokens[] = $emoji !== '' ? itm_seed_sql_quote($emoji) : 'NULL';
-                continue;
-            }
-            if ($activeColumn !== '' && $columnName === $activeColumn) {
-                $rowTokens[] = itm_seed_sql_quote('1');
-                continue;
-            }
-            if ($createdAtColumn !== '' && $columnName === $createdAtColumn) {
-                $rowTokens[] = itm_seed_sql_quote($createdAtDefault);
-                continue;
-            }
-            if ($updatedAtColumn !== '' && $columnName === $updatedAtColumn) {
-                $rowTokens[] = 'NULL';
-                continue;
-            }
+        $rowTokens = itm_seed_build_row_tokens(
+            $templateColumns,
+            $companyId,
+            $valueColumn,
+            $value,
+            $emojiColumn,
+            $emoji,
+            $activeColumn,
+            $createdAtColumn,
+            $updatedAtColumn,
+            $createdAtDefault,
+            $idUsesNull,
+            $nextId,
+            $unquotedNumericColumns,
+            $nullTokenColumns
+        );
 
-            // Fallback for unexpected nullable/default columns in lookup seeds.
-            $rowTokens[] = 'NULL';
+        if ($appendToMultiBlock) {
+            $newMultiTuples[] = '(' . implode(', ', $rowTokens) . ')';
+        } else {
+            $columnsSql = '`' . implode('`, `', $templateColumns) . '`';
+            $newInsertLines[] = "INSERT INTO `{$table}` ({$columnsSql}) VALUES (" . implode(', ', $rowTokens) . ");";
         }
 
-        $columnsSql = '`' . implode('`, `', $templateColumns) . '`';
-        $newInsertLines[] = "INSERT INTO `{$table}` ({$columnsSql}) VALUES (" . implode(', ', $rowTokens) . ");";
         $existingByCompanyAndValue[$key] = true;
         $addedCount++;
     }
@@ -680,16 +945,27 @@ if ($insertPos < 0) {
     $insertPos = $meta['create_end'];
 }
 
-$insertChunk = "\n" . implode("\n", $newInsertLines);
-$newSql = substr($sql, 0, $insertPos) . $insertChunk . substr($sql, $insertPos);
+if ($appendToMultiBlock && $newMultiTuples !== []) {
+    $valuesEnd = (int)$insertData['last_block']['values_end'];
+    $insertChunk = ",\n" . implode(",\n", $newMultiTuples);
+    $newSql = substr($sql, 0, $valuesEnd) . $insertChunk . substr($sql, $valuesEnd);
+    foreach ($newMultiTuples as $tupleLine) {
+        $newInsertLines[] = $tupleLine;
+    }
+} else {
+    $insertChunk = "\n" . implode("\n", $newInsertLines);
+    $newSql = substr($sql, 0, $insertPos) . $insertChunk . substr($sql, $insertPos);
+}
 
-$nextAutoIncrement = $nextId + 1;
-$newSql = preg_replace(
-    '/(CREATE TABLE `' . preg_quote($table, '/') . '` \((?:.|\n)*?\)\s*ENGINE=InnoDB[^;]*AUTO_INCREMENT=)(\d+)([^;]*;)/',
-    '${1}' . $nextAutoIncrement . '${3}',
-    $newSql,
-    1
-);
+$nextAutoIncrement = $hasIdColumn && !$idUsesNull ? $nextId + 1 : 0;
+if ($nextAutoIncrement > 0) {
+    $newSql = preg_replace(
+        '/(CREATE TABLE `' . preg_quote($table, '/') . '` \((?:.|\n)*?\)\s*ENGINE=InnoDB[^;]*AUTO_INCREMENT=)(\d+)([^;]*;)/',
+        '${1}' . $nextAutoIncrement . '${3}',
+        $newSql,
+        1
+    );
+}
 
 if (!is_string($newSql) || $newSql === '') {
     itm_seed_fwrite_stderr("Failed to rebuild SQL content.\n");
@@ -701,7 +977,9 @@ echo "Value column: {$valueColumn}" . itm_script_output_nl();
 echo "Emoji column: " . ($emojiColumn !== '' ? $emojiColumn : '(none)') . itm_script_output_nl();
 echo 'Companies: ' . implode(', ', $companyIds) . itm_script_output_nl();
 echo 'New rows to add: ' . $addedCount . $nl;
-echo 'AUTO_INCREMENT target: ' . $nextAutoIncrement . $nl;
+if ($nextAutoIncrement > 0) {
+    echo 'AUTO_INCREMENT target: ' . $nextAutoIncrement . $nl;
+}
 itm_apply_script_echo_list('New INSERT statements', $newInsertLines);
 
 if (!$apply) {
