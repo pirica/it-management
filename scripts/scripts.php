@@ -1439,7 +1439,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                 <tr>
                     <td><a href="verify_explorer_zip_leak.php" target="_blank" rel="nofollow noreferrer">verify_explorer_zip_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>PoC for multi-tenant data leak via root ZIP downloads in Explorer.</td>
+                    <td>Regression for Explorer <code>downloadZip</code>: Step 1 blocks roots. Step 2 allows only exact <code>Private/{username}_{employee_id}</code>. Step 3 blocks all other paths (own subfolders, <code>Common</code>/<code>Departments</code>, other users). Subprocess uses Laragon CLI <code>php.exe</code> and session before <code>config.php</code>.</td>
                     <td><code>php scripts/verify_explorer_zip_leak.php</code></td>
                 </tr>
                 <tr>

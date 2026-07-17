@@ -80,6 +80,94 @@ function explorer_is_hidden_system_entry($name) {
 }
 
 /**
+ * @return array<int,array{name:string,type:string}>
+ */
+if (!function_exists('explorer_filter_trash_list_to_leaf_items')) {
+function explorer_filter_trash_list_to_leaf_items(array $items)
+{
+    if ($items === []) {
+        return $items;
+    }
+
+    $normalized = [];
+    foreach ($items as $item) {
+        $normalized[] = [
+            'name' => str_replace('\\', '/', (string)($item['name'] ?? '')),
+            'type' => (string)($item['type'] ?? 'file'),
+        ];
+    }
+
+    $filtered = [];
+    foreach ($normalized as $item) {
+        $name = (string)$item['name'];
+        if ($name === '') {
+            continue;
+        }
+        $hasDescendant = false;
+        foreach ($normalized as $other) {
+            $otherName = (string)$other['name'];
+            if ($otherName === $name) {
+                continue;
+            }
+            if (strpos($otherName, $name . '/') === 0) {
+                $hasDescendant = true;
+                break;
+            }
+        }
+        if (!$hasDescendant) {
+            $filtered[] = $item;
+        }
+    }
+
+    return $filtered;
+}
+}
+
+/**
+ * @return array<int,array{name:string,type:string}>
+ */
+if (!function_exists('explorer_collect_visible_trash_items')) {
+function explorer_collect_visible_trash_items($trash_root, $user_id, $dept_code, $username)
+{
+    $items = [];
+    if (!is_dir($trash_root)) {
+        return $items;
+    }
+
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($trash_root, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+    foreach ($it as $file) {
+        $rel = substr($file->getPathname(), strlen($trash_root) + 1);
+        $safe_rel = str_replace('\\', '/', $rel);
+        if (get_full_path($trash_root, $safe_rel, $user_id, $dept_code, $username) === null) {
+            continue;
+        }
+        if (explorer_is_hidden_system_entry($rel)) {
+            continue;
+        }
+        $items[] = [
+            'name' => $safe_rel,
+            'type' => $file->isDir() ? 'folder' : 'file',
+        ];
+    }
+
+    return explorer_filter_trash_list_to_leaf_items($items);
+}
+}
+
+/**
+ * @return bool
+ */
+if (!function_exists('explorer_user_has_visible_trash_items')) {
+function explorer_user_has_visible_trash_items($trash_root, $user_id, $dept_code, $username)
+{
+    return explorer_collect_visible_trash_items($trash_root, $user_id, $dept_code, $username) !== [];
+}
+}
+
+/**
  * Why: Explorer preview must route images/PDFs through file.php instead of reading binary bytes as text.
  */
 if (!function_exists('explorer_resolve_preview_mode')) {
@@ -112,10 +200,17 @@ if (isset($_GET['downloadZip'])) {
         $dept_code = trim((string)($dept_row['code'] ?? ''));
     }
 
-    $path = trim((string)($_GET['path'] ?? ''), '/');
-    // Why: Prevent information leak by zipping the entire storage root or sensitive system folders.
-    if ($path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
-        exit("Invalid path or permission denied.");
+    $path = explorer_normalize_relative_path(trim((string)($_GET['path'] ?? ''), '/'));
+    if ($path === null) {
+        exit('Invalid path or permission denied.');
+    }
+
+    // Why: Employee backup ZIP is limited to the exact own Private/{username}_{employee_id} folder only.
+    $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
+    $user_private_dir = "{$safe_username}_{$user_id}";
+    $allowed_private_path = 'Private/' . $user_private_dir;
+    if ($path !== $allowed_private_path) {
+        exit('Invalid path or permission denied.');
     }
 
     $storage_root = ROOT_PATH . 'files/' . $company_id;
@@ -451,6 +546,15 @@ case "list":
             // Sync to DB on list (discovery)
             sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $f, $type);
         }
+    }
+    // Why: Home shows Trash only when this user has recoverable items (sidebar link always available).
+    if ($path === '' && explorer_user_has_visible_trash_items($trash_root, $user_id, $safe_dept_code, $username)) {
+        $items[] = [
+            'name' => 'Trash',
+            'type' => 'trash',
+            'size' => 0,
+            'mtime' => is_dir($trash_root) ? (int)filemtime($trash_root) : time(),
+        ];
     }
     echo json_encode(["items" => $items]);
     break;
@@ -905,29 +1009,9 @@ case "createYearMonthDay":
 
 /* ---------------- TRASH BIN ---------------- */
 case "listRecycle":
-    $items = [];
-    if (is_dir($trash_root)) {
-        $it = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($trash_root, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-        foreach ($it as $file) {
-            $rel = substr($file->getPathname(), strlen($trash_root) + 1);
-            // Why: Normalize for cross-platform comparison and apply same ACL logic as live storage.
-            $safe_rel = str_replace('\\', '/', $rel);
-            if (get_full_path($trash_root, $safe_rel, $user_id, $safe_dept_code, $username) === null) {
-                continue;
-            }
-            if (explorer_is_hidden_system_entry($rel)) {
-                continue;
-            }
-            $items[] = [
-                "name" => $rel,
-                "type" => $file->isDir() ? "folder" : "file"
-            ];
-        }
-    }
-    echo json_encode(["items" => $items]);
+    echo json_encode([
+        'items' => explorer_collect_visible_trash_items($trash_root, $user_id, $safe_dept_code, $username),
+    ]);
     break;
 
 case "restore":

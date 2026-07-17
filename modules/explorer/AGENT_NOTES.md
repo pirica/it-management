@@ -23,13 +23,17 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Trash ACL:** `listRecycle`, `restore`, and `emptyRecycle` apply the same `get_full_path` rules as live storage (users only see/restore/empty their permitted items).
 - **Path validation:** normalize backslashes to `/`, trim slashes, collapse `.` segments via `explorer_normalize_relative_path()`, block `..`; segment-boundary checks for `Private/{owner}` and `Departments/{dept_code}` (blocks `./Private` bypass).
 - **Zip extraction:** `unzip` uses `explorer_extract_zip_safely()` — rejects archive entries whose resolved path escapes the target folder.
-- **Localisation:** UK English (en-GB) UI labels (Favourites, Trash, etc.).
+- **Trash at Home:** `list` omits the physical `Trash/` folder from scandir, then appends a `Trash` folder icon at Home **only** when `explorer_user_has_visible_trash_items()` finds ACL-visible deleted items for the signed-in user. Double-click or sidebar opens `listRecycle`. When trash is empty for that user, Home hides the icon (sidebar **🗑️ Trash** link remains).
+- **Trash listing:** `explorer_filter_trash_list_to_leaf_items()` drops ancestor folders created when a nested file is soft-deleted (e.g. only `Private/Admin_1/24.png` is listed, not `Private` or `Private/Admin_1`). Empty deleted folders still appear.
 - **Upload hardening (`deny_http`):** never bare `mkdir()` under `files/` — use `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Every segment gets force-written `deny_http` `.htaccess` + `index.html`. Serve UI via `itm_files_serve_url()` → `file.php`. See **`scripts/AGENT_NOTES.md`**.
 - **Upload validation:** `upload` accepts only a whitelist of extensions, checks detected MIME (`finfo` / `getimagesize`) against that extension, rejects dotfiles, and enforces `EXPLORER_MAX_FILE_SIZE` (20MB). MIME mismatch or oversize files are rejected with `error` in the JSON response.
+- **`downloadZip` (`api.php`):** allows **only** the exact path `Private/{username}_{employee_id}` for the signed-in employee. Blocks `Private` root, other users' folders, own private subfolders as zip targets, `Common`, `Departments`, `Trash`, and Home. The ZIP still includes all files recursively inside the allowed private folder.
 
 ## 5. UI Behavior Requirements
-- Breadcrumb navigation; upload, download, delete, rename, favourite.
+- **ZIP backup UI:** **Download as ZIP** appears only when browsing the exact `Private/{username}_{employee_id}` folder (not Home, not the `Private` root, not Common/Departments, and not private subfolders). The request always targets that root private path. **Compress** is hidden for `Common`, `Departments`, `Private`, `Trash`, and virtual trash items at Home.
 - Quick Access sidebar opens scoped Private/Department folders, not blocked roots.
+- **Trash at Home:** virtual `Trash` folder (`type: trash`, 🗑️ icon) on Home only when the user has recoverable items; double-click or sidebar **🗑️ Trash** opens recycle view (`openRecycle()`). Trash entries are not draggable.
+- **Recycle view:** breadcrumbs show **Home / Trash**; grid labels show the leaf basename with the full trash-relative path in `title` (e.g. label `24.png`, title `Private/Admin_1/24.png`). Context menu offers **Restore** only.
 - **Hidden system files:** `index.html` and `.htaccess` are always omitted from Explorer listings (`explorer_is_hidden_system_entry()` in `api.php` `list` / `listRecycle`).
 - **Preview routing:** `open` returns `preview: image|pdf|text|unsupported`. Images and PDFs load via `file.php` (not text `file_get_contents`). `.htaccess` `deny_http` blocks direct `/files/` URLs only; `file.php` reads from disk with ACL checks.
 - **Employee profile photos (`file.php`):** paths matching `Private/*/profile/` are readable by any authenticated user. Storage root is resolved from the **photo owner’s home `company_id`** (parsed from `Private/{username}_{employee_id}/…`), not the tenant-switcher session company — otherwise multi-company admins get 404 after upload. Other `Private/` paths remain owner-scoped under the active session company.
@@ -53,9 +57,11 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 | `unzip` | Extract archive in place |
 | `upload` | Multipart upload (dotfiles blocked; extension + MIME + size validated) |
 | `createYear` / `createMonths` / `createDays` / `createYearMonthDay` | Date-folder scaffolding helpers |
-| `listRecycle` | Trash listing with same ACL as live storage |
+| `listRecycle` | Trash listing with same ACL as live storage; leaf filter via `explorer_filter_trash_list_to_leaf_items()` |
 | `restore` | Restore from Trash (normalise `item` path before ACL) |
 | `emptyRecycle` | Permanently empty permitted Trash items |
+
+`GET api.php?downloadZip=1&path=` — ZIP download **only** when `path` is exactly `Private/{username}_{employee_id}` for the session employee.
 
 `file.php?path=` — authorised download/preview after `get_full_path()` ACL check.
 
@@ -99,4 +105,4 @@ explorer_ensure_dir($dir . '/' . $name); // wraps itm_ensure_files_storage_direc
 ```
 
 ## 12. Module Owner Notes (Optional)
-Regression: `php scripts/test_explorer_paths.php`; ZIP root leak: `php scripts/verify_explorer_zip_leak.php`; path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.
+Regression: `php scripts/test_explorer_paths.php`; ZIP contract: `php scripts/verify_explorer_zip_leak.php` (blocked roots + scoped Private backup); path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerTest::testTrashListFiltersAncestorFolders`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.
