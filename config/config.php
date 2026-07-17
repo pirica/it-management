@@ -448,15 +448,6 @@ if (
     exit();
 }
 
-// Why: Browser scripts/* must run under disposable test employees — never the signed-in Admin cookie.
-if (
-    !$itmSkipWebAuth
-    && PHP_SAPI !== 'cli'
-    && function_exists('itm_script_begin_browser_isolated_session')
-) {
-    itm_script_begin_browser_isolated_session($conn, $itmSkipWebAuth);
-}
-
 // Why: Script/ apitest disposable test sessions must not browse the app as if they were Admin.
 if (function_exists('itm_script_reject_disposable_test_web_session_or_exit')) {
     itm_script_reject_disposable_test_web_session_or_exit($current_file, $itmSkipWebAuth);
@@ -2341,6 +2332,16 @@ if (!function_exists('itm_is_admin')) {
         $cache[$cacheKey] = $isAdmin;
         return $isAdmin;
     }
+}
+
+// Why: Browser scripts/* must run under disposable test employees — never the signed-in Admin cookie.
+// Must run after itm_is_admin() so session actors receive the Admin role when the real user is Admin.
+if (
+    !$itmSkipWebAuth
+    && PHP_SAPI !== 'cli'
+    && function_exists('itm_script_begin_browser_isolated_session')
+) {
+    itm_script_begin_browser_isolated_session($conn, $itmSkipWebAuth);
 }
 
 // Why: Enforcement needs itm_is_admin() for system-module admin bypass; run after the helper exists.

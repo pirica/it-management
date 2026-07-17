@@ -234,6 +234,48 @@ if (!function_exists('itm_script_begin_browser_isolated_session')) {
     }
 }
 
+if (!function_exists('itm_script_session_or_authorization_is_admin')) {
+  /**
+   * True when the active disposable session or pre-swap authorization employee is Admin.
+   */
+  function itm_script_session_or_authorization_is_admin($conn)
+  {
+      if (!($conn instanceof mysqli)) {
+          return false;
+      }
+
+      $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+      if ($sessionEmployeeId > 0 && function_exists('itm_is_admin') && itm_is_admin($conn, $sessionEmployeeId)) {
+          return true;
+      }
+
+      $authEmployeeId = itm_script_get_browser_authorization_employee_id();
+
+      return $authEmployeeId > 0 && function_exists('itm_is_admin') && itm_is_admin($conn, $authEmployeeId);
+  }
+}
+
+if (!function_exists('itm_script_require_admin_script_or_exit')) {
+    /**
+     * Admin gate for scripts/* — accepts disposable test Admin session or pre-swap authorization employee.
+     */
+    function itm_script_require_admin_script_or_exit($conn, $plainMessage = 'Forbidden: administrator access required.')
+    {
+        if (itm_script_is_cli()) {
+            return;
+        }
+
+        if (itm_script_session_or_authorization_is_admin($conn)) {
+            return;
+        }
+
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo (string)$plainMessage;
+        exit;
+    }
+}
+
 if (!function_exists('itm_script_require_admin_browser_or_exit')) {
     /**
      * Browser-only Administrator gate — checks the real signed-in user, not the disposable test session.
