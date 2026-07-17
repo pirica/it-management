@@ -22,7 +22,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_force_delete_company.php` | Shared tenant wipe used by `scripts/force_delete_company.php` and PHPUnit teardown (`itm_force_delete_company()` deletes all `company_id` rows then the `companies` row). |
 | `itm_email_script_helpers.php` | Shared `itm_email_script_resolve_company_id()` for email test scripts and browser/CLI `--company=` parsing (session fallback, default company `1`). |
 | `itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php` (dry-run default, Admin browser gate on `?apply=1` only, target lists) |
-| `itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): browser test-session swap (`itm_script_begin_browser_isolated_session()`), `itm_script_browser_skip_web_auth_allowlist()`, `itm_script_require_admin_browser_or_exit()`, disposable session rejection, `itm_script_with_test_session_context()`, `itm_script_publish_isolated_http_session()`, `itm_script_prepare_cli_entry()` |
+| `itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): browser test-session swap (`itm_script_begin_browser_isolated_session()` after `itm_is_admin()`), `itm_script_session_or_authorization_is_admin()`, `itm_script_require_admin_script_or_exit()`, disposable session rejection, `itm_script_with_test_session_context()`, `itm_script_publish_isolated_http_session()`, `itm_script_prepare_cli_entry()` |
 | `itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `itm_script_regression_entry.php` | Browser + CLI regressions (`apitest_tier_*.php`): `ITM_CLI_SCRIPT` on CLI only; Admin gate in browser |
 

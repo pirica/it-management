@@ -190,6 +190,8 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `itm_script_begin_browser_isolated_session($conn, $skipWebAuth)` | Browser `scripts/*`: swap to disposable test Admin/employee; shutdown restores real session |
 | `itm_script_get_browser_authorization_employee_id()` | Real signed-in employee id for Admin authorization gates |
 | `itm_script_require_admin_browser_or_exit($conn)` | HTML 403 when the **real** browser caller is not Administrator |
+| `itm_script_session_or_authorization_is_admin($conn)` | True for disposable test Admin session or pre-swap authorization employee |
+| `itm_script_require_admin_script_or_exit($conn, $message)` | Plain-text 403 admin gate for `scripts/*` |
 | `itm_script_is_disposable_test_session()` | Detects `apitest-user-*`, `script-*-{hex}`, or slot ids `999901–999999` in `$_SESSION` |
 | `itm_script_reject_disposable_test_web_session_or_exit($currentFile, $skipWebAuth)` | Clears disposable test cookie on normal web pages; **allowed** on `scripts/*.php` |
 | `itm_script_with_test_session_context($companyId, $employeeId, $username, $callback)` | Temporary test-user `$_SESSION` for in-process asserts; restores prior session (Admin) after |
