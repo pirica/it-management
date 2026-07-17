@@ -48,8 +48,8 @@ itm_script_require_admin_script_or_exit($conn, 'Only administrators can access t
 
 // CSRF check for POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        $message = "Error: Invalid CSRF token.";
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $message = 'Error: Invalid CSRF token.';
         $messageType = 'error';
     } else {
         $companyId = (int)($_POST['company_id'] ?? 0);
@@ -111,7 +111,7 @@ while ($row = mysqli_fetch_assoc($res)) {
         </div>
 
         <form method="POST" onsubmit="return confirm('ARE YOU ABSOLUTELY SURE? This will permanently delete the company and all its data. This cannot be undone.');">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 
             <div class="form-group">
                 <label for="company_id">Select Company to Delete:</label>
