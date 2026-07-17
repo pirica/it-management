@@ -934,7 +934,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/benchmark_stats_optimized.php` | Benchmark for user-config.php stats gathering optimization. Compares performance of 31 individual queries vs 1 consolidated query. |
+| `php scripts/benchmark_stats_optimized.php` | Benchmark for `user-config.php` stats: same filters via `includes/itm_user_config_stats.php` — loop of 31 COUNT queries vs 1 consolidated query; exits non-zero on mismatch or if batch is not faster. |
 | `php scripts/benchmark_user_config.php` | Benchmark for user-config.php redundant query removal. Compares individual vs consolidated query performance. |
 | `php scripts/idf_device_port_sort_test.php` | Regression test for IDF device port list sorting (copper before fiber). |
 | `php scripts/crud_tables.php` | Audits module-to-table mapping by reading each module's index.php. |
