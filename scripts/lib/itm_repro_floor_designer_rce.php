@@ -29,6 +29,43 @@ if (!function_exists('itm_repro_floor_designer_sample_png_data_uri')) {
     }
 }
 
+if (!function_exists('itm_repro_floor_designer_is_cli_php_binary')) {
+  /**
+   * @param string $path
+   */
+  function itm_repro_floor_designer_is_cli_php_binary($path): bool
+  {
+    $normalized = strtolower(str_replace('\\', '/', (string)$path));
+    if ($normalized === '' || !is_file($path)) {
+      return false;
+    }
+    // Why: Apache SAPI often exposes php-cgi.exe as PHP_BINARY; subprocess must be CLI for ITM_CLI_SCRIPT auth skip.
+    if (strpos($normalized, 'php-cgi') !== false) {
+      return false;
+    }
+    if (substr($normalized, -4) === '.dll') {
+      return false;
+    }
+
+    return true;
+  }
+}
+
+if (!function_exists('itm_repro_floor_designer_resolve_php_binary')) {
+  function itm_repro_floor_designer_resolve_php_binary(): string
+  {
+    $laragonPhp = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
+    if (is_file($laragonPhp)) {
+      return $laragonPhp;
+    }
+    if (defined('PHP_BINARY') && PHP_BINARY !== '' && itm_repro_floor_designer_is_cli_php_binary(PHP_BINARY)) {
+      return (string)PHP_BINARY;
+    }
+
+    return 'php';
+  }
+}
+
 if (!function_exists('itm_repro_floor_designer_run_save_subprocess')) {
     /**
      * @param array<string,mixed> $sessionData
@@ -68,8 +105,8 @@ putenv('DB_NAME=itmanagement');
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require '" . addslashes($configPath) . "';
-" . $sessionInit . $postInit . "
+" . $sessionInit . "require '" . addslashes($configPath) . "';
+" . $postInit . "
 \$_POST['csrf_token'] = itm_get_csrf_token();
 \$_SERVER['REQUEST_METHOD'] = 'POST';
 \$_SERVER['PHP_SELF'] = '/it-management/modules/floor_designer/index.php';
@@ -83,7 +120,7 @@ include basename('" . addslashes($moduleIndex) . "');
         }
         file_put_contents($tmpFile, $code);
 
-        $phpBin = defined('PHP_BINARY') && PHP_BINARY !== '' ? PHP_BINARY : 'php';
+        $phpBin = itm_repro_floor_designer_resolve_php_binary();
         if (!function_exists('itm_script_shell_stderr_discard')) {
             require_once __DIR__ . '/script_cli_output.php';
         }
@@ -106,6 +143,10 @@ if (!function_exists('itm_repro_floor_designer_parse_json_response')) {
      */
     function itm_repro_floor_designer_parse_json_response(string $output): ?array
     {
+        if (stripos($output, 'Status: 302') !== false || stripos($output, 'Location:') !== false) {
+            return null;
+        }
+
         $decoded = json_decode($output, true);
         if (is_array($decoded) && array_key_exists('ok', $decoded)) {
             return $decoded;

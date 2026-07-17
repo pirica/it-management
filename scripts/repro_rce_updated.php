@@ -2,7 +2,10 @@
 /**
  * Validation for Floor Designer RCE fix.
  */
-define('ITM_CLI_SCRIPT', true);
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+}
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
