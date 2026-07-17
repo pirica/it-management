@@ -321,9 +321,7 @@ if (!isset($crud_title)) {
                 <?php endif; ?>
             </div>
 
-            <?php foreach ($errors as $error): ?>
-                <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
-            <?php endforeach; ?>
+            <?php echo itm_render_alert_errors($errors); ?>
             <?php foreach ($notices as $notice): ?>
                 <div class="alert alert-success"><?php echo sanitize($notice); ?></div>
             <?php endforeach; ?>
