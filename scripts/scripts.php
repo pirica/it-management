@@ -1431,12 +1431,6 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_
                     <td><code>php scripts/verify_reset_git_history_access.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="verify_git_reset_csrf.php" target="_blank" rel="nofollow noreferrer">verify_git_reset_csrf.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression: <code>reset_git_history.php</code> rejects non-POST requests and POST without a valid CSRF token. Uses disposable admin-like user via <code>itm_script_test_employee.php</code>.</td>
-                    <td><code>php scripts/verify_git_reset_csrf.php</code> — run after changing Git reset maintenance endpoints or CSRF guards.</td>
-                </tr>
-                <tr>
                     <td><a href="verify_explorer_zip_leak.php" target="_blank" rel="nofollow noreferrer">verify_explorer_zip_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for Explorer <code>downloadZip</code>: Step 1 blocks roots. Step 2 allows only exact <code>Private/{username}_{employee_id}</code>. Step 3 blocks all other paths (own subfolders, <code>Common</code>/<code>Departments</code>, other users). Subprocess uses Laragon CLI <code>php.exe</code> and session before <code>config.php</code>.</td>
