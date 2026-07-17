@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'itm_script_regression_entry.php';
 require_once ROOT_PATH . 'includes' . DIRECTORY_SEPARATOR . 'detect_fk_dropdown_ui_risk_lib.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'script_browser_nav.php';
 
@@ -48,6 +48,11 @@ if ($companyRes) {
 $report = null;
 $dataIssues = [];
 $codeIssues = [];
+$filteredSummary = [
+    'data_issue_count' => 0,
+    'code_issue_count' => 0,
+    'duplicate_dropdown_data' => 0,
+];
 
 if ($runScan) {
     $runOptions = [
@@ -59,6 +64,13 @@ if ($runScan) {
     $report = itm_detect_fk_dropdown_ui_risk_run(ROOT_PATH, $conn, $runOptions);
     $dataIssues = itm_detect_fk_filter_issues_by_risk($report['data_issues'] ?? [], $riskFilter);
     $codeIssues = itm_detect_fk_filter_issues_by_risk($report['code_issues'] ?? [], $riskFilter);
+    $filteredSummary = [
+        'data_issue_count' => count($dataIssues),
+        'code_issue_count' => count($codeIssues),
+        'duplicate_dropdown_data' => count(array_filter($dataIssues, static function ($row) {
+            return (string)($row['risk'] ?? '') === 'duplicate_dropdown_risk';
+        })),
+    ];
 }
 
 $baseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
@@ -162,10 +174,11 @@ header('Content-Type: text/html; charset=utf-8');
 <?php if ($runScan && $report !== null): ?>
     <?php
     $dbError = (string)($report['db_error'] ?? '');
-    $summary = $report['summary'] ?? [];
     $filteredReport = $report;
     $filteredReport['data_issues'] = $dataIssues;
     $filteredReport['code_issues'] = $codeIssues;
+    $filteredReport['summary'] = $filteredSummary;
+    $filteredReport['risk_filter'] = $riskFilter;
     ?>
     <div class="fk-risk-card">
         <h2>Results</h2>
@@ -176,7 +189,7 @@ header('Content-Type: text/html; charset=utf-8');
             <div class="fk-risk-summary">
                 <span>Data issues: <strong><?= count($dataIssues); ?></strong></span>
                 <span>Code issues: <strong><?= count($codeIssues); ?></strong></span>
-                <span>duplicate_dropdown_risk: <strong><?= (int)($summary['duplicate_dropdown_data'] ?? 0); ?></strong></span>
+                <span>duplicate_dropdown_risk: <strong><?= (int)$filteredSummary['duplicate_dropdown_data']; ?></strong></span>
             </div>
             <?php if ($dataIssues === [] && $codeIssues === []): ?>
                 <p><strong>OK</strong> — No matching FK dropdown UI risks for the selected filters.</p>

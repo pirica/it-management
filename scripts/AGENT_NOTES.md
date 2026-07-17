@@ -99,6 +99,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - Running destructive scripts on the wrong environment. [Cursor-Valid]
 - Forgetting to define `ITM_CLI_SCRIPT` when running PHP scripts from the command line. [Cursor-Valid]
 - **Hardcoded seed user id 1:** repro/verify scripts must use `lib/itm_script_test_employee.php` for `employees` mutations — never UPDATE Admin reset tokens in place. Run `php scripts/check_script_disposable_employees.php` after changing audit repro scripts. [Cursor-Valid]
+- **FK dropdown risk UI:** `detect_fk_dropdown_ui_risk_ui.php` is browser-only diagnostic output for cross-tenant FK findings, so keep the standard Admin browser gate (`lib/itm_script_regression_entry.php`) and ensure the visible/JSON summary reflects the active `risk_filter`, not only the raw unfiltered helper counts. [Cursor-Valid]
 - **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=4` and `employee_id=432` — change params when debugging another tenant. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)` or the row is excluded. Calendar year vs ISO year (`date('o')`) diverges at year boundaries; the script warns when bounds differ. [Cursor-Valid]
 - **MySQL 8 `NO_ZERO_DATE`:** do not use `<> '0000-00-00'` in resignations or verify SQL — use `itm_sql_valid_date_predicate()` from `includes/itm_date_format.php`. Symptom: `Incorrect DATE value: '0000-00-00'` on `mysqli_prepare` and an empty weekly report despite valid `termination_date` rows. [Cursor-Valid]
 
