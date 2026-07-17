@@ -112,10 +112,7 @@ if (itmdf_sort_is_cli()) {
 
 if (PHP_SAPI !== 'cli') {
     require_once dirname(__DIR__) . '/config/config.php';
-    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-        http_response_code(403);
-        die('Access denied. Administrator privileges required.');
-    }
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 }
 
 itm_script_output_begin('IDF device port sort test');

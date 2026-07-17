@@ -24,10 +24,7 @@ if (!$conn instanceof mysqli) {
     exit(1);
 }
 
-if (PHP_SAPI !== 'cli' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    http_response_code(403);
-    die('Access denied. Administrator privileges required.');
-}
+itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 itm_script_output_begin('Database Schema Verification');
 $nl = itm_script_output_nl();

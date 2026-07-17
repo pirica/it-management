@@ -44,11 +44,7 @@ if ($itmIsCli) {
 }
 
 // Browser Access Control: Admin only
-if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    header('HTTP/1.1 403 Forbidden');
-    echo "<h1>403 Forbidden</h1><p>Only administrators can access this tool.</p>";
-    die();
-}
+itm_script_require_admin_script_or_exit($conn, 'Only administrators can access this tool.');
 
 // CSRF check for POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -21,13 +21,7 @@ if ($itmIsCli) {
 } else {
     // Why: Browser path requires a signed-in Admin (no ITM_CLI_SCRIPT auth bypass).
     require_once __DIR__ . '/../config/config.php';
-    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
-    if (!function_exists('itm_is_admin') || !itm_is_admin($conn, $employeeId)) {
-        http_response_code(403);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo "Forbidden: administrator login required.\n";
-        exit(1);
-    }
+    itm_script_require_admin_script_or_exit($conn, 'Forbidden: administrator login required.');
 }
 
 require_once __DIR__ . '/lib/script_cli_output.php';

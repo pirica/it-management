@@ -21,10 +21,7 @@ itm_script_output_begin();
 
 
 if (PHP_SAPI !== 'cli') {
-    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-        header('Location: ' . BASE_URL . 'dashboard.php');
-        exit;
-    }
+    itm_script_require_admin_script_or_exit($conn);
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Run Email Alert Rules</title></head><body>';
     itm_script_browser_nav_echo();

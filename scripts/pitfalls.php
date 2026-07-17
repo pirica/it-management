@@ -386,10 +386,7 @@ if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 
-if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    http_response_code(403);
-    die('Access denied. Administrator privileges required.');
-}
+itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 $generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
 ?>

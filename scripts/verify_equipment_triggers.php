@@ -18,10 +18,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 if (PHP_SAPI !== 'cli') {
-    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-        http_response_code(403);
-        die('Access denied. Administrator privileges required.');
-    }
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 }
 
 itm_script_output_begin('Equipment Trigger Verification');

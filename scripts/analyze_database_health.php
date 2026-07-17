@@ -246,10 +246,7 @@ $nl = itm_script_output_nl();
 
 require_once dirname(__DIR__) . '/config/config.php';
 
-if (!$itmIsCli && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    http_response_code(403);
-    die('Access denied. Administrator privileges required.');
-}
+itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
     http_response_code(500);
