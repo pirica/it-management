@@ -220,7 +220,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
 | `php scripts/apply_crud_rbac_guards.php` | **Browser + CLI.** Default dry-run; `--apply` / `?apply=1` (Admin). Lists changed files and RBAC-exempt modules. Bulk-insert CRUD RBAC guards on flattened index handlers (idempotent). |
 | `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |
-| `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, and role-module permission access. Subprocess spawn uses `escapeshellarg()`. |
+| `php scripts/repro_vulnerabilities.php` | PoC — Explorer RCE, privilege escalation, role-module access; browser + CLI via `script_cli_output.php` and isolated Laragon CLI subprocesses. |
 | `php scripts/repro_esa_vulnerability.php` | PoC — employee system access vulnerability checks. Subprocess spawn uses `escapeshellarg()`. |
 | `php scripts/repro_audit_token_leak.php` | Verification — audit log must not store plaintext `reset_token`; disposable test user via `lib/itm_script_test_employee.php`; prepared `UPDATE employees` for token fields. |
 | `php scripts/repro_employee_dataloss.php` | Regression — generic `itm_handle_json_table_import()` UPDATE must not NULL-out omitted columns on `employees` (expects exit `0`; seeds/disposable row in transaction). |
