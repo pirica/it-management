@@ -1,35 +1,43 @@
 <?php
 /**
  * CLI Bypass Login Utility
- * 
+ *
  * Authenticates as an Admin user and sets up the session for development/testing.
  * Outputs the session ID which can be used to hijack the session in a browser.
+ *
+ * CLI: php scripts/bypass_login.php [--user=Admin] [--company=1]
  */
 
-if (!defined('ITM_CLI_SCRIPT')) define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
+
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !defined('PHPUNIT_RUNNING')) {
+    itm_script_output_begin('Bypass Login');
+    itm_script_output_close_pre();
+    echo '<p><strong>CLI only.</strong> Creates an Admin dev session and prints <code>PHPSESSID</code> for browser cookie hijack (Playwright, README screenshots).</p>';
+    echo '<p>Non-admin target users are rejected via <code>itm_is_admin()</code>.</p>';
+    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/bypass_login.php [--user=Admin] [--company=1]</pre>';
+    itm_script_output_end();
+    exit(1);
+}
+
+if (!defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
+require_once dirname(__DIR__) . '/config/config.php';
 
 $nl = itm_script_output_nl();
 
-
-if (PHP_SAPI !== 'cli' && !defined('PHPUNIT_RUNNING')) {
-    die("This script can only be run from the CLI." . $nl);
-}
-
 if (!function_exists('itm_mysqli_stmt_fetch_assoc')) {
-    require_once __DIR__ . '/../includes/itm_role_module_permissions.php';
+    require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
 }
-require_once __DIR__ . '/../includes/itm_employee_employment_status.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 
-// Parse CLI arguments
-$options = getopt('', ["user:", "company:"]);
+$options = getopt('', ['user:', 'company:']);
 $username = $options['user'] ?? 'admin';
 $companyId = isset($options['company']) ? (int)$options['company'] : 1;
-$password = 'Admin'; // Default password for seeding/development
+$password = 'Admin';
 
-// Fetch User details (match login.php role join)
 $stmt = mysqli_prepare(
     $conn,
     'SELECT u.id, u.username, u.work_email, u.theme, ur.name AS role_name
@@ -44,32 +52,38 @@ $idSearch = is_numeric($username) ? (int)$username : -1;
 mysqli_stmt_bind_param($stmt, 'si', $username, $idSearch);
 if (!mysqli_stmt_execute($stmt)) {
     mysqli_stmt_close($stmt);
-    die("Error: Failed to load user record." . $nl);
+    fwrite(STDERR, 'Error: Failed to load user record.' . PHP_EOL);
+    exit(1);
 }
 $user = itm_mysqli_stmt_fetch_assoc($stmt);
 mysqli_stmt_close($stmt);
 
 if (!$user) {
-    die("Error: User '{$username}' not found in database." . $nl);
+    fwrite(STDERR, "Error: User '{$username}' not found in database." . PHP_EOL);
+    exit(1);
 }
 
 $employeeId = (int)$user['id'];
+if (!itm_is_admin($conn, $employeeId)) {
+    fwrite(STDERR, "Error: Bypass login is restricted to Admin users. User '{$user['username']}' is not an admin." . PHP_EOL);
+    exit(1);
+}
 
-// Fetch Company details
 $stmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE id = ? LIMIT 1');
 mysqli_stmt_bind_param($stmt, 'i', $companyId);
 if (!mysqli_stmt_execute($stmt)) {
     mysqli_stmt_close($stmt);
-    die("Error: Failed to load company record." . $nl);
+    fwrite(STDERR, 'Error: Failed to load company record.' . PHP_EOL);
+    exit(1);
 }
 $company = itm_mysqli_stmt_fetch_assoc($stmt);
 mysqli_stmt_close($stmt);
 
 if (!$company) {
-    die("Error: Company with ID {$companyId} not found." . $nl);
+    fwrite(STDERR, "Error: Company with ID {$companyId} not found." . PHP_EOL);
+    exit(1);
 }
 
-// Set session variables (matching login.php logic)
 $_SESSION['employee_id'] = $employeeId;
 $_SESSION['username'] = (string)$user['username'];
 $_SESSION['role_name'] = strtolower((string)($user['role_name'] ?? '')) === 'admin'
@@ -79,21 +93,14 @@ $_SESSION['company_id'] = (int)$company['id'];
 $_SESSION['company_name'] = (string)$company['company'];
 $_SESSION['read_only_user_config'] = 0;
 $_SESSION['ui_theme'] = (strtolower(trim((string)($user['theme'] ?? 'light'))) === 'dark') ? 'dark' : 'light';
-
-// Set Vault Key for Passwords module
 $_SESSION['vault_key'] = hash('sha256', $password);
 
-// Force session write
 session_write_close();
 
-// Get the session ID
 $sessionId = session_id();
-
-// Fix permissions so Apache can read the session file created by CLI
 $sessionFile = ini_get('session.save_path') . '/sess_' . $sessionId;
 if (file_exists($sessionFile)) {
     chmod($sessionFile, 0664);
-    // Why: Playwright/bypass hijack needs www-data to open the sess file Apache will read.
     if (function_exists('posix_getpwnam')) {
         $wwwData = posix_getpwnam('www-data');
         if (is_array($wwwData)) {
@@ -104,19 +111,18 @@ if (file_exists($sessionFile)) {
 }
 
 if (!defined('PHPUNIT_RUNNING')) {
-    echo "Bypass Login Successful!" . $nl;
-    echo "------------------------" . $nl;
-    echo "User: " . $_SESSION['username'] . " (ID: " . $_SESSION['employee_id'] . ")" . $nl;
-    echo "Role: " . $_SESSION['role_name'] . $nl;
-    echo "Company: " . $_SESSION['company_name'] . " (ID: " . $_SESSION['company_id'] . ")" . $nl;
-    echo "Session ID: " . $sessionId . $nl;
-    echo "Vault Key: Set (hash of '" . $password . "')" . $nl;
-    echo "------------------------" . $nl;
-    echo "To use this session in your browser:" . $nl;
-    echo "1. Open the application in your browser: http://localhost/" . $nl;
-    echo "2. Open Developer Tools (F12) -> Application/Storage -> Cookies" . $nl;
-    echo "3. Change 'PHPSESSID' value to: " . $sessionId . $nl;
-    echo "4. Refresh the page to access the Dashboard." . $nl;
+    $baseUrl = defined('BASE_URL') ? (string)BASE_URL : 'http://localhost/it-management/';
+    fwrite(STDOUT, colorText('Bypass Login Successful!', 'pass') . PHP_EOL);
+    fwrite(STDOUT, '------------------------' . PHP_EOL);
+    fwrite(STDOUT, 'User: ' . $_SESSION['username'] . ' (ID: ' . $_SESSION['employee_id'] . ')' . PHP_EOL);
+    fwrite(STDOUT, 'Role: ' . $_SESSION['role_name'] . PHP_EOL);
+    fwrite(STDOUT, 'Company: ' . $_SESSION['company_name'] . ' (ID: ' . $_SESSION['company_id'] . ')' . PHP_EOL);
+    fwrite(STDOUT, 'Session ID: ' . $sessionId . PHP_EOL);
+    fwrite(STDOUT, "Vault Key: Set (hash of '{$password}')" . PHP_EOL);
+    fwrite(STDOUT, '------------------------' . PHP_EOL);
+    fwrite(STDOUT, 'To use this session in your browser:' . PHP_EOL);
+    fwrite(STDOUT, '1. Open the application: ' . $baseUrl . PHP_EOL);
+    fwrite(STDOUT, '2. Open Developer Tools (F12) -> Application/Storage -> Cookies' . PHP_EOL);
+    fwrite(STDOUT, '3. Change PHPSESSID value to: ' . $sessionId . PHP_EOL);
+    fwrite(STDOUT, '4. Refresh the page to access the Dashboard.' . PHP_EOL);
 }
-
-itm_script_output_end();
