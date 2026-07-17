@@ -1,70 +1,63 @@
 <?php
 /**
  * Validation for IDFs API BAC fix.
+ * Why: idfs is RBAC-exempt; verify tenant scoping blocks company 1 from deleting company 2 positions.
  */
-define('ITM_CLI_SCRIPT', true);
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+}
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_repro_idfs_bac.php';
 
 itm_script_output_begin('Verify: IDFs API BAC Fix');
 $nl = itm_script_output_nl();
 
-$company_id = 1;
-// Role 5 is likely a regular user (not admin)
-$testUser = itm_script_test_employee_create($conn, $company_id, ['script_slug' => 'val-idfs-api-bac', 'role_id' => 5]);
-if (!is_array($testUser)) { die("Failed to create test user\n"); }
+$attacker_company_id = 1;
+$victim_company_id = 2;
+$testUser = itm_script_test_employee_create($conn, $attacker_company_id, ['script_slug' => 'val-idfs-api-bac', 'role_id' => 5]);
+if (!is_array($testUser)) {
+    die("Failed to create test user\n");
+}
 itm_script_test_employee_register_teardown($conn, (int)$testUser['id']);
 
-$_SESSION['company_id'] = $company_id;
-$_SESSION['employee_id'] = $testUser['id'];
-$_SESSION['username'] = $testUser['username'];
+echo colorText('Validating cross-tenant BAC in IDFs API', 'info') . $nl;
 
-echo colorText("Validating BAC Fix in IDFs API", 'info') . $nl;
-
-mysqli_query($conn, "INSERT INTO idfs (company_id, name, active) VALUES ($company_id, 'BAC Val', 1)");
-$idf_id = mysqli_insert_id($conn);
-mysqli_query($conn, "INSERT INTO idf_positions (company_id, idf_id, position_no, device_name, active) VALUES ($company_id, $idf_id, 1, 'BAC Val Device', 1)");
-$position_id = mysqli_insert_id($conn);
-
-$csrf = itm_get_csrf_token();
-$sess_id = session_id();
-
-$config_path = realpath(__DIR__ . '/../config/config.php');
-$api_path = realpath(__DIR__ . '/../modules/idfs/api/position_delete.php');
-
-$code = "<?php
-define('ITM_CLI_SCRIPT', true);
-require '$config_path';
-\$_SESSION['employee_id'] = {$testUser['id']};
-\$_SESSION['company_id'] = $company_id;
-\$_SESSION['username'] = '{$testUser['username']}';
-\$_SESSION['csrf_token'] = '$csrf';
-
-function idf_read_json() {
-    return ['csrf_token' => '$csrf', 'position_id' => $position_id];
+$labelSuffix = str_replace('.', '', (string)microtime(true));
+$seed = itm_repro_idfs_seed_test_position($conn, $victim_company_id, $labelSuffix);
+if (!is_array($seed)) {
+    echo itm_script_format_status_line('[FAIL] Could not seed victim IDF position in company ' . $victim_company_id . '.') . $nl;
+    itm_script_output_end();
+    exit(1);
 }
 
-// Mock the AJAX request
-\$_SERVER['REQUEST_METHOD'] = 'POST';
-include '$api_path';
-?>";
+$idf_id = (int)$seed['idf_id'];
+$position_id = (int)$seed['position_id'];
 
-$tmp = tempnam(sys_get_temp_dir(), 'bac_val');
-file_put_contents($tmp, $code);
-$output = shell_exec("php " . escapeshellarg($tmp) . " 2>&1");
-unlink($tmp);
+$sessionData = [
+    'company_id' => $attacker_company_id,
+    'employee_id' => (int)$testUser['id'],
+    'username' => (string)$testUser['username'],
+];
 
-// Check if position still exists
-$res = mysqli_query($conn, "SELECT id FROM idf_positions WHERE id = " . (int)$position_id);
-$exists = mysqli_num_rows($res) > 0;
+$output = itm_repro_idfs_run_position_delete_subprocess($sessionData, $position_id);
+$decoded = itm_repro_idfs_parse_api_json($output);
+$exists = itm_repro_idfs_position_exists($conn, $victim_company_id, $position_id);
+$exitCode = 0;
 
-if ($exists) {
-    echo itm_script_format_status_line("[PASS] SUCCESS: Position still exists. Deletion was blocked.") . $nl;
+if ($exists && is_array($decoded) && empty($decoded['ok'])) {
+    echo itm_script_format_status_line('[PASS] SUCCESS: Victim position still exists. Cross-tenant delete was blocked.') . $nl;
+    echo 'API response: ' . (string)($decoded['error'] ?? 'denied') . $nl;
+} elseif ($exists) {
+    echo itm_script_format_status_line('[PASS] SUCCESS: Victim position still exists after API call.') . $nl;
 } else {
-    echo itm_script_format_status_line("[FAIL] FAILURE: Position was deleted!") . $nl;
-    echo "Output: $output" . $nl;
+    echo itm_script_format_status_line('[FAIL] FAILURE: Victim position was deleted across tenants.') . $nl;
+    echo 'Output: ' . $output . $nl;
+    $exitCode = 1;
 }
 
-// Cleanup
-mysqli_query($conn, "DELETE FROM idfs WHERE id = $idf_id");
+itm_repro_idfs_cleanup_idf($conn, $victim_company_id, $idf_id);
+itm_script_output_end();
+exit($exitCode);

@@ -26,6 +26,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `itm_script_regression_entry.php` | Browser + CLI regressions (`apitest_tier_*.php`): `ITM_CLI_SCRIPT` on CLI only; Admin gate in browser |
 | `itm_repro_floor_designer_rce.php` | Floor Designer `save_as_floor_plan` repro: sample PNG from `images/switch_port_icons/`, isolated **CLI** subprocess (`itm_repro_floor_designer_resolve_php_binary()` skips `php-cgi` on Laragon), JSON parse, gallery cleanup |
+| `itm_repro_idfs_bac.php` | IDFs `position_delete` BAC repro: seeds `idf_device_type` + `idf_positions` (required `device_type` FK), cross-tenant delete attempt, isolated CLI subprocess, JSON parse |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.
