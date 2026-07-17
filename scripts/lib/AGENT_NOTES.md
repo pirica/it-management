@@ -30,6 +30,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 - New shared script code belongs here when used by two or more scripts.
 - Browser reports must use `itm_script_browser_nav_echo()` — never hand-build module URLs with `BASE_URL`.
 - Cross-platform env vars: parent scripts use `putenv()`, not `VAR=val php …` inline.
+- Admin-gated `scripts/*` in the browser: after `config.php`, call `itm_script_require_admin_script_or_exit($conn)` — not `itm_is_admin($conn, (int)$_SESSION['employee_id'])` alone (disposable test Admin + pre-swap authorization employee). Catalog `scripts.php` and CLI target-user checks (e.g. `bypass_v2.php`) are exceptions.
 
 ## 10. Common Pitfalls
 - Do not link phpMyAdmin from libs — only from `scripts/scripts.php`. [Cursor-Valid]

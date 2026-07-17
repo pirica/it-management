@@ -200,6 +200,8 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 
 **Browser + CLI entry include:** `scripts/lib/itm_script_regression_entry.php` — `ITM_CLI_SCRIPT` on CLI only; Administrator required in browser after `config.php`. Alias: `itm_script_cli_entry.php`.
 
+**Admin-gated `scripts/*` (browser):** after `config.php`, call `itm_script_require_admin_script_or_exit($conn)` (or pass a custom plain-text message). Do **not** gate with `itm_is_admin($conn, (int)$_SESSION['employee_id'])` alone — disposable test Admin sessions and pre-swap authorization employees are accepted via `itm_script_session_or_authorization_is_admin()`. Exceptions: `scripts.php` (catalog checks the **real** signed-in Admin with custom HTML recovery copy) and CLI-only utilities that validate a target user row (e.g. `bypass_v2.php`).
+
 **CLI-only scripts** — per-file `PHP_SAPI !== 'cli'` guard (e.g. `bypass_login.php`, `repair_table_from_schema.php`, `fix_sql*.php`) or call `itm_script_prepare_cli_entry()` before `config.php`.
 
 **Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`.

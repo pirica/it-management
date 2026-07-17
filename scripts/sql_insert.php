@@ -20,10 +20,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 $isCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 
 // Only Admins can access this script in the browser
-if (!$isCli && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    http_response_code(403);
-    die('Access denied. Administrator privileges required.');
-}
+itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 $action = $_POST['action'] ?? '';
 $sqlInput = $_POST['sql_commands'] ?? '';
