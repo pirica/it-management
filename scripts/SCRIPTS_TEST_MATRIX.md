@@ -332,7 +332,6 @@ php scripts/employees_delete_clear_table_test.php
 | 3 | `verify_reports_hub.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_password_reset_flow.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_rbac_updated.php` | MySQL | low | runtime | Domain regression verifier |
-| 3 | `verify_reset_git_history_access.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_roles_permissions.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_select_options_escalation.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_sql.php` | MySQL | low | runtime | Domain regression verifier |
