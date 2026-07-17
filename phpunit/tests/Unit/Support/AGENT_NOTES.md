@@ -9,6 +9,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 - **ItmScriptCliTestTrait:** subprocess runner for `scripts/*.php` that call `exit()` — always use `2>&1` via `runRepoScript()` / `runPhpScriptFile()`.
 - **ItmScriptCliTestCase:** extend this (not `TestCase` + trait require) for CLI audit script tests.
 - **ItmModuleIsolatedTestTrait:** subprocess `runIsolatedModule()` for module `index.php` handlers — required when a test would `include` the same module twice in one PHPUnit process (avoids `Cannot redeclare` fatals from procedural helpers in `modules/employees/index.php` and similar entry files).
+- **ItmPhpunitTestSessionTrait:** disposable `$_SESSION` actors via `itmPhpunitBeginTestSession()` / `itmPhpunitCreateDisposableSessionActor()` / `itmPhpunitEndTestSession()` — never `$_SESSION['employee_id'] = 1`. Subprocess harnesses: `itmPhpunitSessionArrayFromActor()`.
 
 ## 7. File Structure
 | File | Role |
@@ -17,6 +18,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 | `ItmScriptCliTestCase.php` | Base class for audit `check_*` unittest files |
 | `ItmExtractFunctionTestTrait.php` | `requireExtractedFunction()`, `itmExtractFunctionSource()` (brace-balanced) for Org Chart / Explorer tests |
 | `ItmModuleIsolatedTestTrait.php` | `runIsolatedModule()` — subprocess include for module entry files |
+| `ItmPhpunitTestSessionTrait.php` | Disposable PHPUnit `$_SESSION` actors (`itmPhpunitBeginTestSession`, `itmPhpunitEndTestSession`) |
 
 ## 10. Common Pitfalls
 - Including audit scripts at file scope halts PHPUnit — subprocess only. [Cursor-Valid]

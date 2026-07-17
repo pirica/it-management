@@ -121,33 +121,11 @@ if (!function_exists('itm_script_resolve_employment_status_id_for_company')) {
             return 0;
         }
 
-        $stmt = mysqli_prepare(
-            $conn,
-            "SELECT id FROM employee_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1"
-        );
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'i', $companyId);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            $row = $res ? mysqli_fetch_assoc($res) : null;
-            mysqli_stmt_close($stmt);
-            if (is_array($row) && (int)$row['id'] > 0) {
-                return (int)$row['id'];
-            }
+        if (!function_exists('itm_script_test_employee_resolve_employment_status_id')) {
+            require_once __DIR__ . '/itm_script_test_employee.php';
         }
 
-        $fallback = mysqli_prepare($conn, 'SELECT id FROM employee_statuses WHERE company_id = ? LIMIT 1');
-        if (!$fallback) {
-            return 0;
-        }
-
-        mysqli_stmt_bind_param($fallback, 'i', $companyId);
-        mysqli_stmt_execute($fallback);
-        $res = mysqli_stmt_get_result($fallback);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
-        mysqli_stmt_close($fallback);
-
-        return is_array($row) ? (int)$row['id'] : 0;
+        return itm_script_test_employee_resolve_employment_status_id($conn, $companyId);
     }
 }
 
@@ -212,63 +190,25 @@ if (!function_exists('itm_script_begin_browser_isolated_session')) {
             return;
         }
 
-        if (!function_exists('itm_script_test_employee_create')) {
+        if (!function_exists('itm_script_test_employee_create_session_actor')) {
             require_once __DIR__ . '/itm_script_test_employee.php';
         }
 
         $asAdmin = function_exists('itm_is_admin') && itm_is_admin($conn, $realEmployeeId);
-        $roleId = 0;
-        $roleSql = $asAdmin
-            ? "SELECT id FROM employee_roles WHERE company_id = ? AND LOWER(name) = 'admin' LIMIT 1"
-            : "SELECT id FROM employee_roles WHERE company_id = ? AND LOWER(name) != 'admin' ORDER BY id ASC LIMIT 1";
-        $roleStmt = mysqli_prepare($conn, $roleSql);
-        if ($roleStmt) {
-            mysqli_stmt_bind_param($roleStmt, 'i', $companyId);
-            mysqli_stmt_execute($roleStmt);
-            $roleRes = mysqli_stmt_get_result($roleStmt);
-            $roleRow = $roleRes ? mysqli_fetch_assoc($roleRes) : null;
-            mysqli_stmt_close($roleStmt);
-            $roleId = is_array($roleRow) ? (int)$roleRow['id'] : 0;
-        }
-
-        $accessLevelId = 0;
-        $accessStmt = mysqli_prepare($conn, 'SELECT id FROM access_levels WHERE company_id = ? ORDER BY id ASC LIMIT 1');
-        if ($accessStmt) {
-            mysqli_stmt_bind_param($accessStmt, 'i', $companyId);
-            mysqli_stmt_execute($accessStmt);
-            $accessRes = mysqli_stmt_get_result($accessStmt);
-            $accessRow = $accessRes ? mysqli_fetch_assoc($accessRes) : null;
-            mysqli_stmt_close($accessStmt);
-            $accessLevelId = is_array($accessRow) ? (int)$accessRow['id'] : 0;
-        }
-
-        $employmentStatusId = itm_script_resolve_employment_status_id_for_company($conn, $companyId);
         $scriptSlug = preg_replace('/\.php$/', '', $basename);
         if ($scriptSlug === '') {
             $scriptSlug = 'script';
         }
 
-        $testUser = itm_script_test_employee_create($conn, $companyId, [
+        $testUser = itm_script_test_employee_create_session_actor($conn, $companyId, [
+            'as_admin' => $asAdmin,
             'script_slug' => $scriptSlug,
-            'role_id' => $roleId > 0 ? $roleId : 2,
-            'access_level_id' => $accessLevelId > 0 ? $accessLevelId : 2,
-            'employment_status_id' => $employmentStatusId > 0 ? $employmentStatusId : 1,
-            'last_name' => $asAdmin ? 'TestAdmin' : 'TestEmployee',
         ]);
         if (!is_array($testUser) || (int)($testUser['id'] ?? 0) <= 0) {
             return;
         }
 
         $testEmployeeId = (int)$testUser['id'];
-        $grantStmt = mysqli_prepare(
-            $conn,
-            'INSERT IGNORE INTO employee_companies (employee_id, company_id, active) VALUES (?, ?, 1)'
-        );
-        if ($grantStmt) {
-            mysqli_stmt_bind_param($grantStmt, 'ii', $testEmployeeId, $companyId);
-            mysqli_stmt_execute($grantStmt);
-            mysqli_stmt_close($grantStmt);
-        }
 
         $GLOBALS['itm_script_browser_session_backup'] = $backup;
         $GLOBALS['itm_script_browser_isolated_employee_id'] = $testEmployeeId;

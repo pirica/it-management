@@ -56,6 +56,7 @@ require_once __DIR__ . '/Unit/Support/ItmScriptCliTestTrait.php';
 require_once __DIR__ . '/Unit/Support/ItmScriptCliTestCase.php';
 require_once __DIR__ . '/Unit/Support/ItmExtractFunctionTestTrait.php';
 require_once __DIR__ . '/Unit/Support/ItmModuleIsolatedTestTrait.php';
+require_once __DIR__ . '/Unit/Support/ItmPhpunitTestSessionTrait.php';
 
 // Ensure the environment is set to development for tests
 if (!defined('APP_ENV')) {

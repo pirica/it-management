@@ -77,6 +77,21 @@ class ItmScriptTestUserTest extends TestCase
         $this->createdUserIds = array_values(array_diff($this->createdUserIds, [(int)$row['id']]));
     }
 
+    public function testCreateSessionActorUsesAdminRoleWhenRequested(): void
+    {
+        $row = itm_script_test_employee_create_session_actor($this->conn, 1, [
+            'as_admin' => true,
+            'script_slug' => 'phpunit-session-actor',
+        ]);
+        $this->assertIsArray($row);
+        $employeeId = (int)$row['id'];
+        $this->assertGreaterThan(1, $employeeId);
+        $this->createdUserIds[] = $employeeId;
+
+        $this->assertTrue(itm_is_admin($this->conn, $employeeId));
+        $this->assertTrue(itm_script_test_employee_is_disposable((string)$row['username']));
+    }
+
     public function testDeleteRefusesNonDisposableUser(): void
     {
         $this->assertFalse(itm_script_test_employee_delete($this->conn, 1));

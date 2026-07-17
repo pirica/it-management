@@ -163,8 +163,9 @@ Repro, verify, and PHPUnit tests must **not** mutate seed user id `1` (Admin) or
 | `itm_script_test_employee_register_teardown($conn, $employeeId, $snapshot)` | Shutdown restore + delete |
 | `itm_script_test_employee_clear_audit_context($conn)` | `SET @app_employee_id` / `@app_company_id` to NULL (avoids `audit_logs` FK failures) |
 | `itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId)` | `SET @app_employee_id` / `@app_company_id` / `@app_username` (rejects id ≤ 0) |
+| `itm_script_test_employee_create_session_actor($conn, $companyId, $options)` | Disposable Admin/employee session actor (`as_admin`, `script_slug`) + `employee_companies` grant — browser script isolation + PHPUnit |
 
-**Static guard:** `php scripts/check_script_disposable_employees.php` — fails when `scripts/**/*.php` hardcodes user id `1` alongside `UPDATE employees`, `reset_token`, or notes mutations without the helper. PHPUnit: `check_script_disposable_employees.unittest.php`.
+**PHPUnit session isolation:** `phpunit/tests/Unit/Support/ItmPhpunitTestSessionTrait.php` — `itmPhpunitBeginTestSession()` / `itmPhpunitCreateDisposableSessionActor()` / `itmPhpunitEndTestSession()`; never `$_SESSION['employee_id'] = 1`.
 
 **Stale SQL guard:** `php scripts/check_stale_user_id_sql.php` — fails when `modules/`, `includes/`, or `config/` PHP still references legacy `user_id` column SQL or the removed `users` table after the employees merge. Run after auth/session or schema merge changes; catalog: `scripts/scripts.php`.
 

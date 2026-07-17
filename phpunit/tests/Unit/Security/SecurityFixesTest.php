@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
  */
 class SecurityFixesTest extends TestCase
 {
+    use ItmPhpunitTestSessionTrait;
+
     private $conn;
 
     protected function setUp(): void
@@ -15,6 +17,11 @@ class SecurityFixesTest extends TestCase
         if (!$this->conn) {
             $this->markTestSkipped('Database connection unavailable.');
         }
+    }
+
+    protected function tearDown(): void
+    {
+        $this->itmPhpunitEndTestSession();
     }
 
     private function runPhpScriptFile($scriptFile)
@@ -61,12 +68,10 @@ echo ob_get_clean();
     public function testExplorerPhpUploadBlocked()
     {
         $company_id = 1;
-        $session = [
-            'company_id' => $company_id,
-            'employee_id' => 1,
-            'username' => 'admin',
-            'csrf_token' => 'test_token'
-        ];
+        $actor = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $company_id, true, 'explorer-upload-block');
+        $session = $this->itmPhpunitSessionArrayFromActor($actor, $company_id, [
+            'csrf_token' => 'test_token',
+        ]);
 
         // We can't easily mock $_FILES for a real move_uploaded_file call in unit tests
         // but we can check if the logic correctly identifies and blocks the extension.
@@ -401,19 +406,12 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
             $this->assertNotContains($sensitiveField, $filteredNames);
         }
 
-        $adminStmt = $this->conn->prepare('SELECT id, username FROM employees WHERE id = 1 LIMIT 1');
-        $adminStmt->execute();
-        $adminRow = $adminStmt->get_result()->fetch_assoc();
-        $adminStmt->close();
+        $adminRow = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $companyId, true, 'employees-view-sensitive');
         if (!is_array($adminRow)) {
-            $this->markTestSkipped('Seed admin user missing.');
+            $this->markTestSkipped('Unable to create disposable admin session actor.');
         }
 
-        $session = [
-            'company_id' => $companyId,
-            'employee_id' => (int)$adminRow['id'],
-            'username' => (string)$adminRow['username'],
-        ];
+        $session = $this->itmPhpunitSessionArrayFromActor($adminRow, $companyId);
         $get = ['id' => $employeeId];
         $extraGlobals = ['crud_action' => 'view'];
 
@@ -428,6 +426,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
     public function testJsonImportRejectsInvalidDecimal(): void
     {
         $companyId = 1;
+        $actor = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $companyId, true, 'json-import-decimal');
         $uniqueModel = 'PhpUnitImport-' . bin2hex(random_bytes(4));
         $payload = [
             'csrf_token' => 'test_token',
@@ -440,8 +439,9 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload,
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 require_once '" . ROOT_PATH . "config/config.php';
-\$_SESSION['employee_id'] = 1;
+\$_SESSION['employee_id'] = " . (int)$actor['id'] . ";
 \$_SESSION['company_id'] = 1;
+\$_SESSION['username'] = " . var_export((string)$actor['username'], true) . ";
 \$_SESSION['csrf_token'] = 'test_token';
 \$_SERVER['REQUEST_METHOD'] = 'POST';
 \$_SERVER['CONTENT_TYPE'] = 'application/json';
@@ -469,6 +469,7 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'catalogs', 1, \$payload, 
     public function testJsonImportRejectsInvalidDatetime(): void
     {
         $companyId = 1;
+        $actor = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $companyId, true, 'json-import-datetime');
         $uniqueTitle = 'PhpUnitImportDate-' . bin2hex(random_bytes(4));
         $payload = [
             'csrf_token' => 'test_token',
@@ -481,8 +482,9 @@ echo json_encode(itm_handle_json_table_import(\$conn, 'catalogs', 1, \$payload, 
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
 require_once '" . ROOT_PATH . "config/config.php';
-\$_SESSION['employee_id'] = 1;
+\$_SESSION['employee_id'] = " . (int)$actor['id'] . ";
 \$_SESSION['company_id'] = 1;
+\$_SESSION['username'] = " . var_export((string)$actor['username'], true) . ";
 \$_SESSION['csrf_token'] = 'test_token';
 \$_SERVER['REQUEST_METHOD'] = 'POST';
 \$_SERVER['CONTENT_TYPE'] = 'application/json';

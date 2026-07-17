@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
  */
 class MultiTenancyUnittest extends TestCase
 {
+    use ItmPhpunitTestSessionTrait;
+
     protected $conn;
 
     protected function setUp(): void
@@ -20,24 +22,26 @@ class MultiTenancyUnittest extends TestCase
         $this->conn = $conn;
     }
 
+    protected function tearDown(): void
+    {
+        $this->itmPhpunitEndTestSession();
+    }
+
     /**
      * Test that session variables for auditing are correctly set.
      */
     public function testAuditSessionVariables()
     {
-        // Mock session
-        $_SESSION['employee_id'] = 1;
-        $_SESSION['company_id'] = 1;
-        $_SESSION['username'] = 'admin';
+        $actor = $this->itmPhpunitBeginTestSession($this->conn, 1, true, 'audit-session-vars');
+        $employeeId = (int)$actor['id'];
 
-        // Re-run session variable setup (simplified from config.php)
-        mysqli_query($this->conn, 'SET @app_employee_id = 1');
+        mysqli_query($this->conn, 'SET @app_employee_id = ' . $employeeId);
         mysqli_query($this->conn, 'SET @app_company_id = 1');
 
         $res = mysqli_query($this->conn, 'SELECT @app_employee_id as employee_id, @app_company_id as company_id');
         $row = mysqli_fetch_assoc($res);
 
-        $this->assertEquals(1, $row['employee_id']);
-        $this->assertEquals(1, $row['company_id']);
+        $this->assertEquals($employeeId, (int)$row['employee_id']);
+        $this->assertEquals(1, (int)$row['company_id']);
     }
 }

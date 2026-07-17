@@ -9,7 +9,12 @@ use PHPUnit\Framework\TestCase;
  */
 class CompanyModuleAccessDiscoveryTest extends TestCase
 {
+    use ItmPhpunitTestSessionTrait;
+
     private const PROBE_SLUG = 'mbqa_phpunit_sidebar_probe';
+
+    /** @var array<string,mixed>|null */
+    private $sessionActor;
 
     protected function setUp(): void
     {
@@ -19,11 +24,15 @@ class CompanyModuleAccessDiscoveryTest extends TestCase
             $this->markTestSkipped('Database connection unavailable.');
         }
 
-        @session_start();
-        $_SESSION['company_id'] = 1;
-        $_SESSION['employee_id'] = 1;
+        $this->sessionActor = $this->itmPhpunitBeginTestSession($conn, 1, true, 'cma-discovery');
+        $employeeId = (int)$this->sessionActor['id'];
 
-        mysqli_query($conn, "INSERT INTO `ui_configuration` (company_id, employee_id, enable_auto_scaffolding) VALUES (1, 1, 1) ON DUPLICATE KEY UPDATE enable_auto_scaffolding = 1");
+        mysqli_query(
+            $conn,
+            'INSERT INTO `ui_configuration` (company_id, employee_id, enable_auto_scaffolding) VALUES (1, '
+            . $employeeId
+            . ', 1) ON DUPLICATE KEY UPDATE enable_auto_scaffolding = 1'
+        );
         itm_get_ui_configuration(null, 0, 0, true);
     }
 
@@ -34,6 +43,8 @@ class CompanyModuleAccessDiscoveryTest extends TestCase
         if ($conn instanceof mysqli) {
             itm_sidebar_discovery_probe_cleanup($conn, self::PROBE_SLUG);
         }
+
+        $this->itmPhpunitEndTestSession();
     }
 
     public function testEnsureRegistryRowsForModuleSlugsInsertsMissingRow(): void
