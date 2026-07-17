@@ -935,7 +935,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | Script | Purpose |
 |--------|---------|
 | `php scripts/benchmark_stats_optimized.php` | Benchmark for `user-config.php` stats: same filters via `includes/itm_user_config_stats.php` — loop of 31 COUNT queries vs 1 consolidated query; exits non-zero on mismatch or if batch is not faster. |
-| `php scripts/benchmark_user_config.php` | Benchmark for user-config.php redundant query removal. Compares individual vs consolidated query performance. |
+| `php scripts/benchmark_user_config.php` | Benchmark for redundant alerts/events queries removed from `user-config.php`: legacy 4-query loop vs production full batch + `itm_user_config_extract_alerts_events_counts()`; exits non-zero on mismatch or if extract is not faster than legacy loop. |
 | `php scripts/idf_device_port_sort_test.php` | Regression test for IDF device port list sorting (copper before fiber). |
 | `php scripts/crud_tables.php` | Audits module-to-table mapping by reading each module's index.php. |
 | `php scripts/crud_titles.php` | Audits module-to-title mapping by reading each module's index.php and printing the first $crud_title assignment. |

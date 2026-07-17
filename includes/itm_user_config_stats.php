@@ -170,3 +170,76 @@ if (!function_exists('itm_user_config_fetch_stats_batch')) {
         return $allStats;
     }
 }
+
+if (!function_exists('itm_user_config_redundant_stat_definitions')) {
+    /**
+     * Alerts/events stats that user-config.php extracts from $all_stats (no extra queries).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_user_config_redundant_stat_definitions()
+    {
+        $want = [
+            ['alerts', 'assigned_to_employee_id'],
+            ['alerts', 'created_by'],
+            ['events', 'assigned_to_employee_id'],
+            ['events', 'created_by'],
+        ];
+        $out = [];
+
+        foreach (itm_user_config_stat_definitions() as $def) {
+            foreach ($want as $pair) {
+                if ($def['table'] === $pair[0] && $def['field'] === $pair[1]) {
+                    $out[] = $def;
+                    break;
+                }
+            }
+        }
+
+        return $out;
+    }
+}
+
+if (!function_exists('itm_user_config_extract_alerts_events_counts')) {
+    /**
+     * @param array<int, array<string, mixed>> $allStats
+     * @return array{total_events_forme: int, total_events_created: int, total_alerts_forme: int, total_alerts_created: int}
+     */
+    function itm_user_config_extract_alerts_events_counts(array $allStats)
+    {
+        $counts = [
+            'total_events_forme' => 0,
+            'total_events_created' => 0,
+            'total_alerts_forme' => 0,
+            'total_alerts_created' => 0,
+        ];
+
+        foreach ($allStats as $s) {
+            if ($s['table'] === 'events' && $s['field'] === 'assigned_to_employee_id') {
+                $counts['total_events_forme'] = (int)$s['count'];
+            }
+            if ($s['table'] === 'events' && $s['field'] === 'created_by') {
+                $counts['total_events_created'] = (int)$s['count'];
+            }
+            if ($s['table'] === 'alerts' && $s['field'] === 'assigned_to_employee_id') {
+                $counts['total_alerts_forme'] = (int)$s['count'];
+            }
+            if ($s['table'] === 'alerts' && $s['field'] === 'created_by') {
+                $counts['total_alerts_created'] = (int)$s['count'];
+            }
+        }
+
+        return $counts;
+    }
+}
+
+if (!function_exists('itm_user_config_redundant_stat_counts_from_rows')) {
+    /**
+     * @param array<int, array<string, mixed>> $statRows
+     * @return array{total_events_forme: int, total_events_created: int, total_alerts_forme: int, total_alerts_created: int}
+     */
+    function itm_user_config_redundant_stat_counts_from_rows(array $statRows)
+    {
+        return itm_user_config_extract_alerts_events_counts($statRows);
+    }
+}
