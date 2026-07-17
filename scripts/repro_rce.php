@@ -3,7 +3,10 @@
  * PoC for RCE in Floor Designer via 'save_as_floor_plan' action.
  * Why: Patched handler coerces ext=php to png; absence of .php on disk is [PASS], not an error.
  */
-define('ITM_CLI_SCRIPT', true);
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+}
 putenv('DB_HOST=127.0.0.1');
 putenv('DB_USER=root');
 putenv('DB_PASS=itmanagement');
@@ -58,6 +61,9 @@ if (!is_array($decoded)) {
     if ($output !== '') {
         echo 'Response preview: ' . substr($output, 0, 200) . $nl;
     }
+    if (stripos($output, 'Status: 302') !== false) {
+        echo 'Hint: browser runs must spawn Laragon CLI php.exe (not php-cgi) for the isolated subprocess.' . $nl;
+    }
     itm_script_output_end();
     exit(1);
 }
@@ -80,7 +86,7 @@ if ($planId > 0) {
 $phpAfter = glob($uploadDir . 'floor_plan_*.php') ?: [];
 $newPhpFiles = array_values(array_diff($phpAfter, $phpBefore));
 $exitCode = 0;
-$phpBin = defined('PHP_BINARY') && PHP_BINARY !== '' ? PHP_BINARY : 'php';
+$phpBin = itm_repro_floor_designer_resolve_php_binary();
 
 if (!empty($newPhpFiles)) {
     $uploadedFile = $newPhpFiles[0];

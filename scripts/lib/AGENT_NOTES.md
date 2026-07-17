@@ -25,7 +25,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): browser test-session swap (`itm_script_begin_browser_isolated_session()` after `itm_is_admin()`), `itm_script_session_or_authorization_is_admin()`, `itm_script_require_admin_script_or_exit()`, disposable session rejection, `itm_script_with_test_session_context()`, `itm_script_publish_isolated_http_session()`, `itm_script_prepare_cli_entry()` |
 | `itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `itm_script_regression_entry.php` | Browser + CLI regressions (`apitest_tier_*.php`): `ITM_CLI_SCRIPT` on CLI only; Admin gate in browser |
-| `itm_repro_floor_designer_rce.php` | Floor Designer `save_as_floor_plan` repro: sample PNG from `images/switch_port_icons/`, isolated subprocess (handler `exit`), JSON parse, gallery cleanup |
+| `itm_repro_floor_designer_rce.php` | Floor Designer `save_as_floor_plan` repro: sample PNG from `images/switch_port_icons/`, isolated **CLI** subprocess (`itm_repro_floor_designer_resolve_php_binary()` skips `php-cgi` on Laragon), JSON parse, gallery cleanup |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.
