@@ -223,6 +223,10 @@ define('BASE_URL', $itm_baseUrl);
 if (!defined('ROOT_PATH')) {
     define('ROOT_PATH', dirname(dirname(__FILE__)) . '/');
 }
+$itmScriptBootstrapPath = ROOT_PATH . 'scripts/lib/itm_script_bootstrap.php';
+if (is_file($itmScriptBootstrapPath)) {
+    require_once $itmScriptBootstrapPath;
+}
 define('UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'images'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('UPLOAD_URL', BASE_URL . 'images/');
 define('TICKET_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'tickets_photos'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
@@ -413,10 +417,16 @@ if (
     && defined('ITM_CLI_SCRIPT')
     && ITM_CLI_SCRIPT
 ) {
-    $itmBrowserMaintenanceAuthAllowlist = [
-        'module_browser_qa_runner.php',
-        'run_tests.php',
-    ];
+    if (function_exists('itm_script_enforce_cli_maintenance_entry_or_exit')) {
+        itm_script_enforce_cli_maintenance_entry_or_exit();
+    }
+
+    $itmBrowserMaintenanceAuthAllowlist = function_exists('itm_script_browser_cli_maintenance_allowlist')
+        ? itm_script_browser_cli_maintenance_allowlist()
+        : [
+            'module_browser_qa_runner.php',
+            'run_tests.php',
+        ];
     $itmMaintenanceScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 
     if (in_array($itmMaintenanceScript, $itmBrowserMaintenanceAuthAllowlist, true)) {
@@ -438,6 +448,11 @@ if (
 ) {
     header('Location: ' . BASE_URL . 'login.php');
     exit();
+}
+
+// Why: Script/ apitest disposable test sessions must not browse the app as if they were Admin.
+if (function_exists('itm_script_reject_disposable_test_web_session_or_exit')) {
+    itm_script_reject_disposable_test_web_session_or_exit($current_file, $itmSkipWebAuth);
 }
 
 // Restrict users in read-only mode to the user-config page

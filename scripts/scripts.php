@@ -16,6 +16,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Access denied</title></head><body>';
         echo '<p>Administrator privileges required to open the scripts catalog.</p>';
         echo '<p>Your session is still active.</p>';
+        echo '<p>If your browser session was replaced by a script test user (<code>apitest-user-*</code> / <code>script-*</code>), ';
+        echo '<a href="' . htmlspecialchars((string)BASE_URL . 'logout.php', ENT_QUOTES, 'UTF-8') . '">sign out</a> ';
+        echo 'and log in again as Admin.</p>';
         echo '<p><a href="' . $itmScriptsDashboardUrl . '">Return to dashboard</a> · ';
         echo '<a href="' . $itmScriptsHomeUrl . 'index.php">Company selector</a></p>';
         echo '</body></html>';
@@ -1397,7 +1400,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="apitest_tier_free.php" target="_blank" rel="nofollow noreferrer">apitest_tier_free.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier (no <code>api_key</code>) stays unlimited; session resolve and HTTP probe via <code>itm_apitest_publish_http_session()</code>. Prints keyless probe URL <code>scripts/api.php?rate_limit=1</code>.</td>
+                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier (no <code>api_key</code>) stays unlimited; in-process resolve via disposable test user (<code>itm_script_with_test_session_context()</code>); isolated HTTP probe session (<code>itm_script_publish_isolated_http_session()</code>). Prints keyless probe URL <code>scripts/api.php?rate_limit=1</code>. <strong>CLI-only</strong> — include <code>lib/itm_script_cli_entry.php</code>.</td>
                     <td><code>php scripts/apitest_tier_free.php</code></td>
                 </tr>
                 <tr>
