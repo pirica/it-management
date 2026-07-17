@@ -1,13 +1,13 @@
 {
-    "generated_at": "2026-07-17T02:51:30+00:00",
-    "php_binary": "C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe",
+    "generated_at": "2026-07-17T11:21:24+00:00",
+    "php_binary": "/usr/bin/php7.4",
     "summary": {
-        "passed": 82,
+        "passed": 81,
         "failed_exit": 0,
         "failed_errors": 0,
-        "excluded": 53,
-        "allowlisted": 4,
-        "scanned": 86
+        "excluded": 55,
+        "allowlisted": 3,
+        "scanned": 84
     },
     "failures": []
 }

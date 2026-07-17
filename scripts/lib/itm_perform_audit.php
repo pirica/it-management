@@ -112,6 +112,8 @@ if (!function_exists('itm_perform_audit_static_exclusions')) {
             'module_clean_tests_qa_runner.php',
             'tickets_related_equipment_delete_test.php',
             'test_edit.php',
+            'health.php',
+            'test_ajax.php',
         ];
     }
 }

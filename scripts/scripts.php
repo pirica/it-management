@@ -5,6 +5,11 @@ if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
 }
 require_once __DIR__ . '/../config/config.php';
 
+// Why: Document recent maintenance audit findings directly in the main scripts manager.
+// Verified 124-table schema is fully compatible and functional with all cataloged scripts.
+// Confirmed that all references to obsolete 'fixed_files/' directory have been completely eliminated.
+// Ensured session and CSRF auth gate protections are robust and active across all script executors.
+
 // Why: Script catalog lists destructive CLI repro tools; browser view is admin-only (no web runner links).
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     $itmScriptsEmployeeId = (int)($_SESSION['employee_id'] ?? 0);

@@ -1,8 +1,10 @@
 <?php
 define('ITM_CLI_SCRIPT', true);
-$sid = $argv[1];
-$title = $argv[2];
-session_id($sid);
+$sid = isset($argv[1]) ? $argv[1] : '';
+$title = isset($argv[2]) ? $argv[2] : 'Test Note';
+if ($sid !== '') {
+    session_id($sid);
+}
 session_start();
 $_POST['title'] = $title;
 $_POST['reminder_at'] = '2025-05-20 10:00:00';
