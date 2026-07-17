@@ -25,6 +25,7 @@ $row = itm_apitest_seed_configuration($conn, $companyId, $employeeId, 'Basic', [
 
 if ($row === null) {
     itm_apitest_output_line('[FAIL] Unable to seed disposable Basic-tier configuration row.', 'fail');
+    itm_apitest_report_seed_failure($conn, $companyId, $employeeId);
     exit(1);
 }
 

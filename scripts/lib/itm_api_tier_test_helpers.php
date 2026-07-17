@@ -3,6 +3,11 @@
  * Shared disposable ui_configuration rows for API tier regression scripts.
  */
 
+$itmApitestScriptTestEmployee = __DIR__ . '/itm_script_test_employee.php';
+if (is_file($itmApitestScriptTestEmployee)) {
+    require_once $itmApitestScriptTestEmployee;
+}
+
 if (!defined('ITM_APITEST_COMPANY_ID')) {
     define('ITM_APITEST_COMPANY_ID', 1);
 }
@@ -49,6 +54,117 @@ function itm_apitest_assert($label, $condition, $detail = '') {
     return false;
 }
 
+function itm_apitest_clear_audit_context($conn) {
+    if (function_exists('itm_script_test_employee_clear_audit_context')) {
+        return itm_script_test_employee_clear_audit_context($conn);
+    }
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    mysqli_query($conn, 'SET @app_employee_id = NULL');
+    mysqli_query($conn, 'SET @app_company_id = NULL');
+    mysqli_query($conn, "SET @app_username = ''");
+    mysqli_query($conn, "SET @app_email = NULL");
+
+    return true;
+}
+
+function itm_apitest_disposable_username($employeeId) {
+    return 'apitest-user-' . (int)$employeeId;
+}
+
+function itm_apitest_resolve_employment_status_id($conn, $companyId) {
+    if (!($conn instanceof mysqli)) {
+        return 0;
+    }
+
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT id FROM employee_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1"
+    );
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (is_array($row) && (int)$row['id'] > 0) {
+            return (int)$row['id'];
+        }
+    }
+
+    $fallback = mysqli_prepare($conn, 'SELECT id FROM employee_statuses WHERE company_id = ? LIMIT 1');
+    if (!$fallback) {
+        return 0;
+    }
+
+    mysqli_stmt_bind_param($fallback, 'i', $companyId);
+    mysqli_stmt_execute($fallback);
+    $res = mysqli_stmt_get_result($fallback);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($fallback);
+
+    return is_array($row) ? (int)$row['id'] : 0;
+}
+
+function itm_apitest_report_seed_failure($conn, $companyId, $employeeId) {
+    itm_apitest_output_line('[DEBUG] Failure diagnostic checks:', 'warn');
+    if (!$conn || !($conn instanceof mysqli)) {
+        itm_apitest_output_line('  -> Connection is invalid or not connected.', 'fail');
+        return;
+    }
+
+    itm_apitest_output_line('  -> Database connection is valid.', 'pass');
+    $mysqlError = mysqli_error($conn);
+    if ($mysqlError !== '') {
+        itm_apitest_output_line('  -> Recent MySQL Error: ' . $mysqlError, 'fail');
+        itm_apitest_output_line('  -> Recent MySQL Error Code: ' . mysqli_errno($conn), 'fail');
+    }
+
+    $employeeId = (int)$employeeId;
+    $companyId = (int)$companyId;
+    $checkEmp = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE id = ? LIMIT 1');
+    if ($checkEmp) {
+        mysqli_stmt_bind_param($checkEmp, 'i', $employeeId);
+        mysqli_stmt_execute($checkEmp);
+        $res = mysqli_stmt_get_result($checkEmp);
+        $exists = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($checkEmp);
+        if ($exists) {
+            itm_apitest_output_line('  -> Target employee ID ' . $employeeId . ' exists in employees table.', 'pass');
+        } else {
+            itm_apitest_output_line(
+                '  -> Target employee ID ' . $employeeId . ' DOES NOT exist in employees table. '
+                . 'Audit triggers reject stale @app_employee_id when seeding ui_configuration.',
+                'fail'
+            );
+        }
+    }
+
+    $checkComp = mysqli_prepare($conn, 'SELECT 1 FROM companies WHERE id = ? LIMIT 1');
+    if ($checkComp) {
+        mysqli_stmt_bind_param($checkComp, 'i', $companyId);
+        mysqli_stmt_execute($checkComp);
+        $res = mysqli_stmt_get_result($checkComp);
+        $exists = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($checkComp);
+        if ($exists) {
+            itm_apitest_output_line('  -> Target company ID ' . $companyId . ' exists in companies table.', 'pass');
+        } else {
+            itm_apitest_output_line(
+                '  -> Target company ID ' . $companyId . ' DOES NOT exist in companies table.',
+                'fail'
+            );
+        }
+    }
+}
+
 function itm_apitest_cleanup_configuration($conn, $companyId, $employeeId) {
     if (!($conn instanceof mysqli)) {
         return false;
@@ -59,6 +175,8 @@ function itm_apitest_cleanup_configuration($conn, $companyId, $employeeId) {
     if ($companyId <= 0 || $employeeId <= 0) {
         return false;
     }
+
+    itm_apitest_clear_audit_context($conn);
 
     $stmt = mysqli_prepare($conn, 'DELETE FROM ui_configuration WHERE company_id = ? AND employee_id = ?');
     if (!$stmt) {
@@ -87,30 +205,70 @@ function itm_apitest_ensure_employee_exists($conn, $companyId, $employeeId) {
         return false;
     }
 
-    // Check if employee already exists
-    $checkSql = "SELECT 1 FROM employees WHERE id = $employeeId LIMIT 1";
-    $res = mysqli_query($conn, $checkSql);
-    if ($res && mysqli_num_rows($res) > 0) {
+    $checkStmt = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE id = ? LIMIT 1');
+    if (!$checkStmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($checkStmt, 'i', $employeeId);
+    mysqli_stmt_execute($checkStmt);
+    $res = mysqli_stmt_get_result($checkStmt);
+    $exists = $res && mysqli_num_rows($res) > 0;
+    mysqli_stmt_close($checkStmt);
+    if ($exists) {
         return true;
     }
 
-    // Lookup a valid employment status ID for this company
-    $statusId = 1;
-    $statusRes = mysqli_query($conn, "SELECT id FROM employee_statuses WHERE company_id = $companyId LIMIT 1");
-    if ($statusRes && $row = mysqli_fetch_assoc($statusRes)) {
-        $statusId = (int)$row['id'];
+    $statusId = itm_apitest_resolve_employment_status_id($conn, $companyId);
+    if ($statusId <= 0) {
+        return false;
     }
 
-    // Insert dummy employee with exact designated ID to bypass FK validation failure
-    $username = 'apitest-user-' . $employeeId;
-    $email = $username . '@example.com';
+    $username = itm_apitest_disposable_username($employeeId);
+    $email = $username . '@apitest.example.com';
     $firstName = 'Apitest';
     $lastName = 'User';
 
-    $insertSql = "INSERT IGNORE INTO employees (id, company_id, first_name, last_name, username, work_email, employment_status_id)
-                  VALUES ($employeeId, $companyId, '{$firstName}', '{$lastName}', '{$username}', '{$email}', $statusId)";
+    // Why: Stale session @app_employee_id (e.g. prior slot id after row delete) makes employees/ui_configuration
+    // audit triggers fail FK audit_logs_ibfk_employee before the disposable row exists.
+    itm_apitest_clear_audit_context($conn);
 
-    return (bool)mysqli_query($conn, $insertSql);
+    $insertSql = 'INSERT INTO employees (id, company_id, first_name, last_name, username, work_email, employment_status_id)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)';
+    $insertStmt = mysqli_prepare($conn, $insertSql);
+    if (!$insertStmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param(
+        $insertStmt,
+        'iissssi',
+        $employeeId,
+        $companyId,
+        $firstName,
+        $lastName,
+        $username,
+        $email,
+        $statusId
+    );
+    $insertOk = mysqli_stmt_execute($insertStmt);
+    mysqli_stmt_close($insertStmt);
+    if (!$insertOk) {
+        return false;
+    }
+
+    $verifyStmt = mysqli_prepare($conn, 'SELECT 1 FROM employees WHERE id = ? LIMIT 1');
+    if (!$verifyStmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($verifyStmt, 'i', $employeeId);
+    mysqli_stmt_execute($verifyStmt);
+    $verifyRes = mysqli_stmt_get_result($verifyStmt);
+    $verified = $verifyRes && mysqli_num_rows($verifyRes) > 0;
+    mysqli_stmt_close($verifyStmt);
+
+    return $verified;
 }
 
 /**
@@ -137,6 +295,11 @@ function itm_apitest_seed_configuration($conn, $companyId, $employeeId, $tier, a
     }
 
     itm_apitest_cleanup_configuration($conn, $companyId, $employeeId);
+
+    $username = itm_apitest_disposable_username($employeeId);
+    if (function_exists('itm_script_test_employee_set_audit_context')) {
+        itm_script_test_employee_set_audit_context($conn, $employeeId, $username, $companyId);
+    }
 
     $tier = function_exists('itm_api_normalize_tier')
         ? itm_api_normalize_tier($tier)

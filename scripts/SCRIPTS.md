@@ -385,7 +385,7 @@ php scripts/auth_register_reset_human_test.php
 | `php scripts/apitest_tier_free.php` | Disposable **Free** tier row (empty `api_key`): unlimited status, session resolve without key, repeated consumes allowed. HTTP probe may omit `api_key` when Apache session is signed in. |
 | `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. HTTP probe requires `api_key`. |
 
-Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, browser URL with optional `api_key`, HTTP probe). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, browser URL with optional `api_key`, HTTP probe). Slot employees (`apitest-user-{id}`) are created with prepared INSERTs; helpers clear stale `@app_employee_id` audit session vars before `employees` / `ui_configuration` mutations so `audit_logs_ibfk_employee` does not reject seeding. Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
 **Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). The Free apitest publishes the CLI session (`itm_apitest_publish_http_session()`) so the HTTP probe can pass without an API key when Apache is running. **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
 
