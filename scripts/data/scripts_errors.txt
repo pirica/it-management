@@ -158,7 +158,6 @@ script=verify_notes_ajax_contract.php exit=0 note=ok
 script=verify_ops_report.php exit=0 note=ok
 script=verify_password_reset_flow.php exit=0 note=ok
 script=verify_rbac_updated.php exit=0 note=ok
-script=verify_reset_git_history_access.php exit=0 note=ok
 script=verify_roles_permissions.php exit=0 note=ok
 script=verify_select_options_escalation.php exit=0 note=ok
 script=verify_sql.php exit=0 note=ok

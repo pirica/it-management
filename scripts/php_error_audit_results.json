@@ -431,14 +431,6 @@
         ],
         "browser": []
     },
-    "verify_reset_git_history_access.php": {
-        "cli": [
-            "[09-Jul-2026 07:03:34 UTC] PHP Warning:  chdir(): No such file or directory (errno 2) in /tmp/reproQzE63q on line 16",
-            "[09-Jul-2026 07:03:34 UTC] PHP Warning:  file_get_contents(/app/scripts/../reset_git_history.php): failed to open stream: No such file or directory in /app/scripts/verify_reset_git_history_access.php on line 60",
-            "Warning: file_get_contents(/app/scripts/../reset_git_history.php): failed to open stream: No such file or directory in /app/scripts/verify_reset_git_history_access.php on line 60"
-        ],
-        "browser": []
-    },
     "verify_sql.php": {
         "cli": [
             "Total errors found: 0"
