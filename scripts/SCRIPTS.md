@@ -101,7 +101,7 @@ function colorText($text, $type) {
 - Check for the 'Admin' role using session variables (e.g., `$_SESSION['role_name']`).
 - Use `itm_require_post_csrf()` for all state-changing `POST` requests.
 - For CLI scripts, use the `ITM_CLI_SCRIPT` constant to bypass web-specific authentication when appropriate. **Exception:** `scripts/scripts.php` sets `ITM_CLI_SCRIPT` only under CLI SAPI — the browser catalog must not define it (keeps normal session/auth). Browser access is **admin-only** via `itm_is_admin()`; non-admins get HTTP 403 HTML with links back to dashboard (session is not cleared).
-- **Global scripts bootstrap:** `scripts/lib/itm_script_bootstrap.php` — loaded from `config/config.php`. CLI-only `ITM_CLI_SCRIPT` files under `scripts/` are blocked in the browser (except `module_browser_qa_runner.php`, `run_tests.php`). Disposable test-user sessions (`apitest-user-*`, `script-*`, slot ids `999901+`) are cleared on web requests. CLI regressions include `scripts/lib/itm_script_cli_entry.php` and use `itm_script_with_test_session_context()` / `itm_script_publish_isolated_http_session()` — **never** the signed-in Admin browser session.
+- **Global scripts bootstrap:** `scripts/lib/itm_script_bootstrap.php` — loaded from `config/config.php`. **Browser + CLI** is the default for `scripts/*` (normal session/auth in the browser; `ITM_CLI_SCRIPT` only under CLI SAPI). Scripts that must stay CLI-only use their own `PHP_SAPI !== 'cli'` guard (or `itm_script_prepare_cli_entry()`). `module_browser_qa_runner.php` and `run_tests.php` may skip web auth on localhost or with `ITM_MAINTENANCE_TOKEN`. Disposable test-user sessions (`apitest-user-*`, `script-*`, slot ids `999901+`) are cleared on normal web pages. In-process session tests use `itm_script_with_test_session_context()` / `itm_script_publish_isolated_http_session()` — **never** the signed-in Admin browser session.
 - **No-auth browser scripts:** define `ITM_SCRIPT_NO_AUTH` before `config.php` only for read-only aggregate diagnostics allowlisted in `config/config.php` (`$itmNoAuthScripts`). Currently: `count_db_tables.php`.
 
 ### Database table count (`count_db_tables.php`)
@@ -184,16 +184,19 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 |--------|---------|
 | `itm_script_is_cli()` | `PHP_SAPI === 'cli'` or `phpdbg` |
 | `itm_script_running_under_scripts_dir()` | True when `SCRIPT_FILENAME` is `scripts/*.php` |
-| `itm_script_enforce_cli_maintenance_entry_or_exit()` | Browser block for `ITM_CLI_SCRIPT` under `scripts/` (except MBQA runner + PHPUnit browser menu) |
+| `itm_script_browser_skip_web_auth_allowlist()` | `module_browser_qa_runner.php`, `run_tests.php` — may skip web auth on localhost / `ITM_MAINTENANCE_TOKEN` |
+| `itm_script_require_admin_browser_or_exit($conn)` | HTML 403 when the browser caller is not Administrator |
 | `itm_script_is_disposable_test_session()` | Detects `apitest-user-*`, `script-*-{hex}`, or slot ids `999901–999999` in `$_SESSION` |
 | `itm_script_reject_disposable_test_web_session_or_exit($currentFile, $skipWebAuth)` | Clears disposable test cookie and redirects to `login.php` on normal web pages |
 | `itm_script_with_test_session_context($companyId, $employeeId, $username, $callback)` | Temporary test-user `$_SESSION` for in-process asserts; restores prior session (Admin) after |
 | `itm_script_publish_isolated_http_session($companyId, $employeeId, $username)` | Writes a throwaway `sess_*` file for curl/browser HTTP probes without mutating the active session |
 | `itm_script_prepare_cli_entry($basename)` | CLI-only guard + `ITM_CLI_SCRIPT` define; caller must `require config.php` at **file scope** next |
 
-**CLI-only entry include:** `scripts/lib/itm_script_cli_entry.php` — one line at the top of pure CLI regressions (`apitest_tier_*.php`, etc.): guard + `ITM_CLI_SCRIPT` + `config.php` at file scope (keeps `$conn` visible).
+**Browser + CLI entry include:** `scripts/lib/itm_script_regression_entry.php` — `ITM_CLI_SCRIPT` on CLI only; Administrator required in browser after `config.php`. Alias: `itm_script_cli_entry.php`.
 
-**Browser allowlist** (may define `ITM_CLI_SCRIPT` in browser with localhost/token gate): `module_browser_qa_runner.php`, `run_tests.php`.
+**CLI-only scripts** — per-file `PHP_SAPI !== 'cli'` guard (e.g. `bypass_login.php`, `repair_table_from_schema.php`, `fix_sql*.php`) or call `itm_script_prepare_cli_entry()` before `config.php`.
+
+**Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`.
 
 **Recovery:** if the dashboard shows company info but **No companies available** and `scripts.php` returns admin 403, the browser cookie was likely replaced by a script test user — sign out and log in again as Admin.
 
@@ -406,10 +409,10 @@ php scripts/auth_register_reset_human_test.php
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/apitest_tier_free.php` | Disposable **Free** tier row (empty `api_key`): unlimited status, in-process session resolve via disposable test user (`itm_script_with_test_session_context()`), repeated consumes allowed. HTTP probe uses isolated test-user cookie — not Admin. |
-| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. HTTP probe requires `api_key`. |
+| `php scripts/apitest_tier_free.php` | Disposable **Free** tier row (empty `api_key`): unlimited status, in-process session resolve via disposable test user (`itm_script_with_test_session_context()`), repeated consumes allowed. **Browser + CLI** (browser: Admin login). HTTP probe uses isolated test-user cookie — not Admin. |
+| `php scripts/apitest_tier_basic.php` | Disposable **Basic** tier row seeded at `limit - 1`: next consume succeeds, following consume is blocked. **Browser + CLI** (browser: Admin login). HTTP probe requires `api_key`. |
 
-Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, browser URL with optional `api_key`, HTTP probe). Slot employees (`apitest-user-{id}`) are created with prepared INSERTs; helpers clear stale `@app_employee_id` audit session vars before `employees` / `ui_configuration` mutations so `audit_logs_ibfk_employee` does not reject seeding. Session resolve/consume tests use **`itm_script_with_test_session_context()`** (disposable test user — not Admin). HTTP probes use **`itm_script_publish_isolated_http_session()`**. Entry: **`scripts/lib/itm_script_cli_entry.php`** + `scripts/lib/itm_script_bootstrap.php`. Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
+Shared helpers: `scripts/lib/itm_api_tier_test_helpers.php` (disposable `company_id`/`employee_id` slots, browser URL with optional `api_key`, HTTP probe). Slot employees (`apitest-user-{id}`) are created with prepared INSERTs; helpers clear stale `@app_employee_id` audit session vars before `employees` / `ui_configuration` mutations so `audit_logs_ibfk_employee` does not reject seeding. Session resolve/consume tests use **`itm_script_with_test_session_context()`** (disposable test user — not Admin). HTTP probes use **`itm_script_publish_isolated_http_session()`**. Entry: **`scripts/lib/itm_script_regression_entry.php`** (browser + CLI; Admin required in browser). Requires MySQL (`itmanagement` schema). Catalog: `scripts/scripts.php`.
 
 **Free** tier prints a session probe URL (`scripts/api.php?rate_limit=1` without `api_key`). The Free apitest publishes an **isolated** disposable test-user `PHPSESSID` (`itm_script_publish_isolated_http_session()` via `itm_apitest_publish_http_session()`) **before any script output** so the curl HTTP probe can pass without an API key when Apache is running — it does **not** reuse or overwrite the signed-in Admin browser session. **Paid** tiers print `…&api_key=…`. Probe returns JSON without a PHP session redirect (`ITM_API_RATE_LIMIT_PROBE`). Disposable rows remain until the next apitest run for that slot.
 
@@ -474,8 +477,9 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
 | `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, Admin gate for browser apply only, `itm_apply_script_echo_list()` |
-| `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): CLI-only browser block, disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions |
-| `scripts/lib/itm_script_cli_entry.php` | Standard top include for CLI-only regressions: guard + `ITM_CLI_SCRIPT` + `config.php` at file scope |
+| `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions, optional Admin browser gate |
+| `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
+| `scripts/lib/itm_script_regression_entry.php` | Browser + CLI regressions: `ITM_CLI_SCRIPT` on CLI only, Admin gate in browser, `config.php` at file scope |
 
 #### Equipment-type façade modules (`modules/is_*`) and clear-table tests
 

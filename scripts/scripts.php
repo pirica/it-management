@@ -1400,7 +1400,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="apitest_tier_free.php" target="_blank" rel="nofollow noreferrer">apitest_tier_free.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier (no <code>api_key</code>) stays unlimited; in-process resolve via disposable test user (<code>itm_script_with_test_session_context()</code>); isolated HTTP probe session (<code>itm_script_publish_isolated_http_session()</code>). Prints keyless probe URL <code>scripts/api.php?rate_limit=1</code>. <strong>CLI-only</strong> — include <code>lib/itm_script_cli_entry.php</code>.</td>
+                    <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier (no <code>api_key</code>) stays unlimited; in-process resolve via disposable test user (<code>itm_script_with_test_session_context()</code>); isolated HTTP probe session (<code>itm_script_publish_isolated_http_session()</code>). Prints keyless probe URL <code>scripts/api.php?rate_limit=1</code>. Browser: Admin login via <code>lib/itm_script_regression_entry.php</code>.</td>
                     <td><code>php scripts/apitest_tier_free.php</code></td>
                 </tr>
                 <tr>
