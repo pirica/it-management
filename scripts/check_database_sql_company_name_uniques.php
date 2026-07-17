@@ -81,12 +81,12 @@ if ($company_id <= 0) {
 
 $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
 $scriptSelf = $baseUrl . 'scripts/check_database_sql_company_name_uniques.php';
-$result = itm_database_sql_unique_audit_run($sqlPath);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
-    $result = itm_database_sql_unique_audit_run($sqlPath);
 }
+
+$result = itm_database_sql_unique_audit_run($sqlPath);
 
 header('Content-Type: text/html; charset=utf-8');
 require_once __DIR__ . '/lib/script_browser_nav.php';
@@ -334,5 +334,3 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 </script>
 </body>
 </html>
-
-itm_script_output_end();

@@ -964,9 +964,25 @@ if (!function_exists('itm_can_delete_record')) {
  */
 if (!function_exists('itm_validate_csrf_token')) {
     function itm_validate_csrf_token($token) {
-        $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
         $token = (string)$token;
-        return $sessionToken !== '' && $token !== '' && hash_equals($sessionToken, $token);
+        if ($token === '') {
+            return false;
+        }
+
+        $sessionToken = trim((string)($_SESSION['csrf_token'] ?? ''));
+        if ($sessionToken !== '' && hash_equals($sessionToken, $token)) {
+            return true;
+        }
+
+        // Why: browser scripts/* validate POST against the pre-swap cookie session when isolation copied a stale backup.
+        if (isset($GLOBALS['itm_script_browser_session_backup']) && is_array($GLOBALS['itm_script_browser_session_backup'])) {
+            $backupToken = trim((string)($GLOBALS['itm_script_browser_session_backup']['csrf_token'] ?? ''));
+            if ($backupToken !== '' && hash_equals($backupToken, $token)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -989,6 +1005,9 @@ if (!function_exists('itm_get_csrf_token')) {
     function itm_get_csrf_token() {
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        if (function_exists('itm_script_sync_csrf_to_browser_session_backup')) {
+            itm_script_sync_csrf_to_browser_session_backup((string)$_SESSION['csrf_token']);
         }
         return (string)$_SESSION['csrf_token'];
     }

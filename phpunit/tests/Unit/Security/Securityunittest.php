@@ -21,6 +21,22 @@ class SecurityUnittest extends TestCase
         unset($_SESSION['csrf_token']);
     }
 
+    public function testCsrfTokenValidationAcceptsBrowserSessionBackup()
+    {
+        unset($_SESSION['csrf_token']);
+        $GLOBALS['itm_script_browser_session_backup'] = [
+            'employee_id' => 1,
+            'username' => 'Admin',
+            'company_id' => 1,
+            'csrf_token' => 'backup-token',
+        ];
+
+        $this->assertTrue(itm_validate_csrf_token('backup-token'));
+        $this->assertFalse(itm_validate_csrf_token('wrong-token'));
+
+        unset($GLOBALS['itm_script_browser_session_backup']);
+    }
+
     /**
      * Test itm_get_csrf_token() generates and retrieves tokens correctly.
      */

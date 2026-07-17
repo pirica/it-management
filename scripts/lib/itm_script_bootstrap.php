@@ -129,6 +129,25 @@ if (!function_exists('itm_script_resolve_employment_status_id_for_company')) {
     }
 }
 
+if (!function_exists('itm_script_sync_csrf_to_browser_session_backup')) {
+    /**
+     * Keep pre-swap backup aligned when csrf_token is minted in an isolated scripts/* session.
+     */
+    function itm_script_sync_csrf_to_browser_session_backup($csrfToken)
+    {
+        if (!isset($GLOBALS['itm_script_browser_session_backup']) || !is_array($GLOBALS['itm_script_browser_session_backup'])) {
+            return;
+        }
+
+        $csrfToken = trim((string)$csrfToken);
+        if ($csrfToken === '') {
+            return;
+        }
+
+        $GLOBALS['itm_script_browser_session_backup']['csrf_token'] = $csrfToken;
+    }
+}
+
 if (!function_exists('itm_script_finish_browser_isolated_session')) {
     function itm_script_finish_browser_isolated_session()
     {
@@ -147,9 +166,19 @@ if (!function_exists('itm_script_finish_browser_isolated_session')) {
             itm_script_test_employee_delete($conn, $testEmployeeId);
         }
 
-        if ($backup !== null && session_status() === PHP_SESSION_ACTIVE) {
+        if ($backup !== null) {
+            // Why: POST forms render csrf_token during the isolated request; merge back so the next request validates.
+            $isolatedCsrfToken = trim((string)($_SESSION['csrf_token'] ?? ''));
+            if ($isolatedCsrfToken === '' && isset($backup['csrf_token'])) {
+                $isolatedCsrfToken = trim((string)$backup['csrf_token']);
+            }
+            if ($isolatedCsrfToken !== '') {
+                $backup['csrf_token'] = $isolatedCsrfToken;
+            }
             $_SESSION = $backup;
-            itm_script_sync_audit_session_from_php_session($conn);
+            if (session_status() === PHP_SESSION_ACTIVE && $conn instanceof mysqli) {
+                itm_script_sync_audit_session_from_php_session($conn);
+            }
         }
 
         unset(
@@ -214,12 +243,17 @@ if (!function_exists('itm_script_begin_browser_isolated_session')) {
         $GLOBALS['itm_script_browser_isolated_employee_id'] = $testEmployeeId;
         $GLOBALS['itm_script_browser_isolated_conn'] = $conn;
 
-        $_SESSION = [
+        $isolatedSession = [
             'company_id' => $companyId,
             'employee_id' => $testEmployeeId,
             'username' => (string)$testUser['username'],
             'itm_script_browser_isolated' => 1,
         ];
+        $backupCsrfToken = trim((string)($backup['csrf_token'] ?? ''));
+        if ($backupCsrfToken !== '') {
+            $isolatedSession['csrf_token'] = $backupCsrfToken;
+        }
+        $_SESSION = $isolatedSession;
 
         if (function_exists('itm_script_test_employee_set_audit_context')) {
             itm_script_test_employee_set_audit_context($conn, $testEmployeeId, (string)$testUser['username'], $companyId);
