@@ -49,7 +49,7 @@ $exitCode = 0;
 
 if ($exists && is_array($decoded) && empty($decoded['ok'])) {
     echo itm_script_format_status_line('[PASS] SUCCESS: Victim position still exists. Cross-tenant delete was blocked.') . $nl;
-    echo 'API response: ' . (string)($decoded['error'] ?? 'denied') . $nl;
+    echo itm_script_format_status_line('[PASS] API response: ' . (string)($decoded['error'] ?? 'denied')) . $nl;
 } elseif ($exists) {
     echo itm_script_format_status_line('[PASS] SUCCESS: Victim position still exists after API call.') . $nl;
 } else {

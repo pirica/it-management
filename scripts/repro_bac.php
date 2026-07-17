@@ -61,7 +61,7 @@ if (!$exists) {
 } else {
     echo itm_script_format_status_line('[PASS] Cross-tenant position delete was blocked.') . $nl;
     if (is_array($decoded)) {
-        echo 'API response: ' . (string)($decoded['error'] ?? 'denied') . $nl;
+        echo itm_script_format_status_line('[PASS] API response: ' . (string)($decoded['error'] ?? 'denied')) . $nl;
     }
 }
 
