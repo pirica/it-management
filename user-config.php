@@ -206,18 +206,15 @@ $stat_definitions = itm_user_config_stat_definitions();
 $all_stats = itm_user_config_fetch_stats_batch($conn, $stat_definitions, $user_id, $company_id);
 
 // Extract variables used in UI from consolidated stats
-$total_events_forme = 0;
-$total_events_created = 0;
-$total_alerts_forme = 0;
-$total_alerts_created = 0;
+$alertsEventsCounts = itm_user_config_extract_alerts_events_counts($all_stats);
+$total_events_forme = $alertsEventsCounts['total_events_forme'];
+$total_events_created = $alertsEventsCounts['total_events_created'];
+$total_alerts_forme = $alertsEventsCounts['total_alerts_forme'];
+$total_alerts_created = $alertsEventsCounts['total_alerts_created'];
 $assigned_assets_count = 0;
 $vault_entries_count = 0;
 
 foreach ($all_stats as $s) {
-    if ($s['table'] === 'events' && $s['field'] === 'assigned_to_employee_id') $total_events_forme = $s['count'];
-    if ($s['table'] === 'events' && $s['field'] === 'created_by') $total_events_created = $s['count'];
-    if ($s['table'] === 'alerts' && $s['field'] === 'assigned_to_employee_id') $total_alerts_forme = $s['count'];
-    if ($s['table'] === 'alerts' && $s['field'] === 'created_by') $total_alerts_created = $s['count'];
     if ($s['table'] === 'equipment' && $s['field'] === 'assigned_to_employee_id') $assigned_assets_count = $s['count'];
     if ($s['table'] === 'password_entries' && $s['field'] === 'employee_id') $vault_entries_count = $s['count'];
 }
