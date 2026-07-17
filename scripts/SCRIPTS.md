@@ -101,7 +101,7 @@ function colorText($text, $type) {
 - Check for the 'Admin' role using session variables (e.g., `$_SESSION['role_name']`).
 - Use `itm_require_post_csrf()` for all state-changing `POST` requests.
 - For CLI scripts, use the `ITM_CLI_SCRIPT` constant to bypass web-specific authentication when appropriate. **Exception:** `scripts/scripts.php` sets `ITM_CLI_SCRIPT` only under CLI SAPI — the browser catalog must not define it (keeps normal session/auth). Browser access is **admin-only** via `itm_is_admin()`; non-admins get HTTP 403 HTML with links back to dashboard (session is not cleared).
-- **Global scripts bootstrap:** `scripts/lib/itm_script_bootstrap.php` — loaded from `config/config.php`. **Browser + CLI** is the default for `scripts/*` (normal session/auth in the browser; `ITM_CLI_SCRIPT` only under CLI SAPI). Scripts that must stay CLI-only use their own `PHP_SAPI !== 'cli'` guard (or `itm_script_prepare_cli_entry()`). `module_browser_qa_runner.php` and `run_tests.php` may skip web auth on localhost or with `ITM_MAINTENANCE_TOKEN`. Disposable test-user sessions (`apitest-user-*`, `script-*`, slot ids `999901+`) are cleared on normal web pages. In-process session tests use `itm_script_with_test_session_context()` / `itm_script_publish_isolated_http_session()` — **never** the signed-in Admin browser session.
+- **Global scripts bootstrap:** `scripts/lib/itm_script_bootstrap.php` — loaded from `config/config.php`. **Browser + CLI** is the default for `scripts/*` (normal session/auth in the browser; `ITM_CLI_SCRIPT` only under CLI SAPI). **Browser execution swaps to a disposable test Admin or test employee** (`itm_script_begin_browser_isolated_session()`) — never the signed-in Admin cookie; shutdown restores the real session and deletes the disposable row. Exempt: `scripts.php`, `api.php`, MBQA runner, PHPUnit menu. Scripts that must stay CLI-only use their own `PHP_SAPI !== 'cli'` guard (or `itm_script_prepare_cli_entry()`). Disposable test-user sessions (`apitest-user-*`, `script-*`, slot ids `999901+`) may only browse `scripts/*.php`. In-process session tests use `itm_script_with_test_session_context()` / `itm_script_publish_isolated_http_session()` — **never** the signed-in Admin browser session.
 - **No-auth browser scripts:** define `ITM_SCRIPT_NO_AUTH` before `config.php` only for read-only aggregate diagnostics allowlisted in `config/config.php` (`$itmNoAuthScripts`). Currently: `count_db_tables.php`.
 
 ### Database table count (`count_db_tables.php`)
@@ -185,9 +185,12 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `itm_script_is_cli()` | `PHP_SAPI === 'cli'` or `phpdbg` |
 | `itm_script_running_under_scripts_dir()` | True when `SCRIPT_FILENAME` is `scripts/*.php` |
 | `itm_script_browser_skip_web_auth_allowlist()` | `module_browser_qa_runner.php`, `run_tests.php` — may skip web auth on localhost / `ITM_MAINTENANCE_TOKEN` |
-| `itm_script_require_admin_browser_or_exit($conn)` | HTML 403 when the browser caller is not Administrator |
+| `itm_script_browser_isolation_exempt_basenames()` | Catalog/API/MBQA scripts that keep the signed-in browser session |
+| `itm_script_begin_browser_isolated_session($conn, $skipWebAuth)` | Browser `scripts/*`: swap to disposable test Admin/employee; shutdown restores real session |
+| `itm_script_get_browser_authorization_employee_id()` | Real signed-in employee id for Admin authorization gates |
+| `itm_script_require_admin_browser_or_exit($conn)` | HTML 403 when the **real** browser caller is not Administrator |
 | `itm_script_is_disposable_test_session()` | Detects `apitest-user-*`, `script-*-{hex}`, or slot ids `999901–999999` in `$_SESSION` |
-| `itm_script_reject_disposable_test_web_session_or_exit($currentFile, $skipWebAuth)` | Clears disposable test cookie and redirects to `login.php` on normal web pages |
+| `itm_script_reject_disposable_test_web_session_or_exit($currentFile, $skipWebAuth)` | Clears disposable test cookie on normal web pages; **allowed** on `scripts/*.php` |
 | `itm_script_with_test_session_context($companyId, $employeeId, $username, $callback)` | Temporary test-user `$_SESSION` for in-process asserts; restores prior session (Admin) after |
 | `itm_script_publish_isolated_http_session($companyId, $employeeId, $username)` | Writes a throwaway `sess_*` file for curl/browser HTTP probes without mutating the active session |
 | `itm_script_prepare_cli_entry($basename)` | CLI-only guard + `ITM_CLI_SCRIPT` define; caller must `require config.php` at **file scope** next |

@@ -64,4 +64,23 @@ class ItmScriptBootstrapTest extends TestCase
         $this->assertSame('Admin', $_SESSION['username'] ?? null);
         $this->assertSame('keep-me', $_SESSION['vault_key'] ?? null);
     }
+
+    public function testGetBrowserAuthorizationEmployeeIdUsesBackup(): void
+    {
+        $GLOBALS['itm_script_browser_session_backup'] = [
+            'employee_id' => 42,
+            'username' => 'Admin',
+            'company_id' => 1,
+        ];
+        $_SESSION = [
+            'employee_id' => 999999,
+            'username' => 'script-verify-abc12345',
+            'company_id' => 1,
+            'itm_script_browser_isolated' => 1,
+        ];
+
+        $this->assertSame(42, itm_script_get_browser_authorization_employee_id());
+
+        unset($GLOBALS['itm_script_browser_session_backup']);
+    }
 }
