@@ -22,8 +22,9 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_force_delete_company.php` | Shared tenant wipe used by `scripts/force_delete_company.php` and PHPUnit teardown (`itm_force_delete_company()` deletes all `company_id` rows then the `companies` row). |
 | `itm_email_script_helpers.php` | Shared `itm_email_script_resolve_company_id()` for email test scripts and browser/CLI `--company=` parsing (session fallback, default company `1`). |
 | `itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php` (dry-run default, Admin browser gate on `?apply=1` only, target lists) |
-| `itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): `itm_script_enforce_cli_maintenance_entry_or_exit()`, `itm_script_is_disposable_test_session()`, `itm_script_reject_disposable_test_web_session_or_exit()`, `itm_script_with_test_session_context()`, `itm_script_publish_isolated_http_session()`, `itm_script_prepare_cli_entry()` |
-| `itm_script_cli_entry.php` | One-line include for CLI-only regressions: guard + `ITM_CLI_SCRIPT` + `config.php` at file scope (keeps `$conn` visible) |
+| `itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): `itm_script_browser_skip_web_auth_allowlist()`, `itm_script_require_admin_browser_or_exit()`, `itm_script_is_disposable_test_session()`, `itm_script_reject_disposable_test_web_session_or_exit()`, `itm_script_with_test_session_context()`, `itm_script_publish_isolated_http_session()`, `itm_script_prepare_cli_entry()` |
+| `itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
+| `itm_script_regression_entry.php` | Browser + CLI regressions (`apitest_tier_*.php`): `ITM_CLI_SCRIPT` on CLI only; Admin gate in browser |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.

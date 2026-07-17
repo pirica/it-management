@@ -410,23 +410,21 @@ if (
     }
 }
 
-// Browser: never bypass auth for every ITM_CLI_SCRIPT file — only an explicit allowlist (HTTP QA runner).
+// Browser: MBQA runner and PHPUnit menu may skip web auth on localhost or with ITM_MAINTENANCE_TOKEN.
 if (
     !$itmSkipWebAuth
     && PHP_SAPI !== 'cli'
     && defined('ITM_CLI_SCRIPT')
     && ITM_CLI_SCRIPT
 ) {
-    if (function_exists('itm_script_enforce_cli_maintenance_entry_or_exit')) {
-        itm_script_enforce_cli_maintenance_entry_or_exit();
-    }
-
-    $itmBrowserMaintenanceAuthAllowlist = function_exists('itm_script_browser_cli_maintenance_allowlist')
-        ? itm_script_browser_cli_maintenance_allowlist()
-        : [
-            'module_browser_qa_runner.php',
-            'run_tests.php',
-        ];
+    $itmBrowserMaintenanceAuthAllowlist = function_exists('itm_script_browser_skip_web_auth_allowlist')
+        ? itm_script_browser_skip_web_auth_allowlist()
+        : (function_exists('itm_script_browser_cli_maintenance_allowlist')
+            ? itm_script_browser_cli_maintenance_allowlist()
+            : [
+                'module_browser_qa_runner.php',
+                'run_tests.php',
+            ]);
     $itmMaintenanceScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 
     if (in_array($itmMaintenanceScript, $itmBrowserMaintenanceAuthAllowlist, true)) {

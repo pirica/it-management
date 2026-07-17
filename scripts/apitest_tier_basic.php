@@ -3,7 +3,7 @@
  * Regression: Basic tier API keys enforce the hourly request cap.
  */
 
-require_once __DIR__ . '/lib/itm_script_cli_entry.php';
+require_once __DIR__ . '/lib/itm_script_regression_entry.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_api_tier_test_helpers.php';
 

@@ -3,8 +3,9 @@
  * Global entry contract for scripts/* maintenance and regression tools.
  *
  * Why: CLI regressions must use disposable test-user sessions (never the signed-in Admin
- * browser session). Scripts that define ITM_CLI_SCRIPT are CLI-only in the browser unless
- * explicitly allowlisted (MBQA runner, PHPUnit browser menu).
+ * browser session). Browser access to scripts/* is the default — individual scripts gate
+ * CLI-only or Admin-only behaviour. MBQA runner and PHPUnit browser menu may skip web auth
+ * on localhost or with ITM_MAINTENANCE_TOKEN.
  */
 
 if (!function_exists('itm_script_is_cli')) {
@@ -26,11 +27,13 @@ if (!function_exists('itm_script_running_under_scripts_dir')) {
     }
 }
 
-if (!function_exists('itm_script_browser_cli_maintenance_allowlist')) {
+if (!function_exists('itm_script_browser_skip_web_auth_allowlist')) {
     /**
+     * scripts/* that may skip normal web auth in the browser (localhost or ITM_MAINTENANCE_TOKEN).
+     *
      * @return string[]
      */
-    function itm_script_browser_cli_maintenance_allowlist()
+    function itm_script_browser_skip_web_auth_allowlist()
     {
         return [
             'module_browser_qa_runner.php',
@@ -39,32 +42,43 @@ if (!function_exists('itm_script_browser_cli_maintenance_allowlist')) {
     }
 }
 
-if (!function_exists('itm_script_enforce_cli_maintenance_entry_or_exit')) {
+if (!function_exists('itm_script_browser_cli_maintenance_allowlist')) {
     /**
-     * Block browser execution of scripts/* files that define ITM_CLI_SCRIPT (except allowlist).
+     * @deprecated Use itm_script_browser_skip_web_auth_allowlist()
+     * @return string[]
      */
-    function itm_script_enforce_cli_maintenance_entry_or_exit()
+    function itm_script_browser_cli_maintenance_allowlist()
+    {
+        return itm_script_browser_skip_web_auth_allowlist();
+    }
+}
+
+if (!function_exists('itm_script_require_admin_browser_or_exit')) {
+    /**
+     * Browser-only Administrator gate for scripts/* regressions.
+     */
+    function itm_script_require_admin_browser_or_exit($conn)
     {
         if (itm_script_is_cli()) {
             return;
         }
-        if (!defined('ITM_CLI_SCRIPT') || !ITM_CLI_SCRIPT) {
-            return;
-        }
-        if (!itm_script_running_under_scripts_dir()) {
-            return;
-        }
 
-        $basename = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
-        if (in_array($basename, itm_script_browser_cli_maintenance_allowlist(), true)) {
+        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+        $mysqliConn = ($conn instanceof mysqli) ? $conn : null;
+        if (function_exists('itm_is_admin') && itm_is_admin($mysqliConn, $employeeId)) {
             return;
         }
 
         http_response_code(403);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo $basename . " is CLI-only. Run from the repository root:\n";
-        echo "php scripts/" . $basename . "\n";
-        exit(1);
+        header('Content-Type: text/html; charset=utf-8');
+        $dashboardUrl = htmlspecialchars((string)(defined('BASE_URL') ? BASE_URL : '/') . 'dashboard.php', ENT_QUOTES, 'UTF-8');
+        $loginUrl = htmlspecialchars((string)(defined('BASE_URL') ? BASE_URL : '/') . 'login.php', ENT_QUOTES, 'UTF-8');
+        echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Access denied</title></head><body>';
+        echo '<p>Administrator login required to run this script in the browser.</p>';
+        echo '<p><a href="' . $dashboardUrl . '">Return to dashboard</a> · ';
+        echo '<a href="' . $loginUrl . '">Sign in</a></p>';
+        echo '</body></html>';
+        exit;
     }
 }
 
