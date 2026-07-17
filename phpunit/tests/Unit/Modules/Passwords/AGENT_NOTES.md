@@ -9,7 +9,7 @@ Unit/regression tests for `modules/passwords/`.
 
 ## 7. File Structure
 - `PasswordsTest.php` — DB CRUD unit tests.
-- `PasswordsFunctionalTest.php` — PHPUnit class exercising `ajax_handler.php` (no top-level echo; safe with HTML coverage); session `employee_id` comes from class property `$employeeId`.
+- `PasswordsFunctionalTest.php` — PHPUnit class exercising `ajax_handler.php` (no top-level echo; safe with HTML coverage); disposable session via `ItmPhpunitTestSessionTrait` (`company_id` + `employee_id`).
 
 ## 10. Common Pitfalls
 

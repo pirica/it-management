@@ -3,13 +3,16 @@
 namespace Tests\Unit\Modules\Passwords;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Unit\Support\ItmPhpunitTestSessionTrait;
 
 /**
  * Passwords functional tests — AJAX save_folder and save_entry via ajax_handler.php.
  */
 class PasswordsFunctionalTest extends TestCase
 {
-    private $employeeId = 1;
+    use ItmPhpunitTestSessionTrait;
+
+    private $employeeId = 0;
     private $csrfToken;
 
     protected function setUp(): void
@@ -23,8 +26,15 @@ class PasswordsFunctionalTest extends TestCase
             $this->markTestSkipped('Database connection unavailable.');
         }
 
-        $_SESSION['employee_id'] = $this->employeeId;
+        $actor = $this->itmPhpunitBeginTestSession($GLOBALS['conn'], 1, false, 'passwords-functional');
+        $this->employeeId = (int)$actor['id'];
         $this->csrfToken = itm_get_csrf_token();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->itmPhpunitEndTestSession();
+        parent::tearDown();
     }
 
     public function testSaveFolderRootAndChild()
