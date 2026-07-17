@@ -2,99 +2,132 @@
 /**
  * Dynamic PHP Script Error Auditor
  *
- * Discovers and executes all executable PHP scripts in the scripts/ folder
- * using subprocesses. Collects execution exit codes and any logged PHP error logs.
+ * Discovers and executes PHP scripts under scripts/ via subprocesses.
+ * Collects exit codes and PHP error log lines per script (isolated deltas).
+ *
+ * CLI: php scripts/perform_audit.php [--loop]
+ * Report: scripts/php_error_audit_results.json
  */
 
-// Define that we are in a CLI script context to bypass web-only auth/logic
 define('ITM_CLI_SCRIPT', true);
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_perform_audit.php';
 
 itm_script_output_begin('PHP Script Error Audit');
 $nl = itm_script_output_nl();
 
+$argvList = $GLOBALS['argv'] ?? [];
+$loopMode = in_array('--loop', $argvList, true);
+
 $errorLog = ROOT_PATH . 'error_log.txt';
 $resultsFile = __DIR__ . '/php_error_audit_results.json';
+$allowlistFile = __DIR__ . '/data/perform_audit_allowlist.json';
 
-// Discover all PHP scripts in the scripts/ folder (except specific helper/library files)
-$allFiles = glob(__DIR__ . '/*.php');
-$scripts = [];
+itm_perform_audit_prepare_db_env();
+itm_perform_audit_truncate_error_log($errorLog);
 
-$exclusions = [
-    'perform_audit.php',
-    'scripts.php',
+$phpBinary = itm_perform_audit_resolve_php_binary();
+$scripts = itm_perform_audit_discover_scripts(__DIR__);
+$allowlist = itm_perform_audit_load_allowlist($allowlistFile);
+
+$results = [];
+$stats = [
+    'passed' => 0,
+    'failed_exit' => 0,
+    'failed_errors' => 0,
+    'excluded' => count(itm_perform_audit_static_exclusions()),
+    'allowlisted' => 0,
+    'scanned' => count($scripts),
 ];
 
-foreach ($allFiles as $file) {
-    $base = basename($file);
-    if (in_array($base, $exclusions, true)) {
-        continue;
-    }
-    $scripts[] = $base;
-}
-
-sort($scripts);
-
-$lastSize = 0;
-$results = [];
-
-function get_new_errors($logPath, &$lastSize) {
-    clearstatcache();
-    $currentSize = file_exists($logPath) ? filesize($logPath) : 0;
-    if ($currentSize <= $lastSize) {
-        $lastSize = $currentSize;
-        return [];
-    }
-    
-    $fp = fopen($logPath, 'r');
-    if (!$fp) {
-        return [];
-    }
-    fseek($fp, $lastSize);
-    $newContent = '';
-    while (!feof($fp)) {
-        $newContent .= fread($fp, 8192);
-    }
-    fclose($fp);
-    
-    $lastSize = $currentSize;
-    return array_values(array_filter(array_map('trim', explode("\n", $newContent))));
-}
-
-// Ensure the MySQL DB is connected during the audit
-$envPrefix = "DB_HOST=127.0.0.1 DB_USER=root DB_PASS=itmanagement DB_NAME=itmanagement ";
-
-echo "Starting error audit on " . count($scripts) . " scripts..." . $nl;
+echo colorText('PHP Script Error Audit', 'info') . $nl;
+echo '[INFO] PHP binary: ' . $phpBinary . $nl;
+echo '[INFO] Scripts scanned: ' . $stats['scanned'] . ' (Tier 5 / menu scripts excluded)' . $nl;
+echo '[INFO] Allowlist entries: ' . count($allowlist) . $nl . $nl;
 
 foreach ($scripts as $script) {
     $scriptPath = __DIR__ . '/' . $script;
-    
-    // We execute the CLI command in a sub-process once, capturing stdout, stderr, and exit code.
-    $cmd = "{$envPrefix}ITM_CLI_SCRIPT=1 php " . escapeshellarg($scriptPath) . " 2>&1";
-    $output = [];
-    $exitCode = 0;
-    
-    exec($cmd, $output, $exitCode);
-    $errors = get_new_errors($errorLog, $lastSize);
-    
-    // Filter output for obvious PHP warnings, notices, errors, or uncaught exceptions
-    $cleanOutputErrors = array_values(array_filter(array_map('trim', $output), function($line) {
-        return (stripos($line, 'error') !== false || stripos($line, 'warning') !== false || stripos($line, 'notice') !== false || stripos($line, 'fatal') !== false || stripos($line, 'exception') !== false);
-    }));
+    $run = itm_perform_audit_run_script($phpBinary, $scriptPath, $errorLog);
 
-    $allErrors = array_unique(array_merge($errors, $cleanOutputErrors));
+    $exitCode = (int)$run['exit_code'];
+    $cliErrors = $run['cli_errors'];
+    $stdoutHits = $run['stdout_hits'];
+    $hasErrors = ($cliErrors !== [] || $stdoutHits !== []);
+    $allowlisted = itm_perform_audit_is_allowlisted_exit($script, $exitCode, $cliErrors, $stdoutHits, $allowlist);
 
-    if (!empty($allErrors) || $exitCode !== 0) {
+    if ($hasErrors) {
+        $stats['failed_errors']++;
         $results[$script] = [
-            'cli' => $allErrors,
-            'browser' => []
+            'exit_code' => $exitCode,
+            'cli_errors' => $cliErrors,
+            'stdout_hits' => $stdoutHits,
+            'allowlisted' => false,
         ];
+        continue;
+    }
+
+    if ($exitCode !== 0) {
+        if ($allowlisted) {
+            $stats['allowlisted']++;
+            continue;
+        }
+        $stats['failed_exit']++;
+        $results[$script] = [
+            'exit_code' => $exitCode,
+            'cli_errors' => [],
+            'stdout_hits' => [],
+            'allowlisted' => false,
+        ];
+        continue;
+    }
+
+    $stats['passed']++;
+}
+
+$payload = [
+    'generated_at' => gmdate('c'),
+    'php_binary' => $phpBinary,
+    'summary' => $stats,
+    'failures' => $results,
+];
+
+file_put_contents(
+    $resultsFile,
+    json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+);
+
+echo colorText('--- Summary ---', 'info') . $nl;
+echo '[INFO] Passed: ' . $stats['passed'] . $nl;
+echo '[INFO] Failed (exit code): ' . $stats['failed_exit'] . $nl;
+echo '[INFO] Failed (PHP errors): ' . $stats['failed_errors'] . $nl;
+echo '[INFO] Allowlisted exit-only: ' . $stats['allowlisted'] . $nl;
+echo '[INFO] Report: scripts/php_error_audit_results.json' . $nl . $nl;
+
+$unresolved = $stats['failed_exit'] + $stats['failed_errors'];
+if ($unresolved === 0) {
+    echo itm_script_format_status_line('[PASS] Audit verified — no unallowlisted failures.') . $nl;
+    itm_script_output_end();
+    exit(0);
+}
+
+echo itm_script_format_status_line('[FAIL] Audit found ' . $unresolved . ' unallowlisted failure(s).') . $nl;
+
+if ($results !== []) {
+    $shown = 0;
+    foreach ($results as $script => $row) {
+        if ($shown >= 10) {
+            break;
+        }
+        $errCount = count($row['cli_errors'] ?? []);
+        echo '  - ' . $script . ' exit=' . (int)($row['exit_code'] ?? 0) . ' errors=' . $errCount . $nl;
+        $shown++;
+    }
+    if (count($results) > 10) {
+        echo '  ... and ' . (count($results) - 10) . ' more (see JSON)' . $nl;
     }
 }
 
-file_put_contents($resultsFile, json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-echo colorText("[PASS] Audit complete. Error report written to scripts/php_error_audit_results.json", 'pass') . $nl;
-
 itm_script_output_end();
+exit(1);

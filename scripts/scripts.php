@@ -849,8 +849,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="perform_audit.php" target="_blank" rel="nofollow noreferrer">perform_audit.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Runs all scripts in the system and gathers any PHP warnings, notices, errors, or fatal exceptions. Saves results in a structured JSON file.</td>
-                    <td><code>php scripts/perform_audit.php</code></td>
+                    <td>Exploratory Tier 1–3 script subprocess audit (excludes Tier 4/5, <code>repro_*</code>, <code>verify_*</code>, <code>_tmp_*</code>). Per-script <code>exit_code</code> + isolated <code>error_log.txt</code> deltas → <code>scripts/php_error_audit_results.json</code>. Allowlist: <code>scripts/data/perform_audit_allowlist.json</code>. Not a CI gate.</td>
+                    <td><code>php scripts/perform_audit.php</code> (optional <code>--loop</code> for triage). Windows Laragon: full path to <code>php.exe</code> in parent and child processes.</td>
                 </tr>
                 <tr>
                     <td><a href="check_standard_crud_delegate_requires.php" target="_blank" rel="nofollow noreferrer">check_standard_crud_delegate_requires.php</a></td>

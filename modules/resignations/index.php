@@ -181,7 +181,7 @@ if ($selectedStatusIds !== [] && $selectedTypeIds !== [] && $isoWeekBounds !== n
             OR CAST(e.termination_date AS CHAR) LIKE ?
             OR CAST(WEEK(e.termination_date, 3) AS CHAR) LIKE ?
         )';
-        $types .= 'sssssssss';
+        $types .= 'ssssssssss';
         $params[] = $searchPattern;
         $params[] = $searchPattern;
         $params[] = $searchPattern;
