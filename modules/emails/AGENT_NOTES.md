@@ -23,6 +23,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ## 5. UI Behavior Requirements
 - Tabs: **Send Logs** | **SMTP Configurations** | **Alert Rules**.
+- Validation errors on `index.php` use `itm_render_alert_errors($errors)` (not raw `foreach` alert markup).
 - Stat cards link to filtered send logs (`status=sent` / `failed`).
 - SMTP form: toggle **Set as default SMTP**; password field with reveal button; **IMAP** port; **POP3** port, TLS mode, and require-secure toggle; test send on edit.
 - Alert rules: per-rule toggle, days-before (expiry rules), comma-separated notify emails.
