@@ -1,14 +1,26 @@
 <?php
-define('ITM_CLI_SCRIPT', true);
+// Why: CLI runners include config without a web session; browser catalog must not set ITM_CLI_SCRIPT (avoids auth edge cases).
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    define('ITM_CLI_SCRIPT', true);
+}
 require_once __DIR__ . '/../config/config.php';
 
-// Why: Audited and synchronized; lists all functional scripts with secure relative paths.
-// All functional, reproduction, and verification scripts have been audited for absolute correctness.
-// References to obsolete directories (like fixed_files/) have been removed or updated.
 // Why: Script catalog lists destructive CLI repro tools; browser view is admin-only (no web runner links).
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
-    http_response_code(403);
-    die('Access denied. Administrator privileges required.');
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+    $itmScriptsEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+    if (!itm_is_admin($conn, $itmScriptsEmployeeId)) {
+        http_response_code(403);
+        header('Content-Type: text/html; charset=utf-8');
+        $itmScriptsHomeUrl = htmlspecialchars((string)BASE_URL, ENT_QUOTES, 'UTF-8');
+        $itmScriptsDashboardUrl = htmlspecialchars((string)BASE_URL . 'dashboard.php', ENT_QUOTES, 'UTF-8');
+        echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Access denied</title></head><body>';
+        echo '<p>Administrator privileges required to open the scripts catalog.</p>';
+        echo '<p>Your session is still active.</p>';
+        echo '<p><a href="' . $itmScriptsDashboardUrl . '">Return to dashboard</a> · ';
+        echo '<a href="' . $itmScriptsHomeUrl . 'index.php">Company selector</a></p>';
+        echo '</body></html>';
+        exit;
+    }
 }
 ?>
 <!doctype html>

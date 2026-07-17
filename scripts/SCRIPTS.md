@@ -100,7 +100,7 @@ function colorText($text, $type) {
 - Scripts that perform destructive actions or access sensitive data MUST include role-based access control.
 - Check for the 'Admin' role using session variables (e.g., `$_SESSION['role_name']`).
 - Use `itm_require_post_csrf()` for all state-changing `POST` requests.
-- For CLI scripts, use the `ITM_CLI_SCRIPT` constant to bypass web-specific authentication when appropriate.
+- For CLI scripts, use the `ITM_CLI_SCRIPT` constant to bypass web-specific authentication when appropriate. **Exception:** `scripts/scripts.php` sets `ITM_CLI_SCRIPT` only under CLI SAPI — the browser catalog must not define it (keeps normal session/auth). Browser access is **admin-only** via `itm_is_admin()`; non-admins get HTTP 403 HTML with links back to dashboard (session is not cleared).
 - **No-auth browser scripts:** define `ITM_SCRIPT_NO_AUTH` before `config.php` only for read-only aggregate diagnostics allowlisted in `config/config.php` (`$itmNoAuthScripts`). Currently: `count_db_tables.php`.
 
 ### Database table count (`count_db_tables.php`)

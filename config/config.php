@@ -457,7 +457,7 @@ if (
     && isset($_SESSION['employee_id'])
     && !isset($_SESSION['company_id'])
     && !$isReadOnlyUserConfig
-    && !in_array($current_file, ['index.php', 'logout.php'], true)
+    && !in_array($current_file, ['index.php', 'logout.php', 'scripts.php'], true)
 ) {
     header('Location: ' . BASE_URL . 'index.php');
     exit();
