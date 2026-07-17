@@ -21,6 +21,7 @@ class ExplorerTest extends TestCase
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'get_full_path');
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_is_hidden_system_entry');
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_resolve_preview_mode');
+        $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_filter_trash_list_to_leaf_items');
     }
 
     public function testGetFullPathSecurity()
@@ -88,5 +89,24 @@ class ExplorerTest extends TestCase
         $this->assertSame('unsupported', explorer_resolve_preview_mode('archive.zip'));
         $this->assertSame('unsupported', explorer_resolve_preview_mode('.htaccess'));
         $this->assertSame('unsupported', explorer_resolve_preview_mode('image.jpg.bak'));
+    }
+
+    public function testTrashListFiltersAncestorFolders()
+    {
+        if (!function_exists('explorer_filter_trash_list_to_leaf_items')) {
+            $this->markTestSkipped('explorer_filter_trash_list_to_leaf_items function could not be loaded.');
+        }
+
+        $items = [
+            ['name' => 'Private', 'type' => 'folder'],
+            ['name' => 'Private/Admin_1', 'type' => 'folder'],
+            ['name' => 'Private/Admin_1/24.png', 'type' => 'file'],
+        ];
+
+        $filtered = explorer_filter_trash_list_to_leaf_items($items);
+
+        $this->assertCount(1, $filtered);
+        $this->assertSame('Private/Admin_1/24.png', $filtered[0]['name']);
+        $this->assertSame('file', $filtered[0]['type']);
     }
 }

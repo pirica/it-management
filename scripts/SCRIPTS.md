@@ -262,7 +262,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 |--------|---------|
 | `php scripts/test_explorer_paths.php` | Pure-logic regression for `get_full_path` ACL (roots, traversal, backslashes, `./` prefix bypass) |
 | `php scripts/test_explorer_preview.php` | Pure-logic regression for Explorer preview routing (`image`, `pdf`, `text`, `unsupported`) |
-| `php scripts/verify_explorer_zip_leak.php` | Confirms `downloadZip` cannot zip `Private` / company root |
+| `php scripts/verify_explorer_zip_leak.php` | Step 1: blocked roots (Home, `Common`, `Private`, `Departments`, `Trash`). Step 2: exact `Private/{username}_{id}` only. Step 3: all other paths blocked (own subfolders, `Common`/`Departments`, other users). Subprocess harness: Laragon CLI `php.exe`, session before `config.php`. |
 | `php scripts/repro_explorer_path_bypass_v4.php` | Regression — `./Private` and `./Private/{other}` blocked after path normalization |
 | `php scripts/repro_explorer_zip_slip_v2.php` | Regression — malicious ZIP traversal entries blocked during `unzip` |
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
@@ -274,7 +274,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/verify_explorer_fix_web.php` | Verification — Web-friendly Explorer Path Traversal fix. |
 | `php scripts/verify_explorer_fix_standalone.php` | Verification — Standalone Explorer Path Traversal fix (HTML UI). |
 
-Run path/ZIP checks after Explorer ACL changes. Isolated subprocess spawns use `escapeshellarg()`. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`.
+Run path/ZIP checks after Explorer ACL or trash UI changes. Isolated subprocess spawns use `escapeshellarg()`. PoC scripts restore `deny_http` via `itm_ensure_files_storage_directory()` after tests. Catalog: `scripts/scripts.php`. PHPUnit trash leaf filter: `ExplorerTest::testTrashListFiltersAncestorFolders`.
 
 ## 5. Verification & Testing
 - New scripts should ideally be accompanied by a unit test or a verification PoC.
@@ -1189,9 +1189,9 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 - **Paths:** `modules/explorer/api.php`, `modules/explorer/setup.php`, `modules/explorer/file.php`, `modules/explorer/index.php`
 - **Storage:** `files/{company_id}/` tree (`deny_http` on every segment, including `Trash/`)
 - **Description:** General file management with multi-tenant ACL (`get_full_path`), soft-delete to `Trash/`, and PHP-proxied downloads.
-- **Security:** API blocks `Private` and `Departments` roots; UI uses `resolveScopedFolderPath()` for scoped navigation; trash operations are ACL-filtered. See `modules/explorer/AGENT_NOTES.md` and **`AGENTS.md` → Explorer module**.
+- **Security:** API blocks `Private` and `Departments` roots; UI uses `resolveScopedFolderPath()` for scoped navigation; trash operations are ACL-filtered; `downloadZip` blocks Home/`Common`/`Private`/`Departments`/`Trash` roots. Home shows virtual Trash only when the user has recoverable items; `listRecycle` uses leaf filter. See `modules/explorer/AGENT_NOTES.md` and **`AGENTS.md` → Explorer module**.
 - **Implementation:** Standard `.itm-photo-upload-target` UI; desktop drag-and-drop upload. All folder creation uses `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Block dotfile uploads; managed `.htaccess` overwrites malicious uploads on ensure.
-- **Regression scripts:** `php scripts/test_explorer_paths.php`, `php scripts/verify_explorer_zip_leak.php`; `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`; Import data loss: `repro_employee_dataloss.php`, `repro_generic_dataloss.php`.
+- **Regression scripts:** `php scripts/test_explorer_paths.php`, `php scripts/verify_explorer_zip_leak.php` (three-step ZIP contract); `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`; Import data loss: `repro_employee_dataloss.php`, `repro_generic_dataloss.php`.
 
 ### 10. Private Contacts
 - **Paths:** `modules/private_contacts/create.php`, `modules/private_contacts/edit.php`

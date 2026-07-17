@@ -440,12 +440,26 @@ function closeTab(i, e) {
 function renderBreadcrumbs() {
     const el = document.getElementById("breadcrumbs");
     el.innerHTML = "";
-    const parts = currentPath ? currentPath.split("/") : [];
 
     let rootSpan = document.createElement("span");
     rootSpan.textContent = "Home";
     rootSpan.onclick = () => loadFolder("");
     el.appendChild(rootSpan);
+
+    if (inRecycle) {
+        const sep = document.createElement("span");
+        sep.className = "sep";
+        sep.textContent = " / ";
+        el.appendChild(sep);
+
+        const trashSpan = document.createElement("span");
+        trashSpan.textContent = "Trash";
+        trashSpan.onclick = () => openRecycle();
+        el.appendChild(trashSpan);
+        return;
+    }
+
+    const parts = currentPath ? currentPath.split("/") : [];
 
     let current = "";
     parts.forEach(p => {
@@ -471,18 +485,33 @@ function renderIcons(items) {
         div.className = "icon";
         div.dataset.name = item.name;
         div.dataset.type = item.type;
-        div.draggable = true;
+        div.draggable = item.type !== "trash";
 
-        let icon = item.type === "folder" ? "📁" : "📄";
+        let icon = "📄";
+        if (item.type === "trash") {
+            icon = "🗑️";
+        } else if (item.type === "folder") {
+            icon = "📁";
+        }
         // Why: visual differentiation for special areas.
         if (item.name === "Common") icon = "🌐";
         if (item.name === "Departments") icon = "🏢";
         if (item.name === "Private") icon = "🔒";
         if (item.name === userPrivateDir) icon = "👤";
 
+        let label = item.name;
+        if (inRecycle) {
+            const normalized = String(item.name).replace(/\\/g, "/");
+            const parts = normalized.split("/").filter(Boolean);
+            label = parts.length ? parts[parts.length - 1] : normalized;
+            if (parts.length > 1) {
+                div.title = normalized;
+            }
+        }
+
         div.innerHTML = `
             <span>${icon}</span>
-            <div style="word-break:break-all;">${item.name}</div>
+            <div style="word-break:break-all;">${label}</div>
         `;
 
         div.ondblclick = () => openItem(item.name, item.type);
@@ -600,8 +629,9 @@ function showContextMenu(e, item) {
     contextItem = item;
     loadClipboard();
 
-    // Why: Restrict actions on top-level system folders.
-    const isSystemFolder = (currentPath === "" && ["Common", "Departments", "Private"].includes(item.name));
+    // Why: Restrict actions on top-level system folders (no Compress/zip of Private from Home).
+    const isSystemFolder = (currentPath === "" && ["Common", "Departments", "Private", "Trash"].includes(item.name))
+        || item.type === "trash";
 
     clearContextMenu();
     appendContextAction("Open", () => openItem(item.name, item.type));
@@ -636,7 +666,9 @@ function showEmptyContextMenu(e) {
     clearContextMenu();
     appendContextAction("Create New Folder 📁", () => createFolder());
     appendContextAction("Upload Files ⬆️", () => triggerUpload());
-    appendContextAction("Download as ZIP 🗜️", () => downloadZip());
+    if (canDownloadPrivateZipBackup()) {
+        appendContextAction("Download as ZIP 🗜️", () => downloadZip());
+    }
     appendContextAction("Paste 📋", () => pasteItem(), clipboardHasItems());
     appendContextAction("Refresh 🔄", () => refreshFolder());
     appendContextSeparator();
@@ -713,6 +745,10 @@ function renderPreview(res) {
 }
 
 function openItem(name, type) {
+    if (type === "trash" || (name === "Trash" && !currentPath)) {
+        openRecycle();
+        return;
+    }
     if (type === "folder") {
         let nextPath = currentPath ? currentPath + "/" + name : name;
         nextPath = resolveScopedFolderPath(nextPath);
@@ -826,8 +862,24 @@ function zipItem() {
     api("zip", { item: contextItem.name }).then(() => loadFolder(currentPath));
 }
 
+function canDownloadPrivateZipBackup() {
+    const normalized = String(currentPath || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    // Why: Never offer ZIP at Home or system roots — employees cannot zip Private from explorer root.
+    const blockedRoots = ["", "Private", "Common", "Departments", "Trash"];
+    if (blockedRoots.includes(normalized)) {
+        return false;
+    }
+    const allowed = "Private/" + userPrivateDir;
+    return normalized === allowed;
+}
+
 function downloadZip() {
-    window.location = "api.php?downloadZip=1&path=" + encodeURIComponent(currentPath);
+    if (!canDownloadPrivateZipBackup()) {
+        alert("ZIP backup is only available for your own Private folder.");
+        return;
+    }
+    const allowed = "Private/" + userPrivateDir;
+    window.location = "api.php?downloadZip=1&path=" + encodeURIComponent(allowed);
 }
 
 /* CRIAR ESTRUTURAS DE DATA */
@@ -961,6 +1013,7 @@ function filterIcons() {
 /* RECYCLE BIN */
 function openRecycle() {
     inRecycle = true;
+    tabs[activeTab].title = "Trash";
     api("listRecycle", {}).then(res => {
         renderIcons(res.items || []);
         renderBreadcrumbs();
