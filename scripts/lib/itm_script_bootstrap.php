@@ -405,10 +405,7 @@ if (!function_exists('itm_script_with_test_session_context')) {
      */
     function itm_script_with_test_session_context($companyId, $employeeId, $username, callable $callback)
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            return $callback();
-        }
-
+        // Why: PHPUnit and CLI probes set $_SESSION without session_start(); still swap/restore.
         $backup = $_SESSION;
         $_SESSION = [
             'company_id' => (int)$companyId,
