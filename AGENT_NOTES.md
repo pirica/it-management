@@ -25,6 +25,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - `user-config.php` profile UPDATE must use the employee home `company_id`, not the tenant-switcher session company — otherwise Admin users see “Profile updated successfully!” with 0 rows changed. Theme must set `<html data-theme>` + CSS variables (hardcoded `#fff` cards hide dark mode). [Cursor-Fixed]
 - `user-config.php` profile photo: “Photo updated!” with broken image (alt text “Profile”) means `emp_profile_photo_url()` used module-relative `../../modules/explorer/file.php` from the app root — must be app-absolute under `BASE_URL`. [Cursor-Fixed]
 - `user-config.php` dashboard stats: consolidated COUNTs live in `includes/itm_user_config_stats.php`; `floor_plans` counts `created_by` (schema column), not `created_by_employee_id`. [Cursor-Fixed]
+- `database.sql` tenant replicas with per-company lookup rows must resolve child FK seeds by `company_id` + business key (for example cost center code, GL account code, approval stage/status name, access level name) instead of assuming raw auto-increment ids line up across companies. [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.

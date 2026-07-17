@@ -430,21 +430,29 @@ CREATE TABLE `gl_accounts` (
   CONSTRAINT `gl_accounts_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `gl_accounts_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `budget_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '1', '6100', 'IT Maintenance Contracts', '2', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '2', '6100', 'IT Maintenance Contracts', '5', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '3', '6100', 'IT Maintenance Contracts', '8', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '4', '6100', 'IT Maintenance Contracts', '11', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '5', '6100', 'IT Maintenance Contracts', '14', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '1', '6200', 'Software Licensing', '2', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '2', '6200', 'Software Licensing', '5', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '3', '6200', 'Software Licensing', '8', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '4', '6200', 'Software Licensing', '11', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '5', '6200', 'Software Licensing', '14', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '1', '7100', 'Capital IT Equipment', '3', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '2', '7100', 'Capital IT Equipment', '6', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '3', '7100', 'Capital IT Equipment', '9', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '4', '7100', 'Capital IT Equipment', '12', '1', '2026-01-01 00:00:01');
-INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`) VALUES (NULL, '5', '7100', 'Capital IT Equipment', '15', '1', '2026-01-01 00:00:01');
+INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`)
+SELECT NULL, seed.`company_id`, seed.`account_code`, seed.`account_name`, bc.`id`, 1, '2026-01-01 00:00:01'
+FROM (
+  SELECT 1 AS `sort_key`, 1 AS `company_id`, '6100' AS `account_code`, 'IT Maintenance Contracts' AS `account_name`, 'Operating Expense' AS `category_name`
+  UNION ALL SELECT 2, 2, '6100', 'IT Maintenance Contracts', 'Operating Expense'
+  UNION ALL SELECT 3, 3, '6100', 'IT Maintenance Contracts', 'Operating Expense'
+  UNION ALL SELECT 4, 4, '6100', 'IT Maintenance Contracts', 'Operating Expense'
+  UNION ALL SELECT 5, 5, '6100', 'IT Maintenance Contracts', 'Operating Expense'
+  UNION ALL SELECT 6, 1, '6200', 'Software Licensing', 'Operating Expense'
+  UNION ALL SELECT 7, 2, '6200', 'Software Licensing', 'Operating Expense'
+  UNION ALL SELECT 8, 3, '6200', 'Software Licensing', 'Operating Expense'
+  UNION ALL SELECT 9, 4, '6200', 'Software Licensing', 'Operating Expense'
+  UNION ALL SELECT 10, 5, '6200', 'Software Licensing', 'Operating Expense'
+  UNION ALL SELECT 11, 1, '7100', 'Capital IT Equipment', 'Capital Expense'
+  UNION ALL SELECT 12, 2, '7100', 'Capital IT Equipment', 'Capital Expense'
+  UNION ALL SELECT 13, 3, '7100', 'Capital IT Equipment', 'Capital Expense'
+  UNION ALL SELECT 14, 4, '7100', 'Capital IT Equipment', 'Capital Expense'
+  UNION ALL SELECT 15, 5, '7100', 'Capital IT Equipment', 'Capital Expense'
+) seed
+INNER JOIN `budget_categories` bc
+  ON bc.`company_id` = seed.`company_id`
+ AND bc.`name` = seed.`category_name`
+ORDER BY seed.`sort_key`;
 -- Table structure for `annual_budgets`
 DROP TABLE IF EXISTS `annual_budgets`;
 CREATE TABLE `annual_budgets` (
@@ -470,18 +478,30 @@ CREATE TABLE `annual_budgets` (
   CONSTRAINT `annual_budgets_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `annual_budgets_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '1', '1', '1', '2026', '48000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '2', '4', '4', '2026', '48000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '3', '7', '7', '2026', '48000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '4', '10', '10', '2026', '48000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '5', '13', '13', '2026', '48000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '1', '1', '2', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '2', '4', '5', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '3', '7', '8', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '4', '10', '11', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '5', '13', '14', '2026', '36000.00', '1', '1', '2026-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '1', '1', '1', '2025', '45000.00', '1', '1', '2025-01-01 00:00:01');
-INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`) VALUES (NULL, '1', '1', '2', '2025', '33000.00', '1', '1', '2025-01-01 00:00:01');
+INSERT INTO `annual_budgets` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `created_by`, `active`, `created_at`)
+SELECT NULL, seed.`company_id`, cc.`id`, ga.`id`, seed.`year`, seed.`amount`, NULL, 1, seed.`created_at`
+FROM (
+  SELECT 1 AS `sort_key`, 1 AS `company_id`, 'Infrastructure' AS `cost_center_name`, 'CC-IT-INFRA' AS `cost_center_code`, '6100' AS `account_code`, 2026 AS `year`, 48000.00 AS `amount`, 'Admin' AS `created_username`, '2026-01-01 00:00:01' AS `created_at`
+  UNION ALL SELECT 2, 2, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 48000.00, 'Admin2', '2026-01-01 00:00:01'
+  UNION ALL SELECT 3, 3, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 48000.00, 'Admin3', '2026-01-01 00:00:01'
+  UNION ALL SELECT 4, 4, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 48000.00, 'Admin4', '2026-01-01 00:00:01'
+  UNION ALL SELECT 5, 5, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 48000.00, 'Admin5', '2026-01-01 00:00:01'
+  UNION ALL SELECT 6, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin', '2026-01-01 00:00:01'
+  UNION ALL SELECT 7, 2, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin2', '2026-01-01 00:00:01'
+  UNION ALL SELECT 8, 3, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin3', '2026-01-01 00:00:01'
+  UNION ALL SELECT 9, 4, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin4', '2026-01-01 00:00:01'
+  UNION ALL SELECT 10, 5, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 36000.00, 'Admin5', '2026-01-01 00:00:01'
+  UNION ALL SELECT 11, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2025, 45000.00, 'Admin', '2025-01-01 00:00:01'
+  UNION ALL SELECT 12, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2025, 33000.00, 'Admin', '2025-01-01 00:00:01'
+) seed
+INNER JOIN `cost_centers` cc
+  ON cc.`company_id` = seed.`company_id`
+ AND cc.`name` = seed.`cost_center_name`
+ AND cc.`code` = seed.`cost_center_code`
+INNER JOIN `gl_accounts` ga
+  ON ga.`company_id` = seed.`company_id`
+ AND ga.`account_code` = seed.`account_code`
+ORDER BY seed.`sort_key`;
 -- Table structure for `monthly_budgets`
 DROP TABLE IF EXISTS `monthly_budgets`;
 CREATE TABLE `monthly_budgets` (
@@ -505,28 +525,45 @@ CREATE TABLE `monthly_budgets` (
   CONSTRAINT `monthly_budgets_ibfk_annual_budget` FOREIGN KEY (`annual_budget_id`) REFERENCES `annual_budgets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `monthly_budgets_chk_month` CHECK ((`month` between 1 and 12))
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '1', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '2', '3', '1', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '3', '5', '1', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '4', '7', '1', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '5', '9', '1', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '1', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '2', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '3', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '4', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '5', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '6', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '1', '7', '4000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '2', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '3', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '4', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '5', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '6', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '1', '2', '7', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '2', '4', '1', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '3', '6', '1', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '4', '8', '1', '3000.00', '1', '2026-01-01 00:00:01');
-INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`) VALUES (NULL, '5', '10', '1', '3000.00', '1', '2026-01-01 00:00:01');
+INSERT INTO `monthly_budgets` (`id`, `company_id`, `annual_budget_id`, `month`, `amount`, `active`, `created_at`)
+SELECT NULL, seed.`company_id`, ab.`id`, seed.`month`, seed.`amount`, 1, seed.`created_at`
+FROM (
+  SELECT 1 AS `sort_key`, 1 AS `company_id`, 'Infrastructure' AS `cost_center_name`, 'CC-IT-INFRA' AS `cost_center_code`, '6100' AS `account_code`, 2026 AS `year`, 1 AS `month`, 4000.00 AS `amount`, '2026-01-01 00:00:01' AS `created_at`
+  UNION ALL SELECT 2, 2, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 1, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 3, 3, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 1, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 4, 4, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 1, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 5, 5, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 1, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 6, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 7, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 2, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 8, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 3, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 9, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 4, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 10, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 5, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 11, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 6, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 12, 1, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 7, 4000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 13, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 2, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 14, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 3, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 15, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 4, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 16, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 5, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 17, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 6, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 18, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 7, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 19, 2, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 20, 3, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 21, 4, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
+  UNION ALL SELECT 22, 5, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 1, 3000.00, '2026-01-01 00:00:01'
+) seed
+INNER JOIN `cost_centers` cc
+  ON cc.`company_id` = seed.`company_id`
+ AND cc.`name` = seed.`cost_center_name`
+ AND cc.`code` = seed.`cost_center_code`
+INNER JOIN `gl_accounts` ga
+  ON ga.`company_id` = seed.`company_id`
+ AND ga.`account_code` = seed.`account_code`
+INNER JOIN `annual_budgets` ab
+  ON ab.`company_id` = seed.`company_id`
+ AND ab.`cost_center_id` = cc.`id`
+ AND ab.`gl_account_id` = ga.`id`
+ AND ab.`year` = seed.`year`
+ORDER BY seed.`sort_key`;
 -- Table structure for `expenses`
 DROP TABLE IF EXISTS `expenses`;
 CREATE TABLE `expenses` (
@@ -562,11 +599,23 @@ INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `
 (NULL, 1, 1, 1, '2026-05-22', 4275.00, 'Wi-Fi controller licence renewal', 'INV-IT-2026-0005', 1, 1, '2026-05-01 00:00:01', NULL),
 (NULL, 1, 1, 1, '2026-06-11', 2650.00, 'Helpdesk tooling annual fee', 'INV-IT-2026-0006', 1, 1, '2026-06-01 00:00:01', NULL),
 (NULL, 1, 1, 1, '2026-07-08', 3510.00, 'Server rack PDU upgrade', 'INV-IT-2026-0007', 1, 1, '2026-07-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2025-07-14', 2990.00, 'Prior-year July infrastructure spend', 'INV-IT-2025-0007', 1, 1, '2025-07-01 00:00:01', NULL),
-(NULL, 2, 4, 4, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
-(NULL, 3, 7, 7, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
-(NULL, 4, 10, 10, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
-(NULL, 5, 13, 13, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL);
+(NULL, 1, 1, 1, '2025-07-14', 2990.00, 'Prior-year July infrastructure spend', 'INV-IT-2025-0007', 1, 1, '2025-07-01 00:00:01', NULL);
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`)
+SELECT NULL, seed.`company_id`, cc.`id`, ga.`id`, seed.`expense_date`, seed.`amount`, seed.`description`, seed.`invoice_number`, NULL, 1, seed.`created_at`, NULL
+FROM (
+  SELECT 1 AS `sort_key`, 2 AS `company_id`, 'Infrastructure' AS `cost_center_name`, 'CC-IT-INFRA' AS `cost_center_code`, '6100' AS `account_code`, '2026-01-15' AS `expense_date`, 3890.00 AS `amount`, 'Quarterly preventive maintenance contract renewal' AS `description`, 'INV-IT-2026-0001' AS `invoice_number`, 'Admin2' AS `created_username`, '2026-01-01 00:00:01' AS `created_at`
+  UNION ALL SELECT 2, 3, 'Infrastructure', 'CC-IT-INFRA', '6100', '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 'Admin3', '2026-01-01 00:00:01'
+  UNION ALL SELECT 3, 4, 'Infrastructure', 'CC-IT-INFRA', '6100', '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 'Admin4', '2026-01-01 00:00:01'
+  UNION ALL SELECT 4, 5, 'Infrastructure', 'CC-IT-INFRA', '6100', '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 'Admin5', '2026-01-01 00:00:01'
+) seed
+INNER JOIN `cost_centers` cc
+  ON cc.`company_id` = seed.`company_id`
+ AND cc.`name` = seed.`cost_center_name`
+ AND cc.`code` = seed.`cost_center_code`
+INNER JOIN `gl_accounts` ga
+  ON ga.`company_id` = seed.`company_id`
+ AND ga.`account_code` = seed.`account_code`
+ORDER BY seed.`sort_key`;
 -- Table structure for `floor_plan_folders`
 DROP TABLE IF EXISTS `floor_plan_folders`;
 CREATE TABLE `floor_plan_folders` (
@@ -764,16 +813,31 @@ CREATE TABLE `forecast_revisions` (
   CONSTRAINT `forecast_revisions_ibfk_gm_approved_by` FOREIGN KEY (`gm_approved_by`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `forecast_revisions_chk_month` CHECK ((`month` between 1 and 12))
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '1', '1', '1', '2026', '2', '4200.00', '1', '0', '1', NULL, NULL, 'Draft projection before finance review', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '2', '4', '4', '2026', '2', '4200.00', '7', '0', '1', NULL, NULL, 'Draft projection before finance review', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '3', '7', '7', '2026', '2', '4200.00', '13', '0', '1', NULL, NULL, 'Draft projection before finance review', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '4', '10', '10', '2026', '2', '4200.00', '19', '0', '1', NULL, NULL, 'Draft projection before finance review', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '5', '13', '13', '2026', '2', '4200.00', '25', '0', '1', NULL, NULL, 'Draft projection before finance review', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '1', '1', '2', '2026', '2', '3150.00', '2', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '2', '4', '5', '2026', '2', '3150.00', '8', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '3', '7', '8', '2026', '2', '3150.00', '14', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '4', '10', '11', '2026', '2', '3150.00', '20', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1', '2026-01-01 00:00:01');
-INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`) VALUES (NULL, '5', '13', '14', '2026', '2', '3150.00', '26', '0', '1', NULL, NULL, 'Submitted to finance for February forecast', '1', '2026-01-01 00:00:01');
+INSERT INTO `forecast_revisions` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `created_at`)
+SELECT NULL, seed.`company_id`, cc.`id`, ga.`id`, seed.`year`, seed.`month`, seed.`forecast_amount`, frs.`id`, 0, NULL, NULL, NULL, seed.`notes`, 1, seed.`created_at`
+FROM (
+  SELECT 1 AS `sort_key`, 1 AS `company_id`, 'Infrastructure' AS `cost_center_name`, 'CC-IT-INFRA' AS `cost_center_code`, '6100' AS `account_code`, 2026 AS `year`, 2 AS `month`, 4200.00 AS `forecast_amount`, 'Draft' AS `status_name`, 'Admin' AS `submitted_username`, 'Draft projection before finance review' AS `notes`, '2026-01-01 00:00:01' AS `created_at`
+  UNION ALL SELECT 2, 2, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 2, 4200.00, 'Draft', 'Admin2', 'Draft projection before finance review', '2026-01-01 00:00:01'
+  UNION ALL SELECT 3, 3, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 2, 4200.00, 'Draft', 'Admin3', 'Draft projection before finance review', '2026-01-01 00:00:01'
+  UNION ALL SELECT 4, 4, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 2, 4200.00, 'Draft', 'Admin4', 'Draft projection before finance review', '2026-01-01 00:00:01'
+  UNION ALL SELECT 5, 5, 'Infrastructure', 'CC-IT-INFRA', '6100', 2026, 2, 4200.00, 'Draft', 'Admin5', 'Draft projection before finance review', '2026-01-01 00:00:01'
+  UNION ALL SELECT 6, 1, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 2, 3150.00, 'Submitted', 'Admin', 'Submitted to finance for February forecast', '2026-01-01 00:00:01'
+  UNION ALL SELECT 7, 2, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 2, 3150.00, 'Submitted', 'Admin2', 'Submitted to finance for February forecast', '2026-01-01 00:00:01'
+  UNION ALL SELECT 8, 3, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 2, 3150.00, 'Submitted', 'Admin3', 'Submitted to finance for February forecast', '2026-01-01 00:00:01'
+  UNION ALL SELECT 9, 4, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 2, 3150.00, 'Submitted', 'Admin4', 'Submitted to finance for February forecast', '2026-01-01 00:00:01'
+  UNION ALL SELECT 10, 5, 'Infrastructure', 'CC-IT-INFRA', '6200', 2026, 2, 3150.00, 'Submitted', 'Admin5', 'Submitted to finance for February forecast', '2026-01-01 00:00:01'
+) seed
+INNER JOIN `cost_centers` cc
+  ON cc.`company_id` = seed.`company_id`
+ AND cc.`name` = seed.`cost_center_name`
+ AND cc.`code` = seed.`cost_center_code`
+INNER JOIN `gl_accounts` ga
+  ON ga.`company_id` = seed.`company_id`
+ AND ga.`account_code` = seed.`account_code`
+INNER JOIN `forecast_revisions_status` frs
+  ON frs.`company_id` = seed.`company_id`
+ AND frs.`status` = seed.`status_name`
+ORDER BY seed.`sort_key`;
 -- Table structure for `approvals_stage`
 DROP TABLE IF EXISTS `approvals_stage`;
 CREATE TABLE `approvals_stage` (
@@ -834,16 +898,30 @@ CREATE TABLE `approvals` (
   CONSTRAINT `approvals_ibfk_status` FOREIGN KEY (`status`) REFERENCES `forecast_revisions_status` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `approvals_ibfk_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '1', '2', '1', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '2', '4', '3', '9', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '3', '6', '5', '15', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '4', '8', '7', '21', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '5', '10', '9', '27', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '1', '1', '1', '1', NULL, NULL, 'Draft not submitted yet.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '2', '3', '3', '7', NULL, NULL, 'Draft not submitted yet.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '3', '5', '5', '13', NULL, NULL, 'Draft not submitted yet.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '4', '7', '7', '19', NULL, NULL, 'Draft not submitted yet.', '1', '2026-01-01 00:00:01');
-INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`) VALUES (NULL, '5', '9', '9', '25', NULL, NULL, 'Draft not submitted yet.', '1', '2026-01-01 00:00:01');
+INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`)
+SELECT NULL, seed.`company_id`, fr.`id`, aps.`id`, frs.`id`, NULL, NULL, seed.`comments`, 1, seed.`created_at`
+FROM (
+  SELECT 1 AS `sort_key`, 1 AS `company_id`, 'Submitted to finance for February forecast' AS `forecast_note`, 'Finance Review' AS `stage_name`, 'Finance Review' AS `status_name`, 'Awaiting finance validation for submission batch.' AS `comments`, '2026-01-01 00:00:01' AS `created_at`
+  UNION ALL SELECT 2, 2, 'Submitted to finance for February forecast', 'Finance Review', 'Finance Review', 'Awaiting finance validation for submission batch.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 3, 3, 'Submitted to finance for February forecast', 'Finance Review', 'Finance Review', 'Awaiting finance validation for submission batch.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 4, 4, 'Submitted to finance for February forecast', 'Finance Review', 'Finance Review', 'Awaiting finance validation for submission batch.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 5, 5, 'Submitted to finance for February forecast', 'Finance Review', 'Finance Review', 'Awaiting finance validation for submission batch.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 6, 1, 'Draft projection before finance review', 'Finance Review', 'Draft', 'Draft not submitted yet.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 7, 2, 'Draft projection before finance review', 'Finance Review', 'Draft', 'Draft not submitted yet.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 8, 3, 'Draft projection before finance review', 'Finance Review', 'Draft', 'Draft not submitted yet.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 9, 4, 'Draft projection before finance review', 'Finance Review', 'Draft', 'Draft not submitted yet.', '2026-01-01 00:00:01'
+  UNION ALL SELECT 10, 5, 'Draft projection before finance review', 'Finance Review', 'Draft', 'Draft not submitted yet.', '2026-01-01 00:00:01'
+) seed
+INNER JOIN `forecast_revisions` fr
+  ON fr.`company_id` = seed.`company_id`
+ AND fr.`notes` = seed.`forecast_note`
+INNER JOIN `approvals_stage` aps
+  ON aps.`company_id` = seed.`company_id`
+ AND aps.`stage` = seed.`stage_name`
+INNER JOIN `forecast_revisions_status` frs
+  ON frs.`company_id` = seed.`company_id`
+ AND frs.`status` = seed.`status_name`
+ORDER BY seed.`sort_key`;
 -- Table structure for `approver_type`
 DROP TABLE IF EXISTS `approver_type`;
 CREATE TABLE `approver_type` (
@@ -3716,11 +3794,25 @@ CREATE TABLE `registration_invitations` (
   CONSTRAINT `fk_registration_invitations_access_level` FOREIGN KEY (`access_level_id`) REFERENCES `access_levels` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data for `registration_invitations`
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('1', '1', 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '1', '1', NULL, NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('2', '2', 'new.user@datacenterplus.example', 'INVITE-DATACENTERPLUS-001', '1', '6', '4', NULL, NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('3', '3', 'new.user@networksolutions.example', 'INVITE-NETWORKSOLUTIONS-001', '1', '11', '7', NULL, NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('4', '4', 'new.user@cloudtech.example', 'INVITE-CLOUDTECH-001', '1', '16', '10', NULL, NULL, '1', '2026-01-01 00:00:01');
-INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`) VALUES ('5', '5', 'new.user@enterpriseit.example', 'INVITE-ENTERPRISEIT-001', '1', '21', '13', NULL, NULL, '1', '2026-01-01 00:00:01');
+INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`)
+SELECT seed.`id`, seed.`company_id`, seed.`email`, seed.`invitation_code`, inviter.`id`, er.`id`, al.`id`, NULL, NULL, 1, '2026-01-01 00:00:01'
+FROM (
+  SELECT 1 AS `id`, 1 AS `company_id`, 'new.user@techcorp.example' AS `email`, 'INVITE-TECHCORP-001' AS `invitation_code`, 'Admin' AS `inviter_username`, 'Admin' AS `role_name`, 'Full' AS `access_name`
+  UNION ALL SELECT 2, 2, 'new.user@datacenterplus.example', 'INVITE-DATACENTERPLUS-001', 'Admin2', 'Admin', 'Full'
+  UNION ALL SELECT 3, 3, 'new.user@networksolutions.example', 'INVITE-NETWORKSOLUTIONS-001', 'Admin3', 'Admin', 'Full'
+  UNION ALL SELECT 4, 4, 'new.user@cloudtech.example', 'INVITE-CLOUDTECH-001', 'Admin4', 'Admin', 'Full'
+  UNION ALL SELECT 5, 5, 'new.user@enterpriseit.example', 'INVITE-ENTERPRISEIT-001', 'Admin5', 'Admin', 'Full'
+) seed
+LEFT JOIN `employees` inviter
+  ON inviter.`company_id` = seed.`company_id`
+ AND inviter.`username` = seed.`inviter_username`
+LEFT JOIN `employee_roles` er
+  ON er.`company_id` = seed.`company_id`
+ AND er.`name` = seed.`role_name`
+LEFT JOIN `access_levels` al
+  ON al.`company_id` = seed.`company_id`
+ AND al.`name` = seed.`access_name`
+ORDER BY seed.`id`;
 -- Table structure for `attempts`
 -- Why: Unified security telemetry table for login and password reset events (legacy module folders were merged into modules/attempts).
 DROP TABLE IF EXISTS `attempts`;
