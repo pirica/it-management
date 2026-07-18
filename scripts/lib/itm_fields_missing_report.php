@@ -1288,6 +1288,60 @@ if (!function_exists('itm_fields_missing_merge_bespoke_form_paths')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_collect_includes_php_paths')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_collect_includes_php_paths(string $includesDir): array
+    {
+        if (!is_dir($includesDir)) {
+            return [];
+        }
+
+        $root = realpath($includesDir);
+        if ($root === false) {
+            return [];
+        }
+
+        $paths = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $fileInfo) {
+            if ($fileInfo->isFile() && strtolower((string) $fileInfo->getExtension()) === 'php') {
+                $paths[] = $fileInfo->getPathname();
+            }
+        }
+
+        sort($paths, SORT_STRING);
+
+        return $paths;
+    }
+}
+
+if (!function_exists('itm_fields_missing_build_hybrid_scan_content')) {
+    /**
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     * @param list<string> $formPaths
+     */
+    function itm_fields_missing_build_hybrid_scan_content(array $files, array $formPaths): string
+    {
+        $paths = itm_fields_missing_merge_bespoke_form_paths($files, $formPaths);
+        if (!empty($files['includes'])) {
+            $paths = array_merge($paths, itm_fields_missing_collect_includes_php_paths((string) $files['includes']));
+        }
+        $paths = array_values(array_unique($paths));
+        $chunks = [];
+        foreach ($paths as $path) {
+            if (is_readable($path) && !is_dir($path)) {
+                $chunks[] = (string) file_get_contents($path);
+            }
+        }
+
+        return implode("\n\n", $chunks);
+    }
+}
+
 if (!function_exists('itm_fields_missing_apply_skipped_ui_coverage_gate')) {
     /**
      * Bespoke/status-driven modules: full business UI is skipped; gated contract checks still run.
@@ -1313,7 +1367,7 @@ if (!function_exists('itm_fields_missing_apply_skipped_ui_coverage_gate')) {
             $formPaths,
             $passes,
             $failures,
-            true
+            false
         );
 
         itm_fields_missing_audit_bespoke_scaffold_hybrid_contract(
@@ -1591,7 +1645,7 @@ if (!function_exists('itm_fields_missing_audit_bespoke_scaffold_hybrid_contract'
         if (!is_readable($files['index'])) {
             return;
         }
-        $content = (string) file_get_contents($files['index']);
+        $content = itm_fields_missing_build_hybrid_scan_content($files, $formPaths);
         if (strpos($content, 'cr_manageable_columns(') === false) {
             return;
         }
