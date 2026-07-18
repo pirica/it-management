@@ -366,6 +366,66 @@ if (!function_exists('itm_fields_missing_ui_fields_for_module')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_finalize_module_report')) {
+    /**
+     * @param list<string> $expectedColumns
+     * @param list<string> $liveColumns
+     * @param list<string> $uiAuditedColumns
+     * @return array<string, mixed>
+     */
+    function itm_fields_missing_finalize_module_report(
+        array $report,
+        array $expectedColumns,
+        array $liveColumns,
+        array $uiAuditedColumns = []
+    ): array {
+        $report['expected_columns'] = array_values($expectedColumns);
+        $report['live_columns'] = array_values($liveColumns);
+        $report['ui_audited_columns'] = array_values($uiAuditedColumns);
+        $report['ui_excluded_columns'] = array_values(array_diff($expectedColumns, $uiAuditedColumns));
+
+        return $report;
+    }
+}
+
+if (!function_exists('itm_fields_missing_format_columns_block')) {
+    /**
+     * @param array<string, mixed> $moduleReport
+     */
+    function itm_fields_missing_format_columns_block(array $moduleReport, string $nl): string
+    {
+        $expected = $moduleReport['expected_columns'] ?? [];
+        $live = $moduleReport['live_columns'] ?? [];
+        $uiAudited = $moduleReport['ui_audited_columns'] ?? [];
+        $excluded = $moduleReport['ui_excluded_columns'] ?? [];
+
+        if (!is_array($expected)) {
+            $expected = [];
+        }
+        if (!is_array($live)) {
+            $live = [];
+        }
+        if (!is_array($uiAudited)) {
+            $uiAudited = [];
+        }
+        if (!is_array($excluded)) {
+            $excluded = [];
+        }
+
+        $out = '  database.sql columns (' . count($expected) . '): ' . ($expected === [] ? '(none)' : implode(', ', $expected)) . $nl;
+        $out .= '  live columns (' . count($live) . '): ' . ($live === [] ? '(none)' : implode(', ', $live)) . $nl;
+
+        if ($uiAudited !== []) {
+            $out .= '  UI audited columns (' . count($uiAudited) . '): ' . implode(', ', $uiAudited) . $nl;
+        }
+        if ($excluded !== []) {
+            $out .= '  excluded from UI audit (' . count($excluded) . '): ' . implode(', ', $excluded) . $nl;
+        }
+
+        return $out . $nl;
+    }
+}
+
 if (!function_exists('itm_fields_missing_audit_module')) {
     /**
      * @param list<string> $expectedColumns
@@ -415,7 +475,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
         if (isset($bespokeModules[$moduleSlug])) {
             $infos[] = "{$moduleSlug} is bespoke/deferred UI — schema-only audit (see docs/list_bespoke_UI.txt)";
 
-            return [
+            return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
                 'table' => $table,
                 'schema_missing' => $schemaMissing,
@@ -424,13 +484,13 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ];
+            ], $expectedColumns, $liveColumns);
         }
 
         if ($statusDriven && $moduleSlug !== 'employees') {
             $infos[] = "{$moduleSlug} is status-driven bespoke UI — schema-only audit (row active is soft-delete mirror)";
 
-            return [
+            return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
                 'table' => $table,
                 'schema_missing' => $schemaMissing,
@@ -439,7 +499,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ];
+            ], $expectedColumns, $liveColumns);
         }
 
         $uiMode = 'manual';
@@ -448,8 +508,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
         } elseif (itm_fields_missing_index_is_dynamic_scaffold($files['index'])) {
             $uiMode = 'dynamic_scaffold';
             $passes[] = "{$moduleSlug} uses dynamic scaffold columns (\$uiColumns / cr_manageable_columns)";
+            $uiAudited = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
 
-            return [
+            return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
                 'table' => $table,
                 'schema_missing' => $schemaMissing,
@@ -458,7 +519,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ];
+            ], $expectedColumns, $liveColumns, $uiAudited);
         }
 
         $formPaths = [$files['create'], $files['edit'], $files['includes']];
@@ -501,6 +562,15 @@ if (!function_exists('itm_fields_missing_audit_module')) {
         }
 
         if ($moduleSlug === 'employees') {
+            $uiFields = array_values(array_unique(array_merge(
+                $uiFields,
+                array_filter(
+                    itm_fields_missing_employees_optional_fields(),
+                    static function (string $field) use ($expectedColumns): bool {
+                        return in_array($field, $expectedColumns, true);
+                    }
+                )
+            )));
             foreach (itm_fields_missing_employees_optional_fields() as $field) {
                 if (!in_array($field, $expectedColumns, true)) {
                     continue;
@@ -547,7 +617,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             }
         }
 
-        return [
+        return itm_fields_missing_finalize_module_report([
             'module' => $moduleSlug,
             'table' => $table,
             'schema_missing' => $schemaMissing,
@@ -556,7 +626,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             'failures' => $failures,
             'infos' => $infos,
             'passes' => $passes,
-        ];
+        ], $expectedColumns, $liveColumns, $uiFields);
     }
 }
 

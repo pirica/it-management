@@ -92,6 +92,8 @@ foreach ($report['modules'] as $moduleReport) {
         ? itm_script_format_table_link($table)
         : $table) . ', ui: ' . (string) $moduleReport['ui_mode'] . ')' . $nl;
 
+    echo itm_fields_missing_format_columns_block($moduleReport, $nl);
+
     foreach ($moduleReport['passes'] as $passLine) {
         echo colorText('[PASS] ' . $passLine, 'pass') . $nl;
     }
