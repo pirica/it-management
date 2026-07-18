@@ -160,7 +160,7 @@ if (!function_exists('itm_fields_missing_discover_module_targets')) {
 
 if (!function_exists('itm_fields_missing_module_file_bundle')) {
     /**
-     * @return array{create:string,edit:string,view:string,index:string,includes:string,list_all:string}
+     * @return array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,delete:string}
      */
     function itm_fields_missing_module_file_bundle(string $moduleSlug, ?string $rootPath = null): array
     {
@@ -173,6 +173,7 @@ if (!function_exists('itm_fields_missing_module_file_bundle')) {
             'create' => $base . 'create.php',
             'edit' => $base . 'edit.php',
             'view' => $base . 'view.php',
+            'delete' => $base . 'delete.php',
             'index' => $base . 'index.php',
             'includes' => $base . 'includes',
             'list_all' => $base . 'list_all.php',
@@ -1550,9 +1551,8 @@ if (!function_exists('itm_fields_missing_audit_bespoke_list_ui_contract')) {
             'Bulk delete' => itm_check_bulk_delete_actions($listContent, $source, $hasDeleteFile),
             'Bulk cancel' => itm_check_bulk_cancel_contract($indexContent),
             'Actions layout' => itm_check_table_actions_layout($listContent, $source),
+            // Why: New button position/style are page-header checks — bespoke_page_ui_contract already records them once.
             'New button' => itm_check_new_button($indexContent, $hasCreateFile, $createContent),
-            'New button position' => itm_check_new_button_position($indexContent, $hasCreateFile, $createContent),
-            'New button style' => itm_check_new_button_style($indexContent, $hasCreateFile, $createContent),
             'Import Excel' => itm_check_import_excel_contract($listContent, $indexContent, $source),
             'Export toolbar' => itm_check_export_toolbar_support($listContent, $indexContent),
             'POST CSRF' => itm_check_index_mutation_csrf($indexContent),

@@ -431,6 +431,53 @@ PHP;
         $this->assertSame(1, itm_fields_missing_count_skip_gate_failures($moduleReports));
     }
 
+    public function testModuleFileBundleIncludesDeletePath(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('system_access', $root);
+        $this->assertArrayHasKey('delete', $files);
+        $this->assertStringEndsWith('modules/system_access/delete.php', str_replace('\\', '/', $files['delete']));
+        $this->assertTrue(is_readable($files['delete']));
+    }
+
+    public function testBespokeGateDoesNotDuplicateNewButtonPositionRows(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['system_access'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('system_access', $columns);
+        $positionPassCount = 0;
+        $styleFailCount = 0;
+        foreach ($result['passes'] as $passLine) {
+            if (stripos($passLine, 'New button position OK') !== false) {
+                $positionPassCount++;
+            }
+        }
+        foreach ($result['failures'] as $failure) {
+            if (stripos((string) ($failure['message'] ?? ''), 'New button style NOT OK') !== false) {
+                $styleFailCount++;
+            }
+        }
+
+        $this->assertSame(1, $positionPassCount, 'New button position must appear once (page gate only)');
+        $this->assertSame(1, $styleFailCount, 'New button style must appear once (page gate only)');
+    }
+
+    public function testSystemAccessBulkDeleteGatePassesWhenDeletePhpExists(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['system_access'] ?? [];
+        $result = $this->runBespokeGate('system_access', $columns);
+        $passes = implode('|', $result['passes']);
+        $this->assertStringContainsString('Bulk delete OK', $passes);
+    }
+
     public function testBespokeGateFailMessagesUseNotOkSuffix(): void
     {
         $passes = [];
