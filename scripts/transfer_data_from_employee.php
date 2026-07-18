@@ -215,6 +215,19 @@ function createNewEmployeeClone(mysqli $conn, int $old_employee_id): int
 }
 
 /**
+ * Company-scoped UNIQUE columns that must be rewritten when cloning rows for another employee.
+ *
+ * @return array<string,array<string,true>>
+ */
+function itm_transfer_data_from_employee_unique_clone_columns(): array
+{
+    return [
+        'knowledge_base' => ['title' => true],
+        'rack_planner' => ['name' => true],
+    ];
+}
+
+/**
  * @return array{insertCols:array<int,string>,selectCols:array<int,string>}|null
  */
 function itm_transfer_data_from_employee_build_copy_sql_parts(mysqli $conn, string $table, int $newEmployeeId): ?array
@@ -223,6 +236,9 @@ function itm_transfer_data_from_employee_build_copy_sql_parts(mysqli $conn, stri
     if (!$columnsRes) {
         return null;
     }
+
+    $cloneColumns = itm_transfer_data_from_employee_unique_clone_columns();
+    $tableCloneCols = $cloneColumns[$table] ?? [];
 
     $insertCols = [];
     $selectCols = [];
@@ -234,6 +250,9 @@ function itm_transfer_data_from_employee_build_copy_sql_parts(mysqli $conn, stri
         $insertCols[] = "`$field`";
         if ($field === 'employee_id') {
             $selectCols[] = "$newEmployeeId AS employee_id";
+        } elseif (isset($tableCloneCols[$field])) {
+            // Why: company_id stays the same on copy; suffix avoids uq_knowledge_base_company_scope / rack_planner_name_company collisions.
+            $selectCols[] = "CONCAT(`$field`, '-clone-', CAST(`id` AS CHAR)) AS `$field`";
         } else {
             $selectCols[] = "`$field`";
         }
