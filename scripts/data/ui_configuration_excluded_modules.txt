@@ -1,4 +1,5 @@
-# Module folder names skipped by scripts/check_ui_configuration_coverage.php (smoke step 5).
+# Module folder names gate-excluded by scripts/check_ui_configuration_coverage.php (smoke step 5).
+# Gate-excluded modules still appear in the report as [n/a][pass|fail|n/a]; only gated [fail] exits 2.
 # One slug per line. Lines starting with # are comments.
 
 # Bespoke screens (no standard index table contract).
