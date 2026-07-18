@@ -2,18 +2,23 @@
 /**
  * CRUD Action Mapper
  *
- * Why: quickly audits module-to-action mapping by reading each module's index.php
- * and printing the first $crud_action assignment (if present) with a sidebar link.
+ * Why: audits module-to-action mapping by reading each module entry file
+ * (index.php and CRUD wrappers) for $crud_action assignments with sidebar links.
  *
  * Usage:
  *   php scripts/crud_actions.php > crud_actions.html
  */
 
+declare(strict_types=1);
+
 $rootPath = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 $modulesPath = $rootPath . 'modules';
 
 if (!is_dir($modulesPath)) {
-    fwrite(STDERR, "Modules directory not found: {$modulesPath}\n");
+    $message = "Modules directory not found: {$modulesPath}\n";
+    if (PHP_SAPI === 'cli' && defined('STDERR')) {
+        fwrite(STDERR, $message);
+    }
     exit(1);
 }
 
@@ -29,38 +34,139 @@ if (PHP_SAPI === 'cli') {
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/script_browser_nav.php';
 
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
-itm_script_output_begin('CRUD Action Mapper');
-
-$rows = [];
-
-foreach ($moduleDirs as $moduleName) {
-    $indexPath = $modulesPath . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'index.php';
-    $crudLineNumber = null;
-    $crudLineText = null;
-
-    if (is_file($indexPath)) {
-        $lines = @file($indexPath);
-        if (is_array($lines)) {
-            foreach ($lines as $lineNumber => $lineText) {
-                if (preg_match('/\$crud_action\s*=/', $lineText)) {
-                    $crudLineNumber = $lineNumber + 1;
-                    $crudLineText = trim($lineText);
-                    break;
-                }
-            }
-        }
+/**
+ * @return array{line:int,text:string,literal:?string,is_coalesce:bool}|null
+ */
+function itm_crud_actions_parse_assignment(string $filePath): ?array
+{
+    $lines = @file($filePath);
+    if (!is_array($lines)) {
+        return null;
     }
 
-    $rows[] = [
-        'module' => $moduleName,
-        'crud_line_number' => $crudLineNumber,
-        'crud_line_text' => $crudLineText,
-        'sidebar_link' => 'modules/' . $moduleName . '/',
-    ];
+    foreach ($lines as $lineNumber => $lineText) {
+        if (!preg_match('/\$crud_action\s*=\s*(.+);/', $lineText, $matches)) {
+            continue;
+        }
+
+        $rhs = trim((string)$matches[1]);
+        $literal = null;
+        if (preg_match("/^['\"]([^'\"]+)['\"]$/", $rhs, $literalMatch)) {
+            $literal = (string)$literalMatch[1];
+        }
+
+        return [
+            'line' => $lineNumber + 1,
+            'text' => trim($lineText),
+            'literal' => $literal,
+            'is_coalesce' => strpos($rhs, '??') !== false,
+        ];
+    }
+
+    return null;
 }
+
+// #region agent log
+function itm_crud_actions_debug_log(array $data): void
+{
+    $logPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'debug-ffb3d9.log';
+    $payload = array_merge([
+        'sessionId' => 'ffb3d9',
+        'timestamp' => (int)round(microtime(true) * 1000),
+        'location' => 'scripts/crud_actions.php',
+    ], $data);
+    file_put_contents($logPath, json_encode($payload, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+}
+// #endregion
+
+itm_script_output_begin('CRUD Action Mapper');
+
+$entryFiles = ['index.php', 'create.php', 'edit.php', 'view.php', 'delete.php', 'list_all.php'];
+$rows = [];
+$stats = [
+    'modules' => count($moduleDirs),
+    'found' => 0,
+    'default' => 0,
+    'na' => 0,
+    'wrapper_only' => 0,
+];
+
+foreach ($moduleDirs as $moduleName) {
+    $modulePath = $modulesPath . DIRECTORY_SEPARATOR . $moduleName;
+    $moduleRows = [];
+    $hasLiteral = false;
+    $hasCoalesceIndex = false;
+
+    foreach ($entryFiles as $entryFile) {
+        $filePath = $modulePath . DIRECTORY_SEPARATOR . $entryFile;
+        if (!is_file($filePath)) {
+            continue;
+        }
+
+        $assignment = itm_crud_actions_parse_assignment($filePath);
+        if ($assignment === null) {
+            continue;
+        }
+
+        if ($assignment['literal'] !== null) {
+            $hasLiteral = true;
+            $statusClass = 'ok';
+            $statusLabel = 'Found';
+            $stats['found']++;
+        } elseif ($assignment['is_coalesce'] && $entryFile === 'index.php') {
+            $hasCoalesceIndex = true;
+            $statusClass = 'default';
+            $statusLabel = 'Default';
+            $stats['default']++;
+        } else {
+            $statusClass = 'default';
+            $statusLabel = 'Default';
+            $stats['default']++;
+        }
+
+        $moduleRows[] = [
+            'module' => $moduleName,
+            'entry_file' => $entryFile,
+            'crud_line_number' => $assignment['line'],
+            'crud_line_text' => $assignment['text'],
+            'status_class' => $statusClass,
+            'status_label' => $statusLabel,
+            'sidebar_link' => 'modules/' . $moduleName . '/',
+        ];
+    }
+
+    if ($moduleRows === []) {
+        $stats['na']++;
+        $moduleRows[] = [
+            'module' => $moduleName,
+            'entry_file' => '(none)',
+            'crud_line_number' => null,
+            'crud_line_text' => null,
+            'status_class' => 'na',
+            'status_label' => 'N/A',
+            'sidebar_link' => 'modules/' . $moduleName . '/',
+        ];
+    } elseif (!$hasLiteral && $hasCoalesceIndex) {
+        $stats['wrapper_only']++;
+    }
+
+    foreach ($moduleRows as $moduleRow) {
+        $rows[] = $moduleRow;
+    }
+}
+
+// #region agent log
+itm_crud_actions_debug_log([
+    'runId' => 'crud-actions-scan',
+    'hypothesisId' => 'H1-H5',
+    'message' => 'crud_actions scan summary',
+    'data' => $stats + ['row_count' => count($rows)],
+]);
+// #endregion
 
 echo '<!doctype html>';
 echo '<html lang="en">';
@@ -78,6 +184,8 @@ echo 'thead th{background:#f6f8fa;text-align:left;padding:10px;border-bottom:1px
 echo 'tbody td{padding:10px;border-top:1px solid #d8dee4;vertical-align:top;white-space:nowrap;}';
 echo 'tbody tr:nth-child(even){background:#f8fafc;}';
 echo '.ok{color:#116329;font-weight:700;}';
+echo '.default{color:#0969da;font-weight:700;}';
+echo '.na{color:#57606a;font-weight:700;}';
 echo '.missing{color:#cf222e;font-weight:700;display:inline-block;}';
 echo 'code{background:#f6f8fa;padding:2px 6px;border-radius:4px;}';
 echo 'a{color:#0969da;text-decoration:none;}';
@@ -86,29 +194,31 @@ echo '</style>';
 echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
+if (!itm_script_is_cli_sapi()) {
+    itm_script_browser_nav_echo();
+}
 echo '<h1>CRUD Action Mapper</h1>';
-echo '<p>Total modules scanned: <strong>' . count($rows) . '</strong></p>';
+echo '<p>Modules scanned: <strong>' . count($moduleDirs) . '</strong> | Rows: <strong>' . count($rows) . '</strong></p>';
 echo '<table>';
-echo '<thead><tr><th>#</th><th>Module</th><th>CRUD Mapping</th><th>Status</th><th>Sidebar Link</th></tr></thead>';
+echo '<thead><tr><th>#</th><th>Module</th><th>Entry file</th><th>CRUD Mapping</th><th>Status</th><th>Sidebar Link</th></tr></thead>';
 echo '<tbody>';
 
 foreach ($rows as $index => $row) {
-    $mappingText = '(not set in index.php)';
-    $statusClass = 'missing';
-    $statusLabel = 'Missing';
-
+    $mappingText = '(not set)';
     if ($row['crud_line_number'] !== null && $row['crud_line_text'] !== null) {
-        $mappingText = 'line ' . (int) $row['crud_line_number'] . ': ' . htmlspecialchars($row['crud_line_text'], ENT_QUOTES, 'UTF-8');
-        $statusClass = 'ok';
-        $statusLabel = 'Found';
+        $mappingText = 'line ' . (int)$row['crud_line_number'] . ': ' . htmlspecialchars($row['crud_line_text'], ENT_QUOTES, 'UTF-8');
     }
 
     $moduleEscaped = htmlspecialchars($row['module'], ENT_QUOTES, 'UTF-8');
+    $entryEscaped = htmlspecialchars($row['entry_file'], ENT_QUOTES, 'UTF-8');
     $sidebarEscaped = htmlspecialchars($row['sidebar_link'], ENT_QUOTES, 'UTF-8');
+    $statusClass = htmlspecialchars($row['status_class'], ENT_QUOTES, 'UTF-8');
+    $statusLabel = htmlspecialchars($row['status_label'], ENT_QUOTES, 'UTF-8');
 
     echo '<tr>';
     echo '<td>' . ($index + 1) . '</td>';
     echo '<td><strong>' . $moduleEscaped . '</strong></td>';
+    echo '<td><code>' . $entryEscaped . '</code></td>';
     echo '<td><code>' . $mappingText . '</code></td>';
     echo '<td><span class="' . $statusClass . '">' . $statusLabel . '</span></td>';
     $moduleHref = '../' . $sidebarEscaped;

@@ -196,7 +196,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="crud_actions.php" target="_blank" rel="nofollow noreferrer">crud_actions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Lists every module folder and the first <code>$crud_action =</code> line found in <code>index.php</code>, with links to each module.</td>
+                    <td>Lists every module entry file (<code>index.php</code> and CRUD wrappers) and each <code>$crud_action =</code> assignment, with links to each module.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_actions.php</code> (HTML to stdout) or <code>&gt; crud_actions.html</code>.</td>
                 </tr>
                 <tr>
