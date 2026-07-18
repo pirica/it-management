@@ -22,7 +22,9 @@ if (isset($_GET['rate_limit']) && (string)$_GET['rate_limit'] === '1') {
     itm_api_handle_rate_limit_probe_request($conn);
 }
 
-header('Content-Type: text/html; charset=UTF-8');
+if (!defined('ITM_API_DOC_FUNCTIONS_ONLY')) {
+    header('Content-Type: text/html; charset=UTF-8');
+}
 
 $itmDocGeneratedAt = gmdate('Y-m-d H:i:s') . ' UTC';
 $itmRootPath = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
@@ -788,6 +790,7 @@ function itmDocSelectOptionsAllowedTables(): array
     return $tables;
 }
 
+if (!defined('ITM_API_DOC_FUNCTIONS_ONLY')) {
 $moduleImportEndpoints = itmDocCollectModuleImportEndpoints($itmRootPath);
 $modulesWithoutImportEndpoint = itmDocCollectModulesWithoutImportEndpoint($itmRootPath, $moduleImportEndpoints);
 $idfApiEndpoints = itmDocCollectIdfApiEndpoints($itmRootPath);
@@ -1224,3 +1227,5 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/license_mana
 </div>
 </body>
 </html>
+<?php
+}
