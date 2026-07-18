@@ -114,7 +114,7 @@ class FieldsMissingBespokeGateTest extends TestCase
         $this->assertStringContainsString('Actions layout OK', $passes);
     }
 
-    public function testPureBespokeOpsReportFailsMissingHeadFavicon(): void
+    public function testPureBespokeOpsReportPassesHeadFaviconHelper(): void
     {
         $root = realpath(__DIR__ . '/../../../../');
         $this->assertNotFalse($root);
@@ -123,14 +123,21 @@ class FieldsMissingBespokeGateTest extends TestCase
         $this->assertNotSame([], $columns);
 
         $result = $this->runBespokeGate('ops_report', $columns);
-        $messages = array_map(static function (array $failure): string {
-            return (string) ($failure['message'] ?? '');
-        }, $result['failures']);
+        $passes = implode('|', $result['passes']);
+        $this->assertStringContainsString('Favicon OK', $passes);
+    }
 
-        $this->assertTrue(
-            $this->messagesContainAny($messages, ['Favicon', 'favicon', 'rel="icon"']),
-            'ops_report should fail page UI favicon gate: ' . implode(' | ', $messages)
-        );
+    public function testFaviconGatePassesItmRenderHeadFaviconHelperWithoutLiteralLinkTag(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'HTML'
+<head>
+<title>Test</title>
+<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
+</head>
+HTML;
+        $check = itm_check_module_favicon_link($index);
+        $this->assertSame('pass', $check['status'] ?? '');
     }
 
     public function testHybridScaffoldVlansPassesListUiSearchSortPagination(): void

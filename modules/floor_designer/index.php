@@ -569,6 +569,7 @@ if (!isset($crud_title)) {
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         /* Why: Keep designer artboard size local — do not pollute :root CSS variables. */

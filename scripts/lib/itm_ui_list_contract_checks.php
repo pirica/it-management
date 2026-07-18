@@ -551,6 +551,13 @@ if (!function_exists('itm_check_module_favicon_link')) {
             || stripos($headSection, 'itm_ui_config_favicon_url') !== false
             || stripos($headSection, 'itm_render_head_favicon_link') !== false;
 
+        if (stripos($headSection, 'itm_render_head_favicon_link') !== false) {
+            return [
+                'status' => 'pass',
+                'details' => 'Server-side favicon via itm_render_head_favicon_link() (Settings favicon_url)',
+            ];
+        }
+
         if ($hasFaviconLink && $usesConfiguredFavicon) {
             return [
                 'status' => 'pass',
