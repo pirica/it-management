@@ -702,7 +702,11 @@ if (!function_exists('itm_fields_missing_parse_manageable_column_exclusions')) {
         }
 
         $body = $match[1];
-        if (preg_match("/in_array\s*\(\s*\\\$c\['Field'\]\s*,\s*\[([^\]]+)\]/", $body, $listMatch)) {
+        if (preg_match(
+            "/in_array\s*\(\s*\\\$(?:c\['Field'\]|field)\s*,\s*\[([^\]]+)\]/",
+            $body,
+            $listMatch
+        )) {
             preg_match_all("/'([^']+)'/", $listMatch[1], $names);
 
             return $names[1] ?? [];

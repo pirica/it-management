@@ -27,6 +27,29 @@ PHP;
         $this->assertSame(['id'], itm_fields_missing_parse_manageable_column_exclusions($content));
     }
 
+    public function testParseManageableColumnExclusionsWithFieldAlias(): void
+    {
+        $content = <<<'PHP'
+function cr_manageable_columns($columns) {
+    return array_values(array_filter($columns, function ($c) {
+        $field = $c['Field'];
+        return !in_array($field, ['id', 'created_at', 'updated_at'], true);
+    }));
+}
+PHP;
+
+        $this->assertSame(['id', 'created_at', 'updated_at'], itm_fields_missing_parse_manageable_column_exclusions($content));
+    }
+
+    public function testWorkstationModesCreateDoesNotExposeIdDynamically(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $path = $root . '/modules/workstation_modes/create.php';
+
+        $this->assertFalse(itm_fields_missing_dynamic_form_exposes_field('id', [$path]));
+    }
+
     public function testManufacturersIndexDoesNotExposeIdOrCompanyIdDynamically(): void
     {
         $root = realpath(__DIR__ . '/../../../../');
