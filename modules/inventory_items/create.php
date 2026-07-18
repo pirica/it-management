@@ -378,7 +378,8 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
-<script src="../../js/select-add-option.js">
+<script src="../../js/select-add-option.js"></script>
+<script>
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');

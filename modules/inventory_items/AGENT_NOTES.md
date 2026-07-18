@@ -20,6 +20,7 @@ Manages inventory of consumables and spare parts. Tracks quantities on hand and 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
 - **Stock Indicators**: Visual cues for low stock items.
+- **Active checkbox (create/edit via `create.php`)**: `itm-checkbox-control` + `itm-check-indicator` — unchecked box shows ❌, checked shows ✅; JS listener must live in its own `<script>` block after `select-add-option.js` (do not nest inside the external script tag).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
