@@ -394,6 +394,228 @@ if (!function_exists('itm_fields_missing_strip_php_for_form_scan')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_form_noise_field_names')) {
+    /**
+     * Non-schema control names that appear on module screens but are not table columns.
+     *
+     * @return list<string>
+     */
+    function itm_fields_missing_form_noise_field_names(): array
+    {
+        return [
+            'csrf_token',
+            'search',
+            'bulk_action',
+            'ids',
+            'ajax_action',
+            'import_file',
+            'page',
+            'sort',
+            'dir',
+            'add_sample_data',
+            'import_excel_rows',
+            'per_page',
+            'records_per_page',
+            'viewport',
+            'theme',
+            'action',
+            'submit',
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_normalize_form_field_name')) {
+    function itm_fields_missing_normalize_form_field_name(string $name): string
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return '';
+        }
+        // Why: bulk checkboxes and multi-selects use name="ids[]".
+        if (substr($name, -2) === '[]') {
+            $name = substr($name, 0, -2);
+        }
+
+        return $name;
+    }
+}
+
+if (!function_exists('itm_fields_missing_extract_form_field_names_from_content')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_extract_form_field_names_from_content(string $content): array
+    {
+        $scan = itm_fields_missing_strip_php_for_form_scan($content);
+        $names = [];
+        if (preg_match_all('/<(?:input|select|textarea)\b[^>]*\bname\s*=\s*["\']([^"\']+)["\']/i', $scan, $matches)) {
+            foreach ($matches[1] as $raw) {
+                $name = itm_fields_missing_normalize_form_field_name((string) $raw);
+                if ($name !== '') {
+                    $names[$name] = true;
+                }
+            }
+        }
+
+        // Why: scaffold forms often emit dynamic name= echo of $name; also recover static name="field" still present in PHP source.
+        if (preg_match_all('/\bname\s*=\s*["\']([a-zA-Z_][a-zA-Z0-9_]*)["\']/i', $content, $staticMatches)) {
+            foreach ($staticMatches[1] as $raw) {
+                $name = itm_fields_missing_normalize_form_field_name((string) $raw);
+                if ($name !== '') {
+                    $names[$name] = true;
+                }
+            }
+        }
+
+        $noise = array_fill_keys(itm_fields_missing_form_noise_field_names(), true);
+        $out = [];
+        foreach (array_keys($names) as $name) {
+            if (isset($noise[$name])) {
+                continue;
+            }
+            $out[] = $name;
+        }
+        sort($out, SORT_STRING);
+
+        return $out;
+    }
+}
+
+if (!function_exists('itm_fields_missing_extract_form_field_names')) {
+    /**
+     * @param list<string> $paths
+     * @return list<string>
+     */
+    function itm_fields_missing_extract_form_field_names(array $paths): array
+    {
+        $names = [];
+        foreach ($paths as $path) {
+            if (is_dir($path)) {
+                foreach (glob($path . '/*.php') ?: [] as $includeFile) {
+                    $content = file_get_contents($includeFile);
+                    if ($content === false) {
+                        continue;
+                    }
+                    foreach (itm_fields_missing_extract_form_field_names_from_content($content) as $name) {
+                        $names[$name] = true;
+                    }
+                }
+                continue;
+            }
+            if (!is_readable($path)) {
+                continue;
+            }
+            $content = file_get_contents($path);
+            if ($content === false) {
+                continue;
+            }
+            foreach (itm_fields_missing_extract_form_field_names_from_content($content) as $name) {
+                $names[$name] = true;
+            }
+        }
+
+        $out = array_keys($names);
+        sort($out, SORT_STRING);
+
+        return $out;
+    }
+}
+
+if (!function_exists('itm_fields_missing_collect_ui_fields')) {
+    /**
+     * Grab every create/edit form field possible: scraped controls + schema-derived scaffold set.
+     *
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     * @param list<string> $expectedColumns
+     * @return array{form_fields:list<string>,form_fields_other:list<string>,audited:list<string>,scraped_raw:list<string>}
+     */
+    function itm_fields_missing_collect_ui_fields(
+        string $moduleSlug,
+        array $files,
+        array $expectedColumns,
+        bool $allowSchemaDerivedFallback
+    ): array {
+        $formPaths = itm_fields_missing_resolve_form_paths($files);
+        $moduleDir = dirname($files['index']);
+        if (is_dir($moduleDir)) {
+            foreach (glob($moduleDir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $extraFile) {
+                $base = strtolower(basename($extraFile));
+                if ($base === 'index.php' || $base === 'list_all.php' || $base === 'delete.php' || $base === 'view.php') {
+                    continue;
+                }
+                // Why: bespoke modules keep extra form entry files (create_folder.php, edit_folder.php, …).
+                if (strpos($base, 'create') !== false || strpos($base, 'edit') !== false || strpos($base, 'form') !== false) {
+                    $formPaths[] = $extraFile;
+                }
+            }
+            $formPaths = array_values(array_unique($formPaths));
+        }
+        $scraped = itm_fields_missing_extract_form_field_names($formPaths);
+        $expectedSet = array_fill_keys($expectedColumns, true);
+
+        $formFields = [];
+        $formFieldsOther = [];
+        foreach ($scraped as $name) {
+            if (isset($expectedSet[$name])) {
+                $formFields[] = $name;
+            } else {
+                $formFieldsOther[] = $name;
+            }
+        }
+
+        // Why: employees create uses includes + dynamic blocks; merge critical matrix with scraped names.
+        if ($moduleSlug === 'employees') {
+            foreach (itm_fields_missing_employees_critical_fields() as $name) {
+                if (isset($expectedSet[$name]) && !in_array($name, $formFields, true)) {
+                    $formFields[] = $name;
+                }
+            }
+            foreach (itm_fields_missing_employees_optional_fields() as $name) {
+                if (isset($expectedSet[$name]) && !in_array($name, $formFields, true) && in_array($name, $scraped, true)) {
+                    $formFields[] = $name;
+                }
+            }
+        }
+
+        $globalExcluded = array_fill_keys(itm_fields_missing_global_ui_excluded_columns(), true);
+        $audited = [];
+        foreach ($formFields as $name) {
+            if (!isset($globalExcluded[$name])) {
+                $audited[] = $name;
+            }
+        }
+        if ($allowSchemaDerivedFallback) {
+            // Why: dynamic scaffold loops emit name=$name so scrape alone under-reports; union schema-derived UI set.
+            foreach (itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns) as $name) {
+                if (!in_array($name, $audited, true)) {
+                    $audited[] = $name;
+                }
+            }
+            // Why: when scrape only caught hidden id/company_id, surface the scaffold UI field set as form fields.
+            $meaningfulScraped = [];
+            foreach ($formFields as $name) {
+                if (!isset($globalExcluded[$name])) {
+                    $meaningfulScraped[] = $name;
+                }
+            }
+            if ($meaningfulScraped === [] && $audited !== []) {
+                $formFields = $audited;
+            }
+        }
+
+        sort($formFields, SORT_STRING);
+        sort($formFieldsOther, SORT_STRING);
+        sort($audited, SORT_STRING);
+
+        return [
+            'form_fields' => array_values($formFields),
+            'form_fields_other' => array_values($formFieldsOther),
+            'audited' => array_values($audited),
+            'scraped_raw' => $scraped,
+        ];
+    }
+}
+
 if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
     function itm_fields_missing_file_has_visible_form_field(string $field, string $content): bool
     {
@@ -493,16 +715,22 @@ if (!function_exists('itm_fields_missing_finalize_module_report')) {
      * @param list<string> $expectedColumns
      * @param list<string> $liveColumns
      * @param list<string> $uiAuditedColumns
+     * @param list<string> $uiFormFields
+     * @param list<string> $uiFormFieldsOther
      * @return array<string, mixed>
      */
     function itm_fields_missing_finalize_module_report(
         array $report,
         array $expectedColumns,
         array $liveColumns,
-        array $uiAuditedColumns = []
+        array $uiAuditedColumns = [],
+        array $uiFormFields = [],
+        array $uiFormFieldsOther = []
     ): array {
         $report['expected_columns'] = array_values($expectedColumns);
         $report['live_columns'] = array_values($liveColumns);
+        $report['ui_form_fields'] = array_values($uiFormFields);
+        $report['ui_form_fields_other'] = array_values($uiFormFieldsOther);
         $report['ui_audited_columns'] = array_values($uiAuditedColumns);
         $report['ui_excluded_columns'] = array_values(array_diff($expectedColumns, $uiAuditedColumns));
 
@@ -518,6 +746,8 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
     {
         $expected = $moduleReport['expected_columns'] ?? [];
         $live = $moduleReport['live_columns'] ?? [];
+        $uiForm = $moduleReport['ui_form_fields'] ?? [];
+        $uiFormOther = $moduleReport['ui_form_fields_other'] ?? [];
         $uiAudited = $moduleReport['ui_audited_columns'] ?? [];
         $excluded = $moduleReport['ui_excluded_columns'] ?? [];
 
@@ -526,6 +756,12 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
         }
         if (!is_array($live)) {
             $live = [];
+        }
+        if (!is_array($uiForm)) {
+            $uiForm = [];
+        }
+        if (!is_array($uiFormOther)) {
+            $uiFormOther = [];
         }
         if (!is_array($uiAudited)) {
             $uiAudited = [];
@@ -537,6 +773,14 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
         $out = '  database.sql columns (' . count($expected) . '): ' . ($expected === [] ? '(none)' : implode(', ', $expected)) . $nl;
         $out .= '  live columns (' . count($live) . '): ' . ($live === [] ? '(none)' : implode(', ', $live)) . $nl;
 
+        if ($uiForm !== []) {
+            $out .= '  UI form fields (' . count($uiForm) . '): ' . implode(', ', $uiForm) . $nl;
+        } else {
+            $out .= '  UI form fields (0): (none scraped from create/edit for this table)' . $nl;
+        }
+        if ($uiFormOther !== []) {
+            $out .= '  UI form fields other (' . count($uiFormOther) . '): ' . implode(', ', $uiFormOther) . $nl;
+        }
         if ($uiAudited !== []) {
             $out .= '  UI audited columns (' . count($uiAudited) . '): ' . implode(', ', $uiAudited) . $nl;
         }
@@ -801,9 +1045,24 @@ if (!function_exists('itm_fields_missing_audit_module')) {
         require_once __DIR__ . '/itm_crud_tables_audit.php';
         $bespokeModules = array_fill_keys(itm_crud_tables_load_skip_module_slugs($rootPath), true);
         $statusDriven = in_array($moduleSlug, itm_fields_missing_status_driven_slugs(), true);
+        $isDynamicScaffold = itm_fields_missing_index_is_dynamic_scaffold($files['index']);
+        $uiCollected = itm_fields_missing_collect_ui_fields(
+            $moduleSlug,
+            $files,
+            $expectedColumns,
+            $isDynamicScaffold || $moduleSlug === 'employees'
+        );
+        $uiFormFields = $uiCollected['form_fields'];
+        $uiFormFieldsOther = $uiCollected['form_fields_other'];
+        $uiAuditedCollected = $uiCollected['audited'];
+        $formPaths = itm_fields_missing_resolve_form_paths($files);
+        $scrapedCount = count($uiFormFields) + count($uiFormFieldsOther);
 
         if (isset($bespokeModules[$moduleSlug])) {
             $infos[] = "{$moduleSlug} is bespoke/deferred UI — schema-only audit (see docs/list_bespoke_UI.txt)";
+            if ($scrapedCount > 0) {
+                $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
+            }
 
             return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
@@ -814,11 +1073,14 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ], $expectedColumns, $liveColumns);
+            ], $expectedColumns, $liveColumns, $uiAuditedCollected, $uiFormFields, $uiFormFieldsOther);
         }
 
         if ($statusDriven && $moduleSlug !== 'employees') {
             $infos[] = "{$moduleSlug} is status-driven bespoke UI — schema-only audit (row active is soft-delete mirror)";
+            if ($scrapedCount > 0) {
+                $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
+            }
 
             return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
@@ -829,17 +1091,19 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ], $expectedColumns, $liveColumns);
+            ], $expectedColumns, $liveColumns, $uiAuditedCollected, $uiFormFields, $uiFormFieldsOther);
         }
 
         $uiMode = 'manual';
         if ($moduleSlug === 'employees') {
             $uiMode = 'employees';
-        } elseif (itm_fields_missing_index_is_dynamic_scaffold($files['index'])) {
+        } elseif ($isDynamicScaffold) {
             $uiMode = 'dynamic_scaffold';
             $passes[] = "{$moduleSlug} uses dynamic scaffold columns (\$uiColumns / cr_manageable_columns)";
-            $uiAudited = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
-            $formPaths = itm_fields_missing_resolve_form_paths($files);
+            $uiAudited = $uiCollected['audited'];
+            if ($scrapedCount > 0) {
+                $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
+            }
             itm_fields_missing_audit_excluded_ui_columns(
                 $moduleSlug,
                 array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
@@ -857,12 +1121,12 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ], $expectedColumns, $liveColumns, $uiAudited);
+            ], $expectedColumns, $liveColumns, $uiAudited, $uiFormFields, $uiFormFieldsOther);
         }
 
-        $formPaths = itm_fields_missing_resolve_form_paths($files);
-
-        $uiFields = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
+        $uiFields = $uiCollected['audited'] !== []
+            ? $uiCollected['audited']
+            : itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
         foreach ($uiFields as $field) {
             $formOk = itm_fields_missing_file_bundle_has_field($field, $formPaths);
             $viewOk = itm_fields_missing_view_has_field($field, $files['view'], $moduleSlug);
@@ -955,6 +1219,10 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             $failures
         );
 
+        if ($scrapedCount > 0) {
+            $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
+        }
+
         return itm_fields_missing_finalize_module_report([
             'module' => $moduleSlug,
             'table' => $table,
@@ -964,7 +1232,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             'failures' => $failures,
             'infos' => $infos,
             'passes' => $passes,
-        ], $expectedColumns, $liveColumns, $uiFields);
+        ], $expectedColumns, $liveColumns, $uiFields, $uiFormFields, $uiFormFieldsOther);
     }
 }
 
