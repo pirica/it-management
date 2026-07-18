@@ -387,9 +387,17 @@ if (!function_exists('itm_fields_missing_resolve_form_paths')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_strip_php_for_form_scan')) {
+    function itm_fields_missing_strip_php_for_form_scan(string $content): string
+    {
+        return (string) preg_replace('/<\?php.*?\?>/s', '', $content);
+    }
+}
+
 if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
     function itm_fields_missing_file_has_visible_form_field(string $field, string $content): bool
     {
+        $content = itm_fields_missing_strip_php_for_form_scan($content);
         if (!preg_match_all(
             '/<(?:input|select|textarea)\b[^>]*\bname=["\']' . preg_quote($field, '/') . '["\'][^>]*>/i',
             $content,
@@ -400,6 +408,10 @@ if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
 
         foreach ($matches[0] as $tag) {
             if (preg_match('/\btype=["\']hidden["\']/i', $tag)) {
+                continue;
+            }
+            // Why: legacy scaffold stamps company_id with a readonly number input; not user-editable.
+            if (preg_match('/\b(?:readonly|disabled)\b/i', $tag)) {
                 continue;
             }
             if (preg_match('/<(?:textarea|select)\b/i', $tag)) {
