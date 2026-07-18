@@ -53,7 +53,6 @@ if (!function_exists('itm_mojibake_skip_relative_files')) {
         return [
             'scripts/lib/itm_mojibake_audit.php',
             'scripts/verify_source_utf8_mojibake.php',
-            'scripts/apply_utf8_mojibake_fix.php',
             'AGENTS.md',
         ];
     }
