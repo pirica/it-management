@@ -19,7 +19,7 @@ Maps employees (login accounts) to companies they may access after login. Drives
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD with FK labels for `employee_id` and `company_id`.
-- Create/edit/view/list forms use `cr_form_display_value()` so failed saves re-show POST values (not SQL `NULL` / quoted tokens).
+- Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; view keeps full `$fieldColumns` including audit meta.
 - Delete forms set `data-is-admin="1"` when row ties to admin user — JS confirm dialog warns before POST.
 - Bulk delete when row count ≥ `records_per_page`.
 
