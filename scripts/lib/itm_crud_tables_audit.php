@@ -126,3 +126,47 @@ if (!function_exists('itm_crud_titles_detect_assignment')) {
         return null;
     }
 }
+
+if (!function_exists('itm_crud_actions_should_skip_module')) {
+    /**
+     * Modules that intentionally omit $crud_action in entry files.
+     */
+    function itm_crud_actions_should_skip_module(string $moduleSlug, ?string $rootPath = null): bool
+    {
+        return itm_crud_titles_should_skip_module($moduleSlug, $rootPath);
+    }
+}
+
+if (!function_exists('itm_crud_actions_detect_assignment')) {
+    /**
+     * @return array{line:int,text:string,literal:?string,is_coalesce:bool}|null
+     */
+    function itm_crud_actions_detect_assignment(string $filePath): ?array
+    {
+        $lines = @file($filePath);
+        if (!is_array($lines)) {
+            return null;
+        }
+
+        foreach ($lines as $lineNumber => $lineText) {
+            if (!preg_match('/\$crud_action\s*=\s*(.+);/', $lineText, $matches)) {
+                continue;
+            }
+
+            $rhs = trim((string)$matches[1]);
+            $literal = null;
+            if (preg_match("/^['\"]([^'\"]+)['\"]$/", $rhs, $literalMatch)) {
+                $literal = (string)$literalMatch[1];
+            }
+
+            return [
+                'line' => $lineNumber + 1,
+                'text' => trim($lineText),
+                'literal' => $literal,
+                'is_coalesce' => strpos($rhs, '??') !== false,
+            ];
+        }
+
+        return null;
+    }
+}
