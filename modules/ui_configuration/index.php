@@ -171,6 +171,33 @@ function cr_is_hidden_employee_field($field) {
 }
 
 /**
+ * Why: API keys and rate-limit metadata are managed in Settings; scaffold must not null them on save.
+ */
+function cr_is_hidden_ui_configuration_field($field) {
+    if (($GLOBALS['crud_table'] ?? '') !== 'ui_configuration') {
+        return false;
+    }
+    static $hidden = [
+        'api_key',
+        'api_key_is_active',
+        'api_key_last_used_at',
+        'rate_limit_window_start',
+        'rate_limit_request_count',
+        'rate_limit_enabled',
+        'tier',
+        'active',
+    ];
+    return in_array($field, $hidden, true);
+}
+
+/**
+ * Whether a DESCRIBE column permits SQL NULL (empty POST must not become NULL when false).
+ */
+function cr_column_allows_null(array $col) {
+    return strtoupper((string)($col['Null'] ?? '')) === 'YES';
+}
+
+/**
  * Formats database values for UI display (badges, icons, clickable links).
  */
 function cr_render_cell_value($table, $field, $value) {
@@ -317,7 +344,8 @@ $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
-    return !cr_is_hidden_employee_field($col['Field']);
+    $field = (string)($col['Field'] ?? '');
+    return !cr_is_hidden_employee_field($field) && !cr_is_hidden_ui_configuration_field($field);
 }));
 $hasCompany = false;
 foreach ($fieldColumns as $c) {
@@ -769,7 +797,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         // Generic value processing and numeric validation
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            $data[$name] = null;
+            $data[$name] = cr_column_allows_null($col) ? null : '';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
             $normalizedNumeric = null; $numericError = '';
             if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {

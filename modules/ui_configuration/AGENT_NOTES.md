@@ -22,8 +22,9 @@ Manages per-company and per-employee UI layout preferences (such as action butto
 
 ## 5. UI Behavior Requirements
 
-- **Standard flattened CRUD** via `edit.php`.
-- **active field** is added as a hidden field (defaults to 1) and is excluded from visible list/view tables.
+- **Standard flattened CRUD** via `edit.php` (wrapper → `index.php`).
+- **API key / rate-limit fields** (`api_key`, `api_key_is_active`, `api_key_last_used_at`, `rate_limit_*`, `tier`) are **excluded** from scaffold create/edit/list forms — manage keys on **Settings → API Access**. Empty `NOT NULL` varchar fields (e.g. `favicon_path`) persist as `''`, not SQL `NULL`.
+- **active field** is hidden from scaffold forms (defaults apply on create; unchanged on edit).
 - Table actions and button positions are dynamically re-ordered globally via `js/ui-layout.js` based on `table_actions_position` and `new_button_position` settings.
 
 ## 6. API Actions (If Applicable)
