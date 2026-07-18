@@ -719,6 +719,7 @@ $countResult = mysqli_query($conn, $countSql);
 $countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
 $totalRows = (int)($countRow['total'] ?? 0);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+$showBulkActions = ($totalRows >= $perPage);
 if ($page > $totalPages) {
     $page = $totalPages;
     $offset = ($page - 1) * $perPage;
@@ -846,14 +847,17 @@ if (!isset($crud_title)) {
                 </div>
             </div>
 
+            <?php if ($showBulkActions): ?>
             <div class="card" style="margin-bottom:16px;">
-                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all employees for this company? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
+            <?php endif; ?>
 
             <!-- SEARCH FILTER -->
             <div class="card" style="margin-bottom:16px;">
@@ -893,7 +897,7 @@ if (!isset($crud_title)) {
                 <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
-                        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                        <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                         <?php foreach ($columns as $col): ?>
                             <?php $nextDir = ($sort === $col && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(emp_build_query(['sort' => $col, 'dir' => $nextDir, 'show' => $showDuplicatesOnly ? 'duplicates' : null, 'search' => $searchRaw])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize(emp_label($col === 'work_email' ? 'email' : $col)); ?><?php if ($sort === $col): ?><?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
@@ -905,7 +909,7 @@ if (!isset($crud_title)) {
                     <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                         <?php $duplicateReasons = emp_duplicate_reasons_for_row($row, $duplicateValueMaps); ?>
                         <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#ffe8e8;border-left:4px solid #d93025;"' : ''; ?>>
-                            <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                            <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <?php foreach ($columns as $col): ?>
                                 <td>
                                     <?php if (($col === 'work_email' || $col === 'personal_email') && !empty($row[$col])): ?>
@@ -954,7 +958,7 @@ if (!isset($crud_title)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="<?php echo count($columns) + 2; ?>" style="text-align:center;">No employees found.</td></tr>
+                        <tr><td colspan="<?php echo count($columns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No employees found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
