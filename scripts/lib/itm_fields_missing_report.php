@@ -366,6 +366,116 @@ if (!function_exists('itm_fields_missing_ui_fields_for_module')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_resolve_form_paths')) {
+    /**
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     * @return list<string>
+     */
+    function itm_fields_missing_resolve_form_paths(array $files): array
+    {
+        $formPaths = [$files['create'], $files['edit'], $files['includes']];
+        if (is_readable($files['edit']) && strpos((string) file_get_contents($files['edit']), "require 'create.php'") !== false) {
+            $formPaths = [$files['create'], $files['includes']];
+        }
+        if (is_readable($files['create']) && strpos((string) file_get_contents($files['create']), '$crud_action') !== false
+            && strpos((string) file_get_contents($files['create']), "require 'index.php'") !== false
+        ) {
+            $formPaths = [$files['index'], $files['includes']];
+        }
+
+        return $formPaths;
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
+    function itm_fields_missing_file_has_visible_form_field(string $field, string $content): bool
+    {
+        if (!preg_match_all(
+            '/<(?:input|select|textarea)\b[^>]*\bname=["\']' . preg_quote($field, '/') . '["\'][^>]*>/i',
+            $content,
+            $matches
+        )) {
+            return false;
+        }
+
+        foreach ($matches[0] as $tag) {
+            if (preg_match('/\btype=["\']hidden["\']/i', $tag)) {
+                continue;
+            }
+            if (preg_match('/<(?:textarea|select)\b/i', $tag)) {
+                return true;
+            }
+            if (preg_match('/\btype=["\'](?:text|number|email|url|checkbox|date|color|password|tel|search)["\']/i', $tag)) {
+                return true;
+            }
+            if (preg_match('/<input\b/i', $tag) && !preg_match('/\btype=/i', $tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_form_exposes_visible_field')) {
+    /**
+     * @param list<string> $paths
+     */
+    function itm_fields_missing_form_exposes_visible_field(string $field, array $paths): bool
+    {
+        foreach ($paths as $path) {
+            if (is_dir($path)) {
+                foreach (glob($path . '/*.php') ?: [] as $includeFile) {
+                    $content = file_get_contents($includeFile);
+                    if ($content !== false && itm_fields_missing_file_has_visible_form_field($field, $content)) {
+                        return true;
+                    }
+                }
+                continue;
+            }
+            if (!is_readable($path)) {
+                continue;
+            }
+            $content = file_get_contents($path);
+            if ($content !== false && itm_fields_missing_file_has_visible_form_field($field, $content)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
+    /**
+     * @param list<string> $excludedColumns
+     * @param list<string> $formPaths
+     * @param list<string> $passes
+     * @param list<array{code:string,message:string}> $failures
+     */
+    function itm_fields_missing_audit_excluded_ui_columns(
+        string $moduleSlug,
+        array $excludedColumns,
+        array $formPaths,
+        array &$passes,
+        array &$failures
+    ): void {
+        foreach ($excludedColumns as $field) {
+            if ($field === '') {
+                continue;
+            }
+            if (itm_fields_missing_form_exposes_visible_field($field, $formPaths)) {
+                $failures[] = [
+                    'code' => 'ui_excluded_exposed',
+                    'message' => "{$moduleSlug} excluded UI column {$field}: visible on create/edit forms",
+                ];
+                continue;
+            }
+            $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on create/edit forms";
+        }
+    }
+}
+
 if (!function_exists('itm_fields_missing_finalize_module_report')) {
     /**
      * @param list<string> $expectedColumns
@@ -509,6 +619,14 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             $uiMode = 'dynamic_scaffold';
             $passes[] = "{$moduleSlug} uses dynamic scaffold columns (\$uiColumns / cr_manageable_columns)";
             $uiAudited = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
+            $formPaths = itm_fields_missing_resolve_form_paths($files);
+            itm_fields_missing_audit_excluded_ui_columns(
+                $moduleSlug,
+                array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
+                $formPaths,
+                $passes,
+                $failures
+            );
 
             return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
@@ -522,15 +640,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             ], $expectedColumns, $liveColumns, $uiAudited);
         }
 
-        $formPaths = [$files['create'], $files['edit'], $files['includes']];
-        if (is_readable($files['edit']) && strpos((string) file_get_contents($files['edit']), "require 'create.php'") !== false) {
-            $formPaths = [$files['create'], $files['includes']];
-        }
-        if (is_readable($files['create']) && strpos((string) file_get_contents($files['create']), '$crud_action') !== false
-            && strpos((string) file_get_contents($files['create']), "require 'index.php'") !== false
-        ) {
-            $formPaths = [$files['index'], $files['includes']];
-        }
+        $formPaths = itm_fields_missing_resolve_form_paths($files);
 
         $uiFields = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
         foreach ($uiFields as $field) {
@@ -607,7 +717,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             }
 
             foreach (['id', 'company_id', 'created_at', 'updated_at', 'user_id', 'is_hidden'] as $field) {
-                if (in_array($field, $expectedColumns, true)) {
+                if (in_array($field, $expectedColumns, true) && !in_array($field, itm_fields_missing_global_ui_excluded_columns(), true)) {
                     $infos[] = "employees.{$field} is meta/system scope (not required on create/edit forms)";
                 }
             }
@@ -616,6 +726,14 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $passes[] = 'employees list_all.php redirects to index.php (list columns inherit from index.php)';
             }
         }
+
+        itm_fields_missing_audit_excluded_ui_columns(
+            $moduleSlug,
+            array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
+            $formPaths,
+            $passes,
+            $failures
+        );
 
         return itm_fields_missing_finalize_module_report([
             'module' => $moduleSlug,
