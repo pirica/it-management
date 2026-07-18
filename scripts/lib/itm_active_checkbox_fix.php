@@ -166,7 +166,6 @@ if (!function_exists('itm_active_checkbox_fix_ensure_js_listener')) {
         }
 
         $snippet = <<<'JS'
-
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
@@ -174,24 +173,15 @@ document.addEventListener('change', function (event) {
 });
 JS;
 
-        if (preg_match('/<\/script>\s*<\/body>/i', $content)) {
-            return preg_replace(
-                '/<\/script>\s*<\/body>/i',
-                $snippet . "\n</script>\n</body>",
-                $content,
-                1
-            ) ?? $content;
-        }
-
         if (stripos($content, '</body>') !== false) {
             return str_ireplace(
                 '</body>',
-                "<script>\n" . trim($snippet) . "\n</script>\n</body>",
+                "<script>\n" . $snippet . "\n</script>\n</body>",
                 $content
             );
         }
 
-        return $content . "\n<script>\n" . trim($snippet) . "\n</script>\n";
+        return $content . "\n<script>\n" . $snippet . "\n</script>\n";
     }
 }
 
