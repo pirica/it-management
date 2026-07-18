@@ -82,6 +82,13 @@ if ($moduleFilter !== '') {
 echo str_repeat('-', 72) . $nl . $nl;
 
 foreach ($report['modules'] as $moduleReport) {
+    $uiMode = (string) ($moduleReport['ui_mode'] ?? '');
+    $hasFailures = !empty($moduleReport['failures']);
+    // Why: bespoke/status-driven modules are summarised in the SKIP footer; only expand when schema fails.
+    if (!$hasFailures && ($uiMode === 'bespoke_skip' || $uiMode === 'status_driven_skip')) {
+        continue;
+    }
+
     $moduleSlug = (string) $moduleReport['module'];
     $table = (string) $moduleReport['table'];
     $moduleLink = function_exists('itm_script_format_modules_file_link')
@@ -90,7 +97,7 @@ foreach ($report['modules'] as $moduleReport) {
 
     echo $moduleLink . ' (table: ' . (function_exists('itm_script_format_table_link')
         ? itm_script_format_table_link($table)
-        : $table) . ', ui: ' . (string) $moduleReport['ui_mode'] . ')' . $nl;
+        : $table) . ', ui: ' . $uiMode . ')' . $nl;
 
     echo itm_fields_missing_format_columns_block($moduleReport, $nl);
 

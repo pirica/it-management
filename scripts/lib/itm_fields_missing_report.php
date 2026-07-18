@@ -591,8 +591,10 @@ if (!function_exists('itm_fields_missing_format_failure_summary_block')) {
 
 if (!function_exists('itm_fields_missing_collect_bespoke_skips')) {
     /**
+     * One row per module: tables collapsed, short SKIP reason.
+     *
      * @param list<array<string,mixed>> $moduleReports
-     * @return list<array{module:string,table:string,ui_mode:string,reason:string}>
+     * @return list<array{module:string,tables:list<string>,ui_mode:string,reason:string}>
      */
     function itm_fields_missing_collect_bespoke_skips(
         array $moduleReports,
@@ -604,7 +606,8 @@ if (!function_exists('itm_fields_missing_collect_bespoke_skips')) {
         }
         $rootPath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR;
 
-        $skips = [];
+        /** @var array<string, array{module:string,tables:list<string>,ui_mode:string,reason:string}> $byModule */
+        $byModule = [];
         $modulesInReport = [];
 
         foreach ($moduleReports as $moduleReport) {
@@ -622,50 +625,52 @@ if (!function_exists('itm_fields_missing_collect_bespoke_skips')) {
                 continue;
             }
 
-            $skips[] = [
-                'module' => $moduleSlug,
-                'table' => (string) ($moduleReport['table'] ?? ''),
-                'ui_mode' => $uiMode,
-                'reason' => $uiMode === 'status_driven_skip'
-                    ? 'status-driven UI — schema-only'
-                    : 'bespoke/deferred UI — schema-only',
-            ];
+            $table = trim((string) ($moduleReport['table'] ?? ''));
+            $reason = $uiMode === 'status_driven_skip' ? 'status-driven UI' : 'bespoke UI';
+            if (!isset($byModule[$moduleSlug])) {
+                $byModule[$moduleSlug] = [
+                    'module' => $moduleSlug,
+                    'tables' => [],
+                    'ui_mode' => $uiMode,
+                    'reason' => $reason,
+                ];
+            }
+            if ($table !== '' && !in_array($table, $byModule[$moduleSlug]['tables'], true)) {
+                $byModule[$moduleSlug]['tables'][] = $table;
+            }
+            if ($uiMode === 'status_driven_skip') {
+                $byModule[$moduleSlug]['ui_mode'] = $uiMode;
+                $byModule[$moduleSlug]['reason'] = $reason;
+            }
         }
 
         if ($moduleFilter === null || $moduleFilter === '') {
             require_once __DIR__ . '/itm_crud_tables_audit.php';
-            $listedSlugs = itm_crud_tables_load_skip_module_slugs($rootPath);
-            $listedModules = [];
-            foreach ($skips as $skip) {
-                $listedModules[$skip['module']] = true;
-            }
-
-            foreach ($listedSlugs as $slug) {
-                if (isset($listedModules[$slug]) || isset($modulesInReport[$slug])) {
+            foreach (itm_crud_tables_load_skip_module_slugs($rootPath) as $slug) {
+                if (isset($byModule[$slug]) || isset($modulesInReport[$slug])) {
                     continue;
                 }
                 $indexPath = $rootPath . 'modules' . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR . 'index.php';
                 if (!is_file($indexPath)) {
                     continue;
                 }
-
-                $skips[] = [
+                $byModule[$slug] = [
                     'module' => $slug,
-                    'table' => '',
+                    'tables' => [],
                     'ui_mode' => 'bespoke_skip',
-                    'reason' => 'bespoke/deferred UI — no discoverable schema table',
+                    'reason' => 'no schema table',
                 ];
             }
         }
 
+        $skips = array_values($byModule);
         usort($skips, static function (array $a, array $b): int {
-            $moduleCmp = strcmp($a['module'], $b['module']);
-            if ($moduleCmp !== 0) {
-                return $moduleCmp;
-            }
-
-            return strcmp($a['table'], $b['table']);
+            return strcmp($a['module'], $b['module']);
         });
+        foreach ($skips as &$skip) {
+            sort($skip['tables'], SORT_STRING);
+        }
+        unset($skip);
 
         return $skips;
     }
@@ -673,7 +678,9 @@ if (!function_exists('itm_fields_missing_collect_bespoke_skips')) {
 
 if (!function_exists('itm_fields_missing_format_bespoke_skip_block')) {
     /**
-     * @param list<array{module:string,table:string,ui_mode:string,reason:string}> $skips
+     * Compact end-of-run SKIP table: module | table(s) | reason.
+     *
+     * @param list<array{module:string,tables?:list<string>,table?:string,ui_mode:string,reason:string}> $skips
      */
     function itm_fields_missing_format_bespoke_skip_block(
         array $skips,
@@ -684,21 +691,64 @@ if (!function_exists('itm_fields_missing_format_bespoke_skip_block')) {
             return '';
         }
 
-        $out = str_repeat('-', 72) . $nl;
-        $out .= 'Bespoke / deferred UI modules — SKIP (' . count($skips) . '):' . $nl;
+        $rows = [];
+        $moduleWidth = strlen('module');
+        $tableWidth = strlen('table(s)');
         foreach ($skips as $skip) {
             $moduleSlug = (string) ($skip['module'] ?? '');
-            $table = trim((string) ($skip['table'] ?? ''));
-            $reason = trim((string) ($skip['reason'] ?? 'bespoke/deferred UI'));
-            $moduleRef = function_exists('itm_script_format_modules_file_link')
-                ? itm_script_format_modules_file_link('modules/' . $moduleSlug . '/index.php')
-                : 'modules/' . $moduleSlug . '/index.php';
-            $tablePart = $table !== ''
-                ? ' (table: ' . (function_exists('itm_script_format_table_link')
-                    ? itm_script_format_table_link($table)
-                    : $table) . ')'
-                : '';
-            $line = '[SKIP] ' . $moduleRef . $tablePart . ' — ' . $reason;
+            $tables = $skip['tables'] ?? null;
+            if (!is_array($tables)) {
+                $legacy = trim((string) ($skip['table'] ?? ''));
+                $tables = $legacy !== '' ? [$legacy] : [];
+            }
+            // Why: ASCII placeholder keeps CLI column padding stable (UTF-8 em dash breaks strlen widths).
+            $tableText = $tables === [] ? '-' : implode(', ', $tables);
+            $reason = trim((string) ($skip['reason'] ?? 'bespoke UI'));
+            $moduleWidth = max($moduleWidth, strlen($moduleSlug));
+            $tableWidth = max($tableWidth, strlen($tableText));
+            $rows[] = [
+                'module' => $moduleSlug,
+                'tables' => $tableText,
+                'reason' => $reason,
+            ];
+        }
+
+        $out = str_repeat('-', 72) . $nl;
+        $out .= 'Bespoke / deferred UI — SKIP (' . count($rows) . ' modules):' . $nl;
+        $header = sprintf(
+            '%-6s  %-' . $moduleWidth . 's  %-' . $tableWidth . 's  %s',
+            '[SKIP]',
+            'module',
+            'table(s)',
+            'reason'
+        );
+        $out .= $header . $nl;
+
+        foreach ($rows as $row) {
+            $moduleRef = function_exists('itm_script_format_module_link')
+                ? itm_script_format_module_link($row['module'], '', $row['module'])
+                : $row['module'];
+            $tableRef = $row['tables'];
+            if ($tableRef !== '-' && function_exists('itm_script_format_table_link') && !itm_script_is_cli_sapi()) {
+                $parts = [];
+                foreach (explode(', ', $row['tables']) as $tableName) {
+                    $parts[] = itm_script_format_table_link($tableName);
+                }
+                $tableRef = implode(', ', $parts);
+            }
+
+            // Why: pad plain CLI text; browser links break sprintf widths so keep readable spacing.
+            if (function_exists('itm_script_is_cli_sapi') && itm_script_is_cli_sapi()) {
+                $line = sprintf(
+                    '%-6s  %-' . $moduleWidth . 's  %-' . $tableWidth . 's  %s',
+                    '[SKIP]',
+                    $row['module'],
+                    $row['tables'],
+                    $row['reason']
+                );
+            } else {
+                $line = '[SKIP]  ' . $moduleRef . '  ' . $tableRef . '  ' . htmlspecialchars($row['reason'], ENT_QUOTES, 'UTF-8');
+            }
             $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
         }
 
@@ -923,7 +973,7 @@ if (!function_exists('itm_fields_missing_collect_report')) {
      * @return array{
      *   modules: list<array<string,mixed>>,
      *   tables_without_module: list<string>,
-     *   bespoke_skips: list<array{module:string,table:string,ui_mode:string,reason:string}>,
+     *   bespoke_skips: list<array{module:string,tables:list<string>,ui_mode:string,reason:string}>,
      *   failure_count: int
      * }
      */
