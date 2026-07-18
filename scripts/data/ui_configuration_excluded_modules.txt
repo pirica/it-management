@@ -20,3 +20,10 @@ expiring
 ip_subnets
 ip_addresses
 rack_planner
+
+# Read-only reports / dashboards (no standard CRUD index table contract).
+reports
+resignations
+roles_permissions
+company_module_access
+org_chart
