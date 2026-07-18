@@ -708,11 +708,85 @@ if (!function_exists('itm_fields_missing_parse_manageable_column_exclusions')) {
             return $names[1] ?? [];
         }
 
+        if (preg_match_all(
+            "/\(\s*\\\$(?:c|col)\['Field'\]\s*\?\?\s*''\s*\)\s*!==\s*'([^']+)'/",
+            $body,
+            $nullCoalesceMatches
+        )) {
+            return array_values(array_unique($nullCoalesceMatches[1]));
+        }
+
         if (preg_match("/\(\s*\\\$c\['Field'\]\s*\)\s*!==\s*'([^']+)'/", $body, $singleMatch)) {
             return [$singleMatch[1]];
         }
 
         return null;
+    }
+}
+
+if (!function_exists('itm_fields_missing_parse_crud_table_from_content')) {
+    function itm_fields_missing_parse_crud_table_from_content(string $content): ?string
+    {
+        if (preg_match("/\\\$crud_table\s*=\s*'([^']+)'/", $content, $match)) {
+            return $match[1];
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_hides_company_id_via_ui_columns')) {
+    /**
+     * Scaffold modules filter company_id out of $uiColumns when the table is in $hideCompanyIdTables.
+     */
+    function itm_fields_missing_file_hides_company_id_via_ui_columns(string $content): bool
+    {
+        $table = itm_fields_missing_parse_crud_table_from_content($content);
+        if ($table === null || $table === '') {
+            return false;
+        }
+        if (!preg_match('/\$hideCompanyIdTables\s*=\s*\[([^\]]+)\]/', $content, $hideMatch)) {
+            return false;
+        }
+        if (!preg_match("/'" . preg_quote($table, '/') . "'/", $hideMatch[1])) {
+            return false;
+        }
+        if (!preg_match('/\$uiColumns\s*=\s*array_values\s*\(\s*array_filter\s*\(\s*\$fieldColumns/', $content)) {
+            return false;
+        }
+        if (!preg_match('/\$fieldName\s*!==\s*[\'"]company_id[\'"]/', $content)) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_skips_dynamic_form_field')) {
+    /**
+     * Bespoke/special-case branches that replace or hide a column before the generic name=$name render.
+     */
+    function itm_fields_missing_file_skips_dynamic_form_field(string $field, string $content): bool
+    {
+        if ($field === 'company_id') {
+            if (preg_match('/name=[\'"]company_ids\[\][\'"]/', $content)) {
+                return true;
+            }
+            if (preg_match(
+                '/\$name\s*===\s*[\'"]company_id[\'"][\s\S]*?(?:continue\s*;|type=[\'"]hidden[\'"]|\breadonly\b)/',
+                $content
+            )) {
+                return true;
+            }
+            if (preg_match(
+                '/elseif\s*\(\s*\$name\s*===\s*[\'"]company_id[\'"]\s*\)[\s\S]*?type=[\'"]hidden[\'"]/i',
+                $content
+            )) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -738,7 +812,7 @@ if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
      */
     function itm_fields_missing_dynamic_form_exposes_field(string $field, array $paths): bool
     {
-        $manageableExclusions = null;
+        $manageableExclusions = [];
         foreach ($paths as $path) {
             if (!is_readable($path) || is_dir($path)) {
                 continue;
@@ -746,8 +820,7 @@ if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
             $content = (string) file_get_contents($path);
             $parsed = itm_fields_missing_parse_manageable_column_exclusions($content);
             if ($parsed !== null) {
-                $manageableExclusions = $parsed;
-                break;
+                $manageableExclusions = array_values(array_unique(array_merge($manageableExclusions, $parsed)));
             }
         }
 
@@ -772,9 +845,18 @@ if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
                 ) {
                     continue;
                 }
+                if ($field === 'company_id'
+                    && itm_fields_missing_file_hides_company_id_via_ui_columns($content)
+                ) {
+                    continue;
+                }
             }
 
-            if ($manageableExclusions !== null && in_array($field, $manageableExclusions, true)) {
+            if (itm_fields_missing_file_skips_dynamic_form_field($field, $content)) {
+                continue;
+            }
+
+            if (in_array($field, $manageableExclusions, true)) {
                 continue;
             }
 
