@@ -15,12 +15,12 @@
  * column sort (ASC/DESC), pagination via Settings records_per_page, and bulk
  * Select to Delete / Clear Table.
  *
- * Exemptions:
+ * Exemptions (gate only — excluded modules still print as [n/a][pass|fail|n/a]):
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
  *   - scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades)
  *
  * CLI: php scripts/check_ui_configuration_coverage.php [--list-excluded]
- * Browser: ?list_excluded=1 prints skipped slug names (default header shows counts only).
+ * Browser: ?list_excluded=1 prints gate-excluded slug names in the header.
  */
 
 declare(strict_types=1);
@@ -68,28 +68,13 @@ function itm_ui_config_load_excluded_list(string $path): array
 /**
  * @return array<int, string>
  */
-function itm_list_modules(string $modulesDir, array $excludeModules, array $excludeModulePrefixes): array
+function itm_ui_config_list_all_modules(string $modulesDir): array
 {
     $items = scandir($modulesDir) ?: [];
     $modules = [];
 
     foreach ($items as $item) {
         if ($item === '.' || $item === '..') {
-            continue;
-        }
-
-        if (in_array($item, $excludeModules, true)) {
-            continue;
-        }
-
-        $skipByPrefix = false;
-        foreach ($excludeModulePrefixes as $prefix) {
-            if ($prefix !== '' && strpos($item, $prefix) === 0) {
-                $skipByPrefix = true;
-                break;
-            }
-        }
-        if ($skipByPrefix) {
             continue;
         }
 
@@ -100,7 +85,39 @@ function itm_list_modules(string $modulesDir, array $excludeModules, array $excl
     }
 
     sort($modules);
+
     return $modules;
+}
+
+/**
+ * @return string|null Human-readable exclusion reason when the slug is gate-excluded.
+ */
+function itm_ui_config_module_exclusion_reason(string $slug, array $excludeModules, array $excludeModulePrefixes): ?string
+{
+    if (in_array($slug, $excludeModules, true)) {
+        return 'listed in ui_configuration_excluded_modules.txt';
+    }
+
+    foreach ($excludeModulePrefixes as $prefix) {
+        if ($prefix !== '' && strpos($slug, $prefix) === 0) {
+            return 'matches excluded prefix ' . $prefix . '*';
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @deprecated Use itm_ui_config_list_all_modules(); exclusion is applied at output/gate time.
+ * @return array<int, string>
+ */
+function itm_list_modules(string $modulesDir, array $excludeModules, array $excludeModulePrefixes): array
+{
+    $modules = itm_ui_config_list_all_modules($modulesDir);
+
+    return array_values(array_filter($modules, static function (string $slug) use ($excludeModules, $excludeModulePrefixes): bool {
+        return itm_ui_config_module_exclusion_reason($slug, $excludeModules, $excludeModulePrefixes) === null;
+    }));
 }
 
 function itm_read_file_or_empty(string $path): string
@@ -914,34 +931,45 @@ function itm_check_back_save_entry(string $modulePath, string $entryPath, string
 
 $excludeModules = itm_ui_config_load_excluded_list($excludeModulesFile);
 $excludeModulePrefixes = itm_ui_config_load_excluded_list($excludePrefixesFile);
-$modules = itm_list_modules($modulesDir, $excludeModules, $excludeModulePrefixes);
-$totals = ['pass' => 0, 'fail' => 0, 'n/a' => 0];
+$modules = itm_ui_config_list_all_modules($modulesDir);
+$auditedModules = itm_list_modules($modulesDir, $excludeModules, $excludeModulePrefixes);
+$totals = [
+    'pass' => 0,
+    'fail' => 0,
+    'n/a' => 0,
+    'excluded_pass' => 0,
+    'excluded_fail' => 0,
+    'excluded_n/a' => 0,
+];
 $moduleFailures = [];
+$moduleExcludedFailures = [];
 
 $argvList = $GLOBALS['argv'] ?? [];
 $listExcluded = in_array('--list-excluded', $argvList, true)
     || (PHP_SAPI !== 'cli' && (($_GET['list_excluded'] ?? '') === '1'));
 
+$excludedCount = count($modules) - count($auditedModules);
+
 echo "UI Configuration Coverage Audit\n";
 echo "Root: {$modulesDir}\n";
-echo 'Auditing ' . count($modules) . " module(s) with flattened CRUD list contract checks.\n";
-echo 'Skipped ' . count($excludeModules) . ' module slug(s) from ' . basename($excludeModulesFile);
-if (!empty($excludeModulePrefixes)) {
-    echo ' and prefix(es) ' . implode(', ', $excludeModulePrefixes) . ' from ' . basename($excludePrefixesFile);
-}
-echo ".\n";
+echo 'Modules: ' . count($modules) . ' total; ' . count($auditedModules) . " gated for flattened CRUD contract; {$excludedCount} gate-excluded (shown as [n/a][pass|fail|n/a]).\n";
 if ($listExcluded) {
-    echo "Excluded slugs: " . (empty($excludeModules) ? '(none)' : implode(', ', $excludeModules)) . "\n";
+    $excludedSlugs = array_values(array_filter($modules, static function (string $slug) use ($excludeModules, $excludeModulePrefixes): bool {
+        return itm_ui_config_module_exclusion_reason($slug, $excludeModules, $excludeModulePrefixes) !== null;
+    }));
+    echo 'Gate-excluded slugs: ' . (empty($excludedSlugs) ? '(none)' : implode(', ', $excludedSlugs)) . "\n";
     if (!empty($excludeModulePrefixes)) {
-        echo 'Excluded prefixes: ' . implode(', ', $excludeModulePrefixes) . "\n";
+        echo 'Gate-excluded prefixes: ' . implode(', ', $excludeModulePrefixes) . "\n";
     }
 } else {
-    echo "Tip: use --list-excluded (CLI) or ?list_excluded=1 (browser) to print skipped slug names.\n";
+    echo "Tip: use --list-excluded (CLI) or ?list_excluded=1 (browser) to print gate-excluded slug names.\n";
 }
 echo "\n";
 
 foreach ($modules as $module) {
     $modulePath = $modulesDir . '/' . $module;
+    $exclusionReason = itm_ui_config_module_exclusion_reason($module, $excludeModules, $excludeModulePrefixes);
+    $isGateExcluded = ($exclusionReason !== null);
     $indexPath = $modulePath . '/index.php';
     $createPath = $modulePath . '/create.php';
     $editPath = $modulePath . '/edit.php';
@@ -978,10 +1006,27 @@ foreach ($modules as $module) {
 
     foreach ($checks as $checkName => $result) {
         $status = $result['status'];
-        $totals[$status]++;
-
-        $label = str_pad($status, 4, ' ', STR_PAD_RIGHT);
         $moduleLabel = itm_script_format_module_link($module);
+
+        if ($isGateExcluded) {
+            $suffix = $status;
+            $label = '[n/a][' . $suffix . ']';
+            if ($status === 'pass') {
+                $totals['excluded_pass']++;
+            } elseif ($status === 'fail') {
+                $totals['excluded_fail']++;
+                $moduleExcludedFailures[$module][] = "{$checkName}: {$result['details']}";
+            } else {
+                $totals['excluded_n/a']++;
+            }
+            $statusType = ($status === 'fail') ? 'warn' : (($status === 'pass') ? 'pass' : 'warn');
+            $details = 'Gate excluded (' . $exclusionReason . '). ' . $result['details'];
+            echo colorText("{$label} {$moduleLabel} :: {$checkName} - {$details}", $statusType) . itm_script_output_nl();
+            continue;
+        }
+
+        $totals[$status]++;
+        $label = str_pad($status, 4, ' ', STR_PAD_RIGHT);
         $statusType = ($status === 'pass') ? 'pass' : (($status === 'fail') ? 'fail' : 'warn');
         echo colorText("[{$label}] {$moduleLabel} :: {$checkName} - {$result['details']}", $statusType) . itm_script_output_nl();
 
@@ -994,12 +1039,15 @@ foreach ($modules as $module) {
 }
 
 echo "==== Summary ====\n";
-echo 'PASS: ' . $totals['pass'] . "\n";
-echo 'FAIL: ' . $totals['fail'] . "\n";
-echo 'N/A : ' . $totals['n/a'] . "\n";
+echo 'PASS (gated): ' . $totals['pass'] . "\n";
+echo 'FAIL (gated): ' . $totals['fail'] . "\n";
+echo 'N/A  (gated): ' . $totals['n/a'] . "\n";
+echo 'Gate excluded [n/a][pass]: ' . $totals['excluded_pass'] . "\n";
+echo 'Gate excluded [n/a][fail]: ' . $totals['excluded_fail'] . " (informational — does not fail the run)\n";
+echo 'Gate excluded [n/a][n/a]: ' . $totals['excluded_n/a'] . "\n";
 
 if ($totals['fail'] > 0) {
-    echo "\nModules with failures:\n";
+    echo "\nModules with gated failures:\n";
     foreach ($moduleFailures as $module => $failures) {
         echo '- ' . itm_script_format_module_link($module) . "\n";
         foreach ($failures as $failure) {
@@ -1007,6 +1055,16 @@ if ($totals['fail'] > 0) {
         }
     }
     exit(2);
+}
+
+if (!empty($moduleExcludedFailures)) {
+    echo "\nGate-excluded modules with contract failures (informational only):\n";
+    foreach ($moduleExcludedFailures as $module => $failures) {
+        echo '- ' . itm_script_format_module_link($module) . "\n";
+        foreach ($failures as $failure) {
+            echo "    * {$failure}\n";
+        }
+    }
 }
 
 exit(0);
