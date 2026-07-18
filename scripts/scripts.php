@@ -560,7 +560,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Open <a href="count_args.php">count_args.php</a> while logged in. CLI: <code>php scripts/count_args.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="fix_sql_departments.phpfix_sql_departments.php</td>
+                    <td><a href="fix_sql_departments.php" target="_blank" rel="nofollow noreferrer">fix_sql_departments.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Fix column count mismatch in departments INSERT statements in database.sql.</td>
                     <td><code>php scripts/fix_sql_departments.php</code> — CLI only (browser shows instructions).</td>
