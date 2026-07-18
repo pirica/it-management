@@ -17,7 +17,8 @@ Manages individual IP address assignments within subnets.
 - **Equipment Link**: When an IP is assigned to equipment, it should update the `equipment_id` and `hostname`.
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
+- **Standard CRUD** with IPAM-focused list (`itm_ipam_*` helpers) and includes-based create/edit partials.
+- **Audit meta on forms:** `$uiColumns` filters `itm_crud_is_form_hidden_audit_field()` / delete/list-hidden audit columns; create/edit loop uses `$uiColumns` plus `itm_crud_render_form_hidden_audit_inputs()`; view uses `$fieldColumns` so `deleted_*` / `*_by` remain visible on detail.
 - **List search:** focused index uses `itm_ipam_address_list_where_clause()` (subnet CIDR, equipment hostname/name); generic `list_all` fallback uses `itm_crud_fk_label_search_conditions()` in `includes/list_query.php`.
 - **Quick Status Change**: Often allows changing status directly from the list.
 

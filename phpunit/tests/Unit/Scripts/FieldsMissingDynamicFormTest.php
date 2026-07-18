@@ -356,4 +356,43 @@ PHP;
             $passes
         );
     }
+
+    public function testIpAddressesBespokeGateHidesAuditMetaOnForms(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('ip_addresses', $root);
+        $formPaths = itm_fields_missing_merge_bespoke_form_paths(
+            $files,
+            itm_fields_missing_resolve_form_paths($files)
+        );
+        $passes = [];
+        $failures = [];
+
+        itm_fields_missing_apply_skipped_ui_coverage_gate(
+            'ip_addresses',
+            [
+                'id', 'company_id', 'subnet_id', 'ip_text', 'status', 'equipment_id', 'hostname',
+                'is_gateway', 'is_dns', 'dhcp_managed', 'notes', 'active',
+                'deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at',
+            ],
+            $formPaths,
+            $files,
+            $passes,
+            $failures,
+            false
+        );
+
+        $this->assertSame([], $failures, implode('; ', array_map(static function ($row) {
+            return (string) ($row['message'] ?? '');
+        }, $failures)));
+        $this->assertContains(
+            'ip_addresses excluded UI column deleted_by: hidden or absent on create/edit forms',
+            $passes
+        );
+        $this->assertContains(
+            'ip_addresses bespoke gate: hidden audit inputs on create/edit',
+            $passes
+        );
+    }
 }
