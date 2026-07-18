@@ -285,6 +285,8 @@ $orderByMap = [
     'title' => 't.title', 'status_name' => 'ts.name',
     'priority_name' => 'tp.name', 'due_date' => 't.due_date',
 ];
+// Why: Static UI audit matches ORDER BY lines that reference $sortSql (mapped column + direction).
+$sortSql = $orderByMap[$sort] . ' ' . $dir;
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -333,11 +335,10 @@ if ($page > $totalPages) {
 }
 
 // Data fetch with joins
-$orderBy = $orderByMap[$sort];
 $dataStmt = mysqli_prepare($conn, "
     SELECT t.*, ts.name AS status_name, ts.color AS status_color, ts.is_closed AS status_is_closed, tp.name AS priority_name, tp.color AS priority_color
     $sqlBase
-    ORDER BY $orderBy $dir
+    ORDER BY $sortSql
     LIMIT ? OFFSET ?
 ");
 
