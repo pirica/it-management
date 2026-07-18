@@ -12,9 +12,7 @@
  * CLI: php scripts/explorer_human_test.php
  */
 
-define('ITM_CLI_SCRIPT', true);
-
-require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/itm_script_regression_entry.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
@@ -25,7 +23,8 @@ function explorer_test_is_cli(): bool
 
 function explorer_test_eol(): string
 {
-    return itm_script_output_nl();
+    // Why: itm_script_output_begin() wraps browser output in <pre>; real newlines, not <br>.
+    return "\n";
 }
 
 function explorer_test_esc(string $text): string
@@ -48,16 +47,16 @@ function explorer_test_die(string $message): void
     exit(1);
 }
 
-if (!explorer_test_is_cli()) {
-    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
-}
-
 itm_script_output_begin('Explorer human test');
 
-explorer_test_out('Starting Explorer Human-Like Test...');
 if (!explorer_test_is_cli()) {
-    explorer_test_out('[INFO] Mutates DB and filesystem: temporary company + isolated files/{company_id}/ tree (teardown at end).');
+    itm_script_output_close_pre();
+    echo '<p>Human-flow regression for ' . itm_script_format_module_link('explorer')
+        . '. Mutates DB and filesystem: temporary company + isolated <code>files/{company_id}/</code> tree (teardown at end).</p>';
+    echo '<pre>';
 }
+
+explorer_test_out('Starting Explorer Human-Like Test...');
 
 $test_failures = 0;
 $audit_company_id = 1;
@@ -111,9 +110,6 @@ itm_script_test_employee_register_teardown($conn, $user_id);
 itm_script_test_employee_set_audit_context($conn, $user_id, $username, $company_id);
 
 $user_private_dir = "{$username}_{$user_id}";
-$_SESSION['company_id'] = $company_id;
-$_SESSION['employee_id'] = $user_id;
-$_SESSION['username'] = $username;
 
 // Fetch any department code scoped to the temporary tenant.
 $dept_code = '';
@@ -192,6 +188,50 @@ function assert_test($condition, $message) {
     }
 }
 
+/**
+ * Count explorer rows for assertions (tenant-scoped, prepared).
+ *
+ * @param string $mode live|soft_deleted|any
+ */
+function explorer_test_count_explorer_rows($conn, int $companyId, string $fileName, ?string $folderPath = null, string $mode = 'live'): int
+{
+    $sql = 'SELECT COUNT(*) AS c FROM explorer WHERE company_id = ? AND file_name = ?';
+    $types = 'is';
+    $params = [$companyId, $fileName];
+
+    if ($folderPath !== null) {
+        $sql .= ' AND folder_path = ?';
+        $types .= 's';
+        $params[] = $folderPath;
+    }
+
+    if ($mode === 'live') {
+        $sql .= ' AND deleted_at IS NULL AND active = 1';
+    } elseif ($mode === 'soft_deleted') {
+        $sql .= ' AND deleted_at IS NOT NULL AND active = 0';
+    }
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $count = 0;
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $count = (int) ($row['c'] ?? 0);
+    }
+    mysqli_stmt_close($stmt);
+
+    return $count;
+}
+
+function explorer_test_run_cases(): void
+{
+    global $conn, $company_id, $user_id, $username, $storage_root, $user_private_dir, $test_failures;
+
 // --- TEST CASES ---
 
 // Why: Reproduces upgraded storage where Common already exists but the scoped private folder does not.
@@ -211,9 +251,10 @@ $res = mock_api_call('createFolder', 'Common', ['name' => $folder_name]);
 assert_test(($res['ok'] ?? 0) === 1, 'Folder creation API success');
 assert_test(is_dir("$storage_root/Common/$folder_name"), 'Folder exists on disk');
 
-$check_sql = "SELECT id FROM explorer WHERE company_id = $company_id AND folder_path = 'Common' AND file_name = '$folder_name' AND file_type = 'folder'";
-$db_res = mysqli_query($conn, $check_sql);
-assert_test(mysqli_num_rows($db_res) > 0, "Folder record exists in 'explorer' table");
+assert_test(
+    explorer_test_count_explorer_rows($conn, $company_id, $folder_name, 'Common', 'live') > 0,
+    "Folder record exists in 'explorer' table"
+);
 
 explorer_test_out('--- 3. Rename Folder ---');
 $new_name = $folder_name . '_Renamed';
@@ -222,10 +263,14 @@ assert_test(($res['ok'] ?? 0) === 1, 'Rename API success');
 assert_test(!is_dir("$storage_root/Common/$folder_name"), 'Old folder name gone from disk');
 assert_test(is_dir("$storage_root/Common/$new_name"), 'New folder name exists on disk');
 
-$db_res_old = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$folder_name'");
-$db_res_new = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$new_name' AND folder_path = 'Common'");
-assert_test(mysqli_num_rows($db_res_old) === 0, 'Old record deleted from DB');
-assert_test(mysqli_num_rows($db_res_new) > 0, 'New record exists in DB');
+assert_test(
+    explorer_test_count_explorer_rows($conn, $company_id, $folder_name, 'Common', 'soft_deleted') > 0,
+    'Old record soft-deleted in DB (rename sync)'
+);
+assert_test(
+    explorer_test_count_explorer_rows($conn, $company_id, $new_name, 'Common', 'live') > 0,
+    'New record exists in DB'
+);
 
 explorer_test_out('--- 4. Move Folder ---');
 $dest_path = "Private/$user_private_dir";
@@ -233,8 +278,10 @@ $res = mock_api_call('move', 'Common', ['item' => $new_name, 'dest' => $dest_pat
 assert_test(($res['ok'] ?? 0) === 1, "Move API success to $dest_path");
 assert_test(is_dir("$storage_root/$dest_path/$new_name"), 'Folder exists in new location on disk');
 
-$db_res_move = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$new_name' AND folder_path = '$dest_path'");
-assert_test(mysqli_num_rows($db_res_move) > 0, 'Move reflected in DB with new path');
+assert_test(
+    explorer_test_count_explorer_rows($conn, $company_id, $new_name, $dest_path, 'live') > 0,
+    'Move reflected in DB with new path'
+);
 
 explorer_test_out('--- 5. Copy Folder ---');
 $res = mock_api_call('copy', $dest_path, ['item' => $new_name, 'src_path' => $dest_path]);
@@ -248,15 +295,17 @@ assert_test(($res['ok'] ?? 0) === 1, 'Delete API success (moved to trash)');
 assert_test(!file_exists("$storage_root/$dest_path/$copy_name"), 'Deleted folder gone from data area');
 assert_test(file_exists(ROOT_PATH . "files/$company_id/Trash/$dest_path/$copy_name"), 'Folder moved to trash area');
 
-$db_res_del = mysqli_query($conn, "SELECT id FROM explorer WHERE file_name = '$copy_name'");
-assert_test(mysqli_num_rows($db_res_del) === 0, 'Record removed from explorer table');
+assert_test(
+    explorer_test_count_explorer_rows($conn, $company_id, $copy_name, $dest_path, 'soft_deleted') > 0,
+    'Record soft-deleted in explorer table (trash sync)'
+);
 
 explorer_test_out('--- 7. Access Control ---');
-$_SESSION['username'] = 'OtherUser';
 $other_user_path = "Private/$user_private_dir";
-$res = mock_api_call('list', $other_user_path);
+$res = itm_script_with_test_session_context($company_id, $user_id, 'OtherUser', function () use ($other_user_path) {
+    return mock_api_call('list', $other_user_path);
+});
 assert_test(empty($res['items']), "Access to user's private folder by OtherUser denied");
-$_SESSION['username'] = $username;
 
 explorer_test_out('--- 8. Restricted Actions ---');
 $res = mock_api_call('createFolder', '');
@@ -276,6 +325,11 @@ assert_test(!is_dir("$storage_root/Private/$new_name"), 'Trailing-slash copy did
 explorer_test_out('--- 9. Audit Logs ---');
 $audit_res = mysqli_query($conn, "SELECT id FROM audit_logs WHERE table_name = 'explorer' AND action = 'INSERT' ORDER BY id DESC LIMIT 1");
 assert_test(mysqli_num_rows($audit_res) > 0, 'Audit logs recorded for explorer operations');
+}
+
+itm_script_with_test_session_context($company_id, $user_id, $username, function () {
+    explorer_test_run_cases();
+});
 
 if ($test_failures > 0) {
     explorer_test_out("Explorer Human-Like Test completed with $test_failures failure(s).");
