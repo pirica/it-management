@@ -637,6 +637,7 @@ foreach ($modules as $module) {
     $checks = [
         'Table Actions' => itm_check_table_actions($indexContent),
         '+ New Button' => itm_check_new_button($indexContent, is_file($createPath), $createContent),
+        'New button position' => itm_check_new_button_position($indexContent, is_file($createPath), $createContent),
         'Export Buttons' => itm_check_export_toolbar_support($indexContent),
         'Search' => itm_check_search($listContent, $listSource),
         'Column sort (ASC/DESC)' => itm_check_sort($listContent, $listSource),
