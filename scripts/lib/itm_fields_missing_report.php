@@ -1,0 +1,614 @@
+<?php
+/**
+ * Shared report builder for fields_missing.php (all modules) and employee_fields_missing.php.
+ */
+
+if (!function_exists('itm_fields_missing_global_ui_excluded_columns')) {
+    /**
+     * Columns not required on create/edit/view/index for scaffold audits.
+     *
+     * @return list<string>
+     */
+    function itm_fields_missing_global_ui_excluded_columns(): array
+    {
+        return [
+            'id',
+            'company_id',
+            'created_at',
+            'updated_at',
+            'created_by',
+            'updated_by',
+            'deleted_by',
+            'deleted_at',
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_status_driven_slugs')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_status_driven_slugs(): array
+    {
+        return ['employees', 'equipment', 'patches_updates', 'tickets'];
+    }
+}
+
+if (!function_exists('itm_fields_missing_parse_database_sql_table_columns')) {
+    /**
+     * @return array<string, list<string>>
+     */
+    function itm_fields_missing_parse_database_sql_table_columns(?string $rootPath = null): array
+    {
+        if ($rootPath === null) {
+            $rootPath = defined('ROOT_PATH') ? (string) ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
+        }
+        $path = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'database.sql';
+        if (!is_readable($path)) {
+            return [];
+        }
+        $sql = file_get_contents($path);
+        if ($sql === false) {
+            return [];
+        }
+
+        $map = [];
+        if (!preg_match_all('/CREATE TABLE `([^`]+)`\s*\((.*?)\)\s*ENGINE=/s', $sql, $matches, PREG_SET_ORDER)) {
+            return [];
+        }
+
+        foreach ($matches as $match) {
+            $table = (string) $match[1];
+            $body = (string) $match[2];
+            if (!preg_match_all('/^\s*`([^`]+)`/m', $body, $columns)) {
+                continue;
+            }
+            $map[$table] = $columns[1];
+        }
+
+        return $map;
+    }
+}
+
+if (!function_exists('itm_fields_missing_live_table_columns')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_live_table_columns(mysqli $conn, string $table): array
+    {
+        if (!function_exists('itm_is_safe_identifier') || !itm_is_safe_identifier($table)) {
+            return [];
+        }
+
+        $columns = [];
+        $res = mysqli_query($conn, 'SHOW COLUMNS FROM `' . $table . '`');
+        if (!$res) {
+            return [];
+        }
+        while ($row = mysqli_fetch_assoc($res)) {
+            $columns[] = (string) ($row['Field'] ?? '');
+        }
+
+        return $columns;
+    }
+}
+
+if (!function_exists('itm_fields_missing_discover_module_targets')) {
+    /**
+     * @return list<array{module:string,table:string,index_path:string}>
+     */
+    function itm_fields_missing_discover_module_targets(?string $rootPath = null): array
+    {
+        if ($rootPath === null) {
+            $rootPath = defined('ROOT_PATH') ? (string) ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
+        }
+        $rootPath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR;
+        $modulesPath = $rootPath . 'modules';
+        if (!is_dir($modulesPath)) {
+            return [];
+        }
+
+        require_once __DIR__ . '/itm_crud_tables_audit.php';
+        require_once __DIR__ . '/itm_list_active_and_checkboxes_report.php';
+
+        $schemaTables = array_fill_keys(array_keys(itm_fields_missing_parse_database_sql_table_columns($rootPath)), true);
+        $targets = [];
+
+        foreach (scandir($modulesPath) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..' || !is_dir($modulesPath . DIRECTORY_SEPARATOR . $entry)) {
+                continue;
+            }
+            if (itm_crud_mapper_module_matches_is_prefix($entry)) {
+                continue;
+            }
+
+            $indexPath = $modulesPath . DIRECTORY_SEPARATOR . $entry . DIRECTORY_SEPARATOR . 'index.php';
+            if (!is_file($indexPath)) {
+                continue;
+            }
+
+            $table = itm_active_audit_read_crud_table($indexPath);
+            if ($table === null || $table === '') {
+                $table = $entry;
+            }
+            if (!isset($schemaTables[$table])) {
+                continue;
+            }
+
+            $targets[] = [
+                'module' => $entry,
+                'table' => $table,
+                'index_path' => $indexPath,
+            ];
+        }
+
+        usort($targets, static function (array $a, array $b): int {
+            return strcmp($a['module'], $b['module']);
+        });
+
+        return $targets;
+    }
+}
+
+if (!function_exists('itm_fields_missing_module_file_bundle')) {
+    /**
+     * @return array{create:string,edit:string,view:string,index:string,includes:string,list_all:string}
+     */
+    function itm_fields_missing_module_file_bundle(string $moduleSlug, ?string $rootPath = null): array
+    {
+        if ($rootPath === null) {
+            $rootPath = defined('ROOT_PATH') ? (string) ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
+        }
+        $base = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'modules' . DIRECTORY_SEPARATOR . $moduleSlug . DIRECTORY_SEPARATOR;
+
+        return [
+            'create' => $base . 'create.php',
+            'edit' => $base . 'edit.php',
+            'view' => $base . 'view.php',
+            'index' => $base . 'index.php',
+            'includes' => $base . 'includes',
+            'list_all' => $base . 'list_all.php',
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_bundle_has_field')) {
+    function itm_fields_missing_file_bundle_has_field(string $field, array $paths): bool
+    {
+        foreach ($paths as $path) {
+            if (is_dir($path)) {
+                foreach (glob($path . '/*.php') ?: [] as $includeFile) {
+                    $content = file_get_contents($includeFile);
+                    if ($content !== false && preg_match('/name=["\']' . preg_quote($field, '/') . '["\']/', $content)) {
+                        return true;
+                    }
+                }
+                continue;
+            }
+            if (!is_readable($path)) {
+                continue;
+            }
+            $content = file_get_contents($path);
+            if ($content === false) {
+                continue;
+            }
+            if (preg_match('/name=["\']' . preg_quote($field, '/') . '["\']/', $content)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_employees_view_label_map')) {
+    /**
+     * @return array<string, list<string>>
+     */
+    function itm_fields_missing_employees_view_label_map(): array
+    {
+        return [
+            'employee_position_id' => ['Position Title', 'position_name'],
+            'department_id' => ['Department', 'department_name'],
+            'office_key_card_department_id' => ['Office Key Card Department', 'office_key_card_department_name'],
+            'employment_status_id' => ['Employment Status', 'employment_status_name'],
+            'employee_type_id' => ['Employee Type', 'employee_type_name'],
+            'workstation_mode_id' => ['Workstation Mode', 'workstation_mode_name'],
+            'assignment_type_id' => ['Assignment Type', 'assignment_type_name'],
+            'reports_to' => ['Reports To', 'manager_name'],
+            'location_id' => ['IT Location', 'location_name'],
+            'role_id' => ['Role', 'role_name'],
+            'access_level_id' => ['Access Level', 'access_level_name'],
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_view_label_candidates')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_view_label_candidates(string $field, string $moduleSlug): array
+    {
+        $candidates = [$field, ucwords(str_replace('_', ' ', $field))];
+        if ($moduleSlug === 'employees' && isset(itm_fields_missing_employees_view_label_map()[$field])) {
+            $candidates = array_merge($candidates, itm_fields_missing_employees_view_label_map()[$field]);
+        }
+
+        return array_values(array_unique($candidates));
+    }
+}
+
+if (!function_exists('itm_fields_missing_view_has_field')) {
+    function itm_fields_missing_view_has_field(string $field, string $viewPath, string $moduleSlug): bool
+    {
+        if (!is_readable($viewPath)) {
+            return false;
+        }
+        $content = file_get_contents($viewPath);
+        if ($content === false) {
+            return false;
+        }
+        if ($moduleSlug === 'employees' && $field === 'photo' && strpos($content, 'emp_profile_photo_url') !== false) {
+            return true;
+        }
+        foreach (itm_fields_missing_view_label_candidates($field, $moduleSlug) as $candidate) {
+            if (strpos($content, "'{$candidate}'") !== false) {
+                return true;
+            }
+            if (preg_match('/\$[a-zA-Z_][\w]*\[[\'"]' . preg_quote($candidate, '/') . '[\'"]\]/', $content)) {
+                return true;
+            }
+            if (preg_match('/\[[\'"]' . preg_quote($field, '/') . '[\'"]\]/', $content)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_index_has_field')) {
+    function itm_fields_missing_index_has_field(string $field, string $indexPath): bool
+    {
+        if (!is_readable($indexPath)) {
+            return false;
+        }
+        $content = file_get_contents($indexPath);
+        if ($content === false) {
+            return false;
+        }
+
+        return (bool) preg_match("/['\"]{$field}['\"]/", $content);
+    }
+}
+
+if (!function_exists('itm_fields_missing_index_is_dynamic_scaffold')) {
+    function itm_fields_missing_index_is_dynamic_scaffold(string $indexPath): bool
+    {
+        if (!is_file($indexPath)) {
+            return false;
+        }
+        require_once __DIR__ . '/itm_crud_tables_audit.php';
+        $moduleSlug = basename(dirname($indexPath));
+
+        return itm_crud_mapper_module_is_standard_crud($moduleSlug);
+    }
+}
+
+if (!function_exists('itm_fields_missing_employees_critical_fields')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_employees_critical_fields(): array
+    {
+        return [
+            'first_name', 'last_name', 'display_name', 'work_email', 'personal_email', 'mobile_phone',
+            'external_number', 'dect', 'extension', 'on_contacts', 'on_orgchart', 'external_id', 'username',
+            'role_id', 'access_level_id',
+            'job_code', 'employee_position_id', 'reports_to', 'department_id', 'office_key_card_department_id',
+            'raw_status_code', 'employment_status_id', 'employee_code', 'location_id',
+            'request_date', 'requested_by', 'termination_requested_by',
+            'start_date', 'employee_type_id', 'termination_date',
+            'birthday', 'hide_year', 'photo', 'workstation_mode_id', 'assignment_type_id', 'comments',
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_employees_optional_fields')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_employees_optional_fields(): array
+    {
+        return ['duplicate'];
+    }
+}
+
+if (!function_exists('itm_fields_missing_employees_system_access_columns')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_employees_system_access_columns(): array
+    {
+        return [
+            'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms',
+            'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system',
+            'digital_rev', 'office_key_card',
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_ui_fields_for_module')) {
+    /**
+     * @param list<string> $expectedColumns
+     * @return list<string>
+     */
+    function itm_fields_missing_ui_fields_for_module(string $moduleSlug, array $expectedColumns): array
+    {
+        if ($moduleSlug === 'employees') {
+            return itm_fields_missing_employees_critical_fields();
+        }
+
+        $excluded = array_fill_keys(itm_fields_missing_global_ui_excluded_columns(), true);
+        if (in_array($moduleSlug, itm_fields_missing_status_driven_slugs(), true)) {
+            $excluded['active'] = true;
+        }
+
+        $fields = [];
+        foreach ($expectedColumns as $column) {
+            if (isset($excluded[$column])) {
+                continue;
+            }
+            $fields[] = $column;
+        }
+
+        return $fields;
+    }
+}
+
+if (!function_exists('itm_fields_missing_audit_module')) {
+    /**
+     * @param list<string> $expectedColumns
+     * @param list<string> $liveColumns
+     * @return array<string, mixed>
+     */
+    function itm_fields_missing_audit_module(
+        mysqli $conn,
+        string $moduleSlug,
+        string $table,
+        array $expectedColumns,
+        array $liveColumns,
+        ?string $rootPath = null
+    ): array {
+        if ($rootPath === null) {
+            $rootPath = defined('ROOT_PATH') ? (string) ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
+        }
+
+        $files = itm_fields_missing_module_file_bundle($moduleSlug, $rootPath);
+        $schemaMissing = array_values(array_diff($expectedColumns, $liveColumns));
+        $schemaExtra = array_values(array_diff($liveColumns, $expectedColumns));
+        $failures = [];
+        $infos = [];
+        $passes = [];
+
+        if ($schemaMissing !== []) {
+            foreach ($schemaMissing as $column) {
+                $failures[] = [
+                    'code' => 'schema_missing',
+                    'message' => "Live DB missing {$table}.{$column} (present in database.sql)",
+                ];
+            }
+        } else {
+            $passes[] = "Live {$table} includes every column defined in database.sql";
+        }
+
+        if ($schemaExtra !== []) {
+            foreach ($schemaExtra as $column) {
+                $infos[] = "Live DB has extra {$table}.{$column} not listed in database.sql";
+            }
+        }
+
+        require_once __DIR__ . '/itm_crud_tables_audit.php';
+        $bespokeModules = array_fill_keys(itm_crud_tables_load_skip_module_slugs($rootPath), true);
+        $statusDriven = in_array($moduleSlug, itm_fields_missing_status_driven_slugs(), true);
+
+        if (isset($bespokeModules[$moduleSlug])) {
+            $infos[] = "{$moduleSlug} is bespoke/deferred UI — schema-only audit (see docs/list_bespoke_UI.txt)";
+
+            return [
+                'module' => $moduleSlug,
+                'table' => $table,
+                'schema_missing' => $schemaMissing,
+                'schema_extra' => $schemaExtra,
+                'ui_mode' => 'bespoke_skip',
+                'failures' => $failures,
+                'infos' => $infos,
+                'passes' => $passes,
+            ];
+        }
+
+        if ($statusDriven && $moduleSlug !== 'employees') {
+            $infos[] = "{$moduleSlug} is status-driven bespoke UI — schema-only audit (row active is soft-delete mirror)";
+
+            return [
+                'module' => $moduleSlug,
+                'table' => $table,
+                'schema_missing' => $schemaMissing,
+                'schema_extra' => $schemaExtra,
+                'ui_mode' => 'status_driven_skip',
+                'failures' => $failures,
+                'infos' => $infos,
+                'passes' => $passes,
+            ];
+        }
+
+        $uiMode = 'manual';
+        if ($moduleSlug === 'employees') {
+            $uiMode = 'employees';
+        } elseif (itm_fields_missing_index_is_dynamic_scaffold($files['index'])) {
+            $uiMode = 'dynamic_scaffold';
+            $passes[] = "{$moduleSlug} uses dynamic scaffold columns (\$uiColumns / cr_manageable_columns)";
+
+            return [
+                'module' => $moduleSlug,
+                'table' => $table,
+                'schema_missing' => $schemaMissing,
+                'schema_extra' => $schemaExtra,
+                'ui_mode' => $uiMode,
+                'failures' => $failures,
+                'infos' => $infos,
+                'passes' => $passes,
+            ];
+        }
+
+        $formPaths = [$files['create'], $files['edit'], $files['includes']];
+        if (is_readable($files['edit']) && strpos((string) file_get_contents($files['edit']), "require 'create.php'") !== false) {
+            $formPaths = [$files['create'], $files['includes']];
+        }
+        if (is_readable($files['create']) && strpos((string) file_get_contents($files['create']), '$crud_action') !== false
+            && strpos((string) file_get_contents($files['create']), "require 'index.php'") !== false
+        ) {
+            $formPaths = [$files['index'], $files['includes']];
+        }
+
+        $uiFields = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
+        foreach ($uiFields as $field) {
+            $formOk = itm_fields_missing_file_bundle_has_field($field, $formPaths);
+            $viewOk = itm_fields_missing_view_has_field($field, $files['view'], $moduleSlug);
+            $indexOk = itm_fields_missing_index_has_field($field, $files['index']);
+
+            if (!$formOk) {
+                $failures[] = [
+                    'code' => 'ui_form_missing',
+                    'message' => "{$moduleSlug} create/edit missing form field: {$field}",
+                ];
+            }
+            if (!$viewOk && is_readable($files['view'])) {
+                $failures[] = [
+                    'code' => 'ui_view_missing',
+                    'message' => "{$moduleSlug} view.php missing display for: {$field}",
+                ];
+            }
+            if (!$indexOk) {
+                $failures[] = [
+                    'code' => 'ui_index_missing',
+                    'message' => "{$moduleSlug} index.php missing list/import reference for: {$field}",
+                ];
+            }
+            if ($formOk && ($viewOk || !is_readable($files['view'])) && $indexOk) {
+                $passes[] = "{$moduleSlug} UI covers {$field}";
+            }
+        }
+
+        if ($moduleSlug === 'employees') {
+            foreach (itm_fields_missing_employees_optional_fields() as $field) {
+                if (!in_array($field, $expectedColumns, true)) {
+                    continue;
+                }
+                $formOk = itm_fields_missing_file_bundle_has_field($field, $formPaths);
+                $viewOk = itm_fields_missing_view_has_field($field, $files['view'], $moduleSlug);
+                $indexOk = itm_fields_missing_index_has_field($field, $files['index']);
+                if (!$formOk || !$viewOk || !$indexOk) {
+                    $gaps = [];
+                    if (!$formOk) {
+                        $gaps[] = 'create/edit';
+                    }
+                    if (!$viewOk) {
+                        $gaps[] = 'view';
+                    }
+                    if (!$indexOk) {
+                        $gaps[] = 'index';
+                    }
+                    $infos[] = "employees.{$field} not fully wired (" . implode(', ', $gaps) . ' missing)';
+                } else {
+                    $passes[] = "employees optional UI covers {$field}";
+                }
+            }
+
+            foreach (itm_fields_missing_employees_system_access_columns() as $field) {
+                if (!in_array($field, $expectedColumns, true)) {
+                    continue;
+                }
+                if (itm_fields_missing_index_has_field($field, $files['index'])) {
+                    $passes[] = "employees system access column {$field} referenced via employee_system_access join in index.php";
+                } else {
+                    $infos[] = "employees system access column {$field} is managed via employee_system_access matrix (not a direct form input)";
+                }
+            }
+
+            foreach (['id', 'company_id', 'created_at', 'updated_at', 'user_id', 'is_hidden'] as $field) {
+                if (in_array($field, $expectedColumns, true)) {
+                    $infos[] = "employees.{$field} is meta/system scope (not required on create/edit forms)";
+                }
+            }
+
+            if (is_readable($files['list_all']) && strpos((string) file_get_contents($files['list_all']), "header('Location: index.php')") !== false) {
+                $passes[] = 'employees list_all.php redirects to index.php (list columns inherit from index.php)';
+            }
+        }
+
+        return [
+            'module' => $moduleSlug,
+            'table' => $table,
+            'schema_missing' => $schemaMissing,
+            'schema_extra' => $schemaExtra,
+            'ui_mode' => $uiMode,
+            'failures' => $failures,
+            'infos' => $infos,
+            'passes' => $passes,
+        ];
+    }
+}
+
+if (!function_exists('itm_fields_missing_collect_report')) {
+    /**
+     * @return array{
+     *   modules: list<array<string,mixed>>,
+     *   tables_without_module: list<string>,
+     *   failure_count: int
+     * }
+     */
+    function itm_fields_missing_collect_report(mysqli $conn, ?string $moduleFilter = null, ?string $rootPath = null): array
+    {
+        if ($rootPath === null) {
+            $rootPath = defined('ROOT_PATH') ? (string) ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
+        }
+
+        $schemaMap = itm_fields_missing_parse_database_sql_table_columns($rootPath);
+        $targets = itm_fields_missing_discover_module_targets($rootPath);
+        $modulesWithTable = [];
+        $moduleReports = [];
+        $failureCount = 0;
+
+        foreach ($targets as $target) {
+            $moduleSlug = (string) $target['module'];
+            if ($moduleFilter !== null && $moduleFilter !== '' && $moduleSlug !== $moduleFilter) {
+                continue;
+            }
+
+            $table = (string) $target['table'];
+            $modulesWithTable[$table] = true;
+            $expected = $schemaMap[$table] ?? [];
+            $live = itm_fields_missing_live_table_columns($conn, $table);
+            $report = itm_fields_missing_audit_module($conn, $moduleSlug, $table, $expected, $live, $rootPath);
+            $failureCount += count($report['failures']);
+            $moduleReports[] = $report;
+        }
+
+        $tablesWithoutModule = [];
+        foreach (array_keys($schemaMap) as $tableName) {
+            if (!isset($modulesWithTable[$tableName])) {
+                $tablesWithoutModule[] = $tableName;
+            }
+        }
+        sort($tablesWithoutModule, SORT_STRING);
+
+        return [
+            'modules' => $moduleReports,
+            'tables_without_module' => $tablesWithoutModule,
+            'failure_count' => $failureCount,
+            'schema_table_count' => count($schemaMap),
+            'module_count' => count($moduleReports),
+        ];
+    }
+}
