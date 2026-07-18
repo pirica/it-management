@@ -102,14 +102,14 @@ if (!isset($crud_title)) {
             <div class="form-group">
                 <label class="itm-checkbox-control">
                     <input type="checkbox" name="shared" value="1" <?php echo isset($_POST['shared']) ? 'checked' : ''; ?>>
-                    <span>Shared 🔓</span>
+                    <span>Shared <span class="itm-shared-indicator" aria-hidden="true"><?php echo isset($_POST['shared']) ? '🔓' : '🔒'; ?></span></span>
                 </label>
             </div>
             <div class="form-group">
                 <label class="itm-checkbox-control">
-                            <input type="checkbox" name="active" value="1" checked>
-                            <span>Active <span class="itm-check-indicator" aria-hidden="true">✅</span></span>
-                        </label>
+                    <input type="checkbox" name="active" value="1" checked>
+                    <span>Active <span class="itm-check-indicator" aria-hidden="true">✅</span></span>
+                </label>
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">💾</button>
@@ -118,11 +118,21 @@ if (!isset($crud_title)) {
         </form>
     </div>
 </div>
-<script src="../../js/theme.js">
+<script src="../../js/theme.js"></script>
+<script>
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
-    const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
-    if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
+    const control = event.target.closest('.itm-checkbox-control');
+    if (!control) return;
+    const activeIndicator = control.querySelector('.itm-check-indicator');
+    if (activeIndicator) {
+        activeIndicator.textContent = event.target.checked ? '✅' : '❌';
+        return;
+    }
+    const sharedIndicator = control.querySelector('.itm-shared-indicator');
+    if (sharedIndicator) {
+        sharedIndicator.textContent = event.target.checked ? '🔓' : '🔒';
+    }
 });
 </script>
 </body>
