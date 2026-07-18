@@ -513,7 +513,7 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'GET',
             'path' => 'scripts/list_modules_not_on_sidebar.php',
             'params' => '—',
-            'purpose' => 'List modules missing from sidebar (JSON).',
+            'purpose' => 'Audit modules vs live sidebar match_dir and registry rows without module folders (JSON).',
         ],
         [
             'group' => 'Scripts / tooling',
