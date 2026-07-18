@@ -776,7 +776,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="titles_list.php" target="_blank" rel="nofollow noreferrer">titles_list.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Scans all PHP files under <code>modules/</code> for <code>&lt;title&gt;</code> tags. Summary: match vs not match for <code>sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig))</code>; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
+                    <td>Scans all PHP files under <code>modules/</code> for <code>&lt;title&gt;</code> tags. Summary: match vs not match for canonical <code>&lt;title&gt;&lt;?= sanitize($crud_title) ?&gt; - &lt;?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?&gt;&lt;/title&gt;</code>; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list.php</code></td>
                 </tr>
                 <tr>

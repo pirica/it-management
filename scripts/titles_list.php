@@ -55,7 +55,7 @@ foreach ($files as $path) {
 
     $stats['with_title']++;
     $titleBlock = $matches[0];
-    $matchesSuffix = itm_titles_list_title_has_app_name_suffix($titleBlock);
+    $matchesSuffix = itm_titles_list_title_matches_canonical($titleBlock);
     if ($matchesSuffix) {
         $stats['match']++;
     } else {
