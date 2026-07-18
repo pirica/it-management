@@ -47,7 +47,7 @@ if (!$conn instanceof mysqli) {
 }
 
 $report = itm_fields_missing_collect_report($conn, $moduleFilter !== '' ? $moduleFilter : null);
-$nl = itm_script_output_nl();
+$auditNl = "\n";
 
 if ($jsonOutput) {
     if (!$itmIsCli) {
@@ -79,13 +79,13 @@ if (!$itmIsCli) {
     echo '</form><pre>';
 }
 
-echo 'Schema tables (database.sql): ' . (int) $report['schema_table_count'] . $nl;
-echo 'Modules audited: ' . (int) $report['module_count'] . $nl;
+echo itm_script_escape_browser_pre_text('Schema tables (database.sql): ' . (int) $report['schema_table_count']) . $auditNl;
+echo itm_script_escape_browser_pre_text('Modules audited: ' . (int) $report['module_count']) . $auditNl;
 if ($moduleFilter !== '') {
-    echo 'Module filter: ' . $moduleFilter . $nl;
+    echo itm_script_escape_browser_pre_text('Module filter: ' . $moduleFilter) . $auditNl;
 }
-echo itm_fields_missing_format_legend($nl);
-echo str_repeat('-', 72) . $nl . $nl;
+echo itm_script_escape_browser_pre_text(itm_fields_missing_format_legend($auditNl));
+echo itm_script_escape_browser_pre_text(str_repeat('-', 72) . $auditNl . $auditNl);
 
 foreach ($report['modules'] as $moduleReport) {
     $uiMode = (string) ($moduleReport['ui_mode'] ?? '');
@@ -100,39 +100,47 @@ foreach ($report['modules'] as $moduleReport) {
         $tableRef = itm_script_format_table_link($table);
     }
 
-    echo $moduleLink . ' (table: ' . $tableRef . ', ui: ' . $uiMode . ')' . $nl;
-    echo itm_fields_missing_format_columns_block($moduleReport, $nl);
+    echo $moduleLink . ' (table: ' . $tableRef . ', ui: ' . htmlspecialchars($uiMode, ENT_QUOTES, 'UTF-8') . ')' . $auditNl;
+    echo itm_script_escape_browser_pre_text(itm_fields_missing_format_columns_block($moduleReport, $auditNl));
 
-    itm_fields_missing_echo_module_check_lines($moduleReport, $nl);
-    echo $nl;
+    itm_fields_missing_echo_module_check_lines($moduleReport, $auditNl);
+    echo $auditNl;
 }
 
 if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
-    echo 'Tables in database.sql without a discoverable module folder (' . count($report['tables_without_module']) . ')' . $nl;
+    echo itm_script_escape_browser_pre_text(
+        'Tables in database.sql without a discoverable module folder (' . count($report['tables_without_module']) . ')'
+    ) . $auditNl;
     foreach ($report['tables_without_module'] as $tableName) {
         $label = function_exists('itm_script_format_table_link')
             ? itm_script_format_table_link($tableName, '', true)
-            : $tableName;
-        echo '  - ' . $label . $nl;
+            : htmlspecialchars($tableName, ENT_QUOTES, 'UTF-8');
+        if (function_exists('itm_script_format_table_link')) {
+            echo '  - ' . $label . $auditNl;
+        } else {
+            echo itm_script_escape_browser_pre_text('  - ' . $label) . $auditNl;
+        }
     }
-    echo $nl;
+    echo $auditNl;
 }
 
-echo itm_fields_missing_format_audit_summary($report, $nl);
+echo itm_script_escape_browser_pre_text(itm_fields_missing_format_audit_summary($report, $auditNl));
 
 if ((int) $report['failure_count'] > 0) {
-    echo colorText('Result: ' . (int) $report['failure_count'] . ' failure(s).', 'fail') . $nl;
+    echo colorText(itm_script_escape_browser_pre_text('Result: ' . (int) $report['failure_count'] . ' failure(s).'), 'fail') . $auditNl;
     itm_script_output_end();
     exit(1);
 }
 
-echo colorText('Result: all checks passed.', 'pass') . $nl;
+echo colorText(itm_script_escape_browser_pre_text('Result: all checks passed.'), 'pass') . $auditNl;
 $skipGateFailures = (int) ($report['skip_gate_failure_count'] ?? 0);
 if ($skipGateFailures > 0) {
     echo colorText(
-        'Note: ' . $skipGateFailures . ' bespoke [SKIP][fail] line(s) above are informational only (not counted here).',
+        itm_script_escape_browser_pre_text(
+            'Note: ' . $skipGateFailures . ' bespoke [SKIP][fail] line(s) above are informational only (not counted here).'
+        ),
         'warn'
-    ) . $nl;
+    ) . $auditNl;
 }
 itm_script_output_end();
 exit(0);

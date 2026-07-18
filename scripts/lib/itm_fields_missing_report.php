@@ -1528,6 +1528,7 @@ if (!function_exists('itm_fields_missing_audit_bespoke_list_ui_contract')) {
         $deletePath = (string) ($files['delete'] ?? '');
         $hasDeleteFile = $deletePath !== '' && is_readable($deletePath);
         $hasCreateFile = is_readable($files['create']);
+        $createContent = $hasCreateFile ? (string) file_get_contents($files['create']) : '';
 
         $checks = [
             'Search' => itm_check_search($listContent, $source),
@@ -1537,7 +1538,7 @@ if (!function_exists('itm_fields_missing_audit_bespoke_list_ui_contract')) {
             'Bulk delete' => itm_check_bulk_delete_actions($listContent, $source, $hasDeleteFile),
             'Bulk cancel' => itm_check_bulk_cancel_contract($indexContent),
             'Actions layout' => itm_check_table_actions_layout($listContent, $source),
-            'New button' => itm_check_new_button($indexContent, $hasCreateFile),
+            'New button' => itm_check_new_button($indexContent, $hasCreateFile, $createContent),
             'Import Excel' => itm_check_import_excel_contract($listContent, $indexContent, $source),
             'Export toolbar' => itm_check_export_toolbar_support($listContent, $indexContent),
             'POST CSRF' => itm_check_index_mutation_csrf($indexContent),
@@ -1694,26 +1695,32 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
 
         foreach ($moduleReport['passes'] ?? [] as $passLine) {
             $label = itm_fields_missing_result_status_label($skippedUi, true);
-            echo colorText("{$label} {$passLine}", 'pass') . $nl;
+            $line = itm_script_escape_browser_pre_text("{$label} {$passLine}");
+            echo colorText($line, 'pass') . $nl;
         }
         foreach ($moduleReport['failures'] ?? [] as $failure) {
             $label = itm_fields_missing_result_status_label($skippedUi, false);
-            echo colorText("{$label} " . (string) ($failure['message'] ?? ''), 'fail') . $nl;
+            $line = itm_script_escape_browser_pre_text("{$label} " . (string) ($failure['message'] ?? ''));
+            echo colorText($line, 'fail') . $nl;
         }
         foreach ($moduleReport['infos'] ?? [] as $infoLine) {
-            echo colorText('[INFO] ' . $infoLine, 'info') . $nl;
+            echo colorText(itm_script_escape_browser_pre_text('[INFO] ' . $infoLine), 'info') . $nl;
         }
 
         if ($skippedUi && $moduleSlug !== '') {
             $failCount = count($moduleReport['failures'] ?? []);
             if ($failCount > 0) {
                 echo colorText(
-                    '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)',
+                    itm_script_escape_browser_pre_text(
+                        '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)'
+                    ),
                     'fail'
                 ) . $nl;
             } else {
                 echo colorText(
-                    '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)',
+                    itm_script_escape_browser_pre_text(
+                        '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)'
+                    ),
                     'pass'
                 ) . $nl;
             }

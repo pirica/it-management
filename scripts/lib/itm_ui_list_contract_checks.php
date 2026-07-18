@@ -554,27 +554,27 @@ if (!function_exists('itm_check_module_favicon_link')) {
         if ($hasFaviconLink && $usesConfiguredFavicon) {
             return [
                 'status' => 'pass',
-                'details' => 'Server-side favicon link in <head> uses Settings favicon URL',
+                'details' => 'Server-side favicon link in head uses Settings favicon URL',
             ];
         }
 
         if ($hasFaviconLink) {
             return [
                 'status' => 'fail',
-                'details' => '<head> favicon link must use $favicon_url or itm_render_head_favicon_link() from ui_configuration',
+                'details' => 'head favicon link must use $favicon_url or itm_render_head_favicon_link() from ui_configuration',
             ];
         }
 
         return [
             'status' => 'fail',
-            'details' => 'Missing server-side <link rel="icon"> in <head> (header.php JS alone leaves the default tab icon)',
+            'details' => 'Missing server-side favicon link rel=icon in head (header.php JS alone leaves the default tab icon)',
         ];
     }
 }
 
 if (!function_exists('itm_check_list_heading_layout')) {
     /**
-     * List index headers with Settings-managed new buttons must center the module <h1>.
+     * List index headers with Settings-managed new buttons must center the module h1.
      *
      * @return array{status:string,details:string}
      */
@@ -585,7 +585,7 @@ if (!function_exists('itm_check_list_heading_layout')) {
         }
 
         if (preg_match('/<h1\b/i', $indexContent) !== 1) {
-            return ['status' => 'n/a', 'details' => 'No list <h1> heading in index.php'];
+            return ['status' => 'n/a', 'details' => 'No list h1 heading in index.php'];
         }
 
         $hasRelativeWrapper = preg_match(
@@ -602,7 +602,7 @@ if (!function_exists('itm_check_list_heading_layout')) {
         if ($hasRelativeWrapper && $hasCenteredHeading && $usesDynamicHeading) {
             return [
                 'status' => 'pass',
-                'details' => 'List <h1> centered with $moduleListHeading / itm_sidebar_label_for_module()',
+                'details' => 'List h1 centered with $moduleListHeading / itm_sidebar_label_for_module()',
             ];
         }
 
@@ -611,7 +611,7 @@ if (!function_exists('itm_check_list_heading_layout')) {
             $missing[] = 'position:relative wrapper on data-itm-new-button-managed row';
         }
         if (!$hasCenteredHeading) {
-            $missing[] = 'centered list <h1> (position:absolute; left:50%; transform:translateX(-50%))';
+            $missing[] = 'centered list h1 (position:absolute; left:50%; transform:translateX(-50%))';
         }
         if (!$usesDynamicHeading) {
             $missing[] = '$moduleListHeading from itm_sidebar_label_for_module()';
@@ -651,14 +651,48 @@ if (!function_exists('itm_ui_index_has_csrf_guard')) {
     }
 }
 
+if (!function_exists('itm_ui_create_file_is_redirect_stub')) {
+    /**
+     * Why: Immutable/read-only modules keep create.php as a permission-gated redirect to index.
+     */
+    function itm_ui_create_file_is_redirect_stub(string $createContent): bool
+    {
+        $content = trim($createContent);
+        if ($content === '') {
+            return false;
+        }
+
+        $hasRedirect = preg_match(
+            '/header\s*\(\s*[\'"]Location:\s*index\.php/i',
+            $content
+        ) === 1;
+        if (!$hasRedirect) {
+            return false;
+        }
+
+        $hasForm = preg_match('/<form\b/i', $content) === 1
+            || preg_match('/\$_(POST|GET)\s*\[/', $content) === 1
+            || preg_match('/\$_SERVER\s*\[\s*[\'"]REQUEST_METHOD[\'"]\s*\]/', $content) === 1;
+
+        return !$hasForm;
+    }
+}
+
 if (!function_exists('itm_check_new_button')) {
     /**
      * @return array{status:string,details:string}
      */
-    function itm_check_new_button(string $indexContent, bool $hasCreateFile): array
+    function itm_check_new_button(string $indexContent, bool $hasCreateFile, string $createContent = ''): array
     {
         if (!$hasCreateFile) {
             return ['status' => 'n/a', 'details' => 'Module has no create.php'];
+        }
+
+        if ($createContent !== '' && itm_ui_create_file_is_redirect_stub($createContent)) {
+            return [
+                'status' => 'n/a',
+                'details' => 'create.php redirects to index (read-only / immutable module — no create action expected)',
+            ];
         }
 
         $hasCreateLink = preg_match('/<a[^>]*href\s*=\s*["\'][^"\']*(create\.php|new|add)[^"\']*["\'][^>]*>/i', $indexContent) === 1

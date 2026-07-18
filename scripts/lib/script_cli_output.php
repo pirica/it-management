@@ -63,6 +63,16 @@ if (!function_exists('itm_script_cli_is_cli')) {
         return itm_script_cli_is_cli() ? "\n" : '<br><br>';
     }
 
+    /** Why: Browser <pre> still parses HTML tags inside audit messages — escape plain-text lines. */
+    function itm_script_escape_browser_pre_text(string $text): string
+    {
+        if (itm_script_cli_is_cli()) {
+            return $text;
+        }
+
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+
     /** Why: Colour pass/fail/warn/info prefixes when present; leave other lines unchanged. */
     function itm_script_format_status_line($message)
     {
