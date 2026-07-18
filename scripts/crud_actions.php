@@ -70,36 +70,14 @@ function itm_crud_actions_parse_assignment(string $filePath): ?array
     return null;
 }
 
-// #region agent log
-function itm_crud_actions_debug_log(array $data): void
-{
-    $logPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'debug-ffb3d9.log';
-    $payload = array_merge([
-        'sessionId' => 'ffb3d9',
-        'timestamp' => (int)round(microtime(true) * 1000),
-        'location' => 'scripts/crud_actions.php',
-    ], $data);
-    file_put_contents($logPath, json_encode($payload, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
-}
-// #endregion
-
 itm_script_output_begin('CRUD Action Mapper');
 
 $entryFiles = ['index.php', 'create.php', 'edit.php', 'view.php', 'delete.php', 'list_all.php'];
 $rows = [];
-$stats = [
-    'modules' => count($moduleDirs),
-    'found' => 0,
-    'default' => 0,
-    'na' => 0,
-    'wrapper_only' => 0,
-];
 
 foreach ($moduleDirs as $moduleName) {
     $modulePath = $modulesPath . DIRECTORY_SEPARATOR . $moduleName;
     $moduleRows = [];
-    $hasLiteral = false;
-    $hasCoalesceIndex = false;
 
     foreach ($entryFiles as $entryFile) {
         $filePath = $modulePath . DIRECTORY_SEPARATOR . $entryFile;
@@ -113,19 +91,14 @@ foreach ($moduleDirs as $moduleName) {
         }
 
         if ($assignment['literal'] !== null) {
-            $hasLiteral = true;
             $statusClass = 'ok';
             $statusLabel = 'Found';
-            $stats['found']++;
         } elseif ($assignment['is_coalesce'] && $entryFile === 'index.php') {
-            $hasCoalesceIndex = true;
             $statusClass = 'default';
             $statusLabel = 'Default';
-            $stats['default']++;
         } else {
             $statusClass = 'default';
             $statusLabel = 'Default';
-            $stats['default']++;
         }
 
         $moduleRows[] = [
@@ -140,7 +113,6 @@ foreach ($moduleDirs as $moduleName) {
     }
 
     if ($moduleRows === []) {
-        $stats['na']++;
         $moduleRows[] = [
             'module' => $moduleName,
             'entry_file' => '(none)',
@@ -150,23 +122,12 @@ foreach ($moduleDirs as $moduleName) {
             'status_label' => 'N/A',
             'sidebar_link' => 'modules/' . $moduleName . '/',
         ];
-    } elseif (!$hasLiteral && $hasCoalesceIndex) {
-        $stats['wrapper_only']++;
     }
 
     foreach ($moduleRows as $moduleRow) {
         $rows[] = $moduleRow;
     }
 }
-
-// #region agent log
-itm_crud_actions_debug_log([
-    'runId' => 'crud-actions-nav-fix',
-    'hypothesisId' => 'H-DUP',
-    'message' => 'nav source: itm_script_output_begin only (no explicit echo)',
-    'data' => $stats + ['row_count' => count($rows), 'explicit_nav_echo' => false],
-]);
-// #endregion
 
 itm_script_output_close_pre();
 
