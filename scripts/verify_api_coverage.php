@@ -37,23 +37,26 @@ foreach ($bespoke as $b) {
 }
 
 echo $nl . '3. Checking for undocumented module AJAX handlers:' . $nl;
-foreach (glob($root . '/modules/*/*.php') as $file) {
+$documentedJsonHandlers = itmDocCollectDocumentedJsonHandlerPaths($root);
+$undocumented = [];
+foreach (glob($root . '/modules/*/*.php') ?: [] as $file) {
     if (basename($file) === 'index.php') {
         continue;
     }
-    $content = file_get_contents($file);
-    if (strpos($content, 'application/json') === false) {
+    $content = (string) file_get_contents($file);
+    if (!itmDocFileEmitsJsonResponse($content)) {
         continue;
     }
-    $relPath = str_replace($root . '/', '', $file);
-    $found = false;
-    foreach ($bespoke as $b) {
-        if (strpos($b['path'], $relPath) !== false) {
-            $found = true;
-            break;
-        }
+    $relPath = str_replace('\\', '/', substr($file, strlen($root) + 1));
+    if (!itmDocJsonHandlerIsDocumented($relPath, $documentedJsonHandlers)) {
+        $undocumented[] = $relPath;
     }
-    if (!$found) {
+}
+
+if ($undocumented === []) {
+    echo colorText('   [OK] All module JSON handlers are documented in scripts/api.php.', 'pass') . $nl;
+} else {
+    foreach ($undocumented as $relPath) {
         echo colorText('   [WARN] Undocumented JSON handler: ' . $relPath, 'warn') . $nl;
     }
 }
