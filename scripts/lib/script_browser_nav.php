@@ -195,3 +195,40 @@ if (!function_exists('itm_script_format_table_link')) {
         return htmlspecialchars($tableName, ENT_QUOTES, 'UTF-8');
     }
 }
+
+if (!function_exists('itm_script_format_modules_file_link')) {
+    /**
+     * Link modules/&lt;slug&gt;/… repo paths to the module index in browser script output.
+     *
+     * @param string $repoRelativePath e.g. modules/patches_updates/create.php
+     * @param int $line Optional 1-based line suffix (0 = omit)
+     */
+    function itm_script_format_modules_file_link(string $repoRelativePath, int $line = 0): string
+    {
+        $repoRelativePath = trim(str_replace('\\', '/', $repoRelativePath), '/');
+        if ($repoRelativePath === '') {
+            return '';
+        }
+
+        $lineSuffix = $line > 0 ? ':' . $line : '';
+        if (itm_script_is_cli_sapi()) {
+            return $repoRelativePath . $lineSuffix;
+        }
+
+        if (!preg_match('#^modules/([^/]+)(?:/(.*))?$#', $repoRelativePath, $matches)) {
+            return htmlspecialchars($repoRelativePath, ENT_QUOTES, 'UTF-8')
+                . htmlspecialchars($lineSuffix, ENT_QUOTES, 'UTF-8');
+        }
+
+        $moduleSlug = (string)$matches[1];
+        $remainder = isset($matches[2]) ? (string)$matches[2] : '';
+        $moduleLink = itm_script_format_module_link($moduleSlug, '', $moduleSlug);
+        if ($remainder === '') {
+            return $moduleLink . htmlspecialchars($lineSuffix, ENT_QUOTES, 'UTF-8');
+        }
+
+        return $moduleLink . ' '
+            . htmlspecialchars($remainder, ENT_QUOTES, 'UTF-8')
+            . htmlspecialchars($lineSuffix, ENT_QUOTES, 'UTF-8');
+    }
+}
