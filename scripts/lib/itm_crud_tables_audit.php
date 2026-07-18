@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared helpers for crud_tables.php and crud_titles.php — module slug inventories (no database lookups).
+ * Shared helpers for crud_tables.php, crud_titles.php, and crud_actions.php — module slug inventories (no database lookups).
  */
 
 if (!function_exists('itm_crud_tables_load_slug_list_file')) {
@@ -127,13 +127,40 @@ if (!function_exists('itm_crud_titles_detect_assignment')) {
     }
 }
 
+if (!function_exists('itm_crud_mapper_module_is_standard_crud')) {
+    /**
+     * Flattened scaffold modules (e.g. manufacturers/) define both markers in index.php.
+     */
+    function itm_crud_mapper_module_is_standard_crud(string $moduleSlug, ?string $rootPath = null): bool
+    {
+        if ($rootPath === null) {
+            $rootPath = defined('ROOT_PATH') ? (string)ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
+        }
+
+        $indexPath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR
+            . 'modules' . DIRECTORY_SEPARATOR . $moduleSlug . DIRECTORY_SEPARATOR . 'index.php';
+        if (!is_file($indexPath)) {
+            return false;
+        }
+
+        $content = (string)file_get_contents($indexPath);
+
+        return (bool)preg_match('/\$uiColumns\s*=/', $content)
+            && (bool)preg_match('/cr_manageable_columns\s*\(/', $content);
+    }
+}
+
 if (!function_exists('itm_crud_actions_should_skip_module')) {
     /**
-     * Modules that intentionally omit $crud_action in entry files.
+     * Modules that intentionally omit $crud_action in entry files (non-standard CRUD).
      */
     function itm_crud_actions_should_skip_module(string $moduleSlug, ?string $rootPath = null): bool
     {
-        return itm_crud_titles_should_skip_module($moduleSlug, $rootPath);
+        if (itm_crud_mapper_module_matches_is_prefix($moduleSlug)) {
+            return true;
+        }
+
+        return !itm_crud_mapper_module_is_standard_crud($moduleSlug, $rootPath);
     }
 }
 

@@ -4,7 +4,7 @@
  *
  * Why: audits module-to-action mapping by reading each module entry file
  * (index.php and CRUD wrappers) for $crud_action assignments with sidebar links.
- * Equipment shortcut modules (is_*) and bespoke slugs without $crud_action are Skip — not N/A.
+ * Equipment shortcut modules (is_*) and other non-standard CRUD modules without $crud_action are Skip — not N/A.
  *
  * Usage:
  *   php scripts/crud_actions.php > crud_actions.html
@@ -88,9 +88,9 @@ foreach ($moduleDirs as $moduleName) {
             $statusLabel = 'Skip';
             $skipModuleCount++;
             if (itm_crud_mapper_module_matches_is_prefix($moduleName)) {
-                $mappingText = '(is_* equipment shortcut — no $crud_action expected)';
+                $mappingText = '(is_* equipment shortcut — non-standard CRUD)';
             } else {
-                $mappingText = '(bespoke / exception — no $crud_action expected)';
+                $mappingText = '(non-standard CRUD module — no $crud_action expected)';
             }
         } else {
             $statusClass = 'na';
@@ -151,7 +151,7 @@ echo '<h1>CRUD Action Mapper</h1>';
 echo '<p>Modules scanned: <strong>' . count($moduleDirs) . '</strong>'
     . ' | Rows: <strong>' . count($rows) . '</strong>'
     . ' | Skip (no <code>$crud_action</code>): <strong>' . (int)$skipModuleCount . '</strong></p>';
-echo '<p>Skip rules: <code>is_*</code> equipment shortcuts + <code>docs/list_bespoke_UI.txt</code> (all entry files).</p>';
+echo '<p>Skip rules: non-standard CRUD (<code>index.php</code> without <code>$uiColumns</code> + <code>cr_manageable_columns()</code>), including <code>is_*</code> shortcuts (all entry files).</p>';
 echo '<table>';
 echo '<thead><tr><th>#</th><th>Module</th><th>Entry file</th><th>CRUD Mapping</th><th>Status</th><th>Sidebar Link</th></tr></thead>';
 echo '<tbody>';
