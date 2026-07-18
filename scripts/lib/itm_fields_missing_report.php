@@ -1329,6 +1329,58 @@ if (!function_exists('itm_fields_missing_apply_skipped_ui_coverage_gate')) {
                 $passes[] = "{$moduleSlug} row active: hidden on create/edit forms (status-driven)";
             }
         }
+
+        itm_fields_missing_audit_bespoke_deferred_ui_coverage(
+            $moduleSlug,
+            $expectedColumns,
+            $formPaths,
+            $files,
+            $passes,
+            $failures
+        );
+    }
+}
+
+if (!function_exists('itm_fields_missing_audit_bespoke_deferred_ui_coverage')) {
+    /**
+     * Bespoke/status-driven: business columns are not scaffold-audited as [FAIL], but gaps still
+     * surface as [SKIP][fail] so a zero failure count is not mistaken for full UI coverage.
+     *
+     * @param list<string> $expectedColumns
+     * @param list<string> $formPaths
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     * @param list<string> $passes
+     * @param list<array{code:string,message:string}> $failures
+     */
+    function itm_fields_missing_audit_bespoke_deferred_ui_coverage(
+        string $moduleSlug,
+        array $expectedColumns,
+        array $formPaths,
+        array $files,
+        array &$passes,
+        array &$failures
+    ): void {
+        if ($expectedColumns === []) {
+            return;
+        }
+
+        $uiAudited = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
+        if ($uiAudited === []) {
+            return;
+        }
+
+        $dynamicScaffold = itm_fields_missing_index_is_dynamic_scaffold($files['index'])
+            || itm_fields_missing_index_uses_manageable_columns($files['index']);
+
+        itm_fields_missing_audit_audited_ui_columns(
+            $moduleSlug,
+            $uiAudited,
+            $formPaths,
+            $files,
+            $passes,
+            $failures,
+            $dynamicScaffold
+        );
     }
 }
 
@@ -1438,12 +1490,12 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
             $failCount = count($moduleReport['failures'] ?? []);
             if ($failCount > 0) {
                 echo colorText(
-                    '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)',
+                    '[SKIP][fail] ' . $moduleSlug . ' — deferred UI audit: ' . $failCount . ' gap(s) (business columns not fully on form/view/index)',
                     'fail'
                 ) . $nl;
             } else {
                 echo colorText(
-                    '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)',
+                    '[SKIP][pass] ' . $moduleSlug . ' — deferred UI audit: all business columns covered on form/view/index',
                     'pass'
                 ) . $nl;
             }
@@ -1671,8 +1723,8 @@ if (!function_exists('itm_fields_missing_finalize_module_report')) {
         $report['ui_inferred_form_source'] = $inferredFormSource ?? '';
 
         if ($skipped) {
-            $report['ui_audited_columns'] = [];
-            $report['ui_excluded_columns'] = [];
+            $report['ui_audited_columns'] = array_values($uiAuditedColumns);
+            $report['ui_excluded_columns'] = array_values(array_diff($expectedColumns, $uiAuditedColumns));
         } else {
             $report['ui_audited_columns'] = array_values($uiAuditedColumns);
             $report['ui_excluded_columns'] = array_values(array_diff($expectedColumns, $uiAuditedColumns));
@@ -1761,12 +1813,24 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
 
         if ($skipped) {
             if (!$hasSchemaTable) {
-                $out .= '  UI coverage audit: skipped (no schema table — UI form scrape only)' . $nl;
+                $out .= '  UI coverage audit: deferred ([SKIP] tags — no schema table)' . $nl;
             } elseif ($uiMode === 'status_driven_skip') {
-                $out .= '  UI coverage audit: skipped (status-driven bespoke UI — schema-only)' . $nl;
+                $out .= '  UI coverage audit: deferred ([SKIP] tags — status-driven bespoke UI)' . $nl;
             } else {
-                $out .= '  UI coverage audit: skipped (bespoke/deferred UI — schema-only)' . $nl;
+                $out .= '  UI coverage audit: deferred ([SKIP] tags — bespoke/non-scaffold UI)' . $nl;
             }
+            $out .= itm_fields_missing_format_inline_list_section(
+                'UI audited columns (deferred checks)',
+                $uiAudited,
+                $nl,
+                '(none — no business columns after meta exclusions)'
+            );
+            $out .= itm_fields_missing_format_inline_list_section(
+                'excluded from UI audit',
+                $excluded,
+                $nl,
+                '(none — all expected columns are in the deferred audit set)'
+            );
         }
 
         $scrapeHeading = $hasSchemaTable
@@ -1828,13 +1892,13 @@ if (!function_exists('itm_fields_missing_format_legend')) {
     {
         $out = 'Section legend (same for every module; ui: tag shows audit path):' . $nl;
         $out .= '  database.sql columns / live columns — canonical schema vs live MySQL (when the module has a table)' . $nl;
-        $out .= '  UI coverage audit: skipped — gated bespoke contract (literal meta visibility, scaffold-hybrid uiColumns rules)' . $nl;
-        $out .= '  [SKIP][pass] does not audit business columns — see Audit summary footer' . $nl;
+        $out .= '  UI coverage audit: deferred on bespoke/status-driven modules — business columns checked as [SKIP][pass]/[SKIP][fail]' . $nl;
+        $out .= '  [SKIP][fail] means a business column is missing on create/edit, view, or index (not a scaffold [FAIL])' . $nl;
         $out .= '  Static HTML name= scrape — literal name="..." in create/edit (or index for UI-only); not the full dynamic UI' . $nl;
         $out .= '  Inferred form columns — derived from $uiColumns, cr_manageable_columns, or employees matrix' . $nl;
-        $out .= '  UI audited columns / excluded from UI audit — only when UI coverage audit ran' . $nl;
-        $out .= '  [PASS] audited UI column — dynamic scaffold business columns (create/edit, view, index via $uiColumns loops)' . $nl;
-        $out .= '  [PASS] excluded UI column — meta columns must stay hidden on create/edit forms' . $nl;
+        $out .= '  UI audited columns (deferred checks) — business fields compared on bespoke modules' . $nl;
+        $out .= '  [SKIP][pass] audited UI column — business column present on that surface' . $nl;
+        $out .= '  [SKIP][pass] excluded UI column — meta columns must stay hidden on create/edit forms' . $nl;
         $out .= '  UI form fields other — non-table controls (CSRF, bulk actions, import helpers, …)' . $nl;
 
         return $out . $nl;
@@ -2125,6 +2189,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $infos
             );
             $gateFormPaths = itm_fields_missing_merge_bespoke_form_paths($files, $formPaths);
+            $uiAuditedDeferred = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
             itm_fields_missing_apply_skipped_ui_coverage_gate(
                 $moduleSlug,
                 $expectedColumns,
@@ -2153,7 +2218,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ], $expectedColumns, $liveColumns, [], $uiPayload['scraped_table'], $uiPayload['form_other'], $uiPayload['inferred'], $uiPayload['inferred_source']);
+            ], $expectedColumns, $liveColumns, $uiAuditedDeferred, $uiPayload['scraped_table'], $uiPayload['form_other'], $uiPayload['inferred'], $uiPayload['inferred_source']);
         }
 
         if ($statusDriven && $moduleSlug !== 'employees') {
@@ -2166,6 +2231,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $uiCollected
             );
             $gateFormPaths = itm_fields_missing_merge_bespoke_form_paths($files, $formPaths);
+            $uiAuditedDeferred = itm_fields_missing_ui_fields_for_module($moduleSlug, $expectedColumns);
             itm_fields_missing_apply_skipped_ui_coverage_gate(
                 $moduleSlug,
                 $expectedColumns,
@@ -2194,7 +2260,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 'failures' => $failures,
                 'infos' => $infos,
                 'passes' => $passes,
-            ], $expectedColumns, $liveColumns, [], $uiPayload['scraped_table'], $uiPayload['form_other'], $uiPayload['inferred'], $uiPayload['inferred_source']);
+            ], $expectedColumns, $liveColumns, $uiAuditedDeferred, $uiPayload['scraped_table'], $uiPayload['form_other'], $uiPayload['inferred'], $uiPayload['inferred_source']);
         }
 
         $uiMode = 'manual';
@@ -2563,6 +2629,8 @@ if (!function_exists('itm_fields_missing_build_report_summary')) {
     function itm_fields_missing_build_report_summary(array $moduleReports): array
     {
         $byUiMode = [];
+        $skipPassLines = 0;
+        $skipFailLines = 0;
         $skipPassModules = 0;
         $skipFailModules = 0;
         $scaffoldFailModules = 0;
@@ -2577,8 +2645,12 @@ if (!function_exists('itm_fields_missing_build_report_summary')) {
             if ($skipped) {
                 if ($failCount > 0) {
                     $skipFailModules++;
+                    $skipFailLines += $failCount;
                 } else {
                     $skipPassModules++;
+                }
+                foreach ($report['passes'] ?? [] as $passLine) {
+                    $skipPassLines++;
                 }
                 continue;
             }
@@ -2599,6 +2671,8 @@ if (!function_exists('itm_fields_missing_build_report_summary')) {
             'ui_mode_counts' => $byUiMode,
             'skip_pass_modules' => $skipPassModules,
             'skip_fail_modules' => $skipFailModules,
+            'skip_pass_lines' => $skipPassLines,
+            'skip_fail_lines' => $skipFailLines,
             'scaffold_fail_modules' => $scaffoldFailModules,
             'scaffold_audited_pass_lines' => $scaffoldAuditedPassLines,
             'failure_lines_total' => array_sum(array_map(static function (array $report): int {
@@ -2616,11 +2690,13 @@ if (!function_exists('itm_fields_missing_format_audit_summary')) {
     {
         $summary = is_array($report['summary'] ?? null) ? $report['summary'] : [];
         $out = str_repeat('-', 72) . $nl;
-        $out .= 'Audit summary (read this — [SKIP][pass] is not a full UI pass):' . $nl;
-        $out .= '  Bespoke / status-driven gated modules: '
-            . (int) ($summary['skip_pass_modules'] ?? 0) . ' [SKIP][pass], '
-            . (int) ($summary['skip_fail_modules'] ?? 0) . ' [SKIP][fail] '
-            . '(hidden meta columns on create/edit only; business fields not audited)' . $nl;
+        $out .= 'Audit summary ([SKIP] = bespoke/status-driven deferred UI audit, not scaffold [FAIL]):' . $nl;
+        $out .= '  Bespoke / status-driven modules: '
+            . (int) ($summary['skip_pass_modules'] ?? 0) . ' module(s) with 0 gaps, '
+            . (int) ($summary['skip_fail_modules'] ?? 0) . ' module(s) with gaps; '
+            . (int) ($summary['skip_pass_lines'] ?? 0) . ' [SKIP][pass] line(s), '
+            . (int) ($summary['skip_fail_lines'] ?? 0) . ' [SKIP][fail] line(s) '
+            . '(business columns on create/edit, view, index)' . $nl;
         $out .= '  Dynamic scaffold / manual full UI modules: '
             . (int) ($summary['scaffold_audited_pass_lines'] ?? 0) . ' audited UI [PASS] lines, '
             . (int) ($summary['scaffold_fail_modules'] ?? 0) . ' module(s) with [FAIL], '
