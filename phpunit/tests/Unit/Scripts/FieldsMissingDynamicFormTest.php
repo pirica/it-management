@@ -490,4 +490,88 @@ PHP;
             $passes
         );
     }
+
+    public function testScrapedHtmlDetectsDisabledAuditLabelWithoutName(): void
+    {
+        $html = <<<'HTML'
+<form method="POST">
+    <div class="form-group">
+        <label>Created At</label>
+        <input value="2024-01-01" disabled>
+    </div>
+</form>
+HTML;
+
+        $this->assertTrue(itm_fields_missing_scraped_html_exposes_audit_meta_field('created_at', $html));
+        $this->assertFalse(itm_fields_missing_scraped_html_exposes_audit_meta_field('updated_at', $html));
+    }
+
+    public function testScrapedHtmlAllowsHiddenAuditInput(): void
+    {
+        $html = '<form><input type="hidden" name="created_at" value="2024-01-01"></form>';
+
+        $this->assertFalse(itm_fields_missing_scraped_html_exposes_audit_meta_field('created_at', $html));
+    }
+
+    public function testScrapedHtmlDetectsNamedDatetimeLocalAuditField(): void
+    {
+        $html = '<form><input type="datetime-local" name="created_at" value="2024-01-01T10:00"></form>';
+
+        $this->assertTrue(itm_fields_missing_scraped_html_exposes_audit_meta_field('created_at', $html));
+    }
+
+    public function testPseudoHtmlScrapeFlagsLegacyInventoryAuditDisplay(): void
+    {
+        $content = <<<'PHP'
+<form method="POST">
+    <label>Created At</label>
+    <input value="<?php echo sanitize((string)($data['created_at'] ?? '')); ?>" disabled>
+</form>
+PHP;
+
+        $pseudo = itm_fields_missing_strip_php_for_form_scan($content);
+        $this->assertTrue(itm_fields_missing_scraped_html_exposes_audit_meta_field('created_at', $pseudo));
+    }
+
+    public function testInventoryItemsAuditMetaGatePassesAfterModuleFix(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('inventory_items', $root);
+        $formPaths = itm_fields_missing_merge_bespoke_form_paths(
+            $files,
+            itm_fields_missing_resolve_form_paths($files)
+        );
+        $passes = [];
+        $failures = [];
+
+        itm_fields_missing_audit_excluded_ui_columns(
+            'inventory_items',
+            ['created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at', 'deleted_by'],
+            $formPaths,
+            $passes,
+            $failures,
+            false,
+            $files
+        );
+
+        $this->assertSame([], $failures, implode('; ', array_map(static function ($row) {
+            return (string) ($row['message'] ?? '');
+        }, $failures)));
+    }
+
+    public function testTicketsCreateExposesCreatedAtToAuditMetaDetector(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('tickets', $root);
+        $formPaths = itm_fields_missing_merge_bespoke_form_paths(
+            $files,
+            itm_fields_missing_resolve_form_paths($files)
+        );
+
+        $this->assertTrue(
+            itm_fields_missing_form_exposes_audit_meta_on_form('created_at', $formPaths, 'tickets', $files)
+        );
+    }
 }
