@@ -296,7 +296,7 @@ if (!isset($crud_title)) {
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <a class="btn btn-sm" href="<?= $modulePathEsc ?>/index.php" title="Matrix">Matrix</a>
                         <a class="btn btn-sm" href="<?= $modulePathEsc ?>/list_all.php" title="Registry List">Registry List</a>
-                        <a href="<?= $modulePathEsc ?>/create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     </div>
                 <?php else: ?>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -307,7 +307,7 @@ if (!isset($crud_title)) {
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <a href="<?= $modulePathEsc ?>/create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     </div>
                 <?php else: ?>
                     <span></span>
