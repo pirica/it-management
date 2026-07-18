@@ -26,7 +26,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 
 ## 5. UI Behavior Requirements
 
-- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), compact editable emoji inputs (pre-filled with effective icon), Select All / Cancel Select / Unselect All, client-side filter. List header uses `data-itm-new-button-managed` with centered `$moduleListHeading` from `itm_sidebar_label_for_module()` and Settings `new_button_position` create slots (Matrix / Registry List links stay in the left toolbar group).
+- `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), compact editable emoji inputs (pre-filled with effective icon), Select All / Cancel Select / Unselect All, client-side filter. Matrix table uses `table-tools.js` Export Excel / Export PDF (`data-itm-no-import-excel` — matrix is not a CRUD import target). List header uses `data-itm-new-button-managed` with centered `$moduleListHeading` from `itm_sidebar_label_for_module()` and Settings `new_button_position` create slots (Matrix / Registry List links stay in the left toolbar group).
 - `list_all.php` — flat registry list with search.
 - `create.php` / `edit.php` — registry row CRUD with checkbox pattern for `active` and `is_system_module`.
 - Standard layout shell with sidebar/header.
