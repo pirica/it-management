@@ -4,7 +4,7 @@
 Contains the global application stylesheet for the IT Management system.
 
 ## 7. File Structure
-- **`styles.css`** — single canonical stylesheet loaded from `includes/header.php` on standard module pages. Covers layout (sidebar, header, content), forms, tables, badges, switch-port manager, floor-plan gallery, and responsive breakpoints.
+| `styles.css` | Global layout, forms, tables, badges, switch-port manager, floor-plan gallery, responsive breakpoints. List-header ➕ controls (`[data-itm-new-button-managed="server"]`, `.itm-new-button-bar`, `.itm-list-new-button`) use a fixed **40×40 px** square footprint with canonical `btn btn-primary` styling. |
 - **Module inline `<style>` blocks** — some modules (calendar, todo, explorer, system_status, rack planner, etc.) add page-specific CSS in their entry PHP files. Prefer shared utilities in `styles.css` for patterns reused across modules.
 
 ## 8. Responsive design (mandatory)

@@ -1064,6 +1064,8 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 
 **Head favicon:** `php scripts/apply_head_favicon_link.php` — inserts `<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>` after `<title>` in module `index.php` files that have `<head>` but no Settings-backed favicon helper (dry-run default; `--apply` / `?apply=1` writes). Replaces legacy Settings/explorer hardcoded `<link rel="icon">` blocks with the shared helper.
 
+**List new button style:** `php scripts/apply_list_new_button_style.php` — normalizes list-header `create.php` ➕ anchors to `class="btn btn-primary itm-list-new-button" title="Create"` (pairs with `styles.css` 40×40 footprint and `fields_missing` New button style gate).
+
 ---
 
 

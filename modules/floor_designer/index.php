@@ -637,7 +637,7 @@ if (!isset($crud_title)) {
             <?php if ($crud_action === 'index' || $crud_action === 'list_all'): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($moduleListHeading); ?></h1>
-                    <a href="create.php" class="btn btn-primary" title="New floor plan">➕</a>
+                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                 </div>
                 <div class="card">
                     <table data-itm-db-import-endpoint="index.php">

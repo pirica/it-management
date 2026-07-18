@@ -312,6 +312,43 @@ PHP;
         $this->assertSame('n/a', $check['status'] ?? '');
     }
 
+    public function testNewButtonStyleGateFailsWhenCreateUsesBtnSm(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<div data-itm-new-button-managed="server" style="position:relative;min-height:40px;">
+<a href="create.php" class="btn btn-sm btn-primary">➕</a>
+<h1 style="position:absolute;left:50%;transform:translateX(-50%);">Title</h1>
+</div>
+PHP;
+        $check = itm_check_new_button_style($index, true, '<?php // create form');
+        $this->assertSame('fail', $check['status'] ?? '');
+    }
+
+    public function testNewButtonStyleGatePassesForCanonicalManagedHeader(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<div data-itm-new-button-managed="server" style="position:relative;display:flex;min-height:40px;">
+<a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+<h1 style="position:absolute;left:50%;transform:translateX(-50%);">Title</h1>
+<a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+</div>
+PHP;
+        $check = itm_check_new_button_style($index, true, '<?php // create form');
+        $this->assertSame('pass', $check['status'] ?? '');
+    }
+
+    public function testNewButtonStyleGateFailsWhenTitleMissing(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<a href="create.php" class="btn btn-primary">➕</a>
+PHP;
+        $check = itm_check_new_button_style($index, true, '<?php // create form');
+        $this->assertSame('fail', $check['status'] ?? '');
+    }
+
     public function testSyntheticSoftDeleteContractPassesWhenCompliant(): void
     {
         $content = <<<'PHP'

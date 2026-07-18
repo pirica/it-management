@@ -833,13 +833,13 @@ if (!isset($crud_title)) {
             <!-- HEADER ACTIONS -->
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                    <a href="create.php" class="btn btn-primary">➕</a>
+                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a><?php endif; ?>
                     <?php if ($showDuplicatesOnly): ?>
                         <a href="index.php?<?php echo sanitize(emp_build_query(['search' => $searchRaw])); ?>" class="btn btn-sm">Show All</a>
                     <?php else: ?>

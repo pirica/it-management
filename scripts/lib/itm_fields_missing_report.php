@@ -1493,6 +1493,7 @@ if (!function_exists('itm_fields_missing_audit_bespoke_page_ui_contract')) {
                 'List heading layout' => itm_check_list_heading_layout($indexContent),
                 'List heading emoji' => itm_check_list_heading_emoji($indexContent),
                 'New button position' => itm_check_new_button_position($indexContent, $hasCreateFile, $createContent),
+                'New button style' => itm_check_new_button_style($indexContent, $hasCreateFile, $createContent),
             ],
             $passes,
             $failures,
@@ -1545,6 +1546,7 @@ if (!function_exists('itm_fields_missing_audit_bespoke_list_ui_contract')) {
             'Actions layout' => itm_check_table_actions_layout($listContent, $source),
             'New button' => itm_check_new_button($indexContent, $hasCreateFile, $createContent),
             'New button position' => itm_check_new_button_position($indexContent, $hasCreateFile, $createContent),
+            'New button style' => itm_check_new_button_style($indexContent, $hasCreateFile, $createContent),
             'Import Excel' => itm_check_import_excel_contract($listContent, $indexContent, $source),
             'Export toolbar' => itm_check_export_toolbar_support($listContent, $indexContent),
             'POST CSRF' => itm_check_index_mutation_csrf($indexContent),
@@ -2111,7 +2113,7 @@ if (!function_exists('itm_fields_missing_format_legend')) {
     {
         $out = 'Section legend (same for every module; ui: tag shows audit path):' . $nl;
         $out .= '  database.sql columns / live columns — canonical schema vs live MySQL (when the module has a table)' . $nl;
-        $out .= '  UI coverage audit: skipped — gated bespoke UI contract (page: title/favicon/list heading layout+emoji/new button position; list: search/sort/pagination/import/export/sample data)' . $nl;
+        $out .= '  UI coverage audit: skipped — gated bespoke UI contract (page: title/favicon/list heading layout+emoji/new button position+style; list: search/sort/pagination/import/export/sample data)' . $nl;
         $out .= '  Bespoke gate list UI — Search, Sort, Pagination (Settings records_per_page), bulk actions, Actions column' . $nl;
         $out .= '  List heading layout — centered h1 + Settings new_button_position left/right gates' . $nl;
         $out .= '  List heading emoji — $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()' . $nl;

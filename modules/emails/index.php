@@ -318,7 +318,7 @@ if (!isset($crud_title)) {
             <div class="email-toolbar">
                 <h1 title="Email Management">📧</h1>
                 <?php if ($active_tab === 'smtp'): ?>
-                    <a href="create.php" class="btn btn-primary" title="Add SMTP configuration">➕</a>
+                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                 <?php endif; ?>
             </div>
 

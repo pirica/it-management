@@ -379,9 +379,9 @@ if (!isset($crud_title)) {
         <div class="content">
             <!-- HEADER SECTION -->
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
-                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
-                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
             </div>
 
             <!-- SEARCH BAR -->
