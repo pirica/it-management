@@ -907,6 +907,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="apply_ui_action_emoji.php">dry-run</a> / <a href="apply_ui_action_emoji.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_ui_action_emoji.php</code> then <code>php scripts/apply_ui_action_emoji.php --apply</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_source_utf8_mojibake.php" target="_blank" rel="nofollow noreferrer">verify_source_utf8_mojibake.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: tracked <code>modules/</code>, <code>includes/</code>, <code>scripts/</code>, <code>js/</code>, <code>css/</code>, <code>config/</code> source must be valid UTF-8 without mojibake literals (corrupted emoji, accents, or punctuation). Optional scope: <code>?path=modules/patches_updates</code> / <code>--path=…</code>. Pair with <code>apply_utf8_mojibake_fix.php</code> (dry-run default).</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/verify_source_utf8_mojibake.php</code> — exit <code>0</code> when 0 violations. Run after encoding or emoji copy/paste changes.</td>
+                </tr>
+                <tr>
+                    <td><a href="apply_utf8_mojibake_fix.php" target="_blank" rel="nofollow noreferrer">apply_utf8_mojibake_fix.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Maintenance: replace known mojibake literals with correct UTF-8 (emoji, em dash, accents) using <code>scripts/lib/itm_mojibake_audit.php</code> signatures. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Optional <code>--path=</code> / <code>?path=</code> scope.</td>
+                    <td>Browser: <a href="apply_utf8_mojibake_fix.php">dry-run</a> / <a href="apply_utf8_mojibake_fix.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_utf8_mojibake_fix.php</code> then <code>--apply</code>. Re-run <code>verify_source_utf8_mojibake.php</code> after apply.</td>
+                </tr>
+                <tr>
                     <td><a href="check_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">check_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: NO MIXED gate on <code>&lt;a&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;h1&gt;</code>–<code>&lt;h3&gt;</code> — seven emoji+word regex families, known compound literals, plain-text action outliers, header <code>intentRules</code> drift.</td>
