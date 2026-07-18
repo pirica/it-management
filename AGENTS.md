@@ -847,6 +847,7 @@ Also fails on known compound literals (`View Ticket Details`, `Edit Ticket`, `Ne
 | Pagination `Previous` / `Next` | Word labels with emoji in `title` only |
 | Bulk `Select to Delete`, `Delete Selected`, `Clear Table` | Bulk toolbar contract |
 | Submit `Search` | Search row contract |
+| Search reset `Clear` on `<a>` or emoji-only `🔙` | Search row contract (flattened CRUD uses `🔙`; bespoke dashboards may use plain `Clear`) |
 | Descriptive non-actions | `View IP record`, `Reset View`, `Table View`, `Keep View`, etc. |
 | Same-line `itm-ui-action-exempt:` comment | Intentional escape hatch — use sparingly |
 

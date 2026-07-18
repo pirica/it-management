@@ -46,6 +46,22 @@ if (!function_exists('itm_check_table_actions')) {
     }
 }
 
+if (!function_exists('itm_ui_search_reset_control_detected')) {
+    /**
+     * Search-row reset control: plain "Clear" link (bespoke dashboards) or emoji-only 🔙 (flattened CRUD).
+     *
+     * Why: href values may embed PHP (equipment switch_id) — match visible link text, not attribute parsing.
+     */
+    function itm_ui_search_reset_control_detected(string $content): bool
+    {
+        if (preg_match('#>\s*Clear\s*</a>#i', $content) === 1) {
+            return true;
+        }
+
+        return preg_match('#>\s*🔙\s*</a>#u', $content) === 1;
+    }
+}
+
 if (!function_exists('itm_check_search')) {
     /**
      * @return array{status:string,details:string}
@@ -62,9 +78,10 @@ if (!function_exists('itm_check_search')) {
         $hasSearchInput = preg_match('#name\s*=\s*["\']search["\']#i', $listContent) === 1;
         $hasSearchQuery = stripos($listContent, 'searchConditions') !== false
             || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc|Like)|\$search\s*!==\s*[\'"][\s]*[\'"]#i', $listContent) === 1);
+        $hasSearchReset = itm_ui_search_reset_control_detected($listContent);
 
-        if ($hasSearchParam && $hasSearchInput && $hasSearchQuery) {
-            return ['status' => 'pass', 'details' => 'Search input and server-side query detected in ' . $sourceLabel];
+        if ($hasSearchParam && $hasSearchInput && $hasSearchQuery && $hasSearchReset) {
+            return ['status' => 'pass', 'details' => 'Search input, server-side query, and reset control (Clear or 🔙) detected in ' . $sourceLabel];
         }
 
         $missing = [];
@@ -76,6 +93,9 @@ if (!function_exists('itm_check_search')) {
         }
         if (!$hasSearchQuery) {
             $missing[] = 'server-side search conditions';
+        }
+        if (!$hasSearchReset) {
+            $missing[] = 'search reset control (plain Clear link or emoji-only 🔙)';
         }
 
         return [
