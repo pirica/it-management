@@ -413,6 +413,19 @@ $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) 
     return !(($GLOBALS['crud_table'] ?? '') === 'cable_colors' && $col['Field'] === 'company_id');
 }));
 
+// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+$uiColumns = array_values(array_filter($visibleFieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if (function_exists('itm_crud_is_delete_form_hidden_field') && itm_crud_is_delete_form_hidden_field($fieldName)) {
+        return false;
+    }
+
+    return true;
+}));
+
 // Why: Search uses the same visible column set as the list table.
 $displayFieldColumns = $visibleFieldColumns;
 
@@ -1051,7 +1064,12 @@ if (!isset($crud_title)) {
                     <?php if ($crud_table === 'cable_colors' && $hasCompany && $company_id > 0): ?>
                         <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
                     <?php endif; ?>
-                    <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
+                    <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');

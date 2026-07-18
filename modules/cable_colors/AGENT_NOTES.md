@@ -17,6 +17,7 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
 - **Color Preview**: The list and view pages should ideally show a small swatch of the hex color.
+- Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list/view keep `$visibleFieldColumns`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.

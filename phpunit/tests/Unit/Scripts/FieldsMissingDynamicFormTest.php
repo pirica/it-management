@@ -59,4 +59,18 @@ PHP;
             );
         }
     }
+
+    public function testCableColorsIndexDoesNotExposeAuditMetaDynamically(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $path = $root . '/modules/cable_colors/index.php';
+
+        foreach (['deleted_by', 'deleted_at', 'created_by', 'updated_by'] as $field) {
+            $this->assertFalse(
+                itm_fields_missing_dynamic_form_exposes_field($field, [$path]),
+                $field . ' should be hidden on create/edit forms'
+            );
+        }
+    }
 }
