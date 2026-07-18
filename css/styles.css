@@ -999,6 +999,27 @@ input[type="color"] {
     flex-wrap: wrap;
 }
 
+/* Why: list-header ➕ controls share one square footprint (left/right/left_right and ui-layout clones). */
+[data-itm-new-button-managed="server"] > a.btn.btn-primary,
+[data-itm-new-button-managed="server"] > a.itm-list-new-button,
+.itm-new-button-bar > a.btn.btn-primary,
+.itm-new-button-bar > a.btn.btn-primary.itm-new-btn-clone,
+.itm-new-button-bar > a.itm-list-new-button,
+a.itm-list-new-button.btn.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    padding: 0;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
 .itm-form-actions {
     display: flex;
     gap: 10px;

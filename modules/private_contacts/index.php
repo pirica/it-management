@@ -30,7 +30,7 @@ if (!isset($crud_title)) {
         <div class="content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>Private Contacts</h1>
-                <a href="create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Contact</a>
+                <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
             </div>
 
             <div class="card mb-4">

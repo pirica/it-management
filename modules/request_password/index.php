@@ -360,7 +360,7 @@ if (!isset($crud_title)) {
 
             <?php if ($crud_action == 'index' || $crud_action == 'list_all'): ?>
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <a href="create.php" class="btn btn-primary" title="Create">➕</a>
+                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     <h1>🔑 <?php echo sanitize($crud_title); ?></h1>
                     <span></span>
                 </div>

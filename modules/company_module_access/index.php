@@ -290,7 +290,7 @@ if (!isset($crud_title)) {
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a class="btn btn-sm" href="<?= $modulePathEsc ?>/index.php">Matrix</a>
                     <a class="btn btn-sm" href="<?= $modulePathEsc ?>/list_all.php">Registry List</a>
-                    <a class="btn btn-sm btn-primary" href="<?= $modulePathEsc ?>/create.php">➕</a>
+                    <a class="btn btn-primary itm-list-new-button" href="<?= $modulePathEsc ?>/create.php" title="Create">➕</a>
                 </div>
             </div>
 

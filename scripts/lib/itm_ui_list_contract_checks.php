@@ -902,6 +902,156 @@ if (!function_exists('itm_check_new_button_position')) {
     }
 }
 
+if (!function_exists('itm_ui_index_has_btn_sm_create_link')) {
+    function itm_ui_index_has_btn_sm_create_link(string $indexContent): bool
+    {
+        return preg_match(
+            '/<a\b(?=[^>]*\bhref\s*=\s*["\'][^"\']*create\.php[^"\']*["\'])(?=[^>]*\bbtn-sm\b)[^>]*>/i',
+            $indexContent
+        ) === 1;
+    }
+}
+
+if (!function_exists('itm_ui_index_canonical_list_new_button_pattern')) {
+    function itm_ui_index_canonical_list_new_button_pattern(): string
+    {
+        return '/<a\b(?=[^>]*\bhref\s*=\s*["\']create\.php(?:\?[^"\']*)?["\'])(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bbtn\b[^"\']*\bbtn-primary\b[^"\']*["\'])(?=[^>]*\btitle\s*=\s*["\']Create["\'])(?![^>]*\bbtn-sm\b)[^>]*>\s*➕\s*<\/a>/i';
+    }
+}
+
+if (!function_exists('itm_ui_index_collect_list_new_button_anchors')) {
+    /**
+     * @return list<string>
+     */
+    function itm_ui_index_collect_list_new_button_anchors(string $indexContent): array
+    {
+        if (!preg_match_all(
+            '/<a\b[^>]*\bhref\s*=\s*["\'][^"\']*create\.php[^"\']*["\'][^>]*>.*?<\/a>/is',
+            $indexContent,
+            $matches
+        )) {
+            return [];
+        }
+
+        return $matches[0];
+    }
+}
+
+if (!function_exists('itm_ui_index_anchor_is_emoji_only_list_new_button')) {
+    function itm_ui_index_anchor_is_emoji_only_list_new_button(string $anchorHtml): bool
+    {
+        if (!preg_match('/<a\b[^>]*>(.*?)<\/a>/is', $anchorHtml, $innerMatch)) {
+            return false;
+        }
+
+        $inner = trim(html_entity_decode(strip_tags($innerMatch[1]), ENT_QUOTES, 'UTF-8'));
+
+        return $inner === '➕';
+    }
+}
+
+if (!function_exists('itm_check_new_button_style')) {
+    /**
+     * List-header create controls: canonical btn-primary ➕ markup, title="Create", 40×40 CSS footprint.
+     *
+     * @return array{status:string,details:string}
+     */
+    function itm_check_new_button_style(string $indexContent, bool $hasCreateFile, string $createContent = ''): array
+    {
+        if (!$hasCreateFile) {
+            return ['status' => 'n/a', 'details' => 'Module has no create.php'];
+        }
+
+        if ($createContent !== '' && itm_ui_create_file_is_redirect_stub($createContent)) {
+            return [
+                'status' => 'n/a',
+                'details' => 'create.php redirects to index (read-only / immutable module — no create action expected)',
+            ];
+        }
+
+        $anchors = itm_ui_index_collect_list_new_button_anchors($indexContent);
+        if ($anchors === []) {
+            return ['status' => 'n/a', 'details' => 'No create.php link on index.php'];
+        }
+
+        if (itm_ui_index_has_btn_sm_create_link($indexContent)) {
+            return [
+                'status' => 'fail',
+                'details' => 'create.php uses btn-sm; list-header ➕ must use btn btn-primary (40×40 footprint from styles.css)',
+            ];
+        }
+
+        $canonicalPattern = itm_ui_index_canonical_list_new_button_pattern();
+        $emojiButtons = [];
+        foreach ($anchors as $anchorHtml) {
+            if (!itm_ui_index_anchor_is_emoji_only_list_new_button($anchorHtml)) {
+                continue;
+            }
+            $emojiButtons[] = $anchorHtml;
+            if (preg_match($canonicalPattern, $anchorHtml) !== 1) {
+                if (preg_match('/\bbtn-sm\b/i', $anchorHtml) === 1) {
+                    return [
+                        'status' => 'fail',
+                        'details' => 'List-header ➕ uses btn-sm; expected btn btn-primary title="Create"',
+                    ];
+                }
+                if (preg_match('/\btitle\s*=\s*["\']Create["\']/i', $anchorHtml) !== 1) {
+                    return [
+                        'status' => 'fail',
+                        'details' => 'List-header ➕ missing title="Create" (emoji-only visible label)',
+                    ];
+                }
+                if (preg_match('/\bclass\s*=\s*["\'][^"\']*\bbtn-primary\b/i', $anchorHtml) !== 1) {
+                    return [
+                        'status' => 'fail',
+                        'details' => 'List-header ➕ must use btn btn-primary',
+                    ];
+                }
+
+                return [
+                    'status' => 'fail',
+                    'details' => 'List-header ➕ markup is not canonical (href create.php, btn btn-primary, title="Create", visible ➕)',
+                ];
+            }
+        }
+
+        if ($emojiButtons === []) {
+            return [
+                'status' => 'n/a',
+                'details' => 'No emoji-only list-header create.php control on index.php',
+            ];
+        }
+
+        if (stripos($indexContent, 'data-itm-new-button-managed') !== false) {
+            $hasRowMinHeight = preg_match(
+                '/data-itm-new-button-managed[^>]*min-height:\s*40px/i',
+                $indexContent
+            ) === 1;
+            if (!$hasRowMinHeight) {
+                return [
+                    'status' => 'fail',
+                    'details' => 'Server-managed header row missing min-height:40px for uniform list ➕ controls',
+                ];
+            }
+        }
+
+        return [
+            'status' => 'pass',
+            'details' => 'List-header ➕ uses canonical btn btn-primary, title="Create", 40×40 footprint',
+        ];
+    }
+}
+
+if (!function_exists('itm_check_new_button_size')) {
+    /**
+     * @return array{status:string,details:string}
+     */
+    function itm_check_new_button_size(string $indexContent, bool $hasCreateFile, string $createContent = ''): array
+    {
+        return itm_check_new_button_style($indexContent, $hasCreateFile, $createContent);
+    }
+}
+
 if (!function_exists('itm_check_table_actions_layout')) {
     /**
      * MBQA ui_check / index table compliance: Actions column layout markers on th and td.

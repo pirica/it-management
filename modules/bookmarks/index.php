@@ -148,7 +148,7 @@ if (!isset($crud_title)) {
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h1>🔗<?php echo sanitize($crud_title); ?></h1>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <a href="create.php" class="btn btn-primary">➕</a>
+                <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
             </div>
         </div>
         <div class="bookmarks-layout">
