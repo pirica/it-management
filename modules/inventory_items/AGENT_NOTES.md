@@ -19,6 +19,7 @@ Manages inventory of consumables and spare parts. Tracks quantities on hand and 
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
+- **List header**: `data-itm-new-button-managed` row includes `min-height:40px` so Settings-gated ➕ controls match the uniform list-header footprint (`fields_missing` New button style gate).
 - **Stock Indicators**: Visual cues for low stock items.
 - **Active checkbox (create/edit via `create.php`)**: `itm-checkbox-control` + `itm-check-indicator` — unchecked box shows ❌, checked shows ✅; JS listener must live in its own `<script>` block after `select-add-option.js` (do not nest inside the external script tag).
 
