@@ -416,7 +416,7 @@ PHP;
                 'ui_mode' => 'bespoke_skip',
                 'ui_coverage_audit_skipped' => true,
                 'failures' => [
-                    ['code' => 'bespoke_page_ui_favicon', 'message' => 'ops_report bespoke gate: Favicon — missing'],
+                    ['code' => 'bespoke_page_ui_favicon', 'message' => 'ops_report bespoke gate: Favicon NOT OK — missing'],
                 ],
             ],
             [
@@ -429,6 +429,82 @@ PHP;
 
         $this->assertSame(0, itm_fields_missing_count_actionable_failures($moduleReports));
         $this->assertSame(1, itm_fields_missing_count_skip_gate_failures($moduleReports));
+    }
+
+    public function testBespokeGateFailMessagesUseNotOkSuffix(): void
+    {
+        $passes = [];
+        $failures = [];
+        itm_fields_missing_record_bespoke_ui_check_results(
+            'fixture_gate',
+            [
+                'List heading emoji' => [
+                    'status' => 'fail',
+                    'details' => 'List h1 missing emoji source',
+                ],
+            ],
+            $passes,
+            $failures
+        );
+
+        $this->assertSame([], $passes);
+        $this->assertCount(1, $failures);
+        $this->assertStringContainsString('List heading emoji NOT OK', $failures[0]['message'] ?? '');
+    }
+
+    public function testEchoModuleCheckLinesPrintsPassAndFailForBespokeGate(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_cli_output.php';
+        $moduleReport = [
+            'module' => 'vlans',
+            'ui_coverage_audit_skipped' => true,
+            'passes' => ['vlans bespoke gate: List heading emoji OK'],
+            'failures' => [
+                [
+                    'code' => 'bespoke_list_ui_bulk_cancel',
+                    'message' => 'vlans bespoke gate: Bulk cancel NOT OK — bulk-delete-selection.js missing in HTML',
+                ],
+            ],
+        ];
+
+        ob_start();
+        itm_fields_missing_echo_module_check_lines($moduleReport, "\n");
+        $output = (string) ob_get_clean();
+        $plain = preg_replace('/\x1b\[[0-9;]*m/', '', $output);
+
+        $this->assertStringContainsString('[SKIP][fail] vlans bespoke gate: Bulk cancel NOT OK', $plain);
+        $this->assertStringContainsString('[SKIP][pass] vlans bespoke gate: List heading emoji OK', $plain);
+        $this->assertLessThan(
+            strpos($plain, '[SKIP][pass] vlans bespoke gate: List heading emoji OK'),
+            strpos($plain, '[SKIP][fail] vlans bespoke gate: Bulk cancel NOT OK'),
+            'fail lines must print before pass lines'
+        );
+    }
+
+    public function testSkipGateFailureSummaryBlockListsBespokeFailures(): void
+    {
+        $report = [
+            'modules' => [
+                [
+                    'module' => 'companies',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        ['message' => 'companies bespoke gate: List heading emoji NOT OK — missing emoji source'],
+                    ],
+                ],
+                [
+                    'module' => 'manufacturers',
+                    'ui_coverage_audit_skipped' => false,
+                    'failures' => [
+                        ['message' => 'manufacturers audited UI column name: missing on view'],
+                    ],
+                ],
+            ],
+        ];
+
+        $block = itm_fields_missing_format_skip_gate_failure_summary_block($report, "\n");
+        $this->assertStringContainsString('List heading emoji NOT OK', $block);
+        $this->assertStringNotContainsString('manufacturers audited UI column', $block);
     }
 
     /**

@@ -971,7 +971,7 @@ Run `verify_employee_type_resignations.php` when changing `modules/employee_type
 
 Run `employee_fields_missing.php` or `fields_missing.php --module=employees` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
 
-Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print `[SKIP][pass]` / `[SKIP][fail]` gated lines (not a full UI pass).
+Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print gated `[SKIP][pass] … OK` / `[SKIP][fail] … NOT OK` lines per check (fail lines before pass lines per module; footer **Bespoke gate failure summary** repeats all gate failures — informational, not in Result total).
 
 **MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
 

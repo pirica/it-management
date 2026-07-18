@@ -124,6 +124,21 @@ if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
     echo $auditNl;
 }
 
+$skipGateSummary = itm_fields_missing_format_skip_gate_failure_summary_block($report, $auditNl);
+if ($skipGateSummary !== '') {
+    foreach (preg_split('/\r\n|\r|\n/', trim($skipGateSummary)) as $summaryLine) {
+        if ($summaryLine === '') {
+            continue;
+        }
+        if (strpos($summaryLine, '---') === 0 || strpos($summaryLine, 'Bespoke gate failure summary') === 0) {
+            echo itm_script_escape_browser_pre_text($summaryLine) . $auditNl;
+            continue;
+        }
+        itm_fields_missing_echo_status_line($summaryLine, $auditNl);
+    }
+    echo $auditNl;
+}
+
 echo itm_script_escape_browser_pre_text(itm_fields_missing_format_audit_summary($report, $auditNl));
 
 if ((int) $report['failure_count'] > 0) {
