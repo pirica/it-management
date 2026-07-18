@@ -825,9 +825,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="list_active_and_checkboxes.php" target="_blank" rel="nofollow noreferrer">list_active_and_checkboxes.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audit utility for active flags and checkbox inputs in module forms.</td>
-                    <td>CLI: <code>php scripts/list_active_and_checkboxes.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Audits <code>active</code> field UI for modules with an <code>active</code> DB column (resolved via <code>$crud_table</code>). Flags forbidden text inputs, non-compliant scaffold checkboxes, and status-driven modules with visible active checkboxes.</td>
+                    <td>Browser: HTML report (Admin). CLI: <code>php scripts/list_active_and_checkboxes.php</code> · JSON: <code>--json</code> · list compliant files: <code>--all</code> · exit <code>1</code> on violations</td>
                 </tr>
             </tbody>
         </table></div>
