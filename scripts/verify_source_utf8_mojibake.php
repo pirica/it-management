@@ -4,7 +4,6 @@
  *
  * Browser + CLI via script_cli_output.php.
  * CLI: php scripts/verify_source_utf8_mojibake.php [--path=modules/patches_updates]
- * Repair: php scripts/apply_utf8_mojibake_fix.php --apply (dry-run by default).
  */
 declare(strict_types=1);
 
@@ -52,8 +51,6 @@ foreach ($violations as $row) {
 }
 
 echo colorText('[FAIL] ' . count($violations) . ' violation(s) in ' . count($byFile) . ' file(s).', 'fail') . $nl;
-echo colorText('[INFO] Repair dry-run: php scripts/apply_utf8_mojibake_fix.php [--path=…]', 'info') . $nl;
-echo colorText('[INFO] Repair apply: php scripts/apply_utf8_mojibake_fix.php --apply [--path=…]', 'info') . $nl;
 echo $nl;
 echo 'Top offenders:' . $nl;
 arsort($byFile);
