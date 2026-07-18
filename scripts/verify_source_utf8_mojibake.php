@@ -51,6 +51,8 @@ foreach ($violations as $row) {
 }
 
 echo colorText('[FAIL] ' . count($violations) . ' violation(s) in ' . count($byFile) . ' file(s).', 'fail') . $nl;
+echo colorText('[INFO] Repair (selection): scripts/fix_source_utf8_mojibake.php', 'info') . $nl;
+echo colorText('[INFO] Repair (bulk): php scripts/fix_source_utf8_mojibake.php --apply', 'info') . $nl;
 echo $nl;
 echo 'Top offenders:' . $nl;
 arsort($byFile);

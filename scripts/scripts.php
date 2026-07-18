@@ -913,6 +913,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: plain-text report. CLI: <code>php scripts/verify_source_utf8_mojibake.php</code> — exit <code>0</code> when 0 violations. Run after encoding or emoji copy/paste changes.</td>
                 </tr>
                 <tr>
+                    <td><a href="fix_source_utf8_mojibake.php" target="_blank" rel="nofollow noreferrer">fix_source_utf8_mojibake.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Repair known mojibake literals in tracked source. Browser <strong>selection mode</strong> (Select to Fix → check files → Preview / Fix Selected; Admin for apply). CLI: <code>--path=</code>, <code>--files=</code>, <code>--apply</code>. Default dry-run.</td>
+                    <td>Browser: <a href="fix_source_utf8_mojibake.php">selection UI</a>. CLI: <code>php scripts/fix_source_utf8_mojibake.php --files=modules/foo/index.php --apply</code>. Bulk all files: <code>apply_utf8_mojibake_fix.php --apply</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="check_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">check_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: NO MIXED gate on <code>&lt;a&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;h1&gt;</code>–<code>&lt;h3&gt;</code> — seven emoji+word regex families, known compound literals, plain-text action outliers, header <code>intentRules</code> drift.</td>

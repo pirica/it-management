@@ -495,7 +495,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, Admin gate for browser apply only, `itm_apply_script_echo_list()` |
 | `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions, optional Admin browser gate |
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
-| `scripts/lib/itm_mojibake_audit.php` | UTF-8 / mojibake scan helpers for `verify_source_utf8_mojibake.php` |
+| `scripts/lib/itm_mojibake_audit.php` | UTF-8 / mojibake scan + repair helpers for `verify_source_utf8_mojibake.php` and `fix_source_utf8_mojibake.php` |
 | `scripts/lib/itm_script_regression_entry.php` | Browser + CLI regressions: `ITM_CLI_SCRIPT` on CLI only, Admin gate in browser, `config.php` at file scope |
 
 #### Equipment-type façade modules (`modules/is_*`) and clear-table tests
@@ -1021,7 +1021,11 @@ bash scripts/smoke_test.sh
 ```bash
 php scripts/verify_source_utf8_mojibake.php
 php scripts/verify_source_utf8_mojibake.php --path=modules/patches_updates
+php scripts/fix_source_utf8_mojibake.php --path=modules/patches_updates
+php scripts/fix_source_utf8_mojibake.php --files=modules/patches_updates/create.php --apply
 ```
+
+Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php` (Select to Fix → check files → Preview Selected / Fix Selected). Bulk all-files repair: `scripts/apply_utf8_mojibake_fix.php` with `--apply` / `?apply=1`.
 
 **NO MIXED patterns** (hard fail — emoji immediately followed by action word on interactive controls/headings):
 

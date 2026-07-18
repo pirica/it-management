@@ -53,6 +53,8 @@ if (!function_exists('itm_mojibake_skip_relative_files')) {
         return [
             'scripts/lib/itm_mojibake_audit.php',
             'scripts/verify_source_utf8_mojibake.php',
+            'scripts/fix_source_utf8_mojibake.php',
+            'scripts/apply_utf8_mojibake_fix.php',
             'AGENTS.md',
         ];
     }
@@ -237,6 +239,171 @@ if (!function_exists('itm_mojibake_scan_repository')) {
         return [
             'files_scanned' => count($files),
             'violations' => $violations,
+        ];
+    }
+}
+
+if (!function_exists('itm_mojibake_repair_content')) {
+    /**
+     * Replace known mojibake literals with intended UTF-8 and strip a leading BOM.
+     *
+     * @return array{content:string,replacement_count:int,stripped_bom:bool}
+     */
+    function itm_mojibake_repair_content(string $content): array
+    {
+        $replacementCount = 0;
+        $strippedBom = false;
+
+        if (strncmp($content, "\xEF\xBB\xBF", 3) === 0) {
+            $content = substr($content, 3);
+            $strippedBom = true;
+            $replacementCount++;
+        }
+
+        foreach (itm_mojibake_known_signatures() as $signature) {
+            $needle = (string)$signature['needle'];
+            if ($needle === '') {
+                continue;
+            }
+            $count = 0;
+            $content = str_replace($needle, (string)$signature['fix'], $content, $count);
+            if ($count > 0) {
+                $replacementCount += $count;
+            }
+        }
+
+        return [
+            'content' => $content,
+            'replacement_count' => $replacementCount,
+            'stripped_bom' => $strippedBom,
+        ];
+    }
+}
+
+if (!function_exists('itm_mojibake_normalize_repo_relative_path')) {
+    function itm_mojibake_normalize_repo_relative_path(string $path): string
+    {
+        return trim(str_replace('\\', '/', $path), '/');
+    }
+}
+
+if (!function_exists('itm_mojibake_collect_repair_candidates')) {
+    /**
+     * @return array<int, array{file:string,replacement_count:int,violation_count:int}>
+     */
+    function itm_mojibake_collect_repair_candidates(string $repoRoot, ?array $roots = null): array
+    {
+        $scan = itm_mojibake_scan_repository($repoRoot, $roots);
+        $violations = is_array($scan['violations'] ?? null) ? $scan['violations'] : [];
+        $violationsByFile = [];
+        foreach ($violations as $row) {
+            $file = itm_mojibake_normalize_repo_relative_path((string)($row['file'] ?? ''));
+            if ($file === '') {
+                continue;
+            }
+            $violationsByFile[$file] = ($violationsByFile[$file] ?? 0) + 1;
+        }
+
+        $files = itm_mojibake_collect_files(
+            $repoRoot,
+            $roots ?? itm_mojibake_default_scan_roots(),
+            itm_mojibake_default_extensions(),
+            itm_mojibake_exclude_path_fragments()
+        );
+
+        $candidates = [];
+        foreach ($files as $absolutePath) {
+            $rel = itm_mojibake_normalize_repo_relative_path(
+                str_replace(rtrim($repoRoot, '/\\') . DIRECTORY_SEPARATOR, '', $absolutePath)
+            );
+            if ($rel === '' || in_array($rel, itm_mojibake_skip_relative_files(), true)) {
+                continue;
+            }
+
+            $original = file_get_contents($absolutePath);
+            if ($original === false) {
+                continue;
+            }
+
+            $repaired = itm_mojibake_repair_content($original);
+            $replacementCount = (int)($repaired['replacement_count'] ?? 0);
+            if ($repaired['content'] === $original) {
+                continue;
+            }
+
+            $candidates[] = [
+                'file' => $rel,
+                'replacement_count' => $replacementCount,
+                'violation_count' => (int)($violationsByFile[$rel] ?? 0),
+            ];
+        }
+
+        usort($candidates, static function (array $a, array $b): int {
+            $cmp = ($b['replacement_count'] ?? 0) <=> ($a['replacement_count'] ?? 0);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return strcmp((string)($a['file'] ?? ''), (string)($b['file'] ?? ''));
+        });
+
+        return $candidates;
+    }
+}
+
+if (!function_exists('itm_mojibake_repair_repo_files')) {
+    /**
+     * @param string[] $relativeFiles Repo-relative paths
+     * @return array{changed:array<int,string>,skipped:array<int,string>,preview:array<int,string>}
+     */
+    function itm_mojibake_repair_repo_files(string $repoRoot, array $relativeFiles, bool $apply): array
+    {
+        $repoRoot = rtrim($repoRoot, '/\\') . DIRECTORY_SEPARATOR;
+        $changed = [];
+        $skipped = [];
+        $preview = [];
+
+        foreach ($relativeFiles as $relativeFile) {
+            $rel = itm_mojibake_normalize_repo_relative_path($relativeFile);
+            if ($rel === '' || in_array($rel, itm_mojibake_skip_relative_files(), true)) {
+                $skipped[] = $rel . ' (exempt)';
+                continue;
+            }
+
+            $absolutePath = $repoRoot . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+            if (!is_file($absolutePath)) {
+                $skipped[] = $rel . ' (missing)';
+                continue;
+            }
+
+            $original = file_get_contents($absolutePath);
+            if ($original === false) {
+                $skipped[] = $rel . ' (unreadable)';
+                continue;
+            }
+
+            $repaired = itm_mojibake_repair_content($original);
+            $hits = (int)($repaired['replacement_count'] ?? 0);
+            if ($repaired['content'] === $original) {
+                continue;
+            }
+
+            $label = $rel . ' (' . $hits . ' replacement(s))';
+            if ($apply) {
+                if (file_put_contents($absolutePath, $repaired['content']) === false) {
+                    $skipped[] = $rel . ' (write failed)';
+                    continue;
+                }
+                $changed[] = $label;
+            } else {
+                $preview[] = $label;
+            }
+        }
+
+        return [
+            'changed' => $changed,
+            'skipped' => $skipped,
+            'preview' => $preview,
         ];
     }
 }
