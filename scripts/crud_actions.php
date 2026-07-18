@@ -44,6 +44,7 @@ itm_script_output_begin('CRUD Action Mapper');
 $entryFiles = ['index.php', 'create.php', 'edit.php', 'view.php', 'delete.php', 'list_all.php'];
 $rows = [];
 $skipModuleCount = 0;
+$naModuleCount = 0;
 
 foreach ($moduleDirs as $moduleName) {
     $modulePath = $modulesPath . DIRECTORY_SEPARATOR . $moduleName;
@@ -96,6 +97,7 @@ foreach ($moduleDirs as $moduleName) {
             $statusClass = 'na';
             $statusLabel = 'N/A';
             $mappingText = '(not set)';
+            $naModuleCount++;
         }
 
         $moduleRows[] = [
@@ -148,9 +150,9 @@ echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
 echo '<h1>CRUD Action Mapper</h1>';
-echo '<p>Modules scanned: <strong>' . count($moduleDirs) . '</strong>'
-    . ' | Rows: <strong>' . count($rows) . '</strong>'
-    . ' | Skip (no <code>$crud_action</code>): <strong>' . (int)$skipModuleCount . '</strong></p>';
+echo '<p><strong>' . count($moduleDirs) . '</strong> modules'
+    . ' · Skip <strong>' . (int)$skipModuleCount . '</strong>'
+    . ' · N/A <strong>' . (int)$naModuleCount . '</strong></p>';
 echo '<p>Skip rules: non-standard CRUD (<code>index.php</code> without <code>$uiColumns</code> + <code>cr_manageable_columns()</code>), including <code>is_*</code> shortcuts (all entry files).</p>';
 echo '<table>';
 echo '<thead><tr><th>#</th><th>Module</th><th>Entry file</th><th>CRUD Mapping</th><th>Status</th><th>Sidebar Link</th></tr></thead>';
