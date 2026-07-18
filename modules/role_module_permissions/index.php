@@ -403,6 +403,12 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
         return false;
     }
+    if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if (function_exists('itm_crud_is_delete_form_hidden_field') && itm_crud_is_delete_form_hidden_field($fieldName)) {
+        return false;
+    }
     if ($fieldName !== 'company_id') {
         return true;
     }
