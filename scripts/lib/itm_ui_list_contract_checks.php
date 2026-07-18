@@ -598,11 +598,23 @@ if (!function_exists('itm_check_list_heading_layout')) {
         ) === 1;
         $usesDynamicHeading = stripos($indexContent, '$moduleListHeading') !== false
             || stripos($indexContent, 'itm_sidebar_label_for_module') !== false;
+        $readsNewButtonSetting = stripos($indexContent, '$newButtonPosition') !== false
+            && stripos($indexContent, 'new_button_position') !== false;
+        $gatesLeftCreate = preg_match(
+            '/in_array\s*\(\s*\$newButtonPosition\s*,\s*\[\s*[\'"]left[\'"]\s*,\s*[\'"]left_right[\'"]\s*\]/i',
+            $indexContent
+        ) === 1;
+        $gatesRightCreate = preg_match(
+            '/in_array\s*\(\s*\$newButtonPosition\s*,\s*\[\s*[\'"]right[\'"]\s*,\s*[\'"]left_right[\'"]\s*\]/i',
+            $indexContent
+        ) === 1;
 
-        if ($hasRelativeWrapper && $hasCenteredHeading && $usesDynamicHeading) {
+        if ($hasRelativeWrapper && $hasCenteredHeading && $usesDynamicHeading
+            && $readsNewButtonSetting && $gatesLeftCreate && $gatesRightCreate
+        ) {
             return [
                 'status' => 'pass',
-                'details' => 'List h1 centered with $moduleListHeading / itm_sidebar_label_for_module()',
+                'details' => 'List h1 centered; new_button_position gates left/right create controls',
             ];
         }
 
@@ -616,10 +628,61 @@ if (!function_exists('itm_check_list_heading_layout')) {
         if (!$usesDynamicHeading) {
             $missing[] = '$moduleListHeading from itm_sidebar_label_for_module()';
         }
+        if (!$readsNewButtonSetting) {
+            $missing[] = '$newButtonPosition from ui_configuration new_button_position';
+        }
+        if (!$gatesLeftCreate || !$gatesRightCreate) {
+            $missing[] = 'left/right create buttons gated by $newButtonPosition (Settings)';
+        }
 
         return [
             'status' => 'fail',
             'details' => 'List header layout mismatch: ' . implode(', ', $missing),
+        ];
+    }
+}
+
+if (!function_exists('itm_check_list_heading_emoji')) {
+    /**
+     * Index list h1 must resolve sidebar label/icon so Settings emoji overrides apply.
+     *
+     * @return array{status:string,details:string}
+     */
+    function itm_check_list_heading_emoji(string $indexContent): array
+    {
+        if (stripos($indexContent, 'data-itm-new-button-managed') === false) {
+            return ['status' => 'n/a', 'details' => 'No server-managed list header row'];
+        }
+
+        $listH1UsesModuleHeading = preg_match(
+            '/<h1\b[^>]*style\s*=\s*["\'][^"\']*position\s*:\s*absolute[^"\']*left\s*:\s*50%[^"\']*transform\s*:\s*translateX\s*\(\s*-50%\s*\)[^"\']*["\'][^>]*>\s*<\?php\s+echo\s+sanitize\s*\(\s*\$moduleListHeading\s*\)/i',
+            $indexContent
+        ) === 1;
+
+        if (!$listH1UsesModuleHeading) {
+            return [
+                'status' => 'fail',
+                'details' => 'List h1 must echo sanitize($moduleListHeading) in the centered index header row',
+            ];
+        }
+
+        $usesSidebarLabel = stripos($indexContent, 'itm_sidebar_label_for_module(') !== false;
+        $usesIconResolver = stripos($indexContent, 'itm_resolve_module_sidebar_icon(') !== false;
+        $hasLiteralEmojiAssignment = preg_match(
+            '/\$moduleListHeading\s*=[^;]*[\'"][^\'"\r\n]*\p{Extended_Pictographic}/u',
+            $indexContent
+        ) === 1;
+
+        if ($usesSidebarLabel || $usesIconResolver || $hasLiteralEmojiAssignment) {
+            return [
+                'status' => 'pass',
+                'details' => 'List h1 uses Settings sidebar label/icon (emoji from catalog or overrides)',
+            ];
+        }
+
+        return [
+            'status' => 'fail',
+            'details' => 'List h1 missing emoji source — assign $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()',
         ];
     }
 }
