@@ -941,7 +941,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | `php scripts/benchmark_user_config.php` | Benchmark for redundant alerts/events queries removed from `user-config.php`: legacy 4-query loop vs production full batch + `itm_user_config_extract_alerts_events_counts()`; exits non-zero on mismatch or if extract is not faster than legacy loop. |
 | `php scripts/idf_device_port_sort_test.php` | Regression test for IDF device port list sorting (copper before fiber). |
 | `php scripts/crud_tables.php` | Lists each module’s first <code>$crud_table</code> line in <code>index.php</code>. Bespoke/exception modules without that assignment are <strong>Skip</strong> (see <code>docs/list_bespoke_UI.txt</code> + <code>scripts/data/crud_tables_skip_modules.txt</code>) — not Missing. No database table checks. |
-| `php scripts/crud_titles.php` | Audits module-to-title mapping by reading each module's index.php and printing the first $crud_title assignment. |
+| `php scripts/crud_titles.php` | Lists each module’s first <code>$crud_title</code> line in <code>index.php</code>. <code>is_*</code> shortcuts and bespoke modules without it are <strong>Skip</strong> (see <code>itm_crud_titles_should_skip_module()</code>).
 | `php scripts/crud_actions.php` | Audits module-to-action mapping by reading each module entry file (`index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) for `$crud_action` assignments. |
 | `php scripts/test_visualizer_v2.php` | Visual test for Equipment Port Visualizer (IDF rack/device dots). |
 

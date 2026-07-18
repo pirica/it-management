@@ -1,6 +1,6 @@
 <?php
 /**
- * Shared helpers for crud_tables.php — module slug inventories (no database lookups).
+ * Shared helpers for crud_tables.php and crud_titles.php — module slug inventories (no database lookups).
  */
 
 if (!function_exists('itm_crud_tables_load_slug_list_file')) {
@@ -69,6 +69,53 @@ if (!function_exists('itm_crud_tables_detect_assignment')) {
 
         foreach ($lines as $lineNumber => $lineText) {
             if (preg_match('/\$crud_table\s*=/', $lineText)) {
+                return [
+                    'line' => $lineNumber + 1,
+                    'text' => trim($lineText),
+                ];
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_crud_mapper_module_matches_is_prefix')) {
+    function itm_crud_mapper_module_matches_is_prefix(string $moduleSlug): bool
+    {
+        return (bool)preg_match('/^is_/', $moduleSlug);
+    }
+}
+
+if (!function_exists('itm_crud_titles_should_skip_module')) {
+    /**
+     * Modules that intentionally omit $crud_title in index.php.
+     */
+    function itm_crud_titles_should_skip_module(string $moduleSlug, ?string $rootPath = null): bool
+    {
+        if (itm_crud_mapper_module_matches_is_prefix($moduleSlug)) {
+            return true;
+        }
+
+        $skipModules = array_fill_keys(itm_crud_tables_load_skip_module_slugs($rootPath), true);
+
+        return isset($skipModules[$moduleSlug]);
+    }
+}
+
+if (!function_exists('itm_crud_titles_detect_assignment')) {
+    /**
+     * @return array{line:int,text:string}|null
+     */
+    function itm_crud_titles_detect_assignment(string $filePath): ?array
+    {
+        $lines = @file($filePath);
+        if (!is_array($lines)) {
+            return null;
+        }
+
+        foreach ($lines as $lineNumber => $lineText) {
+            if (preg_match('/\$crud_title\s*=/', $lineText)) {
                 return [
                     'line' => $lineNumber + 1,
                     'text' => trim($lineText),

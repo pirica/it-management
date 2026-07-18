@@ -4,16 +4,22 @@
  *
  * Why: quickly audits module-to-title mapping by reading each module's index.php
  * and printing the first $crud_title assignment (if present) with a sidebar link.
+ * Equipment shortcut modules (is_*) and bespoke slugs without $crud_title are Skip — not Missing.
  *
  * Usage:
  *   php scripts/crud_titles.php > crud_titles.html
  */
 
+declare(strict_types=1);
+
 $rootPath = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 $modulesPath = $rootPath . 'modules';
 
 if (!is_dir($modulesPath)) {
-    fwrite(STDERR, "Modules directory not found: {$modulesPath}\n");
+    $message = "Modules directory not found: {$modulesPath}\n";
+    if (PHP_SAPI === 'cli' && defined('STDERR')) {
+        fwrite(STDERR, $message);
+    }
     exit(1);
 }
 
@@ -29,35 +35,46 @@ if (PHP_SAPI === 'cli') {
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_crud_tables_audit.php';
 
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 itm_script_output_begin('CRUD Title Mapper');
 
 $rows = [];
+$counts = ['found' => 0, 'skip' => 0, 'missing' => 0];
 
 foreach ($moduleDirs as $moduleName) {
     $indexPath = $modulesPath . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'index.php';
-    $crudLineNumber = null;
-    $crudLineText = null;
+    $assignment = is_file($indexPath) ? itm_crud_titles_detect_assignment($indexPath) : null;
 
-    if (is_file($indexPath)) {
-        $lines = @file($indexPath);
-        if (is_array($lines)) {
-            foreach ($lines as $lineNumber => $lineText) {
-                if (preg_match('/\$crud_title\s*=/', $lineText)) {
-                    $crudLineNumber = $lineNumber + 1;
-                    $crudLineText = trim($lineText);
-                    break;
-                }
-            }
+    $statusClass = 'missing';
+    $statusLabel = 'Missing';
+    $mappingText = '(not set in index.php)';
+
+    if ($assignment !== null) {
+        $mappingText = 'line ' . (int)$assignment['line'] . ': ' . $assignment['text'];
+        $statusClass = 'ok';
+        $statusLabel = 'Found';
+        $counts['found']++;
+    } elseif (itm_crud_titles_should_skip_module($moduleName, $rootPath)) {
+        $statusClass = 'skip';
+        $statusLabel = 'Skip';
+        if (itm_crud_mapper_module_matches_is_prefix($moduleName)) {
+            $mappingText = '(is_* equipment shortcut — no $crud_title expected)';
+        } else {
+            $mappingText = '(bespoke / exception — no $crud_title expected)';
         }
+        $counts['skip']++;
+    } else {
+        $counts['missing']++;
     }
 
     $rows[] = [
         'module' => $moduleName,
-        'crud_line_number' => $crudLineNumber,
-        'crud_line_text' => $crudLineText,
+        'mapping_text' => $mappingText,
+        'status_class' => $statusClass,
+        'status_label' => $statusLabel,
         'sidebar_link' => 'modules/' . $moduleName . '/',
     ];
 }
@@ -78,6 +95,7 @@ echo 'thead th{background:#f6f8fa;text-align:left;padding:10px;border-bottom:1px
 echo 'tbody td{padding:10px;border-top:1px solid #d8dee4;vertical-align:top;white-space:nowrap;}';
 echo 'tbody tr:nth-child(even){background:#f8fafc;}';
 echo '.ok{color:#116329;font-weight:700;}';
+echo '.skip{color:#57606a;font-weight:700;}';
 echo '.missing{color:#cf222e;font-weight:700;display:inline-block;}';
 echo 'code{background:#f6f8fa;padding:2px 6px;border-radius:4px;}';
 echo 'a{color:#0969da;text-decoration:none;}';
@@ -87,29 +105,26 @@ echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
 echo '<h1>CRUD Title Mapper</h1>';
-echo '<p>Total modules scanned: <strong>' . count($rows) . '</strong></p>';
+echo '<p>Modules scanned: <strong>' . count($rows) . '</strong>'
+    . ' · Found: <strong>' . (int)$counts['found'] . '</strong>'
+    . ' · Skip: <strong>' . (int)$counts['skip'] . '</strong>'
+    . ' · Missing: <strong>' . (int)$counts['missing'] . '</strong></p>';
+echo '<p>Skip rules: <code>is_*</code> equipment shortcuts + <code>docs/list_bespoke_UI.txt</code> (index.php <code>$crud_title</code> only).</p>';
 echo '<table>';
 echo '<thead><tr><th>#</th><th>Module</th><th>CRUD Mapping</th><th>Status</th><th>Sidebar Link</th></tr></thead>';
 echo '<tbody>';
 
 foreach ($rows as $index => $row) {
-    $mappingText = '(not set in index.php)';
-    $statusClass = 'missing';
-    $statusLabel = 'Missing';
-
-    if ($row['crud_line_number'] !== null && $row['crud_line_text'] !== null) {
-        $mappingText = 'line ' . (int) $row['crud_line_number'] . ': ' . htmlspecialchars($row['crud_line_text'], ENT_QUOTES, 'UTF-8');
-        $statusClass = 'ok';
-        $statusLabel = 'Found';
-    }
-
     $moduleEscaped = htmlspecialchars($row['module'], ENT_QUOTES, 'UTF-8');
     $sidebarEscaped = htmlspecialchars($row['sidebar_link'], ENT_QUOTES, 'UTF-8');
+    $mappingEscaped = htmlspecialchars($row['mapping_text'], ENT_QUOTES, 'UTF-8');
+    $statusClass = htmlspecialchars($row['status_class'], ENT_QUOTES, 'UTF-8');
+    $statusLabel = htmlspecialchars($row['status_label'], ENT_QUOTES, 'UTF-8');
 
     echo '<tr>';
     echo '<td>' . ($index + 1) . '</td>';
     echo '<td><strong>' . $moduleEscaped . '</strong></td>';
-    echo '<td><code>' . $mappingText . '</code></td>';
+    echo '<td><code>' . $mappingEscaped . '</code></td>';
     echo '<td><span class="' . $statusClass . '">' . $statusLabel . '</span></td>';
     $moduleHref = '../' . $sidebarEscaped;
     echo '<td>' . itm_script_external_link_html($moduleHref, $sidebarEscaped) . '</td>';
