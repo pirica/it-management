@@ -216,21 +216,26 @@ if (!isset($crud_title)) {
                         <div class="form-group"><label>VAT</label><input type="text" name="vat" value="<?php echo htmlspecialchars((string)($data['vat'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
                     <div class="form-group"><label>Comments</label><textarea name="comments" rows="4"><?php echo htmlspecialchars((string)($data['comments'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea></div>
-                    <div class="form-group"><label class="itm-checkbox-control">
-                            <input type="checkbox" name="active" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>>
+                    <div class="form-group">
+                        <label class="itm-checkbox-control">
+                            <input type="checkbox" name="active" value="1" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>>
                             <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['active'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
-                        </label></div>
+                        </label>
+                    </div>
                     <div style="display:flex;gap:10px;"><button class="btn btn-primary" type="submit">💾</button><a href="index.php" class="btn">🔙</a></div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-<script src="../../js/theme.js">
+<script src="../../js/theme.js"></script>
+<script>
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
-    if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
+    if (indicator) {
+        indicator.textContent = event.target.checked ? '✅' : '❌';
+    }
 });
 </script>
 </body>

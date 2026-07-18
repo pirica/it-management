@@ -15,7 +15,7 @@ Manages the top-level tenant entities ("Companies") in the multi-tenant system. 
 - **Active Status**: Inactivating a company should theoretically block access to its data, though implementation depends on session logic.
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
+- **Active checkbox** (`create.php`, used by `edit.php` wrapper): `itm-checkbox-control` + `itm-check-indicator` (✅/❌). Change listener lives in its own `<script>` block after closed `<script src="../../js/theme.js"></script>` — do not nest listener inside the external script tag.
 - **Dashboard Integration**: Selected company is stored in `$_SESSION['company_id']`.
 
 ## 6. API Actions (If Applicable)
