@@ -942,7 +942,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | `php scripts/idf_device_port_sort_test.php` | Regression test for IDF device port list sorting (copper before fiber). |
 | `php scripts/crud_tables.php` | Audits module-to-table mapping by reading each module's index.php. |
 | `php scripts/crud_titles.php` | Audits module-to-title mapping by reading each module's index.php and printing the first $crud_title assignment. |
-| `php scripts/crud_actions.php` | Audits module-to-action mapping by reading each module's index.php and printing the first $crud_action assignment. |
+| `php scripts/crud_actions.php` | Audits module-to-action mapping by reading each module entry file (`index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) for `$crud_action` assignments. |
 | `php scripts/test_visualizer_v2.php` | Visual test for Equipment Port Visualizer (IDF rack/device dots). |
 
 Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
