@@ -34,7 +34,8 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - **add_sample_data** (POST index) — seeds empty tenant from `database.sql` when table empty.
 
 ## 7. File Structure
-- `index.php` — main planner UI.
+- `index.php` — main planner UI; `$crud_action = $crud_action ?? 'index'` so wrappers (`create.php`, `edit.php`, etc.) keep their action.
+- `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — set `$crud_action` then `require index.php`.
 - `includes/bootstrap.php`, `functions.php`, `handlers.php`, `partials/render.php`.
 
 ## 8. Multi-Tenant Rules
