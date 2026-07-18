@@ -17,6 +17,7 @@ employee_companies
 employee_system_access
 expiring
 explorer
+floor_plans
 idfs
 import
 inventory_items
@@ -43,6 +44,9 @@ rack_planner
 reports
 request_password
 resignations
+role_assignment_rights
+role_hierarchy
+role_module_permissions
 roles_permissions
 settings
 switch_ports
