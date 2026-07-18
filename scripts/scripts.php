@@ -634,8 +634,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="delete_clone_employee.php" target="_blank" rel="nofollow noreferrer">delete_clone_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Reverses an employee clone by deleting the employee and their related data.</td>
-                    <td>Open <a href="delete_clone_employee.php">delete_clone_employee.php</a> in the browser. <strong>DANGER: Destructive.</strong></td>
+                    <td>Deletes a cloned employee and related data. <strong>Default dry-run</strong>; <code>apply=1</code> is destructive (Admin).</td>
+                    <td>Open <a href="delete_clone_employee.php">delete_clone_employee.php</a> — preview with employee id, then <code>?id=N&amp;apply=1</code> only when needed.</td>
                 </tr>
             </tbody>
         </table></div>
