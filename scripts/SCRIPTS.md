@@ -273,7 +273,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | Script | Purpose |
 |--------|---------|
 | `php scripts/generate_FK_employee_id.php` | Detects missing employee_id FKs and suggests ALTER TABLE SQL. |
-| `php scripts/generate_reassignment.php` | Generates UPDATE SQL to reassign data from an old employee to a new one before deletion. |
+| `php scripts/generate_reassignment.php --employee-id=N [--to=M]` | Reassignment **plan** before employee delete: row counts, skip reasons, optional related-column SQL, inbound FK debug. **Default dry-run** + **rows-only filter** (`all_tables=1` to show zeros). `--apply` runs `employee_id` UPDATEs when `--to` is set. Browser: Admin form with company + employee id filter. |
 | `php scripts/transfer_data_from_employee.php --id=N` | Clones an employee and copies related rows to the new record. **Browser + CLI dry-run default** (`?id=N` or form preview); `--apply` / `?apply=1` / form **Apply copy** (Admin) commits the clone and copies all `employee_id` tables (excludes `audit_logs`, `attempts`). |
 | `php scripts/delete_clone_employee.php` | Reverses an employee clone by deleting the employee and their related data. |
 | `php scripts/verify_clear_table_fix.php` | Verification — employees clear-table soft-delete + bookmark detach. |
