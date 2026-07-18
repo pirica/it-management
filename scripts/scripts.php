@@ -387,45 +387,45 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">identify_modules.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Scans the <code>modules/</code> directory to identify and categorize all modules into standard CRUD and bespoke types, saving metadata to <code>scripts/modules_metadata.json</code>.</td>
-                    <td>CLI: <code>php scripts/identify_modules.php > scripts/modules_metadata.json</code></td>
+                    <td>Browser: <a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">JSON preview</a> (Admin) · <a href="identify_modules.php?save=1" target="_blank" rel="nofollow noreferrer">?save=1</a> writes <code>modules_metadata.json</code>. CLI: <code>php scripts/identify_modules.php &gt; scripts/modules_metadata.json</code></td>
                 </tr>
                 <tr>
                     <td><a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">generate_tests.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Automatically generates PHPUnit integration tests for all standard CRUD modules identified in the metadata. Creates test files in <code>phpunit/tests/Unit/Modules/</code>.</td>
-                    <td>CLI: <code>php scripts/generate_tests.php</code></td>
+                    <td>Browser: <a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">dry-run</a> (Admin) · <a href="generate_tests.php?apply=1" target="_blank" rel="nofollow noreferrer">?apply=1</a> writes tests. CLI: <code>php scripts/generate_tests.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="test_import_user_samples.php" target="_blank" rel="nofollow noreferrer">test_import_user_samples.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Verifies the JSON table import logic against specific user-provided sample data for the employees module.</td>
-                    <td>CLI: <code>php scripts/test_import_user_samples.php</code></td>
+                    <td>Browser: <a href="test_import_user_samples.php" target="_blank" rel="nofollow noreferrer">run</a> (Admin). CLI: <code>php scripts/test_import_user_samples.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="test_ajax.php" target="_blank" rel="nofollow noreferrer">test_ajax.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>CLI harness that mocks session/POST for Notes <code>quick_add</code> AJAX.</td>
-                    <td>CLI: <code>php scripts/test_ajax.php &lt;PHPSESSID&gt; &lt;title&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
+                    <td>Browser: <a href="test_ajax.php" target="_blank" rel="nofollow noreferrer">form</a> (Admin). CLI: <code>php scripts/test_ajax.php &lt;PHPSESSID&gt; &lt;title&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="test_edit.php" target="_blank" rel="nofollow noreferrer">test_edit.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>CLI harness that mocks session/POST for Notes edit.</td>
-                    <td>CLI: <code>php scripts/test_edit.php &lt;PHPSESSID&gt; &lt;title&gt; &lt;note_id&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
+                    <td>Browser: <a href="test_edit.php" target="_blank" rel="nofollow noreferrer">form</a> (Admin). CLI: <code>php scripts/test_edit.php &lt;PHPSESSID&gt; &lt;title&gt; &lt;note_id&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="test_session.php" target="_blank" rel="nofollow noreferrer">test_session.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Verifies session handling and persistence.</td>
-                    <td>CLI: <code>php scripts/test_session.php</code></td>
+                    <td>Browser: <a href="test_session.php" target="_blank" rel="nofollow noreferrer">dump current session</a> (Admin). CLI: <code>php scripts/test_session.php</code> or <code>php scripts/test_session.php &lt;PHPSESSID&gt;</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_api_coverage.php" target="_blank" rel="nofollow noreferrer">verify_api_coverage.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Audits import endpoints, bespoke paths, and non-index module JSON handlers (PHP <code>Content-Type: application/json</code> headers only; matches <code>scripts/api.php</code> project + Explorer + IDF api catalogs).</td>
-                    <td>CLI: <code>php scripts/verify_api_coverage.php</code></td>
+                    <td>Browser: <a href="verify_api_coverage.php" target="_blank" rel="nofollow noreferrer">run</a> (Admin). CLI: <code>php scripts/verify_api_coverage.php</code></td>
                 </tr>
             </tbody>
         </table></div>

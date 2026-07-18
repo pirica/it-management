@@ -1,22 +1,29 @@
 <?php
 /**
- * CLI-only: automatically generate PHPUnit integration tests for standard CRUD modules.
+ * Generate PHPUnit integration tests for standard CRUD modules (from modules_metadata.json).
+ *
+ * Browser: dry-run preview (Admin). Writes with ?apply=1 (Admin). CLI: writes immediately.
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/generate_tests.php</pre></body></html>';
-    exit(1);
+$itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
 }
 
-define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
+$apply = $itmIsCli;
+if (!$itmIsCli) {
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+    $apply = isset($_GET['apply']) && (string) $_GET['apply'] === '1';
+}
+
 $nl = itm_script_output_nl();
 itm_script_output_begin('Generate PHPUnit Tests');
+
+if (!$apply) {
+    echo 'Dry-run — no files written. Browser: add ?apply=1 to generate tests. CLI: php scripts/generate_tests.php' . $nl . $nl;
+}
 
 $metadataPath = __DIR__ . '/modules_metadata.json';
 if (!is_file($metadataPath)) {
@@ -249,6 +256,11 @@ class $className extends TestCase
     }
 }
 ";
+
+    if (!$apply) {
+        echo ' - Would generate test for ' . colorText($moduleName, 'pass') . " at $testDir/$className.php" . $nl;
+        continue;
+    }
 
     if (file_put_contents($testDir . '/' . $className . '.php', $testContent) !== false) {
         echo " - Generated test for " . colorText($moduleName, 'pass') . " at $testDir" . $nl;

@@ -1,50 +1,79 @@
 <?php
 /**
- * CLI-only: scan modules directory and save metadata to modules_metadata.json.
+ * Scan modules/ and categorize standard CRUD vs bespoke modules.
+ *
+ * Browser: Admin JSON preview; optional ?save=1 writes scripts/modules_metadata.json.
+ * CLI: php scripts/identify_modules.php > scripts/modules_metadata.json
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/identify_modules.php > scripts/modules_metadata.json</pre></body></html>';
-    exit(1);
+$itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
 }
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
 
+if (!function_exists('itm_identify_modules_collect')) {
+    /**
+     * @return array<string, array{path:string,crud_table:?string,is_standard:bool}>
+     */
+    function itm_identify_modules_collect(): array
+    {
+        $modulesDir = dirname(__DIR__) . '/modules';
+        $modules = [];
+
+        foreach (scandir($modulesDir) ?: [] as $module) {
+            if ($module === '.' || $module === '..' || !is_dir($modulesDir . '/' . $module)) {
+                continue;
+            }
+
+            $indexPath = $modulesDir . '/' . $module . '/index.php';
+            if (!is_file($indexPath)) {
+                continue;
+            }
+
+            $content = (string) file_get_contents($indexPath);
+            $crudTable = null;
+            if (preg_match('/\$crud_table\s*=\s*(?:\$crud_table\s*\?\?\s*)?[\'"]([^\'"]+)[\'"]/', $content, $matches)) {
+                $crudTable = $matches[1];
+            }
+
+            $modules[$module] = [
+                'path' => 'modules/' . $module,
+                'crud_table' => $crudTable,
+                'is_standard' => ($crudTable !== null),
+            ];
+        }
+
+        return $modules;
+    }
+}
+
+$modules = itm_identify_modules_collect();
+$json = json_encode($modules, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+if ($itmIsCli) {
+    echo $json;
+    exit(0);
+}
+
+require_once __DIR__ . '/../config/config.php';
+itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+
+itm_script_output_begin('Identify modules');
 $nl = itm_script_output_nl();
 
-
-$modulesDir = __DIR__ . '/../modules';
-$modules = [];
-
-foreach (scandir($modulesDir) as $module) {
-    if ($module === '.' || $module === '..' || !is_dir($modulesDir . '/' . $module)) {
-        continue;
+$save = isset($_GET['save']) && (string) $_GET['save'] === '1';
+if ($save) {
+    $metadataPath = __DIR__ . '/modules_metadata.json';
+    if (file_put_contents($metadataPath, $json . "\n") === false) {
+        echo colorText('[FAIL] Could not write ' . $metadataPath, 'fail') . $nl;
+    } else {
+        echo colorText('[OK] Wrote ' . $metadataPath, 'pass') . $nl . $nl;
     }
-
-    $indexPath = $modulesDir . '/' . $module . '/index.php';
-    if (!is_file($indexPath)) {
-        continue;
-    }
-
-    $content = file_get_contents($indexPath);
-    $crudTable = null;
-    if (preg_match('/\$crud_table\s*=\s*(?:\$crud_table\s*\?\?\s*)?[\'"]([^\'"]+)[\'"]/', $content, $matches)) {
-        $crudTable = $matches[1];
-    }
-
-    $modules[$module] = [
-        'path' => 'modules/' . $module,
-        'crud_table' => $crudTable,
-        'is_standard' => ($crudTable !== null),
-    ];
+} else {
+    echo 'Preview only (dry-run). To write scripts/modules_metadata.json in the browser, open with ?save=1 (Admin).' . $nl;
+    echo 'CLI: php scripts/identify_modules.php > scripts/modules_metadata.json' . $nl . $nl;
 }
 
-echo json_encode($modules, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
+echo $json . $nl;
 itm_script_output_end();

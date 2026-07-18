@@ -4,13 +4,18 @@
  *
  * Verifies that itm_handle_json_table_import correctly processes
  * both "Normal" (Hilton ID, Title) and "Tabular" (Id▼, Position Title) formats.
+ *
+ * Browser: scripts/test_import_user_samples.php (Admin). CLI: php scripts/test_import_user_samples.php
  */
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Why: config.php redirects to login.php if it doesn't see a CLI session or a logged-in user.
-define('ITM_CLI_SCRIPT', true);
+$itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
