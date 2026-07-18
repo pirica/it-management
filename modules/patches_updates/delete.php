@@ -329,7 +329,7 @@ function cr_render_cell_value($table, $field, $value) {
     if ($table === 'patches_updates' && $field === 'patches_updates_photos') {
         $photos = cr_parse_photo_filenames((string)$value);
         if (empty($photos)) {
-            return 'â€”';
+            return '—';
         }
 
         $html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
@@ -352,7 +352,7 @@ function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['active', 'network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
-            return ((int)$value === 1) ? 'âœ…' : 'âŒ';
+            return ((int)$value === 1) ? '✅' : '❌';
         }
     }
 
@@ -512,7 +512,7 @@ function cr_detect_upload_mime_type(string $tmpName): string {
 }
 
 /**
- * Why: Never trust the client filename extension for stored photos â€” map from detected MIME only.
+ * Why: Never trust the client filename extension for stored photos — map from detected MIME only.
  */
 function cr_upload_extension_from_mime(string $mime): string {
     $map = [
@@ -953,7 +953,7 @@ if (!isset($crud_title)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1><?php echo sanitize($crud_title); ?></h1>
-                    <a href="create.php" class="btn btn-primary">âž•</a>
+                    <a href="create.php" class="btn btn-primary">➕</a>
                 </div>
                 <div class="card" style="overflow:auto;">
                     <table>
@@ -981,13 +981,13 @@ if (!isset($crud_title)) {
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">ðŸ”Ž</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">âœï¸</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                        <button class="btn btn-sm btn-danger" type="submit">ðŸ—‘ï¸</button>
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
@@ -1024,7 +1024,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? 'âœ…' : 'âŒ'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
@@ -1048,7 +1048,7 @@ if (!isset($crud_title)) {
                                     <?php foreach ($opts as $opt): ?>
                                         <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?> <?php echo ($name === 'status_id' && isset($opt['color'])) ? ('data-status-color="' . sanitize((string)$opt['color']) . '"') : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
-                                    <option value="__add_new__">âž•</option>
+                                    <option value="__add_new__">➕</option>
                                 </select>
                                 <?php if ($name === 'status_id'): ?>
                                     <?php $statusColor = cr_status_color_by_id((int)$displayVal); ?>
@@ -1087,8 +1087,8 @@ if (!isset($crud_title)) {
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions">
-                        <button class="btn btn-primary" type="submit">ðŸ’¾</button>
-                        <a href="index.php" class="btn">ðŸ”™</a>
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
 
@@ -1105,7 +1105,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">ðŸ”™</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">âœï¸</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -1131,7 +1131,7 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? 'âœ…' : 'âŒ';
+        indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
 </script>

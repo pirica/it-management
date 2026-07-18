@@ -144,6 +144,10 @@ mysqli_stmt_close($stmt_clean);
 function mock_api_call($action, $path = '', $params = []) {
     global $conn, $company_id, $user_id, $username, $dept_code, $storage_root;
 
+    if (!defined('ITM_EXPLORER_API_IN_PROCESS')) {
+        define('ITM_EXPLORER_API_IN_PROCESS', true);
+    }
+
     $_POST = [];
     $_POST['action'] = $action;
     $_POST['path'] = $path;
@@ -155,6 +159,11 @@ function mock_api_call($action, $path = '', $params = []) {
     ob_start();
     include dirname(__DIR__) . '/modules/explorer/api.php';
     $output = ob_get_clean();
+
+    // Why: api.php sets application/json; restore HTML after buffered in-process include.
+    if (!explorer_test_is_cli()) {
+        header('Content-Type: text/html; charset=utf-8', true);
+    }
 
     $json = null;
     if (preg_match_all('/\{.*\}/s', $output, $matches)) {

@@ -87,6 +87,7 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 - `restore` POST `item` must be normalized before ACL and filesystem paths (backslashes bypass segment checks). [Cursor-Valid]
 - Linking `../../files/…` in HTML after `deny_http` — images/downloads break; use `itm_files_serve_url()`. [Cursor-Valid]
 - Hand-editing `.htaccess` under `files/` — removed on next `itm_ensure_files_storage_directory()` call. [Cursor-Valid]
+- In-process `include` of `api.php` from browser scripts sets `Content-Type: application/json` unless `ITM_EXPLORER_API_IN_PROCESS` is defined (see `explorer_human_test.php`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

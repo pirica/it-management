@@ -92,7 +92,7 @@ if ($isJsonImportRequest) {
 
             $fieldName = (string)$columnMeta['Field'];
             $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-            if ($rawValue === '' || strcasecmp($rawValue, 'null') === 0 || in_array($rawValue, ['-', '–', '—', 'â€”'], true)) {
+            if ($rawValue === '' || strcasecmp($rawValue, 'null') === 0 || in_array($rawValue, ['-', '–', '—', '—'], true)) {
                 continue;
             }
 
@@ -104,10 +104,10 @@ if ($isJsonImportRequest) {
             $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$columnMeta['Type']);
             if ($isTinyInt) {
                 $normalizedBool = strtolower($rawValue);
-                if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', 'âœ…'], true)) {
+                if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
                     $rowData[$fieldName] = '1';
                     $rowPost[$fieldName] = '1';
-                } elseif (in_array($normalizedBool, ['0', 'inactive', 'no', 'false', 'off', 'âŒ'], true)) {
+                } elseif (in_array($normalizedBool, ['0', 'inactive', 'no', 'false', 'off', '❌'], true)) {
                     $rowData[$fieldName] = '0';
                     $rowPost[$fieldName] = '0';
                 }

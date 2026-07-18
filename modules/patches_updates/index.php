@@ -328,7 +328,7 @@ function cr_render_cell_value($table, $field, $value) {
     if ($table === 'patches_updates' && $field === 'patches_updates_photos') {
         $photos = cr_parse_photo_filenames((string)$value);
         if (empty($photos)) {
-            return 'â€”';
+            return '—';
         }
 
         $html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
@@ -351,7 +351,7 @@ function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
-            return ((int)$value === 1) ? 'âœ…' : 'âŒ';
+            return ((int)$value === 1) ? '✅' : '❌';
         }
     }
 
@@ -516,7 +516,7 @@ function cr_detect_upload_mime_type(string $tmpName): string {
 }
 
 /**
- * Why: Never trust the client filename extension for stored photos â€” map from detected MIME only.
+ * Why: Never trust the client filename extension for stored photos — map from detected MIME only.
  */
 function cr_upload_extension_from_mime(string $mime): string {
     $map = [
@@ -666,7 +666,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === 'â€”') {
+                if ($rawValue === '' || $rawValue === '—') {
                     continue;
                 }
 
@@ -1208,13 +1208,13 @@ if (!isset($crud_title)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">âž•</a>
+                        <a href="create.php" class="btn btn-primary">➕</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">âž•</a>
+                        <a href="create.php" class="btn btn-primary">➕</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
@@ -1242,7 +1242,7 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">ðŸ”™</a>
+                            <a href="index.php" class="btn">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -1273,21 +1273,21 @@ if (!isset($crud_title)) {
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">âœï¸</a>
+                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">ðŸ”Ž</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">âœï¸</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                         <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                        <button class="btn btn-sm btn-danger" type="submit">ðŸ—‘ï¸</button>
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                     </form>
                                 </td>
                             </tr>
@@ -1311,11 +1311,11 @@ if (!isset($crud_title)) {
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="â—€ï¸ Previous">Previous</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="◀️ Previous">Previous</a>
                             <?php endif; ?>
                             <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="â–¶ï¸ Next">Next</a>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="▶️ Next">Next</a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -1342,7 +1342,7 @@ if (!isset($crud_title)) {
                     ?>
                         <div class="form-group">
                             <?php if ($isTinyInt): ?>
-                                <!-- Skip top label for checkboxes to avoid duplication with Active âœ… -->
+                                <!-- Skip top label for checkboxes to avoid duplication with Active ✅ -->
                             <?php else: ?>
                                 <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php endif; ?>
@@ -1351,7 +1351,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span>Active âœ… <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? 'âœ…' : 'âŒ'; ?></span></span>
+                                    <span>Active ✅ <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
@@ -1375,7 +1375,7 @@ if (!isset($crud_title)) {
                                     <?php foreach ($opts as $opt): ?>
                                         <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?> <?php echo ($name === 'status_id' && isset($opt['color'])) ? ('data-status-color="' . sanitize((string)$opt['color']) . '"') : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
-                                    <option value="__add_new__">âž•</option>
+                                    <option value="__add_new__">➕</option>
                                 </select>
                                 <?php if ($name === 'status_id'): ?>
                                     <?php $statusColor = cr_status_color_by_id((int)$displayVal); ?>
@@ -1414,8 +1414,8 @@ if (!isset($crud_title)) {
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions">
-                        <button class="btn btn-primary" type="submit">ðŸ’¾</button>
-                        <a href="index.php" class="btn">ðŸ”™</a>
+                        <button class="btn btn-primary" type="submit">💾</button>
+                        <a href="index.php" class="btn">🔙</a>
                     </div>
                 </form>
 
@@ -1432,7 +1432,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">ðŸ”™</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">âœï¸</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -1459,7 +1459,7 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? 'âœ…' : 'âŒ';
+        indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
 </script>
