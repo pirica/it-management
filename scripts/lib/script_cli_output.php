@@ -70,7 +70,13 @@ if (!function_exists('itm_script_cli_is_cli')) {
         if (preg_match('/^\[(PASS|OK)\]/', $text)) {
             return colorText($text, 'pass');
         }
+        if (preg_match('/^\[SKIP\]\[pass\]/', $text)) {
+            return colorText($text, 'pass');
+        }
         if (preg_match('/^\[FAIL\]/', $text)) {
+            return colorText($text, 'fail');
+        }
+        if (preg_match('/^\[SKIP\]\[fail\]/', $text)) {
             return colorText($text, 'fail');
         }
         if (preg_match('/^\[WARN\]/', $text)) {

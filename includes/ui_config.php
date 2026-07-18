@@ -1367,6 +1367,30 @@ function itm_ui_config_favicon_url($uiConfig = null) {
     return BASE_URL . $relative . $suffix;
 }
 
+if (!function_exists('itm_render_head_favicon_link')) {
+    /**
+     * Server-side favicon for <head> — required for correct browser tab icon on first paint.
+     *
+     * Why: header.php injects favicon via DOMContentLoaded JS only; without this link the tab
+     * shows the generic globe until JavaScript runs (or forever when head is parsed early).
+     */
+    function itm_render_head_favicon_link($faviconUrl = null, $uiConfig = null): string
+    {
+        if ($faviconUrl === null || trim((string) $faviconUrl) === '') {
+            $faviconUrl = itm_ui_config_favicon_url(is_array($uiConfig) ? $uiConfig : []);
+        }
+
+        $faviconUrl = trim((string) $faviconUrl);
+        if ($faviconUrl === '') {
+            return '';
+        }
+
+        return '<link rel="icon" type="image/x-icon" href="'
+            . htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8')
+            . '">' . "\n";
+    }
+}
+
 /**
  * Normalizes equipment type -> visibility mapping.
  */
