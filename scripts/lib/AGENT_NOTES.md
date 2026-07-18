@@ -6,10 +6,10 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 ## 7. File Structure
 | File | Role |
 |------|------|
-| `script_browser_nav.php` | ← Scripts index, relative module links, table→module links, `itm_script_format_modules_file_link()` for `modules/<slug>/…` paths in audit output |
+| `script_browser_nav.php` | ← Scripts index, relative module links, table→module links, `itm_script_format_modules_file_link()` for `modules/<slug>/…` paths in audit output; `itm_script_format_table_link($table, '', true)` links expected module paths when the folder is absent |
 | `script_cli_output.php` | Browser `<pre>` wrapper + nav for CLI-style audits; `itm_script_output_begin()` calls `itm_script_browser_nav_echo()` once — do not echo nav again in the same browser response (gate: `check_script_browser_nav_duplicate.php`) |
 | `itm_list_active_and_checkboxes_report.php` | Report builder for `list_active_and_checkboxes.php` (schema-backed active column audit, checkbox compliance; status-driven forms compliant when hidden active + `active` omitted from `$formColumns`) |
-| `itm_fields_missing_report.php` | Report builder for `fields_missing.php` and `employee_fields_missing.php` (database.sql vs live columns; employees critical UI; dynamic scaffold; bespoke/schema-only skips; `[PASS]`/`[FAIL]` per global meta column hidden on create/edit; strips `<?php … ?>` before form-tag scan so readonly session-stamped `company_id` inputs are not false positives; `itm_fields_missing_format_failure_summary_block()` for end-of-run failure list) |
+| `itm_fields_missing_report.php` | Report builder for `fields_missing.php` and `employee_fields_missing.php` (database.sql vs live columns; employees critical UI; dynamic scaffold; bespoke/schema-only skips; companion schema pass when module folder slug ≠ `$crud_table`; `[PASS]`/`[FAIL]` per global meta column hidden on create/edit; strips `<?php … ?>` before form-tag scan; `itm_fields_missing_format_failure_summary_block()` for end-of-run failure list) |
 | `itm_active_checkbox_fix.php` | Repair helpers for `fix_scaffold_active_checkbox.php` (`scaffold_active_checkbox_not_compliant` only) |
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
 | `itm_titles_list_audit.php` | Shared scan/summary helpers for `titles_list.php` and `titles_list_show.php` (module file collection, canonical full `<title>` match, summary output) |

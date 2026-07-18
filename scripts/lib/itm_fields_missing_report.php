@@ -829,12 +829,46 @@ if (!function_exists('itm_fields_missing_collect_report')) {
 
             $table = (string) $target['table'];
             $modulesWithTable[$table] = true;
+            // Why: folder slug may match a schema table while $crud_table points elsewhere (company_module_access → modules_registry).
+            if (isset($schemaMap[$moduleSlug])) {
+                $modulesWithTable[$moduleSlug] = true;
+            }
             $expected = $schemaMap[$table] ?? [];
             $live = itm_fields_missing_live_table_columns($conn, $table);
             $report = itm_fields_missing_audit_module($conn, $moduleSlug, $table, $expected, $live, $rootPath);
             $failureCount += count($report['failures']);
             $moduleReports[] = $report;
         }
+
+        $companionAudited = [];
+        foreach ($targets as $target) {
+            $moduleSlug = (string) $target['module'];
+            if ($moduleFilter !== null && $moduleFilter !== '' && $moduleSlug !== $moduleFilter) {
+                continue;
+            }
+
+            $table = (string) $target['table'];
+            if ($moduleSlug === $table || !isset($schemaMap[$moduleSlug]) || isset($companionAudited[$moduleSlug])) {
+                continue;
+            }
+
+            $companionAudited[$moduleSlug] = true;
+            $expected = $schemaMap[$moduleSlug];
+            $live = itm_fields_missing_live_table_columns($conn, $moduleSlug);
+            $report = itm_fields_missing_audit_module($conn, $moduleSlug, $moduleSlug, $expected, $live, $rootPath);
+            $failureCount += count($report['failures']);
+            $moduleReports[] = $report;
+            $modulesWithTable[$moduleSlug] = true;
+        }
+
+        usort($moduleReports, static function (array $a, array $b): int {
+            $moduleCmp = strcmp((string) ($a['module'] ?? ''), (string) ($b['module'] ?? ''));
+            if ($moduleCmp !== 0) {
+                return $moduleCmp;
+            }
+
+            return strcmp((string) ($a['table'] ?? ''), (string) ($b['table'] ?? ''));
+        });
 
         $tablesWithoutModule = [];
         foreach (array_keys($schemaMap) as $tableName) {
