@@ -528,7 +528,7 @@ function itm_audit_describe_payload($action, $normalizedValue, $isOldValue) {
     return '—';
 }
 
-$moduleListHeading = '🧾 Audit Logs';
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '🧾 Audit Logs';
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
@@ -547,11 +547,12 @@ if (!isset($crud_title)) {
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+    <?php echo itm_render_head_favicon_link($ui_config ?? $currentUiConfig ?? []); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .audit-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+        .audit-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; position:relative; min-height:40px; }
         .audit-admin-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-        .audit-toolbar h1 { margin:0; font-size:1.5rem; font-weight:700; }
+        .audit-toolbar h1 { position:absolute; left:50%; transform:translateX(-50%); margin:0; text-align:center; font-size:1.5rem; font-weight:700; }
         .audit-filters form { display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto auto; gap:10px; align-items:end; }
         .audit-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
         .audit-kpi { border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--input-bg); }
@@ -580,15 +581,15 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-            <div class="audit-toolbar" data-itm-new-button-managed="server">
+            <div class="audit-toolbar" data-itm-new-button-managed="server" style="position:relative;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                    <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
+                    <a href="index.php" class="btn btn-primary" title="Refresh">🔄</a>
                 <?php else: ?>
                     <span aria-hidden="true"></span>
                 <?php endif; ?>
-                <h1><?php echo sanitize($moduleListHeading); ?></h1>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                    <a href="index.php" class="btn btn-primary">🔄 Refresh</a>
+                    <a href="index.php" class="btn btn-primary" title="Refresh">🔄</a>
                 <?php else: ?>
                     <span aria-hidden="true"></span>
                 <?php endif; ?>
