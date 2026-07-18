@@ -8,6 +8,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 |------|------|
 | `script_browser_nav.php` | ← Scripts index, relative module links, table→module links |
 | `script_cli_output.php` | Browser `<pre>` wrapper + nav for CLI-style audits; `itm_script_output_begin()` calls `itm_script_browser_nav_echo()` once — do not echo nav again in the same browser response (gate: `check_script_browser_nav_duplicate.php`) |
+| `itm_list_active_and_checkboxes_report.php` | Report builder for `list_active_and_checkboxes.php` (schema-backed active column audit, checkbox compliance) |
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
 | `itm_titles_list_audit.php` | Shared scan/summary helpers for `titles_list.php` and `titles_list_show.php` (module file collection, canonical full `<title>` match, summary output) |
 | `utf8_file.php` | UTF-8 writes for `qa-reports/*.md` / `.json` |

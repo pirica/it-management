@@ -1,122 +1,104 @@
 <?php
 /**
- * Script to list modules with 'active' input fields and checkboxes,
- * constrained to modules that actually have an 'active' database column.
- * Supports both CLI and Browser.
+ * Audits module active-field UI against database schema and AGENTS.md rules.
+ *
+ * Why: Scaffold modules must render active as an itm-checkbox-control checkbox on create/edit;
+ * status-driven modules (employees, equipment, patches_updates, tickets) must use hidden active=1.
+ * Forbidden: <input type="text" name="active">.
+ *
+ * Browser: Admin session (read-only report on load).
+ * CLI: php scripts/list_active_and_checkboxes.php [--json] [--all]
  */
 
-if (!defined('ROOT_PATH')) {
-    define('ROOT_PATH', realpath(__DIR__ . '/..') . DIRECTORY_SEPARATOR);
+declare(strict_types=1);
+
+$itmIsCli = PHP_SAPI === 'cli';
+
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
 }
 
+require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/itm_list_active_and_checkboxes_report.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../config/config.php';
 
+itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+
+$report = itm_collect_active_and_checkboxes_report($conn);
+$asJson = $itmIsCli
+    ? in_array('--json', $argv ?? [], true)
+    : isset($_GET['format']) && strtolower((string) $_GET['format']) === 'json';
+$showAll = $itmIsCli && in_array('--all', $argv ?? [], true);
+
+if ($itmIsCli) {
+    itm_script_output_begin('Active field and checkbox audit');
+
+    $nl = itm_script_output_nl();
+    if ($asJson) {
+        echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . $nl;
+        exit(((int) ($report['summary']['violations'] ?? 0)) > 0 ? 1 : 0);
+    }
+
+    echo 'Active field / checkbox audit' . $nl;
+    echo str_repeat('=', 72) . $nl;
+    itm_active_audit_echo_summary($report, $nl);
+
+    if ($report['violations'] !== []) {
+        echo 'VIOLATIONS' . $nl;
+        echo str_repeat('-', 72) . $nl;
+        foreach ($report['violations'] as $row) {
+            echo $row['file'] . ' (table: ' . $row['table'] . ')' . $nl;
+            foreach ($row['issues'] as $issue) {
+                echo '  [' . $issue['code'] . '] ' . $issue['message'] . $nl;
+            }
+        }
+        echo $nl;
+    } else {
+        echo 'No active-field violations.' . $nl . $nl;
+    }
+
+    if ($showAll && $report['compliant_checkbox'] !== []) {
+        echo 'COMPLIANT ACTIVE CHECKBOX FILES' . $nl;
+        echo str_repeat('-', 72) . $nl;
+        foreach ($report['compliant_checkbox'] as $row) {
+            echo $row['file'] . $nl;
+        }
+        echo $nl;
+    }
+
+    if ($showAll && $report['hidden_active'] !== []) {
+        echo 'HIDDEN ACTIVE FILES' . $nl;
+        echo str_repeat('-', 72) . $nl;
+        foreach ($report['hidden_active'] as $row) {
+            echo $row['file'] . $nl;
+        }
+        echo $nl;
+    }
+
+    exit(((int) ($report['summary']['violations'] ?? 0)) > 0 ? 1 : 0);
+}
+
+if ($asJson) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+itm_script_output_begin('Active field and checkbox audit');
 $nl = itm_script_output_nl();
+itm_active_audit_echo_summary($report, $nl);
 
-
-$nl = (php_sapi_name() === 'cli' ? "\n" : "<br><br>");
-itm_script_output_begin('List Active Fields and Checkboxes (Constrained by DB Column)');
-
-$modules_dir = realpath(__DIR__ . '/../modules');
-$modules = array_filter(glob($modules_dir . '/*'), 'is_dir');
-
-$active_input_results = [];
-$active_text_results = [];
-$active_checkbox_results = [];
-
-foreach ($modules as $module_path) {
-    $module_name = basename($module_path);
-
-    // Check database schema for 'active' column (case-insensitive)
-    $res = mysqli_query($conn, "SHOW TABLES LIKE '{$module_name}'");
-    $has_table = ($res && mysqli_num_rows($res) > 0);
-
-    $has_active_column = false;
-    if ($has_table) {
-        $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$module_name}` LIKE 'active'");
-        if ($res && mysqli_num_rows($res) > 0) {
-            $has_active_column = true;
-        } else {
-            // Check for 'Active' (upper case) just in case
-            $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$module_name}` LIKE 'Active'");
-            if ($res && mysqli_num_rows($res) > 0) {
-                $has_active_column = true;
-            }
+if ($report['violations'] !== []) {
+    echo 'VIOLATIONS' . $nl;
+    foreach ($report['violations'] as $row) {
+        echo $row['file'] . ' (table: ' . htmlspecialchars($row['table'], ENT_QUOTES, 'UTF-8') . ')' . $nl;
+        foreach ($row['issues'] as $issue) {
+            echo '  [' . htmlspecialchars($issue['code'], ENT_QUOTES, 'UTF-8') . '] '
+                . htmlspecialchars($issue['message'], ENT_QUOTES, 'UTF-8') . $nl;
         }
     }
-
-    // ONLY proceed if the module has an 'active' column in the DB
-    if (!$has_active_column) {
-        continue;
-    }
-
-    $files = glob($module_path . '/*.php');
-    foreach ($files as $file) {
-        $basename = basename($file);
-        if (!in_array($basename, ['create.php', 'edit.php', 'index.php'])) continue;
-
-        $content = file_get_contents($file);
-        $relativePath = 'modules/' . $module_name . '/' . $basename;
-
-        // 1. Check for ANY 'active' input field in code
-        if (preg_match('/name=["\']active["\']/i', $content) ||
-            (strpos($content, '$name === \'active\'') !== false && strpos($content, '$col[\'Field\']') !== false)) {
-            $active_input_results[$module_name][] = $relativePath;
-
-            // 1a. Specifically detect type="text"
-            if (preg_match('/<input[^>]+type=["\']text["\'][^>]+name=["\']active["\']/i', $content) ||
-                preg_match('/<input[^>]+name=["\']active["\'][^>]+type=["\']text["\']/i', $content)) {
-                $active_text_results[$module_name][] = $relativePath;
-            }
-        }
-
-        // 2. Check for ANY checkbox in this module (now constrained by having an 'active' DB column)
-        if (stripos($content, 'type="checkbox"') !== false) {
-            $active_checkbox_results[$module_name][] = $relativePath;
-        }
-    }
-}
-
-function format_module_link_v2($name) {
-    if (itm_script_is_cli_sapi()) {
-        return " (link modules/$name module)";
-    }
-    return ' (<a href="../modules/' . htmlspecialchars($name) . '/index.php" target="_blank">link modules/' . htmlspecialchars($name) . ' module</a>)';
-}
-
-// Flatten for counting distinct module/file pairs
-$count_active = 0; foreach($active_input_results as $files) $count_active += count($files);
-$count_text = 0; foreach($active_text_results as $files) $count_text += count($files);
-$count_checkbox = 0; foreach($active_checkbox_results as $files) $count_checkbox += count($files);
-
-echo "Count: " . $count_active . $nl;
-echo "### Modules with 'active' input field:" . $nl;
-foreach ($active_input_results as $name => $files) {
-    foreach ($files as $f) {
-        echo $f . format_module_link_v2($name) . $nl;
-    }
-}
-
-echo $nl . "Count: " . $count_text . $nl;
-echo "### Modules with <input type=\"text\" name=\"active\">:" . $nl;
-if (empty($active_text_results)) {
-    echo "None found." . $nl;
 } else {
-    foreach ($active_text_results as $name => $files) {
-        foreach ($files as $f) {
-            echo $f . format_module_link_v2($name) . $nl;
-        }
-    }
-}
-
-echo $nl . "Count: " . $count_checkbox . $nl;
-echo "### Modules with checkboxes (only if DB has active field):" . $nl;
-foreach ($active_checkbox_results as $name => $files) {
-    foreach ($files as $f) {
-        echo $f . format_module_link_v2($name) . $nl;
-    }
+    echo 'No active-field violations.' . $nl;
 }
 
 itm_script_output_end();
