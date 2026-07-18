@@ -23,18 +23,12 @@ function explorer_test_is_cli(): bool
 
 function explorer_test_eol(): string
 {
-    // Why: itm_script_output_begin() wraps browser output in <pre>; real newlines, not <br>.
-    return "\n";
-}
-
-function explorer_test_esc(string $text): string
-{
-    return explorer_test_is_cli() ? $text : htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    return itm_script_output_nl();
 }
 
 function explorer_test_out(string $message): void
 {
-    echo itm_script_format_status_line(explorer_test_esc($message)) . explorer_test_eol();
+    echo itm_script_format_status_line($message) . explorer_test_eol();
     if (!explorer_test_is_cli() && function_exists('flush')) {
         @flush();
     }
@@ -49,14 +43,8 @@ function explorer_test_die(string $message): void
 
 itm_script_output_begin('Explorer human test');
 
-if (!explorer_test_is_cli()) {
-    itm_script_output_close_pre();
-    echo '<p>Human-flow regression for ' . itm_script_format_module_link('explorer')
-        . '. Mutates DB and filesystem: temporary company + isolated <code>files/{company_id}/</code> tree (teardown at end).</p>';
-    echo '<pre>';
-}
-
 explorer_test_out('Starting Explorer Human-Like Test...');
+explorer_test_out('[INFO] Mutates DB and filesystem: temporary company + isolated files/{company_id}/ tree (teardown at end).');
 
 $test_failures = 0;
 $audit_company_id = 1;
