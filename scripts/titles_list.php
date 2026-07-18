@@ -12,6 +12,7 @@ require_once __DIR__ . '/../config/config.php';
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_titles_list_audit.php';
 
 $isCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if (!$isCli) {
@@ -28,43 +29,48 @@ if (!is_dir($modulesDir)) {
     exit(1);
 }
 
-$iterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($modulesDir, FilesystemIterator::SKIP_DOTS)
-);
+$files = itm_titles_list_collect_module_php_files($modulesDir);
+$stats = [
+    'scanned' => count($files),
+    'with_title' => 0,
+    'match' => 0,
+    'not_match' => 0,
+    'no_title' => 0,
+];
 
-$files = [];
-foreach ($iterator as $fileInfo) {
-    if (!$fileInfo->isFile() || strtolower($fileInfo->getExtension()) !== 'php') {
-        continue;
-    }
-    $path = $fileInfo->getPathname();
-    $files[] = $path;
-}
-
-sort($files);
+$rows = [];
 
 foreach ($files as $path) {
-    $relative = str_replace($root . DIRECTORY_SEPARATOR, '', $path);
-    $relativeNorm = str_replace('\\', '/', $relative);
-
-    // Ensure path starts with modules/
-    if (strpos($relativeNorm, 'modules/') !== 0) {
-        $modulePath = 'modules/' . ltrim($relativeNorm, '/');
-    } else {
-        $modulePath = $relativeNorm;
-    }
+    $modulePath = itm_titles_list_module_path_from_root($root, $path);
 
     $content = file_get_contents($path);
     if ($content === false) {
         continue;
     }
 
-    // Capture the entire <title>...</title> block (case-insensitive, multiline)
-    if (preg_match('~<title>.*?</title>~is', $content, $matches)) {
-        $outputLine = $modulePath . ' - title = ' . $matches[0];
-        $escapedLine = $isCli ? $outputLine : htmlspecialchars($outputLine, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        echo $escapedLine . ($isCli ? "\n" : "<br>");
+    if (!preg_match('~<title>.*?</title>~is', $content, $matches)) {
+        $stats['no_title']++;
+        continue;
     }
+
+    $stats['with_title']++;
+    $titleBlock = $matches[0];
+    $matchesSuffix = itm_titles_list_title_matches_canonical($titleBlock);
+    if ($matchesSuffix) {
+        $stats['match']++;
+    } else {
+        $stats['not_match']++;
+    }
+
+    $prefix = $matchesSuffix ? '' : '[NOT MATCH] ';
+    $rows[] = $prefix . $modulePath . ' - title = ' . $titleBlock;
+}
+
+itm_titles_list_echo_summary($stats, $isCli);
+
+foreach ($rows as $outputLine) {
+    $escapedLine = $isCli ? $outputLine : htmlspecialchars($outputLine, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    echo $escapedLine . ($isCli ? "\n" : "<br>");
 }
 
 itm_script_output_end();
