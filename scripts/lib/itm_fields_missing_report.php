@@ -794,29 +794,6 @@ if (!function_exists('itm_fields_missing_format_inline_list_section')) {
     }
 }
 
-if (!function_exists('itm_fields_missing_format_indented_list_section')) {
-    /**
-     * @param list<string> $items
-     */
-    function itm_fields_missing_format_indented_list_section(
-        string $heading,
-        array $items,
-        string $nl,
-        string $emptyText
-    ): string {
-        if ($items === []) {
-            return '  ' . $heading . ' (0): ' . $emptyText . $nl;
-        }
-
-        $out = '  ' . $heading . ' (' . count($items) . '):' . $nl;
-        foreach ($items as $item) {
-            $out .= '    ' . $item . $nl;
-        }
-
-        return $out;
-    }
-}
-
 if (!function_exists('itm_fields_missing_format_columns_block')) {
     /**
      * @param array<string, mixed> $moduleReport
@@ -861,14 +838,14 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
             $nl,
             '(none)'
         );
-        $out .= itm_fields_missing_format_indented_list_section(
+        $out .= itm_fields_missing_format_inline_list_section(
             'UI form fields',
             $uiForm,
             $nl,
             '(none scraped from create/edit for this table)'
         );
         if ($uiFormOther !== []) {
-            $out .= itm_fields_missing_format_indented_list_section(
+            $out .= itm_fields_missing_format_inline_list_section(
                 'UI form fields other',
                 $uiFormOther,
                 $nl,
