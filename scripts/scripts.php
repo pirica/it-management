@@ -499,8 +499,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="fields_missing.php" target="_blank" rel="nofollow noreferrer">fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>All-module schema/UI audit: <code>database.sql</code> columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold modules pass UI via dynamic <code>$uiColumns</code>; bespoke modules (<code>docs/list_bespoke_UI.txt</code>) and status-driven slugs (<code>equipment</code>, <code>patches_updates</code>, <code>tickets</code>) are schema-only; <code>employees</code> uses the critical-field matrix.</td>
-                    <td>Browser: optional <code>?module=</code> filter. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=manufacturers</code> · <code>--json</code> · exit <code>1</code> on schema or non-bespoke UI gaps.</td>
+                    <td>All-module schema/UI audit: <code>database.sql</code> columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold modules use <code>[PASS]</code>/<code>[FAIL]</code>; bespoke and status-driven slugs use gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code> (schema + hidden meta exposure; full UI not audited).</td>
+                    <td>Browser: optional <code>?module=</code> filter. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=manufacturers</code> · <code>--json</code> · exit <code>1</code> on <code>[FAIL]</code> or <code>[SKIP][fail]</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="debug_resignations_termination_date.php" target="_blank" rel="nofollow noreferrer">debug_resignations_termination_date.php</a></td>

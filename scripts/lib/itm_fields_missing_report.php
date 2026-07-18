@@ -691,6 +691,100 @@ if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_parse_manageable_column_exclusions')) {
+    /**
+     * @return list<string>|null Column names removed by cr_manageable_columns() in file content.
+     */
+    function itm_fields_missing_parse_manageable_column_exclusions(string $content): ?array
+    {
+        if (!preg_match('/function\s+cr_manageable_columns\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/', $content, $match)) {
+            return null;
+        }
+
+        $body = $match[1];
+        if (preg_match("/in_array\s*\(\s*\\\$c\['Field'\]\s*,\s*\[([^\]]+)\]/", $body, $listMatch)) {
+            preg_match_all("/'([^']+)'/", $listMatch[1], $names);
+
+            return $names[1] ?? [];
+        }
+
+        if (preg_match("/\(\s*\\\$c\['Field'\]\s*\)\s*!==\s*'([^']+)'/", $body, $singleMatch)) {
+            return [$singleMatch[1]];
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_uses_dynamic_column_form_loop')) {
+    function itm_fields_missing_file_uses_dynamic_column_form_loop(string $content): bool
+    {
+        if (!preg_match('/foreach\s*\(\s*\$(fieldColumns|uiColumns)\s+as/', $content)) {
+            return false;
+        }
+
+        return (bool) preg_match(
+            '/name=\s*["\'][^"\']*<\?php\s+echo\s+sanitize\(\$name\)/',
+            $content
+        );
+    }
+}
+
+if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
+    /**
+     * Detect visible inputs emitted by foreach ($fieldColumns|$uiColumns) name=$name loops.
+     *
+     * @param list<string> $paths
+     */
+    function itm_fields_missing_dynamic_form_exposes_field(string $field, array $paths): bool
+    {
+        $manageableExclusions = null;
+        foreach ($paths as $path) {
+            if (!is_readable($path) || is_dir($path)) {
+                continue;
+            }
+            $content = (string) file_get_contents($path);
+            $parsed = itm_fields_missing_parse_manageable_column_exclusions($content);
+            if ($parsed !== null) {
+                $manageableExclusions = $parsed;
+                break;
+            }
+        }
+
+        foreach ($paths as $path) {
+            if (!is_readable($path) || is_dir($path)) {
+                continue;
+            }
+            $content = (string) file_get_contents($path);
+            if (!itm_fields_missing_file_uses_dynamic_column_form_loop($content)) {
+                continue;
+            }
+
+            $usesUiColumns = (bool) preg_match('/foreach\s*\(\s*\$uiColumns\s+as/', $content);
+            if ($usesUiColumns) {
+                if (function_exists('itm_crud_is_form_hidden_audit_field')
+                    && itm_crud_is_form_hidden_audit_field($field)
+                ) {
+                    continue;
+                }
+                if (function_exists('itm_crud_is_list_hidden_audit_field')
+                    && itm_crud_is_list_hidden_audit_field($field)
+                ) {
+                    continue;
+                }
+            }
+
+            if ($manageableExclusions !== null && in_array($field, $manageableExclusions, true)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_fields_missing_form_exposes_visible_field')) {
     /**
      * @param list<string> $paths
@@ -716,7 +810,7 @@ if (!function_exists('itm_fields_missing_form_exposes_visible_field')) {
             }
         }
 
-        return false;
+        return itm_fields_missing_dynamic_form_exposes_field($field, $paths);
     }
 }
 
@@ -752,21 +846,126 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
 
 if (!function_exists('itm_fields_missing_append_schema_column_passes')) {
     /**
-     * One PASS per column present in both database.sql and live DB (not a single summary line).
+     * One PASS (or INFO when schema-only) per column present in both database.sql and live DB.
      *
      * @param list<string> $expectedColumns
      * @param list<string> $liveColumns
      * @param list<string> $passes
+     * @param list<string> $infos
      */
     function itm_fields_missing_append_schema_column_passes(
         string $table,
         array $expectedColumns,
         array $liveColumns,
-        array &$passes
+        array &$passes,
+        array &$infos = [],
+        bool $schemaOnly = false
     ): void {
         foreach ($expectedColumns as $column) {
-            if (in_array($column, $liveColumns, true)) {
-                $passes[] = "{$table}.{$column}: live matches database.sql";
+            if (!in_array($column, $liveColumns, true)) {
+                continue;
+            }
+            $line = "{$table}.{$column}: live matches database.sql";
+            if ($schemaOnly) {
+                $passes[] = $line;
+                continue;
+            }
+            $passes[] = $line;
+        }
+    }
+}
+
+if (!function_exists('itm_fields_missing_merge_bespoke_form_paths')) {
+    /**
+     * Bespoke modules often duplicate create/edit in index.php and edit.php — scan all entry files.
+     *
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     * @param list<string> $formPaths
+     * @return list<string>
+     */
+    function itm_fields_missing_merge_bespoke_form_paths(array $files, array $formPaths): array
+    {
+        $merged = $formPaths;
+        foreach (['index', 'edit', 'create', 'list_all'] as $key) {
+            if (!empty($files[$key]) && is_readable($files[$key])) {
+                $merged[] = $files[$key];
+            }
+        }
+
+        return array_values(array_unique($merged));
+    }
+}
+
+if (!function_exists('itm_fields_missing_apply_skipped_ui_coverage_gate')) {
+    /**
+     * Bespoke/status-driven modules: full UI coverage is skipped; still audit hidden meta columns.
+     *
+     * @param list<string> $expectedColumns
+     * @param list<string> $formPaths
+     * @param list<string> $passes
+     * @param list<array{code:string,message:string}> $failures
+     */
+    function itm_fields_missing_apply_skipped_ui_coverage_gate(
+        string $moduleSlug,
+        array $expectedColumns,
+        array $formPaths,
+        array &$passes,
+        array &$failures
+    ): void {
+        itm_fields_missing_audit_excluded_ui_columns(
+            $moduleSlug,
+            array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
+            $formPaths,
+            $passes,
+            $failures
+        );
+    }
+}
+
+if (!function_exists('itm_fields_missing_result_status_label')) {
+    function itm_fields_missing_result_status_label(bool $uiCoverageSkipped, bool $passed): string
+    {
+        if ($uiCoverageSkipped) {
+            return $passed ? '[SKIP][pass]' : '[SKIP][fail]';
+        }
+
+        return $passed ? '[PASS]' : '[FAIL]';
+    }
+}
+
+if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
+    /**
+     * @param array<string, mixed> $moduleReport
+     */
+    function itm_fields_missing_echo_module_check_lines(array $moduleReport, string $nl): void
+    {
+        $skippedUi = !empty($moduleReport['ui_coverage_audit_skipped']);
+        $moduleSlug = (string) ($moduleReport['module'] ?? '');
+
+        foreach ($moduleReport['passes'] ?? [] as $passLine) {
+            $label = itm_fields_missing_result_status_label($skippedUi, true);
+            echo colorText("{$label} {$passLine}", 'pass') . $nl;
+        }
+        foreach ($moduleReport['failures'] ?? [] as $failure) {
+            $label = itm_fields_missing_result_status_label($skippedUi, false);
+            echo colorText("{$label} " . (string) ($failure['message'] ?? ''), 'fail') . $nl;
+        }
+        foreach ($moduleReport['infos'] ?? [] as $infoLine) {
+            echo colorText('[INFO] ' . $infoLine, 'info') . $nl;
+        }
+
+        if ($skippedUi && $moduleSlug !== '') {
+            $failCount = count($moduleReport['failures'] ?? []);
+            if ($failCount > 0) {
+                echo colorText(
+                    '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)',
+                    'fail'
+                ) . $nl;
+            } else {
+                echo colorText(
+                    '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)',
+                    'pass'
+                ) . $nl;
             }
         }
     }
@@ -1149,7 +1348,7 @@ if (!function_exists('itm_fields_missing_format_legend')) {
     {
         $out = 'Section legend (same for every module; ui: tag shows audit path):' . $nl;
         $out .= '  database.sql columns / live columns — canonical schema vs live MySQL (when the module has a table)' . $nl;
-        $out .= '  UI coverage audit: skipped — no create/edit/view/index FAIL checks (bespoke, status-driven, or UI-only)' . $nl;
+        $out .= '  UI coverage audit: skipped — gated checks print as [SKIP][pass] / [SKIP][fail] (schema + hidden meta columns)' . $nl;
         $out .= '  Static HTML name= scrape — literal name="..." in create/edit (or index for UI-only); not the full dynamic UI' . $nl;
         $out .= '  Inferred form columns — derived from $uiColumns, cr_manageable_columns, or employees matrix' . $nl;
         $out .= '  UI audited columns / excluded from UI audit — only when UI coverage audit ran' . $nl;
@@ -1407,7 +1606,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             }
         }
         if ($expectedColumns !== []) {
-            itm_fields_missing_append_schema_column_passes($table, $expectedColumns, $liveColumns, $passes);
+            // Schema match lines are appended after UI mode is known (PASS vs schema-only INFO).
         }
 
         require_once __DIR__ . '/itm_crud_tables_audit.php';
@@ -1442,6 +1641,22 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $files['index'],
                 $infos
             );
+            $gateFormPaths = itm_fields_missing_merge_bespoke_form_paths($files, $formPaths);
+            itm_fields_missing_apply_skipped_ui_coverage_gate(
+                $moduleSlug,
+                $expectedColumns,
+                $gateFormPaths,
+                $passes,
+                $failures
+            );
+            itm_fields_missing_append_schema_column_passes(
+                $table,
+                $expectedColumns,
+                $liveColumns,
+                $passes,
+                $infos,
+                true
+            );
 
             return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
@@ -1464,6 +1679,22 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $expectedColumns,
                 'status_driven_skip',
                 $uiCollected
+            );
+            $gateFormPaths = itm_fields_missing_merge_bespoke_form_paths($files, $formPaths);
+            itm_fields_missing_apply_skipped_ui_coverage_gate(
+                $moduleSlug,
+                $expectedColumns,
+                $gateFormPaths,
+                $passes,
+                $failures
+            );
+            itm_fields_missing_append_schema_column_passes(
+                $table,
+                $expectedColumns,
+                $liveColumns,
+                $passes,
+                $infos,
+                true
             );
 
             return itm_fields_missing_finalize_module_report([
@@ -1499,6 +1730,14 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $expectedColumns,
                 $uiMode,
                 $uiCollected
+            );
+            itm_fields_missing_append_schema_column_passes(
+                $table,
+                $expectedColumns,
+                $liveColumns,
+                $passes,
+                $infos,
+                false
             );
 
             return itm_fields_missing_finalize_module_report([
@@ -1614,6 +1853,14 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             $expectedColumns,
             $uiMode,
             $uiCollected
+        );
+        itm_fields_missing_append_schema_column_passes(
+            $table,
+            $expectedColumns,
+            $liveColumns,
+            $passes,
+            $infos,
+            false
         );
 
         return itm_fields_missing_finalize_module_report([
