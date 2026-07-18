@@ -395,4 +395,99 @@ PHP;
             $passes
         );
     }
+
+    public function testExtractCreateEditFormBlockIgnoresNestedFieldElseif(): void
+    {
+        $content = <<<'PHP'
+<?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
+<form>
+<?php foreach ($fieldColumns as $col): $name = $col['Field']; ?>
+<?php if ($name === 'company_id'): ?>
+<?php elseif ($isTinyInt): ?>
+<input name="<?php echo sanitize($name); ?>">
+<?php endif; ?>
+<?php endforeach; ?>
+</form>
+<?php elseif ($crud_action === 'view'): ?>
+PHP;
+
+        $block = itm_fields_missing_extract_create_edit_form_block($content);
+        $this->assertNotNull($block);
+        $this->assertStringContainsString('sanitize($name)', $block);
+        $this->assertStringContainsString('foreach ($fieldColumns', $block);
+    }
+
+    public function testFieldColumnsLoopInNestedPartialDetectsAuditMetaExposure(): void
+    {
+        $content = <<<'PHP'
+<?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
+<?php foreach ($fieldColumns as $col): $name = $col['Field']; ?>
+<?php if ($name === 'company_id'): ?>
+<?php elseif ($isTinyInt): ?>
+<input name="<?php echo sanitize($name); ?>">
+<?php endif; ?>
+<?php endforeach; ?>
+<?php elseif ($crud_action === 'view'): ?>
+PHP;
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $tmpDir = $root . '/modules/_fields_missing_test_nested';
+        $renderPath = $tmpDir . '/includes/partials/render.php';
+        if (!is_dir($tmpDir . '/includes/partials')) {
+            mkdir($tmpDir . '/includes/partials', 0777, true);
+        }
+        file_put_contents($renderPath, $content);
+
+        try {
+            $this->assertTrue(
+                itm_fields_missing_dynamic_form_exposes_field('deleted_by', [$renderPath]),
+                'fieldColumns create/edit loops must expose globally excluded audit columns to the detector'
+            );
+        } finally {
+            if (is_file($renderPath)) {
+                unlink($renderPath);
+            }
+            @rmdir($tmpDir . '/includes/partials');
+            @rmdir($tmpDir . '/includes');
+            @rmdir($tmpDir);
+        }
+    }
+
+    public function testIpSubnetsBespokeGateHidesAuditMetaOnForms(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('ip_subnets', $root);
+        $formPaths = itm_fields_missing_merge_bespoke_form_paths(
+            $files,
+            itm_fields_missing_resolve_form_paths($files)
+        );
+        $passes = [];
+        $failures = [];
+
+        itm_fields_missing_apply_skipped_ui_coverage_gate(
+            'ip_subnets',
+            [
+                'id', 'company_id', 'vlan_id', 'cidr', 'gateway_ip', 'dns1_ip', 'dns2_ip', 'dhcp_enabled',
+                'notes', 'active', 'deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at',
+            ],
+            $formPaths,
+            $files,
+            $passes,
+            $failures,
+            false
+        );
+
+        $this->assertSame([], $failures, implode('; ', array_map(static function ($row) {
+            return (string) ($row['message'] ?? '');
+        }, $failures)));
+        $this->assertContains(
+            'ip_subnets excluded UI column deleted_by: hidden or absent on create/edit forms',
+            $passes
+        );
+        $this->assertContains(
+            'ip_subnets bespoke gate: hidden audit inputs on create/edit',
+            $passes
+        );
+    }
 }

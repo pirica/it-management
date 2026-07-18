@@ -623,19 +623,7 @@ if (!function_exists('itm_fields_missing_extract_form_field_names')) {
     function itm_fields_missing_extract_form_field_names(array $paths): array
     {
         $names = [];
-        foreach ($paths as $path) {
-            if (is_dir($path)) {
-                foreach (glob($path . '/*.php') ?: [] as $includeFile) {
-                    $content = file_get_contents($includeFile);
-                    if ($content === false) {
-                        continue;
-                    }
-                    foreach (itm_fields_missing_extract_form_field_names_from_content($content) as $name) {
-                        $names[$name] = true;
-                    }
-                }
-                continue;
-            }
+        foreach (itm_fields_missing_expand_form_scan_paths($paths) as $path) {
             if (!is_readable($path)) {
                 continue;
             }
@@ -919,6 +907,82 @@ if (!function_exists('itm_fields_missing_file_uses_dynamic_column_form_loop')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_extract_create_edit_form_block')) {
+    /**
+     * Return the create/edit elseif branch body when present (bespoke partials + flattened index).
+     */
+    function itm_fields_missing_extract_create_edit_form_block(string $content): ?string
+    {
+        $openTag = null;
+        $startPos = null;
+        if (preg_match(
+            "/<\?php\s+elseif\s*\(\s*in_array\s*\(\s*\\\$crud_action\s*,\s*\[\s*['\"]create['\"][^\]]*\]\s*,\s*true\s*\)\s*\)\s*:\s*\?>/",
+            $content,
+            $openMatch,
+            PREG_OFFSET_CAPTURE
+        )) {
+            $openTag = $openMatch[0][0];
+            $startPos = (int) $openMatch[0][1];
+        } elseif (preg_match(
+            "/<\?php\s+elseif\s*\(\s*\\\$crud_action\s*===\s*['\"]create['\"][^\)]*\)\s*:\s*\?>/",
+            $content,
+            $openMatch,
+            PREG_OFFSET_CAPTURE
+        )) {
+            $openTag = $openMatch[0][0];
+            $startPos = (int) $openMatch[0][1];
+        }
+
+        if ($openTag === null || $startPos === null) {
+            return null;
+        }
+
+        $searchFrom = $startPos + strlen($openTag);
+        if (preg_match(
+            "/<\?php\s+elseif\s*\(\s*\\\$crud_action\b/",
+            $content,
+            $endMatch,
+            PREG_OFFSET_CAPTURE,
+            $searchFrom
+        )) {
+            return substr($content, $startPos, $endMatch[0][1] - $startPos);
+        }
+
+        if (preg_match(
+            "/<\?php\s+endif\s*;\s*\?>/",
+            $content,
+            $endMatch,
+            PREG_OFFSET_CAPTURE,
+            $searchFrom
+        )) {
+            return substr($content, $startPos, $endMatch[0][1] - $startPos);
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_fields_missing_create_edit_form_loop_variable')) {
+    function itm_fields_missing_create_edit_form_loop_variable(string $content): ?string
+    {
+        $block = itm_fields_missing_extract_create_edit_form_block($content);
+        if ($block === null || !itm_fields_missing_file_uses_dynamic_column_form_loop($block)) {
+            return null;
+        }
+        if (preg_match('/foreach\s*\(\s*\$fieldColumns\s+as/', $block)) {
+            return 'fieldColumns';
+        }
+        if (preg_match('/foreach\s*\(\s*\$uiColumns\s+as/', $block)) {
+            return 'uiColumns';
+        }
+        if (preg_match('/foreach\s*\(\s*\$formColumns\s+as/', $block)) {
+            return 'formColumns';
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
     /**
      * Detect visible inputs emitted by foreach ($fieldColumns|$uiColumns) name=$name loops.
@@ -927,9 +991,10 @@ if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
      */
     function itm_fields_missing_dynamic_form_exposes_field(string $field, array $paths): bool
     {
+        $expandedPaths = itm_fields_missing_expand_form_scan_paths($paths);
         $manageableExclusions = [];
-        foreach ($paths as $path) {
-            if (!is_readable($path) || is_dir($path)) {
+        foreach ($expandedPaths as $path) {
+            if (!is_readable($path)) {
                 continue;
             }
             $content = (string) file_get_contents($path);
@@ -939,17 +1004,21 @@ if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
             }
         }
 
-        foreach ($paths as $path) {
-            if (!is_readable($path) || is_dir($path)) {
+        $globalExcluded = array_fill_keys(itm_fields_missing_global_ui_excluded_columns(), true);
+
+        foreach ($expandedPaths as $path) {
+            if (!is_readable($path)) {
                 continue;
             }
             $content = (string) file_get_contents($path);
-            if (!itm_fields_missing_file_uses_dynamic_column_form_loop($content)) {
+            $createEditLoop = itm_fields_missing_create_edit_form_loop_variable($content);
+            if ($createEditLoop === null) {
                 continue;
             }
 
-            $usesUiColumns = (bool) preg_match('/foreach\s*\(\s*\$(uiColumns|formColumns)\s+as/', $content);
-            if ($usesUiColumns) {
+            $createEditBlock = itm_fields_missing_extract_create_edit_form_block($content) ?? $content;
+
+            if ($createEditLoop === 'uiColumns' || $createEditLoop === 'formColumns') {
                 if (function_exists('itm_crud_is_form_hidden_audit_field')
                     && itm_crud_is_form_hidden_audit_field($field)
                 ) {
@@ -970,9 +1039,18 @@ if (!function_exists('itm_fields_missing_dynamic_form_exposes_field')) {
                 ) {
                     continue;
                 }
+            } elseif ($createEditLoop === 'fieldColumns' && isset($globalExcluded[$field])) {
+                if (itm_fields_missing_file_skips_dynamic_form_field($field, $createEditBlock)) {
+                    continue;
+                }
+                if (in_array($field, $manageableExclusions, true)) {
+                    continue;
+                }
+
+                return true;
             }
 
-            if (itm_fields_missing_file_skips_dynamic_form_field($field, $content)) {
+            if (itm_fields_missing_file_skips_dynamic_form_field($field, $createEditBlock)) {
                 continue;
             }
 
@@ -995,16 +1073,7 @@ if (!function_exists('itm_fields_missing_form_exposes_literal_visible_field')) {
      */
     function itm_fields_missing_form_exposes_literal_visible_field(string $field, array $paths): bool
     {
-        foreach ($paths as $path) {
-            if (is_dir($path)) {
-                foreach (glob($path . '/*.php') ?: [] as $includeFile) {
-                    $content = file_get_contents($includeFile);
-                    if ($content !== false && itm_fields_missing_file_has_visible_form_field($field, $content)) {
-                        return true;
-                    }
-                }
-                continue;
-            }
+        foreach (itm_fields_missing_expand_form_scan_paths($paths) as $path) {
             if (!is_readable($path)) {
                 continue;
             }
@@ -1024,16 +1093,7 @@ if (!function_exists('itm_fields_missing_form_exposes_visible_field')) {
      */
     function itm_fields_missing_form_exposes_visible_field(string $field, array $paths): bool
     {
-        foreach ($paths as $path) {
-            if (is_dir($path)) {
-                foreach (glob($path . '/*.php') ?: [] as $includeFile) {
-                    $content = file_get_contents($includeFile);
-                    if ($content !== false && itm_fields_missing_file_has_visible_form_field($field, $content)) {
-                        return true;
-                    }
-                }
-                continue;
-            }
+        foreach (itm_fields_missing_expand_form_scan_paths($paths) as $path) {
             if (!is_readable($path)) {
                 continue;
             }
@@ -1316,6 +1376,30 @@ if (!function_exists('itm_fields_missing_collect_includes_php_paths')) {
         sort($paths, SORT_STRING);
 
         return $paths;
+    }
+}
+
+if (!function_exists('itm_fields_missing_expand_form_scan_paths')) {
+    /**
+     * Flatten form scan paths: directories become recursive PHP files under includes/.
+     *
+     * @param list<string> $paths
+     * @return list<string>
+     */
+    function itm_fields_missing_expand_form_scan_paths(array $paths): array
+    {
+        $expanded = [];
+        foreach ($paths as $path) {
+            if (is_dir($path)) {
+                $expanded = array_merge($expanded, itm_fields_missing_collect_includes_php_paths($path));
+                continue;
+            }
+            if (is_readable($path) && !is_dir($path)) {
+                $expanded[] = $path;
+            }
+        }
+
+        return array_values(array_unique($expanded));
     }
 }
 
