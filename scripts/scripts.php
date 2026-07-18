@@ -500,7 +500,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="debug_resignations_termination_date.php" target="_blank" rel="nofollow noreferrer">debug_resignations_termination_date.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Diagnose why a <code>termination_date</code> (default <code>18/06/2026</code>, ISO week 25) does or does not match <code>modules/resignations/index.php</code> — PHP vs MySQL week metadata, ISO bounds, legacy <code>YEAR/MONTH/WEEK</code>, simulated module SQL (<code>itm_sql_valid_date_predicate()</code>; not <code>&lt;&gt; '0000-00-00'</code>), employee row, verify-probe bounds. Use when the report is empty or prepare fails with <code>Incorrect DATE value: '0000-00-00'</code>.</td>
-                    <td><code>php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026</code></td>
+                    <td><code>php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=1 --week=25 --month=6 --year=2026</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_employee_type_resignations.php" target="_blank" rel="nofollow noreferrer">verify_employee_type_resignations.php</a></td>

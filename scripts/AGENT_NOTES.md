@@ -63,7 +63,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **list_boolean_integer_fields.php** — parses database.sql and live database to list Boolean/tinyint/int/integer columns, matched to modules by name.
 - **list_enum_fields.php** — parses database.sql and live database to list ENUM columns, matched to modules by name.
 - **extract_by_fields.php** — parses database.sql to extract column definitions matching keywords (by, to, employee_id, employee), matching tables to modules by name.
-- **debug_resignations_termination_date.php** — read-only diagnostic for `modules/resignations/index.php` weekly filter. Default probe date `18/06/2026` (ISO week 25). Params: `date`, `company_id`, `employee_id`, `week`, `month`, `year`. Prints `[PASS]` / `[FAIL]` / `[WARN]` for week metadata, ISO bounds, legacy predicates, module SQL simulation, employee row, and today's verify-probe bounds. Catalog: `scripts/scripts.php`. Confirmed fix for empty report when MySQL 8 rejected `<> '0000-00-00'` in prepared statements.
+- **debug_resignations_termination_date.php** — read-only diagnostic for `modules/resignations/index.php` weekly filter. Default probe date `18/06/2026` (ISO week 25), `company_id=1`. Optional `employee_id` (0 = disposable probe only). Tests literal-date predicates (not dependent on existing rows), simulates module SQL with a disposable `MBQA-RESIGN-DEBUG-*` employee (same contract as `verify_employee_type_resignations.php`), then deletes the probe.
 - **employee_fields_missing.php** — compares `employees` columns in `database.sql` and live MySQL with create/edit/view/index coverage in `modules/employees/`; fails on schema or critical UI gaps (including `termination_date`). View checks map FK columns to human labels in `view.php` (e.g. `department_id` → `Department` / `department_name`).
 - **verify_emails_module.php** — Email Management tables, registry row, SMTP/alert seeds, `itm_send_email()` helper, delivery test scripts, and company 1 alert-runner 30-day window (hard fail when empty; inserts disposable license sample then cleans up).
 - **verify_user_config_profile.php** — `user-config.php` profile field regression: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute Explorer proxy (not `../../modules/…`).
@@ -102,7 +102,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - Forgetting to define `ITM_CLI_SCRIPT` when running PHP scripts from the command line. [Cursor-Valid]
 - **Hardcoded seed user id 1:** repro/verify scripts must use `lib/itm_script_test_employee.php` for `employees` mutations — never UPDATE Admin reset tokens in place. Run `php scripts/check_script_disposable_employees.php` after changing audit repro scripts. [Cursor-Valid]
 - **FK dropdown risk UI:** `detect_fk_dropdown_ui_risk_ui.php` is browser-only diagnostic output for cross-tenant FK findings, so keep the standard Admin browser gate (`lib/itm_script_regression_entry.php`) and ensure the visible/JSON summary reflects the active `risk_filter`, not only the raw unfiltered helper counts. [Cursor-Valid]
-- **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=4` and `employee_id=432` — change params when debugging another tenant. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)` or the row is excluded. Calendar year vs ISO year (`date('o')`) diverges at year boundaries; the script warns when bounds differ. [Cursor-Valid]
+- **Resignations debug:** `debug_resignations_termination_date.php` defaults to `company_id=1` and `employee_id=0` (optional live row lookup). Module probe inserts a disposable employee when no live row is supplied — same weekly filter contract as `verify_employee_type_resignations.php`. Cross-month ISO weeks require the selected `month` to match `MONTH(termination_date)`. [Cursor-Valid]
 - **MySQL 8 `NO_ZERO_DATE`:** do not use `<> '0000-00-00'` in resignations or verify SQL — use `itm_sql_valid_date_predicate()` from `includes/itm_date_format.php`. Symptom: `Incorrect DATE value: '0000-00-00'` on `mysqli_prepare` and an empty weekly report despite valid `termination_date` rows. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
@@ -131,9 +131,9 @@ php scripts/bypass_login.php --user=johndoe --company=2
 
 ### Resignations termination date debug
 ```bash
-php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432 --week=25 --month=6 --year=2026
+php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=1 --week=25 --month=6 --year=2026
 ```
-Browser (login required): `scripts/debug_resignations_termination_date.php?date=18/06/2026&company_id=4&employee_id=432&week=25&month=6&year=2026`. Listed in **`scripts/scripts.php`**.
+Browser (login required): `scripts/debug_resignations_termination_date.php?date=18/06/2026&company_id=1&week=25&month=6&year=2026`. Listed in **`scripts/scripts.php`**.
 
 ## 12. Bypass Login (CLI Information)
 The `scripts/bypass_login.php` script allows you to:
