@@ -237,9 +237,57 @@ PHP;
 
     public function testBespokeScaffoldHybridMissingAuditFilterFailsGate(): void
     {
+        $content = <<<'PHP'
+function cr_manageable_columns($columns) { return $columns; }
+$uiColumns = array_values(array_filter($fieldColumns, function ($col) {
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($col['Field'])) {
+        return false;
+    }
+    return true;
+}));
+<?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
+<?php foreach ($uiColumns as $col): $name = $col['Field']; ?>
+<input name="<?php echo sanitize($name); ?>">
+PHP;
         $root = realpath(__DIR__ . '/../../../../');
         $this->assertNotFalse($root);
-        $files = itm_fields_missing_module_file_bundle('role_module_permissions', $root);
+        $tmpDir = $root . '/modules/_fields_missing_test_hybrid';
+        $indexPath = $tmpDir . '/index.php';
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir);
+        }
+        file_put_contents($indexPath, $content);
+        $files = itm_fields_missing_module_file_bundle('_fields_missing_test_hybrid', $root);
+        $formPaths = [$indexPath];
+        $passes = [];
+        $failures = [];
+
+        try {
+            itm_fields_missing_audit_bespoke_scaffold_hybrid_contract(
+                '_fields_missing_test_hybrid',
+                $files,
+                $formPaths,
+                $passes,
+                $failures
+            );
+
+            $this->assertNotSame([], $failures);
+            $this->assertStringContainsString('audit meta filter', $failures[0]['message'] ?? '');
+        } finally {
+            if (is_file($indexPath)) {
+                unlink($indexPath);
+            }
+            if (is_dir($tmpDir)) {
+                rmdir($tmpDir);
+            }
+        }
+    }
+
+    public function testOpsReportDeferredUiAuditReportsSkipFails(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('ops_report', $root);
         $formPaths = itm_fields_missing_merge_bespoke_form_paths(
             $files,
             itm_fields_missing_resolve_form_paths($files)
@@ -247,16 +295,17 @@ PHP;
         $passes = [];
         $failures = [];
 
-        itm_fields_missing_audit_bespoke_scaffold_hybrid_contract(
-            'role_module_permissions',
-            $files,
+        itm_fields_missing_audit_bespoke_deferred_ui_coverage(
+            'ops_report',
+            ['id', 'company_id', 'report_date', 'room_revenue', 'active', 'created_by'],
             $formPaths,
+            $files,
             $passes,
             $failures
         );
 
         $this->assertNotSame([], $failures);
-        $this->assertStringContainsString('audit meta filter', $failures[0]['message'] ?? '');
+        $this->assertGreaterThanOrEqual(3, count($failures));
     }
 
     public function testCableColorsBespokeGatePassesHybridContract(): void
