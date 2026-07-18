@@ -743,6 +743,30 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
                     'code' => 'ui_excluded_exposed',
                     'message' => "{$moduleSlug} excluded UI column {$field}: visible on create/edit forms",
                 ];
+                continue;
+            }
+            $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on create/edit forms";
+        }
+    }
+}
+
+if (!function_exists('itm_fields_missing_append_schema_column_passes')) {
+    /**
+     * One PASS per column present in both database.sql and live DB (not a single summary line).
+     *
+     * @param list<string> $expectedColumns
+     * @param list<string> $liveColumns
+     * @param list<string> $passes
+     */
+    function itm_fields_missing_append_schema_column_passes(
+        string $table,
+        array $expectedColumns,
+        array $liveColumns,
+        array &$passes
+    ): void {
+        foreach ($expectedColumns as $column) {
+            if (in_array($column, $liveColumns, true)) {
+                $passes[] = "{$table}.{$column}: live matches database.sql";
             }
         }
     }
@@ -1120,6 +1144,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 $infos[] = "Live DB has extra {$table}.{$column} not listed in database.sql";
             }
         }
+        if ($expectedColumns !== []) {
+            itm_fields_missing_append_schema_column_passes($table, $expectedColumns, $liveColumns, $passes);
+        }
 
         require_once __DIR__ . '/itm_crud_tables_audit.php';
         $bespokeModules = array_fill_keys(itm_crud_tables_load_skip_module_slugs($rootPath), true);
@@ -1218,6 +1245,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                     'message' => "{$moduleSlug} index.php missing list/import reference for: {$field}",
                 ];
             }
+            if ($formOk && ($viewOk || !is_readable($files['view'])) && $indexOk) {
+                $passes[] = "{$moduleSlug} UI covers {$field}";
+            }
         }
 
         if ($moduleSlug === 'employees') {
@@ -1249,6 +1279,8 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                         $gaps[] = 'index';
                     }
                     $infos[] = "employees.{$field} not fully wired (" . implode(', ', $gaps) . ' missing)';
+                } else {
+                    $passes[] = "employees optional UI covers {$field}";
                 }
             }
 
@@ -1256,7 +1288,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 if (!in_array($field, $expectedColumns, true)) {
                     continue;
                 }
-                if (!itm_fields_missing_index_has_field($field, $files['index'])) {
+                if (itm_fields_missing_index_has_field($field, $files['index'])) {
+                    $passes[] = "employees system access column {$field} referenced via employee_system_access join in index.php";
+                } else {
                     $infos[] = "employees system access column {$field} is managed via employee_system_access matrix (not a direct form input)";
                 }
             }
