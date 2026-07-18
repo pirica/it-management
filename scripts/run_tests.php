@@ -141,7 +141,6 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     $coverageDriverOk = itm_run_tests_has_coverage_driver();
 
     itm_script_output_begin('PHPUnit Test Suite');
-    itm_script_browser_nav_echo();
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>PHPUnit Test Suite</h1>';
     echo '<p>Choose how to run tests from <code>phpunit/tests/Unit/</code>. Output is verbose (test names and details).</p>';
@@ -240,7 +239,6 @@ $command .= ' 2>&1';
 
 if (!$isCli) {
     itm_script_output_begin('PHPUnit Test Suite Results');
-    itm_script_browser_nav_echo();
     echo '<h1>PHPUnit Test Suite</h1>';
     echo '<p><a href="run_tests.php">← Choose another run mode</a></p>';
     echo '<p>Running from <code>phpunit/tests/Unit/</code> — mode: <strong>'

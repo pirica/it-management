@@ -16,8 +16,6 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 $isCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if (!$isCli) {
     header('Content-Type: text/html; charset=utf-8');
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo('titles_list_show.php');
 }
 
 itm_script_output_begin('Modules Title List (Rendered Inner Text)');

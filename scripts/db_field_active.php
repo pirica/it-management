@@ -36,7 +36,6 @@ $asJson = in_array('--json', $argvList, true);
 if (!$itmIsCli) {
     itm_script_output_begin('DB Field active audit');
     itm_script_output_close_pre();
-    itm_script_browser_nav_echo();
 }
 
 $dbSqlPath = dirname(__DIR__) . '/database.sql';

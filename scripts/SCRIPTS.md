@@ -441,6 +441,7 @@ php scripts/apitest_tier_basic.php
 * **Back link (required):** Every HTML report must show **← Scripts index** at the top, linking to `scripts/scripts.php` (relative `scripts.php` from `scripts/`).
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo()`.
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
+  * **No duplicate nav (mandatory):** `itm_script_output_begin()` already renders **← Scripts index** once. Do **not** call `itm_script_browser_nav_echo()` again in the same browser response (for example after `itm_script_output_close_pre()`, inside the same `if (!$isCli)` block, or on the line immediately after `itm_script_output_begin()`). Custom full-page HTML shells should use **either** `itm_script_output_begin()` **or** a hand-built `<!doctype>` page with a single `itm_script_browser_nav_echo()` — not both. Static gate: `php scripts/check_script_browser_nav_duplicate.php`.
 * **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
 * **Line-breaking prevention for tables (nowrap standard):** To guarantee readability and maintain professional UI appearance in admin/report tool dashboards (e.g., `crud_tables.php`, `crud_titles.php`, `crud_actions.php`), data rows must not wrap arbitrarily. Implement this by applying `white-space: nowrap;` to table header and body cells (`thead th` and `tbody td`), and wrap the table structure in a container set to `overflow-x: auto;` (such as the `.wrap` container class) to facilitate horizontal scrolling for overflowing data without distorting column structures.
 
@@ -993,6 +994,14 @@ php scripts/verify_employees_equipment_search_coverage.php
 ```
 
 When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`. The static audit (`check_fk_label_search_coverage.php`) is smoke step 4 and uses **universal pass rules only** (no per-module N/A allowlist); runtime verify runs in the **database-import** CI job. Run `php scripts/verify_employees_equipment_search_coverage.php` after employees or equipment list search / FK label helper changes.
+
+**Script browser nav (no duplicate ← Scripts index):** after changing `scripts/lib/script_cli_output.php`, `scripts/lib/script_browser_nav.php`, or any browser HTML shell under `scripts/*.php`, run:
+
+```bash
+php scripts/check_script_browser_nav_duplicate.php
+```
+
+Exit `0` when no file stacks `itm_script_browser_nav_echo()` / `itm_script_browser_nav_html()` on top of `itm_script_output_begin()` in the same browser path.
 
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 

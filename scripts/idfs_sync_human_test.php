@@ -64,7 +64,6 @@ function itm_test_browser_init()
     }
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>IDF sync human test</title></head>'
         . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:960px;">';
-    itm_script_browser_nav_echo();
     echo '<p style="color:#57606a;margin:0 0 14px;">End-to-end sync across '
         . itm_script_format_module_link('idfs', '', 'IDF module')
         . ' · tables '

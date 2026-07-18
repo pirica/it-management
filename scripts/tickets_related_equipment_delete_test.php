@@ -174,7 +174,6 @@ if (!tradt_is_cli()) {
     header('Content-Type: text/html; charset=UTF-8');
     require_once __DIR__ . '/lib/script_browser_nav.php';
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Tickets Related Equipment delete test</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
 }
 
 $failures = 0;

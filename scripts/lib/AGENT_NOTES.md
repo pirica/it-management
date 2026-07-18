@@ -7,7 +7,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | File | Role |
 |------|------|
 | `script_browser_nav.php` | ← Scripts index, relative module links, table→module links |
-| `script_cli_output.php` | Browser `<pre>` wrapper + nav for CLI-style audits; `itm_script_output_nl()`, `colorText()`, `itm_script_format_status_line()`, `itm_script_echo_list()` |
+| `script_cli_output.php` | Browser `<pre>` wrapper + nav for CLI-style audits; `itm_script_output_begin()` calls `itm_script_browser_nav_echo()` once — do not echo nav again in the same browser response (gate: `check_script_browser_nav_duplicate.php`) |
 | `utf8_file.php` | UTF-8 writes for `qa-reports/*.md` / `.json` |
 | `mbqa_report_paths.php` | Timestamped QA report paths |
 | `mbqa_runner_tiers.php` | Tier D / skipClear canonical lists |
