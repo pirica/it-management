@@ -56,7 +56,7 @@ echo 'Top offenders:' . $nl;
 arsort($byFile);
 $shown = 0;
 foreach ($byFile as $file => $count) {
-    echo '  - ' . $file . ' (' . $count . ')' . $nl;
+    echo '  - ' . itm_script_format_modules_file_link($file) . ' (' . $count . ')' . $nl;
     $shown++;
     if ($shown >= 25) {
         break;
@@ -65,9 +65,13 @@ foreach ($byFile as $file => $count) {
 echo $nl;
 
 foreach ($violations as $row) {
+    $file = (string)($row['file'] ?? '');
     $line = (int)($row['line'] ?? 0);
-    $lineLabel = $line > 0 ? (string)$line : '?';
-    echo '  ' . (string)($row['file'] ?? '') . ':' . $lineLabel
+    $fileRef = itm_script_format_modules_file_link($file, $line > 0 ? $line : 0);
+    if ($line <= 0) {
+        $fileRef .= ':?';
+    }
+    echo '  ' . $fileRef
         . ' [' . (string)($row['code'] ?? 'issue') . '] '
         . (string)($row['detail'] ?? '') . $nl;
 }
