@@ -161,12 +161,14 @@ foreach ($moduleDirs as $moduleName) {
 
 // #region agent log
 itm_crud_actions_debug_log([
-    'runId' => 'crud-actions-scan',
-    'hypothesisId' => 'H1-H5',
-    'message' => 'crud_actions scan summary',
-    'data' => $stats + ['row_count' => count($rows)],
+    'runId' => 'crud-actions-nav-fix',
+    'hypothesisId' => 'H-DUP',
+    'message' => 'nav source: itm_script_output_begin only (no explicit echo)',
+    'data' => $stats + ['row_count' => count($rows), 'explicit_nav_echo' => false],
 ]);
 // #endregion
+
+itm_script_output_close_pre();
 
 echo '<!doctype html>';
 echo '<html lang="en">';
@@ -194,9 +196,6 @@ echo '</style>';
 echo '</head>';
 echo '<body>';
 echo '<div class="wrap">';
-if (!itm_script_is_cli_sapi()) {
-    itm_script_browser_nav_echo();
-}
 echo '<h1>CRUD Action Mapper</h1>';
 echo '<p>Modules scanned: <strong>' . count($moduleDirs) . '</strong> | Rows: <strong>' . count($rows) . '</strong></p>';
 echo '<table>';
