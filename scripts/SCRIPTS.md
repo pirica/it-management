@@ -556,6 +556,16 @@ Local full import (requires MySQL, password `itmanagement`): `bash scripts/verif
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
+**Tier 2 batch (pre-merge static cluster):** run every Tier 2 `check_*` script from `SCRIPTS_TEST_MATRIX.md` in one pass:
+
+```bash
+php scripts/run_tier2_checks.php
+php scripts/run_tier2_checks.php --continue
+php scripts/run_tier2_checks.php --only=check_ui_action_emoji.php,check_audit_logs_coverage.php
+```
+
+Browser menu: `scripts/run_tier2_checks.php` → **Run Tier 2 batch**. Optional `PHP_BIN=/path/to/php.exe` (Windows Laragon). Parses `SCRIPTS_TEST_MATRIX.md` for Tier 2 `check_*` rows; falls back to a built-in list when the matrix is missing. Does not mutate the database.
+
 #### Scaffold audit columns + soft-delete
 
 | Script | Purpose |

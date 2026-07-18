@@ -21,6 +21,7 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **234**.
 | Runner | Covers | Does not cover |
 |--------|--------|----------------|
 | `bash scripts/smoke_test.sh` | PHP lint; `check_csrf_coverage.php`; `check_sql_injection_coverage.php`; `check_fk_label_search_coverage.php` | MySQL, PHPUnit, MBQA, most `check_*` / `verify_*` |
+| `php scripts/run_tier2_checks.php` | All Tier 2 static `check_*` scripts from this matrix (parse or fallback list) | Tier 1 smoke trio, Tier 3+ runtime verifiers, MBQA |
 | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import + table count; calls schema verify | Module HTTP behaviour |
 | `php scripts/verify_crud_fk_label_search.php` | Runtime FK label search (CI database-import) | Non-search modules |
 | `php scripts/run_tests.php` | PHPUnit suite under `phpunit/tests/Unit/` | Module entry HTTP flows; most `scripts/verify_*` |
@@ -128,6 +129,15 @@ $php = "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nt
 ```
 
 ## Tier 2 commands (static cluster)
+
+**Batch (recommended):**
+
+```bash
+php scripts/run_tier2_checks.php
+php scripts/run_tier2_checks.php --continue
+```
+
+Individual scripts:
 
 ```bash
 php scripts/check_ui_action_emoji.php

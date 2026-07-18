@@ -861,8 +861,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF coverage, (3) SQLi coverage. Other check scripts are run manually when needed — not part of smoke.</td>
+                    <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF coverage, (3) SQLi coverage, (4) FK label search static audit. Other Tier 2 <code>check_*</code> scripts: use <code>run_tier2_checks.php</code>.</td>
                     <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
+                </tr>
+                <tr>
+                    <td><a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Batch runner for all Tier 2 static <code>check_*</code> scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (pre-merge static cluster; no DB mutation). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
+                    <td>Browser: menu at <a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a>; run with <code>?run=1</code> (optional <code>&amp;continue=1</code>). CLI: <code>php scripts/run_tier2_checks.php</code>, <code>--continue</code>, <code>--list</code>, <code>--only=check_ui_action_emoji.php</code>. Optional <code>PHP_BIN</code> env on Windows Laragon.</td>
                 </tr>
                 <tr>
                     <td><a href="perform_audit.php" target="_blank" rel="nofollow noreferrer">perform_audit.php</a></td>
