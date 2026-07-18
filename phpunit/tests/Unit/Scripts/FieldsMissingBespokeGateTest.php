@@ -602,6 +602,58 @@ PHP;
         $this->assertStringNotContainsString('manufacturers audited UI column', $block);
     }
 
+    public function testSearchContractAcceptsPlainClearResetLink(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $content = <<<'HTML'
+<?php $searchRaw = trim((string)($_GET['search'] ?? '')); ?>
+<?php if ($searchRaw !== '') { $sql = " AND name LIKE ?"; } ?>
+<form method="get">
+<input name="search" value="">
+<button type="submit">Search</button>
+<a class="btn" href="index.php">Clear</a>
+</form>
+<table></table>
+HTML;
+        $check = itm_check_search($content, 'index.php');
+        $this->assertSame('pass', $check['status'] ?? '');
+        $this->assertStringContainsString('Clear', (string) ($check['details'] ?? ''));
+    }
+
+    public function testSearchContractAcceptsEmojiOnlyBackResetLink(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $content = <<<'HTML'
+<?php $searchRaw = trim((string)($_GET['search'] ?? '')); ?>
+<?php if ($searchRaw !== '') { $sql = " AND name LIKE ?"; } ?>
+<form method="get">
+<input name="search" value="">
+<button type="submit">Search</button>
+<a href="index.php" class="btn">🔙</a>
+</form>
+<table><tr><td>x</td></tr></table>
+HTML;
+        $check = itm_check_search($content, 'index.php');
+        $this->assertSame('pass', $check['status'] ?? '');
+    }
+
+    public function testSearchContractFailsWithoutResetControl(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $content = <<<'HTML'
+<?php $searchRaw = trim((string)($_GET['search'] ?? '')); ?>
+<?php if ($searchRaw !== '') { $sql = " AND name LIKE ?"; } ?>
+<form method="get">
+<input name="search" value="">
+<button type="submit">Search</button>
+</form>
+<table></table>
+HTML;
+        $check = itm_check_search($content, 'index.php');
+        $this->assertSame('fail', $check['status'] ?? '');
+        $this->assertStringContainsString('search reset control', (string) ($check['details'] ?? ''));
+    }
+
     /**
      * @param list<string> $messages
      * @param list<string> $needles
