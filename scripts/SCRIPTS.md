@@ -291,6 +291,8 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 |--------|---------|
 | `php scripts/test_explorer_paths.php` | Pure-logic regression for `get_full_path` ACL (roots, traversal, backslashes, `./` prefix bypass) |
 | `php scripts/test_explorer_preview.php` | Pure-logic regression for Explorer preview routing (`image`, `pdf`, `text`, `unsupported`) |
+| `php scripts/test_explorer_paths.php` | Path ACL logic for Explorer (`get_full_path`). Browser + CLI. |
+| `php scripts/explorer_human_test.php` | Human-flow Explorer API regression (list/create/rename/move/copy/delete, ACL, DB sync, audit). **Mutates DB + filesystem** (temporary company). Browser (Admin) + CLI; exit `1` on failure. |
 | `php scripts/verify_explorer_zip_leak.php` | Step 1: blocked roots (Home, `Common`, `Private`, `Departments`, `Trash`). Step 2: exact `Private/{username}_{id}` only. Step 3: all other paths blocked (own subfolders, `Common`/`Departments`, other users). Subprocess harness: Laragon CLI `php.exe`, session before `config.php`. |
 | `php scripts/repro_explorer_path_bypass_v4.php` | Regression — `./Private` and `./Private/{other}` blocked after path normalization |
 | `php scripts/repro_explorer_zip_slip_v2.php` | Regression — malicious ZIP traversal entries blocked during `unzip` |

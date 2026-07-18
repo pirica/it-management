@@ -89,6 +89,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **benchmark_stats_optimized.php** — Performance benchmark for consolidated stats query.
 - **benchmark_user_config.php** — Legacy 4 alerts/events COUNT loop vs production `itm_user_config_fetch_stats_batch()` + `itm_user_config_extract_alerts_events_counts()`; `[PASS]` requires matching counts and extract faster than legacy loop.
 - **repro_explorer_traversal.php** — Repro script for Explorer Path Traversal vulnerability via 'item' parameter.
+- **explorer_human_test.php** — Human-flow Explorer API regression (ACL, CRUD, DB sync, audit). Browser (Admin) + CLI; mutates DB/filesystem via temporary company teardown. See **`scripts/SCRIPTS.md` → Explorer**.
 - **verify_explorer_fix.php** / **verify_explorer_fix_updated.php** — Verification for Explorer Path Traversal fix.
 - **verify_explorer_fix_web.php** / **verify_explorer_fix_standalone.php** — Web-friendly and standalone HTML UI verification for Explorer Path Traversal fix.
 - **verify_import_fix_updated.php** — Verification for Employee Import Department Data Loss Fix.

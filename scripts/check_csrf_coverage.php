@@ -211,7 +211,7 @@ foreach ($iterator as $fileInfo) {
         continue;
     }
 
-    // Why: scripts/explorer_human_test.php is a CLI integration test; $_POST is mocked for internal API calls.
+    // Why: scripts/explorer_human_test.php mocks $_POST for internal API calls (CLI + browser).
     if ($relativePath === 'scripts/explorer_human_test.php') {
         $skipped[] = [
             $relativePath,
