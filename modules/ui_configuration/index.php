@@ -172,11 +172,9 @@ function cr_is_hidden_employee_field($field) {
 
 /**
  * Why: API keys and rate-limit metadata are managed in Settings; scaffold must not null them on save.
+ * This index.php only serves ui_configuration — do not gate on $GLOBALS['crud_table'] (never populated).
  */
 function cr_is_hidden_ui_configuration_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'ui_configuration') {
-        return false;
-    }
     static $hidden = [
         'api_key',
         'api_key_is_active',
