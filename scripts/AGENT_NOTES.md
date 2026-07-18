@@ -77,6 +77,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **take_screenshots_modules.py** — Python script using Playwright to automate screenshot capture for README.
 - **check_phones.php** / **list_phone_columns.php** — PII auditing for phone-related columns in `database.sql`. Browser or CLI via `lib/script_cli_output.php`.
 - **list_active_and_checkboxes.php** — Audits `active` field UI for modules whose resolved `$crud_table` has an `active` column (`information_schema`). Flags forbidden text inputs, non-compliant scaffold checkboxes (`itm-checkbox-control`), and status-driven modules (`employees`, `equipment`, `patches_updates`, `tickets`) with visible active checkboxes. Shared builder: `scripts/lib/itm_list_active_and_checkboxes_report.php`. CLI exits `1` on violations; `--all` lists compliant files.
+- **fix_scaffold_active_checkbox.php** — Repairs `scaffold_active_checkbox_not_compliant` violations via `scripts/lib/itm_active_checkbox_fix.php`. Browser module select + dry-run/apply; CLI `--module=` / `--all`. Catalog: **`scripts/scripts.php`**.
 - **identify_modules.php** — Scans modules and saves metadata to `modules_metadata.json`.
 - **generate_tests.php** — Generates PHPUnit tests based on module metadata.
 - **count_args.php** — Audits `trg_employees_audit_insert` trigger arguments. Browser or CLI via `lib/script_cli_output.php`.

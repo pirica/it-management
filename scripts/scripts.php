@@ -829,6 +829,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Audits <code>active</code> field UI for modules with an <code>active</code> DB column (resolved via <code>$crud_table</code>). Flags forbidden text inputs, non-compliant scaffold checkboxes, and status-driven modules with visible active checkboxes.</td>
                     <td>Browser: HTML report (Admin). CLI: <code>php scripts/list_active_and_checkboxes.php</code> · JSON: <code>--json</code> · list compliant files: <code>--all</code> · exit <code>1</code> on violations</td>
                 </tr>
+                <tr>
+                    <td><a href="fix_scaffold_active_checkbox.php" target="_blank" rel="nofollow noreferrer">fix_scaffold_active_checkbox.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Repairs <code>scaffold_active_checkbox_not_compliant</code> findings (wrap <code>name="active"</code> checkboxes with <code>itm-checkbox-control</code> + <code>itm-check-indicator</code>). Browser module select; CLI <code>--module=</code> / <code>--all</code>. <strong>Default = dry-run</strong>; writes with <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td>Browser: module dropdown + preview/apply. CLI: <code>php scripts/fix_scaffold_active_checkbox.php --module=idfs</code> then <code>--apply</code>. Re-check: <code>php scripts/list_active_and_checkboxes.php</code>.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
