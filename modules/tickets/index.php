@@ -352,6 +352,7 @@ $items = mysqli_stmt_get_result($dataStmt);
 
 $showBulkActions = $totalRows >= $perPage;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -376,10 +377,10 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <!-- HEADER SECTION -->
-            <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php else: ?><span></span><?php endif; ?>
-                <h1>🎟️ Tickets</h1>
-                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
             </div>
 
             <!-- SEARCH BAR -->

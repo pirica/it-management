@@ -66,8 +66,7 @@ if (!$itmIsCli) {
         . 'discoverable <code>$crud_table</code> module. Employees uses the same critical-field list as '
         . '<a href="employee_fields_missing.php">employee_fields_missing.php</a>. '
         . 'Flattened scaffold modules with <code>$uiColumns</code> pass UI via dynamic scaffold. '
-        . 'Bespoke modules print deferred UI checks as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> '
-        . '(business columns on create/edit, view, and index — not scaffold <code>[FAIL]</code>).</p>';
+        . 'Bespoke modules print gated results as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> (informational gate only — not counted in the Result failure total).</p>';
     echo '<details style="margin:12px 0;max-width:900px;"><summary style="cursor:pointer;font-weight:600;">Section legend</summary>';
     echo '<pre style="margin:8px 0;padding:12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;">';
     echo htmlspecialchars(itm_fields_missing_format_legend(''), ENT_QUOTES, 'UTF-8');
@@ -128,5 +127,12 @@ if ((int) $report['failure_count'] > 0) {
 }
 
 echo colorText('Result: all checks passed.', 'pass') . $nl;
+$skipGateFailures = (int) ($report['skip_gate_failure_count'] ?? 0);
+if ($skipGateFailures > 0) {
+    echo colorText(
+        'Note: ' . $skipGateFailures . ' bespoke [SKIP][fail] line(s) above are informational only (not counted here).',
+        'warn'
+    ) . $nl;
+}
 itm_script_output_end();
 exit(0);
