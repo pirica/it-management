@@ -602,7 +602,7 @@ PHP;
         $this->assertStringNotContainsString('manufacturers audited UI column', $block);
     }
 
-    public function testSearchContractAcceptsPlainClearResetLink(): void
+    public function testSearchContractFailsPlainClearResetLink(): void
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
         $content = <<<'HTML'
@@ -616,8 +616,8 @@ PHP;
 <table></table>
 HTML;
         $check = itm_check_search($content, 'index.php');
-        $this->assertSame('pass', $check['status'] ?? '');
-        $this->assertStringContainsString('Clear', (string) ($check['details'] ?? ''));
+        $this->assertSame('fail', $check['status'] ?? '');
+        $this->assertStringContainsString('emoji-only 🔙', (string) ($check['details'] ?? ''));
     }
 
     public function testSearchContractAcceptsEmojiOnlyBackResetLink(): void

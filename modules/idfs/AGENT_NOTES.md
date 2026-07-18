@@ -30,7 +30,7 @@ Manages Intermediate Distribution Frames (IDFs): physical network distribution p
 - **Price sync:** when Rack Planner or position save updates priced unlinked tokens, persist price changes to `idf_positions.price` for matching `equipment_id` token patterns.
 
 ## 5. UI Behavior Requirements
-- **List (`index.php`):** standard search (`$searchRaw` / `$searchLike`), sort (`$sort` / `$dir` / `$sortSql`), pagination, bulk delete when row count ≥ `records_per_page` (Cancel + `bulk-delete-selection.js` in index HTML), Excel/PDF export, and `import_excel_rows` JSON import via `data-itm-db-import-endpoint`.
+- **List (`index.php`):** standard search (`$searchRaw` / `$searchLike`), sort (`$sort` / `$dir` / `$sortSql`), pagination, search reset via emoji-only `🔙` (`title="Clear"`), bulk delete when row count ≥ `records_per_page` (Cancel + `bulk-delete-selection.js` in index HTML), Excel/PDF export, and `import_excel_rows` JSON import via `data-itm-db-import-endpoint`.
 - **Dashboard (`view.php`):** rack elevation, port visualiser, link management, and inline AJAX saves — not a flat CRUD table.
 - **Device screen (`device.php`):** equipment-centric port management within an IDF context.
 - **FK labels:** list and detail views must show location and rack names, not raw `location_id` / `rack_id`.

@@ -70,10 +70,6 @@ function itm_ui_action_line_exempt(string $line): bool
     if (preg_match('/>\s*(Previous|Next|Search|Select to Delete|Delete Selected|Clear Table)\s*</', $line)) {
         return true;
     }
-    // Search-row reset: plain Clear on <a> (idfs) or emoji-only 🔙 (flattened CRUD e.g. departments) — not an action emoji.
-    if (preg_match('/>\s*Clear\s*<\/a>/i', $line)) {
-        return true;
-    }
     // Descriptive non-actions containing action words without standard emoji prefix.
     if (preg_match('/(View IP record|Reset View|Table View|Keep View|rack-drag-trash)/i', $line)) {
         return true;
@@ -126,9 +122,6 @@ foreach ($files as $path) {
                 continue;
             }
             if (in_array($word, ['Previous', 'Next', 'Search'], true)) {
-                continue;
-            }
-            if (strcasecmp($word, 'Clear') === 0 && preg_match('/>\s*Clear\s*<\/a>/i', $line)) {
                 continue;
             }
             $violations[] = "{$rel}:{$humanLine} [plain action] >{$word}< without emoji";

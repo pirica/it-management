@@ -1058,7 +1058,7 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 
 **Known literals:** View Ticket Details, Edit Ticket, New Equipment, Create IDF, Edit IDF, View Employee System Access.
 
-**Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; pagination Previous/Next; bulk Select to Delete / Clear Table; submit Search; search-row reset plain `Clear` on `<a>` or emoji-only `🔙` (flattened CRUD uses `🔙`, bespoke dashboards may use `Clear`); descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment.
+**Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; pagination Previous/Next; bulk Select to Delete / Clear Table; submit Search; descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment. **Search reset is not exempt:** list contract requires emoji-only `🔙` on `<a>` (plain `Clear` fails `itm_check_search`).
 
 **Bulk fix:** `php scripts/apply_ui_action_emoji.php` — **Browser + CLI**, dry-run default; `--apply` / `?apply=1` writes; lists changed files. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 

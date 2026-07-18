@@ -649,7 +649,7 @@ if (!isset($crud_title)) {
                         <input type="hidden" name="page" value="1">
                         <div style="display:flex; gap:8px;">
                             <button class="btn btn-primary" type="submit">Search</button>
-                            <a class="btn" href="index.php">Clear</a>
+                            <a href="index.php" class="btn" title="Clear">🔙</a>
                         </div>
                     </form>
                 </section>
