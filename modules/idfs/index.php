@@ -352,12 +352,18 @@ if ($idf_sort_dir !== 'asc' && $idf_sort_dir !== 'desc') {
 $idfOrderSql = $idfSortMap[$idf_sort] . ' ' . strtoupper($idf_sort_dir) . ', i.id DESC';
 $idf_search = trim((string)($_GET['search'] ?? $_GET['q'] ?? ''));
 $idf_search_like = '%' . $idf_search . '%';
+// Why: fields_missing list contract scans canonical search/sort variable names.
+$searchRaw = $idf_search;
+$searchLike = $idf_search_like;
+$sort = $idf_sort;
+$dir = $idf_sort_dir;
+$sortSql = $idfOrderSql;
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $totalRows = 0;
 $idfWhereSearchSql = '';
 if ($company_id > 0) {
-    if ($idf_search !== '') {
+    if ($searchRaw !== '') {
         $idfWhereSearchSql = " AND (
             CAST(i.id AS CHAR) LIKE ?
             OR i.name LIKE ?
@@ -375,17 +381,17 @@ if ($company_id > 0) {
          WHERE i.company_id=? {$idfWhereSearchSql}";
     $stmtCount = mysqli_prepare($conn, $countSql);
     if ($stmtCount) {
-        if ($idf_search !== '') {
+        if ($searchRaw !== '') {
             mysqli_stmt_bind_param(
                 $stmtCount,
                 'issssss',
                 $company_id,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like
+                $searchLike,
+                $searchLike,
+                $searchLike,
+                $searchLike,
+                $searchLike,
+                $searchLike
             );
         } else {
             mysqli_stmt_bind_param($stmtCount, 'i', $company_id);
@@ -418,21 +424,21 @@ if ($company_id > 0) {
          LEFT JOIN it_locations l ON l.id=i.location_id
          LEFT JOIN racks r ON r.id=i.rack_id
          WHERE i.company_id=? {$idfWhereSearchSql}
-         ORDER BY {$idfOrderSql}
+         ORDER BY {$sortSql}
          LIMIT ?, ?"
     );
     if ($stmtIdfs) {
-        if ($idf_search !== '') {
+        if ($searchRaw !== '') {
             mysqli_stmt_bind_param(
                 $stmtIdfs,
                 'issssssii',
                 $company_id,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
-                $idf_search_like,
+                $searchLike,
+                $searchLike,
+                $searchLike,
+                $searchLike,
+                $searchLike,
+                $searchLike,
                 $offset,
                 $perPage
             );
@@ -783,9 +789,10 @@ if (!isset($crud_title)) {
                         <h3>📋 Existing IDFs <span class="idf-badge">Tap an IDF to open</span></h3>
                         <?php if ($showBulkActions): ?>
                         <div class="card" style="margin-bottom:12px;">
-                            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;" data-itm-bulk-delete-bound="1">
                                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrf); ?>">
                                 <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                                <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                                 <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                             </form>
                         </div>
@@ -965,5 +972,6 @@ document.addEventListener('change', function (event) {
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
+<script src="../../js/bulk-delete-selection.js"></script>
 </body>
 </html>
