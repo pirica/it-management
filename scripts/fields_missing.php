@@ -66,7 +66,7 @@ if (!$itmIsCli) {
         . 'discoverable <code>$crud_table</code> module. Employees uses the same critical-field list as '
         . '<a href="employee_fields_missing.php">employee_fields_missing.php</a>. '
         . 'Flattened scaffold modules with <code>$uiColumns</code> pass UI via dynamic scaffold. '
-        . 'Bespoke and status-driven modules skip UI FAIL checks but still list schema and scraped/inferred form fields.</p>';
+        . 'Bespoke modules print gated results as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> (schema + hidden meta columns; full UI not audited).</p>';
     echo '<details style="margin:12px 0;max-width:900px;"><summary style="cursor:pointer;font-weight:600;">Section legend</summary>';
     echo '<pre style="margin:8px 0;padding:12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;">';
     echo htmlspecialchars(itm_fields_missing_format_legend(''), ENT_QUOTES, 'UTF-8');
@@ -103,15 +103,7 @@ foreach ($report['modules'] as $moduleReport) {
     echo $moduleLink . ' (table: ' . $tableRef . ', ui: ' . $uiMode . ')' . $nl;
     echo itm_fields_missing_format_columns_block($moduleReport, $nl);
 
-    foreach ($moduleReport['passes'] as $passLine) {
-        echo colorText('[PASS] ' . $passLine, 'pass') . $nl;
-    }
-    foreach ($moduleReport['failures'] as $failure) {
-        echo colorText('[FAIL] ' . (string) ($failure['message'] ?? ''), 'fail') . $nl;
-    }
-    foreach ($moduleReport['infos'] as $infoLine) {
-        echo colorText('[INFO] ' . $infoLine, 'info') . $nl;
-    }
+    itm_fields_missing_echo_module_check_lines($moduleReport, $nl);
     echo $nl;
 }
 
@@ -127,9 +119,6 @@ if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
 }
 
 if ((int) $report['failure_count'] > 0) {
-    echo itm_fields_missing_format_failure_summary_block($report, $nl, static function (string $line): string {
-        return colorText($line, 'fail');
-    });
     echo colorText('Result: ' . (int) $report['failure_count'] . ' failure(s).', 'fail') . $nl;
     itm_script_output_end();
     exit(1);

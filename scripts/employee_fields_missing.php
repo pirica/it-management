@@ -44,16 +44,8 @@ echo 'Live columns (SHOW COLUMNS): ' . $liveCount . $nl . $nl;
 
 echo itm_fields_missing_format_columns_block($moduleReport, $nl);
 
-foreach ($moduleReport['passes'] as $passLine) {
-    echo colorText('[PASS] ' . $passLine, 'pass') . $nl;
-}
-foreach ($moduleReport['failures'] as $failure) {
-    $failures++;
-    echo colorText('[FAIL] ' . (string) ($failure['message'] ?? ''), 'fail') . $nl;
-}
-foreach ($moduleReport['infos'] as $infoLine) {
-    echo colorText('[INFO] ' . $infoLine, 'info') . $nl;
-}
+itm_fields_missing_echo_module_check_lines($moduleReport, $nl);
+$failures = count($moduleReport['failures'] ?? []);
 
 echo $nl;
 if ($failures > 0) {
