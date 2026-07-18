@@ -17,6 +17,7 @@ Manages IP subnets (CIDR blocks), including gateways, DNS, and DHCP configuratio
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
+- **Audit meta on forms:** `$uiColumns` filters `itm_crud_is_form_hidden_audit_field()` / delete/list-hidden audit columns; create/edit loop uses `$uiColumns` plus `itm_crud_render_form_hidden_audit_inputs()`; view uses `$fieldColumns` so `deleted_*` / `*_by` remain visible on detail.
 - **List search:** matches `vlan_id` label via `itm_crud_fk_label_search_conditions()` in `includes/list_query.php`.
 - **Subnet Stats**: View page often shows usage statistics (Free vs Used IPs).
 - **Bulk generate**: View page and index list include **Generate host IPs** (before **Active** on the index table). Uses `itm_ipam_subnet_bulk_generate_ui()` and POST `generate_subnet_ips` (index redirects back to the list; view stays on the subnet). For `/31` and `/32`, `host_total` aligns with `max_hosts` when the standard `-2` formula yields zero.
