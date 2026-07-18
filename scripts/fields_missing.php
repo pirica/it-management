@@ -83,34 +83,18 @@ echo str_repeat('-', 72) . $nl . $nl;
 
 foreach ($report['modules'] as $moduleReport) {
     $uiMode = (string) ($moduleReport['ui_mode'] ?? '');
-    $hasFailures = !empty($moduleReport['failures']);
-    $isSkipUi = ($uiMode === 'bespoke_skip' || $uiMode === 'status_driven_skip');
-
     $moduleSlug = (string) $moduleReport['module'];
-    $table = (string) $moduleReport['table'];
+    $table = itm_fields_missing_format_report_table_label((string) ($moduleReport['table'] ?? ''));
     $moduleLink = function_exists('itm_script_format_modules_file_link')
         ? itm_script_format_modules_file_link('modules/' . $moduleSlug . '/index.php')
         : $moduleSlug;
 
-    // Why: always show scraped UI form fields; bespoke/status-driven stay compact unless schema fails.
-    if (!$hasFailures && $isSkipUi) {
-        echo $moduleLink . ' (table: ' . (function_exists('itm_script_format_table_link')
-            ? itm_script_format_table_link($table)
-            : $table) . ', ui: ' . $uiMode . ')' . $nl;
-        echo itm_fields_missing_format_columns_block($moduleReport, $nl);
-        foreach ($moduleReport['passes'] as $passLine) {
-            if (strpos((string) $passLine, 'scraped ') !== false) {
-                echo colorText('[PASS] ' . $passLine, 'pass') . $nl;
-            }
-        }
-        echo $nl;
-        continue;
+    $tableRef = $table;
+    if ($table !== '-' && function_exists('itm_script_format_table_link')) {
+        $tableRef = itm_script_format_table_link($table);
     }
 
-    echo $moduleLink . ' (table: ' . (function_exists('itm_script_format_table_link')
-        ? itm_script_format_table_link($table)
-        : $table) . ', ui: ' . $uiMode . ')' . $nl;
-
+    echo $moduleLink . ' (table: ' . $tableRef . ', ui: ' . $uiMode . ')' . $nl;
     echo itm_fields_missing_format_columns_block($moduleReport, $nl);
 
     foreach ($moduleReport['passes'] as $passLine) {
@@ -134,13 +118,6 @@ if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
         echo '  - ' . $label . $nl;
     }
     echo $nl;
-}
-
-$bespokeSkips = $report['bespoke_skips'] ?? [];
-if (is_array($bespokeSkips) && $bespokeSkips !== []) {
-    echo itm_fields_missing_format_bespoke_skip_block($bespokeSkips, $nl, static function (string $line): string {
-        return colorText($line, 'warn');
-    });
 }
 
 if ((int) $report['failure_count'] > 0) {
