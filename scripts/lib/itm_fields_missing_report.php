@@ -536,6 +536,47 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_format_failure_summary_block')) {
+    /**
+     * @param array{modules?:list<array<string,mixed>>} $report
+     */
+    function itm_fields_missing_format_failure_summary_block(
+        array $report,
+        string $nl,
+        ?callable $formatLine = null
+    ): string {
+        $messages = [];
+        foreach ($report['modules'] ?? [] as $moduleReport) {
+            if (!is_array($moduleReport['failures'] ?? null)) {
+                continue;
+            }
+            foreach ($moduleReport['failures'] as $failure) {
+                if (!is_array($failure)) {
+                    continue;
+                }
+                $message = trim((string) ($failure['message'] ?? ''));
+                if ($message !== '') {
+                    $messages[] = $message;
+                }
+            }
+        }
+
+        $count = count($messages);
+        if ($count === 0) {
+            return '';
+        }
+
+        $out = str_repeat('-', 72) . $nl;
+        $out .= 'Failure summary (' . $count . '):' . $nl;
+        foreach ($messages as $message) {
+            $line = '[FAIL] ' . $message;
+            $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
+        }
+
+        return $out . $nl;
+    }
+}
+
 if (!function_exists('itm_fields_missing_audit_module')) {
     /**
      * @param list<string> $expectedColumns
