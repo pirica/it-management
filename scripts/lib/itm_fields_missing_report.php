@@ -1442,18 +1442,24 @@ if (!function_exists('itm_fields_missing_record_bespoke_ui_check_results')) {
         string $codePrefix = 'bespoke_ui'
     ): void {
         foreach ($checks as $label => $result) {
-            if (($result['status'] ?? '') === 'n/a') {
+            $status = strtolower(trim((string) ($result['status'] ?? '')));
+            if ($status === 'n/a' || $status === '') {
                 continue;
             }
-            if (($result['status'] ?? '') === 'pass') {
+            if ($status === 'pass') {
                 $passes[] = "{$moduleSlug} bespoke gate: {$label} OK";
                 continue;
+            }
+
+            $details = trim((string) ($result['details'] ?? ''));
+            if ($details === '') {
+                $details = 'contract check failed';
             }
 
             $code = $codePrefix . '_' . strtolower(str_replace(' ', '_', $label));
             $failures[] = [
                 'code' => $code,
-                'message' => "{$moduleSlug} bespoke gate: {$label} — {$result['details']}",
+                'message' => "{$moduleSlug} bespoke gate: {$label} NOT OK — {$details}",
             ];
         }
     }
@@ -1692,6 +1698,39 @@ if (!function_exists('itm_fields_missing_result_status_label')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_extract_failure_message')) {
+    /**
+     * @param mixed $failure
+     */
+    function itm_fields_missing_extract_failure_message($failure): string
+    {
+        if (is_array($failure)) {
+            return trim((string) ($failure['message'] ?? ''));
+        }
+
+        return trim((string) $failure);
+    }
+}
+
+if (!function_exists('itm_fields_missing_echo_status_line')) {
+    function itm_fields_missing_echo_status_line(string $line, string $nl): void
+    {
+        $escaped = itm_script_escape_browser_pre_text($line);
+        if (function_exists('itm_script_format_status_line')) {
+            echo itm_script_format_status_line($escaped) . $nl;
+            return;
+        }
+
+        $type = 'info';
+        if (preg_match('/^\[SKIP\]\[pass\]|\[PASS\]/', $line)) {
+            $type = 'pass';
+        } elseif (preg_match('/^\[SKIP\]\[fail\]|\[FAIL\]/', $line)) {
+            $type = 'fail';
+        }
+        echo colorText($escaped, $type) . $nl;
+    }
+}
+
 if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
     /**
      * @param array<string, mixed> $moduleReport
@@ -1701,36 +1740,39 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
         $skippedUi = !empty($moduleReport['ui_coverage_audit_skipped']);
         $moduleSlug = (string) ($moduleReport['module'] ?? '');
 
-        foreach ($moduleReport['passes'] ?? [] as $passLine) {
-            $label = itm_fields_missing_result_status_label($skippedUi, true);
-            $line = itm_script_escape_browser_pre_text("{$label} {$passLine}");
-            echo colorText($line, 'pass') . $nl;
-        }
+        // Why: Fail lines must stay visible — long bespoke modules print many [SKIP][pass] OK lines first.
         foreach ($moduleReport['failures'] ?? [] as $failure) {
+            $message = itm_fields_missing_extract_failure_message($failure);
+            if ($message === '') {
+                continue;
+            }
             $label = itm_fields_missing_result_status_label($skippedUi, false);
-            $line = itm_script_escape_browser_pre_text("{$label} " . (string) ($failure['message'] ?? ''));
-            echo colorText($line, 'fail') . $nl;
+            itm_fields_missing_echo_status_line("{$label} {$message}", $nl);
+        }
+        foreach ($moduleReport['passes'] ?? [] as $passLine) {
+            $passText = trim((string) $passLine);
+            if ($passText === '') {
+                continue;
+            }
+            $label = itm_fields_missing_result_status_label($skippedUi, true);
+            itm_fields_missing_echo_status_line("{$label} {$passText}", $nl);
         }
         foreach ($moduleReport['infos'] ?? [] as $infoLine) {
-            echo colorText(itm_script_escape_browser_pre_text('[INFO] ' . $infoLine), 'info') . $nl;
+            itm_fields_missing_echo_status_line('[INFO] ' . (string) $infoLine, $nl);
         }
 
         if ($skippedUi && $moduleSlug !== '') {
             $failCount = count($moduleReport['failures'] ?? []);
             if ($failCount > 0) {
-                echo colorText(
-                    itm_script_escape_browser_pre_text(
-                        '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)'
-                    ),
-                    'fail'
-                ) . $nl;
+                itm_fields_missing_echo_status_line(
+                    '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)',
+                    $nl
+                );
             } else {
-                echo colorText(
-                    itm_script_escape_browser_pre_text(
-                        '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)'
-                    ),
-                    'pass'
-                ) . $nl;
+                itm_fields_missing_echo_status_line(
+                    '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)',
+                    $nl
+                );
             }
         }
     }
@@ -2117,13 +2159,57 @@ if (!function_exists('itm_fields_missing_format_legend')) {
         $out .= '  Bespoke gate list UI — Search, Sort, Pagination (Settings records_per_page), bulk actions, Actions column' . $nl;
         $out .= '  List heading layout — centered h1 + Settings new_button_position left/right gates' . $nl;
         $out .= '  List heading emoji — $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()' . $nl;
-        $out .= '  [SKIP][pass] does not audit business columns — see Audit summary footer' . $nl;
+        $out .= '  [SKIP][pass] / [SKIP][fail] — one line per gated check (OK / NOT OK); n/a checks are omitted' . $nl;
+        $out .= '  [SKIP][pass] module summary does not audit business columns — see Audit summary footer' . $nl;
         $out .= '  Static HTML name= scrape — literal name="..." in create/edit (or index for UI-only); not the full dynamic UI' . $nl;
         $out .= '  Inferred form columns — derived from $uiColumns, cr_manageable_columns, or employees matrix' . $nl;
         $out .= '  UI audited columns / excluded from UI audit — only when UI coverage audit ran' . $nl;
         $out .= '  [PASS] audited UI column — dynamic scaffold business columns (create/edit, view, index via $uiColumns loops)' . $nl;
         $out .= '  [PASS] excluded UI column — meta columns must stay hidden on create/edit forms' . $nl;
         $out .= '  UI form fields other — non-table controls (CSRF, bulk actions, import helpers, …)' . $nl;
+
+        return $out . $nl;
+    }
+}
+
+if (!function_exists('itm_fields_missing_format_skip_gate_failure_summary_block')) {
+    /**
+     * Bespoke/status-driven [SKIP][fail] lines (informational — not in actionable failure_count).
+     *
+     * @param array{modules?:list<array<string,mixed>>} $report
+     */
+    function itm_fields_missing_format_skip_gate_failure_summary_block(
+        array $report,
+        string $nl,
+        ?callable $formatLine = null
+    ): string {
+        $messages = [];
+        foreach ($report['modules'] ?? [] as $moduleReport) {
+            if (!itm_fields_missing_module_ui_coverage_skipped($moduleReport)) {
+                continue;
+            }
+            if (!is_array($moduleReport['failures'] ?? null)) {
+                continue;
+            }
+            foreach ($moduleReport['failures'] as $failure) {
+                $message = itm_fields_missing_extract_failure_message($failure);
+                if ($message !== '') {
+                    $messages[] = $message;
+                }
+            }
+        }
+
+        $count = count($messages);
+        if ($count === 0) {
+            return '';
+        }
+
+        $out = str_repeat('-', 72) . $nl;
+        $out .= 'Bespoke gate failure summary (' . $count . ' — informational, not in Result total):' . $nl;
+        foreach ($messages as $message) {
+            $line = '[SKIP][fail] ' . $message;
+            $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
+        }
 
         return $out . $nl;
     }
