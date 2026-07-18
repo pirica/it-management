@@ -395,7 +395,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">generate_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Automatically generates PHPUnit integration tests for all standard CRUD modules identified in the metadata. Creates test files in <code>phpunit/tests/Unit/Modules/</code>.</td>
-                    <td>Browser: <a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">dry-run</a> (Admin) · <a href="generate_tests.php?apply=1" target="_blank" rel="nofollow noreferrer">?apply=1</a> writes tests. CLI: <code>php scripts/generate_tests.php</code></td>
+                    <td>Browser: <a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">dry-run</a> (Admin) · <a href="generate_tests.php?apply=1" target="_blank" rel="nofollow noreferrer">?apply=1</a> writes missing tests only (skips existing <code>*Test.php</code>). CLI: <code>php scripts/generate_tests.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="test_import_user_samples.php" target="_blank" rel="nofollow noreferrer">test_import_user_samples.php</a></td>
