@@ -19,6 +19,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 ## 5. UI Behavior Requirements
 - **Browser vs CLI**: Many scripts provide both a plain-text/HTML browser view and a CLI output mode.
 - **Table Line Breaking**: To ensure high readability of reporting pages (such as `crud_tables.php`, `crud_titles.php`, `crud_actions.php`), columns must not break lines arbitrarily. Apply CSS `white-space: nowrap;` to headers (`th`) and cells (`td`), and use a scroll wrapper with `overflow-x: auto;`.
+- **crud_tables.php** — reads `index.php` for `$crud_table` only (no DB). Skip slugs: `docs/list_bespoke_UI.txt` + `scripts/data/crud_tables_skip_modules.txt` via `scripts/lib/itm_crud_tables_audit.php`.
 - **crud_actions.php**: scans `index.php` plus CRUD wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) for `$crud_action` assignments; bespoke modules with no assignment show **N/A** (not Missing). Browser nav comes from `itm_script_output_begin()` — do not call `itm_script_browser_nav_echo()` again in custom HTML (duplicate ← Scripts index).
 
 ## 6. API Actions (If Applicable)
