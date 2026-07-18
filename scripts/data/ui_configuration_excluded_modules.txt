@@ -26,12 +26,16 @@ backup_tape_log
 birthdays
 bookmarks
 calendar
+cable_colors
+companies
 contacts
 company_module_access
 emails
+employee_companies
 explorer
 floor_designer
 import
+inventory_items
 notes
 ops_report
 org_chart
@@ -41,5 +45,9 @@ reports
 request_password
 resignations
 roles_permissions
+switch_ports
+system_access
 system_status
 todo
+visitors_access_log
+vlans

@@ -18,6 +18,9 @@
  * Exemptions:
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
  *   - scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades)
+ *
+ * CLI: php scripts/check_ui_configuration_coverage.php [--list-excluded]
+ * Browser: ?list_excluded=1 prints skipped slug names (default header shows counts only).
  */
 
 declare(strict_types=1);
@@ -915,12 +918,27 @@ $modules = itm_list_modules($modulesDir, $excludeModules, $excludeModulePrefixes
 $totals = ['pass' => 0, 'fail' => 0, 'n/a' => 0];
 $moduleFailures = [];
 
+$argvList = $GLOBALS['argv'] ?? [];
+$listExcluded = in_array('--list-excluded', $argvList, true)
+    || (PHP_SAPI !== 'cli' && (($_GET['list_excluded'] ?? '') === '1'));
+
 echo "UI Configuration Coverage Audit\n";
 echo "Root: {$modulesDir}\n";
-echo "Excluded modules: " . (empty($excludeModules) ? '(none)' : implode(', ', $excludeModules));
-echo " (from " . basename($excludeModulesFile) . ")\n";
-echo "Excluded prefixes: " . (empty($excludeModulePrefixes) ? '(none)' : implode(', ', $excludeModulePrefixes));
-echo " (from " . basename($excludePrefixesFile) . ")\n\n";
+echo 'Auditing ' . count($modules) . " module(s) with flattened CRUD list contract checks.\n";
+echo 'Skipped ' . count($excludeModules) . ' module slug(s) from ' . basename($excludeModulesFile);
+if (!empty($excludeModulePrefixes)) {
+    echo ' and prefix(es) ' . implode(', ', $excludeModulePrefixes) . ' from ' . basename($excludePrefixesFile);
+}
+echo ".\n";
+if ($listExcluded) {
+    echo "Excluded slugs: " . (empty($excludeModules) ? '(none)' : implode(', ', $excludeModules)) . "\n";
+    if (!empty($excludeModulePrefixes)) {
+        echo 'Excluded prefixes: ' . implode(', ', $excludeModulePrefixes) . "\n";
+    }
+} else {
+    echo "Tip: use --list-excluded (CLI) or ?list_excluded=1 (browser) to print skipped slug names.\n";
+}
+echo "\n";
 
 foreach ($modules as $module) {
     $modulePath = $modulesDir . '/' . $module;
