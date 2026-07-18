@@ -788,11 +788,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Lists <code>modules/*/index.php</code> folders that are <strong>not</strong> on the sidebar (including policy-hidden internal modules such as <code>floor_plan_folders</code>, <code>floor_plan_tags</code>, <code>floor_plan_item_tags</code>).</td>
+                    <td>Audits <code>modules/*/index.php</code> vs live sidebar <code>match_dir</code> entries from <code>itm_sidebar_structure()</code> (base catalog, filesystem discovery, registry merge). Also lists active <code>modules_registry</code> rows without module folders (policy-hidden vs unexpected).</td>
                     <td>
-                        <strong>Log in first.</strong> Open <a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a> or
+                        <strong>Admin login required.</strong> Open <a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a> or
                         <a href="list_modules_not_on_sidebar.php?format=json">?format=json</a>.<br>
-                        CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code>
+                        CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code> · exit <code>1</code> on unexpected gaps
                     </td>
                 </tr>
                 <tr>
