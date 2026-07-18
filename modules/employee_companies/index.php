@@ -474,6 +474,19 @@ $displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) 
     return ($col['Field'] ?? '') !== 'company_id';
 }));
 
+// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+$uiColumns = array_values(array_filter($fieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if (function_exists('itm_crud_is_delete_form_hidden_field') && itm_crud_is_delete_form_hidden_field($fieldName)) {
+        return false;
+    }
+
+    return true;
+}));
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
@@ -1243,7 +1256,12 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($fieldColumns as $col): $name = $col['Field'];
+                    <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = cr_is_boolean_tinyint_column($col);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
