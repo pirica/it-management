@@ -424,7 +424,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_api_coverage.php" target="_blank" rel="nofollow noreferrer">verify_api_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audits API endpoint coverage and consistency.</td>
+                    <td>Audits import endpoints, bespoke paths, and non-index module JSON handlers (PHP <code>Content-Type: application/json</code> headers only; matches <code>scripts/api.php</code> project + Explorer + IDF api catalogs).</td>
                     <td>CLI: <code>php scripts/verify_api_coverage.php</code></td>
                 </tr>
             </tbody>

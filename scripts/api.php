@@ -330,6 +330,62 @@ function itmDocExplorerDownloadEndpoints(): array
     ];
 }
 
+/**
+ * Why: verify_api_coverage.php scans non-index module PHP files; merge every documented JSON handler path.
+ *
+ * @return list<string>
+ */
+function itmDocCollectDocumentedJsonHandlerPaths(string $rootPath): array
+{
+    $paths = [];
+    foreach (itmDocProjectJsonEndpoints() as $row) {
+        $path = explode('?', (string) ($row['path'] ?? ''))[0];
+        if ($path !== '') {
+            $paths[] = $path;
+        }
+    }
+
+    $paths[] = 'modules/explorer/api.php';
+
+    foreach (itmDocCollectIdfApiEndpoints($rootPath) as $row) {
+        $path = (string) ($row['path'] ?? '');
+        if ($path !== '') {
+            $paths[] = $path;
+        }
+    }
+
+    $paths = array_values(array_unique($paths));
+    sort($paths, SORT_STRING);
+
+    return $paths;
+}
+
+/**
+ * Why: Client fetch() blocks also mention application/json; only flag PHP handlers that set JSON headers.
+ */
+function itmDocFileEmitsJsonResponse(string $content): bool
+{
+    return (bool) preg_match(
+        '/\bheader\s*\(\s*[\'"]Content-Type:\s*application\/json/i',
+        $content
+    );
+}
+
+/**
+ * @param list<string> $documentedPaths
+ */
+function itmDocJsonHandlerIsDocumented(string $relativePath, array $documentedPaths): bool
+{
+    foreach ($documentedPaths as $docPath) {
+        $docPath = explode('?', $docPath)[0];
+        if ($relativePath === $docPath || strpos($docPath, $relativePath) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function itmDocProjectJsonEndpoints(): array
 {
     return [
