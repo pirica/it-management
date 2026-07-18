@@ -331,7 +331,7 @@ if (!isset($crud_title)) {
 
                 <div class="card">
                     <div class="card-body" style="overflow:auto;">
-                        <table class="table" id="cma-access-matrix" data-itm-no-import-excel="1">
+                        <table class="table" id="cma-access-matrix">
                             <thead>
                             <tr>
                                 <th>Modules</th>
