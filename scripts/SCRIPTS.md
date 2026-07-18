@@ -938,7 +938,8 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 |--------|---------|
 | `php scripts/debug_resignations_termination_date.php` | Diagnose resignations weekly filter for a probe `termination_date` (default `18/06/2026`): literal ISO range + MONTH predicates, deprecated legacy YEAR/WEEK check, disposable probe employee module simulation (aligned with `verify_employee_type_resignations.php`). |
 | `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)` + `itm_sql_valid_date_predicate()`). Browser or CLI via `lib/script_cli_output.php` (no `STDERR` on web SAPI). |
-| `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`) |
+| `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`). Thin wrapper around `fields_missing.php` shared lib. |
+| `php scripts/fields_missing.php` | **All-module** schema/UI audit: every discoverable module with a `database.sql` table compares live MySQL columns to canonical schema; flattened scaffold modules pass UI via dynamic `$uiColumns`; `employees` uses the critical-field matrix; bespoke modules (`docs/list_bespoke_UI.txt`) and other status-driven slugs (`equipment`, `patches_updates`, `tickets`) are **schema-only**. CLI `--module=<slug>` / `--json`; browser optional module filter. Exit `1` on schema or non-bespoke UI gaps. |
 
 ### Performance benchmarks
 
@@ -957,7 +958,9 @@ Run `debug_resignations_termination_date.php` when a known `termination_date` (f
 
 Run `verify_employee_type_resignations.php` when changing `modules/employee_type/`, `modules/resignations/`, `modules/employees/` start/type/termination fields, or `employee_type` / `employees` schema in `database.sql`.
 
-Run `employee_fields_missing.php` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
+Run `employee_fields_missing.php` or `fields_missing.php --module=employees` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
+
+Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules report schema-only `[INFO]` lines.
 
 **MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
 
