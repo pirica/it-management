@@ -510,7 +510,10 @@ if (defined('ITM_VERIFY_SKIP_ROUTER') && ITM_VERIFY_SKIP_ROUTER) {
     return;
 }
 
-header("Content-Type: application/json; charset=utf-8");
+// Why: In-process harness includes (explorer_human_test.php) must not poison browser HTML shell Content-Type.
+if (!defined('ITM_EXPLORER_API_IN_PROCESS') || !ITM_EXPLORER_API_IN_PROCESS) {
+    header("Content-Type: application/json; charset=utf-8");
+}
 
 $action = $_POST['action'] ?? '';
 // Why: Normalize path to ensure trailing slashes do not bypass root protection guards.
