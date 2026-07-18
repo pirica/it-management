@@ -17,6 +17,7 @@ Tests for maintenance/audit scripts under `scripts/`.
 - **ItmScriptBootstrapTest.php** — `scripts/lib/itm_script_bootstrap.php` disposable session detection, `itm_script_with_test_session_context()` Admin restore, `itm_script_sync_csrf_to_browser_session_backup()`, and `itm_script_finish_browser_isolated_session()` `csrf_token` merge on browser isolation shutdown.
 - **ReproAuditDisclosureTest.php** — subprocess `scripts/repro_audit_disclosure.php`; asserts seed Admin `reset_token*` unchanged and no leftover `script-*` users. Output guard uses `\buser ID 1\b` so disposable IDs like 108 do not false-fail.
 - **check_script_disposable_employees.unittest.php** — subprocess `scripts/check_script_disposable_employees.php` static guard (exit 0).
+- **FieldsMissingDynamicFormTest.php** — `itm_fields_missing_report.php` dynamic form heuristics (`id` / `company_id` false-positive guards; audit meta still flagged).
 
 ## 10. Common Pitfalls
 
