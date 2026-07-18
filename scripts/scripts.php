@@ -592,13 +592,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="schema_report.php" target="_blank" rel="nofollow noreferrer">schema_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Visual report for database schema validation (errors and warnings).</td>
+                    <td>Visual report for database schema validation (errors, warnings, and SKIP DELETE CASCADE skips).</td>
                     <td>Open <a href="schema_report.php">schema_report.php</a> in the browser.</td>
                 </tr>
                 <tr>
                     <td><a href="validate_DB_schema.php" target="_blank" rel="nofollow noreferrer">validate_DB_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Validates database schema consistency (FKs, duplicate indexes, orphaned indexes).</td>
+                    <td>Validates database schema consistency (FKs, duplicate indexes, orphaned indexes); intentional CASCADE prints as <code>[SKIP]</code>.</td>
                     <td>Open <a href="validate_DB_schema.php">validate_DB_schema.php</a> in the browser.</td>
                 </tr>
                 <tr>

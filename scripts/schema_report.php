@@ -1,6 +1,6 @@
 <?php
 /**
- * Visual report for database schema validation (errors and warnings).
+ * Visual report for database schema validation (errors, warnings, and skips).
  *
  * Why: Provides a high-level overview of schema integrity for administrators.
  *
@@ -28,6 +28,7 @@ itm_script_require_admin_script_or_exit($conn, 'Administrator access required fo
 $validation = itm_schema_collect_validation_issues($conn);
 $errors = $validation['errors'];
 $warnings = $validation['warnings'];
+$skips = $validation['skips'] ?? [];
 
 $dbName = DB_NAME;
 $dbHost = mysqli_get_host_info($conn);
@@ -38,6 +39,7 @@ if (is_array($dbRow) && isset($dbRow[0]) && (string)$dbRow[0] !== '') {
 
 $errorCount = count($errors);
 $warningCount = count($warnings);
+$skipCount = count($skips);
 $overallOk = $errorCount === 0 && $warningCount === 0;
 ?>
 <!DOCTYPE html>
@@ -155,6 +157,7 @@ $overallOk = $errorCount === 0 && $warningCount === 0;
     }
     .schema-report-stat--errors .schema-report-stat__value { color: #cf222e; }
     .schema-report-stat--warnings .schema-report-stat__value { color: #9a6700; }
+    .schema-report-stat--skips .schema-report-stat__value { color: #57606a; }
     .schema-report-stat--ok .schema-report-stat__value { color: #1a7f37; }
     .schema-report-section h2 {
         margin: 0 0 12px;
@@ -200,6 +203,7 @@ $overallOk = $errorCount === 0 && $warningCount === 0;
     }
     .schema-report-badge--ok { background: #dafbe1; color: #1a7f37; }
     .schema-report-badge--warn { background: #fff8c5; color: #9a6700; }
+    .schema-report-badge--skip { background: #eaeef2; color: #57606a; }
     .schema-report-badge--error { background: #ffebe9; color: #cf222e; }
     .schema-report-desc { line-height: 1.5; word-break: break-word; }
     .itm-script-nav { margin-bottom: 20px !important; }
@@ -237,6 +241,10 @@ $overallOk = $errorCount === 0 && $warningCount === 0;
         <div class="schema-report-stat schema-report-stat--warnings">
             <div class="schema-report-stat__value"><?= (int)$warningCount ?></div>
             <div class="schema-report-stat__label">Warnings</div>
+        </div>
+        <div class="schema-report-stat schema-report-stat--skips">
+            <div class="schema-report-stat__value"><?= (int)$skipCount ?></div>
+            <div class="schema-report-stat__label">Skipped</div>
         </div>
         <div class="schema-report-stat schema-report-stat--ok">
             <div class="schema-report-stat__value"><?= $overallOk ? '✓' : '—' ?></div>
@@ -297,7 +305,34 @@ $overallOk = $errorCount === 0 && $warningCount === 0;
             </tbody>
         </table>
     </div>
-</div>
+
+    <div class="schema-report-card schema-report-section">
+        <h2 title="SKIP DELETE CASCADE">Skipped</h2>
+        <table class="schema-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">Status</th>
+                    <th scope="col">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if ($skips === []): ?>
+                <tr>
+                    <td><span class="schema-report-badge schema-report-badge--ok">OK</span></td>
+                    <td class="schema-report-desc">No skipped checks.</td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($skips as $skip): ?>
+                <tr>
+                    <td><span class="schema-report-badge schema-report-badge--skip">Skip</span></td>
+                    <td class="schema-report-desc"><?= sanitize($skip) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+    </div>
 
 </body>
 </html>

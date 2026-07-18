@@ -1449,7 +1449,6 @@ CREATE TABLE `employees` (
   KEY `idx_employees_reset_token` (`reset_token`),
   KEY `idx_employees_reset_token_hash` (`reset_token_hash`),
   KEY `idx_employees_reset_token_expires_at` (`reset_token_expires_at`),
-  KEY `idx_employees_company_work_email` (`company_id`,`work_email`),
   CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `employees_ibfk_3` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
   CONSTRAINT `employees_ibfk_4` FOREIGN KEY (`location_id`) REFERENCES `it_locations` (`id`),

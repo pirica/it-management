@@ -263,8 +263,8 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/schema_report.php` | Visual HTML report of schema validation errors and warnings. |
-| `php scripts/validate_DB_schema.php` | Static validation of FKs, duplicate indexes, and orphaned indexes on employee_id. |
+| `php scripts/schema_report.php` | Visual HTML report of schema validation errors, warnings, and skips (SKIP DELETE CASCADE). |
+| `php scripts/validate_DB_schema.php` | Static validation of FKs, duplicate indexes, and orphaned indexes on employee_id; prints `[SKIP]` for intentional CASCADE. |
 | `php scripts/test_employee_id-foreign_keys.php` | Runtime validation of employee_id FKs and scoping. |
 | `php scripts/validate_delete_employee.php` | Checks if employees can be safely deleted by auditing referencing FKs and triggers. |
 

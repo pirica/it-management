@@ -1,19 +1,21 @@
 <?php
 /**
- * Collect database schema validation errors and warnings (no CLI output).
+ * Collect database schema validation errors, warnings, and skips (no CLI output).
  *
- * @return array{errors:array<int,string>,warnings:array<int,string>}
+ * @return array{errors:array<int,string>,warnings:array<int,string>,skips:array<int,string>}
  */
 function itm_schema_collect_validation_issues(mysqli $conn): array
 {
     $errors = [];
     $warnings = [];
+    $skips = [];
 
     $tablesRes = mysqli_query($conn, 'SHOW TABLES');
     if (!$tablesRes) {
         return [
             'errors' => ['Could not list tables: ' . mysqli_error($conn)],
             'warnings' => [],
+            'skips' => [],
         ];
     }
 
@@ -44,7 +46,9 @@ function itm_schema_collect_validation_issues(mysqli $conn): array
 
         $fk = mysqli_fetch_assoc($fkRes);
         $rule = (string)($fk['DELETE_RULE'] ?? '');
-        if ($rule !== 'RESTRICT' && $rule !== 'NO ACTION' && $rule !== 'SET NULL') {
+        if ($rule === 'CASCADE') {
+            $skips[] = "Table {$table}: SKIP DELETE CASCADE (intentional employee-owned data)";
+        } elseif ($rule !== 'RESTRICT' && $rule !== 'NO ACTION' && $rule !== 'SET NULL') {
             $warnings[] = "Table {$table} uses DELETE {$rule} (not recommended)";
         }
     }
@@ -122,5 +126,6 @@ function itm_schema_collect_validation_issues(mysqli $conn): array
     return [
         'errors' => $errors,
         'warnings' => $warnings,
+        'skips' => $skips,
     ];
 }
