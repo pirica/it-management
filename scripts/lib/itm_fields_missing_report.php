@@ -743,9 +743,7 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
                     'code' => 'ui_excluded_exposed',
                     'message' => "{$moduleSlug} excluded UI column {$field}: visible on create/edit forms",
                 ];
-                continue;
             }
-            $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on create/edit forms";
         }
     }
 }
@@ -775,6 +773,29 @@ if (!function_exists('itm_fields_missing_finalize_module_report')) {
         $report['ui_excluded_columns'] = array_values(array_diff($expectedColumns, $uiAuditedColumns));
 
         return $report;
+    }
+}
+
+if (!function_exists('itm_fields_missing_format_indented_list_section')) {
+    /**
+     * @param list<string> $items
+     */
+    function itm_fields_missing_format_indented_list_section(
+        string $heading,
+        array $items,
+        string $nl,
+        string $emptyText
+    ): string {
+        if ($items === []) {
+            return '  ' . $heading . ' (0): ' . $emptyText . $nl;
+        }
+
+        $out = '  ' . $heading . ' (' . count($items) . '):' . $nl;
+        foreach ($items as $item) {
+            $out .= '    ' . $item . $nl;
+        }
+
+        return $out;
     }
 }
 
@@ -810,28 +831,47 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
             $excluded = [];
         }
 
-        $out = '  database.sql columns (' . count($expected) . '): ' . ($expected === [] ? '(none)' : implode(', ', $expected)) . $nl;
-        $out .= '  live columns (' . count($live) . '): ' . ($live === [] ? '(none)' : implode(', ', $live)) . $nl;
-
-        if ($uiForm !== []) {
-            $out .= '  UI form fields (' . count($uiForm) . '):' . $nl;
-            foreach ($uiForm as $fieldName) {
-                $out .= '    ' . $fieldName . $nl;
-            }
-        } else {
-            $out .= '  UI form fields (0): (none scraped from create/edit for this table)' . $nl;
-        }
+        $out = itm_fields_missing_format_indented_list_section(
+            'database.sql columns',
+            $expected,
+            $nl,
+            '(none)'
+        );
+        $out .= itm_fields_missing_format_indented_list_section(
+            'live columns',
+            $live,
+            $nl,
+            '(none)'
+        );
+        $out .= itm_fields_missing_format_indented_list_section(
+            'UI form fields',
+            $uiForm,
+            $nl,
+            '(none scraped from create/edit for this table)'
+        );
         if ($uiFormOther !== []) {
-            $out .= '  UI form fields other (' . count($uiFormOther) . '):' . $nl;
-            foreach ($uiFormOther as $fieldName) {
-                $out .= '    ' . $fieldName . $nl;
-            }
+            $out .= itm_fields_missing_format_indented_list_section(
+                'UI form fields other',
+                $uiFormOther,
+                $nl,
+                '(none)'
+            );
         }
         if ($uiAudited !== []) {
-            $out .= '  UI audited columns (' . count($uiAudited) . '): ' . implode(', ', $uiAudited) . $nl;
+            $out .= itm_fields_missing_format_indented_list_section(
+                'UI audited columns',
+                $uiAudited,
+                $nl,
+                '(none)'
+            );
         }
         if ($excluded !== []) {
-            $out .= '  excluded from UI audit (' . count($excluded) . '): ' . implode(', ', $excluded) . $nl;
+            $out .= itm_fields_missing_format_indented_list_section(
+                'excluded from UI audit',
+                $excluded,
+                $nl,
+                '(none)'
+            );
         }
 
         return $out . $nl;
@@ -1078,8 +1118,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                     'message' => "Live DB missing {$table}.{$column} (present in database.sql)",
                 ];
             }
-        } else {
-            $passes[] = "Live {$table} includes every column defined in database.sql";
         }
 
         if ($schemaExtra !== []) {
@@ -1138,7 +1176,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             $uiMode = 'employees';
         } elseif ($isDynamicScaffold) {
             $uiMode = 'dynamic_scaffold';
-            $passes[] = "{$moduleSlug} uses dynamic scaffold columns (\$uiColumns / cr_manageable_columns)";
             $uiAudited = $uiCollected['audited'];
             itm_fields_missing_audit_excluded_ui_columns(
                 $moduleSlug,
@@ -1186,9 +1223,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                     'message' => "{$moduleSlug} index.php missing list/import reference for: {$field}",
                 ];
             }
-            if ($formOk && ($viewOk || !is_readable($files['view'])) && $indexOk) {
-                $passes[] = "{$moduleSlug} UI covers {$field}";
-            }
         }
 
         if ($moduleSlug === 'employees') {
@@ -1220,8 +1254,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                         $gaps[] = 'index';
                     }
                     $infos[] = "employees.{$field} not fully wired (" . implode(', ', $gaps) . ' missing)';
-                } else {
-                    $passes[] = "employees optional UI covers {$field}";
                 }
             }
 
@@ -1229,9 +1261,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 if (!in_array($field, $expectedColumns, true)) {
                     continue;
                 }
-                if (itm_fields_missing_index_has_field($field, $files['index'])) {
-                    $passes[] = "employees system access column {$field} referenced via employee_system_access join in index.php";
-                } else {
+                if (!itm_fields_missing_index_has_field($field, $files['index'])) {
                     $infos[] = "employees system access column {$field} is managed via employee_system_access matrix (not a direct form input)";
                 }
             }
@@ -1243,7 +1273,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             }
 
             if (is_readable($files['list_all']) && strpos((string) file_get_contents($files['list_all']), "header('Location: index.php')") !== false) {
-                $passes[] = 'employees list_all.php redirects to index.php (list columns inherit from index.php)';
+                $infos[] = 'employees list_all.php redirects to index.php (list columns inherit from index.php)';
             }
         }
 
