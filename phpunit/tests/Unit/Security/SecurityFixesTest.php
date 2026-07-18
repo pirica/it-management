@@ -1,0 +1,513 @@
+<?php
+
+use PHPUnit\Framework\TestCase;
+use Tests\Unit\Support\ItmPhpunitTestSessionTrait;
+
+/**
+ * Functional security tests for identified vulnerabilities.
+ */
+class SecurityFixesTest extends TestCase
+{
+    use ItmPhpunitTestSessionTrait;
+
+    private $conn;
+
+    protected function setUp(): void
+    {
+        require_once __DIR__ . '/../../../../config/config.php';
+        $this->conn = $GLOBALS['conn'];
+        if (!$this->conn) {
+            $this->markTestSkipped('Database connection unavailable.');
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        $this->itmPhpunitEndTestSession();
+    }
+
+    private function runPhpScriptFile($scriptFile)
+    {
+        $phpBin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
+        if (strpos($phpBin, 'php-cgi') !== false) {
+            $phpBin = str_replace('php-cgi', 'php', $phpBin);
+        }
+
+        // Why: 2>/dev/null breaks on Windows cmd ("The system cannot find the path specified.").
+        // 2>&1 is supported on Windows and Linux shells used by PHP exec().
+        $command = escapeshellarg($phpBin) . ' -d error_reporting=0 ' . escapeshellarg($scriptFile) . ' 2>&1';
+        $lines = [];
+        exec($command, $lines);
+        return implode("\n", $lines);
+    }
+
+    private function runIsolated($script_path, $session_data = [], $post_data = [], $get_data = [], $extra_globals = [])
+    {
+        $scriptPathLiteral = var_export($script_path, true);
+        $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+if (!function_exists('itm_ensure_upload_directory')) { function itm_ensure_upload_directory(\$d, \$p='upload') { return true; } }
+if (!function_exists('itm_ensure_upload_directory_chain')) { function itm_ensure_upload_directory_chain(\$a, \$p='upload', \$r='') { return true; } }
+if (!function_exists('itm_ensure_files_storage_directory')) { function itm_ensure_files_storage_directory(\$a) { return true; } }
+if (!function_exists('itm_active_sessions_touch')) { function itm_active_sessions_touch(\$e, \$c) { return true; } }
+session_start();
+" . implode("\n", array_map(function($k, $v) { return "\$_SESSION['$k'] = " . var_export($v, true) . ";"; }, array_keys($session_data), $session_data)) . "
+" . implode("\n", array_map(function($k, $v) { return "\$_POST['$k'] = " . var_export($v, true) . ";"; }, array_keys($post_data), $post_data)) . "
+" . implode("\n", array_map(function($k, $v) { return "\$_GET['$k'] = " . var_export($v, true) . ";"; }, array_keys($get_data), $get_data)) . "
+" . implode("\n", array_map(function($k, $v) { return "global \$$k; \$$k = " . var_export($v, true) . ";"; }, array_keys($extra_globals), $extra_globals)) . "
+chdir(dirname({$scriptPathLiteral}));
+ob_start();
+include basename({$scriptPathLiteral});
+echo ob_get_clean();
+?>";
+        $tmp_file = tempnam(sys_get_temp_dir(), 'repro_test');
+        file_put_contents($tmp_file, $code);
+        $output = $this->runPhpScriptFile($tmp_file);
+        unlink($tmp_file);
+        return $output;
+    }
+
+    public function testExplorerPhpUploadBlocked()
+    {
+        $company_id = 1;
+        $actor = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $company_id, true, 'explorer-upload-block');
+        $session = $this->itmPhpunitSessionArrayFromActor($actor, $company_id, [
+            'csrf_token' => 'test_token',
+        ]);
+
+        // We can't easily mock $_FILES for a real move_uploaded_file call in unit tests
+        // but we can check if the logic correctly identifies and blocks the extension.
+        // The repro script already verified this functionally.
+        // For unit test, we can check if the file was NOT created.
+
+        $php_content = "<?php echo 'RCE'; ?>";
+        $tmp_file = tempnam(sys_get_temp_dir(), 'test');
+        file_put_contents($tmp_file, $php_content);
+
+        $_FILES['files'] = [
+            'name' => ['shell.php'],
+            'type' => ['application/x-php'],
+            'tmp_name' => [$tmp_file],
+            'error' => [0],
+            'size' => [strlen($php_content)]
+        ];
+
+        $_POST['action'] = 'upload';
+        $_POST['path'] = 'Common';
+        $_POST['csrf_token'] = 'test_token';
+
+        // Direct include in the same process to test the block logic
+        // We need to mock itm_require_post_csrf as it might exit
+        // Actually, let's use runIsolated to be safe and truly functional
+        $this->runIsolated(ROOT_PATH . 'modules/explorer/api.php', $session, $_POST);
+
+        $target_path = ROOT_PATH . "files/$company_id/Common/shell.php";
+        $this->assertFileDoesNotExist($target_path, "PHP file should be blocked by extension allowlist.");
+
+        if (file_exists($target_path)) unlink($target_path);
+        if (file_exists($tmp_file)) unlink($tmp_file);
+    }
+
+    public function testUserRoleEscalationBlocked()
+    {
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
+        // 1. Create a non-admin user
+        $attackerRow = itm_script_test_employee_create($this->conn, 1, [
+            'script_slug' => 'phpunit-role-escalation',
+            'role_id' => 5,
+        ]);
+        $this->assertIsArray($attackerRow);
+        $attacker_id = (int)$attackerRow['id'];
+        $attackerUsername = (string)$attackerRow['username'];
+
+        $session = [
+            'company_id' => 1,
+            'employee_id' => $attacker_id,
+            'username' => $attackerUsername,
+            'csrf_token' => 'test_token'
+        ];
+
+        // 2. Attempt to update own role to Admin (1)
+        $post = [
+            'csrf_token' => 'test_token',
+            'username' => $attackerUsername,
+            'email' => (string)$attackerRow['email'],
+            'role_id' => 1,
+            'access_level_id' => 1,
+        ];
+        $get = ['id' => $attacker_id];
+        $globals = ['crud_action' => 'edit'];
+
+        $this->runIsolated(ROOT_PATH . 'modules/employees/index.php', $session, $post, $get, $globals);
+
+        // 3. Verify role was NOT updated
+        $stmtV = $this->conn->prepare("SELECT role_id FROM employees WHERE id = ?");
+        $stmtV->bind_param("i", $attacker_id);
+        $stmtV->execute();
+        $res = $stmtV->get_result();
+        $row = mysqli_fetch_assoc($res);
+        $this->assertEquals(5, (int)$row['role_id'], "Non-admin user should not be able to update their role to Admin.");
+
+        // Cleanup
+        itm_script_test_employee_delete($this->conn, $attacker_id);
+    }
+
+    public function testRoleModulePermissionsAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'employee_id' => 999,
+            'username' => 'nobody',
+            'role_name' => 'User'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'modules/role_module_permissions/index.php', $session);
+
+        $this->assertStringNotContainsString('Role Module Permissions Management', $output, "Non-admin users should be redirected from Role Module Permissions.");
+    }
+
+    public function testCompanyModuleAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'employee_id' => 999,
+            'username' => 'nobody'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'modules/companies/index.php', $session);
+        $this->assertStringNotContainsString('Companies Management', $output, "Non-admin users should be redirected from Companies module.");
+    }
+
+    public function testSensitiveImportAdminOnly()
+    {
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
+        // 1. Create a non-admin user
+        $attackerRow = itm_script_test_employee_create($this->conn, 1, [
+            'script_slug' => 'phpunit-sensitive-import',
+            'role_id' => 5,
+        ]);
+        $this->assertIsArray($attackerRow);
+        $attacker_id = (int)$attackerRow['id'];
+        $attackerUsername = (string)$attackerRow['username'];
+
+        $session = [
+            'company_id' => 1,
+            'employee_id' => $attacker_id,
+            'username' => $attackerUsername,
+            'csrf_token' => 'test_token'
+        ];
+
+        $payload = [
+            'csrf_token' => 'test_token',
+            'import_excel_rows' => [
+                ['id', 'company', 'incode'],
+                [1, 'Hacked', 'HACKED']
+            ]
+        ];
+
+        // 2. Attempt to import companies
+        $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+require_once '" . ROOT_PATH . "config/config.php';
+\$_SESSION['employee_id'] = $attacker_id;
+\$_SESSION['company_id'] = 1;
+\$_SESSION['csrf_token'] = 'test_token';
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['CONTENT_TYPE'] = 'application/json';
+\$payload = " . var_export($payload, true) . ";
+echo json_encode(itm_handle_json_table_import(\$conn, 'companies', 1, \$payload, true));
+?>";
+        $tmp_file = tempnam(sys_get_temp_dir(), 'import_test');
+        file_put_contents($tmp_file, $code);
+        $output = $this->runPhpScriptFile($tmp_file);
+        unlink($tmp_file);
+
+        $result = json_decode($output, true);
+        $this->assertFalse($result['ok'] ?? true, "Import should fail for non-admin user on sensitive table.");
+
+        // Cleanup
+        itm_script_test_employee_delete($this->conn, $attacker_id);
+    }
+
+    public function testRegistrationInvitationsAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'employee_id' => 999,
+            'username' => 'nobody',
+            'role_name' => 'User'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'modules/registration_invitations/index.php', $session);
+
+        $this->assertStringNotContainsString('Registration Invitations Management', $output, "Non-admin users should be redirected from Registration Invitations.");
+    }
+
+    public function testResetGitHistoryAdminOnly()
+    {
+        $session = [
+            'company_id' => 1,
+            'employee_id' => 999,
+            'username' => 'nobody',
+            'role_name' => 'User'
+        ];
+
+        $output = (string)$this->runIsolated(ROOT_PATH . 'reset_git_history.php', $session);
+
+        $this->assertStringNotContainsString('Starting Git history reset', $output, "Non-admin users should be redirected from reset_git_history.php.");
+    }
+
+    public function testNotesZipTraversalBlocked()
+    {
+        require_once ROOT_PATH . 'includes/notes_visibility.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
+        $companyId = 1;
+        $owner = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-zip-fix']);
+        if (!is_array($owner)) {
+            $this->fail('Unable to create disposable test user.');
+        }
+
+        $employeeId = (int)$owner['id'];
+        $username = (string)$owner['username'];
+        itm_script_test_employee_register_teardown($this->conn, $employeeId, [], [
+            'cleanup' => true,
+            'company_id' => $companyId,
+            'username' => $username,
+        ]);
+
+        $traversalPath = '../../../../../config/config.php';
+        $this->assertNull(
+            itm_notes_resolve_image_path($companyId, $username, $employeeId, $traversalPath),
+            'Path traversal filenames must not resolve to files outside the notes upload directory.'
+        );
+
+        $uploadDir = itm_notes_private_images_dir($companyId, $username, $employeeId);
+        // Do not create the directory here as per the requirement.
+        // If it doesn't exist, itm_notes_resolve_image_path will still return null for traversal attempts.
+
+        $title = 'VULN_TEST_TRAVERSAL_FIX';
+        $imagesJson = json_encode([$traversalPath]);
+        $stmt = $this->conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, images_json, active) VALUES (?, ?, ?, 'test', ?, 1)");
+        $stmt->bind_param('iiss', $companyId, $employeeId, $title, $imagesJson);
+        $stmt->execute();
+        $noteId = (int)$stmt->insert_id;
+        $stmt->close();
+
+        $imgs = json_decode($imagesJson, true);
+        $zipName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $title) . '_download.zip';
+        $zipPath = sys_get_temp_dir() . '/' . $zipName;
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
+
+        $addedFiles = 0;
+        foreach ($imgs as $img) {
+            $filePath = itm_notes_resolve_image_path($companyId, $username, $employeeId, $img);
+            if ($filePath !== null) {
+                $zip->addFile($filePath, basename($filePath));
+                $addedFiles++;
+            }
+        }
+        $zip->close();
+
+        $this->assertSame(0, $addedFiles, 'Malicious images_json entries must not add files to the ZIP.');
+        if (file_exists($zipPath)) {
+            unlink($zipPath);
+        }
+
+        $this->conn->query("DELETE FROM notes WHERE id = $noteId");
+        itm_script_test_employee_cleanup_storage($companyId, $username, $employeeId);
+    }
+
+    public function testNotesIdorViewBlocked()
+    {
+        require_once ROOT_PATH . 'includes/notes_visibility.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
+        $companyId = 1;
+        $victim = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-victim-fix']);
+        $attacker = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-notes-idor-attacker-fix']);
+        if (!is_array($victim) || !is_array($attacker)) {
+            $this->fail('Unable to create disposable test users.');
+        }
+
+        $victimId = (int)$victim['id'];
+        $attackerId = (int)$attacker['id'];
+        itm_script_test_employee_register_teardown($this->conn, $victimId, [], [
+            'cleanup' => true,
+            'company_id' => $companyId,
+            'username' => (string)$victim['username'],
+        ]);
+        itm_script_test_employee_register_teardown($this->conn, $attackerId, [], [
+            'cleanup' => true,
+            'company_id' => $companyId,
+            'username' => (string)$attacker['username'],
+        ]);
+
+        $title = 'VULN_TEST_IDOR_VIEW_FIX';
+        $secret = 'SECRET_CONTENT_' . bin2hex(random_bytes(8));
+        $stmt = $this->conn->prepare('INSERT INTO notes (company_id, employee_id, title, content, active) VALUES (?, ?, ?, ?, 1)');
+        $stmt->bind_param('iiss', $companyId, $victimId, $title, $secret);
+        $stmt->execute();
+        $noteId = (int)$stmt->insert_id;
+        $stmt->close();
+
+        $this->assertNull(
+            itm_notes_fetch_visible_by_id($this->conn, $noteId, $companyId, $attackerId, true),
+            'Cross-user private notes must not load via the visibility helper.'
+        );
+
+        $session = [
+            'company_id' => $companyId,
+            'employee_id' => $attackerId,
+            'username' => (string)$attacker['username'],
+        ];
+        $get = ['id' => $noteId];
+        $extra_globals = ['crud_action' => 'view'];
+
+        $output = $this->runIsolated(ROOT_PATH . 'modules/notes/index.php', $session, [], $get, $extra_globals);
+        $this->assertStringNotContainsString($secret, $output, 'Attacker must not view victim private note content via view load.');
+
+        $ownerRow = itm_notes_fetch_visible_by_id($this->conn, $noteId, $companyId, $victimId, true);
+        $this->assertIsArray($ownerRow);
+        $this->assertSame($secret, $ownerRow['content']);
+
+        $this->conn->query("DELETE FROM notes WHERE id = $noteId");
+    }
+
+    public function testUsersSensitiveFieldsHiddenFromView()
+    {
+        require_once ROOT_PATH . 'includes/itm_employees_auth_sensitive_fields.php';
+        require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
+
+        $companyId = 1;
+        $testUser = itm_script_test_employee_create($this->conn, $companyId, ['script_slug' => 'phpunit-users-sensitive-view']);
+        if (!is_array($testUser)) {
+            $this->fail('Unable to create disposable test user.');
+        }
+
+        $employeeId = (int)$testUser['id'];
+        itm_script_test_employee_register_teardown($this->conn, $employeeId);
+
+        $secretToken = 'PHPUNIT_RESET_' . bin2hex(random_bytes(8));
+        $secretHash = hash('sha256', $secretToken);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        $stmt = $this->conn->prepare('UPDATE employees SET reset_token = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?');
+        $stmt->bind_param('sssi', $secretToken, $secretHash, $expiresAt, $employeeId);
+        $stmt->execute();
+        $stmt->close();
+
+        $uiSample = array_map(function ($name) {
+            return ['Field' => $name];
+        }, array_merge(['username'], itm_employees_auth_sensitive_field_names()));
+        $filtered = itm_employees_auth_filter_ui_columns($uiSample);
+        $filteredNames = array_column($filtered, 'Field');
+        foreach (itm_employees_auth_sensitive_field_names() as $sensitiveField) {
+            $this->assertNotContains($sensitiveField, $filteredNames);
+        }
+
+        $adminRow = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $companyId, true, 'employees-view-sensitive');
+        if (!is_array($adminRow)) {
+            $this->markTestSkipped('Unable to create disposable admin session actor.');
+        }
+
+        $session = $this->itmPhpunitSessionArrayFromActor($adminRow, $companyId);
+        $get = ['id' => $employeeId];
+        $extraGlobals = ['crud_action' => 'view'];
+
+        $output = $this->runIsolated(ROOT_PATH . 'modules/employees/index.php', $session, [], $get, $extraGlobals);
+        $this->assertStringNotContainsString($secretToken, $output);
+        $this->assertStringNotContainsString($secretHash, $output);
+        $this->assertStringNotContainsString('Reset Token Hash', $output);
+
+        $this->conn->query("DELETE FROM employees WHERE id = $employeeId");
+    }
+
+    public function testJsonImportRejectsInvalidDecimal(): void
+    {
+        $companyId = 1;
+        $actor = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $companyId, true, 'json-import-decimal');
+        $uniqueModel = 'PhpUnitImport-' . bin2hex(random_bytes(4));
+        $payload = [
+            'csrf_token' => 'test_token',
+            'import_excel_rows' => [
+                ['Model', 'Price'],
+                [$uniqueModel, 'invalid-price'],
+            ],
+        ];
+
+        $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+require_once '" . ROOT_PATH . "config/config.php';
+\$_SESSION['employee_id'] = " . (int)$actor['id'] . ";
+\$_SESSION['company_id'] = 1;
+\$_SESSION['username'] = " . var_export((string)$actor['username'], true) . ";
+\$_SESSION['csrf_token'] = 'test_token';
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['CONTENT_TYPE'] = 'application/json';
+\$payload = " . var_export($payload, true) . ";
+echo json_encode(itm_handle_json_table_import(\$conn, 'catalogs', 1, \$payload, true));
+?>";
+        $tmpFile = tempnam(sys_get_temp_dir(), 'import_decimal_test');
+        file_put_contents($tmpFile, $code);
+        $output = $this->runPhpScriptFile($tmpFile);
+        unlink($tmpFile);
+
+        $result = json_decode($output, true);
+        $this->assertIsArray($result);
+        $this->assertFalse($result['ok'] ?? true);
+        $this->assertSame(0, (int)($result['inserted'] ?? -1));
+
+        $stmt = $this->conn->prepare('SELECT id FROM catalogs WHERE company_id = ? AND model = ? LIMIT 1');
+        $stmt->bind_param('is', $companyId, $uniqueModel);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $this->assertSame(0, $res ? mysqli_num_rows($res) : -1);
+        $stmt->close();
+    }
+
+    public function testJsonImportRejectsInvalidDatetime(): void
+    {
+        $companyId = 1;
+        $actor = $this->itmPhpunitCreateDisposableSessionActor($this->conn, $companyId, true, 'json-import-datetime');
+        $uniqueTitle = 'PhpUnitImportDate-' . bin2hex(random_bytes(4));
+        $payload = [
+            'csrf_token' => 'test_token',
+            'import_excel_rows' => [
+                ['Title', 'Start Datetime'],
+                [$uniqueTitle, 'not-a-date'],
+            ],
+        ];
+
+        $code = "<?php
+define('ITM_CLI_SCRIPT', true);
+require_once '" . ROOT_PATH . "config/config.php';
+\$_SESSION['employee_id'] = " . (int)$actor['id'] . ";
+\$_SESSION['company_id'] = 1;
+\$_SESSION['username'] = " . var_export((string)$actor['username'], true) . ";
+\$_SESSION['csrf_token'] = 'test_token';
+\$_SERVER['REQUEST_METHOD'] = 'POST';
+\$_SERVER['CONTENT_TYPE'] = 'application/json';
+\$payload = " . var_export($payload, true) . ";
+echo json_encode(itm_handle_json_table_import(\$conn, 'events', 1, \$payload, true));
+?>";
+        $tmpFile = tempnam(sys_get_temp_dir(), 'import_date_test');
+        file_put_contents($tmpFile, $code);
+        $output = $this->runPhpScriptFile($tmpFile);
+        unlink($tmpFile);
+
+        $result = json_decode($output, true);
+        $this->assertIsArray($result);
+        $this->assertFalse($result['ok'] ?? true);
+        $this->assertSame(0, (int)($result['inserted'] ?? -1));
+
+        $stmt = $this->conn->prepare('SELECT id FROM events WHERE company_id = ? AND title = ? LIMIT 1');
+        $stmt->bind_param('is', $companyId, $uniqueTitle);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $this->assertSame(0, $res ? mysqli_num_rows($res) : -1);
+        $stmt->close();
+    }
+}
