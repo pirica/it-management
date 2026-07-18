@@ -17,7 +17,6 @@ $nl = itm_script_output_nl();
 if (!$itmIsCli) {
     itm_script_output_begin('Employees clear_table guard');
     itm_script_output_close_pre();
-    itm_script_browser_nav_echo();
     echo '<h1>Employees clear_table static guard</h1>';
     echo '<p class="scripts-muted">Verifies <code>clear_table</code> soft-deletes via <code>employees_delete_record()</code> (detach + transaction + <code>itm_crud_build_soft_delete_sql</code>).</p>';
     echo '<p><strong>Files audited:</strong> '

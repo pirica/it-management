@@ -28,7 +28,6 @@ require_once __DIR__ . '/lib/itm_email_script_helpers.php';
 if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Test Email Forgot</title><style>body{font-family:Segoe UI,sans-serif;margin:16px;line-height:1.4;}</style></head><body>';
-    itm_script_browser_nav_echo();
 }
 
 $userEmail = '';

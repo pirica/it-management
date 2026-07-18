@@ -24,7 +24,6 @@ $nl = itm_script_output_nl();
 
 if (!$itmIsCli) {
     itm_script_output_close_pre();
-    itm_script_browser_nav_echo();
     echo '<h1>Seed Company Module Access</h1>';
 }
 

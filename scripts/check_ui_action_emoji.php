@@ -13,12 +13,6 @@ $nl = itm_script_output_nl();
 
 
 $isCli = (PHP_SAPI === 'cli');
-if (!$isCli) {
-    header('Content-Type: text/html; charset=utf-8');
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo('check_ui_action_emoji.php');
-}
-
 itm_script_output_begin('UI action emoji audit (NO MIXED)');
 
 $scanExtensions = ['php', 'js', 'html'];

@@ -61,7 +61,6 @@ function fp_test_browser_init(): void
     require_once __DIR__ . '/lib/script_browser_nav.php';
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Floor Plans folder move test</title></head>'
         . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:920px;">';
-    itm_script_browser_nav_echo();
     echo '<p style="color:#57606a;margin:0 0 14px;">Regression for '
         . itm_script_format_module_link('floor_plans', '', 'Floor Plans module')
         . ' · table <code>floor_plan_folders</code> (column <code>parent_folder_id</code>, helpers <code>fp_fetch_folders</code> / <code>fp_move_folder_to_parent</code>).</p>';

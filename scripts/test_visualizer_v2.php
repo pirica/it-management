@@ -35,18 +35,14 @@ for ($i = 1; $i <= 48; $i++) {
 
 $closeDiv = '</' . 'div>';
 
-echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">';
-echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-echo '<title>IDF Port Visualizer V2</title>';
+// Why: Nav is emitted once by itm_script_output_begin(); avoid a second full HTML shell.
 echo '<link rel="stylesheet" href="../css/styles.css">';
 echo '<style>
-body { padding: 20px; }
+body { padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
 .card { margin-bottom: 24px; }
 .card h2 { margin-top: 0; }
 .card p { color: var(--text-secondary, #57606a); margin: 0 0 12px 0; }
 </style>';
-echo '</head><body>';
-itm_script_browser_nav_echo();
 echo '<h1>IDF Port Visualizer V2 (Relation-based)</h1>';
 echo '<div id="captureArea">';
 
