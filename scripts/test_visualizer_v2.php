@@ -35,7 +35,6 @@ for ($i = 1; $i <= 48; $i++) {
 
 $closeDiv = '</' . 'div>';
 
-// Why: Nav is emitted once by itm_script_output_begin(); avoid a second full HTML shell.
 echo '<link rel="stylesheet" href="../css/styles.css">';
 echo '<style>
 body { padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }

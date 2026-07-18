@@ -5,20 +5,15 @@
  * Why: itm_script_output_begin() already calls itm_script_browser_nav_echo(); a second
  * call in the same browser response stacks two identical back links.
  *
+ * Browser: scripts/check_script_browser_nav_duplicate.php
  * CLI: php scripts/check_script_browser_nav_duplicate.php
  */
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 
-if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('CLI only');
-    echo '<p>CLI only: <code>php scripts/check_script_browser_nav_duplicate.php</code></p>';
-    itm_script_output_end();
-    exit(0);
-}
-
-itm_script_output_begin();
+itm_script_output_begin('Script browser nav duplicate audit');
+$nl = itm_script_output_nl();
 
 /**
  * @return array<int, string>
@@ -73,51 +68,67 @@ function itm_check_script_nav_duplicate_issues(string $content): array
     return array_values(array_unique($issues));
 }
 
-$root = __DIR__;
-$failures = [];
+/**
+ * @return array<int, string>
+ */
+function itm_check_script_nav_duplicate_collect_failures(string $scriptsRoot): array
+{
+    $failures = [];
 
-$iterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
-);
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($scriptsRoot, FilesystemIterator::SKIP_DOTS)
+    );
 
-foreach ($iterator as $fileInfo) {
-    if (!$fileInfo->isFile() || $fileInfo->getExtension() !== 'php') {
-        continue;
+    foreach ($iterator as $fileInfo) {
+        if (!$fileInfo->isFile() || $fileInfo->getExtension() !== 'php') {
+            continue;
+        }
+
+        $path = $fileInfo->getPathname();
+        if (strpos(str_replace('\\', '/', $path), '/lib/') !== false) {
+            continue;
+        }
+
+        $basename = $fileInfo->getFilename();
+        if ($basename === 'check_script_browser_nav_duplicate.php' || $basename === 'scripts.php') {
+            continue;
+        }
+
+        $content = file_get_contents($path);
+        if ($content === false) {
+            continue;
+        }
+
+        $issues = itm_check_script_nav_duplicate_issues($content);
+        if ($issues === []) {
+            continue;
+        }
+
+        $rel = 'scripts/' . $basename;
+        foreach ($issues as $issue) {
+            $failures[] = $rel . ': ' . $issue;
+        }
     }
 
-    $path = $fileInfo->getPathname();
-    if (strpos(str_replace('\\', '/', $path), '/lib/') !== false) {
-        continue;
-    }
+    sort($failures, SORT_STRING);
 
-    $basename = $fileInfo->getFilename();
-    if ($basename === 'check_script_browser_nav_duplicate.php' || $basename === 'scripts.php') {
-        continue;
-    }
-
-    $content = file_get_contents($path);
-    if ($content === false) {
-        continue;
-    }
-
-    $issues = itm_check_script_nav_duplicate_issues($content);
-    if ($issues === []) {
-        continue;
-    }
-
-    $rel = 'scripts/' . $basename;
-    foreach ($issues as $issue) {
-        $failures[] = $rel . ': ' . $issue;
-    }
+    return $failures;
 }
 
+$failures = itm_check_script_nav_duplicate_collect_failures(__DIR__);
+
 if ($failures === []) {
-    echo "PASS: No duplicate ← Scripts index patterns in scripts/*.php.\n";
+    $line = '[PASS] No duplicate ← Scripts index patterns in scripts/*.php.';
+    echo (PHP_SAPI === 'cli' ? colorText($line . PHP_EOL, 'pass') : itm_script_format_status_line($line) . $nl);
+    itm_script_output_end();
     exit(0);
 }
 
-echo 'FAIL: ' . count($failures) . " duplicate nav pattern(s):\n";
+$header = '[FAIL] ' . count($failures) . ' duplicate nav pattern(s):';
+echo (PHP_SAPI === 'cli' ? colorText($header . PHP_EOL, 'fail') : itm_script_format_status_line($header) . $nl);
 foreach ($failures as $line) {
-    echo '  - ' . $line . "\n";
+    echo '  - ' . htmlspecialchars($line, ENT_QUOTES, 'UTF-8') . $nl;
 }
+
+itm_script_output_end();
 exit(1);
