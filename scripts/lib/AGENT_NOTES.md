@@ -6,7 +6,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 ## 7. File Structure
 | File | Role |
 |------|------|
-| `script_browser_nav.php` | ← Scripts index, relative module links, table→module links |
+| `script_browser_nav.php` | ← Scripts index, relative module links, table→module links, `itm_script_format_modules_file_link()` for `modules/<slug>/…` paths in audit output |
 | `script_cli_output.php` | Browser `<pre>` wrapper + nav for CLI-style audits; `itm_script_output_begin()` calls `itm_script_browser_nav_echo()` once — do not echo nav again in the same browser response (gate: `check_script_browser_nav_duplicate.php`) |
 | `itm_list_active_and_checkboxes_report.php` | Report builder for `list_active_and_checkboxes.php` (schema-backed active column audit, checkbox compliance) |
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
