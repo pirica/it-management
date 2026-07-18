@@ -65,7 +65,12 @@ if (!$itmIsCli) {
     echo '<p>Compares <code>database.sql</code> columns, live MySQL schema, and module UI coverage for every '
         . 'discoverable <code>$crud_table</code> module. Employees uses the same critical-field list as '
         . '<a href="employee_fields_missing.php">employee_fields_missing.php</a>. '
-        . 'Flattened scaffold modules with <code>$uiColumns</code> pass schema checks and are marked dynamic scaffold.</p>';
+        . 'Flattened scaffold modules with <code>$uiColumns</code> pass UI via dynamic scaffold. '
+        . 'Bespoke and status-driven modules skip UI FAIL checks but still list schema and scraped/inferred form fields.</p>';
+    echo '<details style="margin:12px 0;max-width:900px;"><summary style="cursor:pointer;font-weight:600;">Section legend</summary>';
+    echo '<pre style="margin:8px 0;padding:12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;">';
+    echo htmlspecialchars(itm_fields_missing_format_legend(''), ENT_QUOTES, 'UTF-8');
+    echo '</pre></details>';
     echo '<form method="get" style="margin:16px 0;padding:12px;border:1px solid #d0d7de;border-radius:8px;max-width:720px;">';
     echo '<label for="module" style="display:block;margin-bottom:8px;font-weight:600;">Module filter (optional)</label>';
     echo '<input type="text" name="module" id="module" value="' . htmlspecialchars($moduleFilter, ENT_QUOTES, 'UTF-8') . '" placeholder="e.g. employees" style="width:100%;padding:8px;margin-bottom:12px;">';
@@ -79,6 +84,7 @@ echo 'Modules audited: ' . (int) $report['module_count'] . $nl;
 if ($moduleFilter !== '') {
     echo 'Module filter: ' . $moduleFilter . $nl;
 }
+echo itm_fields_missing_format_legend($nl);
 echo str_repeat('-', 72) . $nl . $nl;
 
 foreach ($report['modules'] as $moduleReport) {
