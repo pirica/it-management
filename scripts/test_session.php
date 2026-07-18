@@ -2,7 +2,8 @@
 /**
  * Session dump for debugging persistence and keys.
  *
- * Browser: current signed-in session (Admin). CLI: php scripts/test_session.php [PHPSESSID]
+ * Browser: current script session after config.php (disposable test Admin when scripts bootstrap ran).
+ * CLI: php scripts/test_session.php [PHPSESSID]
  */
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
@@ -14,10 +15,16 @@ if ($itmIsCli) {
 }
 
 if ($itmIsCli && isset($argv[1]) && trim((string) $argv[1]) !== '') {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
     session_id(trim((string) $argv[1]));
 }
 
-session_start();
+// Why: config.php already started the session in the browser; CLI has no config load.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 if ($itmIsCli) {
     var_dump($_SESSION);
@@ -25,5 +32,10 @@ if ($itmIsCli) {
 }
 
 itm_script_output_begin('Session dump');
-echo htmlspecialchars(print_r($_SESSION, true), ENT_QUOTES, 'UTF-8') . "\n";
+itm_script_output_close_pre();
+echo '<p>Shows <code>$_SESSION</code> after <code>config.php</code>. Browser script runs use a disposable test Admin ';
+echo '(<code>itm_script_browser_isolated</code>) — not your live cookie session.</p>';
+echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">';
+echo htmlspecialchars(print_r($_SESSION, true), ENT_QUOTES, 'UTF-8');
+echo '</pre>';
 itm_script_output_end();
