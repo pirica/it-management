@@ -101,6 +101,7 @@ if (!function_exists('itm_perform_audit_static_exclusions')) {
             'transfer_data_from_employee.php',
             'update_all_created_at.php',
             'run_tests.php',
+            'run_tier2_checks.php',
             'auth_register_reset_human_test.php',
             'employees_delete_clear_table_test.php',
             'equipment_delete_clear_table_test.php',
