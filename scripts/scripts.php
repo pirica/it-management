@@ -196,7 +196,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="crud_actions.php" target="_blank" rel="nofollow noreferrer">crud_actions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Lists every module entry file (<code>index.php</code> and CRUD wrappers) and each <code>$crud_action =</code> assignment, with links to each module.</td>
+                    <td>Lists every module entry file (<code>index.php</code> and CRUD wrappers) and each <code>$crud_action =</code> assignment. <code>is_*</code> modules and bespoke slugs with no assignment show <strong>Skip</strong>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_actions.php</code> (HTML to stdout) or <code>&gt; crud_actions.html</code>.</td>
                 </tr>
                 <tr>
