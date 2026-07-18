@@ -26,7 +26,7 @@ The central helpdesk/ticketing module for managing support requests.
 ## 5. UI Behavior Requirements
 - **Standard CRUD** with FK label columns (`status_name`, `priority_name`, etc.).
 - **Photo Upload**: Supports uploading photos/screenshots for troubleshooting.
-- **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view.
+- **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view. List sort uses `$sort` / `$dir` GET params with `$sortSql` in `ORDER BY` (static UI audit contract).
 - **Archive toggle**: `archive.php` POST sets `is_archived` 0/1 with company scope.
 
 ## 6. API Actions (If Applicable)
