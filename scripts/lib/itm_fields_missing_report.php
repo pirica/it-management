@@ -776,6 +776,24 @@ if (!function_exists('itm_fields_missing_finalize_module_report')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_format_inline_list_section')) {
+    /**
+     * @param list<string> $items
+     */
+    function itm_fields_missing_format_inline_list_section(
+        string $heading,
+        array $items,
+        string $nl,
+        string $emptyText
+    ): string {
+        if ($items === []) {
+            return '  ' . $heading . ' (0): ' . $emptyText . $nl;
+        }
+
+        return '  ' . $heading . ' (' . count($items) . '): ' . implode(', ', $items) . $nl;
+    }
+}
+
 if (!function_exists('itm_fields_missing_format_indented_list_section')) {
     /**
      * @param list<string> $items
@@ -831,13 +849,13 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
             $excluded = [];
         }
 
-        $out = itm_fields_missing_format_indented_list_section(
+        $out = itm_fields_missing_format_inline_list_section(
             'database.sql columns',
             $expected,
             $nl,
             '(none)'
         );
-        $out .= itm_fields_missing_format_indented_list_section(
+        $out .= itm_fields_missing_format_inline_list_section(
             'live columns',
             $live,
             $nl,
@@ -858,7 +876,7 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
             );
         }
         if ($uiAudited !== []) {
-            $out .= itm_fields_missing_format_indented_list_section(
+            $out .= itm_fields_missing_format_inline_list_section(
                 'UI audited columns',
                 $uiAudited,
                 $nl,
@@ -866,7 +884,7 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
             );
         }
         if ($excluded !== []) {
-            $out .= itm_fields_missing_format_indented_list_section(
+            $out .= itm_fields_missing_format_inline_list_section(
                 'excluded from UI audit',
                 $excluded,
                 $nl,
