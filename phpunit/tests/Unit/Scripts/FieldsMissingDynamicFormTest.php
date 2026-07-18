@@ -46,6 +46,20 @@ PHP;
         $this->assertFalse(itm_fields_missing_dynamic_form_exposes_field('company_id', [$path]));
     }
 
+    public function testEmployeeCompaniesEditDoesNotExposeAuditMetaDynamically(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $path = $root . '/modules/employee_companies/edit.php';
+
+        foreach (['deleted_by', 'deleted_at', 'created_by', 'updated_by'] as $field) {
+            $this->assertFalse(
+                itm_fields_missing_dynamic_form_exposes_field($field, [$path]),
+                $field . ' should be hidden on create/edit forms'
+            );
+        }
+    }
+
     public function testCableColorsIndexDoesNotExposeAuditMetaDynamically(): void
     {
         $root = realpath(__DIR__ . '/../../../../');
