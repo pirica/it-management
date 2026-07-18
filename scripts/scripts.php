@@ -813,9 +813,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="explorer_human_test.php" target="_blank" rel="nofollow noreferrer">explorer_human_test.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Human-flow regression for Explorer storage, access control, copy/move/delete, database synchronisation, and audit logging. <strong>Mutates DB and filesystem:</strong> creates a temporary company plus isolated <code>files/{company_id}</code> content, then removes them at shutdown.</td>
-                    <td><code>php scripts/explorer_human_test.php</code> — CLI-only; run from the repository root after Explorer module changes.</td>
+                    <td>Browser: Admin HTML log. CLI: <code>php scripts/explorer_human_test.php</code> — run after Explorer module changes.</td>
                 </tr>
                 <tr>
                     <td><a href="floor_designer_test.php" target="_blank" rel="nofollow noreferrer">floor_designer_test.php</a></td>
