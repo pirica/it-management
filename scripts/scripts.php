@@ -913,6 +913,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_ui_action_emoji.php</code> — exit <code>0</code> when <strong>0 violations incl. mixed emoji+word</strong>; exit <code>1</code> on any match. Run after UI label changes.</td>
                 </tr>
                 <tr>
+                    <td><a href="check_script_browser_nav_duplicate.php">check_script_browser_nav_duplicate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: <code>scripts/*.php</code> must not stack two <strong>← Scripts index</strong> links in one browser response — <code>itm_script_output_begin()</code> already calls <code>itm_script_browser_nav_echo()</code>; custom HTML must not call nav again after <code>close_pre</code> or in the same <code>if (!$isCli)</code> block.</td>
+                    <td>Browser: plain-text report in <code>&lt;pre&gt;</code>. CLI: <code>php scripts/check_script_browser_nav_duplicate.php</code> — exit <code>0</code> when no duplicate-nav patterns; exit <code>1</code> with file list. Run after changing script browser shells or <code>script_cli_output.php</code> / <code>script_browser_nav.php</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="check_fk_label_search_coverage.php" target="_blank" rel="nofollow noreferrer">check_fk_label_search_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
                     <td>Static audit: every module with server-side list search must match visible FK/label columns (shared CRUD helper, EXISTS/JOIN label LIKE, employee JOIN/CONCAT, or scalar-only fields). No per-module allowlist.</td>

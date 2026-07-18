@@ -16,7 +16,6 @@ $nl = itm_script_output_nl();
 $failures = 0;
 
 if (!$isCli) {
-    itm_script_browser_nav_echo();
     echo '<h1>Verify Company Module Access</h1>';
 }
 

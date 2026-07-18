@@ -441,6 +441,7 @@ php scripts/apitest_tier_basic.php
 * **Back link (required):** Every HTML report must show **← Scripts index** at the top, linking to `scripts/scripts.php` (relative `scripts.php` from `scripts/`).
   * Use `scripts/lib/script_browser_nav.php`: `require_once …/script_browser_nav.php`; then `itm_script_browser_nav_echo()`.
   * Plain-text-in-`<pre>` audits: use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`), which includes the same nav bar.
+  * **No duplicate nav (mandatory):** `itm_script_output_begin()` already renders **← Scripts index** once. Do **not** call `itm_script_browser_nav_echo()` again in the same browser response. Static gate: `php scripts/check_script_browser_nav_duplicate.php` (browser + CLI).
 * **Human-readable results:** Browser output must explain findings in plain language (not only internal codes). Example: write “Duplicate dropdown option” rather than only `duplicate_dropdown_risk`. Include a short “what to do next” when useful.
 * **Line-breaking prevention for tables (nowrap standard):** To guarantee readability and maintain professional UI appearance in admin/report tool dashboards (e.g., `crud_tables.php`, `crud_titles.php`, `crud_actions.php`), data rows must not wrap arbitrarily. Implement this by applying `white-space: nowrap;` to table header and body cells (`thead th` and `tbody td`), and wrap the table structure in a container set to `overflow-x: auto;` (such as the `.wrap` container class) to facilitate horizontal scrolling for overflowing data without distorting column structures.
 

@@ -10,7 +10,6 @@ $isCli = (php_sapi_name() === 'cli');
 $nl = itm_script_output_nl();
 
 if (!$isCli) {
-    itm_script_browser_nav_echo();
     echo '<h1>Sync Modules Registry</h1>';
 }
 
