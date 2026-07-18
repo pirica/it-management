@@ -17,7 +17,6 @@ if (PHP_SAPI === 'cli') {
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
 
 $nl = itm_script_output_nl();
 
@@ -31,6 +30,7 @@ $itmIsCli = PHP_SAPI === 'cli';
 
 // CLI Mode
 if ($itmIsCli) {
+    itm_script_output_begin();
     $options = getopt("", ["id:"]);
     $cid = isset($options['id']) ? (int)$options['id'] : 0;
 

@@ -83,10 +83,6 @@ function itmdf_sort_browser_init(): void
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
         . '<title>IDF device port sort test</title></head>'
         . '<body style="font-family:Segoe UI,system-ui,sans-serif;line-height:1.45;margin:16px;max-width:920px;">';
-    if (!function_exists('itm_script_browser_nav_html')) {
-        require_once __DIR__ . '/lib/script_browser_nav.php';
-    }
-    echo itm_script_browser_nav_html();
     echo '<p style="color:#57606a;margin:0 0 14px;">'
         . '<a href="?">Summary</a> &nbsp;|&nbsp; '
         . '<a href="?verbose=1">Verbose</a> &nbsp;|&nbsp; '

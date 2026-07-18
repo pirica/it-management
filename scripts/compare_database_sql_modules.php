@@ -328,10 +328,10 @@ $asJson = $itmIsCli
 $cliShowAll = $itmIsCli && in_array('--all', $cliArgv, true);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
-
 
 if ($itmIsCli) {
+    itm_script_output_begin();
+
     $nl = itm_script_output_nl();
     if ($asJson) {
         echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . $nl;

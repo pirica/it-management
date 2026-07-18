@@ -995,6 +995,14 @@ php scripts/verify_employees_equipment_search_coverage.php
 
 When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`. The static audit (`check_fk_label_search_coverage.php`) is smoke step 4 and uses **universal pass rules only** (no per-module N/A allowlist); runtime verify runs in the **database-import** CI job. Run `php scripts/verify_employees_equipment_search_coverage.php` after employees or equipment list search / FK label helper changes.
 
+**Script browser nav (no duplicate ← Scripts index):** after changing `scripts/lib/script_cli_output.php`, `scripts/lib/script_browser_nav.php`, or any browser HTML shell under `scripts/*.php`, run:
+
+```bash
+php scripts/check_script_browser_nav_duplicate.php
+```
+
+Exit `0` when no file stacks `itm_script_browser_nav_echo()` / `itm_script_browser_nav_html()` on top of `itm_script_output_begin()` in the same browser path.
+
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 
 ```bash

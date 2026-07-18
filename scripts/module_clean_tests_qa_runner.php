@@ -508,7 +508,6 @@ if ($options['help']) {
     }
 
     header('Content-Type: text/html; charset=utf-8');
-    itm_script_browser_nav_echo();
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:860px;margin:16px;line-height:1.5;">';
     echo '<h1>Clean tests for module QA runner</h1>';
     echo '<p>Runs the same cleanup used automatically at the end of <code>module_browser_qa_runner.php</code>:</p>';
@@ -531,7 +530,6 @@ if (!$options['run']) {
     }
 
     header('Content-Type: text/html; charset=utf-8');
-    itm_script_browser_nav_echo();
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:860px;margin:16px;line-height:1.5;">';
     echo '<h1>Clean tests for module QA runner</h1>';
     echo '<p><strong>Destructive (local dev DB):</strong> runs the same cleanup used by the QA runner and removes known test artifacts plus MBQA / QA-IMPORT rows by signature.</p>';
@@ -615,7 +613,6 @@ if (mbqa_clean_tests_is_cli()) {
 }
 
 header('Content-Type: text/html; charset=utf-8');
-itm_script_browser_nav_echo();
 echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:860px;margin:16px;line-height:1.5;">';
 echo '<h1>Clean tests completed</h1>';
 if ($cleanup['ok']) {
