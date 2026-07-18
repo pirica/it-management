@@ -1487,7 +1487,8 @@ if (!function_exists('itm_fields_missing_audit_bespoke_page_ui_contract')) {
             [
                 'Browser title' => itm_check_module_browser_title($indexContent),
                 'Favicon' => itm_check_module_favicon_link($indexContent),
-                'List heading' => itm_check_list_heading_layout($indexContent),
+                'List heading layout' => itm_check_list_heading_layout($indexContent),
+                'List heading emoji' => itm_check_list_heading_emoji($indexContent),
             ],
             $passes,
             $failures,
@@ -2105,8 +2106,10 @@ if (!function_exists('itm_fields_missing_format_legend')) {
     {
         $out = 'Section legend (same for every module; ui: tag shows audit path):' . $nl;
         $out .= '  database.sql columns / live columns — canonical schema vs live MySQL (when the module has a table)' . $nl;
-        $out .= '  UI coverage audit: skipped — gated bespoke UI contract (page: title/favicon/list heading; list: search/sort/pagination/import/export/sample data)' . $nl;
+        $out .= '  UI coverage audit: skipped — gated bespoke UI contract (page: title/favicon/list heading layout+emoji; list: search/sort/pagination/import/export/sample data)' . $nl;
         $out .= '  Bespoke gate list UI — Search, Sort, Pagination (Settings records_per_page), bulk actions, Actions column' . $nl;
+        $out .= '  List heading layout — centered h1 + Settings new_button_position left/right gates' . $nl;
+        $out .= '  List heading emoji — $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()' . $nl;
         $out .= '  [SKIP][pass] does not audit business columns — see Audit summary footer' . $nl;
         $out .= '  Static HTML name= scrape — literal name="..." in create/edit (or index for UI-only); not the full dynamic UI' . $nl;
         $out .= '  Inferred form columns — derived from $uiColumns, cr_manageable_columns, or employees matrix' . $nl;

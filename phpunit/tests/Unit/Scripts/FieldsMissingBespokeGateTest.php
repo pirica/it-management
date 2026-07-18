@@ -109,7 +109,8 @@ class FieldsMissingBespokeGateTest extends TestCase
 
         $result = $this->runBespokeGate('tickets', $columns);
         $passes = implode('|', $result['passes']);
-        $this->assertStringContainsString('List heading OK', $passes);
+        $this->assertStringContainsString('List heading layout OK', $passes);
+        $this->assertStringContainsString('List heading emoji OK', $passes);
         $this->assertStringContainsString('Actions layout OK', $passes);
     }
 
@@ -198,9 +199,70 @@ PHP;
             return (string) ($failure['message'] ?? '');
         }, $failures);
         $this->assertTrue(
-            $this->messagesContainAny($messages, ['List heading']),
+            $this->messagesContainAny($messages, ['List heading layout', 'List heading emoji']),
             'expected List heading failure: ' . implode(' | ', $messages)
         );
+    }
+
+    public function testSyntheticListHeadingEmojiFailsWithoutSidebarLabelSource(): void
+    {
+        $content = <<<'PHP'
+<!DOCTYPE html><html><head><title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title></head>
+<body>
+<?php $moduleListHeading = $crud_title; $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right'); ?>
+<div data-itm-new-button-managed="server" style="position:relative;display:flex;">
+<?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
+<h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+<?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
+</div>
+<table></table>
+PHP;
+        $passes = [];
+        $failures = [];
+        itm_fields_missing_audit_bespoke_page_ui_contract(
+            'fixture_heading_emoji',
+            $this->makeFixtureFiles($content),
+            $passes,
+            $failures
+        );
+
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $failures);
+        $this->assertTrue(
+            $this->messagesContainAny($messages, ['List heading emoji', 'emoji source']),
+            'expected List heading emoji failure: ' . implode(' | ', $messages)
+        );
+    }
+
+    public function testSyntheticListHeadingEmojiPassesWithSidebarLabel(): void
+    {
+        $content = <<<'PHP'
+<!DOCTYPE html><html><head><title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title></head>
+<body>
+<?php
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+?>
+<div data-itm-new-button-managed="server" style="position:relative;display:flex;">
+<?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
+<h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+<?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
+</div>
+<table></table>
+PHP;
+        $passes = [];
+        $failures = [];
+        itm_fields_missing_audit_bespoke_page_ui_contract(
+            'fixture_heading_emoji_ok',
+            $this->makeFixtureFiles($content),
+            $passes,
+            $failures
+        );
+
+        $passesText = implode('|', $passes);
+        $this->assertStringContainsString('List heading emoji OK', $passesText);
+        $this->assertStringContainsString('List heading layout OK', $passesText);
     }
 
     public function testSyntheticSoftDeleteContractPassesWhenCompliant(): void
@@ -256,7 +318,8 @@ PHP;
 
         $result = $this->runBespokeGate('employees', $columns);
         $passes = implode('|', $result['passes']);
-        $this->assertStringContainsString('List heading OK', $passes);
+        $this->assertStringContainsString('List heading layout OK', $passes);
+        $this->assertStringContainsString('List heading emoji OK', $passes);
         $this->assertStringContainsString('Search OK', $passes);
         $this->assertStringContainsString('row active: hidden on create/edit forms', $passes);
     }
