@@ -628,8 +628,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="transfer_data_from_employee.php" target="_blank" rel="nofollow noreferrer">transfer_data_from_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Clones an employee and transfers/copies their related data to the new record.</td>
-                    <td>Open <a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a> in the browser. <strong>DANGER: Mutates DB.</strong></td>
+                    <td>Clones an employee and copies related data. <strong>Default dry-run</strong>; <code>apply=1</code> mutates DB (Admin).</td>
+                    <td>Open <a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a> — preview with employee id, then <code>?id=N&amp;apply=1</code> only when needed.</td>
                 </tr>
                 <tr>
                     <td><a href="delete_clone_employee.php" target="_blank" rel="nofollow noreferrer">delete_clone_employee.php</a></td>
