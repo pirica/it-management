@@ -261,6 +261,12 @@ if ($searchRaw !== '' && $crud_action === 'list_all') {
 }
 
 $modulePathEsc = sanitize($modulePath);
+// Why: List h1 must use Settings sidebar label so per-user emoji overrides apply in the matrix header.
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -285,13 +291,27 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
-                <h1 style="margin:0;"><?= sanitize($crud_title) ?></h1>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a class="btn btn-sm" href="<?= $modulePathEsc ?>/index.php">Matrix</a>
-                    <a class="btn btn-sm" href="<?= $modulePathEsc ?>/list_all.php">Registry List</a>
-                    <a class="btn btn-primary itm-list-new-button" href="<?= $modulePathEsc ?>/create.php" title="Create">➕</a>
-                </div>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;min-height:40px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <a class="btn btn-sm" href="<?= $modulePathEsc ?>/index.php" title="Matrix">Matrix</a>
+                        <a class="btn btn-sm" href="<?= $modulePathEsc ?>/list_all.php" title="Registry List">Registry List</a>
+                        <a href="<?= $modulePathEsc ?>/create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                    </div>
+                <?php else: ?>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <a class="btn btn-sm" href="<?= $modulePathEsc ?>/index.php" title="Matrix">Matrix</a>
+                        <a class="btn btn-sm" href="<?= $modulePathEsc ?>/list_all.php" title="Registry List">Registry List</a>
+                    </div>
+                <?php endif; ?>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <a href="<?= $modulePathEsc ?>/create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <?php if ($crud_action === 'index'): ?>
