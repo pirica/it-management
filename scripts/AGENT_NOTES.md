@@ -453,6 +453,7 @@ php scripts/ensure_files_htaccess_chain.php
 
 ## Recent Changes (Maintenance Task)
 
+- **verify_port_visualizer_layout.php** — CLI regression for Vertical vs Horizontal grid metadata and port 2 placement (`grid-row` / `grid-column`).
 - **Standardized Output**: Focus scripts (`benchmark_user_config.php`, `repro_explorer_traversal.php`, `verify_explorer_fix*` suite, `repro_rce.php`, `repro_bac.php`, `repro_sqli.php`, `benchmark_stats_optimized.php`, `idf_device_port_sort_test.php`, `crud_tables.php`, `crud_titles.php`, `crud_actions.php`, `test_visualizer_v2.php`, and `repro_bug.php`) refactored to use `scripts/lib/script_cli_output.php` and `itm_script_output_begin()` for consistent CLI/Browser reporting.
 - **Obsolete Directory Removal**: All references to the non-existent `fixed_files/` directory have been removed from all functional scripts. These now target the live `modules/` directory.
 - **Path and Include Audit**: Fixed relative path issues in multiple scripts (`repro_rce.php`, `repro_bac.php`, `repro_sqli.php`, `generate_tests.php`) to ensure they correctly resolve dependencies from the `scripts/` directory.

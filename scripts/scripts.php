@@ -748,8 +748,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="test_visualizer_v2.php" target="_blank" rel="nofollow noreferrer">test_visualizer_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Visual test for Equipment Port Visualizer (IDF rack/device dots).</td>
-                    <td>Open <code>scripts/test_visualizer_v2.php</code> to verify port rendering style and cable colors.</td>
+                    <td>Mock Vertical vs Horizontal IDF port visualizer (48 ports).</td>
+                    <td>Browser: <code>scripts/test_visualizer_v2.php</code>. Regression: <code>php scripts/verify_port_visualizer_layout.php</code>.</td>
+                </tr>
+                <tr>
+                    <td>verify_port_visualizer_layout.php</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression: Vertical odd/even grid placement vs Horizontal L→R (<code>grid-row</code> / <code>grid-column</code>).</td>
+                    <td><code>php scripts/verify_port_visualizer_layout.php</code></td>
                 </tr>
             </tbody>
         </table></div>

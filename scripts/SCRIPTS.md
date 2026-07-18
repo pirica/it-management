@@ -943,7 +943,8 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | `php scripts/crud_tables.php` | Lists each module’s first <code>$crud_table</code> line in <code>index.php</code>. Bespoke/exception modules without that assignment are <strong>Skip</strong> (see <code>docs/list_bespoke_UI.txt</code> + <code>scripts/data/crud_tables_skip_modules.txt</code>) — not Missing. No database table checks. |
 | `php scripts/crud_titles.php` | Lists each module’s first <code>$crud_title</code> line in <code>index.php</code>. <code>is_*</code> shortcuts and bespoke modules without it are <strong>Skip</strong> (see <code>itm_crud_titles_should_skip_module()</code>).
 | `php scripts/crud_actions.php` | Audits module-to-action mapping by reading each module entry file (`index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) for `$crud_action` assignments. Non-standard CRUD modules with no assignment are <strong>Skip</strong> (see <code>itm_crud_actions_should_skip_module()</code>).
-| `php scripts/test_visualizer_v2.php` | Visual test for Equipment Port Visualizer (IDF rack/device dots). |
+| `php scripts/verify_port_visualizer_layout.php` | CLI regression for IDF port visualizer Vertical vs Horizontal grid metadata and port 2 placement.
+| `php scripts/test_visualizer_v2.php` | Browser/CLI mock for IDF port visualizer Vertical vs Horizontal layouts (48-port demo). Regression: `php scripts/verify_port_visualizer_layout.php`. |
 
 Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
 

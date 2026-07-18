@@ -590,12 +590,17 @@ if (!function_exists('itm_render_port_visualizer')) {
                 $portTypeKey = itm_port_visualizer_type_key($p);
                 $portBorderRadius = $portTypeKey === 'sfp' ? '50%' : '3px';
                 $portTypeClass = $portTypeKey === 'rj45' ? '' : ' itm-port-item--' . sanitize($portTypeKey);
+                // Why: Vertical layout places odd/even pairs in the same column; without explicit grid lines auto-flow packs DOM order left-to-right like horizontal.
+                $portGridRow = (int)$r + 1;
+                $portGridCol = (int)$c + 1;
                 // Why: Tooltip still uses merged `connected_to`; click routing uses idf_links only via itm_port_visualizer_click_has_explicit_connection().
                 $portConnectedToAttr = sanitize(trim((string)($p['idf_port_connected_for_routing'] ?? '')));
                 $portLinkIdAttr = isset($p['link_id']) ? (int)$p['link_id'] : 0;
                 $portExplicitConnAttr = itm_port_visualizer_click_has_explicit_connection($p) ? '1' : '0';
 
                 $html .= '<div class="itm-port-item' . $portTypeClass . '" title="' . sanitize($title) . '" data-port-id="' . $portId . '" data-port-status-label="' . $portStatusLabelAttr . '" data-position-id="' . $portPositionIdAttr . '" data-port-type="' . sanitize($portTypeKey) . '" data-port-connected-to="' . $portConnectedToAttr . '" data-port-link-id="' . $portLinkIdAttr . '" data-has-explicit-connection="' . $portExplicitConnAttr . '"' . $portNumberAttr . ' ' . $onClick . ' style="
+                    grid-row: ' . $portGridRow . ';
+                    grid-column: ' . $portGridCol . ';
                     width: 14px;
                     height: 14px;
                     background-color: ' . sanitize($statusColor) . ';

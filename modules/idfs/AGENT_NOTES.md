@@ -49,11 +49,11 @@ Manages Intermediate Distribution Frames (IDFs): physical network distribution p
 - **index.php** — IDF list, create handler, Excel import, select refresh JSON.
 - **create.php**, **edit.php**, **delete.php**, **view.php**, **list_all.php** — CRUD and detail routes.
 - **device.php** — device-level management inside an IDF (must stay UTF-8 without BOM so PHP does not emit a BOM before headers).
-- **port_visualizer_helper.php** — port grid rendering and colour/status resolution.
+- **port_visualizer_helper.php** — port grid rendering and colour/status resolution. Layout rules: **Vertical** = odd/even pairs per column with wrap after 24 paired positions; **Horizontal** = left-to-right with wrap every 24 ports. Each dot sets explicit `grid-row` / `grid-column` so CSS auto-flow does not collapse vertical pairing.
 - **idf_ports_sync.php** — shared sync helpers between `idf_ports` and `switch_ports`.
 - **idf_positions_schema.php** — position schema helpers for the rack UI.
 - **api/** — AJAX endpoints for position/port/link mutations (one action per file).
-- **test_visualizer_v2.php** — development/visualiser test page (not production CRUD).
+- **test_visualizer_v2.php** — development/visualiser test page (no DB); uses production `layout` options only (do not pass manual `rows` for the 48-port demo).
 
 ## 8. Multi-Tenant Rules
 - All queries and inserts must filter or set `company_id` from `$_SESSION['company_id']`.
