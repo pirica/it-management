@@ -138,6 +138,65 @@ if (!function_exists('itm_active_audit_has_hidden_active')) {
     }
 }
 
+if (!function_exists('itm_active_audit_status_driven_status_fk_note')) {
+    /**
+     * Human-readable note for status-driven row-active rules (business status is on status_id FK).
+     */
+    function itm_active_audit_status_driven_status_fk_note(string $moduleSlug): string
+    {
+        $map = [
+            'employees' => 'employment_status_id → employee_statuses',
+            'equipment' => 'status_id → equipment_statuses',
+            'patches_updates' => 'status_id → patches_updates_status',
+            'tickets' => 'status_id → ticket_statuses',
+        ];
+
+        return $map[$moduleSlug] ?? 'status_id → *_status lookup';
+    }
+}
+
+if (!function_exists('itm_active_audit_form_excludes_active_column')) {
+    /**
+     * Scaffold create/edit loops that never render the row active field (hidden active helper instead).
+     */
+    function itm_active_audit_form_excludes_active_column(string $content): bool
+    {
+        if (preg_match(
+            "/\(string\)\s*\(\s*\\\$col\['Field'\]\s*\?\?\s*''\s*\)\s*!==\s*['\"]active['\"]/",
+            $content
+        )) {
+            return true;
+        }
+
+        if (preg_match(
+            "/\\\$fieldName\s*===\s*['\"]company_id['\"]\s*\|\|\s*\\\$fieldName\s*===\s*['\"]active['\"]/",
+            $content
+        )) {
+            return true;
+        }
+
+        if (preg_match(
+            "/if\s*\(\s*\\\$name\s*===\s*['\"]active['\"]\s*\)\s*\{[^}]*continue\s*;/s",
+            $content
+        )) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_active_audit_status_driven_form_is_compliant')) {
+    /**
+     * Status-driven modules: hidden row active + active omitted from create/edit field loops.
+     */
+    function itm_active_audit_status_driven_form_is_compliant(string $content): bool
+    {
+        return itm_active_audit_has_hidden_active($content)
+            && itm_active_audit_form_excludes_active_column($content);
+    }
+}
+
 if (!function_exists('itm_active_audit_has_dynamic_active_checkbox_loop')) {
     function itm_active_audit_has_dynamic_active_checkbox_loop(string $content): bool
     {
@@ -155,6 +214,12 @@ if (!function_exists('itm_active_audit_has_visible_active_checkbox')) {
     function itm_active_audit_has_visible_active_checkbox(string $content): bool
     {
         if (itm_active_audit_has_dynamic_active_checkbox_loop($content)) {
+            // Why: Flattened CRUD may keep `$name === 'active'` in the tinyint branch while
+            // `$formColumns` omits active and `itm_crud_render_form_hidden_active_input()` stamps it.
+            if (itm_active_audit_form_excludes_active_column($content)) {
+                return false;
+            }
+
             return true;
         }
 
@@ -213,10 +278,14 @@ if (!function_exists('itm_active_audit_classify_file')) {
         }
 
         if ($statusDriven && $isFormFile) {
-            if (itm_active_audit_has_visible_active_checkbox($content)) {
+            if (itm_active_audit_status_driven_form_is_compliant($content)) {
+                // Business Active/Inactive is on the status FK; row active is soft-delete only.
+            } elseif (itm_active_audit_has_visible_active_checkbox($content)) {
                 $issues[] = [
                     'code' => 'status_driven_visible_active_checkbox',
-                    'message' => 'Status-driven module must use hidden active=1, not a visible checkbox',
+                    'message' => 'Row active must be hidden on forms (soft-delete mirror). Business status lives on '
+                        . itm_active_audit_status_driven_status_fk_note($moduleSlug)
+                        . ', not a visible active checkbox.',
                 ];
             } elseif (!itm_active_audit_has_hidden_active($content) && itm_active_audit_has_any_active_reference($content)) {
                 $issues[] = [
