@@ -21,9 +21,25 @@ ip_subnets
 ip_addresses
 rack_planner
 
-# Read-only reports / dashboards (no standard CRUD index table contract).
+# Bespoke UIs (docs/list_bespoke_UI.txt) — no flattened CRUD list contract on index.php.
+backup_tape_log
+birthdays
+bookmarks
+calendar
+contacts
+company_module_access
+emails
+explorer
+floor_designer
+import
+notes
+ops_report
+org_chart
+passwords
+private_contacts
 reports
+request_password
 resignations
 roles_permissions
-company_module_access
-org_chart
+system_status
+todo
