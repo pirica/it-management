@@ -776,6 +776,132 @@ if (!function_exists('itm_check_new_button')) {
     }
 }
 
+if (!function_exists('itm_ui_index_primary_create_link_pattern')) {
+    function itm_ui_index_primary_create_link_pattern(): string
+    {
+        return '/<a\b(?=[^>]*\bhref\s*=\s*["\']create\.php["\'])(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bbtn-primary\b)[^>]*>/i';
+    }
+}
+
+if (!function_exists('itm_ui_index_split_managed_header_regions')) {
+    /**
+     * Split the server-managed list header row into left/right regions around the centered h1.
+     *
+     * @return array{left:string,right:string}|null
+     */
+    function itm_ui_index_split_managed_header_regions(string $indexContent): ?array
+    {
+        $managedPos = stripos($indexContent, 'data-itm-new-button-managed');
+        if ($managedPos === false) {
+            return null;
+        }
+
+        $h1Pos = stripos($indexContent, '<h1', $managedPos);
+        if ($h1Pos === false) {
+            return null;
+        }
+
+        $h1Close = stripos($indexContent, '</h1>', $h1Pos);
+        if ($h1Close === false) {
+            return null;
+        }
+
+        return [
+            'left' => substr($indexContent, $managedPos, $h1Pos - $managedPos),
+            'right' => substr($indexContent, $h1Close, 2500),
+        ];
+    }
+}
+
+if (!function_exists('itm_ui_index_region_has_new_button_position_gate')) {
+    function itm_ui_index_region_has_new_button_position_gate(string $region, string $side): bool
+    {
+        if ($side === 'left') {
+            return preg_match(
+                "/in_array\s*\(\s*\\\$newButtonPosition\s*,\s*\[\s*['\"]left['\"]\s*,\s*['\"]left_right['\"]\s*\]/",
+                $region
+            ) === 1;
+        }
+
+        return preg_match(
+            "/in_array\s*\(\s*\\\$newButtonPosition\s*,\s*\[\s*['\"]right['\"]\s*,\s*['\"]left_right['\"]\s*\]/",
+            $region
+        ) === 1;
+    }
+}
+
+if (!function_exists('itm_check_new_button_position')) {
+    /**
+     * Settings new_button_position (left / right / left_right) must gate create.php slots in the managed header row.
+     *
+     * @return array{status:string,details:string}
+     */
+    function itm_check_new_button_position(string $indexContent, bool $hasCreateFile, string $createContent = ''): array
+    {
+        if (!$hasCreateFile) {
+            return ['status' => 'n/a', 'details' => 'Module has no create.php'];
+        }
+
+        if ($createContent !== '' && itm_ui_create_file_is_redirect_stub($createContent)) {
+            return [
+                'status' => 'n/a',
+                'details' => 'create.php redirects to index (read-only / immutable module — no create action expected)',
+            ];
+        }
+
+        if (stripos($indexContent, 'data-itm-new-button-managed') === false) {
+            return [
+                'status' => 'n/a',
+                'details' => 'No server-managed new-button row (ui-layout.js may relocate at runtime)',
+            ];
+        }
+
+        $regions = itm_ui_index_split_managed_header_regions($indexContent);
+        if ($regions === null) {
+            return ['status' => 'n/a', 'details' => 'No centered list h1 inside server-managed header row'];
+        }
+
+        $readsSettings = preg_match(
+            '/\$newButtonPosition\s*=.*?new_button_position/s',
+            $indexContent
+        ) === 1;
+        $createPattern = itm_ui_index_primary_create_link_pattern();
+        $leftGate = itm_ui_index_region_has_new_button_position_gate($regions['left'], 'left');
+        $rightGate = itm_ui_index_region_has_new_button_position_gate($regions['right'], 'right');
+        $leftCreate = preg_match($createPattern, $regions['left']) === 1;
+        $rightCreate = preg_match($createPattern, $regions['right']) === 1;
+
+        if ($readsSettings && $leftGate && $rightGate && $leftCreate && $rightCreate) {
+            return [
+                'status' => 'pass',
+                'details' => 'create.php btn-primary gated by Settings new_button_position (left / right / left_right)',
+            ];
+        }
+
+        $missing = [];
+        if (!$readsSettings) {
+            $missing[] = '$newButtonPosition from $ui_config[\'new_button_position\']';
+        }
+        if (!$leftGate) {
+            $missing[] = 'left slot in_array($newButtonPosition, [\'left\', \'left_right\'])';
+        }
+        if (!$rightGate) {
+            $missing[] = 'right slot in_array($newButtonPosition, [\'right\', \'left_right\'])';
+        }
+        if (!$leftCreate) {
+            $missing[] = 'create.php btn-primary in left slot';
+        }
+        if (!$rightCreate) {
+            $missing[] = 'create.php btn-primary in right slot';
+        }
+
+        return [
+            'status' => 'fail',
+            'details' => 'New button position contract mismatch: ' . implode(', ', $missing),
+        ];
+    }
+}
+
 if (!function_exists('itm_check_table_actions_layout')) {
     /**
      * MBQA ui_check / index table compliance: Actions column layout markers on th and td.

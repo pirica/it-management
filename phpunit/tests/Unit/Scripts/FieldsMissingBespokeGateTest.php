@@ -111,6 +111,7 @@ class FieldsMissingBespokeGateTest extends TestCase
         $passes = implode('|', $result['passes']);
         $this->assertStringContainsString('List heading layout OK', $passes);
         $this->assertStringContainsString('List heading emoji OK', $passes);
+        $this->assertStringContainsString('New button position OK', $passes);
         $this->assertStringContainsString('Actions layout OK', $passes);
     }
 
@@ -263,6 +264,52 @@ PHP;
         $passesText = implode('|', $passes);
         $this->assertStringContainsString('List heading emoji OK', $passesText);
         $this->assertStringContainsString('List heading layout OK', $passesText);
+    }
+
+    public function testNewButtonPositionGatePassesCanonicalManagedHeader(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+<div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;">
+<?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+<a href="create.php" class="btn btn-primary" title="Create">➕</a>
+<?php else: ?><span></span><?php endif; ?>
+<h1 style="position:absolute;left:50%;transform:translateX(-50%);"><?php echo sanitize($moduleListHeading); ?></h1>
+<?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+<a href="create.php" class="btn btn-primary" title="Create">➕</a>
+<?php else: ?><span></span><?php endif; ?>
+</div>
+PHP;
+        $check = itm_check_new_button_position($index, true, '<?php // create form');
+        $this->assertSame('pass', $check['status'] ?? '');
+    }
+
+    public function testNewButtonPositionGateFailsWhenCreateLinkIsNotSettingsGated(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<div data-itm-new-button-managed="server" style="position:relative;">
+<a href="create.php" class="btn btn-primary">➕</a>
+<h1 style="position:absolute;left:50%;transform:translateX(-50%);">Title</h1>
+</div>
+PHP;
+        $check = itm_check_new_button_position($index, true, '<?php // create form');
+        $this->assertSame('fail', $check['status'] ?? '');
+        $this->assertStringContainsString('new_button_position', $check['details'] ?? '');
+    }
+
+    public function testNewButtonPositionGateIsNaWhenUiLayoutRelocatesClientSide(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<div style="display:flex;">
+<a href="create.php" class="btn btn-primary">➕</a>
+<h1>Title</h1>
+</div>
+PHP;
+        $check = itm_check_new_button_position($index, true, '<?php // create form');
+        $this->assertSame('n/a', $check['status'] ?? '');
     }
 
     public function testSyntheticSoftDeleteContractPassesWhenCompliant(): void
