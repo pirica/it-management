@@ -135,6 +135,8 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
+// Why: List h1 must use Settings sidebar label so per-user emoji overrides apply in the list header.
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 
 function itm_inventory_items_list_url(array $overrides = []): string
 {
@@ -175,13 +177,13 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div data-itm-new-button-managed="server" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
-                <h1>📦 Inventory Items</h1>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                     <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                 <?php else: ?>
@@ -209,9 +211,10 @@ if (!isset($crud_title)) {
             <?php if ($showBulkActions): ?>
                 <!-- Bulk controls appear only when enough records exist to justify batch operations. -->
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all inventory records? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
@@ -314,5 +317,6 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 </body>
 </html>
