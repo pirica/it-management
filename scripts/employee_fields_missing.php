@@ -42,6 +42,8 @@ echo 'Employees schema/UI audit' . $nl;
 echo 'Expected columns (database.sql): ' . $expectedCount . $nl;
 echo 'Live columns (SHOW COLUMNS): ' . $liveCount . $nl . $nl;
 
+echo itm_fields_missing_format_columns_block($moduleReport, $nl);
+
 foreach ($moduleReport['passes'] as $passLine) {
     echo colorText('[PASS] ' . $passLine, 'pass') . $nl;
 }
