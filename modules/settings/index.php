@@ -708,9 +708,7 @@ if (!isset($crud_title)) {
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
-    <?php if ($currentFaviconUrl !== ""): ?>
-        <link rel="icon" type="image/x-icon" href="<?php echo sanitize($currentFaviconUrl); ?>">
-    <?php endif; ?>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
 </head>
 <body>
 <div class="container">

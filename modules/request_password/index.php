@@ -324,6 +324,7 @@ if (!isset($crud_title)) {
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .request-header { background: #f6f8fa; padding: 20px; border: 1px solid #d0d7de; border-radius: 6px; margin-bottom: 20px; }
