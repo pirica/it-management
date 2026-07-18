@@ -118,6 +118,8 @@ if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
     echo $nl;
 }
 
+echo itm_fields_missing_format_audit_summary($report, $nl);
+
 if ((int) $report['failure_count'] > 0) {
     echo colorText('Result: ' . (int) $report['failure_count'] . ' failure(s).', 'fail') . $nl;
     itm_script_output_end();
