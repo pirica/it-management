@@ -478,6 +478,54 @@ PHP;
         $this->assertStringContainsString('Bulk delete OK', $passes);
     }
 
+    public function testCompanyModuleAccessFailsListHeadingEmojiForPlainCrudTitleH1(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['company_module_access'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('company_module_access', $columns);
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $result['failures']);
+
+        $this->assertTrue(
+            $this->messagesContainAny($messages, ['List heading emoji', 'sanitize($crud_title)']),
+            'company_module_access must fail list heading emoji when h1 uses bare $crud_title: ' . implode(' | ', $messages)
+        );
+        $this->assertTrue(
+            $this->messagesContainAny($messages, ['List heading layout', 'data-itm-new-button-managed']),
+            'company_module_access must fail list heading layout for non-managed header: ' . implode(' | ', $messages)
+        );
+    }
+
+    public function testPlainCrudTitleListH1FailsEmojiGate(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<div style="display:flex;">
+<h1 style="margin:0;"><?= sanitize($crud_title) ?></h1>
+</div>
+<table></table>
+PHP;
+        $emoji = itm_check_list_heading_emoji($index);
+        $layout = itm_check_list_heading_layout($index);
+        $this->assertSame('fail', $emoji['status'] ?? '');
+        $this->assertSame('fail', $layout['status'] ?? '');
+    }
+
+    public function testOpsReportListHeadingEmojiStaysNaForCustomHeadingMarkup(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'PHP'
+<h1 class="opr-page-title"><?= opr_render_editable_ui_text($title) ?></h1>
+PHP;
+        $emoji = itm_check_list_heading_emoji($index);
+        $this->assertSame('n/a', $emoji['status'] ?? '');
+    }
+
     public function testBespokeGateFailMessagesUseNotOkSuffix(): void
     {
         $passes = [];

@@ -579,6 +579,97 @@ if (!function_exists('itm_check_module_favicon_link')) {
     }
 }
 
+if (!function_exists('itm_ui_index_has_server_managed_list_header')) {
+    function itm_ui_index_has_server_managed_list_header(string $indexContent): bool
+    {
+        return stripos($indexContent, 'data-itm-new-button-managed') !== false;
+    }
+}
+
+if (!function_exists('itm_ui_index_has_list_h1')) {
+    function itm_ui_index_has_list_h1(string $indexContent): bool
+    {
+        return preg_match('/<h1\b/i', $indexContent) === 1;
+    }
+}
+
+if (!function_exists('itm_ui_index_h1_is_create_edit_view_screen')) {
+    function itm_ui_index_h1_is_create_edit_view_screen(string $h1Fragment): bool
+    {
+        return preg_match('/(?:New |Edit |View )\s*<\?php/i', $h1Fragment) === 1
+            || preg_match('/(?:New |Edit |View )\s*<\?=/i', $h1Fragment) === 1
+            || preg_match('/\$crud_action\s*===/i', $h1Fragment) === 1;
+    }
+}
+
+if (!function_exists('itm_ui_index_h1_echoes_crud_title_only')) {
+    /**
+     * List/matrix index h1 that prints bare $crud_title (not scaffold create/edit/view headings).
+     */
+    function itm_ui_index_h1_echoes_crud_title_only(string $indexContent): bool
+    {
+        if (!itm_ui_index_has_list_h1($indexContent)) {
+            return false;
+        }
+
+        if (!preg_match_all('/<h1\b[^>]*>[\s\S]*?<\/h1>/i', $indexContent, $matches)) {
+            return false;
+        }
+
+        foreach ($matches[0] as $h1Block) {
+            if (itm_ui_index_h1_is_create_edit_view_screen($h1Block)) {
+                continue;
+            }
+            if (preg_match('/sanitize\s*\(\s*\$crud_title\s*\)/i', $h1Block) === 1
+                && stripos($h1Block, '$moduleListHeading') === false
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_ui_index_h1_echoes_module_list_heading')) {
+    function itm_ui_index_h1_echoes_module_list_heading(string $indexContent): bool
+    {
+        if (!preg_match_all('/<h1\b[^>]*>[\s\S]*?<\/h1>/i', $indexContent, $matches)) {
+            return false;
+        }
+
+        foreach ($matches[0] as $h1Block) {
+            if (itm_ui_index_h1_is_create_edit_view_screen($h1Block)) {
+                continue;
+            }
+            if (stripos($h1Block, '$moduleListHeading') !== false
+                || preg_match('/sanitize\s*\(\s*\$moduleListHeading\s*\)/i', $h1Block) === 1
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_ui_index_list_heading_emoji_source_present')) {
+    function itm_ui_index_list_heading_emoji_source_present(string $indexContent): bool
+    {
+        if (stripos($indexContent, 'itm_sidebar_label_for_module(') !== false) {
+            return true;
+        }
+        if (stripos($indexContent, 'itm_resolve_module_sidebar_icon(') !== false) {
+            return true;
+        }
+
+        return preg_match(
+            '/\$moduleListHeading\s*=[^;]*[\'"][^\'"\r\n]*\p{Extended_Pictographic}/u',
+            $indexContent
+        ) === 1;
+    }
+}
+
 if (!function_exists('itm_check_list_heading_layout')) {
     /**
      * List index headers with Settings-managed new buttons must center the module h1.
@@ -587,12 +678,21 @@ if (!function_exists('itm_check_list_heading_layout')) {
      */
     function itm_check_list_heading_layout(string $indexContent): array
     {
-        if (stripos($indexContent, 'data-itm-new-button-managed') === false) {
-            return ['status' => 'n/a', 'details' => 'No server-managed list header row'];
+        if (!itm_ui_index_has_list_h1($indexContent)) {
+            return ['status' => 'n/a', 'details' => 'No list h1 heading in index.php'];
         }
 
-        if (preg_match('/<h1\b/i', $indexContent) !== 1) {
-            return ['status' => 'n/a', 'details' => 'No list h1 heading in index.php'];
+        if (!itm_ui_index_has_server_managed_list_header($indexContent)) {
+            if (itm_ui_index_h1_echoes_crud_title_only($indexContent)
+                || itm_ui_index_h1_echoes_module_list_heading($indexContent)
+            ) {
+                return [
+                    'status' => 'fail',
+                    'details' => 'List index h1 must use data-itm-new-button-managed header row with centered sanitize($moduleListHeading)',
+                ];
+            }
+
+            return ['status' => 'n/a', 'details' => 'No server-managed list header row'];
         }
 
         $hasRelativeWrapper = preg_match(
@@ -657,8 +757,32 @@ if (!function_exists('itm_check_list_heading_emoji')) {
      */
     function itm_check_list_heading_emoji(string $indexContent): array
     {
-        if (stripos($indexContent, 'data-itm-new-button-managed') === false) {
-            return ['status' => 'n/a', 'details' => 'No server-managed list header row'];
+        if (!itm_ui_index_has_list_h1($indexContent)) {
+            return ['status' => 'n/a', 'details' => 'No list h1 heading in index.php'];
+        }
+
+        if (!itm_ui_index_has_server_managed_list_header($indexContent)) {
+            if (itm_ui_index_h1_echoes_crud_title_only($indexContent)) {
+                return [
+                    'status' => 'fail',
+                    'details' => 'List index h1 uses sanitize($crud_title) without sidebar emoji — assign $moduleListHeading via itm_sidebar_label_for_module()',
+                ];
+            }
+            if (itm_ui_index_h1_echoes_module_list_heading($indexContent)) {
+                if (itm_ui_index_list_heading_emoji_source_present($indexContent)) {
+                    return [
+                        'status' => 'pass',
+                        'details' => 'List h1 uses Settings sidebar label/icon (emoji from catalog or overrides)',
+                    ];
+                }
+
+                return [
+                    'status' => 'fail',
+                    'details' => 'List h1 missing emoji source — assign $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()',
+                ];
+            }
+
+            return ['status' => 'n/a', 'details' => 'No list index h1 contract (custom heading markup)'];
         }
 
         $listH1UsesModuleHeading = preg_match(
@@ -673,14 +797,7 @@ if (!function_exists('itm_check_list_heading_emoji')) {
             ];
         }
 
-        $usesSidebarLabel = stripos($indexContent, 'itm_sidebar_label_for_module(') !== false;
-        $usesIconResolver = stripos($indexContent, 'itm_resolve_module_sidebar_icon(') !== false;
-        $hasLiteralEmojiAssignment = preg_match(
-            '/\$moduleListHeading\s*=[^;]*[\'"][^\'"\r\n]*\p{Extended_Pictographic}/u',
-            $indexContent
-        ) === 1;
-
-        if ($usesSidebarLabel || $usesIconResolver || $hasLiteralEmojiAssignment) {
+        if (itm_ui_index_list_heading_emoji_source_present($indexContent)) {
             return [
                 'status' => 'pass',
                 'details' => 'List h1 uses Settings sidebar label/icon (emoji from catalog or overrides)',
