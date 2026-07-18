@@ -814,12 +814,18 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
         $out .= '  live columns (' . count($live) . '): ' . ($live === [] ? '(none)' : implode(', ', $live)) . $nl;
 
         if ($uiForm !== []) {
-            $out .= '  UI form fields (' . count($uiForm) . '): ' . implode(', ', $uiForm) . $nl;
+            $out .= '  UI form fields (' . count($uiForm) . '):' . $nl;
+            foreach ($uiForm as $fieldName) {
+                $out .= '    ' . $fieldName . $nl;
+            }
         } else {
             $out .= '  UI form fields (0): (none scraped from create/edit for this table)' . $nl;
         }
         if ($uiFormOther !== []) {
-            $out .= '  UI form fields other (' . count($uiFormOther) . '): ' . implode(', ', $uiFormOther) . $nl;
+            $out .= '  UI form fields other (' . count($uiFormOther) . '):' . $nl;
+            foreach ($uiFormOther as $fieldName) {
+                $out .= '    ' . $fieldName . $nl;
+            }
         }
         if ($uiAudited !== []) {
             $out .= '  UI audited columns (' . count($uiAudited) . '): ' . implode(', ', $uiAudited) . $nl;
@@ -1096,13 +1102,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
         $uiFormFieldsOther = $uiCollected['form_fields_other'];
         $uiAuditedCollected = $uiCollected['audited'];
         $formPaths = itm_fields_missing_resolve_form_paths($files);
-        $scrapedCount = count($uiFormFields) + count($uiFormFieldsOther);
 
         if (isset($bespokeModules[$moduleSlug])) {
             $infos[] = "{$moduleSlug} is bespoke/deferred UI — schema-only audit (see docs/list_bespoke_UI.txt)";
-            if ($scrapedCount > 0) {
-                $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
-            }
 
             return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
@@ -1118,9 +1120,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
 
         if ($statusDriven && $moduleSlug !== 'employees') {
             $infos[] = "{$moduleSlug} is status-driven bespoke UI — schema-only audit (row active is soft-delete mirror)";
-            if ($scrapedCount > 0) {
-                $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
-            }
 
             return itm_fields_missing_finalize_module_report([
                 'module' => $moduleSlug,
@@ -1141,9 +1140,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             $uiMode = 'dynamic_scaffold';
             $passes[] = "{$moduleSlug} uses dynamic scaffold columns (\$uiColumns / cr_manageable_columns)";
             $uiAudited = $uiCollected['audited'];
-            if ($scrapedCount > 0) {
-                $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
-            }
             itm_fields_missing_audit_excluded_ui_columns(
                 $moduleSlug,
                 array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
@@ -1259,10 +1255,6 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             $failures
         );
 
-        if ($scrapedCount > 0) {
-            $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
-        }
-
         return itm_fields_missing_finalize_module_report([
             'module' => $moduleSlug,
             'table' => $table,
@@ -1291,7 +1283,6 @@ if (!function_exists('itm_fields_missing_audit_bespoke_ui_only')) {
         $files = itm_fields_missing_module_file_bundle($moduleSlug, $rootPath);
         $formPaths = itm_fields_missing_resolve_bespoke_form_paths($files);
         $scraped = itm_fields_missing_extract_form_field_names($formPaths);
-        $scrapedCount = count($scraped);
         $passes = [];
         $infos = [
             "{$moduleSlug} is bespoke/deferred UI — no schema table; UI form scrape only (see docs/list_bespoke_UI.txt)",
@@ -1302,10 +1293,6 @@ if (!function_exists('itm_fields_missing_audit_bespoke_ui_only')) {
             if (preg_match('/require\s+[\'\"]\.\.\/equipment\/index\.php[\'\"]/', $indexContent)) {
                 $infos[] = "{$moduleSlug} delegates to modules/equipment/index.php — form fields owned by equipment";
             }
-        }
-
-        if ($scrapedCount > 0) {
-            $passes[] = "{$moduleSlug} scraped {$scrapedCount} UI form field(s) from create/edit";
         }
 
         return itm_fields_missing_finalize_module_report([
