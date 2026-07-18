@@ -776,13 +776,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="titles_list.php" target="_blank" rel="nofollow noreferrer">titles_list.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Scans all PHP files under the <code>modules/</code> directory to extract their <code>&lt;title&gt;</code> tags. Outputs the list matching <code>module/{module_name}/{file}.php</code>.</td>
+                    <td>Scans all PHP files under <code>modules/</code> for <code>&lt;title&gt;</code> tags. Summary: match vs not match for <code>sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig))</code>; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="titles_list_show.php" target="_blank" rel="nofollow noreferrer">titles_list_show.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Scans all PHP files under the <code>modules/</code> directory to extract their <code>&lt;title&gt;</code> tags showing only the inner title text. Outputs the list matching <code>module/{module_name}/{file}.php</code>.</td>
+                    <td>Same scan/summary as <code>titles_list.php</code> with rendered inner title text; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list_show.php</code></td>
                 </tr>
                 <tr>
