@@ -357,16 +357,11 @@ if (!isset($crud_title)) {
                         <textarea name="comments" rows="4"><?php echo sanitize((string)($data['comments'] ?? '')); ?></textarea>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Created At</label>
-                            <input value="<?php echo sanitize((string)($data['created_at'] ?? '')); ?>" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Updated At</label>
-                            <input value="<?php echo sanitize((string)($data['updated_at'] ?? '')); ?>" disabled>
-                        </div>
-                    </div>
+                    <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs(is_array($data) ? $data : [], $is_edit ? 'edit' : 'create');
+                    }
+                    ?>
 
                     <div style="display:flex;gap:10px;">
                         <button class="btn btn-primary" type="submit">💾</button>

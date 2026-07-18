@@ -971,7 +971,7 @@ Run `verify_employee_type_resignations.php` when changing `modules/employee_type
 
 Run `employee_fields_missing.php` or `fields_missing.php --module=employees` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
 
-Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print gated `[SKIP][pass] … OK` / `[SKIP][fail] … NOT OK` lines per check (fail lines before pass lines per module; footer **Bespoke gate failure summary** repeats all gate failures — informational, not in Result total).
+Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print gated `[SKIP][pass] … OK` / `[SKIP][fail] … NOT OK` lines per check (fail lines before pass lines per module; footer **Bespoke gate failure summary** repeats all gate failures — informational, not in Result total). Audit meta on create/edit (`created_at`, `updated_at`, `*_by`, `deleted_*`) uses multi-method detection in `scripts/lib/itm_fields_missing_report.php` (named controls, `$data['field']` in forms, humanized labels, dynamic loops, PHP-stripped pseudo HTML scrape; optional live HTTP scrape when `ITM_FIELDS_MISSING_HTTP_SCRAPE=1` and Apache is up).
 
 **MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
 

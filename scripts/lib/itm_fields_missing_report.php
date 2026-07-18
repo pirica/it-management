@@ -761,7 +761,7 @@ if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
             if (preg_match('/<(?:textarea|select)\b/i', $tag)) {
                 return true;
             }
-            if (preg_match('/\btype=["\'](?:text|number|email|url|checkbox|date|color|password|tel|search)["\']/i', $tag)) {
+            if (preg_match('/\btype=["\'](?:text|number|email|url|checkbox|date|datetime-local|color|password|tel|search)["\']/i', $tag)) {
                 return true;
             }
             if (preg_match('/<input\b/i', $tag) && !preg_match('/\btype=/i', $tag)) {
@@ -770,6 +770,301 @@ if (!function_exists('itm_fields_missing_file_has_visible_form_field')) {
         }
 
         return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_audit_meta_humanized_label')) {
+    function itm_fields_missing_audit_meta_humanized_label(string $field): string
+    {
+        if (function_exists('cr_humanize_field')) {
+            return (string) cr_humanize_field($field);
+        }
+
+        return ucwords(str_replace('_', ' ', $field));
+    }
+}
+
+if (!function_exists('itm_fields_missing_extract_form_blocks')) {
+    /**
+     * @return list<string>
+     */
+    function itm_fields_missing_extract_form_blocks(string $content): array
+    {
+        if (!preg_match_all('/<form\b[\s\S]*?<\/form>/i', $content, $matches)) {
+            return [$content];
+        }
+
+        return $matches[0];
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_has_audit_meta_label_in_form')) {
+    /**
+     * Method: humanized field label text inside a create/edit form (bespoke disabled display rows).
+     */
+    function itm_fields_missing_file_has_audit_meta_label_in_form(string $field, string $content): bool
+    {
+        $label = preg_quote(itm_fields_missing_audit_meta_humanized_label($field), '/');
+        $labelPattern = '/<label\b[^>]*>\s*' . $label . '\s*<\/label>/i';
+
+        foreach (itm_fields_missing_extract_form_blocks($content) as $formBlock) {
+            if (preg_match($labelPattern, $formBlock)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_uses_humanized_field_marker_in_form')) {
+    /**
+     * Method: cr_humanize_field('created_at') (or equivalent) referenced inside a form block.
+     */
+    function itm_fields_missing_file_uses_humanized_field_marker_in_form(string $field, string $content): bool
+    {
+        $fieldQuoted = preg_quote($field, '/');
+        $markerPattern = '/cr_humanize_field\s*\(\s*[\'"]' . $fieldQuoted . '[\'"]\s*\)/i';
+        $dataPattern = '/\$data\s*\[\s*[\'"]' . $fieldQuoted . '[\'"]\s*\]/';
+
+        foreach (itm_fields_missing_extract_form_blocks($content) as $formBlock) {
+            if (preg_match($markerPattern, $formBlock) && preg_match($dataPattern, $formBlock)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_is_global_audit_meta_column')) {
+    function itm_fields_missing_is_global_audit_meta_column(string $field): bool
+    {
+        return in_array($field, [
+            'created_at',
+            'updated_at',
+            'created_by',
+            'updated_by',
+            'deleted_at',
+            'deleted_by',
+        ], true);
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_has_non_hidden_named_form_field')) {
+    /**
+     * Named create/edit control other than type=hidden (includes disabled/readonly display).
+     */
+    function itm_fields_missing_file_has_non_hidden_named_form_field(string $field, string $content): bool
+    {
+        $content = itm_fields_missing_strip_php_for_form_scan($content);
+        if (!preg_match_all(
+            '/<(?:input|select|textarea)\b[^>]*\bname=["\']' . preg_quote($field, '/') . '["\'][^>]*>/i',
+            $content,
+            $matches
+        )) {
+            return false;
+        }
+
+        foreach ($matches[0] as $tag) {
+            if (!preg_match('/\btype=["\']hidden["\']/i', $tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_file_renders_data_field_in_form')) {
+    /**
+     * Bespoke forms may echo $data['created_at'] in disabled inputs without a name attribute.
+     */
+    function itm_fields_missing_file_renders_data_field_in_form(string $field, string $content): bool
+    {
+        $pattern = '/\$data\s*\[\s*[\'"]' . preg_quote($field, '/') . '[\'"]\s*\]/';
+
+        foreach (itm_fields_missing_extract_form_blocks($content) as $formBlock) {
+            if (preg_match($pattern, $formBlock)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_form_exposes_audit_meta_on_form')) {
+    /**
+     * Stricter than generic visible scrape: audit meta must be absent or hidden-only on create/edit.
+     *
+     * @param list<string> $paths
+     */
+    function itm_fields_missing_form_exposes_audit_meta_on_form(string $field, array $paths, string $moduleSlug = '', array $files = []): bool
+    {
+        foreach (itm_fields_missing_expand_form_scan_paths($paths) as $path) {
+            if (!is_readable($path)) {
+                continue;
+            }
+            $content = (string) file_get_contents($path);
+            // Method 1: editable visible named controls (text, datetime-local, select, etc.).
+            if (itm_fields_missing_file_has_visible_form_field($field, $content)) {
+                return true;
+            }
+            // Method 2: any named control that is not type=hidden (includes disabled/readonly display).
+            if (itm_fields_missing_file_has_non_hidden_named_form_field($field, $content)) {
+                return true;
+            }
+            // Method 3: echo $data['field'] inside a form without relying on name=.
+            if (itm_fields_missing_file_renders_data_field_in_form($field, $content)) {
+                return true;
+            }
+            // Method 4: humanized audit label rendered in the form (Created At, Updated By, ...).
+            if (itm_fields_missing_file_has_audit_meta_label_in_form($field, $content)) {
+                return true;
+            }
+            // Method 5: cr_humanize_field marker plus $data['field'] in the same form block.
+            if (itm_fields_missing_file_uses_humanized_field_marker_in_form($field, $content)) {
+                return true;
+            }
+            // Method 7: pseudo HTML scrape — strip PHP tags and parse the remaining markup.
+            if (itm_fields_missing_scraped_html_exposes_audit_meta_field(
+                $field,
+                itm_fields_missing_strip_php_for_form_scan($content)
+            )) {
+                return true;
+            }
+        }
+
+        // Method 6: dynamic foreach ($uiColumns|$fieldColumns) name=$name loops.
+        if (itm_fields_missing_dynamic_form_exposes_field($field, $paths)) {
+            return true;
+        }
+
+        // Method 8: optional live HTTP scrape of create/edit screens (ITM_FIELDS_MISSING_HTTP_SCRAPE=1).
+        if ($moduleSlug !== '' && $files !== []) {
+            $liveHtml = itm_fields_missing_http_fetch_module_form_html($moduleSlug, $files);
+            if ($liveHtml !== ''
+                && itm_fields_missing_scraped_html_exposes_audit_meta_field($field, $liveHtml)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_scraped_html_exposes_audit_meta_field')) {
+    /**
+     * Method 7/8: parse rendered (or PHP-stripped) HTML for visible audit meta on create/edit forms.
+     */
+    function itm_fields_missing_scraped_html_exposes_audit_meta_field(string $field, string $html): bool
+    {
+        if (trim($html) === '') {
+            return false;
+        }
+
+        $label = preg_quote(itm_fields_missing_audit_meta_humanized_label($field), '/');
+        $labelPattern = '/<label\b[^>]*>\s*' . $label . '\s*<\/label>/i';
+        $namePattern = '/\bname=["\']' . preg_quote($field, '/') . '["\']/i';
+
+        foreach (itm_fields_missing_extract_form_blocks($html) as $formBlock) {
+            if (preg_match_all('/<(?:input|select|textarea)\b[^>]*>/i', $formBlock, $tagMatches)) {
+                foreach ($tagMatches[0] as $tag) {
+                    if (!preg_match($namePattern, $tag)) {
+                        continue;
+                    }
+                    if (!preg_match('/\btype=["\']hidden["\']/i', $tag)) {
+                        return true;
+                    }
+                }
+            }
+
+            if (preg_match($labelPattern, $formBlock)) {
+                return true;
+            }
+
+            if (preg_match(
+                '/<div[^>]*class="[^"]*form-group[^"]*"[^>]*>[\s\S]*?<label[^>]*>\s*' . $label . '\s*<\/label>[\s\S]*?<input\b/i',
+                $formBlock
+            )) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_http_scrape_enabled')) {
+    function itm_fields_missing_http_scrape_enabled(): bool
+    {
+        $flag = getenv('ITM_FIELDS_MISSING_HTTP_SCRAPE');
+
+        return $flag === '1' || strtolower((string) $flag) === 'true' || strtolower((string) $flag) === 'yes';
+    }
+}
+
+if (!function_exists('itm_fields_missing_http_fetch_module_form_html')) {
+    /**
+     * Method 8: fetch create/edit HTML via HTTP when Apache is available (opt-in).
+     *
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     */
+    function itm_fields_missing_http_fetch_module_form_html(string $moduleSlug, array $files): string
+    {
+        if (!itm_fields_missing_http_scrape_enabled() || !function_exists('curl_init')) {
+            return '';
+        }
+
+        if (!function_exists('itm_script_publish_isolated_http_session')) {
+            $bootstrap = __DIR__ . '/itm_script_bootstrap.php';
+            if (is_readable($bootstrap)) {
+                require_once $bootstrap;
+            }
+        }
+        if (!function_exists('itm_script_publish_isolated_http_session')) {
+            return '';
+        }
+
+        $baseUrl = defined('BASE_URL') ? rtrim((string) BASE_URL, '/') : 'http://localhost/it-management';
+        $sessionId = itm_script_publish_isolated_http_session(1, 1, 'Admin');
+        if ($sessionId === '') {
+            return '';
+        }
+
+        $html = '';
+        foreach (['create', 'edit'] as $key) {
+            if (empty($files[$key]) || !is_readable($files[$key])) {
+                continue;
+            }
+            $entry = basename((string) $files[$key]);
+            $url = $baseUrl . '/modules/' . rawurlencode($moduleSlug) . '/' . rawurlencode($entry);
+            if ($key === 'edit') {
+                $url .= '?id=1';
+            }
+
+            $ch = curl_init($url);
+            if ($ch === false) {
+                continue;
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_HTTPHEADER => ['Cookie: PHPSESSID=' . $sessionId],
+            ]);
+            $body = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (is_string($body) && $body !== '' && $httpCode > 0 && $httpCode < 400) {
+                $html .= "\n" . $body;
+            }
+        }
+
+        return $html;
     }
 }
 
@@ -1120,15 +1415,26 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
         array $formPaths,
         array &$passes,
         array &$failures,
-        bool $literalOnly = false
+        bool $literalOnly = false,
+        array $files = []
     ): void {
         foreach ($excludedColumns as $field) {
             if ($field === '') {
                 continue;
             }
-            $exposed = $literalOnly
-                ? itm_fields_missing_form_exposes_literal_visible_field($field, $formPaths)
-                : itm_fields_missing_form_exposes_visible_field($field, $formPaths);
+            $exposed = false;
+            if (itm_fields_missing_is_global_audit_meta_column($field)) {
+                $exposed = itm_fields_missing_form_exposes_audit_meta_on_form(
+                    $field,
+                    $formPaths,
+                    $moduleSlug,
+                    $files
+                );
+            } elseif ($literalOnly) {
+                $exposed = itm_fields_missing_form_exposes_literal_visible_field($field, $formPaths);
+            } else {
+                $exposed = itm_fields_missing_form_exposes_visible_field($field, $formPaths);
+            }
             if ($exposed) {
                 $failures[] = [
                     'code' => 'ui_excluded_exposed',
@@ -1451,7 +1757,8 @@ if (!function_exists('itm_fields_missing_apply_skipped_ui_coverage_gate')) {
             $formPaths,
             $passes,
             $failures,
-            false
+            false,
+            $files
         );
 
         itm_fields_missing_audit_bespoke_scaffold_hybrid_contract(
@@ -2721,7 +3028,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
                 array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
                 $formPaths,
                 $passes,
-                $failures
+                $failures,
+                false,
+                $files
             );
             itm_fields_missing_audit_audited_ui_columns(
                 $moduleSlug,
@@ -2853,7 +3162,9 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             array_values(array_intersect($expectedColumns, itm_fields_missing_global_ui_excluded_columns())),
             $formPaths,
             $passes,
-            $failures
+            $failures,
+            false,
+            $files
         );
 
         $uiPayload = itm_fields_missing_prepare_ui_report_payload(
