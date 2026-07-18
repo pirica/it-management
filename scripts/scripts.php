@@ -622,8 +622,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="generate_reassignment.php" target="_blank" rel="nofollow noreferrer">generate_reassignment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
-                    <td>Generates reassignment SQL for <code>employee_id</code> before deletion.</td>
-                    <td>Open <a href="generate_reassignment.php">generate_reassignment.php</a> in the browser.</td>
+                    <td>Reassignment plan before delete: filter by <strong>employee id</strong>, row counts, skip reasons, FK debug. Default dry-run + rows-only.</td>
+                    <td>Open <a href="generate_reassignment.php">generate_reassignment.php</a> — <code>?employee_id=N</code> preview or <code>?from=N&amp;to=M</code> for apply SQL.</td>
                 </tr>
                 <tr>
                     <td><a href="transfer_data_from_employee.php" target="_blank" rel="nofollow noreferrer">transfer_data_from_employee.php</a></td>
