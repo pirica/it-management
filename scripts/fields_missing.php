@@ -108,13 +108,20 @@ foreach ($report['modules'] as $moduleReport) {
 
 if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
     echo 'Tables in database.sql without a discoverable module folder (' . count($report['tables_without_module']) . ')' . $nl;
-        foreach ($report['tables_without_module'] as $tableName) {
+    foreach ($report['tables_without_module'] as $tableName) {
         $label = function_exists('itm_script_format_table_link')
             ? itm_script_format_table_link($tableName, '', true)
             : $tableName;
         echo '  - ' . $label . $nl;
     }
     echo $nl;
+}
+
+$bespokeSkips = $report['bespoke_skips'] ?? [];
+if (is_array($bespokeSkips) && $bespokeSkips !== []) {
+    echo itm_fields_missing_format_bespoke_skip_block($bespokeSkips, $nl, static function (string $line): string {
+        return colorText($line, 'warn');
+    });
 }
 
 if ((int) $report['failure_count'] > 0) {
