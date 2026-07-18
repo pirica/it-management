@@ -43,6 +43,18 @@ foreach ($metadata as $moduleName => $info) {
     $className = str_replace(' ', '', ucwords(str_replace('_', ' ', $moduleName))) . 'Test';
     $namespace = 'Tests\Unit\Modules\\' . str_replace(' ', '', ucwords(str_replace('_', ' ', $moduleName)));
     $testDir = __DIR__ . '/../phpunit/tests/Unit/Modules/' . str_replace(' ', '', ucwords(str_replace('_', ' ', $moduleName)));
+    $testFile = $testDir . DIRECTORY_SEPARATOR . $className . '.php';
+
+    if (is_file($testFile)) {
+        echo ' - [SKIP] ' . $moduleName . ' — test already exists at phpunit/tests/Unit/Modules/'
+            . str_replace(' ', '', ucwords(str_replace('_', ' ', $moduleName))) . '/' . $className . '.php' . $nl;
+        continue;
+    }
+
+    if (!$apply) {
+        echo ' - Would generate test for ' . colorText($moduleName, 'pass') . " at $testDir/$className.php" . $nl;
+        continue;
+    }
 
     if (!is_dir($testDir)) {
         mkdir($testDir, 0777, true);
@@ -257,12 +269,7 @@ class $className extends TestCase
 }
 ";
 
-    if (!$apply) {
-        echo ' - Would generate test for ' . colorText($moduleName, 'pass') . " at $testDir/$className.php" . $nl;
-        continue;
-    }
-
-    if (file_put_contents($testDir . '/' . $className . '.php', $testContent) !== false) {
+    if (file_put_contents($testFile, $testContent) !== false) {
         echo " - Generated test for " . colorText($moduleName, 'pass') . " at $testDir" . $nl;
     } else {
         echo colorText(" - [FAIL] Failed to write test for $moduleName", 'fail') . $nl;
