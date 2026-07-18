@@ -970,6 +970,19 @@ foreach ($visibleFieldColumns as $visibleFieldColumn) {
     }
 }
 
+// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+$uiColumns = array_values(array_filter($visibleFieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if (function_exists('itm_crud_is_delete_form_hidden_field') && itm_crud_is_delete_form_hidden_field($fieldName)) {
+        return false;
+    }
+
+    return true;
+}));
+
 // Why: Search uses the same visible column set as the list table.
 $displayFieldColumns = $visibleFieldColumns;
 
@@ -1726,7 +1739,12 @@ if (!isset($crud_title)) {
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="active" value="<?php echo sanitize(($data['active'] ?? '') === '0' ? '0' : '1'); ?>">
-                    <?php foreach ($visibleFieldColumns as $col): $name = $col['Field'];
+                    <?php
+                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
+                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
+                    }
+                    ?>
+                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');

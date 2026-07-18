@@ -73,4 +73,18 @@ PHP;
             );
         }
     }
+
+    public function testSwitchPortsIndexDoesNotExposeAuditMetaDynamically(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $path = $root . '/modules/switch_ports/index.php';
+
+        foreach (['deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'] as $field) {
+            $this->assertFalse(
+                itm_fields_missing_dynamic_form_exposes_field($field, [$path]),
+                $field . ' should be hidden on create/edit forms'
+            );
+        }
+    }
 }

@@ -22,6 +22,7 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 ## 5. UI Behavior Requirements
 - **Grid Layout**: Often rendered in a grid mimicking the physical switch layout (via equipment module tiles).
 - Wrapper entry files set `$crud_action` before `require index.php` — index must not overwrite wrapper value.
+- Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list/view keep `$visibleFieldColumns`.
 - Standard flattened list in `list_all.php` when not embedded in equipment view.
 - **List search:** `index.php` / `list_all.php` search matches FK label tables via `itm_crud_fk_label_search_conditions()` (status, VLAN, equipment hostname, etc.), not only raw numeric IDs.
 
