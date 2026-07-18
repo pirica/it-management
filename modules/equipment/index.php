@@ -138,6 +138,7 @@ $countResult = mysqli_query($conn, $countSql);
 $countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
 $totalRows = (int)($countRow['total'] ?? 0);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
+$showBulkActions = ($totalRows >= $perPage);
 if ($page > $totalPages) {
     $page = $totalPages;
     $offset = ($page - 1) * $perPage;
@@ -299,14 +300,17 @@ if (!empty($_SESSION['crud_success'])) {
                 </div>
             </div>
 
+            <?php if ($showBulkActions): ?>
             <div class="card" style="margin-bottom:16px;">
-                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($equipmentCsrfToken); ?>">
                     <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all equipment records for this company? Switches will also remove related switch port data. This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
+            <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -331,7 +335,7 @@ if (!empty($_SESSION['crud_success'])) {
                 <table data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
-                        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                        <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                         <?php foreach ([
                             'id' => 'ID',
                             'name' => 'Name',
@@ -360,7 +364,7 @@ if (!empty($_SESSION['crud_success'])) {
                             $isSwitch = (strpos($typeLabel, 'switch') !== false);
                             ?>
                             <tr>
-                                <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <td><?php echo (int)$row['id']; ?></td>
                                 <td><?php echo sanitize($row['name']); ?></td>
                                 <td><?php echo sanitize($row['equipment_type_name'] ?? '-'); ?></td>
@@ -416,7 +420,7 @@ if (!empty($_SESSION['crud_success'])) {
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="13" style="text-align:center;">No equipment records found.</td></tr>
+                        <tr><td colspan="<?php echo ($showBulkActions ? 14 : 13); ?>" style="text-align:center;">No equipment records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
