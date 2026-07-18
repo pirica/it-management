@@ -5,8 +5,8 @@
  * Default probe: 18/06/2026 (ISO week 25). Explains which SQL predicates pass or fail
  * and whether the live employee row would appear in modules/resignations/index.php.
  *
- * Browser: scripts/debug_resignations_termination_date.php?date=18/06/2026&company_id=4&employee_id=432
- * CLI: php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=4 --employee_id=432
+ * Browser: scripts/debug_resignations_termination_date.php?date=18/06/2026&company_id=1
+ * CLI: php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=1 --week=25 --month=6 --year=2026
  */
 declare(strict_types=1);
 
@@ -49,8 +49,8 @@ function drd_parse_args(): array
 {
     $args = [
         'date' => '18/06/2026',
-        'company_id' => '4',
-        'employee_id' => '432',
+        'company_id' => '1',
+        'employee_id' => '0',
         'week' => '25',
         'month' => '6',
         'year' => '2026',
@@ -205,34 +205,35 @@ if ($mysqlMeta) {
     }
 }
 
-$legacySql = "SELECT 1 AS ok FROM employees e
-    WHERE e.termination_date = '{$escapedDate}'
-      AND YEAR(e.termination_date) = {$filterYear}
-      AND MONTH(e.termination_date) = {$filterMonth}
-      AND WEEK(e.termination_date, 3) = {$filterWeek}
+$legacySql = "SELECT 1 AS ok WHERE YEAR('{$escapedDate}') = {$filterYear}
+      AND MONTH('{$escapedDate}') = {$filterMonth}
+      AND WEEK('{$escapedDate}', 3) = {$filterWeek}
     LIMIT 1";
 $legacyRes = mysqli_query($conn, $legacySql);
-if ($legacyRes && mysqli_num_rows($legacyRes) === 1) {
-    drd_pass('Legacy YEAR + MONTH + WEEK(...,3) predicate matches this date.');
+$legacyMatchesLiteral = ($legacyRes && mysqli_num_rows($legacyRes) === 1);
+drd_info('Legacy predicate (deprecated — resignations uses ISO range + MONTH, not YEAR+WEEK):');
+if ($legacyMatchesLiteral) {
+    drd_warn('Legacy YEAR + MONTH + WEEK(...,3) matches this date in SQL; module intentionally uses itm_iso_week_bounds() instead.');
 } else {
-    drd_fail('Legacy YEAR + MONTH + WEEK(...,3) predicate does NOT match this date.');
+    drd_pass('Legacy YEAR + MONTH + WEEK(...,3) does not match this date (expected on some cross-boundary dates).');
 }
 
 if ($boundsCalendarYear !== null) {
-    $rangeSql = "SELECT 1 AS ok FROM employees e
-        WHERE e.termination_date = '{$escapedDate}'
-          AND e.termination_date >= '" . mysqli_real_escape_string($conn, $boundsCalendarYear['start']) . "'
-          AND e.termination_date <= '" . mysqli_real_escape_string($conn, $boundsCalendarYear['end']) . "'
-          AND MONTH(e.termination_date) = {$filterMonth}
+    $rangeStart = mysqli_real_escape_string($conn, $boundsCalendarYear['start']);
+    $rangeEnd = mysqli_real_escape_string($conn, $boundsCalendarYear['end']);
+    $rangeSql = "SELECT 1 AS ok WHERE '{$escapedDate}' >= '{$rangeStart}'
+          AND '{$escapedDate}' <= '{$rangeEnd}'
+          AND MONTH('{$escapedDate}') = {$filterMonth}
         LIMIT 1";
     $rangeRes = mysqli_query($conn, $rangeSql);
     if ($rangeRes && mysqli_num_rows($rangeRes) === 1) {
-        drd_pass('Current range + MONTH predicate matches this date.');
+        drd_pass('Current ISO range + MONTH predicate matches this date (same contract as modules/resignations/index.php).');
     } else {
-        drd_fail('Current range + MONTH predicate does NOT match this date.');
+        drd_fail('Current ISO range + MONTH predicate does NOT match this date.');
     }
 }
 
+$emp = null;
 if ($employeeId > 0) {
     drd_info('--- Employee row (id=' . $employeeId . ') ---');
     $empSql = "SELECT e.id, e.company_id, e.external_id, e.first_name, e.last_name, e.termination_date,
@@ -245,7 +246,7 @@ if ($employeeId > 0) {
     $empRes = mysqli_query($conn, $empSql);
     $emp = ($empRes) ? mysqli_fetch_assoc($empRes) : null;
     if (!$emp) {
-        drd_fail('Employee id ' . $employeeId . ' not found.');
+        drd_warn('Employee id ' . $employeeId . ' not found (optional — module probe uses a disposable row).');
     } else {
         drd_info('company_id=' . (int)$emp['company_id'] . ', external_id=' . (string)($emp['external_id'] ?? '') . ', name=' . trim((string)$emp['first_name'] . ' ' . (string)$emp['last_name']));
         drd_info('termination_date=' . (string)($emp['termination_date'] ?? '') . ' (' . itm_format_date_display($emp['termination_date'] ?? '') . ')');
@@ -284,9 +285,64 @@ $moduleSql = 'SELECT e.id, e.external_id, e.first_name, e.last_name, e.terminati
       AND MONTH(e.termination_date) = ?
       AND es.id IN (' . $statusPlaceholders . ')
       AND (e.employee_type_id IS NULL OR e.employee_type_id IN (' . $typePlaceholders . '))';
-if ($employeeId > 0) {
-    $moduleSql .= ' AND e.id = ' . $employeeId;
+
+$probeEmployeeId = 0;
+$probeExternalId = '';
+$terminatedStatusId = 0;
+$teamMemberTypeId = 0;
+$terminatedRes = mysqli_query($conn, "SELECT id FROM employee_statuses WHERE company_id = {$companyId} AND name = 'Terminated' AND active = 1 LIMIT 1");
+if ($terminatedRes && ($terminatedRow = mysqli_fetch_assoc($terminatedRes))) {
+    $terminatedStatusId = (int)$terminatedRow['id'];
 }
+$teamMemberRes = mysqli_query($conn, "SELECT id FROM employee_type WHERE company_id = {$companyId} AND name_type = 'Team member' AND active = 1 LIMIT 1");
+if ($teamMemberRes && ($teamMemberRow = mysqli_fetch_assoc($teamMemberRes))) {
+    $teamMemberTypeId = (int)$teamMemberRow['id'];
+}
+
+if ($terminatedStatusId > 0 && $teamMemberTypeId > 0 && in_array($terminatedStatusId, $statusIds, true) && in_array($teamMemberTypeId, $typeIds, true)) {
+    $probeExternalId = 'MBQA-RESIGN-DEBUG-' . bin2hex(random_bytes(4));
+    $startDate = date('Y-m-d', strtotime($canonicalDate . ' -120 days'));
+    $insertSql = 'INSERT INTO employees (
+        company_id, first_name, last_name, display_name, employment_status_id, employee_type_id,
+        external_id, start_date, termination_date, raw_status_code
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    $insertStmt = mysqli_prepare($conn, $insertSql);
+    if ($insertStmt) {
+        $firstName = 'QA';
+        $lastName = 'ResignDebug';
+        $displayName = 'QA Resign Debug';
+        $rawStatus = 'T';
+        mysqli_stmt_bind_param(
+            $insertStmt,
+            'isssiissss',
+            $companyId,
+            $firstName,
+            $lastName,
+            $displayName,
+            $terminatedStatusId,
+            $teamMemberTypeId,
+            $probeExternalId,
+            $startDate,
+            $canonicalDate,
+            $rawStatus
+        );
+        if (mysqli_stmt_execute($insertStmt)) {
+            $probeEmployeeId = (int)mysqli_insert_id($conn);
+            drd_info('Inserted disposable probe employee id=' . $probeEmployeeId . ' external_id=' . $probeExternalId . ' termination_date=' . $canonicalDate);
+        } else {
+            drd_warn('Could not insert probe employee: ' . mysqli_stmt_error($insertStmt));
+        }
+        mysqli_stmt_close($insertStmt);
+    }
+} else {
+    drd_warn('Cannot insert probe employee (Terminated status or Team member type missing from default filters).');
+}
+
+$moduleTargetId = ($employeeId > 0 && $emp) ? $employeeId : $probeEmployeeId;
+if ($moduleTargetId > 0) {
+    $moduleSql .= ' AND e.id = ' . (int)$moduleTargetId;
+}
+
 $moduleSql .= ' ORDER BY e.termination_date ASC';
 
 $stmt = mysqli_prepare($conn, $moduleSql);
@@ -310,12 +366,17 @@ while ($moduleRes && ($row = mysqli_fetch_assoc($moduleRes))) {
 }
 mysqli_stmt_close($stmt);
 
-if ($employeeId > 0) {
+if ($probeEmployeeId > 0) {
+    mysqli_query($conn, 'DELETE FROM employees WHERE id = ' . (int)$probeEmployeeId . ' AND company_id = ' . (int)$companyId . ' LIMIT 1');
+    drd_info('Removed disposable probe employee id=' . $probeEmployeeId);
+}
+
+if ($moduleTargetId > 0) {
     if (count($moduleRows) === 1) {
-        drd_pass('Module filter returns employee id ' . $employeeId . ' for week=' . $filterWeek . ' month=' . $filterMonth . ' year=' . $filterYear . '.');
+        drd_pass('Module filter returns employee id ' . $moduleTargetId . ' for week=' . $filterWeek . ' month=' . $filterMonth . ' year=' . $filterYear . '.');
     } else {
-        drd_fail('Module filter does NOT return employee id ' . $employeeId . ' with default status/type filters.');
-        if (!empty($emp)) {
+        drd_fail('Module filter does NOT return employee id ' . $moduleTargetId . ' with default status/type filters.');
+        if ($employeeId > 0 && !empty($emp)) {
             $statusOk = in_array((int)$emp['employment_status_id'], $statusIds, true);
             $typeOk = ((int)($emp['employee_type_id'] ?? 0) === 0) || in_array((int)$emp['employee_type_id'], $typeIds, true);
             if (!$statusOk) {
@@ -327,7 +388,7 @@ if ($employeeId > 0) {
         }
     }
 } else {
-  drd_info('Module filter matched ' . count($moduleRows) . ' row(s) for company ' . $companyId . '.');
+    drd_info('Module filter matched ' . count($moduleRows) . ' row(s) for company ' . $companyId . ' (no probe target).');
 }
 
 drd_info('--- Today probe (verify_employee_type_resignations.php) ---');

@@ -929,7 +929,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/debug_resignations_termination_date.php` | Diagnose why a `termination_date` (default `18/06/2026`, ISO week 25) does or does not match `modules/resignations/index.php`: PHP vs MySQL week metadata, `itm_iso_week_bounds()` range, legacy `YEAR/MONTH/WEEK`, simulated module SQL (uses `itm_sql_valid_date_predicate()` — not `<> '0000-00-00'`), live employee row, today's verify-probe bounds. Browser or CLI. Surfaces MySQL 8 `NO_ZERO_DATE` prepare errors. |
+| `php scripts/debug_resignations_termination_date.php` | Diagnose resignations weekly filter for a probe `termination_date` (default `18/06/2026`): literal ISO range + MONTH predicates, deprecated legacy YEAR/WEEK check, disposable probe employee module simulation (aligned with `verify_employee_type_resignations.php`). |
 | `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)` + `itm_sql_valid_date_predicate()`). Browser or CLI via `lib/script_cli_output.php` (no `STDERR` on web SAPI). |
 | `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`) |
 
