@@ -41,6 +41,7 @@ Tracks software patches, security updates, and system upgrades across equipment.
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]
 - Storing photo files using the client-supplied filename extension (e.g. `.php` on an image MIME). [Cursor-Fixed]
+- Mojibake in duplicated entry files (emoji saved with wrong encoding) — run `php scripts/verify_source_utf8_mojibake.php --path=modules/patches_updates` and repair with `apply_utf8_mojibake_fix.php --apply`. [Cursor-Fixed]
 - Links to **equipment** and patch status/level lookups. [Cursor-Valid]
 - Respect tenant unique constraints; duplicates fail at the database layer. [Cursor-Valid]
 - Scope every SELECT/INSERT/UPDATE/DELETE by `company_id`; never expose `company_id` in the UI. [Cursor-Valid]

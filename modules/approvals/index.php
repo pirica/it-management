@@ -558,7 +558,7 @@ if ($isJsonImportRequest) {
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || strcasecmp($rawValue, 'null') === 0 || in_array($rawValue, ['-', '–', '—', 'â€”'], true)) {
+                if ($rawValue === '' || strcasecmp($rawValue, 'null') === 0 || in_array($rawValue, ['-', '–', '—', '—'], true)) {
                     continue;
                 }
 
