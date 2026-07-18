@@ -108,9 +108,9 @@ foreach ($report['modules'] as $moduleReport) {
 
 if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
     echo 'Tables in database.sql without a discoverable module folder (' . count($report['tables_without_module']) . ')' . $nl;
-    foreach ($report['tables_without_module'] as $tableName) {
+        foreach ($report['tables_without_module'] as $tableName) {
         $label = function_exists('itm_script_format_table_link')
-            ? itm_script_format_table_link($tableName)
+            ? itm_script_format_table_link($tableName, '', true)
             : $tableName;
         echo '  - ' . $label . $nl;
     }

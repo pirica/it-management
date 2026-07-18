@@ -178,17 +178,19 @@ if (!function_exists('itm_script_format_module_path_link')) {
 if (!function_exists('itm_script_format_table_link')) {
     /**
      * Link table name to modules/&lt;table&gt;/ when that module exists; otherwise plain text.
+     *
+     * @param bool $linkAsModulePath When true, always link to modules/&lt;table&gt;/index.php even if the folder is missing.
      */
-    function itm_script_format_table_link($tableName, $baseUrl = ''): string
+    function itm_script_format_table_link($tableName, $baseUrl = '', bool $linkAsModulePath = false): string
     {
         $tableName = trim((string)$tableName);
         if ($tableName === '') {
             return '';
         }
         if (itm_script_is_cli_sapi()) {
-            return $tableName;
+            return $linkAsModulePath ? 'modules/' . $tableName . '/index.php' : $tableName;
         }
-        if (itm_script_table_has_module($tableName)) {
+        if ($linkAsModulePath || itm_script_table_has_module($tableName)) {
             return itm_script_format_module_link($tableName, $baseUrl);
         }
 
