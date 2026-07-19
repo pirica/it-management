@@ -101,6 +101,13 @@
                 if (!selectionMode) {
                     enterSelectionMode(false);
                 }
+                rowCheckboxes.forEach(function (checkbox) {
+                    checkbox.checked = true;
+                });
+                if (selectAllRows) {
+                    selectAllRows.checked = true;
+                }
+                itmDispatchBulkSelectionChange();
             });
         }
 
