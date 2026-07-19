@@ -18,8 +18,9 @@ Company-scoped lookup of IT systems and applications (e.g. ERP, Email, VPN) used
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
+- **List header:** `data-itm-new-button-managed="server"` with `position:relative`, centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()`, `min-height:40px`, and Settings `new_button_position` create slots.
 - Standard flattened CRUD: search, sort, pagination, export/import.
-- Bulk toolbar when `$totalRows >= $perPage`; `bulk-delete-selection.js` Cancel button contract.
+- Bulk toolbar when `$totalRows >= $perPage`; `bulk-delete-selection.js` + `data-itm-bulk-cancel="1"` Cancel in index HTML.
 - `includes/employee_system_access.php` loaded on index/create/delete for shared helpers (`esa_ensure_table()`).
 
 ## 6. API Actions (If Applicable)
