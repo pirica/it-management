@@ -99,7 +99,7 @@ if (!function_exists('itm_verify_module_page_chrome_entry_basenames')) {
      */
     function itm_verify_module_page_chrome_entry_basenames(): array
     {
-        return ['index.php', 'create.php', 'edit.php', 'view.php', 'list_all.php'];
+        return ['index.php', 'create.php', 'edit.php', 'view.php', 'list_all.php', 'view_all.php'];
     }
 }
 
@@ -108,7 +108,7 @@ if (!function_exists('itm_verify_module_page_chrome_skip_reason')) {
      * Return a skip reason when a modules path is out of page-chrome verify scope.
      *
      * Why: delete/export/partials/join pages are auxiliary or bespoke; standalone list_all.php
-     * is in scope (Settings favicon + canonical browser title like index).
+     * and view_all.php are in scope (Settings favicon + canonical browser title like index).
      */
     function itm_verify_module_page_chrome_skip_reason(string $moduleRelativePath): ?string
     {
@@ -119,7 +119,7 @@ if (!function_exists('itm_verify_module_page_chrome_skip_reason')) {
             return null;
         }
 
-        return 'page chrome verify audits primary CRUD entry files only (index/create/edit/view/list_all)';
+        return 'page chrome verify audits primary CRUD entry files only (index/create/edit/view/list_all/view_all)';
     }
 }
 
