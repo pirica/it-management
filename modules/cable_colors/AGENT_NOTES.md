@@ -15,7 +15,8 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 - **Hex Code**: `hex_color` should be a valid CSS hex color string (e.g., "#808080").
 
 ## 5. UI Behavior Requirements
-- **Standard CRUD**.
+- **Standard CRUD** with scaffold soft-delete (`itm_crud_build_soft_delete_sql()` on delete; list uses `itm_crud_append_not_deleted_predicate()`).
+- **Bulk toolbar:** `bulk-delete-form`, shared `bulk-delete-selection.js`, **Select to Delete**, **Cancel** (`data-itm-bulk-cancel="1"`, `type="button"`), and **Clear Table** when row count ≥ `records_per_page`.
 - **Color Preview**: The list and view pages should ideally show a small swatch of the hex color.
 - Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list/view keep `$visibleFieldColumns`.
 
@@ -33,6 +34,7 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 
 ## 10. Common Pitfalls
 - Deleting a color that is actively used in the floor designer might result in missing color indicators or fallback to a default color. [Cursor-Valid]
+- Do not hard `DELETE` — use `itm_crud_build_soft_delete_sql()` and filter live rows with `itm_crud_append_not_deleted_predicate()`. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

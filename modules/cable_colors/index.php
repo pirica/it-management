@@ -583,17 +583,23 @@ if ($crud_action === 'delete') {
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
 
     if ($bulkAction === 'clear_table') {
-        $where = '';
-        if ($hasCompany && $company_id > 0) {
-            $where = ' WHERE company_id=' . (int)$company_id;
-        }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        $hasCompanyFilter = ($hasCompany && $company_id > 0);
+        $where = $hasCompanyFilter ? ' WHERE company_id=?' : '';
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+            : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+
+        $stmt = mysqli_prepare($conn, $deleteSql);
+        if ($stmt) {
+            if ($hasCompanyFilter) {
+                mysqli_stmt_bind_param($stmt, 'i', $company_id);
+            }
+            if (!mysqli_stmt_execute($stmt)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+            }
+            mysqli_stmt_close($stmt);
         }
         header('Location: ' . $listUrl);
         exit;
@@ -608,18 +614,33 @@ if ($crud_action === 'delete') {
         foreach ($ids as $rawId) {
             $id = (int)$rawId;
             if ($id > 0) {
-                $idList[$id] = $id;
+                $idList[] = $id;
             }
         }
 
         if (!empty($idList)) {
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
+            $placeholders = implode(',', array_fill(0, count($idList), '?'));
+            $hasCompanyFilter = ($hasCompany && $company_id > 0);
+            $where = ' WHERE id IN (' . $placeholders . ')';
+            if ($hasCompanyFilter) {
+                $where .= ' AND company_id=?';
             }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+
+            $stmt = mysqli_prepare($conn, $deleteSql);
+            if ($stmt) {
+                $types = str_repeat('i', count($idList));
+                if ($hasCompanyFilter) {
+                    $types .= 'i';
+                    $idList[] = (int)$company_id;
+                }
+                mysqli_stmt_bind_param($stmt, $types, ...$idList);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                }
+                mysqli_stmt_close($stmt);
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -630,13 +651,26 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
-        $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) {
-            $where .= ' AND company_id=' . (int)$company_id;
+        $hasCompanyFilter = ($hasCompany && $company_id > 0);
+        $where = ' WHERE id=?';
+        if ($hasCompanyFilter) {
+            $where .= ' AND company_id=?';
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+            : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+
+        $stmt = mysqli_prepare($conn, $deleteSql);
+        if ($stmt) {
+            if ($hasCompanyFilter) {
+                mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+            } else {
+                mysqli_stmt_bind_param($stmt, 'i', $id);
+            }
+            if (!mysqli_stmt_execute($stmt)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+            }
+            mysqli_stmt_close($stmt);
         }
     }
     header('Location: ' . $listUrl);
@@ -681,6 +715,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 
     $where = ' WHERE company_id=' . (int)$company_id;
+    if (function_exists('itm_crud_append_not_deleted_predicate')) {
+        $where = itm_crud_append_not_deleted_predicate($where);
+    }
     $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
@@ -846,6 +883,9 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
@@ -962,6 +1002,7 @@ if (!isset($crud_title)) {
                 <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                     <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                 </form>
             </div>
@@ -1253,6 +1294,7 @@ if (!isset($crud_title)) {
 })();
 </script>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
