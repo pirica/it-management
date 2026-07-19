@@ -36,6 +36,9 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     return true;
 }));
 
+// Why: Search and list share visible columns; alias matches flattened CRUD modules.
+$displayFieldColumns = $uiColumns;
+
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
