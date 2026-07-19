@@ -18,13 +18,30 @@ require_once __DIR__ . '/lib/itm_titles_list_audit.php';
 require_once __DIR__ . '/lib/itm_ui_list_contract_checks.php';
 require_once __DIR__ . '/lib/itm_fields_missing_report.php';
 
+if (!function_exists('itm_verify_page_chrome_format_entry_line')) {
+    /**
+     * @param 'FAIL'|'SKIP' $status
+     */
+    function itm_verify_page_chrome_format_entry_line(string $status, string $modulePath, string $detail): string
+    {
+        $prefix = $status === 'FAIL'
+            ? colorText('[FAIL]', 'fail')
+            : colorText('[SKIP]', 'warn');
+
+        return '  ' . $prefix . ' '
+            . itm_script_format_modules_file_link($modulePath)
+            . ' — '
+            . itm_script_escape_browser_pre_text($detail);
+    }
+}
+
 itm_script_output_begin('Verify module page chrome');
 $nl = itm_script_output_nl();
 $root = dirname(__DIR__);
 $modulesDir = $root . DIRECTORY_SEPARATOR . 'modules';
 
 if (!is_dir($modulesDir)) {
-    echo 'FAIL: modules/ directory does not exist.' . $nl;
+    echo colorText('[FAIL] modules/ directory does not exist.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
@@ -42,7 +59,9 @@ $stats = [
     'title_na' => 0,
     'favicon_na' => 0,
 ];
+/** @var list<array{path:string,detail:string}> $failures */
 $failures = [];
+/** @var list<array{path:string,detail:string}> $skips */
 $skips = [];
 
 foreach ($files as $path) {
@@ -50,7 +69,7 @@ foreach ($files as $path) {
     $skipReason = itm_verify_module_page_chrome_skip_reason($modulePath);
     if ($skipReason !== null) {
         $stats['skipped_out_of_scope']++;
-        $skips[] = $modulePath . ' — ' . $skipReason;
+        $skips[] = ['path' => $modulePath, 'detail' => $skipReason];
         continue;
     }
 
@@ -65,14 +84,17 @@ foreach ($files as $path) {
     $titleBlock = itm_ui_extract_title_block($content);
     if ($titleBlock === '') {
         $stats['title_na']++;
-        $failures[] = $modulePath . ' — missing <title>';
+        $failures[] = ['path' => $modulePath, 'detail' => 'missing <title>'];
     } elseif (itm_titles_list_title_matches_canonical($titleBlock)
         || (itm_check_module_browser_title($content)['status'] ?? '') === 'pass'
     ) {
         $stats['title_pass']++;
     } else {
         $stats['title_fail']++;
-        $failures[] = $modulePath . ' — browser title not canonical (see titles_list.php)';
+        $failures[] = [
+            'path' => $modulePath,
+            'detail' => 'browser title not canonical (see titles_list.php)',
+        ];
     }
 
     $faviconCheck = itm_check_module_favicon_link($content, $content);
@@ -83,7 +105,10 @@ foreach ($files as $path) {
         $stats['favicon_pass']++;
     } else {
         $stats['favicon_fail']++;
-        $failures[] = $modulePath . ' — favicon: ' . (string) ($faviconCheck['details'] ?? 'contract failed');
+        $failures[] = [
+            'path' => $modulePath,
+            'detail' => 'favicon: ' . (string) ($faviconCheck['details'] ?? 'contract failed'),
+        ];
     }
 }
 
@@ -96,28 +121,30 @@ echo 'Browser title pass: ' . (int) $stats['title_pass'] . $nl;
 echo 'Browser title fail: ' . (int) $stats['title_fail'] . $nl;
 echo 'Favicon pass: ' . (int) $stats['favicon_pass'] . $nl;
 echo 'Favicon fail: ' . (int) $stats['favicon_fail'] . $nl;
-echo 'Canonical title pattern: ' . itm_titles_list_expected_title_literal() . $nl;
-echo 'Related: titles_list.php, titles_list_show.php, fields_missing.php, crud_titles.php' . $nl;
+echo 'Canonical title pattern: ' . itm_script_escape_browser_pre_text(itm_titles_list_expected_title_literal()) . $nl;
+echo colorText('[INFO] Related: titles_list.php, titles_list_show.php, fields_missing.php, crud_titles.php', 'info') . $nl;
 echo '-------------------------------' . $nl . $nl;
 
 if ($skips !== []) {
     echo 'Skipped (' . count($skips) . '):' . $nl;
-    foreach ($skips as $line) {
-        echo '  [SKIP] ' . $line . $nl;
+    foreach ($skips as $row) {
+        echo itm_verify_page_chrome_format_entry_line('SKIP', $row['path'], $row['detail']) . $nl;
     }
     echo $nl;
 }
 
 if ($failures !== []) {
     echo 'Failures (' . count($failures) . '):' . $nl;
-    foreach ($failures as $line) {
-        echo '  [FAIL] ' . $line . $nl;
+    foreach ($failures as $row) {
+        echo itm_verify_page_chrome_format_entry_line('FAIL', $row['path'], $row['detail']) . $nl;
     }
     echo $nl;
 }
 
 $exitCode = ($stats['title_fail'] > 0 || $stats['favicon_fail'] > 0) ? 1 : 0;
-echo $exitCode === 0 ? 'Result: pass' : 'Result: fail';
+echo $exitCode === 0
+    ? colorText('[PASS] Result: pass', 'pass')
+    : colorText('[FAIL] Result: fail', 'fail');
 echo $nl;
 
 itm_script_output_end();
