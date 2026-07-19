@@ -26,6 +26,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - Tabs: **Send Logs** | **SMTP Configurations** | **Alert Rules**.
 - Validation errors on `index.php` use `itm_render_alert_errors($errors)` (not raw `foreach` alert markup).
 - Stat cards link to filtered send logs (`status=sent` / `failed`); search term preserved on stat-card links when active.
+- **List header:** centered `h1` echoes `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` inside `data-itm-new-button-managed="server"` (Settings emoji/icon overrides); SMTP tab ➕ create respects `new_button_position`.
 - **Send Logs tab:** server-side search via `$_GET['search']` on `to_email`, `subject`, `status`, `details`, and `sent_at` (SQL `LIKE`); Search submit + emoji-only 🔙 reset on `tabs/send_logs.php`.
 - SMTP form: toggle **Set as default SMTP**; password field with reveal button; **IMAP** port; **POP3** port, TLS mode, and require-secure toggle; test send on edit.
 - Alert rules: per-rule toggle, days-before (expiry rules), comma-separated notify emails.
