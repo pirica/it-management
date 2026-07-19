@@ -796,13 +796,15 @@ if (!isset($crud_title)) {
                             </form>
                         </div>
 
-                        <!-- Toolbar for Tools (Excel/PDF) -->
+                        <!-- Toolbar for Tools (Excel/PDF) — card view only; list_all uses the visible table below -->
+                        <?php if ($crud_action === 'index'): ?>
                         <div class="card" style="margin-bottom: 20px;">
                             <table data-itm-db-import-endpoint="index.php" style="display:none;">
                                 <thead><tr><th>ID</th><th>Title</th><th>Content</th><th>Reminder</th><th>Tags</th><th>Shared With</th><th>Pinned</th><th>Important</th><th>Archived</th></tr></thead>
                                 <tbody><?php foreach ($notes as $note): ?><tr><td><?=$note['id']?></td><td><?=sanitize($note['title'])?></td><td><?=sanitize($note['content'])?></td><td><?=$note['reminder_at']?></td><td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td><td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td><td><?=$note['is_pinned']?'Yes':'No'?></td><td><?=$note['is_important']?'Yes':'No'?></td><td><?=$note['is_archived']?'Yes':'No'?></td></tr><?php endforeach; ?></tbody>
                             </table>
                         </div>
+                        <?php endif; ?>
 
                         <?php if ($crud_action === "index"): ?>
 
