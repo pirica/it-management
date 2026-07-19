@@ -175,9 +175,9 @@ if (!isset($crud_title)) {
 
         <?php if ($showBulkActions): ?>
         <div class="card" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" data-itm-bulk-delete-bound="1">
+            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                <button type="button" class="btn btn-sm" id="bulk-select-toggle" data-itm-bulk-select="1">Select</button>
+                <button type="button" class="btn btn-sm" id="bulk-select-toggle" data-itm-bulk-select="1" title="Select All">Select All</button>
                 <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
                 <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                 <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
