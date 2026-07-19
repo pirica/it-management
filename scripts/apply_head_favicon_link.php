@@ -1,6 +1,6 @@
 <?php
 /**
- * Insert server-side favicon <link> in module index/create/edit/view <head> blocks.
+ * Insert server-side favicon <link> in module index/create/edit/view/list_all <head> blocks.
  *
  * Why: fields_missing bespoke gate and first-paint tab icon require itm_render_head_favicon_link()
  * using Settings favicon_url (header.php JS alone leaves the default globe).
@@ -10,6 +10,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_titles_list_audit.php';
 require_once __DIR__ . '/lib/itm_ui_list_contract_checks.php';
 
 $boot = itm_apply_script_bootstrap('Apply head favicon link');
@@ -27,7 +28,7 @@ $warned = [];
 $changed = [];
 
 $entryFiles = [];
-foreach (['index.php', 'create.php', 'edit.php', 'view.php'] as $entryName) {
+foreach (itm_verify_module_page_chrome_entry_basenames() as $entryName) {
     foreach (glob($root . 'modules' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $entryName) ?: [] as $entryPath) {
         $entryFiles[] = $entryPath;
     }
