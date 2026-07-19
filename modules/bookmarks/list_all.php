@@ -218,7 +218,7 @@ if (!isset($crud_title)) {
                                         <a href="<?php echo sanitize($row['url_display']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url_display']); ?></a>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo sanitize($row['notes']); ?></td>
+                                <td><?php echo sanitize($row['notes_display'] ?? $row['notes'] ?? ''); ?></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">

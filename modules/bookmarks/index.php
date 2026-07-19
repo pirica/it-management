@@ -406,7 +406,7 @@ if (!isset($crud_title)) {
 
     <!-- Notes -->
     <td style="padding:8px;">
-        <?php echo sanitize($b['notes']); ?>
+        <?php echo sanitize($b['notes_display'] ?? $b['notes'] ?? ''); ?>
     </td>
 
     <!-- Visibility -->

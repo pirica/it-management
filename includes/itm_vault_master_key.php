@@ -182,6 +182,52 @@ if (!function_exists('itm_vault_reencrypt_bookmark_urls')) {
         mysqli_stmt_close($title_upd);
         mysqli_stmt_close($title_sel);
 
+        $notes_sel = mysqli_prepare(
+            $conn,
+            'SELECT id, notes FROM bookmarks WHERE employee_id = ? AND shared = 0 AND active = 1'
+        );
+        if (!$notes_sel) {
+            return ['ok' => false, 'message' => 'Failed to load bookmark notes.'];
+        }
+        mysqli_stmt_bind_param($notes_sel, 'i', $employeeId);
+        if (!mysqli_stmt_execute($notes_sel)) {
+            mysqli_stmt_close($notes_sel);
+            return ['ok' => false, 'message' => 'Failed to load bookmark notes.'];
+        }
+        $notes_res = mysqli_stmt_get_result($notes_sel);
+        $notes_upd = mysqli_prepare($conn, 'UPDATE bookmarks SET notes = ? WHERE id = ? AND employee_id = ?');
+        if (!$notes_upd) {
+            mysqli_stmt_close($notes_sel);
+            return ['ok' => false, 'message' => 'Failed to prepare bookmark notes update.'];
+        }
+        while ($row = mysqli_fetch_assoc($notes_res)) {
+            $bookmarkId = (int)($row['id'] ?? 0);
+            $stored = (string)($row['notes'] ?? '');
+            if ($stored === '') {
+                continue;
+            }
+            $plain = itm_decrypt($stored, $oldKeySession);
+            if ($plain === false || $plain === '') {
+                if (function_exists('bkm_private_text_legacy_plaintext_check')
+                    && bkm_private_text_legacy_plaintext_check($stored)) {
+                    $plain = $stored;
+                } else {
+                    mysqli_stmt_close($notes_upd);
+                    mysqli_stmt_close($notes_sel);
+                    return ['ok' => false, 'message' => 'Failed to re-encrypt bookmark notes. Please try again.'];
+                }
+            }
+            $re_encrypted = itm_encrypt($plain, $newKeySession);
+            mysqli_stmt_bind_param($notes_upd, 'sii', $re_encrypted, $bookmarkId, $employeeId);
+            if (!mysqli_stmt_execute($notes_upd)) {
+                mysqli_stmt_close($notes_upd);
+                mysqli_stmt_close($notes_sel);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt bookmark notes. Please try again.'];
+            }
+        }
+        mysqli_stmt_close($notes_upd);
+        mysqli_stmt_close($notes_sel);
+
         $folder_sel = mysqli_prepare(
             $conn,
             'SELECT id, name FROM bookmark_folders WHERE employee_id = ? AND shared = 0 AND active = 1'

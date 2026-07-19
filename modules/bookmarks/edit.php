@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     bkm_hydrate_bookmark_row($data, $user_id);
     $data['title'] = $data['title_plain'] ?? '';
     $data['url'] = $data['url_display'];
+    $data['notes'] = $data['notes_plain'] ?? '';
 }
 
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);

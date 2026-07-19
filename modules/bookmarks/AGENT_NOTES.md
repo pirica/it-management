@@ -4,7 +4,7 @@
 Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — URL records (`title` TEXT, `url` TEXT, `url_hash` SHA-256 of plaintext URL, `shared`, `employee_id`, `folder_id`). **Private** (`shared = 0`): `title` and `url` encrypted at rest via `itm_encrypt()` + session `vault_key`; **shared** (`shared = 1`): `title` and `url` stored plaintext for team access. **`UNIQUE (company_id, employee_id, url_hash)`** — one exact URL per employee (any folder).
+- **bookmarks** — URL records (`title` TEXT, `url` TEXT, `url_hash` SHA-256 of plaintext URL, `notes` TEXT, `shared`, `employee_id`, `folder_id`). **Private** (`shared = 0`): `title`, `url`, and `notes` encrypted at rest via `itm_encrypt()` + session `vault_key`; **shared** (`shared = 1`): all three stored plaintext for team access. **`UNIQUE (company_id, employee_id, url_hash)`** — one exact URL per employee (any folder).
 - **bookmark_folders** — folder tree (emoji icons in sidebar). **Private** (`shared = 0`): `name` encrypted at rest + `name_hash` (SHA-256 of plaintext name) for import lookup; **shared** folders keep plaintext `name`. **Duplicate folder names are allowed** (same employee / company / parent). Identity is `PRIMARY KEY (id)` only — there is **no** UNIQUE on `name`.
 
 ## 3. Required Relationships
@@ -27,7 +27,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 5. UI Behavior Requirements
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
 - View modes: `all`, `private`, `shared` via `?view=`; folder filter via `?folder_id=`.
-- **Search:** `index.php` and `list_all.php` decrypt private title/url/folder names in PHP, then filter/sort/paginate in memory (`bkm_query_bookmarks_for_list()`). SQL `LIKE` is not used on encrypted private fields.
+- **Search:** `index.php` and `list_all.php` decrypt private title/url/notes and folder names in PHP, then filter/sort/paginate in memory (`bkm_query_bookmarks_for_list()`). SQL `LIKE` is not used on encrypted private fields.
 - Dual-pane `index.php` list heading uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()`. POST mutations on `index.php` call `itm_require_post_csrf()` (JSON `import_excel_rows` keeps token validation on the JSON body).
 - Dual-pane `index.php` bulk toolbar (`Select`, `Select to Delete`, Cancel, Clear Table, **Move to** folder select) and row `ids[]` checkboxes appear only when `$showBulkActions = ($totalRows >= $perPage)`; uses shared `bulk-delete-selection.js` with `#select-all-rows` and `data-itm-bulk-select="1"` on **Select**. **Move to** form (`#bulk-move-form`) stays hidden until at least one row checkbox is checked.
 - Folder drag-and-drop reparenting posts `action=move_folder` (CSRF on form).
@@ -42,7 +42,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
 - **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows. **Vault required** before upload (`bkm_vault_bootstrap.php`); imports create **private** bookmarks with URLs encrypted at rest via `bkm_insert_bookmark_row()`. Imports accept `http://`, `https://`, and `ftp://` URLs only; skips exact URL duplicates per employee. Post-import tables: imported rows light green (`Successfully imported → Folder`); duplicate URL skips light red (`Duplicate URL → Folder`); invalid URL skips light yellow (`Invalid URL → Folder`); vault locked skips light grey (`Vault locked → Folder`).
-- **export.php** / **export.js** — CSV, XLSX (CSV payload), TXT, HTML, and PDF (print view) via `export.php`. `bkm_export_row()` decrypts **own private** titles and URLs when `$_SESSION['vault_key']` is set; **shared** rows always export as plaintext. Private titles/URLs export blank when the vault is locked. `export.js` routes every format to `export.php` (no DOM scrape).
+- **export.php** / **export.js** — CSV, XLSX (CSV payload), TXT, HTML, and PDF (print view) via `export.php`. `bkm_export_row()` decrypts **own private** titles, URLs, and notes when `$_SESSION['vault_key']` is set; **shared** rows always export as plaintext. Private fields export blank when the vault is locked. `export.js` routes every format to `export.php` (no DOM scrape).
 
 ## 7. File Structure
 - `index.php` — dual-pane UI, folder move POST, JSON import.
