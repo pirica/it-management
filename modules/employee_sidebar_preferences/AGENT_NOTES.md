@@ -47,7 +47,7 @@ Stores per-user sidebar section/item order and visibility (`employee_sidebar_pre
 - Soft-deleted rows still occupy unique keys — recreating the same entry may collide until purged.
 - Per-user sidebar order/visibility — unique per `company_id` + `employee_id` + entry.
 - Scope every SELECT by `company_id`; never expose `company_id` in the UI.
-- `fields_missing.php` and `check_ui_configuration_coverage.php` treat this slug as gate-excluded / bespoke skip — do not add standard bulk/import contracts back without updating inventory lists.
+- `fields_missing.php` and `check_ui_configuration_coverage.php` treat this slug as gate-excluded / bespoke skip — do not add standard bulk/import contracts back without updating inventory lists. Gate-excluded `[n/a][n/a]` lines for missing create/edit/delete are marked `[reviewed]` in `scripts/data/ui_configuration_reviewed.json`.
 
 ## 11. Examples of Safe Code Patterns
 

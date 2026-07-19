@@ -530,6 +530,57 @@
           "note": "Bulk toolbar on Send Logs tab (tabs/send_logs.php) posts to delete.php — gate scan looks for table in index.php only"
         }
       ]
+    },
+    "employee_sidebar_preferences": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Read-only admin audit list for persisted sidebar preference rows — live drag-and-drop editor lives in includes/ui_config.php; no create/edit/delete UI in this module folder.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — preference rows are written by sidebar editor/runtime, not manual CRUD create"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — read-only audit list; bulk toolbar intentionally omitted per AGENT_NOTES.md"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design — preferences are not created from this module UI"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design — view-only module"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design — rows are not deleted from this audit list"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
     }
   }
 }
