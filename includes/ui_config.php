@@ -575,7 +575,12 @@ function itm_sidebar_module_is_hidden($moduleName) {
     if ($moduleName === '') {
         return false;
     }
-    return in_array($moduleName, itm_sidebar_excluded_module_ids(), true);
+    if (in_array($moduleName, itm_sidebar_excluded_module_ids(), true)) {
+        return true;
+    }
+
+    // Why: QR share session tables are internal to parent modules (notes, passwords, bookmarks, todo, events).
+    return (bool)preg_match('/_share_sessions$/', $moduleName);
 }
 
 /**
