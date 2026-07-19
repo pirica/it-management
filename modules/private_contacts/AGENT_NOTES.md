@@ -17,9 +17,12 @@ Per-user private address book (not the shared company Contacts module). Stores p
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
-- Custom list with search, favourite star (AJAX), photo thumbnails.
-- **Search:** matches first/last name, email, organisation, phone (`phone1_value`), labels CSV, and full name concat — aligned with visible list columns.
-- `data-itm-db-import-endpoint` on index table for Excel import.
+- Custom list with search, sort, pagination, favourite star (AJAX), photo thumbnails.
+- **List header:** `data-itm-new-button-managed="server"` with centered `$moduleListHeading` from `itm_sidebar_label_for_module()` and Settings `new_button_position` create slots (`itm-list-new-button`).
+- **Search:** server-side GET `search` on `index.php` (`$searchRaw`, `$searchConditions`, LIKE on first/last name, email, organisation, phone (`phone1_value`), labels CSV, and full name concat) — aligned with visible list columns. Query logic in `private_contacts_list_helpers.php` (`pc_query_contacts_for_list()`).
+- **Sort:** GET `sort`/`dir` on visible columns (`first_name`, `email1_value`, `phone1_value`, `organization_name`, `labels`) with ▲/▼; favourites stay first via `ORDER BY is_favorite DESC`.
+- **Pagination:** `itm_resolve_records_per_page()`, `$perPage`, `$totalRows`, `LIMIT`/`$offset`, Previous/Next with `title="◀️ Previous"` / `title="▶️ Next"`.
+- `data-itm-db-import-endpoint="index.php"` on index table for Excel import.
 - Actions column uses `itm-actions-cell` markers.
 - Create/edit profile photo uses the employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, **PNG only**). Hint: `Drag and drop or click to upload PNG.` Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
 
@@ -28,9 +31,10 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - **import_excel_rows** (JSON POST on `index.php`) — bulk import with `data-itm-db-import-endpoint="index.php"`.
 
 ## 7. File Structure
-- `index.php` — HTML list view.
-- `index_logic.php` — auth, POST handlers, contact query.
-- `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD screens.
+- `index.php` — HTML list view (search/sort/pagination wiring, Settings list header, `import_excel_rows` JSON handler).
+- `index_logic.php` — auth, POST handlers (toggle favourite, inline delete).
+- `private_contacts_list_helpers.php` — server-side list query (search, sort, pagination).
+- `create.php`, `edit.php`, `view.php` — CRUD screens.
 - `edit_form.php` — shared form sections for create/edit.
 - `includes/profile_photo_fields.php` — employees-matching photo UI for create/edit.
 - `includes/private_contact_photo.php` — photo URL + upload store helpers.

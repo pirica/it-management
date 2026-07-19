@@ -1721,6 +1721,15 @@ if (!function_exists('itm_handle_json_table_import')) {
             require_once ROOT_PATH . 'modules/bookmarks/helpers.php';
         }
 
+        if ($tableName === 'private_contacts') {
+            $importEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+            if ($importEmployeeId <= 0) {
+                http_response_code(401);
+                echo json_encode(['ok' => false, 'error' => 'Import requires a signed-in employee.']);
+                exit;
+            }
+        }
+
         $hasCompanyColumn = isset($columns['company_id']);
         $companyId = (int)$companyId;
         if ($hasCompanyColumn && $companyId <= 0) {
@@ -2180,6 +2189,10 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $rowValues['company_id'] = (string)$companyId;
             }
 
+            if ($tableName === 'private_contacts') {
+                $rowValues['employee_id'] = (string)(int)($_SESSION['employee_id'] ?? 0);
+            }
+
             foreach ($targetFields as $fieldName) {
                 if (($rowValues[$fieldName] ?? 'NULL') !== 'NULL') {
                     continue;
@@ -2252,6 +2265,9 @@ if (!function_exists('itm_handle_json_table_import')) {
                 if ($hasCompanyColumn) {
                     $checkSql .= " AND company_id = " . (int)$companyId;
                 }
+                if ($tableName === 'private_contacts') {
+                    $checkSql .= ' AND employee_id = ' . (int)($_SESSION['employee_id'] ?? 0);
+                }
                 $checkRes = mysqli_query($conn, $checkSql);
                 if ($checkRes && mysqli_num_rows($checkRes) > 0) {
                     $existingId = $rowId;
@@ -2284,6 +2300,9 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $updateSql = "UPDATE `" . str_replace('`', '``', $tableName) . "` SET " . implode(', ', $updateParts)
                     . " WHERE id = " . (int)$existingId
                     . ($hasCompanyColumn ? " AND company_id = " . (int)$companyId : '');
+                if ($tableName === 'private_contacts') {
+                    $updateSql .= ' AND employee_id = ' . (int)($_SESSION['employee_id'] ?? 0);
+                }
                 $dbErrorCode = 0;
                 $dbErrorMessage = '';
                 if (itm_run_query($conn, $updateSql, $dbErrorCode, $dbErrorMessage) !== false) {
