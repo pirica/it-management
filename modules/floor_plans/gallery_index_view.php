@@ -124,11 +124,11 @@ if ($galleryFolderId > 0) {
                 <?php if ($galleryUnfiled): ?>
                     <input type="hidden" name="unfiled" value="1">
                 <?php endif; ?>
-                <div class="form-group" style="margin:0;flex:1;">
+                <div class="form-group">
                     <label for="gallerySearch">Search file, folder, tag, IT location, or extension (e.g. pdf, png)</label>
                     <input type="text" id="gallerySearch" name="search" value="<?php echo sanitize($gallerySearch); ?>" placeholder="Name, folder, tag, IT location, or extension (pdf, png, dwg)...">
                 </div>
-                <div class="form-actions" style="margin:0;">
+                <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Search</button>
                     <a href="<?php echo sanitize($fpGalleryClearUrl); ?>" class="btn" title="Clear">🔙</a>
                 </div>
