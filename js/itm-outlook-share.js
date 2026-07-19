@@ -41,7 +41,14 @@
                 }
                 var subject = buildOutlookSubject(itemLabel);
                 var body = buildOutlookBody(itemLabel, data.join_url, data.share_code);
-                openOutlookCompose(subject, body);
+                var openShare = function () {
+                    openOutlookCompose(subject, body);
+                };
+                if (typeof window.itmMaybeConfirmShareNoAttachments === 'function') {
+                    window.itmMaybeConfirmShareNoAttachments(!!data.has_images, openShare);
+                } else {
+                    openShare();
+                }
             })
             .catch(function () { alert('Could not create share link.'); });
     };

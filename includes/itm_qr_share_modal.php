@@ -26,5 +26,6 @@
 <div class="modal-backdrop" id="itmShareQrBackdrop" style="display:none;position:fixed;inset:0;background:#000;opacity:.5;z-index:1040;"></div>
 <script src="../../js/qrcode.min.js"></script>
 <script src="../../js/itm-qr-share.js"></script>
+<script src="../../js/itm-share-no-attachments-prompt.js"></script>
 <script src="../../js/itm-whatsapp-share.js"></script>
 <script src="../../js/itm-outlook-share.js"></script>

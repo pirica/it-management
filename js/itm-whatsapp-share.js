@@ -35,7 +35,14 @@
                     return;
                 }
                 var message = buildWhatsAppMessage(itemLabel, data.join_url, data.share_code);
-                openWhatsAppWithMessage(message);
+                var openShare = function () {
+                    openWhatsAppWithMessage(message);
+                };
+                if (typeof window.itmMaybeConfirmShareNoAttachments === 'function') {
+                    window.itmMaybeConfirmShareNoAttachments(!!data.has_images, openShare);
+                } else {
+                    openShare();
+                }
             })
             .catch(function () { alert('Could not create share link.'); });
     };

@@ -551,12 +551,15 @@ if (isset($_GET["ajax_action"])) {
         }
         $session = $result['session'];
         $joinUrl = notes_share_build_join_url((string)$session['access_token']);
+        $payload = notes_share_decode_payload($session['payload_json'] ?? '');
+        $hasImages = is_array($payload) && !empty($payload['images']);
         echo json_encode([
             'ok' => true,
             'share_code' => (string)$session['share_code'],
             'join_url' => $joinUrl,
             'expires_at' => (string)$session['expires_at'],
             'ttl_seconds' => notes_share_session_ttl_seconds(),
+            'has_images' => $hasImages,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         die();
     }
@@ -1174,6 +1177,7 @@ if (!isset($crud_title)) {
 <script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 <script src="../../js/xlsx.full.min.js"></script>
 <script src="../../js/qrcode.min.js"></script>
+<script src="../../js/itm-share-no-attachments-prompt.js"></script>
 <script src="../../js/itm-whatsapp-share.js"></script>
 <script src="../../js/itm-outlook-share.js"></script>
 <script src="../../js/table-tools.js"></script>
