@@ -277,6 +277,27 @@ if (isset($_GET["ajax_action"])) {
         }
         die();
     }
+    if ($action === "create_share_session") {
+        header('Content-Type: application/json; charset=utf-8');
+        require_once __DIR__ . '/todo_share_helpers.php';
+        $todoId = (int)($_POST['id'] ?? 0);
+        $ownerUsername = (string)($_SESSION['username'] ?? '');
+        $result = todo_share_create_session($conn, $todoId, $company_id, $logged_user_id, $ownerUsername, $categories, $departments, $users);
+        if (!$result['ok']) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            die();
+        }
+        $session = $result['session'];
+        echo json_encode([
+            'ok' => true,
+            'share_code' => (string)$session['share_code'],
+            'join_url' => todo_share_build_join_url((string)$session['access_token']),
+            'expires_at' => (string)$session['expires_at'],
+            'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        die();
+    }
 }
 
 // Data fetching
@@ -839,6 +860,9 @@ if (!isset($crud_title)) {
                                             <?php echo $task["importance"] ? "★" : "☆"; ?>
                                         </div>
                                         <a href="edit.php?id=<?php echo $task["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
+                                        <?php if ((int)($task['created_by'] ?? 0) === (int)$logged_user_id): ?>
+                                        <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                        <?php endif; ?>
                                         <form method="POST" action="index.php?id=<?php echo $task["id"]; ?>" style="display:inline;" onsubmit="return confirm('Delete this task?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
@@ -1017,6 +1041,9 @@ if (!isset($crud_title)) {
                             </table>
 
                             <div class="form-actions" style="margin-top: 30px;">
+                                <?php if ((int)($data['created_by'] ?? 0) === (int)$logged_user_id): ?>
+                                <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                <?php endif; ?>
                                 <a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary" title="Edit">✏️</a>
                                 <a href="index.php" class="btn" title="Back">🔙</a>
                             </div>
@@ -1351,6 +1378,8 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
     </div>
 </div>
 <div class="modal-backdrop" id="modalBackdrop"></div>
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
+<script>window.ITM_CSRF_TOKEN = CSRF_TOKEN;</script>
 
 </body>
 </html>

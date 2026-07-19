@@ -267,6 +267,8 @@ if (!isset($crud_title)) {
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
+                                        <?php if (bkm_can_edit_bookmark($row, $user_id, $is_admin)): ?>
+                                        <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo $row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete?');">
                                             <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
@@ -274,6 +276,7 @@ if (!isset($crud_title)) {
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                         </form>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -342,5 +345,7 @@ document.addEventListener('click', function() {
     });
 });
 </script>
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
+<script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 </body>
 </html>

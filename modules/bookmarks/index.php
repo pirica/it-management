@@ -177,6 +177,35 @@ $bkmListQueryState = [
     'page' => $page,
 ];
 
+if (isset($_GET['ajax_action']) && (string)$_GET['ajax_action'] === 'create_share_session') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'CSRF token mismatch'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    require_once __DIR__ . '/bookmarks_share_helpers.php';
+    $bookmarkId = (int)($_POST['id'] ?? 0);
+    $ownerUsername = (string)($_SESSION['username'] ?? '');
+    $vaultUnlocked = !empty($bkmVaultState['unlocked']);
+    $result = bookmarks_share_create_session($conn, $bookmarkId, $company_id, $user_id, $ownerUsername, $is_admin, $vaultUnlocked);
+    if (!$result['ok']) {
+        $httpCode = !empty($result['error']) && stripos((string)$result['error'], 'vault') !== false ? 403 : 400;
+        http_response_code($httpCode);
+        echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $session = $result['session'];
+    echo json_encode([
+        'ok' => true,
+        'share_code' => (string)$session['share_code'],
+        'join_url' => bookmarks_share_build_join_url((string)$session['access_token']),
+        'expires_at' => (string)$session['expires_at'],
+        'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 $csrfToken = itm_get_csrf_token();
 ?>
 <!DOCTYPE html>
@@ -515,6 +544,7 @@ if (!isset($crud_title)) {
         <?php endif; ?>
 
         <?php if (bkm_can_edit_bookmark($b, $user_id, $is_admin)): ?>
+            <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$b['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
             <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm" title="Edit">✏️</a>
 
             <form method="POST" action="delete.php"
@@ -890,6 +920,8 @@ document.addEventListener('click', function() {
     if (dropdown) dropdown.style.display = 'none';
 });
 </script>
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
+<script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 
 </body>
 </html>

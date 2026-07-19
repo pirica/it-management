@@ -131,6 +131,9 @@ function audit_logs_private_data_tables(): array
         'notes' => true,
         'note_labels' => true,
         'note_share_sessions' => true,
+        'password_share_sessions' => true,
+        'bookmark_share_sessions' => true,
+        'todo_share_sessions' => true,
         'bookmark_folders' => true,
         'bookmarks' => true,
     ];

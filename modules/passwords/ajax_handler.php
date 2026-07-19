@@ -329,6 +329,30 @@ case 'list_entries':
         echo json_encode(['ok' => true, 'total' => $total, 'imported' => $imported, 'failed' => $failed, 'skipped' => $skipped]);
         break;
 
+    case 'create_share_session':
+        header('Content-Type: application/json; charset=utf-8');
+        require_once __DIR__ . '/passwords_share_helpers.php';
+        $entryId = (int)($_POST['id'] ?? 0);
+        $companyId = (int)($_SESSION['company_id'] ?? 0);
+        $ownerUsername = (string)($_SESSION['username'] ?? '');
+        $vaultUnlocked = !empty($_SESSION['vault_key']);
+        $result = passwords_share_create_session($conn, $entryId, $companyId, $user_id, $ownerUsername, $vaultUnlocked);
+        if (!$result['ok']) {
+            $httpCode = !empty($result['error']) && stripos((string)$result['error'], 'vault') !== false ? 403 : 400;
+            http_response_code($httpCode);
+            echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            break;
+        }
+        $session = $result['session'];
+        echo json_encode([
+            'ok' => true,
+            'share_code' => (string)$session['share_code'],
+            'join_url' => passwords_share_build_join_url((string)$session['access_token']),
+            'expires_at' => (string)$session['expires_at'],
+            'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        break;
+
     default:
         echo json_encode(['ok' => false, 'message' => 'Invalid action']);
         break;

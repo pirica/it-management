@@ -25,13 +25,17 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
 - **Search:** index search matches title/description plus category, department, and assignee labels via `includes/itm_todo_search.php` (`FIND_IN_SET` on CSV `*_id` columns).
+- **QR / code share (`join.php`):** task creator (`created_by`) may create 30-minute temporary read links. `todo_share_sessions` stores plaintext `payload_json`. UI: `images/QR.svg` on task rows and view screen; modal via shared `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — bulk task import with category/department/username resolution.
 - **toggle_complete** / inline AJAX handlers on index — must apply `itm_todo_visibility_sql()` before UPDATE.
+- **create_share_session** — creator-only temporary QR/code share (`todo_share_sessions`)
 
 ## 7. File Structure
 - `index.php` — main UI, import, visibility-filtered queries.
+- `todo_share_helpers.php` — QR share session builder (`todo_share_create_session()`)
+- `join.php` — public 6-digit / token join page for shared task snapshots
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD entry points.
 
 ## 8. Multi-Tenant Rules
