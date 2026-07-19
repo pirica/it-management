@@ -85,6 +85,21 @@ $crud_title = 'View Password';
     <title><?php echo sanitize($crud_title); ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config ?? [])); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .pwd-inline-field {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 8px;
+            max-width: 100%;
+        }
+        .pwd-inline-field input.form-control {
+            flex: 1 1 auto;
+            min-width: 120px;
+            max-width: 280px;
+        }
+        .pwd-inline-field .btn { flex-shrink: 0; white-space: nowrap; }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -122,8 +137,8 @@ $crud_title = 'View Password';
                         <tr><th style="width:220px;">Account</th><td><?php echo sanitize((string)($data['account'] ?? '')); ?></td></tr>
                         <tr><th>Login Name</th><td><?php echo sanitize((string)($data['login_name'] ?? '')); ?></td></tr>
                         <tr><th>Password</th><td>
-                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                <input type="password" id="view-password" class="form-control" style="max-width:240px;" value="<?php echo sanitize((string)($data['password_plain'] ?? '')); ?>" readonly>
+                            <div class="pwd-inline-field">
+                                <input type="password" id="view-password" class="form-control" value="<?php echo sanitize((string)($data['password_plain'] ?? '')); ?>" readonly>
                                 <button type="button" class="btn btn-sm" onclick="togglePasswordVisibility('view-password')" title="Toggle visibility">👁️</button>
                                 <button type="button" class="btn btn-sm" onclick="copyViewPassword()" title="Copy">🗐</button>
                             </div>
