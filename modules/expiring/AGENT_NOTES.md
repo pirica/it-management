@@ -23,6 +23,7 @@ Read-only dashboard for upcoming and past expirations. Aggregates dates from **e
 - Badge rendering via `expiring_days_left_badge()` (expired red, ≤30d red, ≤90d warning, else success).
 - No bulk delete / import / sample-data CRUD on a dedicated table.
 - `data-itm-no-export-*` may be set on filter cards where exports should omit controls.
+- **UI configuration audit:** gate-excluded bespoke dashboard — wrapper CRUD files route to `index.php` only; no scaffold search/sort/pagination/create/bulk. Intentional `[n/a][fail|n/a]` lines are `[reviewed]` in `scripts/data/ui_configuration_reviewed.json`.
 
 ## 6. API Actions (If Applicable)
 - None — read-only dashboard; no JSON import or AJAX mutation endpoints.

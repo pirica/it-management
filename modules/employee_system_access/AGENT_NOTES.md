@@ -20,6 +20,7 @@ Manages and tracks the various systems and applications an employee has access t
 - **Standard View/Edit**.
 - **Checklist View**: Often presented as a list of checkboxes for each available system.
 - **List header**: `index.php` uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` and Settings `new_button_position` gates; CSV export sits in the right create slot (no `create.php` in this module).
+- **UI configuration audit:** gate-excluded; missing create/delete/list_all and no bulk toolbar are `[reviewed]` in `scripts/data/ui_configuration_reviewed.json`.
 
 ## 6. API Actions (If Applicable)
 - None.

@@ -581,6 +581,189 @@
           "note": "No edit.php form"
         }
       ]
+    },
+    "employee_system_access": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Employee × system checklist on index.php/edit.php/view.php — no create.php; CSV export in managed header slot; mutations via edit checklist not scaffold create/delete.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — access rows edited per employee via edit.php checklist, not list create action"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — header uses data-itm-new-button-managed with CSV export in create slot"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — no list-header ➕ create link"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — checklist edits replace bulk scaffold delete"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php — single index checklist list only"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        }
+      ]
+    },
+    "expiring": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Read-only expiration dashboard (no expiring table): aggregates equipment warranty/certificate and alert end dates — wrapper create/edit/delete/list_all exist for scaffold routing only; no flattened CRUD list search/sort/pagination.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No writable expiring rows — create.php wrapper routes to dashboard; no primary create/add on index"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Bespoke summary/tab sections — no GET search input or server-side LIKE on a flattened index table"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Fixed SQL ordering per section — no per-column sort headers or GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full expiration sections on one page — no records_per_page paging"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php wrapper delegates to index.php — no scaffold create form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php wrapper delegates to index.php — no scaffold edit form"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — read-only dashboard rows link to source modules"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No server-managed new-button row — dashboard has no create flow"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php link on index.php"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — read-only aggregator"
+        }
+      ]
+    },
+    "explorer": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Bespoke file-manager UI (index.php + api.php + file.php): folder grid and JSON API — no flattened CRUD table, create.php, edit.php, list_all.php, or delete.php.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No HTML list table — file grid uses context menu and api.php actions"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — uploads/folders via Explorer toolbar and api.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table-tools list — ZIP/download via api.php downloadZip and file.php"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Client-side filter on current folder listing — not scaffold GET search on index.php table"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No column-sort list — grid sort is bespoke JS, not GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Folder listing is not server-paginated via records_per_page"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No bulk-delete-form — multi-select delete uses Explorer API, not scaffold toolbar"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design — rename/move via api.php"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php by design"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design — soft-delete to Trash via api.php"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
     }
   }
 }
