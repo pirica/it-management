@@ -388,224 +388,6 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
-// Handle Excel/CSV database import requests from table-tools.js.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
-    $rawBody = file_get_contents('php://input');
-    $jsonBody = json_decode((string)$rawBody, true);
-    if (is_array($jsonBody) && isset($jsonBody['import_excel_rows'])) {
-        header('Content-Type: application/json');
-
-        $requestToken = (string)($jsonBody['csrf_token'] ?? '');
-        if (!itm_validate_csrf_token($requestToken)) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']);
-            exit;
-        }
-
-        if (!$hasCompany || $company_id <= 0) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => 'Import requires an active company.']);
-            exit;
-        }
-
-        $importRows = $jsonBody['import_excel_rows'];
-        if (!is_array($importRows) || count($importRows) < 2) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => 'The uploaded file has no data rows.']);
-            exit;
-        }
-
-        $headerRow = array_map('trim', array_map('strval', (array)($importRows[0] ?? [])));
-        $columnKeys = [];
-        foreach ($headerRow as $headerValue) {
-            $columnKeys[] = strtolower(preg_replace('/\s+/', ' ', $headerValue));
-        }
-
-        $fieldByLabel = [];
-        foreach ($fieldColumns as $col) {
-            $fieldName = (string)$col['Field'];
-            $fieldByLabel[strtolower((string)cr_humanize_field($fieldName))] = $col;
-            $fieldByLabel[strtolower(str_replace('_', ' ', $fieldName))] = $col;
-        }
-        $fieldByLabel['id'] = null;
-
-        $importColumns = [];
-        foreach ($columnKeys as $labelKey) {
-            $importColumns[] = $fieldByLabel[$labelKey] ?? null;
-        }
-
-        $insertedRows = 0;
-        for ($rowIndex = 1; $rowIndex < count($importRows); $rowIndex++) {
-            $sourceRow = (array)$importRows[$rowIndex];
-            if (empty(array_filter($sourceRow, function ($v) { return trim((string)$v) !== ''; }))) {
-                continue;
-            }
-
-            $rowData = [];
-            foreach ($fieldColumns as $col) {
-                $rowData[$col['Field']] = 'NULL';
-            }
-
-            foreach ($importColumns as $idx => $columnMeta) {
-                if (!is_array($columnMeta)) {
-                    continue;
-                }
-
-                $fieldName = (string)$columnMeta['Field'];
-                $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
-                    continue;
-                }
-
-                if ($fieldName === 'company_id' || $fieldName === 'id') {
-                    continue;
-                }
-
-                $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$columnMeta['Type']);
-                if ($isTinyInt) {
-                    $normalizedBool = strtolower($rawValue);
-                    if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
-                        $rowData[$fieldName] = '1';
-                    } elseif (in_array($normalizedBool, ['0', 'inactive', 'no', 'false', 'off', '❌'], true)) {
-                        $rowData[$fieldName] = '0';
-                    }
-                    continue;
-                }
-
-                if (isset($fkMap[$fieldName])) {
-                    $fk = $fkMap[$fieldName];
-                    $options = cr_fk_options($conn, $fk, (int)$company_id);
-                    $resolvedId = 0;
-                    foreach ($options as $option) {
-                        if (strcasecmp((string)$option['label'], $rawValue) === 0) {
-                            $resolvedId = (int)$option['id'];
-                            break;
-                        }
-                    }
-                    if ($resolvedId <= 0 && ctype_digit($rawValue)) {
-                        $resolvedId = (int)$rawValue;
-                    }
-                    $rowData[$fieldName] = $resolvedId > 0 ? (string)$resolvedId : 'NULL';
-                    continue;
-                }
-
-                if (preg_match('/int|decimal|float|double/', (string)$columnMeta['Type'])) {
-                    $normalizedNumeric = null; $numericError = '';
-                    if (cr_validate_numeric_value($rawValue, $columnMeta, $fieldName, $normalizedNumeric, $numericError)) {
-                        $rowData[$fieldName] = $normalizedNumeric;
-                    }
-                    continue;
-                }
-
-                $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $rawValue) . "'";
-            }
-
-            if ($hasCompany) {
-                $rowData['company_id'] = (string)(int)$company_id;
-            }
-
-            $fields = [];
-            $values = [];
-            foreach ($fieldColumns as $col) {
-                $name = (string)$col['Field'];
-                $fields[] = cr_escape_identifier($name);
-                $values[] = $rowData[$name] ?? 'NULL';
-            }
-
-            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
-            $dbErrorCode = 0; $dbErrorMessage = '';
-            if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-                $insertedRows++;
-            }
-        }
-
-        echo json_encode(['ok' => true, 'inserted' => $insertedRows]);
-        exit;
-    }
-}
-
-if ($crud_action === 'delete') {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        header('Allow: POST');
-        echo 'Method not allowed.';
-        exit;
-    }
-
-    // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
-    itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
-
-    cr_require_valid_csrf_token();
-
-    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    $dbErrorCode = 0;
-    $dbErrorMessage = '';
-
-    if ($bulkAction === 'clear_table') {
-        $where = '';
-        if ($hasCompany && $company_id > 0) {
-            $where = ' WHERE company_id=' . (int)$company_id;
-        }
-        if (function_exists('itm_crud_append_not_deleted_predicate')) {
-            $where = itm_crud_append_not_deleted_predicate($where);
-        }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-        }
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    if ($bulkAction === 'bulk_delete') {
-        $ids = $_POST['ids'] ?? [];
-        if (!is_array($ids)) {
-            $ids = [];
-        }
-        $idList = [];
-        foreach ($ids as $rawId) {
-            $id = (int)$rawId;
-            if ($id > 0) {
-                $idList[$id] = $id;
-            }
-        }
-
-        if (!empty($idList)) {
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
-            }
-            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            }
-        } else {
-            $_SESSION['crud_error'] = 'No records selected for deletion.';
-        }
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id > 0) {
-        $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) {
-            $where .= ' AND company_id=' . (int)$company_id;
-        }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-        }
-    }
-    header('Location: ' . $listUrl);
-    exit;
-}
 
 $errors = [];
 if (!empty($_SESSION['crud_error'])) {
@@ -860,7 +642,6 @@ if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
     $totalRows = (int)($countRow['total_rows'] ?? 0);
 }
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
-$showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) {
     $page = 1;
@@ -917,18 +698,6 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                 </div>
 
-                <?php if ($showBulkActions): ?>
-                <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
-                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                    </form>
-                </div>
-                <?php endif; ?>
-
                 <div class="card" style="margin-bottom:16px;">
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
@@ -945,10 +714,9 @@ if (!isset($crud_title)) {
                     </form>
                 </div>
                 <div class="card" style="overflow:auto;">
-                    <table data-itm-db-import-endpoint="index.php">
+                    <table data-itm-no-import-excel="1">
                         <thead>
                         <tr>
-                            <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -967,30 +735,15 @@ if (!isset($crud_title)) {
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
-                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
-                                        <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
-                                        <?php endif; ?>
+                                        <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="hidden" name="bulk_action" value="single_delete">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                    </form>
-                                </td>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1"><a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a></td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($fieldColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -1105,7 +858,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn" title="Back">🔙</a></p>
                 </div>
             <?php endif; ?>
         </div>

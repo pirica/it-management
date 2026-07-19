@@ -2878,7 +2878,7 @@ CREATE TABLE `employee_sidebar_preferences` (
   `section_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `display_order` int NOT NULL DEFAULT '0',
   `is_visible` tinyint(1) NOT NULL DEFAULT '1',
-  `active` tinyint(1) DEFAULT '1',
+  `active` tinyint(1) NOT NULL DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,

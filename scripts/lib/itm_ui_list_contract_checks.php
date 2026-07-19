@@ -308,6 +308,12 @@ if (!function_exists('itm_check_bulk_delete_actions')) {
             return ['status' => 'n/a', 'details' => 'Module has no delete.php'];
         }
 
+        $hasBulkForm = stripos($listContent, 'bulk-delete-form') !== false
+            || stripos($listContent, 'department-bulk-form') !== false;
+        if (!$hasBulkForm) {
+            return ['status' => 'n/a', 'details' => 'Bulk toolbar intentionally omitted'];
+        }
+
         $hasBulkDelete = stripos($listContent, 'bulk_delete') !== false;
         $hasClearTable = stripos($listContent, 'clear_table') !== false;
         $hasSelectControl = stripos($listContent, 'Select to Delete') !== false
