@@ -157,6 +157,20 @@ $_SESSION['company_id'] = $companyId;
 $_SESSION['employee_id'] = $employeeId;
 $_SESSION['vault_key'] = hash('sha256', $vaultKeyPlain);
 
+$hydrateRow = [
+    'title' => itm_encrypt('192.168.1.74/UI/', $_SESSION['vault_key']),
+    'url' => itm_encrypt('http://192.168.1.74/UI/', $_SESSION['vault_key']),
+    'notes' => itm_encrypt('', $_SESSION['vault_key']),
+    'shared' => 0,
+    'employee_id' => $employeeId,
+];
+bkm_hydrate_bookmark_row($hydrateRow, $employeeId);
+if (!empty($hydrateRow['notes_locked']) || ($hydrateRow['notes_display'] ?? '') === '🔒 Unable to decrypt notes') {
+    bkm_verify_fail('Encrypted empty private notes must hydrate as blank, not "Unable to decrypt".');
+} else {
+    bkm_verify_pass('Encrypted empty private notes hydrate without false decrypt failure.');
+}
+
 $folderCache = [];
 $foldersCreated = 0;
 $importedUrlKeys = [];
