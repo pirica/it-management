@@ -4,26 +4,33 @@
  */
 require '../../config/config.php';
 require './helpers.php';
+require './bkm_vault_bootstrap.php';
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = (string)@file_get_contents('php://input');
     $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
 
-    // Explicit CSRF check for JSON payload
-    if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
-        http_response_code(403);
-        die('CSRF validation failed');
-    }
-
     if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
+            http_response_code(403);
+            die('CSRF validation failed');
+        }
+        if (empty($_SESSION['vault_key'])) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing bookmarks.']);
+            exit;
+        }
         itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
+        exit;
     }
 }
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+$bkmVaultState = bkm_handle_vault_requests($conn, $user_id);
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -59,11 +66,16 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = 25;
 $offset = ($page - 1) * $perPage;
 
+$rows = [];
+$totalRows = 0;
+$totalPages = 1;
+
+if (!empty($bkmVaultState['unlocked'])) {
 $where = "b.company_id = $company_id AND b.active = 1 AND (b.employee_id = $user_id OR b.shared = 1)";
 $joinFolders = ' LEFT JOIN bookmark_folders f ON b.folder_id = f.id';
 if ($searchRaw !== '') {
     $s = mysqli_real_escape_string($conn, $searchRaw);
-    $where .= " AND (b.title LIKE '%$s%' OR b.url LIKE '%$s%' OR b.notes LIKE '%$s%' OR f.name LIKE '%$s%')";
+    $where .= " AND (b.title LIKE '%$s%' OR b.notes LIKE '%$s%' OR (b.shared = 1 AND b.url LIKE '%$s%') OR f.name LIKE '%$s%')";
 }
 
 $sql = "SELECT b.*, f.name as folder_display_name
@@ -71,11 +83,16 @@ $sql = "SELECT b.*, f.name as folder_display_name
         . $joinFolders
         . " WHERE $where ORDER BY $orderBy $dir LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $sql);
+while ($res && ($row = mysqli_fetch_assoc($res))) {
+    bkm_hydrate_bookmark_row($row, $user_id);
+    $rows[] = $row;
+}
 
 $countSql = "SELECT COUNT(*) as total FROM bookmarks b" . $joinFolders . " WHERE $where";
 $countRes = mysqli_query($conn, $countSql);
-$totalRows = mysqli_fetch_assoc($countRes)['total'];
-$totalPages = ceil($totalRows / $perPage);
+$totalRows = (int)(mysqli_fetch_assoc($countRes)['total'] ?? 0);
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+}
 
 $csrfToken = itm_get_csrf_token();
 $showBulkActions = true;
@@ -108,6 +125,10 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
+        <?php if (empty($bkmVaultState['unlocked'])): ?>
+            <h1><?php echo sanitize($crud_title); ?></h1>
+            <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'list_all.php'); ?>
+        <?php else: ?>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h1><?php echo sanitize($crud_title); ?></h1>
             <div style="display: flex; gap: 8px; align-items: center;">
@@ -176,20 +197,28 @@ if (!isset($crud_title)) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if ($res && mysqli_num_rows($res) > 0): ?>
-                        <?php while ($row = mysqli_fetch_assoc($res)): ?>
+                    <?php if (!empty($rows)): ?>
+                        <?php foreach ($rows as $row): ?>
                             <tr>
                                 <?php if ($showBulkActions): ?>
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php endif; ?>
                                 <td><?php echo sanitize($row['title']); ?></td>
                                 <td style="text-align:center;">
-                                    <img src="<?php echo bkm_get_favicon_url($row['url']); ?>"
+                                    <?php if (empty($row['url_locked']) && !empty($row['url_display'])): ?>
+                                    <img src="<?php echo bkm_get_favicon_url($row['url_display']); ?>"
                                          alt="favicon"
                                          style="width:16px; height:16px; vertical-align:middle;"
                                          onerror="this.style.display='none';">
+                                    <?php endif; ?>
                                 </td>
-                                <td><a href="<?php echo sanitize($row['url']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url']); ?></a></td>
+                                <td>
+                                    <?php if (!empty($row['url_locked'])): ?>
+                                        <span style="color:var(--text-tertiary);"><?php echo sanitize($row['url_locked_label'] ?: '🔒 URL hidden'); ?></span>
+                                    <?php else: ?>
+                                        <a href="<?php echo sanitize($row['url_display']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url_display']); ?></a>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo sanitize($row['notes']); ?></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
                                 <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
@@ -205,7 +234,7 @@ if (!isset($crud_title)) {
                                     </div>
                                 </td>
                             </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No bookmarks found.</td></tr>
                     <?php endif; ?>
@@ -226,6 +255,7 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                 </div>
             </div>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>

@@ -1,6 +1,7 @@
 <?php
 require '../../config/config.php';
 require './helpers.php';
+require './bkm_vault_bootstrap.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
@@ -9,6 +10,8 @@ if ($company_id <= 0) {
     header('Location: ../../index.php');
     return;
 }
+
+$bkmVaultState = bkm_handle_vault_requests($conn, $user_id);
 
 $errors = [];
 $success = '';
@@ -23,12 +26,14 @@ foreach ($all_folders as $folderRow) {
 }
 $import_folder_id = isset($_POST['folder_id']) ? (int)$_POST['folder_id'] : (isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
 
-    if (isset($_FILES['import_file']) && is_uploaded_file($_FILES['import_file']['tmp_name'])) {
+    if (empty($bkmVaultState['unlocked'])) {
+        $errors[] = 'Unlock your vault before importing bookmarks.';
+    } elseif (isset($_FILES['import_file']) && is_uploaded_file($_FILES['import_file']['tmp_name'])) {
         $filename = $_FILES['import_file']['name'];
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
@@ -85,15 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($ext === 'csv') {
             $handle = fopen($_FILES['import_file']['tmp_name'], 'r');
-            // Skip header row
             fgetcsv($handle);
             $bookmarks_to_import = [];
-            while (($data = fgetcsv($handle)) !== FALSE) {
+            while (($data = fgetcsv($handle)) !== false) {
                 if (count($data) >= 2) {
                     $bookmarks_to_import[] = [
                         'title' => $data[0],
                         'url' => $data[1],
-                        'notes' => $data[2] ?? ''
+                        'notes' => $data[2] ?? '',
                     ];
                 }
             }
@@ -132,6 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ];
                 }
             }
+        } else {
+            $errors[] = 'Unsupported file type. Upload HTML or CSV.';
         }
 
         if ($bookmarkCount > 0) {
@@ -145,11 +151,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success .= '.';
         } elseif ($entriesSeen > 0) {
             $errors[] = 'No bookmarks were imported. See the list below.';
-        } else {
+        } elseif (empty($errors)) {
             $errors[] = 'No valid bookmarks found in the file.';
         }
     } else {
-        $errors[] = "Please select a file to import.";
+        $errors[] = 'Please select a file to import.';
     }
 }
 
@@ -179,6 +185,9 @@ if (!isset($crud_title)) {
         .bkm-import-results-table tr.bkm-import-row-invalid td {
             background-color: #fff3cd;
         }
+        .bkm-import-results-table tr.bkm-import-row-vault td {
+            background-color: #e2e3e5;
+        }
         [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-success td {
             background-color: rgba(40, 167, 69, 0.22);
         }
@@ -187,6 +196,9 @@ if (!isset($crud_title)) {
         }
         [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-invalid td {
             background-color: rgba(255, 193, 7, 0.22);
+        }
+        [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-vault td {
+            background-color: rgba(108, 117, 125, 0.25);
         }
     </style>
 </head>
@@ -198,6 +210,9 @@ if (!isset($crud_title)) {
 
         <div class="content">
         <h1>Import Bookmarks</h1>
+        <?php if (empty($bkmVaultState['unlocked'])): ?>
+            <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'import.php'); ?>
+        <?php else: ?>
         <?php if ($success): ?>
             <div class="alert alert-success"><?php echo sanitize($success); ?></div>
         <?php endif; ?>
@@ -274,11 +289,13 @@ if (!isset($crud_title)) {
         </div>
         <div style="margin-top: 20px;">
             <h3>Instructions</h3>
+            <p><strong>Vault:</strong> Unlock your master key before importing. HTML/CSV imports create <strong>private</strong> bookmarks — URLs are encrypted in the database (shared bookmarks stay plaintext when created via the main module).</p>
             <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here. Folder headings (<code>&lt;H3&gt;</code>) in the file are created automatically and bookmarks are imported into the matching folder.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
             <p><strong>Folder:</strong> Choose <code>Root</code> or a parent folder. HTML imports nest file folders under that target; CSV imports place every row in the selected folder.</p>
-            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Imported rows are highlighted green; duplicate URL skips are highlighted red (<code>Reason → Folder</code>).</p>
+            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Imported rows are highlighted green; duplicate URL skips are red; invalid URLs are yellow; vault errors are grey (<code>Reason → Folder</code>).</p>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 <script src="../../js/theme.js"></script>

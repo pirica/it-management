@@ -3,10 +3,12 @@ require '../../config/config.php';
 itm_require_crud_role_module_permission($conn, 'edit', 'bookmarks');
 
 require './helpers.php';
+require './bkm_vault_bootstrap.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+$bkmVaultState = bkm_handle_vault_requests($conn, $user_id);
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -22,8 +24,11 @@ if (!$data || !bkm_can_edit_bookmark($data, $user_id, $is_admin)) {
     die('Record not found or access denied.');
 }
 
+$isPrivateBookmark = (int)($data['shared'] ?? 0) === 0;
+$needsVaultForForm = $isPrivateBookmark && empty($bkmVaultState['unlocked']);
+
 $errors = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
@@ -35,26 +40,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $shared = isset($_POST['shared']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($title === '') $errors[] = 'Title is required.';
+    if ($title === '') {
+        $errors[] = 'Title is required.';
+    }
     if ($url === '') {
         $errors[] = 'URL is required.';
     } elseif (!bkm_import_url_is_allowed($url)) {
         $errors[] = 'Invalid URL. Only http://, https://, and ftp:// protocols are allowed.';
     } elseif (bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url, $id)) {
         $errors[] = 'A bookmark with this URL already exists for your account.';
+    } elseif ($shared === 0 && empty($bkmVaultState['unlocked'])) {
+        $errors[] = 'Unlock your vault to save private bookmarks.';
     }
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "UPDATE bookmarks SET folder_id = ?, title = ?, url = ?, notes = ?, shared = ?, active = ? WHERE id = ?");
-        mysqli_stmt_bind_param($stmt, 'isssiii', $folder_id, $title, $url, $notes, $shared, $active, $id);
-
-        if (mysqli_stmt_execute($stmt)) {
-            header('Location: index.php' . ($folder_id ? "?folder_name=$folder_id" : ""));
+        $result = bkm_update_bookmark_row($conn, $id, $company_id, $folder_id, $title, $url, $notes, $shared, $active);
+        if ($result['ok']) {
+            header('Location: index.php' . ($folder_id ? "?folder_id=$folder_id" : ''));
             return;
-        } else {
-            $errors[] = 'Database error: ' . mysqli_error($conn);
         }
+        $errors[] = $result['message'] !== '' ? $result['message'] : 'Database error.';
     }
+
+    $data['title'] = $title;
+    $data['url'] = $url;
+    $data['notes'] = $notes;
+    $data['folder_id'] = $folder_id;
+    $data['shared'] = $shared;
+    $data['active'] = $active;
+} elseif (!$needsVaultForForm) {
+    bkm_hydrate_bookmark_row($data, $user_id);
+    $data['url'] = $data['url_display'];
 }
 
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
@@ -84,6 +100,9 @@ if (!isset($crud_title)) {
 
         <div class="content">
         <h1>Edit Bookmark</h1>
+        <?php if ($needsVaultForForm): ?>
+            <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'edit.php?id=' . $id); ?>
+        <?php else: ?>
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">
                 <ul><?php foreach ($errors as $e): ?><li><?php echo sanitize($e); ?></li><?php endforeach; ?></ul>
@@ -123,10 +142,11 @@ if (!isset($crud_title)) {
                 </label>
             </div>
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">💾</button>
-                <a href="index.php" class="btn">🔙</a>
+                <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                <a href="index.php" class="btn" title="Back">🔙</a>
             </div>
         </form>
+        <?php endif; ?>
     </div>
 </div>
 <script src="../../js/theme.js"></script>

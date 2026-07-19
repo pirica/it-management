@@ -1684,6 +1684,10 @@ if (!function_exists('itm_handle_json_table_import')) {
                 continue;
             }
 
+            if ($tableName === 'bookmarks' && $fieldName === 'url_hash') {
+                continue;
+            }
+
             $columns[$fieldName] = [
                 'field' => $fieldName,
                 'type' => strtolower((string)($column['Type'] ?? '')),
@@ -1696,6 +1700,15 @@ if (!function_exists('itm_handle_json_table_import')) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Import columns were not found.']);
             exit;
+        }
+
+        if ($tableName === 'bookmarks') {
+            if (empty($_SESSION['vault_key'])) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing bookmarks.']);
+                exit;
+            }
+            require_once ROOT_PATH . 'modules/bookmarks/helpers.php';
         }
 
         $hasCompanyColumn = isset($columns['company_id']);
@@ -2137,6 +2150,13 @@ if (!function_exists('itm_handle_json_table_import')) {
                     return isset($rowValues[$fieldName]) && $rowValues[$fieldName] !== 'NULL';
                 }
             )));
+
+            if ($tableName === 'bookmarks' && function_exists('bkm_apply_import_row_url_storage')) {
+                $bookmarkUrlError = bkm_apply_import_row_url_storage($rowValues, $conn);
+                if ($bookmarkUrlError !== '') {
+                    $rowValidationError = $bookmarkUrlError;
+                }
+            }
 
             if ($rowValidationError !== '') {
                 $failedRows++;

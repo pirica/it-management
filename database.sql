@@ -7432,8 +7432,8 @@ CREATE TABLE `bookmarks` (
   `employee_id` int NOT NULL,
   `folder_id` int DEFAULT NULL,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `url` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `url_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin GENERATED ALWAYS AS (sha2(`url`,256)) STORED,
+  `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `url_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `position` int DEFAULT '0',
   `shared` tinyint DEFAULT '0',
@@ -7454,15 +7454,18 @@ CREATE TABLE `bookmarks` (
   CONSTRAINT `bookmarks_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmarks_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Existing databases: DELETE duplicate bookmark rows per (company_id, employee_id, SHA2(url,256)); DROP INDEX uq_bookmarks_employee_url ON bookmarks; ADD COLUMN url_hash char(64) GENERATED ALWAYS AS (sha2(url,256)) STORED AFTER url; ADD UNIQUE KEY uq_bookmarks_employee_url (company_id, employee_id, url_hash);
+-- Existing databases: DELETE duplicate rows per (company_id, employee_id, SHA2(plaintext url,256)); DROP INDEX uq_bookmarks_employee_url ON bookmarks;
+-- ADD url_hash char(64) NOT NULL; backfill url_hash from SHA2(url,256) for shared rows or re-encrypt private rows via app;
+-- CHANGE url to TEXT; ADD UNIQUE (company_id, employee_id, url_hash).
 -- Seed default shared bookmarks
 -- Retroactive default bookmarks for existing Admin users
-INSERT INTO bookmarks (company_id, employee_id, title, url, shared, active)
+INSERT INTO bookmarks (company_id, employee_id, title, url, url_hash, shared, active)
 SELECT 
     e.company_id,
     e.id,
     b.title,
     b.url,
+    SHA2(b.url, 256),
     1,
     1
 FROM employees e

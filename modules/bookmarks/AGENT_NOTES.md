@@ -4,7 +4,7 @@
 Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — URL records (`title`, `url` up to 2048 chars, `url_hash` generated SHA-256, `shared`, `employee_id`, `folder_id`). Duplicate titles are allowed; row identity is `id`. **`UNIQUE (company_id, employee_id, url_hash)`** — one exact URL per employee (any folder); full URL kept in `url`, uniqueness enforced via hash because utf8mb4 index length limits block indexing `url` directly.
+- **bookmarks** — URL records (`title`, `url` TEXT, `url_hash` SHA-256 of plaintext URL, `shared`, `employee_id`, `folder_id`). **Private** (`shared = 0`): `url` encrypted at rest via `itm_encrypt()` + session `vault_key`; **shared** (`shared = 1`): `url` stored plaintext for team access. **`UNIQUE (company_id, employee_id, url_hash)`** — one exact URL per employee (any folder).
 - **bookmark_folders** — folder tree (emoji icons in sidebar). **Duplicate folder names are allowed** (same employee / company / parent). Identity is `PRIMARY KEY (id)` only — there is **no** UNIQUE on `name` (and no `uq_bookmark_folders_company_scope`).
 
 ## 3. Required Relationships
@@ -41,8 +41,8 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
-- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows. Imports accept `http://`, `https://`, and `ftp://` URLs only; skips exact URL duplicates per employee. Post-import tables: imported rows light green (`Successfully imported → Folder`); duplicate URL skips light red (`Duplicate URL → Folder`); invalid URL skips light yellow (`Invalid URL → Folder`).
-- **export.php** / **export.js** — CSV, XLSX, and Netscape HTML export.
+- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows. **Vault required** before upload (`bkm_vault_bootstrap.php`); imports create **private** bookmarks with URLs encrypted at rest via `bkm_insert_bookmark_row()`. Imports accept `http://`, `https://`, and `ftp://` URLs only; skips exact URL duplicates per employee. Post-import tables: imported rows light green (`Successfully imported → Folder`); duplicate URL skips light red (`Duplicate URL → Folder`); invalid URL skips light yellow (`Invalid URL → Folder`); vault locked skips light grey (`Vault locked → Folder`).
+- **export.php** / **export.js** — CSV, XLSX (CSV payload), TXT, HTML, and PDF (print view) via `export.php`. `bkm_export_row()` decrypts **own private** URLs when `$_SESSION['vault_key']` is set; **shared** URLs always export as plaintext. Private URLs export blank when the vault is locked. `export.js` routes every format to `export.php` (no DOM scrape).
 
 ## 7. File Structure
 - `index.php` — dual-pane UI, folder move POST, JSON import.

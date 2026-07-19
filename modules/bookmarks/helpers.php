@@ -410,21 +410,203 @@ function bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $name
     return $newId;
 }
 
-function bkm_insert_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes)
+/**
+ * SHA-256 hex digest of trimmed URL — used for dedupe (plaintext, before encryption).
+ */
+function bkm_bookmark_url_hash($url)
 {
+    return hash('sha256', trim((string)$url));
+}
+
+function bkm_vault_session_key()
+{
+    return isset($_SESSION['vault_key']) ? (string)$_SESSION['vault_key'] : '';
+}
+
+/**
+ * @return array{url:string,url_hash:string}|null null when private bookmark and vault is locked
+ */
+function bkm_prepare_url_storage($plainUrl, $shared)
+{
+    $plainUrl = trim((string)$plainUrl);
+    $urlHash = bkm_bookmark_url_hash($plainUrl);
+    $shared = (int)$shared;
+
+    if ($shared === 1) {
+        return ['url' => $plainUrl, 'url_hash' => $urlHash];
+    }
+
+    $vaultKey = bkm_vault_session_key();
+    if ($vaultKey === '') {
+        return null;
+    }
+
+    return [
+        'url' => itm_encrypt($plainUrl, $vaultKey),
+        'url_hash' => $urlHash,
+    ];
+}
+
+/**
+ * @return array{url:string,locked:bool,label:string}
+ */
+function bkm_resolve_bookmark_url(array $row, $viewerEmployeeId)
+{
+    $stored = (string)($row['url'] ?? '');
+    $shared = (int)($row['shared'] ?? 0);
+    $ownerId = (int)($row['employee_id'] ?? 0);
+    $viewerEmployeeId = (int)$viewerEmployeeId;
+
+    if ($shared === 1) {
+        return ['url' => $stored, 'locked' => false, 'label' => ''];
+    }
+
+    if ($ownerId !== $viewerEmployeeId) {
+        return ['url' => '', 'locked' => true, 'label' => '🔒 Private URL'];
+    }
+
+    $vaultKey = bkm_vault_session_key();
+    if ($vaultKey === '') {
+        return ['url' => '', 'locked' => true, 'label' => '🔒 Unlock vault to view URL'];
+    }
+
+    $plain = itm_decrypt($stored, $vaultKey);
+    if ($plain === false || $plain === '') {
+        if (bkm_import_url_is_allowed($stored)) {
+            $plain = $stored;
+        } else {
+            return ['url' => '', 'locked' => true, 'label' => '🔒 Unable to decrypt URL'];
+        }
+    }
+
+    return ['url' => $plain, 'locked' => false, 'label' => ''];
+}
+
+function bkm_hydrate_bookmark_row(array &$row, $viewerEmployeeId)
+{
+    $resolved = bkm_resolve_bookmark_url($row, $viewerEmployeeId);
+    $row['url_display'] = $resolved['url'];
+    $row['url_locked'] = $resolved['locked'];
+    $row['url_locked_label'] = $resolved['label'];
+}
+
+/**
+ * Build one export row with plaintext URL when the viewer may read it (shared, or private + vault).
+ *
+ * @return array{title:string,url:string,notes:string,shared:int}
+ */
+function bkm_export_row(array $row, $viewerEmployeeId)
+{
+    bkm_hydrate_bookmark_row($row, $viewerEmployeeId);
+
+    return [
+        'title' => (string)($row['title'] ?? ''),
+        'url' => !empty($row['url_locked']) ? '' : (string)$row['url_display'],
+        'notes' => (string)($row['notes'] ?? ''),
+        'shared' => (int)($row['shared'] ?? 0),
+    ];
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title, $plainUrl, $notes, $shared, $active = 1)
+{
+    $storage = bkm_prepare_url_storage($plainUrl, $shared);
+    if ($storage === null) {
+        return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
+    }
+
     if ($folderId === null) {
-        $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, NULL, ?, ?, ?)');
-        mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $user_id, $title, $url, $notes);
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, url_hash, notes, shared, active) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)'
+        );
+        mysqli_stmt_bind_param(
+            $stmt,
+            'iissssii',
+            $company_id,
+            $user_id,
+            $title,
+            $storage['url'],
+            $storage['url_hash'],
+            $notes,
+            $shared,
+            $active
+        );
     } else {
         $folderId = (int)$folderId;
-        $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, ?, ?, ?, ?)');
-        mysqli_stmt_bind_param($stmt, 'iiisss', $company_id, $user_id, $folderId, $title, $url, $notes);
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, url_hash, notes, shared, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        mysqli_stmt_bind_param(
+            $stmt,
+            'iiissssii',
+            $company_id,
+            $user_id,
+            $folderId,
+            $title,
+            $storage['url'],
+            $storage['url_hash'],
+            $notes,
+            $shared,
+            $active
+        );
     }
 
     $ok = mysqli_stmt_execute($stmt);
+    $message = $ok ? '' : (mysqli_error($conn) ?: 'Database error.');
     mysqli_stmt_close($stmt);
 
-    return $ok;
+    return ['ok' => $ok, 'message' => $message];
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function bkm_update_bookmark_row($conn, $id, $company_id, $folderId, $title, $plainUrl, $notes, $shared, $active)
+{
+    $id = (int)$id;
+    $company_id = (int)$company_id;
+    $shared = (int)$shared;
+    $active = (int)$active;
+
+    $storage = bkm_prepare_url_storage($plainUrl, $shared);
+    if ($storage === null) {
+        return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'UPDATE bookmarks SET folder_id = ?, title = ?, url = ?, url_hash = ?, notes = ?, shared = ?, active = ? WHERE id = ? AND company_id = ?'
+    );
+    mysqli_stmt_bind_param(
+        $stmt,
+        'isssssiii',
+        $folderId,
+        $title,
+        $storage['url'],
+        $storage['url_hash'],
+        $notes,
+        $shared,
+        $active,
+        $id,
+        $company_id
+    );
+
+    $ok = mysqli_stmt_execute($stmt);
+    $message = $ok ? '' : (mysqli_error($conn) ?: 'Database error.');
+    mysqli_stmt_close($stmt);
+
+    return ['ok' => $ok, 'message' => $message];
+}
+
+function bkm_insert_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes)
+{
+    $result = bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title, $url, $notes, 0, 1);
+
+    return $result['ok'];
 }
 
 /**
@@ -531,6 +713,9 @@ function bkm_format_import_skip_summary($skipReason, $folderLabel)
         case 'insert_failed':
             $reason = 'Save failed';
             break;
+        case 'vault_locked':
+            $reason = 'Vault locked';
+            break;
         default:
             $reason = 'Not imported';
     }
@@ -564,6 +749,10 @@ function bkm_import_skip_row_class($skipReason)
 
     if ($skipReason === 'invalid_url') {
         return 'bkm-import-row-invalid';
+    }
+
+    if ($skipReason === 'vault_locked') {
+        return 'bkm-import-row-vault';
     }
 
     return '';
@@ -606,11 +795,21 @@ function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title
         ];
     }
 
-    if (!bkm_insert_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes)) {
+    if (bkm_vault_session_key() === '') {
         return [
             'imported' => false,
-            'skip_reason' => 'insert_failed',
-            'skip_label' => 'Could not save bookmark',
+            'skip_reason' => 'vault_locked',
+            'skip_label' => 'Unlock your vault to import private bookmarks',
+        ];
+    }
+
+    $insertResult = bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title, $url, $notes, 0, 1);
+    if (!$insertResult['ok']) {
+        $isVault = stripos($insertResult['message'], 'vault') !== false;
+        return [
+            'imported' => false,
+            'skip_reason' => $isVault ? 'vault_locked' : 'insert_failed',
+            'skip_label' => $insertResult['message'] !== '' ? $insertResult['message'] : 'Could not save bookmark',
         ];
     }
 
@@ -668,4 +867,52 @@ function bkm_get_favicon_url($url) {
     }
 
     return "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://www." . urlencode($domain) . "&size=32";
+}
+
+/**
+ * Transform JSON/Excel import row literals for bookmarks.url / url_hash.
+ */
+function bkm_import_row_literal_to_string($literal)
+{
+    $literal = (string)$literal;
+    if ($literal === 'NULL') {
+        return '';
+    }
+    if (strlen($literal) >= 2 && $literal[0] === "'" && substr($literal, -1) === "'") {
+        return str_replace(["\\'", '\\\\'], ["'", '\\'], substr($literal, 1, -1));
+    }
+
+    return $literal;
+}
+
+function bkm_apply_import_row_url_storage(array &$rowValues, $conn)
+{
+    if (!isset($rowValues['url']) || $rowValues['url'] === 'NULL') {
+        return 'URL is required.';
+    }
+
+    $plainUrl = trim(bkm_import_row_literal_to_string($rowValues['url']));
+    if ($plainUrl === '') {
+        return 'URL is required.';
+    }
+
+    if (!bkm_import_url_is_allowed($plainUrl)) {
+        return 'Invalid URL. Only http://, https://, and ftp:// protocols are allowed.';
+    }
+
+    $shared = 0;
+    if (isset($rowValues['shared']) && $rowValues['shared'] !== 'NULL') {
+        $sharedRaw = bkm_import_row_literal_to_string($rowValues['shared']);
+        $shared = in_array(strtolower((string)$sharedRaw), ['1', 'true', 'yes', '✅'], true) ? 1 : 0;
+    }
+
+    $storage = bkm_prepare_url_storage($plainUrl, $shared);
+    if ($storage === null) {
+        return 'Unlock your vault to import private bookmarks.';
+    }
+
+    $rowValues['url'] = "'" . mysqli_real_escape_string($conn, $storage['url']) . "'";
+    $rowValues['url_hash'] = "'" . mysqli_real_escape_string($conn, $storage['url_hash']) . "'";
+
+    return '';
 }
