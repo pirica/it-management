@@ -66,6 +66,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Folder delete without contents moves bookmarks to root; **delete contents** hard-deletes bookmarks in the folder tree. [Cursor-Valid]
 - HTML import must not create folder paths when the row is skipped (duplicate URL / invalid URL / vault locked) — folders are resolved only after `bkm_precheck_import_bookmark()` passes. [Cursor-Valid]
 - Legacy private folders missing `name_hash` are matched by decrypted name during import (`bkm_find_folder_id_by_decrypted_name()`). [Cursor-Valid]
+- Private bookmarks with **empty notes** store encrypted ciphertext; `bkm_resolve_private_text()` must treat successful decrypt of `''` as valid — do not treat empty plaintext like decrypt failure. [Cursor-Valid]
 - Do not enforce unique folder names in PHP validation — the schema allows duplicates. [Cursor-Valid]
 - Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `database.sql`). [Cursor-Valid]
 

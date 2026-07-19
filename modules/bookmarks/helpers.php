@@ -660,15 +660,15 @@ function bkm_resolve_private_text($stored, $shared, $ownerId, $viewerEmployeeId,
     }
 
     $plain = itm_decrypt($stored, $vaultKey);
-    if ($plain === false || $plain === '') {
-        if (is_callable($legacyPlaintextCheck) && $legacyPlaintextCheck($stored)) {
-            $plain = $stored;
-        } else {
-            return ['text' => '', 'locked' => true, 'label' => $decryptFailLabel];
-        }
+    if ($plain !== false) {
+        return ['text' => $plain, 'locked' => false, 'label' => ''];
     }
 
-    return ['text' => $plain, 'locked' => false, 'label' => ''];
+    if (is_callable($legacyPlaintextCheck) && $legacyPlaintextCheck($stored)) {
+        return ['text' => $stored, 'locked' => false, 'label' => ''];
+    }
+
+    return ['text' => '', 'locked' => true, 'label' => $decryptFailLabel];
 }
 
 function bkm_hydrate_folder_row(array &$row, $viewerEmployeeId)
@@ -740,15 +740,15 @@ function bkm_resolve_bookmark_url(array $row, $viewerEmployeeId)
     }
 
     $plain = itm_decrypt($stored, $vaultKey);
-    if ($plain === false || $plain === '') {
-        if (bkm_import_url_is_allowed($stored)) {
-            $plain = $stored;
-        } else {
-            return ['url' => '', 'locked' => true, 'label' => '🔒 Unable to decrypt URL'];
-        }
+    if ($plain !== false) {
+        return ['url' => $plain, 'locked' => false, 'label' => ''];
     }
 
-    return ['url' => $plain, 'locked' => false, 'label' => ''];
+    if (bkm_import_url_is_allowed($stored)) {
+        return ['url' => $stored, 'locked' => false, 'label' => ''];
+    }
+
+    return ['url' => '', 'locked' => true, 'label' => '🔒 Unable to decrypt URL'];
 }
 
 function bkm_hydrate_bookmark_row(array &$row, $viewerEmployeeId)
