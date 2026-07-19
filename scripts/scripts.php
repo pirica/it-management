@@ -1657,6 +1657,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_events_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/events/events_vault_helpers.php</code>, persistence in <code>modules/events/index.php</code>, calendar event hydration, or <code>itm_vault_reencrypt_events()</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_private_contacts_vault.php" target="_blank" rel="nofollow noreferrer">verify_private_contacts_vault.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for Private Contacts vault encryption: PII fields encrypt at rest, hydrate when vault unlocked, locked vault hides list fields, legacy plaintext tolerated. Disposable script employee.</td>
+                    <td><code>php scripts/verify_private_contacts_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/private_contacts/pc_vault_helpers.php</code>, create/edit persistence, list hydrate/search, or <code>itm_vault_reencrypt_private_contacts()</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_notes_share.php" target="_blank" rel="nofollow noreferrer">verify_notes_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>note_share_sessions</code> in <code>database.sql</code>.</td>

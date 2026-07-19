@@ -2,8 +2,48 @@
 $crud_table = 'private_contacts';
 $crud_title = 'Private Contacts';
 $crud_action = $crud_action ?? 'index';
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'])) {
+    require_once '../../config/config.php';
+    itm_require_post_csrf();
+}
+
 require_once 'index_logic.php';
+require_once __DIR__ . '/pc_vault_bootstrap.php';
+require_once __DIR__ . '/pc_vault_helpers.php';
 require_once __DIR__ . '/private_contacts_list_helpers.php';
+
+$csrfToken = itm_get_csrf_token();
+$pcVaultState = pc_handle_vault_requests($conn, $employeeId);
+$pcVaultUnlocked = !empty($pcVaultState['unlocked']);
+$pcVaultRedirect = 'index.php';
+
+if (isset($_GET['ajax_action']) && (string)$_GET['ajax_action'] === 'create_share_session') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    require_once __DIR__ . '/pc_share_helpers.php';
+    $contactId = (int)($_POST['id'] ?? 0);
+    $ownerUsername = (string)($_SESSION['username'] ?? '');
+    $result = pc_share_create_session($conn, $contactId, (int)$companyId, $employeeId, $ownerUsername, $pcVaultUnlocked);
+    if (!$result['ok']) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $session = $result['session'];
+    echo json_encode([
+        'ok' => true,
+        'share_code' => (string)$session['share_code'],
+        'join_url' => pc_share_build_join_url((string)$session['access_token']),
+        'expires_at' => (string)$session['expires_at'],
+        'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
@@ -32,14 +72,14 @@ if ($searchRaw !== '') {
     $searchConditions[] = 'labels LIKE ?';
 }
 
-$listResult = pc_query_contacts_for_list($conn, [
+$listResult = $pcVaultUnlocked ? pc_query_contacts_for_list($conn, [
     'employee_id' => $employeeId,
     'search' => $searchRaw,
     'sort' => $sort,
     'dir' => $dir,
     'page' => $page,
     'per_page' => $perPage,
-]);
+]) : ['rows' => [], 'totalRows' => 0, 'totalPages' => 1, 'page' => 1, 'offset' => 0];
 $contacts = $listResult['rows'];
 $totalRows = (int)$listResult['totalRows'];
 $totalPages = (int)$listResult['totalPages'];
@@ -65,6 +105,12 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             http_response_code(403);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        if (!$pcVaultUnlocked) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing private contacts.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
         itm_handle_json_table_import($conn, 'private_contacts', (int)$companyId, $itmImportJsonBody);
@@ -104,6 +150,9 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <?php if (pc_ui_requires_vault_lock_screen($pcVaultState)): ?>
+                <?php pc_render_vault_lock_screen($csrfToken, $pcVaultState, $pcVaultRedirect); ?>
+            <?php else: ?>
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <div style="display:flex;gap:8px;">
@@ -159,7 +208,7 @@ if (!isset($crud_title)) {
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th width="120" class="text-right itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                            <th width="220" class="text-right itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -185,7 +234,7 @@ if (!isset($crud_title)) {
                                                 </div>
                                             <?php endif; ?>
                                             <a href="view.php?id=<?php echo (int)$contact['id']; ?>" class="font-weight-bold">
-                                                <?php echo htmlspecialchars(trim($contact['first_name'] . ' ' . $contact['last_name'])); ?>
+                                                <?php echo htmlspecialchars(pc_contact_display_name($contact)); ?>
                                             </a>
                                         </div>
                                     </td>
@@ -202,12 +251,15 @@ if (!isset($crud_title)) {
                                         ?>
                                     </td>
                                     <td class="text-right itm-actions-cell" data-itm-actions-origin="1">
-                                        <div class="itm-actions-wrap" style="display:flex;justify-content:flex-end;gap:4px;">
+                                        <div class="itm-actions-wrap" style="display:flex;justify-content:flex-end;gap:4px;flex-wrap:wrap;">
+                                            <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$contact['id']; ?>)" title="Share to device">📱</button>
+                                            <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$contact['id']; ?>, null, 'private contact')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                            <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$contact['id']; ?>, null, 'private contact')" title="Share on Outlook">📨</button>
                                             <a class="btn btn-sm" href="view.php?id=<?php echo (int)$contact['id']; ?>" title="View">🔎</a>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$contact['id']; ?>" title="Edit">✏️</a>
                                             <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure?');">
                                                 <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
-                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="action" value="remove_contact">
                                                 <input type="hidden" name="id" value="<?php echo (int)$contact['id']; ?>">
                                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
                                             </form>
@@ -233,10 +285,12 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
             <?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
 <script src="../../js/theme.js"></script>
 <script>
 $(document).ready(function() {

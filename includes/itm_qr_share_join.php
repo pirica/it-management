@@ -89,6 +89,19 @@ function itm_qr_share_render_join_page($moduleLabel, $joinScriptPath, $accessTok
                     <?php if (!empty($payload['category_name'])): ?><tr><th>Category</th><td><?php echo sanitize((string)$payload['category_name']); ?></td></tr><?php endif; ?>
                     <?php if (!empty($payload['assignee_name'])): ?><tr><th>Assigned To</th><td><?php echo sanitize((string)$payload['assignee_name']); ?></td></tr><?php endif; ?>
                 </table>
+            <?php elseif ($payloadType === 'private_contact'): ?>
+                <table class="join-table">
+                    <tr><th>Name</th><td><?php echo sanitize((string)($payload['name'] ?? '')); ?></td></tr>
+                    <?php if (!empty($payload['email'])): ?><tr><th>Email</th><td><?php echo sanitize((string)$payload['email']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['phone'])): ?><tr><th>Phone</th><td><?php echo sanitize((string)$payload['phone']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['organization'])): ?><tr><th>Organization</th><td><?php echo sanitize((string)$payload['organization']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['labels'])): ?><tr><th>Labels</th><td><?php echo sanitize((string)$payload['labels']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['website'])): ?><tr><th>Website</th><td><a href="<?php echo sanitize((string)$payload['website']); ?>" rel="nofollow noreferrer noopener" target="_blank"><?php echo sanitize((string)$payload['website']); ?></a></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['address_street']) || !empty($payload['address_city'])): ?>
+                        <tr><th>Address</th><td><?php echo sanitize(trim((string)($payload['address_street'] ?? '') . ' ' . (string)($payload['address_city'] ?? '') . ' ' . (string)($payload['address_region'] ?? '') . ' ' . (string)($payload['address_postcode'] ?? '') . ' ' . (string)($payload['address_country'] ?? ''))); ?></td></tr>
+                    <?php endif; ?>
+                    <?php if (!empty($payload['notes'])): ?><tr><th>Notes</th><td style="white-space:pre-wrap;"><?php echo sanitize((string)$payload['notes']); ?></td></tr><?php endif; ?>
+                </table>
             <?php else: ?>
                 <p class="join-expiry">Unsupported share payload.</p>
             <?php endif; ?>

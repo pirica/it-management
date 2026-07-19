@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     // Handle Delete
-    if ($_POST['action'] === 'delete' && isset($_POST['id'])) {
+    if ($_POST['action'] === 'remove_contact' && isset($_POST['id'])) {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare('DELETE FROM private_contacts WHERE id = ? AND employee_id = ?');
         $stmt->bind_param('ii', $id, $employeeId);

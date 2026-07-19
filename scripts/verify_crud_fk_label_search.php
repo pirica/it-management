@@ -361,9 +361,11 @@ if ($stmtContact) {
     mysqli_stmt_close($stmtContact);
 }
 if ($privateContactId > 0) {
+    $contactSession = $session;
+    $contactSession['vault_key'] = hash('sha256', 'Admin');
     $contactHtml = verify_crud_fk_label_run_isolated(
         ROOT_PATH . 'modules/private_contacts/index.php',
-        $session,
+        $contactSession,
         ['search' => $privatePhone]
     );
     if (stripos($contactHtml, $privatePhone) === false) {

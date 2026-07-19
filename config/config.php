@@ -1728,6 +1728,12 @@ if (!function_exists('itm_handle_json_table_import')) {
                 echo json_encode(['ok' => false, 'error' => 'Import requires a signed-in employee.']);
                 exit;
             }
+            if (empty($_SESSION['vault_key'])) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing private contacts.']);
+                exit;
+            }
+            require_once ROOT_PATH . 'modules/private_contacts/pc_vault_helpers.php';
         }
 
         $hasCompanyColumn = isset($columns['company_id']);
@@ -2191,6 +2197,13 @@ if (!function_exists('itm_handle_json_table_import')) {
 
             if ($tableName === 'private_contacts') {
                 $rowValues['employee_id'] = (string)(int)($_SESSION['employee_id'] ?? 0);
+                if (!pc_encrypt_contact_import_row_values($rowValues, (string)$_SESSION['vault_key'], $conn)) {
+                    $failedRows++;
+                    if (count($importErrors) < 5) {
+                        $importErrors[] = 'row ' . ($rowIndex + 1) . ': vault encryption failed';
+                    }
+                    continue;
+                }
             }
 
             foreach ($targetFields as $fieldName) {
