@@ -876,6 +876,57 @@
           "note": "No edit.php"
         }
       ]
+    },
+    "is_*": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php delegates to equipment — façade index.php has no detectable primary create/add action (many façades set equipmentAllowCreate=false)"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No table in façade index.php — list chrome lives in modules/equipment/index.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No server-managed new-button row on façade index.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php link on façade index.php — create routes through equipment module"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table in façade index.php — export card is on equipment list"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No table in façade index.php — search is implemented in modules/equipment/index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No table in façade index.php — sort headers are on equipment list"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No table in façade index.php — pagination uses equipment list + itm_resolve_records_per_page()"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No table in façade index.php — bulk toolbar is on equipment list when enabled"
+        }
+      ]
     }
   }
 }
