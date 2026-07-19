@@ -291,6 +291,9 @@ if ($searchRaw !== '') {
     $sendLogsBaseQuery['search'] = $searchRaw;
 }
 $sendLogsClearUrl = 'index.php?tab=send_logs' . ($status_filter !== '' ? '&status=' . rawurlencode($status_filter) : '');
+$sendLogsStatHrefAll = htmlspecialchars('index.php?' . http_build_query($sendLogsBaseQuery), ENT_QUOTES, 'UTF-8');
+$sendLogsStatHrefSent = htmlspecialchars('index.php?' . http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'sent'])), ENT_QUOTES, 'UTF-8');
+$sendLogsStatHrefFailed = htmlspecialchars('index.php?' . http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'failed'])), ENT_QUOTES, 'UTF-8');
 
 $page_title = 'Email Management';
 $modulePath = dirname($_SERVER['PHP_SELF']);
@@ -352,15 +355,15 @@ if (!isset($crud_title)) {
             <?php endforeach; ?>
 
             <div class="email-stats">
-                <a class="stat-card stat-card-link" href="index.php?<?php echo sanitize(http_build_query($sendLogsBaseQuery)); ?>">
+                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefAll; ?>">
                     <div class="stat-label">Total Emails Logged</div>
                     <div class="stat-number"><?php echo (int)$totalEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="index.php?<?php echo sanitize(http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'sent']))); ?>">
+                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefSent; ?>">
                     <div class="stat-label">Successfully Sent</div>
                     <div class="stat-number"><?php echo (int)$sentEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="index.php?<?php echo sanitize(http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'failed']))); ?>">
+                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefFailed; ?>">
                     <div class="stat-label">Failed</div>
                     <div class="stat-number"><?php echo (int)$failedEmails; ?></div>
                 </a>
