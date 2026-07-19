@@ -6,10 +6,12 @@ $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
 require './helpers.php';
+require './bkm_vault_bootstrap.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+$bkmVaultState = bkm_handle_vault_requests($conn, $user_id);
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -25,6 +27,12 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
             http_response_code(403);
             die('CSRF validation failed');
+        }
+        if (empty($_SESSION['vault_key'])) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing bookmarks.']);
+            exit;
         }
         itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
         exit;
@@ -80,6 +88,16 @@ $searchRaw = trim((string)($_GET['search'] ?? ''));
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
 
+$bookmarks = [];
+$totalRows = 0;
+$totalPages = 1;
+$page = 1;
+$offset = 0;
+$showBulkActions = false;
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+
+if (!empty($bkmVaultState['unlocked'])) {
+
 $bkmSortableColumns = ['title', 'url', 'notes', 'shared'];
 $sort = (string)($_GET['sort'] ?? 'title');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
@@ -101,7 +119,8 @@ if ($searchRaw !== '') {
     $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
         ? mysqli_real_escape_string($conn, $searchRaw)
         : '%' . mysqli_real_escape_string($conn, $searchRaw) . '%';
-    $searchConditions[] = "(title LIKE '$searchPattern' OR url LIKE '$searchPattern' OR notes LIKE '$searchPattern'"
+    $searchConditions[] = "(title LIKE '$searchPattern' OR notes LIKE '$searchPattern'"
+        . " OR (shared = 1 AND url LIKE '$searchPattern')"
         . " OR EXISTS (SELECT 1 FROM bookmark_folders bf WHERE bf.id = bookmarks.folder_id AND bf.name LIKE '$searchPattern'))";
     $where .= ' AND ' . $searchConditions[0];
 } elseif ($selected_folder_id) {
@@ -126,9 +145,10 @@ $showBulkActions = ($totalRows >= $perPage);
 
 $listSql = "SELECT * FROM bookmarks WHERE $where ORDER BY $sortSql LIMIT $offset, $perPage";
 $res = mysqli_query($conn, $listSql);
-$bookmarks = [];
 while ($res && ($row = mysqli_fetch_assoc($res))) {
+    bkm_hydrate_bookmark_row($row, $user_id);
     $bookmarks[] = $row;
+}
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
@@ -215,6 +235,9 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
+            <?php if (empty($bkmVaultState['unlocked'])): ?>
+                <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'index.php'); ?>
+            <?php else: ?>
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <div style="display:flex;gap:8px;">
@@ -392,12 +415,16 @@ if (!isset($crud_title)) {
 
     <!-- URL -->
     <td style="padding:8px;">
-        <a href="<?php echo sanitize($b['url']); ?>"
+        <?php if (!empty($b['url_locked'])): ?>
+            <span style="color:var(--text-tertiary);"><?php echo sanitize($b['url_locked_label'] ?: '🔒 URL hidden'); ?></span>
+        <?php else: ?>
+        <a href="<?php echo sanitize($b['url_display']); ?>"
            target="_blank"
            rel="nofollow noreferrer noopener"
            style="color:var(--accent); text-decoration:none;">
-            <?php echo sanitize($b['url']); ?>
+            <?php echo sanitize($b['url_display']); ?>
         </a>
+        <?php endif; ?>
     </td>
 
     <!-- Notes -->
@@ -416,18 +443,22 @@ if (!isset($crud_title)) {
 
     <!-- Favicon -->
     <td style="padding:8px; text-align:center;">
-        <img src="<?php echo bkm_get_favicon_url($b['url']); ?>"
+        <?php if (empty($b['url_locked']) && !empty($b['url_display'])): ?>
+        <img src="<?php echo bkm_get_favicon_url($b['url_display']); ?>"
              alt="favicon"
              style="width:16px; height:16px; vertical-align:middle;"
              onerror="this.style.display='none';">
+        <?php endif; ?>
     </td>
 
     <!-- Actions -->
     <td class="itm-actions-cell" data-itm-actions-origin="1" style="padding:8px;">
         <div class="itm-actions-wrap">
+        <?php if (empty($b['url_locked']) && !empty($b['url_display'])): ?>
         <button class="btn btn-sm copy-btn"
-                onclick="copyUrl('<?php echo addslashes($b['url']); ?>')"
+                onclick="copyUrl('<?php echo addslashes($b['url_display']); ?>')"
                 title="Copy URL">🗐</button>
+        <?php endif; ?>
 
         <?php if (bkm_can_edit_bookmark($b, $user_id, $is_admin)): ?>
             <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm" title="Edit">✏️</a>
@@ -468,8 +499,9 @@ if (!isset($crud_title)) {
     <?php endif; ?>
 </div>
 
-
             </div>
+        </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

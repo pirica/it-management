@@ -750,6 +750,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if (!$is_first) {
                             $res = itm_vault_reencrypt_password_entries($conn, $user_id, hash('sha256', $old_vk_verify), hash('sha256', $new_vk));
                             if (!$res['ok']) throw new Exception($res['message']);
+                            $resBkm = itm_vault_reencrypt_bookmark_urls($conn, $user_id, hash('sha256', $old_vk_verify), hash('sha256', $new_vk));
+                            if (!$resBkm['ok']) throw new Exception($resBkm['message']);
                         }
                         $vk_hash = password_hash($new_vk, PASSWORD_DEFAULT);
                         $stmt = mysqli_prepare($conn, "UPDATE employees SET vault_key_hash = ? WHERE id = ? AND company_id = ?");
