@@ -20,6 +20,7 @@ Tests for maintenance/audit scripts under `scripts/`.
 - **FieldsMissingBespokeGateTest.php** — bespoke gate contract checks; reviewed registry (`scripts/data/fields_missing_reviewed.json`, `[SKIP][fail][reviewed]` labels); strict gate exit (`--strict-gate` / unreviewed `[SKIP][fail]`); bookmarks in-memory Search/Sort via `bkm_query_bookmarks_for_list()` (`testBookmarksBespokeGatePassesSearchAndSort`, `testBookmarksBespokeGatePassesViewAuditMeta`); index list audit meta hidden via `itm_crud_is_list_hidden_audit_field()` (`testCableColorsBespokeGateHidesAuditMetaOnIndexList`); view audit meta required via `itm_fields_missing_module_view_covers_audit_meta_field()` (`testCompaniesBespokeGatePassesViewAuditMeta`, `testBespokeViewAuditMetaRejectsRawAliasHelperOnly`, `testBespokeViewAuditMetaPassesWithViewColumnsLoop`).
 - **UiConfigurationReviewedTest.php** — `itm_ui_configuration_reviewed.php` registry matcher for `[n/a][*][reviewed]` lines in `check_ui_configuration_coverage.php`.
 - **check_codacy_xss_echo.unittest.php** — `itm_codacy_xss_echo_audit.php` line matchers + subprocess `scripts/check_codacy_xss_echo.php`.
+- **check_manual_sql_string.unittest.php** — `itm_manual_sql_string_audit.php` line matchers + subprocess `scripts/check_manual_sql_string.php`.
 
 ## 10. Common Pitfalls
 
