@@ -88,6 +88,57 @@
           "note": "No edit.php"
         }
       ]
+    },
+    "backup_tape_log": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Monthly grid bespoke UI intentionally omits flattened CRUD list search, sort, pagination, create flow, and bulk toolbar.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — rows auto-populated per day in the monthly grid"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Monthly grid uses year/month/server selectors — no flattened list search input"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Rows are calendar days in selected month — fixed grid order, not column sort headers"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full month grid on one page — no records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — grid uses per-row delete with date lock rules"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php — daily rows ensured by grid loader, not manual create"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        }
+      ]
     }
   }
 }

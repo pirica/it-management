@@ -22,7 +22,7 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Grid View**: A custom interactive grid instead of a standard list.
-- **No flattened list contract:** monthly grid omits standard Search/Sort/Pagination wiring on `index.php`. `fields_missing.php` still reports those bespoke gate checks as `[SKIP][fail]`; Search, Sort, and Pagination are listed as reviewed exceptions in `scripts/data/fields_missing_reviewed.json` (manifest: `scripts/fields_missing_reviewed.php`) and print as `[SKIP][fail][reviewed]`.
+- **No flattened list contract:** monthly grid omits standard Search/Sort/Pagination wiring on `index.php`. `fields_missing.php` reports those bespoke gate checks as `[SKIP][fail][reviewed]` via `scripts/data/fields_missing_reviewed.json`; `check_ui_configuration_coverage.php` prints matching gate-excluded lines as `[n/a][fail|n/a][reviewed]` via `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
 - **No Excel import:** table uses `data-itm-no-import-excel="1"` (and export opt-outs); `check_index_table_compliance.php` does not require `data-itm-db-import-endpoint`.
 - **Time Punch**: A "⌛" icon is used to auto-fill the current time into timestamp fields.
 - **AJAX Updates**: Supports inline editing via POST requests.
