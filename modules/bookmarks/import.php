@@ -12,9 +12,14 @@ if ($company_id <= 0) {
 
 $errors = [];
 $success = '';
+$skippedImports = [];
 
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
+$foldersById = [];
+foreach ($all_folders as $folderRow) {
+    $foldersById[(int)$folderRow['id']] = $folderRow;
+}
 $import_folder_id = isset($_POST['folder_id']) ? (int)$_POST['folder_id'] : (isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -28,6 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $bookmarkCount = 0;
         $foldersCreated = 0;
+        $importedUrlKeys = [];
+        $entriesSeen = 0;
 
         if ($ext === 'html') {
             $content = file_get_contents($_FILES['import_file']['tmp_name']);
@@ -36,9 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $folderCache = [];
 
             foreach ($entries as $b) {
-                if (!preg_match('/^https?:\/\//i', $b['url'])) {
-                    continue;
-                }
+                $entriesSeen++;
                 $target_folder_id = bkm_resolve_import_folder_path(
                     $conn,
                     $company_id,
@@ -48,8 +53,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $folderCache,
                     $foldersCreated
                 );
-                if (bkm_insert_import_bookmark($conn, $company_id, $user_id, $target_folder_id, $b['title'], $b['url'], $b['notes'])) {
+                $folderLabel = bkm_format_import_folder_label($b['folder_path'], $target_folder_id, $foldersById);
+                $result = bkm_try_import_bookmark(
+                    $conn,
+                    $company_id,
+                    $user_id,
+                    $target_folder_id,
+                    $b['title'],
+                    $b['url'],
+                    $b['notes'],
+                    $importedUrlKeys
+                );
+
+                if ($result['imported']) {
                     $bookmarkCount++;
+                } else {
+                    $skippedImports[] = [
+                        'title' => $b['title'],
+                        'url' => $b['url'],
+                        'folder' => $folderLabel,
+                        'reason' => $result['skip_label'],
+                    ];
                 }
             }
         } elseif ($ext === 'csv') {
@@ -69,12 +93,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             fclose($handle);
 
             $folder_id = (int)($_POST['folder_id'] ?? 0) ?: null;
+            $folderLabel = bkm_format_import_folder_label([], $folder_id, $foldersById);
+
             foreach ($bookmarks_to_import as $b) {
-                if (!preg_match('/^https?:\/\//i', $b['url'])) {
-                    continue;
-                }
-                if (bkm_insert_import_bookmark($conn, $company_id, $user_id, $folder_id, $b['title'], $b['url'], $b['notes'])) {
+                $entriesSeen++;
+                $result = bkm_try_import_bookmark(
+                    $conn,
+                    $company_id,
+                    $user_id,
+                    $folder_id,
+                    $b['title'],
+                    $b['url'],
+                    $b['notes'],
+                    $importedUrlKeys
+                );
+
+                if ($result['imported']) {
                     $bookmarkCount++;
+                } else {
+                    $skippedImports[] = [
+                        'title' => $b['title'],
+                        'url' => $b['url'],
+                        'folder' => $folderLabel,
+                        'reason' => $result['skip_label'],
+                    ];
                 }
             }
         }
@@ -84,7 +126,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($foldersCreated > 0) {
                 $success .= ' into ' . $foldersCreated . ' new folder' . ($foldersCreated === 1 ? '' : 's');
             }
+            if (!empty($skippedImports)) {
+                $success .= ' (' . count($skippedImports) . ' skipped)';
+            }
             $success .= '.';
+        } elseif ($entriesSeen > 0) {
+            $errors[] = 'No bookmarks were imported. See the list below.';
         } else {
             $errors[] = 'No valid bookmarks found in the file.';
         }
@@ -126,6 +173,31 @@ if (!isset($crud_title)) {
                 <ul><?php foreach ($errors as $e): ?><li><?php echo sanitize($e); ?></li><?php endforeach; ?></ul>
             </div>
         <?php endif; ?>
+        <?php if (!empty($skippedImports)): ?>
+            <div class="card" style="margin-bottom:16px;">
+                <h3>Not imported (<?php echo count($skippedImports); ?>)</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>URL</th>
+                            <th>Folder</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($skippedImports as $row): ?>
+                            <tr>
+                                <td><?php echo sanitize($row['title']); ?></td>
+                                <td><?php echo sanitize($row['url']); ?></td>
+                                <td><?php echo sanitize($row['folder']); ?></td>
+                                <td><?php echo sanitize($row['reason']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
         <div class="card">
             <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -151,6 +223,7 @@ if (!isset($crud_title)) {
             <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here. Folder headings (<code>&lt;H3&gt;</code>) in the file are created automatically and bookmarks are imported into the matching folder.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
             <p><strong>Folder:</strong> Choose <code>Root</code> or a parent folder. HTML imports nest file folders under that target; CSV imports place every row in the selected folder.</p>
+            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Duplicates are skipped when the exact same URL already exists in the target folder (similar URLs are allowed).</p>
         </div>
     </div>
 </div>

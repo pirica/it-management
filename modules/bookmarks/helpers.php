@@ -428,6 +428,127 @@ function bkm_insert_import_bookmark($conn, $company_id, $user_id, $folderId, $ti
 }
 
 /**
+ * Import URLs must use http, https, or ftp.
+ */
+function bkm_import_url_is_allowed($url)
+{
+    $url = trim((string)$url);
+
+    return (bool)preg_match('/^(https?|ftp):\/\//i', $url);
+}
+
+/**
+ * Exact URL match inside one folder for the importing employee (active rows only).
+ */
+function bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, $url)
+{
+    $url = trim((string)$url);
+    if ($folderId === null) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND active = 1 AND folder_id IS NULL AND url = ? LIMIT 1'
+        );
+        mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $url);
+    } else {
+        $folderId = (int)$folderId;
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND active = 1 AND folder_id = ? AND url = ? LIMIT 1'
+        );
+        mysqli_stmt_bind_param($stmt, 'iiis', $company_id, $user_id, $folderId, $url);
+    }
+
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $exists = $res && mysqli_fetch_assoc($res);
+    mysqli_stmt_close($stmt);
+
+    return (bool)$exists;
+}
+
+/**
+ * Human-readable folder label for import skip reports.
+ *
+ * @param list<string> $folderPath
+ */
+function bkm_format_import_folder_label(array $folderPath, $folderId, array $foldersById)
+{
+    $pathLabel = implode(' / ', array_filter(array_map('trim', $folderPath), static function ($segment) {
+        return $segment !== '';
+    }));
+
+    if ($pathLabel === '' && $folderId === null) {
+        return 'Root';
+    }
+
+    if ($pathLabel === '' && $folderId !== null) {
+        $folderId = (int)$folderId;
+        return isset($foldersById[$folderId]) ? $foldersById[$folderId]['name'] : ('Folder #' . $folderId);
+    }
+
+    if ($folderId !== null && isset($foldersById[(int)$folderId])) {
+        return $foldersById[(int)$folderId]['name'] . ' / ' . $pathLabel;
+    }
+
+    return $pathLabel;
+}
+
+/**
+ * Import one bookmark when URL is allowed and not already present in the target folder.
+ *
+ * @param array<string,bool> $importedUrlKeys
+ * @return array{imported:bool,skip_reason:string,skip_label:string}
+ */
+function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, array &$importedUrlKeys)
+{
+    $url = trim((string)$url);
+    $title = trim((string)$title);
+    $notes = trim((string)$notes);
+
+    if (!bkm_import_url_is_allowed($url)) {
+        return [
+            'imported' => false,
+            'skip_reason' => 'invalid_url',
+            'skip_label' => 'URL must start with http://, https://, or ftp://',
+        ];
+    }
+
+    $folderKey = $folderId === null ? '0' : (string)(int)$folderId;
+    $batchKey = $folderKey . '|' . $url;
+    if (isset($importedUrlKeys[$batchKey])) {
+        return [
+            'imported' => false,
+            'skip_reason' => 'duplicate_file',
+            'skip_label' => 'Duplicate URL in import file (same folder)',
+        ];
+    }
+
+    if (bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, $url)) {
+        return [
+            'imported' => false,
+            'skip_reason' => 'duplicate_folder',
+            'skip_label' => 'Bookmark already exists in this folder',
+        ];
+    }
+
+    if (!bkm_insert_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes)) {
+        return [
+            'imported' => false,
+            'skip_reason' => 'insert_failed',
+            'skip_label' => 'Could not save bookmark',
+        ];
+    }
+
+    $importedUrlKeys[$batchKey] = true;
+
+    return [
+        'imported' => true,
+        'skip_reason' => '',
+        'skip_label' => '',
+    ];
+}
+
+/**
  * Parses browser-exported HTML bookmarks (Netscape format).
  *
  * @return list<array{title:string,url:string,notes:string}>
