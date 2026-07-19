@@ -438,25 +438,33 @@ function bkm_import_url_is_allowed($url)
 }
 
 /**
+ * SHA-256 hex digest of trimmed URL — matches bookmarks.url_hash (MySQL sha2(url, 256)).
+ */
+function bkm_bookmark_url_hash($url)
+{
+    return hash('sha256', trim((string)$url));
+}
+
+/**
  * Exact URL match for one employee in the tenant (any folder). Hard-delete only — no soft-deleted rows.
  */
 function bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url, $excludeId = null)
 {
-    $url = trim((string)$url);
+    $urlHash = bkm_bookmark_url_hash($url);
     $excludeId = $excludeId !== null ? (int)$excludeId : 0;
 
     if ($excludeId > 0) {
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url = ? AND id <> ? LIMIT 1'
+            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url_hash = ? AND id <> ? LIMIT 1'
         );
-        mysqli_stmt_bind_param($stmt, 'iisi', $company_id, $user_id, $url, $excludeId);
+        mysqli_stmt_bind_param($stmt, 'iisi', $company_id, $user_id, $urlHash, $excludeId);
     } else {
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url = ? LIMIT 1'
+            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url_hash = ? LIMIT 1'
         );
-        mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $url);
+        mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $urlHash);
     }
 
     mysqli_stmt_execute($stmt);
