@@ -187,7 +187,8 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
         $sqlColumns = $tableColumnsMap[$tableName] ?? [];
         $columnsInline = itm_columns_inline($sqlColumns);
 
-        if (isset($policyHiddenTables[$tableName])) {
+        if ((function_exists('itm_sidebar_module_is_hidden') && itm_sidebar_module_is_hidden($tableName))
+            || isset($policyHiddenTables[$tableName])) {
             $tableRows[] = [
                 'table' => $tableName,
                 'status' => 'expected_internal',
@@ -195,7 +196,7 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
                 'crud_table' => $tableName,
                 'columns' => $sqlColumns,
                 'columns_inline' => $columnsInline,
-                'notes' => itm_single_line_text('Internal support table (managed inside Floor Plans gallery; no modules/ folder expected).'),
+                'notes' => itm_single_line_text('Internal support table (no modules/ folder expected; managed inside a parent module).'),
             ];
             $summary['expected_internal']++;
             continue;
