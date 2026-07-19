@@ -481,6 +481,8 @@ if ($crud_action === 'delete') {
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
     $dbErrorCode = 0;
     $dbErrorMessage = '';
+    // Why: Private bookmark folder rows are hard-deleted (no soft-delete retention).
+    $bkm_use_hard_delete = ($crud_table === 'bookmark_folders');
 
     if ($bulkAction === 'clear_table') {
         // Truncate the table within the company scope
@@ -488,12 +490,16 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
         }
-        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+        if (!$bkm_use_hard_delete && function_exists('itm_crud_append_not_deleted_predicate')) {
             $where = itm_crud_append_not_deleted_predicate($where);
         }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+        if ($bkm_use_hard_delete) {
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        } else {
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+        }
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
@@ -520,9 +526,13 @@ if ($crud_action === 'delete') {
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
-            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+            if ($bkm_use_hard_delete) {
+                $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+            } else {
+                $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                    ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+                    : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+            }
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
@@ -540,9 +550,13 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        if ($bkm_use_hard_delete) {
+            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        } else {
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        }
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }

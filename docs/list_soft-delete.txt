@@ -13,7 +13,6 @@ approver_type
 approvers
 assignment_types
 attempts
-bookmark_folders
 budget_categories
 catalogs
 cost_centers

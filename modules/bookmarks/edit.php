@@ -38,8 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($title === '') $errors[] = 'Title is required.';
     if ($url === '') {
         $errors[] = 'URL is required.';
-    } elseif (!preg_match('/^https?:\/\//i', $url)) {
-        $errors[] = 'Invalid URL. Only http:// and https:// protocols are allowed.';
+    } elseif (!bkm_import_url_is_allowed($url)) {
+        $errors[] = 'Invalid URL. Only http://, https://, and ftp:// protocols are allowed.';
+    } elseif (bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url, $id)) {
+        $errors[] = 'A bookmark with this URL already exists for your account.';
     }
 
     if (empty($errors)) {

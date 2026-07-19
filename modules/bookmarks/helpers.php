@@ -438,24 +438,25 @@ function bkm_import_url_is_allowed($url)
 }
 
 /**
- * Exact URL match inside one folder for the importing employee (active rows only).
+ * Exact URL match for one employee in the tenant (any folder). Hard-delete only — no soft-deleted rows.
  */
-function bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, $url)
+function bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url, $excludeId = null)
 {
     $url = trim((string)$url);
-    if ($folderId === null) {
+    $excludeId = $excludeId !== null ? (int)$excludeId : 0;
+
+    if ($excludeId > 0) {
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND active = 1 AND folder_id IS NULL AND url = ? LIMIT 1'
+            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url = ? AND id <> ? LIMIT 1'
+        );
+        mysqli_stmt_bind_param($stmt, 'iisi', $company_id, $user_id, $url, $excludeId);
+    } else {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url = ? LIMIT 1'
         );
         mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $url);
-    } else {
-        $folderId = (int)$folderId;
-        $stmt = mysqli_prepare(
-            $conn,
-            'SELECT 1 FROM bookmarks WHERE company_id = ? AND employee_id = ? AND active = 1 AND folder_id = ? AND url = ? LIMIT 1'
-        );
-        mysqli_stmt_bind_param($stmt, 'iiis', $company_id, $user_id, $folderId, $url);
     }
 
     mysqli_stmt_execute($stmt);
@@ -464,6 +465,14 @@ function bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, 
     mysqli_stmt_close($stmt);
 
     return (bool)$exists;
+}
+
+/**
+ * @deprecated Use bkm_bookmark_url_exists_for_employee() — kept for callers that still pass folder_id.
+ */
+function bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, $url)
+{
+    return bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url);
 }
 
 /**
@@ -494,7 +503,35 @@ function bkm_format_import_folder_label(array $folderPath, $folderId, array $fol
 }
 
 /**
- * Import one bookmark when URL is allowed and not already present in the target folder.
+ * Short skip summary for import reports, e.g. "Duplicate URL → WD".
+ */
+function bkm_format_import_skip_summary($skipReason, $folderLabel)
+{
+    $folder = trim((string)$folderLabel);
+    if ($folder === '') {
+        $folder = 'Root';
+    }
+
+    switch ((string)$skipReason) {
+        case 'invalid_url':
+            $reason = 'Invalid URL';
+            break;
+        case 'duplicate_file':
+        case 'duplicate_employee':
+            $reason = 'Duplicate URL';
+            break;
+        case 'insert_failed':
+            $reason = 'Save failed';
+            break;
+        default:
+            $reason = 'Not imported';
+    }
+
+    return $reason . ' → ' . $folder;
+}
+
+/**
+ * Import one bookmark when URL is allowed and not already present for this employee.
  *
  * @param array<string,bool> $importedUrlKeys
  * @return array{imported:bool,skip_reason:string,skip_label:string}
@@ -513,21 +550,20 @@ function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title
         ];
     }
 
-    $folderKey = $folderId === null ? '0' : (string)(int)$folderId;
-    $batchKey = $folderKey . '|' . $url;
+    $batchKey = $url;
     if (isset($importedUrlKeys[$batchKey])) {
         return [
             'imported' => false,
             'skip_reason' => 'duplicate_file',
-            'skip_label' => 'Duplicate URL in import file (same folder)',
+            'skip_label' => 'Duplicate URL in import file',
         ];
     }
 
-    if (bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, $url)) {
+    if (bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url)) {
         return [
             'imported' => false,
-            'skip_reason' => 'duplicate_folder',
-            'skip_label' => 'Bookmark already exists in this folder',
+            'skip_reason' => 'duplicate_employee',
+            'skip_label' => 'Bookmark with this URL already exists for your account',
         ];
     }
 

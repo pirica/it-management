@@ -16,7 +16,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 - **Folder names (duplicates OK):**
   - Multiple folders may share the same `name` (same employee, same parent, or across the company).
   - Do **not** add `UNIQUE (company_id, name)`, `UNIQUE (company_id, employee_id, name)`, or parent-scoped name UNIQUEs unless product rules change.
-  - Soft-delete does not block recreating a folder with the same name (no unique collision).
+  - Folder names may be reused immediately after hard delete (no UNIQUE on `name`).
   - Tenant unique-key audit skips this table — see `includes/database_sql_unique_audit.php` and `scripts/check_database_sql_company_name_uniques.php`.
 - **Recursive Deletion**: Deleting a folder sets `parent_folder_id` of subfolders to NULL (via `ON DELETE SET NULL`) or requires manual cleanup.
 - **Tenant Isolation**: Strictly scoped by `company_id`.
@@ -40,8 +40,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 ## 10. Common Pitfalls
 
-- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
-- Soft-deleted rows remain until purged; folder names may be reused immediately (no UNIQUE on `name`). [Cursor-Valid]
+- **Hard delete (private data):** `index.php` delete actions use `DELETE FROM bookmark_folders` (not soft-delete). Dual-pane folder delete lives in `modules/bookmarks/delete_folder.php`. Employee delete cascades via FK. [Cursor-Fixed]
 - Do not add PHP “name already exists” guards for folders unless intentionally changing product rules. [Cursor-Valid]
 - Legacy installs: drop `uq_bookmark_folders_company_scope` if still present (`database.sql` comment under `CREATE TABLE bookmark_folders`). [Cursor-Valid]
 - **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Cursor-Valid]

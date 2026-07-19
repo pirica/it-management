@@ -24,7 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($data && ($is_admin || (int)$data['employee_id'] === $user_id)) {
             if ($delete_contents) {
-                // Recursive deletion of everything inside
                 $folders_to_delete = [$id];
                 $to_process = [$id];
 
@@ -37,17 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                $folder_ids_str = implode(',', $folders_to_delete);
-                // Soft delete bookmarks
-                itm_run_query($conn, "UPDATE bookmarks SET active = 0 WHERE folder_id IN ($folder_ids_str) AND company_id = $company_id");
-                // Soft delete folders
-                itm_run_query($conn, "UPDATE bookmark_folders SET active = 0 WHERE id IN ($folder_ids_str) AND company_id = $company_id");
+                $folder_ids_str = implode(',', array_map('intval', $folders_to_delete));
+                itm_run_query($conn, "DELETE FROM bookmarks WHERE folder_id IN ($folder_ids_str) AND company_id = $company_id");
+                itm_run_query($conn, "DELETE FROM bookmark_folders WHERE id IN ($folder_ids_str) AND company_id = $company_id");
             } else {
-                // Original behavior: move immediate children to root
                 itm_run_query($conn, "UPDATE bookmarks SET folder_id = NULL WHERE folder_id = $id AND company_id = $company_id");
                 itm_run_query($conn, "UPDATE bookmark_folders SET parent_folder_id = NULL WHERE parent_folder_id = $id AND company_id = $company_id");
-                // Soft delete the folder
-                itm_run_query($conn, "UPDATE bookmark_folders SET active = 0 WHERE id = $id AND company_id = $company_id");
+                itm_run_query($conn, "DELETE FROM bookmark_folders WHERE id = $id AND company_id = $company_id");
             }
         }
     }
