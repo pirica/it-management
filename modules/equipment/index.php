@@ -237,6 +237,7 @@ $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right')
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: 'Equipment';
 $moduleSearchPlaceholder = (string)($equipmentSearchPlaceholder ?? 'Use SQL wildcards, e.g. %%switch%%');
 $locationTypeExtraOptions = [];
 $locationTypeSql = "SELECT id, name FROM location_types WHERE company_id = " . (int)$company_id . " ORDER BY name ASC";
@@ -290,7 +291,7 @@ if (!empty($_SESSION['crud_success'])) {
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
-                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($equipmentModuleTitle ?? '🖥️ Equipment'); ?></h1>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <?php if ($showSwitchPortManager): ?>
                         <button type="button" class="btn btn-sm" id="exportEquipmentPdfBtn">Export PDF</button>
@@ -327,7 +328,7 @@ if (!empty($_SESSION['crud_success'])) {
                     </div>
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="index.php<?php echo ($selectedSwitchId > 0) ? '?switch_id=' . (int)$selectedSwitchId . ($showSwitchPortManager ? '&spm=1' : '') : ''; ?>" class="btn btn-sm">Clear</a>
+                        <a href="index.php<?php echo ($selectedSwitchId > 0) ? '?switch_id=' . (int)$selectedSwitchId . ($showSwitchPortManager ? '&spm=1' : '') : ''; ?>" class="btn" title="Clear">🔙</a>
                     </div>
                 </form>
             </div>
