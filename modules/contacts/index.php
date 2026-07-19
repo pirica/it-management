@@ -36,6 +36,50 @@ $empRes = mysqli_stmt_get_result($empStmt);
 $employeesByDept = [];
 while ($e = mysqli_fetch_assoc($empRes)) { $employeesByDept[(int)$e['department_id']][] = $e; }
 mysqli_stmt_close($empStmt);
+
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$searchConditions = [];
+if ($searchRaw !== '') {
+    // Why: Directory rows are grouped in PHP after two queries; in-memory filter matches all visible columns.
+    $searchConditions[] = 'department';
+    $searchConditions[] = 'employee';
+    $needle = strtolower($searchRaw);
+    $filteredDepartments = [];
+    $filteredEmployeesByDept = [];
+    foreach ($departments as $dept) {
+        $did = (int)$dept['id'];
+        $deptHaystack = strtolower(implode(' ', [
+            (string)($dept['name'] ?? ''),
+            (string)($dept['extension'] ?? ''),
+            (string)($dept['dect'] ?? ''),
+            (string)($dept['phone'] ?? ''),
+        ]));
+        $deptMatches = strpos($deptHaystack, $needle) !== false;
+        $emps = $employeesByDept[$did] ?? [];
+        $matchingEmps = [];
+        foreach ($emps as $emp) {
+            $empHaystack = strtolower(implode(' ', [
+                (string)($emp['first_name'] ?? ''),
+                (string)($emp['last_name'] ?? ''),
+                (string)($emp['work_email'] ?? ''),
+                (string)($emp['extension'] ?? ''),
+                (string)($emp['mobile_phone'] ?? ''),
+                (string)($emp['external_number'] ?? ''),
+                (string)($emp['dect'] ?? ''),
+                (string)($emp['position_title'] ?? ''),
+            ]));
+            if (strpos($empHaystack, $needle) !== false) {
+                $matchingEmps[] = $emp;
+            }
+        }
+        if ($deptMatches || $matchingEmps !== []) {
+            $filteredDepartments[] = $dept;
+            $filteredEmployeesByDept[$did] = $deptMatches ? $emps : $matchingEmps;
+        }
+    }
+    $departments = $filteredDepartments;
+    $employeesByDept = $filteredEmployeesByDept;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,6 +133,9 @@ if (!isset($crud_title)) {
         tr:hover:not(.dept-header) {
             background-color: var(--bg-secondary);
         }
+        @media print {
+            .table-search-inline { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -98,6 +145,23 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <h1>Contacts 📓</h1>
+            <div class="card" style="margin-bottom:16px;">
+                <form method="GET" class="table-search-inline" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                    <div class="form-group" style="margin:0;">
+                        <label for="search">Search (all fields)</label>
+                        <input type="search" name="search" id="search" class="form-control" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search...">
+                    </div>
+                    <button type="submit" class="btn btn-primary" title="🔎 Search">Search</button>
+                    <?php if ($searchRaw !== ''): ?>
+                        <a class="btn" href="index.php" title="Clear">🔙</a>
+                    <?php endif; ?>
+                </form>
+            </div>
+            <?php if ($searchRaw !== ''): ?>
+            <div class="card" style="margin-bottom:8px;">
+                <p style="margin:0;" class="muted">Showing contacts matching <strong><?= sanitize($searchRaw) ?></strong>.</p>
+            </div>
+            <?php endif; ?>
             <div class="card">
                 <table class="table" data-itm-no-import-excel="1">
                     <thead><tr><th>Name</th><th>Extension</th><th>Dect</th><th>Mobile Phone</th><th>External Number</th><th>Job Role</th></tr></thead>
