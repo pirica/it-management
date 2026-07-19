@@ -2197,6 +2197,82 @@ if (!function_exists('itm_fields_missing_record_bespoke_ui_check_results')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_file_has_standalone_html_head')) {
+    /**
+     * True when a PHP entry file renders its own <head> (not a thin index.php router).
+     */
+    function itm_fields_missing_file_has_standalone_html_head(string $content): bool
+    {
+        if (stripos($content, '<head') === false) {
+            return false;
+        }
+
+        if (preg_match('/\$crud_action\s*=\s*[\'"](?:create|edit|view|delete|list_all)[\'"]\s*;\s*\?>\s*<\?php\s+require(?:_once)?\s+[\'"][^\'"]*index\.php[\'"]\s*;/s', $content) === 1) {
+            return false;
+        }
+
+        if (preg_match('/require(?:_once)?\s+[\'"][^\'"]*index\.php[\'"]\s*;\s*$/m', $content) === 1
+            && preg_match('/\$crud_action\s*=/', $content) === 1
+            && stripos($content, '<head') === false
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('itm_fields_missing_collect_page_chrome_checks')) {
+    /**
+     * Favicon + browser <title> checks for index/create/edit/view files with standalone <head>.
+     *
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,delete?:string} $files
+     * @return array<string, array{status:string,details:string}>
+     */
+    function itm_fields_missing_collect_page_chrome_checks(array $files): array
+    {
+        $checks = [];
+        $screens = [
+            'index' => (string) ($files['index'] ?? ''),
+            'create' => (string) ($files['create'] ?? ''),
+            'edit' => (string) ($files['edit'] ?? ''),
+            'view' => (string) ($files['view'] ?? ''),
+        ];
+
+        foreach ($screens as $screen => $path) {
+            if ($path === '' || !is_readable($path)) {
+                continue;
+            }
+            $content = (string) file_get_contents($path);
+            if (!itm_fields_missing_file_has_standalone_html_head($content)) {
+                continue;
+            }
+
+            $suffix = $screen === 'index' ? '' : ' (' . $screen . ')';
+            $checks['Favicon' . $suffix] = itm_check_module_favicon_link($content, $content);
+            $checks['Browser title' . $suffix] = itm_check_module_browser_title($content);
+        }
+
+        return $checks;
+    }
+}
+
+/** @deprecated Use itm_fields_missing_collect_page_chrome_checks() */
+if (!function_exists('itm_fields_missing_collect_favicon_page_checks')) {
+    function itm_fields_missing_collect_favicon_page_checks(array $files): array
+    {
+        $checks = itm_fields_missing_collect_page_chrome_checks($files);
+        $faviconOnly = [];
+        foreach ($checks as $label => $result) {
+            if (stripos($label, 'Favicon') === 0) {
+                $faviconOnly[$label] = $result;
+            }
+        }
+
+        return $faviconOnly;
+    }
+}
+
 if (!function_exists('itm_fields_missing_audit_bespoke_page_ui_contract')) {
     /**
      * Page chrome for bespoke/status-driven modules: browser title, favicon, list heading layout.
@@ -2223,16 +2299,21 @@ if (!function_exists('itm_fields_missing_audit_bespoke_page_ui_contract')) {
         $hasCreateFile = is_readable($files['create']);
         $createContent = $hasCreateFile ? (string) file_get_contents($files['create']) : '';
 
+        $pageChecks = itm_fields_missing_collect_page_chrome_checks($files);
+        if (!isset($pageChecks['Favicon'])) {
+            $pageChecks['Favicon'] = itm_check_module_favicon_link($indexContent, $indexContent);
+        }
+        if (!isset($pageChecks['Browser title'])) {
+            $pageChecks['Browser title'] = itm_check_module_browser_title($indexContent);
+        }
+        $pageChecks['List heading layout'] = itm_check_list_heading_layout($indexContent);
+        $pageChecks['List heading emoji'] = itm_check_list_heading_emoji($indexContent);
+        $pageChecks['New button position'] = itm_check_new_button_position($indexContent, $hasCreateFile, $createContent);
+        $pageChecks['New button style'] = itm_check_new_button_style($indexContent, $hasCreateFile, $createContent);
+
         itm_fields_missing_record_bespoke_ui_check_results(
             $moduleSlug,
-            [
-                'Browser title' => itm_check_module_browser_title($indexContent),
-                'Favicon' => itm_check_module_favicon_link($indexContent),
-                'List heading layout' => itm_check_list_heading_layout($indexContent),
-                'List heading emoji' => itm_check_list_heading_emoji($indexContent),
-                'New button position' => itm_check_new_button_position($indexContent, $hasCreateFile, $createContent),
-                'New button style' => itm_check_new_button_style($indexContent, $hasCreateFile, $createContent),
-            ],
+            $pageChecks,
             $passes,
             $failures,
             'bespoke_page_ui'

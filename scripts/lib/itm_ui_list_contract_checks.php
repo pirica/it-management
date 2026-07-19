@@ -679,14 +679,17 @@ if (!function_exists('itm_check_module_browser_title')) {
 
 if (!function_exists('itm_check_module_favicon_link')) {
     /**
+     * @param string $indexContent HTML <head> source (usually index.php or create/edit/view)
+     * @param string $fullFileContent Full PHP file for config.php / $favicon_url wiring checks
      * @return array{status:string,details:string}
      */
-    function itm_check_module_favicon_link(string $indexContent): array
+    function itm_check_module_favicon_link(string $indexContent, string $fullFileContent = ''): array
     {
         if (stripos($indexContent, '<head') === false) {
             return ['status' => 'n/a', 'details' => 'No HTML head in index.php'];
         }
 
+        $fullContent = $fullFileContent !== '' ? $fullFileContent : $indexContent;
         $headSection = $indexContent;
         if (preg_match('~<head\b[^>]*>(.*?)</head>~is', $indexContent, $matches) === 1) {
             $headSection = (string) $matches[1];
@@ -696,16 +699,57 @@ if (!function_exists('itm_check_module_favicon_link')) {
             '/<link\b[^>]*\brel\s*=\s*["\'](?:shortcut\s+icon|icon)["\']/i',
             $headSection
         ) === 1;
-        $usesConfiguredFavicon = stripos($headSection, '$favicon_url') !== false
-            || stripos($headSection, 'itm_ui_config_favicon_url') !== false
-            || stripos($headSection, 'itm_render_head_favicon_link') !== false;
+
+        if (preg_match(
+            '/itm_render_head_favicon_link\s*\(\s*\$(?:ui_config|currentUiConfig)\b/i',
+            $headSection
+        ) === 1) {
+            return [
+                'status' => 'fail',
+                'details' => 'itm_render_head_favicon_link() first argument must be $favicon_url (or null) — pass ui_configuration as the second argument',
+            ];
+        }
+
+        if (preg_match('/itm_render_head_favicon_link\s*\(\s*\$favicon_url\b/i', $headSection) === 1) {
+            if (!preg_match('/require(?:_once)?\s+[^;]*config\.php/i', $fullContent)) {
+                return [
+                    'status' => 'fail',
+                    'details' => 'itm_render_head_favicon_link($favicon_url) requires config.php (sets $favicon_url from ui_configuration)',
+                ];
+            }
+
+            return [
+                'status' => 'pass',
+                'details' => 'Server-side favicon via itm_render_head_favicon_link($favicon_url) from Settings ui_configuration',
+            ];
+        }
+
+        if (preg_match(
+            '/itm_render_head_favicon_link\s*\(\s*null\s*,\s*\$(?:ui_config|currentUiConfig)\b/i',
+            $headSection
+        ) === 1) {
+            return [
+                'status' => 'pass',
+                'details' => 'Server-side favicon via itm_render_head_favicon_link(null, $ui_config) from Settings ui_configuration',
+            ];
+        }
+
+        if (preg_match('/itm_render_head_favicon_link\s*\(\s*itm_ui_config_favicon_url\s*\(/i', $headSection) === 1) {
+            return [
+                'status' => 'pass',
+                'details' => 'Server-side favicon via itm_ui_config_favicon_url() in head',
+            ];
+        }
 
         if (stripos($headSection, 'itm_render_head_favicon_link') !== false) {
             return [
-                'status' => 'pass',
-                'details' => 'Server-side favicon via itm_render_head_favicon_link() (Settings favicon_url)',
+                'status' => 'fail',
+                'details' => 'itm_render_head_favicon_link() must resolve Settings favicon via $favicon_url (from config.php), itm_ui_config_favicon_url($ui_config), or null + second $ui_config argument',
             ];
         }
+
+        $usesConfiguredFavicon = stripos($headSection, '$favicon_url') !== false
+            || stripos($headSection, 'itm_ui_config_favicon_url') !== false;
 
         if ($hasFaviconLink && $usesConfiguredFavicon) {
             return [

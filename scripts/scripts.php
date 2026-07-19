@@ -805,6 +805,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list_show.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_module_page_chrome.php" target="_blank" rel="nofollow noreferrer">verify_module_page_chrome.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Cross-check: canonical browser <code>&lt;title&gt;</code> (<code>titles_list.php</code>) and Settings favicon wiring (<code>fields_missing.php</code> bespoke gate) on every <code>modules/**/*.php</code> file with a standalone <code>&lt;head&gt;</code>. Exit <code>1</code> on any title or favicon failure.</td>
+                    <td>Browser: <a href="verify_module_page_chrome.php">verify_module_page_chrome.php</a>. CLI: <code>php scripts/verify_module_page_chrome.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audits <code>modules/*/index.php</code> vs live sidebar <code>match_dir</code> entries from <code>itm_sidebar_structure()</code> (base catalog, filesystem discovery, registry merge). Also lists active <code>modules_registry</code> rows without module folders (policy-hidden vs unexpected).</td>
@@ -928,7 +934,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="apply_head_favicon_link.php" target="_blank" rel="nofollow noreferrer">apply_head_favicon_link.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Maintenance: add <code>itm_render_head_favicon_link($favicon_url ?? null)</code> in module <code>index.php</code> <code>&lt;head&gt;</code> so the tab icon matches Settings on first paint. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td>Maintenance: add <code>itm_render_head_favicon_link($favicon_url ?? null)</code> in module <code>index.php</code>, <code>create.php</code>, <code>edit.php</code>, and <code>view.php</code> <code>&lt;head&gt;</code> so the tab icon matches Settings on first paint. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_head_favicon_link.php">dry-run</a> / <a href="apply_head_favicon_link.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_head_favicon_link.php</code> then <code>php scripts/apply_head_favicon_link.php --apply</code>.</td>
                 </tr>
                 <tr>

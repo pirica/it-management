@@ -134,11 +134,71 @@ class FieldsMissingBespokeGateTest extends TestCase
         $index = <<<'HTML'
 <head>
 <title>Test</title>
+<?php require '../../config/config.php'; ?>
 <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
 </head>
 HTML;
-        $check = itm_check_module_favicon_link($index);
+        $check = itm_check_module_favicon_link($index, $index);
         $this->assertSame('pass', $check['status'] ?? '');
+    }
+
+    public function testFaviconGateFailsWhenUiConfigPassedAsFirstArgument(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'HTML'
+<head>
+<title>Test</title>
+<?php echo itm_render_head_favicon_link($ui_config ?? $currentUiConfig ?? []); ?>
+</head>
+HTML;
+        $check = itm_check_module_favicon_link($index, $index);
+        $this->assertSame('fail', $check['status'] ?? '');
+    }
+
+    public function testFaviconGateFailsHelperWithoutSettingsWiring(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'HTML'
+<head>
+<title>Test</title>
+<?php echo itm_render_head_favicon_link(); ?>
+</head>
+HTML;
+        $check = itm_check_module_favicon_link($index, $index);
+        $this->assertSame('fail', $check['status'] ?? '');
+    }
+
+    public function testPageChromeCollectChecksCreateScreenFaviconAndTitle(): void
+    {
+        $dir = sys_get_temp_dir() . '/itm_fm_chrome_' . uniqid('', true);
+        mkdir($dir);
+        $index = $dir . '/index.php';
+        $create = $dir . '/create.php';
+        file_put_contents($index, <<<'PHP'
+<?php require '../../config/config.php'; ?>
+<head>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
+</head>
+PHP);
+        file_put_contents($create, <<<'PHP'
+<?php require '../../config/config.php'; ?>
+<head><title><?= sanitize($crud_title) ?></title></head>
+PHP);
+        $files = [
+            'index' => $index,
+            'create' => $create,
+            'edit' => '',
+            'view' => '',
+            'includes' => '',
+            'list_all' => '',
+            'delete' => '',
+        ];
+        $checks = itm_fields_missing_collect_page_chrome_checks($files);
+        $this->assertSame('pass', $checks['Favicon']['status'] ?? '');
+        $this->assertSame('pass', $checks['Browser title']['status'] ?? '');
+        $this->assertSame('fail', $checks['Favicon (create)']['status'] ?? '');
+        $this->assertSame('fail', $checks['Browser title (create)']['status'] ?? '');
     }
 
     public function testHybridScaffoldVlansPassesListUiSearchSortPagination(): void
