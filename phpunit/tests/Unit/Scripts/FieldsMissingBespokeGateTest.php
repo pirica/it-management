@@ -788,6 +788,49 @@ HTML;
         $this->assertStringContainsString('search reset control', (string) ($check['details'] ?? ''));
     }
 
+    public function testSearchContractAcceptsBookmarksInMemoryListHelper(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $content = <<<'PHP'
+<?php
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$sort = (string)($_GET['sort'] ?? 'title');
+$listResult = bkm_query_bookmarks_for_list($conn, [
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+]);
+?>
+<form method="get">
+<input name="search" value="">
+<a href="index.php" class="btn">🔙</a>
+</form>
+<table></table>
+PHP;
+        $searchCheck = itm_check_search($content, 'index.php');
+        $this->assertSame('pass', $searchCheck['status'] ?? '', (string) ($searchCheck['details'] ?? ''));
+    }
+
+    public function testSortContractAcceptsBookmarksInMemoryListHelper(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $content = <<<'PHP'
+<?php
+$sort = (string)($_GET['sort'] ?? 'title');
+$dir = strtoupper((string)($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+$listResult = bkm_query_bookmarks_for_list($conn, [
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+]);
+$nextDir = ($sort === 'title' && $dir === 'ASC') ? 'DESC' : 'ASC';
+?>
+<table><th><a href="?sort=title">Title <?php if ($sort === 'title') { echo $dir === 'ASC' ? '▲' : '▼'; } ?></a></th></table>
+PHP;
+        $sortCheck = itm_check_sort($content, 'index.php');
+        $this->assertSame('pass', $sortCheck['status'] ?? '', (string) ($sortCheck['details'] ?? ''));
+    }
+
     /**
      * @param list<string> $messages
      * @param list<string> $needles
