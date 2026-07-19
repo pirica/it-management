@@ -21,7 +21,7 @@ Read-only monthly birthday list for the active company. Data is sourced from `em
 
 ## 5. UI Behavior Requirements
 - **index.php only** — no create/edit/delete handlers.
-- Filter card: month `<select>`, **Employment Status** multi-select (`employment_status_id[]`, between Month and Search), and **Search (all fields)** across Name, Day, Department (`departments.code`), and department name (`departments.name`); marked `data-itm-no-export-pdf="1"` and `data-itm-no-export-excel="1"` so PDF/Excel exports omit controls.
+- Filter card: month `<select>`, **Employment Status** multi-select (`employment_status_id[]`, between Month and Search), and **Search (all fields)** across Name, Day, Department (`departments.code`), and department name (`departments.name`); search reset uses emoji-only 🔙 (`title="Clear"`) when a query is active; marked `data-itm-no-export-pdf="1"` and `data-itm-no-export-excel="1"` so PDF/Excel exports omit controls.
 - Table columns: Name (first + last, text only), Day (day of month without leading zeros via `emp_format_birthday_day_only()` — e.g. `1`, `9`, `10`), Department (`departments.code`). No Actions column.
 - List table uses `data-itm-no-import-excel="1"` — no Import Excel / `data-itm-db-import-endpoint` (intentional; index compliance audit honors the opt-out and does not require Actions markers).
 - Default sort: Day ASC (`DAY(e.birthday)`). Also sortable: Name, Department.
