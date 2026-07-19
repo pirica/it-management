@@ -402,3 +402,94 @@ if (!function_exists('itm_vault_reencrypt_notes')) {
         return ['ok' => true, 'message' => ''];
     }
 }
+
+if (!function_exists('itm_vault_reencrypt_events')) {
+    /**
+     * Re-encrypt private event fields for one employee when the vault session key changes.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    function itm_vault_reencrypt_events($conn, $employeeId, $oldKeySession, $newKeySession)
+    {
+        if (!($conn instanceof mysqli)) {
+            return ['ok' => false, 'message' => 'Database connection unavailable.'];
+        }
+
+        $employeeId = (int)$employeeId;
+        if ($employeeId <= 0) {
+            return ['ok' => false, 'message' => 'Invalid employee.'];
+        }
+
+        $oldKeySession = (string)$oldKeySession;
+        $newKeySession = (string)$newKeySession;
+        if ($oldKeySession === '' || $newKeySession === '') {
+            return ['ok' => false, 'message' => 'Invalid vault key material.'];
+        }
+
+        $sel_stmt = mysqli_prepare(
+            $conn,
+            "SELECT id, title, description, location FROM events WHERE employee_id = ? AND active = 1 AND deleted_at IS NULL AND (shared_with_json IS NULL OR shared_with_json = '' OR shared_with_json = '[]')"
+        );
+        if (!$sel_stmt) {
+            return ['ok' => false, 'message' => 'Failed to load events.'];
+        }
+        mysqli_stmt_bind_param($sel_stmt, 'i', $employeeId);
+        if (!mysqli_stmt_execute($sel_stmt)) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to load events.'];
+        }
+
+        $res = mysqli_stmt_get_result($sel_stmt);
+        $upd_stmt = mysqli_prepare(
+            $conn,
+            'UPDATE events SET title = ?, description = ?, location = ? WHERE id = ? AND employee_id = ?'
+        );
+        if (!$upd_stmt) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to prepare event update.'];
+        }
+
+        while ($row = mysqli_fetch_assoc($res)) {
+            $eventId = (int)($row['id'] ?? 0);
+            $fields = [
+                'title' => (string)($row['title'] ?? ''),
+                'description' => (string)($row['description'] ?? ''),
+                'location' => (string)($row['location'] ?? ''),
+            ];
+            foreach ($fields as $field => $stored) {
+                if ($stored === '') {
+                    continue;
+                }
+                $plain = itm_decrypt($stored, $oldKeySession);
+                if ($plain === false || $plain === '') {
+                    if ($field === 'title' && strlen($stored) <= 255) {
+                        $plain = $stored;
+                    } elseif ($field === 'description' && strlen($stored) <= 64 && base64_decode($stored, true) === false) {
+                        $plain = $stored;
+                    } elseif ($field === 'location' && strlen($stored) <= 255) {
+                        $plain = $stored;
+                    } else {
+                        mysqli_stmt_close($upd_stmt);
+                        mysqli_stmt_close($sel_stmt);
+                        return ['ok' => false, 'message' => 'Failed to re-encrypt events. Please try again.'];
+                    }
+                }
+                $fields[$field] = itm_encrypt($plain, $newKeySession);
+            }
+
+            $title = $fields['title'];
+            $description = $fields['description'] === '' ? null : $fields['description'];
+            $location = $fields['location'] === '' ? null : $fields['location'];
+            mysqli_stmt_bind_param($upd_stmt, 'sssii', $title, $description, $location, $eventId, $employeeId);
+            if (!mysqli_stmt_execute($upd_stmt)) {
+                mysqli_stmt_close($upd_stmt);
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt events. Please try again.'];
+            }
+        }
+        mysqli_stmt_close($upd_stmt);
+        mysqli_stmt_close($sel_stmt);
+
+        return ['ok' => true, 'message' => ''];
+    }
+}

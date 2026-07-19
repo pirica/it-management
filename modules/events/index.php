@@ -23,7 +23,36 @@ $crud_action = $crud_action ?? 'index';
 <?php
 require_once '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
+require_once ROOT_PATH . 'includes/events_visibility.php';
+require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+require_once __DIR__ . '/events_vault_bootstrap.php';
+require_once __DIR__ . '/events_vault_helpers.php';
 $logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
+$eventsVaultState = events_handle_vault_requests($conn, $logged_user_id);
+$eventsVaultUnlocked = !empty($eventsVaultState['unlocked']);
+$eventsVaultRedirect = 'index.php';
+if ($crud_action === 'list_all') {
+    $eventsVaultRedirect = 'list_all.php';
+} elseif ($crud_action === 'create') {
+    $eventsVaultRedirect = 'create.php';
+} elseif (in_array($crud_action, ['edit', 'view'], true) && !empty($_GET['id'])) {
+    $eventsVaultRedirect = $crud_action . '.php?id=' . (int)$_GET['id'];
+}
+$users = [];
+$join = itm_employee_active_employment_status_join_sql('e', 'es');
+$predicate = itm_employee_active_employment_status_predicate_sql('es');
+$stmtUsers = $conn->prepare('SELECT e.id, e.username, e.first_name, e.last_name FROM employees e' . $join . ' WHERE e.company_id = ? AND ' . $predicate);
+if ($stmtUsers) {
+    $stmtUsers->bind_param('i', $company_id);
+    $stmtUsers->execute();
+    $resUser = $stmtUsers->get_result();
+    if ($resUser) {
+        while ($rowUser = $resUser->fetch_assoc()) {
+            $users[$rowUser['id']] = $rowUser;
+        }
+    }
+    $stmtUsers->close();
+}
 $pk = 'id';
 
 /**
@@ -226,6 +255,15 @@ function cr_is_hidden_employee_field($field) {
  */
 function cr_render_cell_value($table, $field, $value, $row = []) {
     if ($table === 'events') {
+        if ($field === 'title' && !empty($row['title_locked'])) {
+            return sanitize((string)($row['title_locked_label'] ?? '🔒 Private event'));
+        }
+        if ($field === 'description' && !empty($row['description_locked'])) {
+            return sanitize((string)($row['description_locked_label'] ?? '🔒 Private event'));
+        }
+        if ($field === 'location' && !empty($row['location_locked'])) {
+            return sanitize((string)($row['location_locked_label'] ?? '🔒 Private event'));
+        }
         if ($field === 'category_id' && isset($row['category_name'])) {
             $catName = (string)$row['category_name'];
             $catColor = sanitize((string)($row['category_color'] ?? '#3b82f6'));
@@ -417,7 +455,11 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
 
-// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+// Why: Search and list share visible columns; hide vault internals from forms/list.
+$vaultHiddenFields = ['employee_id', 'title_hash', 'shared_with_json'];
+$uiColumns = array_values(array_filter($uiColumns, static function ($col) use ($vaultHiddenFields) {
+    return !in_array((string)($col['Field'] ?? ''), $vaultHiddenFields, true);
+}));
 $displayFieldColumns = $uiColumns;
 
 // Why: View shows create/update/delete audit stamps while list hides them.
@@ -515,9 +557,10 @@ if (isset($_GET['ajax_action'])) {
     if ($action === 'create_share_session') {
         header('Content-Type: application/json; charset=utf-8');
         require_once __DIR__ . '/events_share_helpers.php';
+        require_once __DIR__ . '/events_vault_helpers.php';
         $eventId = (int)($_POST['id'] ?? 0);
         $ownerUsername = (string)($_SESSION['username'] ?? '');
-        $result = events_share_create_session($conn, $eventId, $company_id, $logged_user_id, $ownerUsername);
+        $result = events_share_create_session($conn, $eventId, $company_id, $logged_user_id, $ownerUsername, $eventsVaultUnlocked);
         if (!$result['ok']) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -539,54 +582,66 @@ if (isset($_GET['ajax_action'])) {
 if (isset($_GET['export']) && $_GET['export'] === 'ics') {
     $export_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-    if ($export_id > 0) {
-        $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND e.id = ? LIMIT 1";
-        $stmt = mysqli_prepare($conn, $sql_export);
-        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $export_id);
-    } else {
-        $start_export = date('Y-m-01', strtotime("-1 year"));
-        $end_export = date('Y-m-t', strtotime("+1 year"));
-        $sql_export = "SELECT e.* FROM events e WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
-                       AND e.start_datetime BETWEEN ? AND ?";
-        $stmt = mysqli_prepare($conn, $sql_export);
-        mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_export, $end_export);
-    }
-
-    $ics_esc = function($text) {
+    $ics_esc = function ($text) {
         $text = str_replace('\\', '\\\\', (string)$text);
         $text = str_replace(',', '\\,', $text);
         $text = str_replace(';', '\\;', $text);
         $text = str_replace(["\r\n", "\n", "\r"], "\\n", $text);
+
         return $text;
     };
 
-    $ics_content = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPROID:-//IT Management System//Calendar//EN\r\n";
-    if ($stmt) {
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($row = mysqli_fetch_assoc($res)) {
-            $ics_content .= "BEGIN:VEVENT\r\n";
-            $ics_content .= "UID:" . $row['id'] . "@it-management\r\n";
-            $ics_content .= "DTSTAMP:" . date('Ymd\THis\Z') . "\r\n";
-            $ics_content .= "DTSTART:" . date('Ymd\THis', strtotime($row['start_datetime'])) . "\r\n";
-            if ($row['end_datetime']) {
-                $ics_content .= "DTEND:" . date('Ymd\THis', strtotime($row['end_datetime'])) . "\r\n";
-            }
-            $ics_content .= "SUMMARY:" . $ics_esc($row['title']) . "\r\n";
-            if ($row['description']) {
-                $ics_content .= "DESCRIPTION:" . $ics_esc($row['description']) . "\r\n";
-            }
-            if ($row['location']) {
-                $ics_content .= "LOCATION:" . $ics_esc($row['location']) . "\r\n";
-            }
-            $ics_content .= "END:VEVENT\r\n";
+    $exportRows = [];
+    if ($export_id > 0) {
+        $exportRow = itm_events_fetch_visible_by_id($conn, $export_id, (int)$company_id, $logged_user_id);
+        if (!$exportRow) {
+            http_response_code(404);
+            exit('Event not found.');
         }
-        mysqli_stmt_close($stmt);
+        events_hydrate_event_row($exportRow, $logged_user_id);
+        $exportRows = [$exportRow];
+    } else {
+        $start_export = date('Y-m-01', strtotime('-1 year'));
+        $end_export = date('Y-m-t', strtotime('+1 year'));
+        $visSql = itm_events_visibility_sql('e');
+        $sql_export = 'SELECT e.* FROM events e WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
+                       AND e.deleted_at IS NULL AND (' . $visSql . ')
+                       AND e.start_datetime BETWEEN ? AND ?';
+        $stmt = mysqli_prepare($conn, $sql_export);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'iiiss', $company_id, $logged_user_id, $logged_user_id, $start_export, $end_export);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            while ($row = mysqli_fetch_assoc($res)) {
+                events_hydrate_event_row($row, $logged_user_id);
+                $exportRows[] = $row;
+            }
+            mysqli_stmt_close($stmt);
+        }
     }
-    $ics_content .= "END:VCALENDAR";
+
+    $ics_content = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPROID:-//IT Management System//Calendar//EN\r\n";
+    foreach ($exportRows as $row) {
+        $ics_content .= "BEGIN:VEVENT\r\n";
+        $ics_content .= 'UID:' . (int)$row['id'] . "@it-management\r\n";
+        $ics_content .= 'DTSTAMP:' . date('Ymd\THis\Z') . "\r\n";
+        $ics_content .= 'DTSTART:' . date('Ymd\THis', strtotime($row['start_datetime'])) . "\r\n";
+        if (!empty($row['end_datetime'])) {
+            $ics_content .= 'DTEND:' . date('Ymd\THis', strtotime($row['end_datetime'])) . "\r\n";
+        }
+        $ics_content .= 'SUMMARY:' . $ics_esc($row['title'] ?? '') . "\r\n";
+        if (!empty($row['description'])) {
+            $ics_content .= 'DESCRIPTION:' . $ics_esc($row['description']) . "\r\n";
+        }
+        if (!empty($row['location'])) {
+            $ics_content .= 'LOCATION:' . $ics_esc($row['location']) . "\r\n";
+        }
+        $ics_content .= "END:VEVENT\r\n";
+    }
+    $ics_content .= 'END:VCALENDAR';
 
     header('Content-Type: text/calendar; charset=utf-8');
-    $filename = "events_export_" . ($export_id > 0 ? "id_$export_id" : date('Ymd')) . ".ics";
+    $filename = 'events_export_' . ($export_id > 0 ? 'id_' . $export_id : date('Ymd')) . '.ics';
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     echo $ics_content;
     exit;
@@ -609,6 +664,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         if (!$hasCompany || $company_id <= 0) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Import requires an active company.']);
+            exit;
+        }
+
+        if (empty($_SESSION['vault_key'])) {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Unlock the vault to import events.']);
             exit;
         }
 
@@ -707,6 +768,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             if ($hasCompany) {
                 $rowData['company_id'] = (string)(int)$company_id;
             }
+            $rowData['employee_id'] = (string)(int)$logged_user_id;
+
+            $plainTitle = trim((string)($rowData['title'] ?? ''), "'");
+            $plainDescription = trim((string)($rowData['description'] ?? ''), "'");
+            $plainLocation = trim((string)($rowData['location'] ?? ''), "'");
+            if ($plainTitle === 'NULL') {
+                $plainTitle = '';
+            }
+            if ($plainDescription === 'NULL') {
+                $plainDescription = '';
+            }
+            if ($plainLocation === 'NULL') {
+                $plainLocation = '';
+            }
+            $preparedImport = events_prepare_event_fields_for_storage($plainTitle, $plainDescription, $plainLocation, null);
+            if ($preparedImport === null) {
+                continue;
+            }
+            $rowData['title'] = "'" . mysqli_real_escape_string($conn, $preparedImport['title']) . "'";
+            $rowData['title_hash'] = "'" . mysqli_real_escape_string($conn, $preparedImport['title_hash']) . "'";
+            $rowData['description'] = $preparedImport['description'] !== null
+                ? "'" . mysqli_real_escape_string($conn, $preparedImport['description']) . "'"
+                : 'NULL';
+            $rowData['location'] = $preparedImport['location'] !== null
+                ? "'" . mysqli_real_escape_string($conn, $preparedImport['location']) . "'"
+                : 'NULL';
+            $rowData['shared_with_json'] = 'NULL';
 
             $fields = [];
             $values = [];
@@ -866,21 +954,16 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
-    $hasCompanyFilter = ($hasCompany && $company_id > 0);
-    $where = ' WHERE id=?';
-    if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
-    $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'ii', $editId, $company_id); }
-        else { mysqli_stmt_bind_param($stmt, 'i', $editId); }
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $data = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : [];
-        mysqli_stmt_close($stmt);
+    $data = itm_events_fetch_visible_by_id($conn, $editId, (int)$company_id, $logged_user_id) ?: [];
+    if ($data) {
+        events_hydrate_event_row($data, $logged_user_id);
     }
 
     if (!$data) { $errors[] = 'Record not found.'; }
+    elseif ($crud_action === 'edit' && (int)($data['employee_id'] ?? 0) !== $logged_user_id) {
+        $errors[] = 'Only the event owner can edit this record.';
+        $data = [];
+    }
 }
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
@@ -1050,6 +1133,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // PERSISTENCE (Prepared Statements)
     if (empty($errors)) {
+        $sharedUsers = array_filter(array_map('intval', (array)($_POST['shared_with_json'] ?? [])));
+        $sharedWithJson = !empty($sharedUsers) ? json_encode(array_values($sharedUsers)) : null;
+        if ($crud_action === 'create') {
+            $data['employee_id'] = $logged_user_id;
+        }
+        $preparedEvent = events_prepare_event_fields_for_storage(
+            (string)($data['title'] ?? ''),
+            (string)($data['description'] ?? ''),
+            (string)($data['location'] ?? ''),
+            $sharedWithJson
+        );
+        if ($preparedEvent === null) {
+            $errors[] = 'Unlock the vault to save private events.';
+        } else {
+            $data['title'] = $preparedEvent['title'];
+            $data['title_hash'] = $preparedEvent['title_hash'];
+            $data['description'] = $preparedEvent['description'];
+            $data['location'] = $preparedEvent['location'];
+            $data['shared_with_json'] = $sharedWithJson;
+        }
+    }
+
+    if (empty($errors)) {
         if ($crud_action === 'create' && function_exists('itm_crud_stamp_create_audit')) {
             $sqlValuesStamp = null;
             itm_crud_stamp_create_audit($data, $sqlValuesStamp);
@@ -1092,6 +1198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $hasCompanyFilter = ($hasCompany && $company_id > 0);
             $where = ' WHERE id=?';
             if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+            if ($crud_action === 'edit') { $where .= ' AND employee_id=?'; }
             $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
 
             $stmt = mysqli_prepare($conn, $sql);
@@ -1101,6 +1208,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 if ($hasCompanyFilter) {
                     $types .= 'i';
                     $params[] = $company_id;
+                }
+                if ($crud_action === 'edit') {
+                    $types .= 'i';
+                    $params[] = $logged_user_id;
                 }
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
@@ -1116,68 +1227,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 // FETCH LIST DATA (Pagination, Search, and Sort)
-$where = '';
-if ($hasCompany && $company_id > 0) { $where = ' WHERE e.company_id=' . (int)$company_id; }
-if (function_exists('itm_crud_append_not_deleted_predicate')) {
-    $where = itm_crud_append_not_deleted_predicate($where, 'e');
-}
-
-// SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));
-if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-    $searchConditions = ["CAST(e.`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($displayFieldColumns as $col) {
-        $fieldName = (string)($col['Field'] ?? '');
-        if ($fieldName === '') { continue; }
-        $searchConditions[] = 'CAST(e.' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
-    }
-    
-    $itmFkSearchFields = [];
-    foreach ($displayFieldColumns as $col) {
-        $itmFkFieldName = (string)($col['Field'] ?? '');
-        if ($itmFkFieldName !== '') {
-            $itmFkSearchFields[] = $itmFkFieldName;
-        }
-    }
-    if (!empty($fkMap)) {
-        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, 'e', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
-        if (!empty($itmFkLabelSearch)) {
-            $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
-        }
-    }
-
-if (!empty($searchConditions)) {
-        $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
-    }
-}
-
-// SORTING
 $sortableColumns = array_map(static function ($col) { return $col['Field']; }, $fieldColumns);
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
 if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
-$sortSql = 'e.' . cr_escape_identifier($sort) . ' ' . $dir;
 
-// PAGINATION
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
-$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . ' e ' . $where);
-$totalRows = 0;
-if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) { $totalRows = (int)($countRow['total_rows'] ?? 0); }
-$totalPages = max(1, (int)ceil($totalRows / $perPage));
+$eventListData = events_query_events_for_list($conn, [
+    'company_id' => (int)$company_id,
+    'employee_id' => $logged_user_id,
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+    'page' => isset($_GET['page']) ? (int)$_GET['page'] : 1,
+    'per_page' => $perPage,
+    'users' => $users,
+]);
+$eventListRows = $eventListData['rows'];
+$totalRows = (int)$eventListData['totalRows'];
+$totalPages = (int)$eventListData['totalPages'];
+$page = (int)$eventListData['page'];
 $showBulkActions = ($totalRows >= $perPage);
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) { $page = 1; }
-if ($page > $totalPages) { $page = $totalPages; }
 $offset = ($page - 1) * $perPage;
-
-$rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as category_color, u.first_name, u.last_name, u.username
-     FROM events e
-     LEFT JOIN event_categories ec ON e.category_id = ec.id
-     LEFT JOIN employees u ON e.assigned_to_employee_id = u.id
-     ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
@@ -1210,7 +1283,9 @@ if (!isset($crud_title)) {
                 <div class="alert alert-success"><?php echo sanitize($success); ?></div>
             <?php endif; ?>
 
-            <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
+            <?php if (events_ui_requires_vault_lock_screen($crud_action, $eventsVaultState, $logged_user_id, $data ?: null)): ?>
+                <?php events_render_vault_lock_screen($csrfToken, $eventsVaultState, $eventsVaultRedirect); ?>
+            <?php elseif (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <!-- LIST VIEW -->
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
@@ -1334,7 +1409,7 @@ if (!isset($crud_title)) {
                         </tr>
                         </thead>
                         <tbody>
-                        <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
+                        <?php if (!empty($eventListRows)): foreach ($eventListRows as $row): ?>
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
@@ -1364,7 +1439,7 @@ if (!isset($crud_title)) {
                                     </div>
                                 </td>
                             </tr>
-                        <?php endwhile; else: ?>
+                        <?php endforeach; else: ?>
                             <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
@@ -1471,6 +1546,24 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                    <div class="form-group">
+                        <label>Shared With</label>
+                        <select name="shared_with_json[]" multiple size="5" data-addable-select="1" data-add-table="employees" data-add-label-col="username" data-add-company-scoped="1">
+                            <?php
+                            $sharedUsers = json_decode($data['shared_with_json'] ?? '[]', true);
+                            if (!is_array($sharedUsers)) {
+                                $sharedUsers = [];
+                            }
+                            foreach ($users as $uid => $userRow):
+                                if ((int)$uid === (int)$logged_user_id) {
+                                    continue;
+                                }
+                            ?>
+                                <option value="<?php echo (int)$uid; ?>" <?php echo in_array((int)$uid, array_map('intval', $sharedUsers), true) ? 'selected' : ''; ?>><?php echo sanitize((string)($userRow['username'] ?? '')); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small style="color:var(--text-secondary);">Leave empty for a private vault-encrypted event.</small>
+                    </div>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1510,6 +1603,23 @@ if (!isset($crud_title)) {
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $viewRow[$f] ?? '', $viewRow); ?></td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr>
+                            <th style="width:240px;">Shared With</th>
+                            <td><?php
+                                $sharedUserIds = json_decode($viewRow['shared_with_json'] ?? '[]', true);
+                                if (!is_array($sharedUserIds) || empty($sharedUserIds)) {
+                                    echo 'Private';
+                                } else {
+                                    $sharedNames = [];
+                                    foreach ($sharedUserIds as $uid) {
+                                        if (isset($users[$uid])) {
+                                            $sharedNames[] = (string)($users[$uid]['username'] ?? '');
+                                        }
+                                    }
+                                    echo sanitize(implode(', ', $sharedNames));
+                                }
+                            ?></td>
+                        </tr>
                         </tbody>
                     </table>
                     <p style="margin-top:16px;">
