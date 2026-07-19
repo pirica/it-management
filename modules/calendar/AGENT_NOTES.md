@@ -28,6 +28,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - ICS export via `?export=ics` (events in ±1 year window).
 - Integrated sources skipped when parent module disabled (`has_module_access()` per slug).
 - **Side panel create:** links to `modules/events/create.php` with `start_date` preset to the selected day; visible control is emoji-only ➕ (`title="Add a new event"`).
+- **No local CRUD shell:** `index.php` only — no list table, pagination, or `modules/calendar/create.php` / `view.php`. Create/view deep-link to source modules (`events`, `alerts`, `tickets`, `equipment`, `patches_updates`). Gate-excluded UI configuration checks reviewed in `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
 - **Responsive:** side panel stacks above calendar below 768px; week/day grids scroll horizontally on narrow screens.
 
 ## 6. API Actions (If Applicable)
