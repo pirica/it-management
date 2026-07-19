@@ -147,6 +147,7 @@ function bdays_sort_indicator($column, $currentSort, $currentDir) {
 }
 
 $monthLabel = date('F', mktime(0, 0, 0, $selectedMonth, 1));
+$bdaysSearchMatchSuffix = $search !== '' ? ' matching <strong>' . sanitize($search) . '</strong>' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -207,7 +208,7 @@ if (!isset($crud_title)) {
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label for="search">Search (all fields)</label>
-                        <input type="search" name="search" id="search" class="form-control" value="<?= sanitize($search) ?>" placeholder="Type to search...">
+                        <input type="search" name="search" id="search" class="form-control" value="<?php echo sanitize($search); ?>" placeholder="Type to search...">
                     </div>
                     <input type="hidden" name="sort" value="<?= sanitize($sort) ?>">
                     <input type="hidden" name="dir" value="<?= sanitize($dir) ?>">
@@ -229,7 +230,7 @@ if (!isset($crud_title)) {
             </div>
 
             <div class="card" style="margin-bottom:8px;">
-                <p style="margin:0;" class="muted">Showing birthdays in <strong><?= sanitize($monthLabel) ?></strong><?= !empty($selectedStatusNames) ? ' for <strong>' . sanitize(implode(', ', $selectedStatusNames)) . '</strong> employees' : '' ?><?= $search !== '' ? ' matching <strong>' . sanitize($search) . '</strong>' : '' ?>.</p>
+                <p style="margin:0;" class="muted">Showing birthdays in <strong><?= sanitize($monthLabel) ?></strong><?= !empty($selectedStatusNames) ? ' for <strong>' . sanitize(implode(', ', $selectedStatusNames)) . '</strong> employees' : '' ?><?php echo $bdaysSearchMatchSuffix; ?>.</p>
             </div>
 
             <div class="card" style="overflow:auto;">
