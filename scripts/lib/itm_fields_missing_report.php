@@ -2091,6 +2091,37 @@ if (!function_exists('itm_fields_missing_apply_skipped_ui_coverage_gate')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_audit_bespoke_deferred_ui_coverage')) {
+    /**
+     * Bespoke/deferred UI modules with schema tables: run gated UI contract checks only.
+     *
+     * @param list<string> $expectedColumns
+     * @param list<string> $formPaths
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,delete?:string} $files
+     * @param list<string> $passes
+     * @param list<array{code:string,message:string}> $failures
+     */
+    function itm_fields_missing_audit_bespoke_deferred_ui_coverage(
+        string $moduleSlug,
+        array $expectedColumns,
+        array $formPaths,
+        array $files,
+        array &$passes,
+        array &$failures
+    ): void {
+        $statusDriven = in_array($moduleSlug, itm_fields_missing_status_driven_slugs(), true);
+        itm_fields_missing_apply_skipped_ui_coverage_gate(
+            $moduleSlug,
+            $expectedColumns,
+            $formPaths,
+            $files,
+            $passes,
+            $failures,
+            $statusDriven
+        );
+    }
+}
+
 if (!function_exists('itm_fields_missing_audit_bespoke_soft_delete_contract')) {
     /**
      * Bespoke scaffold hybrids (cr_manageable_columns) on tables with deleted_at must soft-delete
