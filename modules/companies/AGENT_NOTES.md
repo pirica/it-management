@@ -17,6 +17,7 @@ Manages the top-level tenant entities ("Companies") in the multi-tenant system. 
 ## 5. UI Behavior Requirements
 - **List heading:** centered `h1` with `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` inside `data-itm-new-button-managed="server"` row; `new_button_position` gates left/right ➕ create buttons.
 - **Bulk toolbar:** when `$totalRows >= $perPage`, `bulk-delete-form` includes Select to Delete, Cancel (`data-itm-bulk-cancel="1"`, `type="button"`), Clear Table, and `bulk-delete-selection.js` in index HTML (bespoke gate contract).
+- **View audit meta:** `view.php` renders all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) via `itm_crud_render_audit_cell_value()` with the viewed company `id` as tenant scope for employee-name lookups (`*_by`) and `d-m-Y - H:i:s` timestamps (`*_at`).
 - **Active checkbox** (`create.php`, used by `edit.php` wrapper): `itm-checkbox-control` + `itm-check-indicator` (✅/❌). Change listener lives in its own `<script>` block after closed `<script src="../../js/theme.js"></script>` — do not nest listener inside the external script tag.
 - **Dashboard Integration**: Selected company is stored in `$_SESSION['company_id']`.
 

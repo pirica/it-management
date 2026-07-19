@@ -3,7 +3,7 @@
  * Companies Module - View
  * 
  * Displays the full profile of a single company, including contact details,
- * VAT information, and creation/update timestamps.
+ * VAT information, and audit meta (created/updated/deleted by/at).
  */
 
 require '../../config/config.php';
@@ -121,8 +121,13 @@ if (!isset($crud_title)) {
                         <tr><th>Comments</th><td><?php echo nl2br(sanitize(itm_company_view_value($itemNormalized, ['comments']))); ?></td></tr>
                         <?php $activeValue = (int)itm_company_view_value($itemNormalized, ['active', 'status'], '0'); ?>
                         <tr><th>Status</th><td><?php echo $activeValue === 1 ? '✅' : '❌'; ?></td></tr>
-                        <tr><th>Created</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['created_at', 'created'])); ?></td></tr>
-                        <tr><th>Updated</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['updated_at', 'updated'])); ?></td></tr>
+                        <?php $companyAuditScopeId = (int)itm_company_view_value($itemNormalized, ['id']); ?>
+                        <tr><th>Deleted By</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'deleted_by', $itemNormalized['deleted_by'] ?? null); ?></td></tr>
+                        <tr><th>Deleted At</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'deleted_at', $itemNormalized['deleted_at'] ?? null); ?></td></tr>
+                        <tr><th>Created By</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'created_by', $itemNormalized['created_by'] ?? null); ?></td></tr>
+                        <tr><th>Created At</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'created_at', $itemNormalized['created_at'] ?? null); ?></td></tr>
+                        <tr><th>Updated By</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'updated_by', $itemNormalized['updated_by'] ?? null); ?></td></tr>
+                        <tr><th>Updated At</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'updated_at', $itemNormalized['updated_at'] ?? null); ?></td></tr>
                         </tbody>
                     </table>
                 <?php endif; ?>
