@@ -214,6 +214,10 @@ if (($_GET['export'] ?? '') === 'csv') {
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '🔐 Employee System Access';
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -238,9 +242,18 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:20px;min-height:40px;flex-wrap:wrap;">
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <span></span>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
-                <a href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'export' => 'csv'])); ?>" class="btn btn-primary">⬇ Export CSV</a>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <a href="?<?php echo sanitize(esa_module_build_query(['search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'export' => 'csv'])); ?>" class="btn btn-primary" title="Export CSV">⬇</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <?php echo itm_render_alert_errors($employeeSystemAccessError ?? ''); ?>

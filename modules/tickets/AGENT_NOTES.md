@@ -58,4 +58,5 @@ $stmt->execute();
 ```
 
 ## 12. Module Owner Notes (Optional)
+- **`database.sql` seeds:** one `TCK-0001` row per seeded company (ids 1–5), each with tenant `Open` `status_id`. The late `@replicate_source_company_id` block does **not** copy `tickets` — explicit per-company inserts are the only seed rows (avoids duplicate open tickets on import).
 The primary interface for IT support operations.

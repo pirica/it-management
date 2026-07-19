@@ -4806,41 +4806,6 @@ WHERE e.`password` IS NOT NULL
     FROM `employee_companies` uc
     WHERE uc.`employee_id` = e.`id` AND uc.`company_id` = e.`company_id`
   );
-INSERT IGNORE INTO `tickets` (`company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `created_at`)
-SELECT
-    c.`id`,
-    t.`ticket_external_code`,
-    t.`title`,
-    t.`description`,
-    tc_target.`id`,
-    ts_target.`id`,
-    tp_target.`id`,
-    COALESCE(e_creator_target.`id`, e_fallback.`id`),
-    e_assignee_target.`id`,
-    e_target.`id`,
-    '2026-01-01 00:00:01'
-FROM `tickets` t
-JOIN `companies` c ON c.`id` <> t.`company_id`
-LEFT JOIN `ticket_categories` tc_source ON tc_source.`id` = t.`category_id`
-LEFT JOIN `ticket_categories` tc_target ON tc_target.`company_id` = c.`id` AND tc_target.`name` = tc_source.`name`
-LEFT JOIN `ticket_statuses` ts_source ON ts_source.`id` = t.`status_id`
-LEFT JOIN `ticket_statuses` ts_target ON ts_target.`company_id` = c.`id` AND ts_target.`name` = ts_source.`name`
-LEFT JOIN `ticket_priorities` tp_source ON tp_source.`id` = t.`priority_id`
-LEFT JOIN `ticket_priorities` tp_target ON tp_target.`company_id` = c.`id` AND tp_target.`name` = tp_source.`name`
-LEFT JOIN `employees` e_creator_source ON e_creator_source.`id` = t.`created_by_employee_id`
-LEFT JOIN `employees` e_creator_target ON e_creator_target.`company_id` = c.`id` AND e_creator_target.`username` = e_creator_source.`username`
-LEFT JOIN `employees` e_assignee_source ON e_assignee_source.`id` = t.`assigned_to_employee_id`
-LEFT JOIN `employees` e_assignee_target ON e_assignee_target.`company_id` = c.`id` AND e_assignee_target.`username` = e_assignee_source.`username`
-LEFT JOIN (
-    SELECT e1.`company_id`, MIN(e1.`id`) AS `id`
-    FROM `employees` e1
-    WHERE e1.`password` IS NOT NULL
-    GROUP BY e1.`company_id`
-) e_fallback ON e_fallback.`company_id` = c.`id`
-LEFT JOIN `equipment` e_source ON e_source.`id` = t.`equipment_id`
-LEFT JOIN `equipment` e_target ON e_target.`company_id` = c.`id` AND e_target.`name` = e_source.`name`
-WHERE t.`company_id` = @replicate_source_company_id
-  AND COALESCE(e_creator_target.`id`, e_fallback.`id`) IS NOT NULL;
 INSERT IGNORE INTO `ui_configuration` (
     `company_id`,
     `employee_id`,
