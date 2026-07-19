@@ -12,7 +12,7 @@ Manages Virtual LAN (VLAN) definitions, including names, IDs, and descriptions.
 
 ## 4. Business Rules (Critical for Agents)
 - **Unique ID**: VLAN ID must be unique within a company.
-- **Soft-delete**: `delete.php` routes to `index.php`; single/bulk/clear use `itm_crud_build_soft_delete_sql()` (`deleted_by`, `deleted_at`, `active=0`). List/count queries append `itm_crud_append_not_deleted_predicate()` so soft-deleted rows stay off index/list_all. Single delete still calls `itm_can_delete_record()` before soft-delete when inbound usage blocks removal.
+- **Hard delete**: `delete.php` / bulk/clear use hard `DELETE` (detach `switch_ports`, `idf_ports`, `ip_subnets` `vlan_id` first). Reviewed in `scripts/data/fields_missing_reviewed.json` — no scaffold soft-delete or `deleted_at IS NULL` list filter.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).

@@ -2760,6 +2760,13 @@ if (!function_exists('itm_fields_missing_extract_failure_message')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_status_line_is_reviewed_skip_fail')) {
+    function itm_fields_missing_status_line_is_reviewed_skip_fail(string $line): bool
+    {
+        return preg_match('/^\[SKIP\]\[fail\]\[reviewed\]/', $line) === 1;
+    }
+}
+
 if (!function_exists('itm_fields_missing_format_failure_message_with_module_link')) {
     /**
      * Browser: replace leading module slug with a link to modules/{slug}/index.php.
@@ -2793,7 +2800,7 @@ if (!function_exists('itm_fields_missing_format_status_line_with_module_link')) 
     function itm_fields_missing_format_status_line_with_module_link(string $line, string $moduleSlug): string
     {
         $moduleSlug = trim($moduleSlug);
-        if ($moduleSlug === '') {
+        if ($moduleSlug === '' || itm_fields_missing_status_line_is_reviewed_skip_fail($line)) {
             return $line;
         }
         if (strpos($line, '<a ') !== false) {
@@ -2909,7 +2916,8 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
             $reviewed = is_array($failure)
                 && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure);
             $label = itm_fields_missing_result_status_label($skippedUi, false, $reviewed);
-            itm_fields_missing_echo_status_line("{$label} {$message}", $nl, $moduleSlug);
+            $linkSlug = $reviewed ? '' : $moduleSlug;
+            itm_fields_missing_echo_status_line("{$label} {$message}", $nl, $linkSlug);
         }
         foreach ($moduleReport['passes'] ?? [] as $passLine) {
             $passText = trim((string) $passLine);
@@ -2938,10 +2946,11 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
                 if ($reviewedCount > 0 && !$allReviewed) {
                     $suffix = ' (' . $reviewedCount . '/' . $failCount . ' reviewed)';
                 }
+                $summarySlug = $allReviewed ? '' : $moduleSlug;
                 itm_fields_missing_echo_status_line(
                     $summaryLabel . ' ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)' . $suffix,
                     $nl,
-                    $moduleSlug
+                    $summarySlug
                 );
             } else {
                 itm_fields_missing_echo_status_line(
@@ -3336,7 +3345,7 @@ if (!function_exists('itm_fields_missing_format_legend')) {
         $out .= '  List heading layout — centered h1 + Settings new_button_position left/right gates' . $nl;
         $out .= '  List heading emoji — $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()' . $nl;
         $out .= '  [SKIP][pass] / [SKIP][fail] — one line per gated check (OK / NOT OK); n/a checks are omitted' . $nl;
-        $out .= '  [SKIP][fail][reviewed] — bespoke gate failure listed in scripts/data/fields_missing_reviewed.json (informational)' . $nl;
+        $out .= '  [SKIP][fail][reviewed] — bespoke gate failure listed in scripts/data/fields_missing_reviewed.json (informational; module slug is plain text, not a link)' . $nl;
         $out .= '  [SKIP][pass] module summary does not audit business columns — see Audit summary footer' . $nl;
         $out .= '  Static HTML name= scrape — literal name="..." in create/edit (or index for UI-only); not the full dynamic UI' . $nl;
         $out .= '  Inferred form columns — derived from $uiColumns, cr_manageable_columns, or employees matrix' . $nl;
@@ -3399,7 +3408,9 @@ if (!function_exists('itm_fields_missing_format_skip_gate_failure_summary_block'
             $reviewed = !empty($failure['reviewed'])
                 || ($moduleSlug !== '' && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure));
             $prefix = $reviewed ? '[SKIP][fail][reviewed]' : '[SKIP][fail]';
-            $messageOut = itm_fields_missing_format_failure_message_with_module_link($message, $moduleSlug);
+            $messageOut = $reviewed
+                ? $message
+                : itm_fields_missing_format_failure_message_with_module_link($message, $moduleSlug);
             $line = $prefix . ' ' . $messageOut;
             $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
         }

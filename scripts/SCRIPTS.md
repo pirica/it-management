@@ -962,7 +962,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 
 #### `fields_missing` reviewed exceptions (`scripts/data/fields_missing_reviewed.json`)
 
-Use this registry when a bespoke module **intentionally** fails a gated UI check (Search, Sort, Pagination, list heading layout, …) and the team has reviewed the gap. Matching failures still run every audit; output changes from `[SKIP][fail]` to **`[SKIP][fail][reviewed]`** only. Exit code and `failure_count` are unchanged (`[SKIP][fail]` remains informational).
+Use this registry when a bespoke module **intentionally** fails a gated UI check (Search, Sort, Pagination, list heading layout, …) and the team has reviewed the gap. Matching failures still run every audit; output changes from `[SKIP][fail]` to **`[SKIP][fail][reviewed]`** only. Exit code and `failure_count` are unchanged (`[SKIP][fail]` remains informational). Browser audit output keeps the module slug as plain text on `[SKIP][fail][reviewed]` lines (no `modules/<slug>/index.php` link).
 
 | Field | Required | Purpose |
 |-------|----------|---------|

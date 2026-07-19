@@ -746,6 +746,38 @@ PHP;
         $this->assertSame($line, $formatted);
     }
 
+    public function testFormatStatusLineWithModuleLinkSkipsReviewedLinesEvenWhenBrowserLinksWouldApply(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_browser_nav.php';
+        $line = '[SKIP][fail][reviewed] vlans bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)';
+        $formatted = itm_fields_missing_format_status_line_with_module_link($line, 'vlans');
+        $this->assertSame($line, $formatted);
+        $this->assertStringNotContainsString('<a href=', $formatted);
+    }
+
+    public function testSkipGateFailureSummaryDoesNotEmbedModuleLinkForReviewedFailures(): void
+    {
+        $report = [
+            'modules' => [
+                [
+                    'module' => 'vlans',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        [
+                            'code' => 'bespoke_hard_delete',
+                            'message' => 'vlans bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)',
+                            'reviewed' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $block = itm_fields_missing_format_skip_gate_failure_summary_block($report, "\n");
+        $this->assertStringContainsString('[SKIP][fail][reviewed] vlans bespoke gate: delete uses hard DELETE', $block);
+        $this->assertStringNotContainsString('<a href=', $block);
+    }
+
     public function testSkipGateFailureSummaryDoesNotEmbedModuleLinkInCli(): void
     {
         $report = [
