@@ -44,6 +44,7 @@ Secure private password manager with vault encryption. It allows users to store 
 - **Copy-to-Clipboard**: Provide a 🗐 icon for copying fields (Account, Login, Password, Website, Comments) to the clipboard.
 - **Password Generator**: Features length slider, character type toggles, and strength meter. Manual edits to the generated password field update the displayed length and strength meter live.
 - **AJAX Driven**: Folder and entry CRUD operations are handled via AJAX to `ajax_handler.php`.
+- **Folder drag-and-drop:** folders can be reparented via drag-and-drop in the sidebar tree (mirrors `modules/bookmarks/`). Dropping onto a destination with a same-named sibling prompts to merge (move entries/subfolders into the existing folder and delete the source) or keep both folders with the same name. Edit-folder parent changes use the same merge prompt.
 - **QR / code share (`join.php`):** vault-unlocked temporary read links (30 min). `password_share_sessions` stores plaintext `payload_json` snapshot (decrypted fields). UI: 📱, `images/whatsapp.svg`, and 📨 on entry list actions and `view.php`; modal via `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_whatsapp_share.php`, `php scripts/verify_outlook_share.php`.
 - **View:** `view.php` read-only entry detail (vault-unlocked) with 🔎 list action, masked password + copy, share controls, and ✏️ link back to `index.php?edit_entry=` modal.
 
@@ -54,7 +55,8 @@ Secure private password manager with vault encryption. It allows users to store 
 All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSON.
 
 - **list_folders** — retrieves folder tree for sidebar
-- **save_folder** — create/update folder (`id`, `name`, `parent_id`)
+- **save_folder** — create/update folder (`id`, `name`, `parent_id`, optional `merge_into_folder_id`)
+- **move_folder** — reparent folder (`folder_id`, `new_parent_id`, optional `merge_into_folder_id`); uses `passwords_folder_helpers.php`
 - **delete_folder** — remove folder
 - **list_entries** — retrieves entries for selected folder; supports search (`folder_id`, `search`)
 - **get_entry** — retrieves single entry for editing (decrypts password)
@@ -72,6 +74,7 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 - **delete.php** — bulk delete / clear table wrapper (`crud_action=delete`)
 - **view.php** — read-only entry detail with share actions
 - **ajax_handler.php** — central AJAX handler for encryption and CRUD
+- **passwords_folder_helpers.php** — folder move/merge helpers (`pwd_move_folder()`, `pwd_merge_folder_into()`)
 - **passwords_share_helpers.php** — QR share session builder (`passwords_share_create_session()`)
 - **join.php** — public 6-digit / token join page for shared password snapshots
 - **export_handler.php** — secure export handler (XLSX, CSV, PDF, TXT)

@@ -181,6 +181,12 @@ if (!isset($crud_title)) {
         .folder-item.active { background: var(--accent); color: #fff; }
         .folder-item.active a { color: #fff; font-weight: bold; }
         .folder-item a { text-decoration: none; color: inherit; flex: 1; }
+        .pwd-folder-tree { list-style: none; padding: 0; margin: 0; }
+        .pwd-folder-tree-children { list-style: none; padding: 0; margin: 0 0 0 12px; }
+        .pwd-folder-tree-item[drag-over="true"] > .folder-item {
+            background: rgba(9, 105, 218, 0.1) !important;
+            border: 1px dashed var(--accent);
+        }
         .strength-meter {
             height: 6px;
             background: var(--bg-tertiary);
@@ -463,6 +469,7 @@ if (!isset($crud_title)) {
 const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 const pwdShowBulkActions = <?php echo $showBulkActions ? 'true' : 'false'; ?>;
 const pwdListColspan = <?php echo (int)($showBulkActions ? 6 : 5); ?>;
+let pwdFoldersData = [];
 let currentFolderId = 0;
 let searchQuery = '';
 
@@ -572,37 +579,197 @@ function saveGeneratedPassword() {
 
 function loadFolderTree() {
     apiCall('list_folders').then(data => {
+        pwdFoldersData = Array.isArray(data) ? data : [];
         const tree = document.getElementById('folder-tree');
         if (!tree) return;
         const selectEntry = document.getElementById('entry-folder_id');
         const selectFolder = document.getElementById('folder-parent_id');
         const selectImport = document.getElementById('import-folder_id');
         const selectImportExcel = document.getElementById('import-excel-folder_id');
-        let treeHtml = '';
         let optionsHtml = '<option value="0">-- Root --</option>';
-        const buildTree = (parentId, level = 0) => {
-            const children = Array.isArray(data) ? data.filter(f => (f.parent_id == parentId) || (parentId === 0 && !f.parent_id)) : [];
+
+        const buildOptions = (parentId, level = 0) => {
+            const children = pwdFoldersData.filter(f => (f.parent_id == parentId) || (parentId === 0 && !f.parent_id));
             children.forEach(f => {
-                const isActive = f.id == currentFolderId;
-                treeHtml += `<div class="folder-item ${isActive ? 'active' : ''}" style="margin-left: ${level * 15}px">
-                    <a href="#" onclick="selectFolder(${f.id}); return false;">📁 ${sanitizeHtml(f.name)}</a>
-                    <div>
-                        <button class="btn btn-link btn-sm p-0" onclick="openFolderModal(${f.id}, '${addslashes(f.name)}', ${f.parent_id})">✏️</button>
-                        <button class="btn btn-link btn-sm p-0 text-danger" onclick="deleteFolder(${f.id})">🗑️</button>
-                    </div>
-                </div>`;
                 optionsHtml += `<option value="${f.id}">${'&nbsp;'.repeat(level * 2)}${sanitizeHtml(f.name)}</option>`;
-                buildTree(f.id, level + 1);
+                buildOptions(f.id, level + 1);
             });
         };
-        buildTree(0);
-        tree.innerHTML = treeHtml || '<div class="text-muted text-center">No folders.</div>';
+
+        const renderBranch = (parentId) => {
+            const children = pwdFoldersData.filter(f => (f.parent_id == parentId) || (parentId === 0 && !f.parent_id));
+            if (!children.length) {
+                return '';
+            }
+            let html = '<ul class="pwd-folder-tree-children">';
+            children.forEach(f => {
+                const isActive = parseInt(f.id, 10) === parseInt(currentFolderId, 10);
+                const nameAttr = escapeHtmlAttr(f.name || '');
+                html += `<li class="pwd-folder-tree-item" data-folder-id="${f.id}" data-folder-name="${nameAttr}" draggable="true" ondragstart="pwdFolderDrag(event)" ondrop="pwdFolderDrop(event)" ondragover="pwdFolderAllowDrop(event)">
+                    <div class="folder-item ${isActive ? 'active' : ''}">
+                        <a href="#" onclick="selectFolder(${f.id}); return false;">📁 ${sanitizeHtml(f.name)}</a>
+                        <div>
+                            <button class="btn btn-link btn-sm p-0" type="button" onclick="openFolderModal(${f.id}, '${addslashes(f.name)}', ${f.parent_id || 0})" title="Edit">✏️</button>
+                            <button class="btn btn-link btn-sm p-0 text-danger" type="button" onclick="deleteFolder(${f.id})" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    ${renderBranch(f.id)}
+                </li>`;
+            });
+            html += '</ul>';
+            return html;
+        };
+
+        buildOptions(0);
+        const rootActive = parseInt(currentFolderId, 10) === 0;
+        let treeHtml = `<ul class="pwd-folder-tree">
+            <li class="pwd-folder-tree-item pwd-folder-tree-root" data-folder-id="0" data-folder-name="" ondrop="pwdFolderDrop(event)" ondragover="pwdFolderAllowDrop(event)">
+                <div class="folder-item ${rootActive ? 'active' : ''}">
+                    <a href="#" onclick="selectFolder(0); return false;">📁 All entries</a>
+                </div>
+                ${renderBranch(0)}
+            </li>
+        </ul>`;
+
+        tree.innerHTML = pwdFoldersData.length ? treeHtml : '<div class="text-muted text-center">No folders.</div>';
         if (selectEntry) selectEntry.innerHTML = optionsHtml;
         if (selectFolder) selectFolder.innerHTML = optionsHtml;
         if (selectImport) selectImport.innerHTML = optionsHtml;
         if (selectImportExcel) selectImportExcel.innerHTML = optionsHtml;
     });
 }
+
+function escapeHtmlAttr(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function pwdNormalizedFolderName(name) {
+    return (name || '').trim().toLowerCase();
+}
+
+function pwdGetFolderName(folderId) {
+    if (folderId === 0 || folderId === '0') {
+        return '';
+    }
+    const row = pwdFoldersData.find(f => String(f.id) === String(folderId));
+    return row ? (row.name || '') : '';
+}
+
+function pwdFindSiblingFolderWithName(parentFolderId, sourceFolderId, sourceName) {
+    const normalized = pwdNormalizedFolderName(sourceName);
+    if (!normalized) {
+        return null;
+    }
+    for (let i = 0; i < pwdFoldersData.length; i++) {
+        const row = pwdFoldersData[i];
+        if (String(row.id) === String(sourceFolderId)) {
+            continue;
+        }
+        const parentId = row.parent_id ? parseInt(row.parent_id, 10) : 0;
+        if (parentId !== parseInt(parentFolderId, 10)) {
+            continue;
+        }
+        if (pwdNormalizedFolderName(row.name) === normalized) {
+            return parseInt(row.id, 10);
+        }
+    }
+    return null;
+}
+
+function pwdIsDescendantFolder(folderId, ancestorId) {
+    if (!folderId || !ancestorId || folderId === '0' || ancestorId === '0') {
+        return false;
+    }
+    if (String(folderId) === String(ancestorId)) {
+        return true;
+    }
+    const seen = {};
+    let current = parseInt(folderId, 10);
+    while (current > 0 && !seen[current]) {
+        seen[current] = true;
+        const row = pwdFoldersData.find(f => parseInt(f.id, 10) === current);
+        if (!row) {
+            break;
+        }
+        const parent = row.parent_id ? parseInt(row.parent_id, 10) : 0;
+        if (parent === parseInt(ancestorId, 10)) {
+            return true;
+        }
+        current = parent;
+    }
+    return false;
+}
+
+function pwdFolderAllowDrop(ev) {
+    ev.preventDefault();
+    const target = ev.target.closest('[data-folder-id]');
+    if (target) {
+        target.setAttribute('drag-over', 'true');
+    }
+}
+
+function pwdFolderDrag(ev) {
+    const item = ev.target.closest('[data-folder-id]');
+    if (!item || item.getAttribute('data-folder-id') === '0') {
+        return;
+    }
+    ev.dataTransfer.setData('folder_id', item.getAttribute('data-folder-id'));
+}
+
+function pwdFolderDrop(ev) {
+    ev.preventDefault();
+    const target = ev.target.closest('[data-folder-id]');
+    if (!target) {
+        return;
+    }
+    target.removeAttribute('drag-over');
+    const folderId = ev.dataTransfer.getData('folder_id');
+    const newParentId = target.getAttribute('data-folder-id');
+    if (!folderId || folderId === newParentId) {
+        return;
+    }
+    if (pwdIsDescendantFolder(folderId, newParentId)) {
+        alert('Cannot move a folder into itself or one of its subfolders.');
+        return;
+    }
+    const sourceName = pwdGetFolderName(folderId);
+    const siblingId = pwdFindSiblingFolderWithName(newParentId, folderId, sourceName);
+    const payload = {
+        folder_id: folderId,
+        new_parent_id: newParentId === '0' ? '' : newParentId,
+        merge_into_folder_id: ''
+    };
+    if (siblingId) {
+        const merge = confirm(
+            'A folder named "' + sourceName + '" already exists in this location.\n\nMerge the moved folder into it?\n\nOK = merge contents\nCancel = keep both folders with the same name'
+        );
+        if (merge) {
+            payload.merge_into_folder_id = String(siblingId);
+        }
+    }
+    apiCall('move_folder', payload).then(res => {
+        if (res.ok) {
+            if (parseInt(currentFolderId, 10) === parseInt(folderId, 10) && payload.merge_into_folder_id) {
+                currentFolderId = parseInt(payload.merge_into_folder_id, 10);
+            }
+            loadFolderTree();
+            loadEntries();
+        } else {
+            alert(res.message || 'Could not move folder.');
+        }
+    });
+}
+
+document.addEventListener('dragleave', function(ev) {
+    const target = ev.target.closest('[data-folder-id]');
+    if (target) {
+        target.removeAttribute('drag-over');
+    }
+});
 
 function selectFolder(id) { currentFolderId = id; loadEntries(); loadFolderTree(); }
 function performSearch() { searchQuery = document.getElementById('entry-search').value; loadEntries(); }
@@ -682,6 +849,7 @@ function openFolderModal(id = 0, name = '', parentId = 0) {
     document.getElementById('folder-id').value = id;
     document.getElementById('folder-name').value = name;
     document.getElementById('folder-parent_id').value = parentId || '0';
+    form.dataset.originalParentId = id ? String(parentId || 0) : '0';
     document.getElementById('folderModalLabel').innerText = id ? 'Rename Folder' : 'New Folder';
     $('body').append('<div class="modal-backdrop show"></div>'); $('#folderModal').addClass('show').show(); $('body').addClass('modal-open');
 }
@@ -766,6 +934,20 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const data = {};
         new FormData(this).forEach((v, k) => data[k] = v);
+        const folderId = parseInt(data.id || '0', 10) || 0;
+        const newParentId = parseInt(data.parent_id || '0', 10) || 0;
+        const originalParentId = parseInt(this.dataset.originalParentId || '0', 10) || 0;
+        if (folderId > 0 && newParentId !== originalParentId) {
+            const siblingId = pwdFindSiblingFolderWithName(newParentId, folderId, data.name || '');
+            if (siblingId) {
+                const merge = confirm(
+                    'A folder named "' + (data.name || '') + '" already exists in this location.\n\nMerge this folder into it?\n\nOK = merge contents\nCancel = keep both folders with the same name'
+                );
+                if (merge) {
+                    data.merge_into_folder_id = String(siblingId);
+                }
+            }
+        }
         apiCall('save_folder', data).then(res => {
             if (res.ok) {
                 $('#folderModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');

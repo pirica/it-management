@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/config.php';
+require_once __DIR__ . '/passwords_folder_helpers.php';
 
 if (!isset($_SESSION['employee_id'])) {
     echo json_encode(['ok' => false, 'message' => 'Unauthorized']);
@@ -32,9 +33,24 @@ switch ($action) {
 
     case 'save_folder':
         $id = (int)($_POST['id'] ?? 0);
-        $name = (string)($_POST['name'] ?? '');
+        $name = trim((string)($_POST['name'] ?? ''));
         $parent_id = (!empty($_POST['parent_id']) && $_POST['parent_id'] != '0') ? (int)$_POST['parent_id'] : null;
-        
+        $merge_into = (int)($_POST['merge_into_folder_id'] ?? 0);
+
+        if ($id > 0 && $merge_into > 0) {
+            if ($name !== '') {
+                $nameStmt = mysqli_prepare($conn, 'UPDATE password_folders SET name = ?, updated_by = ? WHERE id = ? AND employee_id = ?');
+                if ($nameStmt) {
+                    mysqli_stmt_bind_param($nameStmt, 'siii', $name, $user_id, $id, $user_id);
+                    mysqli_stmt_execute($nameStmt);
+                    mysqli_stmt_close($nameStmt);
+                }
+            }
+            $result = pwd_move_folder($conn, $user_id, $id, $parent_id, $merge_into);
+            echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            break;
+        }
+
         if ($id) {
             $stmt = mysqli_prepare($conn, "UPDATE password_folders SET name = ?, parent_id = ?, updated_by = ? WHERE id = ? AND employee_id = ?");
             mysqli_stmt_bind_param($stmt, 'siiii', $name, $parent_id, $user_id, $id, $user_id);
@@ -62,6 +78,15 @@ switch ($action) {
             echo json_encode(['ok' => false, 'message' => mysqli_error($conn)]);
         }
         mysqli_stmt_close($stmt);
+        break;
+
+    case 'move_folder':
+        $folderId = (int)($_POST['folder_id'] ?? 0);
+        $newParentId = (int)($_POST['new_parent_id'] ?? 0);
+        $newParentId = $newParentId > 0 ? $newParentId : null;
+        $mergeInto = (int)($_POST['merge_into_folder_id'] ?? 0);
+        $result = pwd_move_folder($conn, $user_id, $folderId, $newParentId, $mergeInto);
+        echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         break;
 
 case 'list_entries':
