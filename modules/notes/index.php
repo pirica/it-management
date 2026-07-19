@@ -155,9 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
-    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? "")) {
-        die("CSRF token mismatch");
-    }
+    itm_require_post_csrf();
 
     $action = $_POST["bulk_action"] ?? "";
     if ($action === "delete" && !empty($_POST["ids"])) {
@@ -273,11 +271,13 @@ if (isset($_GET["download_zip"])) {
 }
 
 if (isset($_GET["ajax_action"])) {
-    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? $_POST["CSRF_TOKEN"] ?? "")) {
-        http_response_code(403);
-        echo json_encode(["ok" => false, "error" => "CSRF token mismatch"]);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        echo json_encode(["ok" => false, "error" => "Method not allowed"]);
         die();
     }
+    itm_require_post_csrf();
 
     $action = $_GET["ajax_action"];
     if ($action === "quick_add") {

@@ -16,7 +16,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - A user sees only their own notes or notes shared with them (`itm_notes_visibility_sql()`).
 - `shared_with_json` is a JSON array of user IDs.
 - Import maps tag names and usernames to tenant-scoped IDs before insert.
-- Standard CSRF on all POST handlers.
+- Standard CSRF on all POST handlers via `itm_require_post_csrf()` (form/AJAX); JSON `import_excel_rows` validates `csrf_token` from the request body with `itm_validate_csrf_token()`.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract. Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
