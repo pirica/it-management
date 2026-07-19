@@ -355,7 +355,7 @@ $idf_search = trim((string)($_GET['search'] ?? $_GET['q'] ?? ''));
 $searchRaw = $idf_search;
 $searchLike = $searchRaw === ''
     ? ''
-    : ((strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+    : ((str_contains($searchRaw, '%') || str_contains($searchRaw, '_'))
         ? $searchRaw
         : '%' . $searchRaw . '%');
 $idf_search_like = $searchLike;
@@ -641,23 +641,6 @@ if (!isset($crud_title)) {
                     </div>
                 </section>
 
-                <section class="idf-panel">
-                    <h3>🔎 Search IDFs <span class="idf-badge">Filter current company records</span></h3>
-                    <form method="get" class="itm-idf-search">
-                        <div class="form-group">
-                            <label class="label" for="moduleSearch">Search</label>
-                            <input class="input" type="text" id="moduleSearch" name="search" value="<?php echo sanitize($idf_search); ?>" placeholder="Search ID, name, code, location, rack, active...">
-                        </div>
-                        <input type="hidden" name="sort" value="<?php echo sanitize($idf_sort); ?>">
-                        <input type="hidden" name="dir" value="<?php echo sanitize($idf_sort_dir); ?>">
-                        <input type="hidden" name="page" value="1">
-                        <div class="form-actions">
-                            <button class="btn btn-primary" type="submit">Search</button>
-                            <a href="index.php" class="btn" title="Clear">🔙</a>
-                        </div>
-                    </form>
-                </section>
-
                 <div class="idf-layout-grid">
                     <section class="idf-panel">
                         <h3 title="Create closet profile">➕ <span class="idf-badge">New closet profile</span></h3>
@@ -801,6 +784,21 @@ if (!isset($crud_title)) {
                             </form>
                         </div>
                         <?php endif; ?>
+                        <div class="card" style="margin-bottom:16px;">
+                            <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                                <input type="hidden" name="sort" value="<?php echo sanitize($idf_sort); ?>">
+                                <input type="hidden" name="dir" value="<?php echo sanitize($idf_sort_dir); ?>">
+                                <input type="hidden" name="page" value="1">
+                                <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                    <label for="moduleSearch">Search (all fields)</label>
+                                    <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+                                </div>
+                                <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                    <a href="index.php" class="btn" title="Clear">🔙</a>
+                                </div>
+                            </form>
+                        </div>
                         <div class="card" style="overflow:auto;">
                         <table class="table idf-list-table" data-itm-db-import-endpoint="index.php">
                     <thead>
