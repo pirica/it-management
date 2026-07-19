@@ -317,22 +317,39 @@ if ($editId > 0 && in_array($crud_action, ['edit', 'view'], true)) {
 }
 
 // Column definitions for UI and Search
-$uiColumns = [
+$visitorsAccessLogListFields = [
     'visitor_name' => 'Name',
     'company_department' => 'Company / Department',
     'reason_for_visit' => 'Reason for Visit',
     'pre_approved_by' => 'Pre-Approved by',
     'room_opened_by' => 'Computer Room Opened By',
     'date_time_in' => 'Date & Time IN',
-    'date_time_out' => 'Date & Time OUT'
+    'date_time_out' => 'Date & Time OUT',
 ];
+// Why: fields_missing index list audit gate requires itm_crud_is_list_hidden_audit_field on $uiColumns.
+$uiColumns = array_values(array_filter(
+    array_map(
+        static function ($field, $label) {
+            return ['Field' => $field, 'label' => $label];
+        },
+        array_keys($visitorsAccessLogListFields),
+        $visitorsAccessLogListFields
+    ),
+    static function ($col) {
+        $fieldName = (string)($col['Field'] ?? '');
+        if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+            return false;
+        }
+        return $fieldName !== '' && $fieldName !== 'company_id' && $fieldName !== 'id' && $fieldName !== 'active';
+    }
+));
 $displayFieldColumns = $uiColumns;
 
 // BUILD THE MAIN LIST DATA QUERY
 $page = (int)($_GET['page'] ?? 1);
 $search = trim((string)($_GET['search'] ?? ''));
 $sort = trim((string)($_GET['sort'] ?? 'date_time_in'));
-$sort = itm_is_safe_identifier($sort) && isset($uiColumns[$sort]) ? $sort : 'date_time_in';
+$sort = itm_is_safe_identifier($sort) && in_array($sort, array_column($uiColumns, 'Field'), true) ? $sort : 'date_time_in';
 $dir = strtoupper(trim((string)($_GET['dir'] ?? 'DESC'))) === 'ASC' ? 'ASC' : 'DESC';
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -382,7 +399,7 @@ $logs = mysqli_fetch_all($logsRes, MYSQLI_ASSOC);
 mysqli_stmt_close($stmt);
 
 $showBulkActions = ($totalRows >= $perPage);
-$moduleListHeading = '📝 ' . $crud_title;
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)(($ui_config ?? [])['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
@@ -431,10 +448,10 @@ if (!isset($crud_title)) {
 
                 <?php if ($showBulkActions): ?>
                     <div class="card" style="margin-bottom:16px;">
-                        <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                        <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                            <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1" style="display:none;">Cancel</button>
+                            <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                             <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                         </form>
                     </div>
@@ -461,8 +478,12 @@ if (!isset($crud_title)) {
                         <thead>
                         <tr>
                             <th style="width: 40px;"></th>
-                            <?php foreach ($uiColumns as $field => $label): ?>
-                                <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                            <?php foreach ($uiColumns as $col): ?>
+                                <?php
+                                $field = (string)($col['Field'] ?? '');
+                                $label = (string)($col['label'] ?? $field);
+                                $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC';
+                                ?>
                                 <th>
                                     <a href="?search=<?php echo urlencode($search); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize($label); ?>
@@ -510,7 +531,11 @@ if (!isset($crud_title)) {
                                         <input type="checkbox" name="ids[]" value="<?php echo (int)$log['id']; ?>" form="bulk-delete-form" style="display:none;">
                                     <?php endif; ?>
                                 </td>
-                                <?php foreach ($uiColumns as $field => $label): ?>
+                                <?php foreach ($uiColumns as $col): ?>
+                                    <?php
+                                    $field = (string)($col['Field'] ?? '');
+                                    $label = (string)($col['label'] ?? $field);
+                                    ?>
                                     <td class="inline-editable" data-field="<?= $field ?>" data-original="<?= sanitize($log[$field]) ?>">
                                         <?php if ($field === 'date_time_in' || $field === 'date_time_out'): ?>
                                             <span class="display-val"><?= val_format_datetime($log[$field]) ?></span>
@@ -635,7 +660,11 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($uiColumns as $field => $label): ?>
+                        <?php foreach ($uiColumns as $col): ?>
+                            <?php
+                            $field = (string)($col['Field'] ?? '');
+                            $label = (string)($col['label'] ?? $field);
+                            ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize($label); ?></th>
                                 <td>
@@ -658,6 +687,7 @@ if (!isset($crud_title)) {
 </div>
 
 <script src="../../js/script.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Inline editing for text fields
