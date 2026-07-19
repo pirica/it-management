@@ -351,10 +351,14 @@ if ($idf_sort_dir !== 'asc' && $idf_sort_dir !== 'desc') {
 }
 $idfOrderSql = $idfSortMap[$idf_sort] . ' ' . strtoupper($idf_sort_dir) . ', i.id DESC';
 $idf_search = trim((string)($_GET['search'] ?? $_GET['q'] ?? ''));
-$idf_search_like = '%' . $idf_search . '%';
 // Why: fields_missing list contract scans canonical search/sort variable names.
 $searchRaw = $idf_search;
-$searchLike = $idf_search_like;
+$searchLike = $searchRaw === ''
+    ? ''
+    : ((strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+        ? $searchRaw
+        : '%' . $searchRaw . '%');
+$idf_search_like = $searchLike;
 $sort = $idf_sort;
 $dir = $idf_sort_dir;
 $sortSql = $idfOrderSql;
@@ -639,15 +643,15 @@ if (!isset($crud_title)) {
 
                 <section class="idf-panel">
                     <h3>🔎 Search IDFs <span class="idf-badge">Filter current company records</span></h3>
-                    <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-                        <div style="min-width:280px; flex:1;">
+                    <form method="get" class="itm-idf-search">
+                        <div class="form-group">
                             <label class="label" for="moduleSearch">Search</label>
                             <input class="input" type="text" id="moduleSearch" name="search" value="<?php echo sanitize($idf_search); ?>" placeholder="Search ID, name, code, location, rack, active...">
                         </div>
                         <input type="hidden" name="sort" value="<?php echo sanitize($idf_sort); ?>">
                         <input type="hidden" name="dir" value="<?php echo sanitize($idf_sort_dir); ?>">
                         <input type="hidden" name="page" value="1">
-                        <div style="display:flex; gap:8px;">
+                        <div class="form-actions">
                             <button class="btn btn-primary" type="submit">Search</button>
                             <a href="index.php" class="btn" title="Clear">🔙</a>
                         </div>
