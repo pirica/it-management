@@ -33,6 +33,7 @@ contacts
 company_module_access
 emails
 employee_companies
+employee_sidebar_preferences
 explorer
 floor_designer
 import

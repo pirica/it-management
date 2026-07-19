@@ -386,36 +386,6 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
-if ($crud_action === 'delete') {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        header('Allow: POST');
-        echo 'Method not allowed.';
-        exit;
-    }
-
-    cr_require_valid_csrf_token();
-
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id > 0) {
-        $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) {
-            $where .= ' AND company_id=' . (int)$company_id;
-        }
-        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
-        ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
-        : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
-        $dbErrorCode = 0;
-        $dbErrorMessage = '';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            header('Location: ' . $listUrl);
-            exit;
-        }
-    }
-    header('Location: ' . $listUrl);
-    exit;
-}
 
 $errors = [];
 if (!empty($_SESSION['crud_error'])) {
@@ -644,7 +614,7 @@ if (!isset($crud_title)) {
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th>Actions</th>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -653,16 +623,7 @@ if (!isset($crud_title)) {
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                 <?php endforeach; ?>
-                                <td>
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                    </form>
-                                </td>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1"><a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a></td>
                             </tr>
                         <?php endwhile; else: ?>
                             <tr><td colspan="<?php echo count($uiColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
@@ -757,7 +718,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn" title="Back">🔙</a></p>
                 </div>
             <?php endif; ?>
         </div>

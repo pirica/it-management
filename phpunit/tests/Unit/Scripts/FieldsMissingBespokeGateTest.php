@@ -602,6 +602,40 @@ PHP;
         $this->assertStringNotContainsString('manufacturers audited UI column', $block);
     }
 
+    public function testBulkDeleteGateIsNaWhenBulkFormOmitted(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
+        $index = <<<'HTML'
+<table>
+<tr><td>x</td></tr>
+</table>
+HTML;
+        $check = itm_check_bulk_delete_actions($index, 'fixture.php', true);
+        $this->assertSame('n/a', $check['status'] ?? '');
+        $this->assertStringContainsString('Bulk toolbar intentionally omitted', (string) ($check['details'] ?? ''));
+    }
+
+    public function testEmployeeSidebarPreferencesBespokeGatePassesReadOnlyContracts(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['employee_sidebar_preferences'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('employee_sidebar_preferences', $columns);
+        $passes = implode('|', $result['passes']);
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $result['failures']);
+
+        $this->assertStringContainsString('Search OK', $passes);
+        $this->assertFalse(
+            $this->messagesContainAny($messages, ['Bulk delete NOT OK', 'Import Excel NOT OK']),
+            'read-only employee_sidebar_preferences should not fail bulk/import gates: ' . implode(' | ', $messages)
+        );
+    }
+
     public function testSearchContractFailsPlainClearResetLink(): void
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
