@@ -411,7 +411,7 @@ function bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $name
 }
 
 /**
- * SHA-256 hex digest of trimmed URL — used for dedupe (plaintext, before encryption).
+ * SHA-256 hex digest of trimmed URL — dedupe index (plaintext, before encryption).
  */
 function bkm_bookmark_url_hash($url)
 {
@@ -617,14 +617,6 @@ function bkm_import_url_is_allowed($url)
     $url = trim((string)$url);
 
     return (bool)preg_match('/^(https?|ftp):\/\//i', $url);
-}
-
-/**
- * SHA-256 hex digest of trimmed URL — matches bookmarks.url_hash (MySQL sha2(url, 256)).
- */
-function bkm_bookmark_url_hash($url)
-{
-    return hash('sha256', trim((string)$url));
 }
 
 /**
