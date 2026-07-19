@@ -240,20 +240,28 @@ if (!isset($crud_title)) {
             position: fixed;
             inset: 0;
             z-index: 2000;
-            background: rgba(0, 0, 0, 0.45);
+            background: rgba(0, 0, 0, 0.55);
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
         .bkm-modal-overlay.is-open { display: flex; }
         .bkm-modal-card {
+            position: relative;
+            z-index: 1;
             width: 100%;
             max-width: 420px;
-            background: var(--bg-card);
+            background-color: var(--bg-primary, #ffffff);
+            color: var(--text-primary);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.25));
+        }
+        .bkm-modal-card .form-group input[type="text"] {
+            background-color: var(--bg-primary, #ffffff);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
         }
         .bkm-modal-card h3 { margin: 0 0 16px; }
         .itm-folder-tree-actions .btn { flex-shrink: 0; }
