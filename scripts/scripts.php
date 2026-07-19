@@ -1663,6 +1663,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_qr_share_modules.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_whatsapp_share.php" target="_blank" rel="nofollow noreferrer">verify_whatsapp_share.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for WhatsApp share deep links: message body (join URL + 6-digit code + expiry copy) and <code>wa.me</code> URL encoding via <code>includes/itm_whatsapp_share.php</code>.</td>
+                    <td><code>php scripts/verify_whatsapp_share.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_json_import_validation.php" target="_blank" rel="nofollow noreferrer">verify_json_import_validation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for JSON import: invalid numeric, date/datetime, and enum column values are rejected instead of silent NULL inserts.</td>
