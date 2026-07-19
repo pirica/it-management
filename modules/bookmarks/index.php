@@ -41,16 +41,14 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     itm_require_post_csrf();
 
     if (isset($_POST['action']) && $_POST['action'] === 'move_folder') {
-        $fid = (int)$_POST['folder_id'];
-        $new_parent = (int)$_POST['new_parent_id'] ?: null;
+        $fid = (int)($_POST['folder_id'] ?? 0);
+        $new_parent = (int)($_POST['new_parent_id'] ?? 0) ?: null;
+        $merge_into = (int)($_POST['merge_into_folder_id'] ?? 0);
 
-        $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $fid");
-        $f_data = mysqli_fetch_assoc($check_res);
-        if ($f_data && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0)) || (int)$f_data['employee_id'] === (int)($_SESSION['employee_id'] ?? 0)) {
-            $stmt = mysqli_prepare($conn, 'UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?');
-            mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
-            mysqli_stmt_execute($stmt);
-        }
+        bkm_move_folder($conn, $company_id, $user_id, $fid, $new_parent, $merge_into, $is_admin);
+
+        header('Location: index.php');
+        exit;
     }
 
     if (isset($_POST['action']) && $_POST['action'] === 'move_bookmarks') {
@@ -488,6 +486,7 @@ if (!isset($crud_title)) {
     <input type="hidden" name="action" value="move_folder">
     <input type="hidden" name="folder_id" id="move-folder-id">
     <input type="hidden" name="new_parent_id" id="move-new-parent-id">
+    <input type="hidden" name="merge_into_folder_id" id="move-merge-into-folder-id" value="">
 </form>
 
 <script src="../../js/theme.js"></script>
@@ -599,17 +598,120 @@ function drag(ev) {
     ev.dataTransfer.setData("folder_id", folderId);
 }
 
+function bkmNormalizedFolderName(name) {
+    return (name || '').trim().toLowerCase();
+}
+
+function bkmGetFolderTreeItem(folderId) {
+    return document.querySelector('.folder-tree [data-folder-id="' + folderId + '"]');
+}
+
+function bkmGetFolderName(folderId) {
+    const item = bkmGetFolderTreeItem(folderId);
+    if (!item) {
+        return '';
+    }
+    return item.getAttribute('data-folder-name') || '';
+}
+
+function bkmListChildFolderItems(parentFolderId) {
+    if (parentFolderId === '0' || parentFolderId === 0) {
+        const tree = document.querySelector('.folder-tree');
+        if (!tree) {
+            return [];
+        }
+        return Array.from(tree.querySelectorAll(':scope > li.itm-folder-tree-item[data-folder-id]'));
+    }
+    const parent = bkmGetFolderTreeItem(parentFolderId);
+    if (!parent) {
+        return [];
+    }
+    const childList = parent.querySelector(':scope > ul.itm-folder-tree-children');
+    if (!childList) {
+        return [];
+    }
+    return Array.from(childList.querySelectorAll(':scope > li.itm-folder-tree-item[data-folder-id]'));
+}
+
+function bkmFindSiblingFolderWithName(parentFolderId, sourceFolderId, sourceName) {
+    const normalized = bkmNormalizedFolderName(sourceName);
+    if (!normalized) {
+        return null;
+    }
+    const children = bkmListChildFolderItems(parentFolderId);
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        const childId = child.getAttribute('data-folder-id');
+        if (childId === sourceFolderId) {
+            continue;
+        }
+        if (bkmNormalizedFolderName(bkmGetFolderName(childId)) === normalized) {
+            return childId;
+        }
+    }
+    return null;
+}
+
+function bkmIsDescendantFolder(folderId, ancestorId) {
+    if (!folderId || !ancestorId || folderId === '0' || ancestorId === '0') {
+        return false;
+    }
+    if (folderId === ancestorId) {
+        return true;
+    }
+    let current = ancestorId;
+    const seen = {};
+    while (current && current !== '0') {
+        if (current === folderId) {
+            return true;
+        }
+        if (seen[current]) {
+            break;
+        }
+        seen[current] = true;
+        const item = bkmGetFolderTreeItem(current);
+        if (!item) {
+            break;
+        }
+        const parentList = item.parentElement;
+        if (!parentList) {
+            break;
+        }
+        const parentItem = parentList.closest('li.itm-folder-tree-item[data-folder-id]');
+        current = parentItem ? parentItem.getAttribute('data-folder-id') : '0';
+    }
+    return false;
+}
+
 function drop(ev) {
     ev.preventDefault();
     const target = ev.target.closest('[data-folder-id]');
     if (target) {
         target.removeAttribute('drag-over');
-        const folderId = ev.dataTransfer.getData("folder_id");
+        const folderId = ev.dataTransfer.getData('folder_id');
         const newParentId = target.getAttribute('data-folder-id');
 
         if (folderId !== newParentId) {
+            if (bkmIsDescendantFolder(folderId, newParentId)) {
+                alert('Cannot move a folder into itself or one of its subfolders.');
+                return;
+            }
+
+            const sourceName = bkmGetFolderName(folderId);
+            const siblingId = bkmFindSiblingFolderWithName(newParentId, folderId, sourceName);
             document.getElementById('move-folder-id').value = folderId;
-            document.getElementById('move-new-parent-id').value = newParentId === "0" ? "" : newParentId;
+            document.getElementById('move-new-parent-id').value = newParentId === '0' ? '' : newParentId;
+            document.getElementById('move-merge-into-folder-id').value = '';
+
+            if (siblingId) {
+                const merge = confirm(
+                    'A folder named "' + sourceName + '" already exists in this location.\n\nMerge the moved folder into it?\n\nOK = merge contents\nCancel = keep both folders with the same name'
+                );
+                if (merge) {
+                    document.getElementById('move-merge-into-folder-id').value = siblingId;
+                }
+            }
+
             document.getElementById('move-folder-form').submit();
         }
     }

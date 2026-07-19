@@ -76,6 +76,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **fields_missing_reviewed.php** — manifest for `scripts/data/fields_missing_reviewed.json`. Catalog: **`scripts/scripts.php`**.
 - **verify_emails_module.php** — Email Management tables, registry row, SMTP/alert seeds, `itm_send_email()` helper, delivery test scripts, and company 1 alert-runner 30-day window (hard fail when empty; inserts disposable license sample then cleans up).
 - **verify_bookmarks_import.php** — Bookmarks HTML import (`L1/L2` nested folders), duplicate URL skips without orphan folders, legacy `name_hash` folder match, CSV folder target; disposable script employee + `data/bookmarks_import_sample.html`.
+- **verify_bookmarks_folder_move.php** — Bookmarks folder reparent vs merge into same-named sibling (`bkm_move_folder()`, `bkm_merge_folder_into()`).
 - **verify_user_config_profile.php** — `user-config.php` profile field regression: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute Explorer proxy (not `../../modules/…`).
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
 - **data/** — static allowlists/baselines for audits (`ui_configuration_excluded_modules.txt`, `fields_missing_reviewed.json`, `multi_tenant_leak_allowlist.json`, …).
