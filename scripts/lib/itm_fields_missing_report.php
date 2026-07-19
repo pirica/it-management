@@ -272,6 +272,13 @@ if (!function_exists('itm_fields_missing_view_has_field')) {
             }
         }
 
+        if (preg_match(
+            "/itm_crud_render_audit_cell_value\s*\([^)]*['\"]" . preg_quote($field, '/') . "['\"]/",
+            $content
+        )) {
+            return true;
+        }
+
         return false;
     }
 }
@@ -1537,10 +1544,22 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
                     'code' => 'ui_index_excluded_exposed',
                     'message' => "{$moduleSlug} excluded UI column {$field}: visible on index list",
                 ];
+            } else {
+                $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on index list";
+            }
+
+            if (!itm_fields_missing_view_paths_readable($files)) {
                 continue;
             }
 
-            $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on index list";
+            if (!itm_fields_missing_module_view_covers_field($field, $files, $moduleSlug)) {
+                $failures[] = [
+                    'code' => 'ui_view_audit_missing',
+                    'message' => "{$moduleSlug} excluded UI column {$field}: missing on view",
+                ];
+            } else {
+                $passes[] = "{$moduleSlug} excluded UI column {$field}: present on view";
+            }
         }
     }
 }

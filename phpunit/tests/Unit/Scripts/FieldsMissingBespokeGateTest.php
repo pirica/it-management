@@ -914,9 +914,101 @@ PHP;
         );
     }
 
+    public function testBespokeViewAuditMetaFailsWhenFieldAbsent(): void
+    {
+        $viewContent = <<<'PHP'
+<?php
+?>
+<table><tbody>
+<tr><th>Company</th><td><?php echo sanitize($data['company']); ?></td></tr>
+</tbody></table>
+PHP;
+        $files = [
+            'create' => '',
+            'edit' => '',
+            'view' => $this->writeTempView($viewContent),
+            'index' => '',
+            'includes' => '',
+            'list_all' => '',
+            'delete' => '',
+        ];
+        $this->assertFalse(itm_fields_missing_module_view_covers_field('created_by', $files, 'fixture_module'));
+        $this->assertFalse(itm_fields_missing_module_view_covers_field('deleted_at', $files, 'fixture_module'));
+    }
+
+    public function testBespokeViewAuditMetaPassesWithViewColumnsLoop(): void
+    {
+        $viewContent = <<<'PHP'
+<?php
+foreach ($viewColumns as $col): $f = $col['Field']; ?>
+<tr><td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td></tr>
+<?php endforeach; ?>
+PHP;
+        $files = [
+            'create' => '',
+            'edit' => '',
+            'view' => $this->writeTempView($viewContent),
+            'index' => '',
+            'includes' => '',
+            'list_all' => '',
+            'delete' => '',
+        ];
+        $this->assertTrue(itm_fields_missing_module_view_covers_field('created_by', $files, 'fixture_module'));
+        $this->assertTrue(itm_fields_missing_module_view_covers_field('deleted_at', $files, 'fixture_module'));
+    }
+
+    public function testBespokeViewAuditMetaPassesWithAuditCellRenderer(): void
+    {
+        $viewContent = <<<'PHP'
+<?php
+echo itm_crud_render_audit_cell_value($crud_table, 'created_by', $data['created_by'] ?? '');
+?>
+PHP;
+        $files = [
+            'create' => '',
+            'edit' => '',
+            'view' => $this->writeTempView($viewContent),
+            'index' => '',
+            'includes' => '',
+            'list_all' => '',
+            'delete' => '',
+        ];
+        $this->assertTrue(itm_fields_missing_module_view_covers_field('created_by', $files, 'fixture_module'));
+    }
+
+    public function testCompaniesBespokeGateFlagsMissingViewAuditMeta(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['companies'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('companies', $columns);
+        $passes = implode('|', $result['passes']);
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $result['failures']);
+
+        $this->assertStringContainsString('excluded UI column created_at: present on view', $passes);
+        $this->assertStringContainsString('excluded UI column updated_at: present on view', $passes);
+        $this->assertStringContainsString('excluded UI column created_by: missing on view', implode('|', $messages));
+        $this->assertStringContainsString('excluded UI column updated_by: missing on view', implode('|', $messages));
+        $this->assertStringContainsString('excluded UI column deleted_by: missing on view', implode('|', $messages));
+        $this->assertStringContainsString('excluded UI column deleted_at: missing on view', implode('|', $messages));
+    }
+
     private function writeTempIndex(string $content): string
     {
         $path = sys_get_temp_dir() . '/itm_fm_index_' . uniqid('', true) . '.php';
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
+    private function writeTempView(string $content): string
+    {
+        $path = sys_get_temp_dir() . '/itm_fm_view_' . uniqid('', true) . '.php';
         file_put_contents($path, $content);
 
         return $path;
