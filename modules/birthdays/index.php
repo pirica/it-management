@@ -223,7 +223,7 @@ if (!isset($crud_title)) {
                             $clearQuery['employment_status_id'] = $selectedStatusIds;
                         }
                         ?>
-                        <a class="btn" href="index.php?<?= sanitize(http_build_query($clearQuery)) ?>">Clear</a>
+                        <a class="btn" href="index.php?<?= sanitize(http_build_query($clearQuery)) ?>" title="Clear">🔙</a>
                     <?php endif; ?>
                 </form>
             </div>
