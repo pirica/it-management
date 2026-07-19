@@ -14,8 +14,10 @@ Provides a financial overview and comparison of actual expenses vs. budgets. It 
 - **Tenant Isolation**: Only aggregates data for the active `company_id`.
 
 ## 5. UI Behavior Requirements
-- **Period Selector**: Form to select Year, Month, Cost Center, and GL Account.
-- **Comparison Columns**: Shows current actuals, previous month, and previous year same month.
+- **Period selector:** Form filters via `year`, `month` (optional), `cost_center_id`, and `gl_account_id` — not flattened list `search` input.
+- **Fixed row order:** Report SQL uses `ORDER BY cc.name, ga.account_code`; no `sort`/`dir` column headers.
+- **Gate-excluded UI config:** Search and Column sort checks are reviewed in `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
+- **Comparison Columns:** Shows current actuals, previous month, and previous year same month.
 
 ## 6. API Actions (If Applicable)
 - None (Read-only view).

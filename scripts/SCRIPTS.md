@@ -998,7 +998,7 @@ Use this registry when a **gate-excluded** module (listed in `ui_configuration_e
 
 **Workflow:** reproduce with `php scripts/check_ui_configuration_coverage.php` → add rows to JSON → validate `php scripts/ui_configuration_reviewed.php` → update module `AGENT_NOTES.md` → re-run coverage and confirm `[reviewed]` suffix.
 
-**Seeded modules:** `attempts` — no `create.php` / `edit.php` (read-only security log). `audit_logs` — immutable read-only trail (`create.php` redirect; no edit/delete entry files). `backup_tape_log` — monthly grid bespoke UI (no `create.php`; Search, Sort, Pagination, bulk toolbar, and create/new-button checks reviewed). `birthdays` — read-only monthly list (`index.php` only; no Actions column, pagination, CRUD entry files, or bulk delete).
+**Seeded modules:** `attempts` — no `create.php` / `edit.php` (read-only security log). `audit_logs` — immutable read-only trail (`create.php` redirect; no edit/delete entry files). `backup_tape_log` — monthly grid bespoke UI (no `create.php`; Search, Sort, Pagination, bulk toolbar, and create/new-button checks reviewed). `birthdays` — read-only monthly list (`index.php` only; no Actions column, pagination, CRUD entry files, or bulk delete). `budget_report` — computed finance summary (period/cost-center/GL filters; fixed SQL sort — Search and Column sort reviewed).
 
 ### Named module verifiers (catalog: `scripts/scripts.php`)
 

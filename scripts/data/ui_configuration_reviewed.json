@@ -210,6 +210,22 @@
           "note": "No edit.php form"
         }
       ]
+    },
+    "budget_report": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Computed finance summary (index.php only): period filters replace list search; rows ordered by cost center + GL account in SQL — not flattened CRUD list search/sort headers.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Report filters via year/month/cost_center_id/gl_account_id selectors — no list search input"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Fixed ORDER BY cc.name, ga.account_code in report SQL — no sortable column headers"
+        }
+      ]
     }
   }
 }
