@@ -281,6 +281,27 @@
           "note": "No edit.php form"
         }
       ]
+    },
+    "company_module_access": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Admin company × module matrix bespoke UI: all registry rows on one page ordered by module_slug ASC; AJAX bulk_toggle_access replaces scaffold bulk-delete toolbar.",
+      "checks": [
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Matrix rows fixed ORDER BY module_slug ASC — no per-column sort headers or GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full registry matrix on one page — admin needs every module visible; no records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar omitted — matrix uses Select All / Cancel Select / Unselect All + ajax_action=bulk_toggle_access"
+        }
+      ]
     }
   }
 }
