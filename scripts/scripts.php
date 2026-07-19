@@ -499,8 +499,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="fields_missing.php" target="_blank" rel="nofollow noreferrer">fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>All-module schema/UI audit: <code>database.sql</code> columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold modules use <code>[PASS]</code>/<code>[FAIL]</code>; bespoke and status-driven slugs use gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code> (schema + hidden meta exposure; full UI not audited).</td>
-                    <td>Browser: optional <code>?module=</code> filter. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=manufacturers</code> · <code>--json</code> · exit <code>1</code> on <code>[FAIL]</code> or <code>[SKIP][fail]</code>.</td>
+                    <td>All-module schema/UI audit: <code>database.sql</code> columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold modules use <code>[PASS]</code>/<code>[FAIL]</code>; bespoke and status-driven slugs use gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code>/<code>[SKIP][fail][reviewed]</code> (schema + hidden meta exposure; full UI not audited). Reviewed exceptions: <a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a>.</td>
+                    <td>Browser: optional <code>?module=</code> filter. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=manufacturers</code> · <code>--json</code> · exit <code>1</code> on <code>[FAIL]</code> only (<code>[SKIP][fail]</code> informational).</td>
+                </tr>
+                <tr>
+                    <td><a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Read-only manifest for reviewed bespoke <code>[SKIP][fail]</code> gate lines consumed by <code>fields_missing.php</code>. Data: <code>scripts/data/fields_missing_reviewed.json</code> (module slug + check label/code + reason).</td>
+                    <td><code>php scripts/fields_missing_reviewed.php</code> · <code>--json</code> · exit <code>1</code> on invalid registry JSON.</td>
                 </tr>
                 <tr>
                     <td><a href="debug_resignations_termination_date.php" target="_blank" rel="nofollow noreferrer">debug_resignations_termination_date.php</a></td>

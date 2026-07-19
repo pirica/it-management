@@ -21,6 +21,7 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 
 ## 5. UI Behavior Requirements
 - **Grid View**: A custom interactive grid instead of a standard list.
+- **No flattened list contract:** monthly grid omits standard Search/Sort/Pagination wiring on `index.php`. `fields_missing.php` still reports those bespoke gate checks as `[SKIP][fail]`; Search, Sort, and Pagination are listed as reviewed exceptions in `scripts/data/fields_missing_reviewed.json` (manifest: `scripts/fields_missing_reviewed.php`) and print as `[SKIP][fail][reviewed]`.
 - **No Excel import:** table uses `data-itm-no-import-excel="1"` (and export opt-outs); `check_index_table_compliance.php` does not require `data-itm-db-import-endpoint`.
 - **Time Punch**: A "⌛" icon is used to auto-fill the current time into timestamp fields.
 - **AJAX Updates**: Supports inline editing via POST requests.

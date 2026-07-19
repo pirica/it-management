@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "description": "Reviewed bespoke gate failures for fields_missing.php. Matching entries render as [SKIP][fail][reviewed] (informational — same exit semantics as [SKIP][fail]).",
+  "modules": {
+    "backup_tape_log": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Monthly grid bespoke UI intentionally omits flattened CRUD list search, sort, and pagination.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "bespoke_list_ui_search",
+          "note": "Table in index.php missing search wiring: GET/search variable, search input, server-side search conditions"
+        },
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
+        }
+      ]
+    }
+  }
+}

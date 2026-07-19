@@ -2114,6 +2114,175 @@ if (!function_exists('itm_fields_missing_count_actionable_failures')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_reviewed_registry_path')) {
+    function itm_fields_missing_reviewed_registry_path(): string
+    {
+        return dirname(__DIR__) . '/data/fields_missing_reviewed.json';
+    }
+}
+
+if (!function_exists('itm_fields_missing_load_reviewed_registry')) {
+    /**
+     * @return array{version?:int,description?:string,modules?:array<string,array<string,mixed>>}
+     */
+    function itm_fields_missing_load_reviewed_registry(): array
+    {
+        static $cached = null;
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $path = itm_fields_missing_reviewed_registry_path();
+        if (!is_readable($path)) {
+            $cached = ['version' => 1, 'description' => '', 'modules' => []];
+            return $cached;
+        }
+
+        $raw = file_get_contents($path);
+        $decoded = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($decoded)) {
+            $cached = ['version' => 1, 'description' => '', 'modules' => []];
+            return $cached;
+        }
+
+        if (!isset($decoded['modules']) || !is_array($decoded['modules'])) {
+            $decoded['modules'] = [];
+        }
+
+        $cached = $decoded;
+        return $cached;
+    }
+}
+
+if (!function_exists('itm_fields_missing_validate_reviewed_registry')) {
+    /**
+     * @param array<string,mixed> $registry
+     * @return array{ok:bool,errors:list<string>}
+     */
+    function itm_fields_missing_validate_reviewed_registry(array $registry): array
+    {
+        $errors = [];
+        $modules = $registry['modules'] ?? null;
+        if (!is_array($modules)) {
+            $errors[] = 'modules must be an object map keyed by module slug';
+            return ['ok' => false, 'errors' => $errors];
+        }
+
+        foreach ($modules as $moduleSlug => $moduleEntry) {
+            $slug = trim((string) $moduleSlug);
+            if ($slug === '') {
+                $errors[] = 'modules contains an empty slug key';
+                continue;
+            }
+            if (!is_array($moduleEntry)) {
+                $errors[] = $slug . ': module entry must be an object';
+                continue;
+            }
+            $checks = $moduleEntry['checks'] ?? null;
+            if (!is_array($checks) || $checks === []) {
+                $errors[] = $slug . ': checks must be a non-empty array';
+                continue;
+            }
+            foreach ($checks as $idx => $checkEntry) {
+                if (!is_array($checkEntry)) {
+                    $errors[] = $slug . ': checks[' . $idx . '] must be an object';
+                    continue;
+                }
+                $label = trim((string) ($checkEntry['check'] ?? ''));
+                $code = trim((string) ($checkEntry['code'] ?? ''));
+                if ($label === '' && $code === '') {
+                    $errors[] = $slug . ': checks[' . $idx . '] requires check and/or code';
+                }
+            }
+        }
+
+        return ['ok' => $errors === [], 'errors' => $errors];
+    }
+}
+
+if (!function_exists('itm_fields_missing_extract_bespoke_gate_check_label')) {
+    function itm_fields_missing_extract_bespoke_gate_check_label(string $message): string
+    {
+        if (preg_match('/\bbespoke gate:\s*(.+?)\s+NOT OK\b/u', $message, $matches) === 1) {
+            return trim((string) ($matches[1] ?? ''));
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('itm_fields_missing_failure_is_reviewed')) {
+    /**
+     * @param array{code?:string,message?:string,reviewed?:bool} $failure
+     * @param array<string,mixed> $registry
+     */
+    function itm_fields_missing_failure_is_reviewed(string $moduleSlug, array $failure, ?array $registry = null): bool
+    {
+        if (!empty($failure['reviewed'])) {
+            return true;
+        }
+
+        $registry = $registry ?? itm_fields_missing_load_reviewed_registry();
+        $moduleEntry = $registry['modules'][$moduleSlug] ?? null;
+        if (!is_array($moduleEntry)) {
+            return false;
+        }
+
+        $checks = $moduleEntry['checks'] ?? [];
+        if (!is_array($checks) || $checks === []) {
+            return false;
+        }
+
+        $failureCode = trim((string) ($failure['code'] ?? ''));
+        $checkLabel = itm_fields_missing_extract_bespoke_gate_check_label(
+            trim((string) ($failure['message'] ?? ''))
+        );
+
+        foreach ($checks as $checkEntry) {
+            if (!is_array($checkEntry)) {
+                continue;
+            }
+            $registryCode = trim((string) ($checkEntry['code'] ?? ''));
+            $registryLabel = trim((string) ($checkEntry['check'] ?? ''));
+            if ($failureCode !== '' && $registryCode !== '' && strcasecmp($failureCode, $registryCode) === 0) {
+                return true;
+            }
+            if ($checkLabel !== '' && $registryLabel !== '' && strcasecmp($checkLabel, $registryLabel) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_apply_reviewed_flags_to_report')) {
+    /**
+     * @param array{modules?:list<array<string,mixed>>} $report
+     */
+    function itm_fields_missing_apply_reviewed_flags_to_report(array &$report): void
+    {
+        $registry = itm_fields_missing_load_reviewed_registry();
+        foreach ($report['modules'] ?? [] as $moduleIdx => $moduleReport) {
+            if (!is_array($moduleReport)) {
+                continue;
+            }
+            $moduleSlug = (string) ($moduleReport['module'] ?? '');
+            if ($moduleSlug === '' || !is_array($moduleReport['failures'] ?? null)) {
+                continue;
+            }
+            foreach ($moduleReport['failures'] as $failureIdx => $failure) {
+                if (!is_array($failure)) {
+                    continue;
+                }
+                if (itm_fields_missing_failure_is_reviewed($moduleSlug, $failure, $registry)) {
+                    $report['modules'][$moduleIdx]['failures'][$failureIdx]['reviewed'] = true;
+                }
+            }
+        }
+    }
+}
+
 if (!function_exists('itm_fields_missing_count_skip_gate_failures')) {
     /**
      * @param list<array<string,mixed>> $moduleReports
@@ -2133,10 +2302,14 @@ if (!function_exists('itm_fields_missing_count_skip_gate_failures')) {
 }
 
 if (!function_exists('itm_fields_missing_result_status_label')) {
-    function itm_fields_missing_result_status_label(bool $uiCoverageSkipped, bool $passed): string
+    function itm_fields_missing_result_status_label(bool $uiCoverageSkipped, bool $passed, bool $reviewed = false): string
     {
         if ($uiCoverageSkipped) {
-            return $passed ? '[SKIP][pass]' : '[SKIP][fail]';
+            if ($passed) {
+                return '[SKIP][pass]';
+            }
+
+            return $reviewed ? '[SKIP][fail][reviewed]' : '[SKIP][fail]';
         }
 
         return $passed ? '[PASS]' : '[FAIL]';
@@ -2169,6 +2342,8 @@ if (!function_exists('itm_fields_missing_echo_status_line')) {
         $type = 'info';
         if (preg_match('/^\[SKIP\]\[pass\]|\[PASS\]/', $line)) {
             $type = 'pass';
+        } elseif (preg_match('/^\[SKIP\]\[fail\]\[reviewed\]/', $line)) {
+            $type = 'warn';
         } elseif (preg_match('/^\[SKIP\]\[fail\]|\[FAIL\]/', $line)) {
             $type = 'fail';
         }
@@ -2191,7 +2366,9 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
             if ($message === '') {
                 continue;
             }
-            $label = itm_fields_missing_result_status_label($skippedUi, false);
+            $reviewed = is_array($failure)
+                && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure);
+            $label = itm_fields_missing_result_status_label($skippedUi, false, $reviewed);
             itm_fields_missing_echo_status_line("{$label} {$message}", $nl);
         }
         foreach ($moduleReport['passes'] ?? [] as $passLine) {
@@ -2209,8 +2386,20 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
         if ($skippedUi && $moduleSlug !== '') {
             $failCount = count($moduleReport['failures'] ?? []);
             if ($failCount > 0) {
+                $reviewedCount = 0;
+                foreach ($moduleReport['failures'] ?? [] as $failure) {
+                    if (is_array($failure) && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure)) {
+                        $reviewedCount++;
+                    }
+                }
+                $allReviewed = $reviewedCount === $failCount;
+                $summaryLabel = itm_fields_missing_result_status_label($skippedUi, false, $allReviewed);
+                $suffix = $allReviewed ? ' (reviewed)' : '';
+                if ($reviewedCount > 0 && !$allReviewed) {
+                    $suffix = ' (' . $reviewedCount . '/' . $failCount . ' reviewed)';
+                }
                 itm_fields_missing_echo_status_line(
-                    '[SKIP][fail] ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)',
+                    $summaryLabel . ' ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)' . $suffix,
                     $nl
                 );
             } else {
@@ -2605,6 +2794,7 @@ if (!function_exists('itm_fields_missing_format_legend')) {
         $out .= '  List heading layout — centered h1 + Settings new_button_position left/right gates' . $nl;
         $out .= '  List heading emoji — $moduleListHeading via itm_sidebar_label_for_module() or itm_resolve_module_sidebar_icon()' . $nl;
         $out .= '  [SKIP][pass] / [SKIP][fail] — one line per gated check (OK / NOT OK); n/a checks are omitted' . $nl;
+        $out .= '  [SKIP][fail][reviewed] — bespoke gate failure listed in scripts/data/fields_missing_reviewed.json (informational)' . $nl;
         $out .= '  [SKIP][pass] module summary does not audit business columns — see Audit summary footer' . $nl;
         $out .= '  Static HTML name= scrape — literal name="..." in create/edit (or index for UI-only); not the full dynamic UI' . $nl;
         $out .= '  Inferred form columns — derived from $uiColumns, cr_manageable_columns, or employees matrix' . $nl;
@@ -2652,7 +2842,14 @@ if (!function_exists('itm_fields_missing_format_skip_gate_failure_summary_block'
         $out = str_repeat('-', 72) . $nl;
         $out .= 'Bespoke gate failure summary (' . $count . ' — informational, not in Result total):' . $nl;
         foreach ($messages as $message) {
-            $line = '[SKIP][fail] ' . $message;
+            $failure = ['message' => $message];
+            $moduleSlug = '';
+            if (preg_match('/^([a-z0-9_]+)\s+bespoke gate:/i', $message, $matches) === 1) {
+                $moduleSlug = (string) ($matches[1] ?? '');
+            }
+            $reviewed = $moduleSlug !== '' && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure);
+            $prefix = $reviewed ? '[SKIP][fail][reviewed]' : '[SKIP][fail]';
+            $line = $prefix . ' ' . $message;
             $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
         }
 

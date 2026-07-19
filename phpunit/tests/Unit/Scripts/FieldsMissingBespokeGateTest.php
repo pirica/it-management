@@ -602,6 +602,46 @@ PHP;
         $this->assertStringNotContainsString('manufacturers audited UI column', $block);
     }
 
+    public function testBackupTapeLogSearchFailureMatchesReviewedRegistry(): void
+    {
+        $failure = [
+            'code' => 'bespoke_list_ui_search',
+            'message' => 'backup_tape_log bespoke gate: Search NOT OK — Table in index.php missing search wiring',
+        ];
+        $this->assertTrue(itm_fields_missing_failure_is_reviewed('backup_tape_log', $failure));
+    }
+
+    public function testEchoModuleCheckLinesPrintsReviewedLabelForRegistryMatch(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_cli_output.php';
+        $moduleReport = [
+            'module' => 'backup_tape_log',
+            'ui_coverage_audit_skipped' => true,
+            'passes' => [],
+            'failures' => [
+                [
+                    'code' => 'bespoke_list_ui_search',
+                    'message' => 'backup_tape_log bespoke gate: Search NOT OK — Table in index.php missing search wiring',
+                ],
+            ],
+        ];
+
+        ob_start();
+        itm_fields_missing_echo_module_check_lines($moduleReport, "\n");
+        $output = (string) ob_get_clean();
+        $plain = preg_replace('/\x1b\[[0-9;]*m/', '', $output);
+
+        $this->assertStringContainsString('[SKIP][fail][reviewed] backup_tape_log bespoke gate: Search NOT OK', $plain);
+    }
+
+    public function testReviewedRegistryValidationPasses(): void
+    {
+        $registry = itm_fields_missing_load_reviewed_registry();
+        $validation = itm_fields_missing_validate_reviewed_registry($registry);
+        $this->assertTrue($validation['ok']);
+        $this->assertSame([], $validation['errors']);
+    }
+
     public function testBulkDeleteGateIsNaWhenBulkFormOmitted(): void
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
