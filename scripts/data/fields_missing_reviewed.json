@@ -22,6 +22,22 @@
           "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
         }
       ]
+    },
+    "company_module_access": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Admin company × module matrix is not a flattened CRUD list: rows are all registry modules sorted by slug; matrix search is in-memory on slug/name only. Registry flat list (`list_all`) is auxiliary.",
+      "checks": [
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
+        }
+      ]
     }
   }
 }

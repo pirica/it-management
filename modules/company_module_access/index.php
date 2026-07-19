@@ -19,6 +19,15 @@ if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
 
 itm_sync_modules_registry_from_filesystem($conn);
 
+// Handle Excel/CSV database import requests from table-tools.js (registry rows).
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        itm_handle_json_table_import($conn, 'modules_registry', 0);
+    }
+}
+
 $crud_action = $crud_action ?? 'index';
 $csrfToken = itm_get_csrf_token();
 $modulePath = dirname($_SERVER['PHP_SELF']);
@@ -346,7 +355,7 @@ if (!isset($crud_title)) {
 
                 <div class="card">
                     <div class="card-body" style="overflow:auto;">
-                        <table class="table" id="cma-access-matrix">
+                        <table class="table" id="cma-access-matrix" data-itm-db-import-endpoint="index.php">
                             <thead>
                             <tr>
                                 <th>Modules</th>
