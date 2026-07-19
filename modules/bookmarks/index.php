@@ -7,36 +7,6 @@ $crud_action = $crud_action ?? 'index';
 require '../../config/config.php';
 require './helpers.php';
 
-// Handle Excel/CSV database import requests from table-tools.js.
-if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    $itmImportRawBody = (string)@file_get_contents('php://input');
-    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
-
-    // Explicit CSRF check for JSON payload
-    if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
-        http_response_code(403);
-        die('CSRF validation failed');
-    }
-
-    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
-        itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
-    }
-
-    // Handle Folder Reordering/Reparenting via POST
-    if (isset($_POST['action']) && $_POST['action'] === 'move_folder') {
-        $fid = (int)$_POST['folder_id'];
-        $new_parent = (int)$_POST['new_parent_id'] ?: null;
-
-        $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $fid");
-        $f_data = mysqli_fetch_assoc($check_res);
-        if ($f_data && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0)) || (int)$f_data['employee_id'] === (int)($_SESSION['employee_id'] ?? 0)) {
-            $stmt = mysqli_prepare($conn, "UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?");
-            mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
-            mysqli_stmt_execute($stmt);
-        }
-    }
-}
-
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
@@ -46,35 +16,135 @@ if ($company_id <= 0) {
     return;
 }
 
+// Handle Excel/CSV database import requests from table-tools.js and form POST mutations.
+if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $itmImportRawBody = (string)@file_get_contents('php://input');
+    $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
+
+    if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        if (!itm_validate_csrf_token($itmImportJsonBody['csrf_token'] ?? '')) {
+            http_response_code(403);
+            die('CSRF validation failed');
+        }
+        itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
+        exit;
+    }
+
+    itm_require_post_csrf();
+
+    if (isset($_POST['action']) && $_POST['action'] === 'move_folder') {
+        $fid = (int)$_POST['folder_id'];
+        $new_parent = (int)$_POST['new_parent_id'] ?: null;
+
+        $check_res = mysqli_query($conn, "SELECT employee_id FROM bookmark_folders WHERE id = $fid");
+        $f_data = mysqli_fetch_assoc($check_res);
+        if ($f_data && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0)) || (int)$f_data['employee_id'] === (int)($_SESSION['employee_id'] ?? 0)) {
+            $stmt = mysqli_prepare($conn, 'UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?');
+            mysqli_stmt_bind_param($stmt, 'ii', $new_parent, $fid);
+            mysqli_stmt_execute($stmt);
+        }
+    }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'move_bookmarks') {
+        $target_folder_id = (int)($_POST['target_folder_id'] ?? 0) ?: null;
+        $ids = array_filter(array_map('intval', (array)($_POST['ids'] ?? [])));
+        foreach ($ids as $bookmark_id) {
+            $check_res = mysqli_query(
+                $conn,
+                'SELECT * FROM bookmarks WHERE id = ' . (int)$bookmark_id . ' AND company_id = ' . (int)$company_id . ' AND active = 1 LIMIT 1'
+            );
+            $bookmark_row = $check_res ? mysqli_fetch_assoc($check_res) : null;
+            if (!$bookmark_row || !bkm_can_edit_bookmark($bookmark_row, (int)($_SESSION['employee_id'] ?? 0), itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0)))) {
+                continue;
+            }
+            if ($target_folder_id === null) {
+                $stmt = mysqli_prepare($conn, 'UPDATE bookmarks SET folder_id = NULL WHERE id = ? AND company_id = ?');
+                mysqli_stmt_bind_param($stmt, 'ii', $bookmark_id, $company_id);
+            } else {
+                $stmt = mysqli_prepare($conn, 'UPDATE bookmarks SET folder_id = ? WHERE id = ? AND company_id = ?');
+                mysqli_stmt_bind_param($stmt, 'iii', $target_folder_id, $bookmark_id, $company_id);
+            }
+            mysqli_stmt_execute($stmt);
+        }
+        $redirect = $_SERVER['HTTP_REFERER'] ?? 'index.php';
+        header('Location: ' . $redirect);
+        exit;
+    }
+}
+
 $selected_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
 $view_mode = isset($_GET['view']) ? $_GET['view'] : 'all';
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$searchRaw = trim((string)($_GET['search'] ?? ''));
 
 // Fetch folders
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
 
-// Fetch bookmarks for current context
-$where = "company_id = $company_id AND active = 1 AND (employee_id = $user_id OR shared = 1)";
-if ($view_mode === 'private') $where .= " AND shared = 0";
-if ($view_mode === 'shared') $where .= " AND shared = 1";
+$bkmSortableColumns = ['title', 'url', 'notes', 'shared'];
+$sort = (string)($_GET['sort'] ?? 'title');
+$dir = strtoupper((string)($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+if (!in_array($sort, $bkmSortableColumns, true)) {
+    $sort = 'title';
+}
+$sortSql = $sort . ' ' . $dir;
 
-if ($search) {
-    $s = mysqli_real_escape_string($conn, $search);
-    $where .= " AND (title LIKE '%$s%' OR url LIKE '%$s%' OR notes LIKE '%$s%'"
-        . " OR EXISTS (SELECT 1 FROM bookmark_folders bf WHERE bf.id = bookmarks.folder_id AND bf.name LIKE '%$s%'))";
+$where = "company_id = $company_id AND active = 1 AND (employee_id = $user_id OR shared = 1)";
+if ($view_mode === 'private') {
+    $where .= ' AND shared = 0';
+}
+if ($view_mode === 'shared') {
+    $where .= ' AND shared = 1';
+}
+
+$searchConditions = [];
+if ($searchRaw !== '') {
+    $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+        ? mysqli_real_escape_string($conn, $searchRaw)
+        : '%' . mysqli_real_escape_string($conn, $searchRaw) . '%';
+    $searchConditions[] = "(title LIKE '$searchPattern' OR url LIKE '$searchPattern' OR notes LIKE '$searchPattern'"
+        . " OR EXISTS (SELECT 1 FROM bookmark_folders bf WHERE bf.id = bookmarks.folder_id AND bf.name LIKE '$searchPattern'))";
+    $where .= ' AND ' . $searchConditions[0];
 } elseif ($selected_folder_id) {
     $where .= " AND folder_id = $selected_folder_id";
 } else {
-    $where .= " AND folder_id IS NULL";
+    $where .= ' AND folder_id IS NULL';
 }
 
-$sql = "SELECT * FROM bookmarks WHERE $where ORDER BY title ASC";
-$res = mysqli_query($conn, $sql);
+$countRes = mysqli_query($conn, "SELECT COUNT(*) AS c FROM bookmarks WHERE $where");
+$totalRows = (int)(mysqli_fetch_assoc($countRes)['c'] ?? 0);
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+$showBulkActions = ($totalRows >= $perPage);
+
+$listSql = "SELECT * FROM bookmarks WHERE $where ORDER BY $sortSql LIMIT $offset, $perPage";
+$res = mysqli_query($conn, $listSql);
 $bookmarks = [];
 while ($res && ($row = mysqli_fetch_assoc($res))) {
     $bookmarks[] = $row;
 }
+
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
+
+$bkmListQueryState = [
+    'view' => $view_mode,
+    'folder_id' => $selected_folder_id,
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+    'page' => $page,
+];
 
 $csrfToken = itm_get_csrf_token();
 ?>
@@ -145,17 +215,30 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h1>🔗<?php echo sanitize($crud_title); ?></h1>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;">
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;">
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
-        </div>
         <div class="bookmarks-layout">
             <div class="bookmarks-sidebar">
                 <div style="margin-bottom: 15px;">
                     <form method="GET" style="display: flex; gap: 5px;">
-                        <input type="text" name="search" placeholder="Search..." value="<?php echo sanitize($search); ?>" style="flex: 1; padding: 8px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px;">
+                        <input type="hidden" name="view" value="<?php echo sanitize($view_mode); ?>">
+                        <?php if ($selected_folder_id): ?><input type="hidden" name="folder_id" value="<?php echo (int)$selected_folder_id; ?>"><?php endif; ?>
+                        <input type="text" name="search" placeholder="Search..." value="<?php echo sanitize($searchRaw); ?>" style="flex: 1; padding: 8px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px;">
                         <button type="submit" class="btn btn-primary">🔍</button>
                     </form>
                 </div>
@@ -171,7 +254,7 @@ if (!isset($crud_title)) {
                     <a href="create_folder.php" class="btn" title="Add Folder" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border);">➕📁</a>
                 </div>
                 <ul class="folder-tree">
-                    <li class="<?php echo ($selected_folder_id === null && $search === '') ? 'active' : ''; ?>" ondrop="drop(event)" ondragover="allowDrop(event)" data-folder-id="0">
+                    <li class="<?php echo ($selected_folder_id === null && $searchRaw === '') ? 'active' : ''; ?>" ondrop="drop(event)" ondragover="allowDrop(event)" data-folder-id="0">
                         <div><a href="index.php?view=<?php echo $view_mode; ?>">🏠 Root Bookmarks</a></div>
                     </li>
                     <?php echo bkm_render_folder_tree_html($conn, $folder_tree, $selected_folder_id, $company_id); ?>
@@ -182,8 +265,8 @@ if (!isset($crud_title)) {
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <h2 style="margin: 0; color: var(--text-primary);">
                             <?php
-                            if ($search) {
-                                echo "Search Results for '" . sanitize($search) . "'";
+                            if ($searchRaw) {
+                                echo "Search Results for '" . sanitize($searchRaw) . "'";
                             } elseif ($selected_folder_id) {
                                 $folder_name = 'Folder';
                                 foreach ($all_folders as $f) { if ($f['id'] == $selected_folder_id) { $folder_name = $f['name']; break; } }
@@ -214,12 +297,44 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
 
-                <div class="bulk-delete-bar">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <input type="hidden" name="view" value="<?php echo sanitize($view_mode); ?>">
+                        <?php if ($selected_folder_id): ?><input type="hidden" name="folder_id" value="<?php echo (int)$selected_folder_id; ?>"><?php endif; ?>
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <input type="hidden" name="page" value="1">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="bkmListSearch">Search (all fields)</label>
+                            <input type="text" id="bkmListSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Search bookmarks...">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="<?php echo sanitize(bkm_build_index_query(['search' => '', 'page' => 1])); ?>" class="btn">🔙</a>
+                        </div>
                     </form>
                 </div>
+
+                <?php if ($showBulkActions): ?>
+                <div class="bulk-delete-bar card" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    </form>
+                    <form id="bulk-move-form" method="POST" action="index.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="action" value="move_bookmarks">
+                        <label for="bulk-move-folder" style="margin:0;">Move to</label>
+                        <select id="bulk-move-folder" name="target_folder_id" class="form-control" style="min-width:180px;">
+                            <option value="0">Root</option>
+                            <?php echo bkm_render_folder_options($folder_tree, $selected_folder_id); ?>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary" id="bulk-move-submit">Move to</button>
+                    </form>
+                </div>
+                <?php endif; ?>
 
                 <div class="bookmarks-list">
     <?php if (empty($bookmarks)): ?>
@@ -232,24 +347,28 @@ if (!isset($crud_title)) {
         <table style="width:100%; border-collapse:collapse;" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
 <thead>
     <tr style="background:var(--bg-secondary);">
-
-        <th style="padding:8px; cursor:pointer;" onclick="sortTable(1, this)">
-            Title <span class="sort-arrow"></span>
-        </th>
+        <?php if ($showBulkActions): ?>
+        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+        <?php endif; ?>
+        <?php
+        $bkmListColumns = [
+            'title' => 'Title',
+            'url' => 'URL',
+            'notes' => 'Notes',
+            'shared' => 'Visibility',
+        ];
+        foreach ($bkmListColumns as $colKey => $colLabel):
+            $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
+            $sortHref = bkm_build_index_query(array_merge($bkmListQueryState, ['sort' => $colKey, 'dir' => $nextDir]));
+        ?>
         <th style="padding:8px;">
-            Favicon
+            <a href="<?php echo sanitize($sortHref); ?>" style="text-decoration:none;color:inherit;">
+                <?php echo sanitize($colLabel); ?>
+                <?php if ($sort === $colKey): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+            </a>
         </th>
-        <th style="padding:8px; cursor:pointer;" onclick="sortTable(5, this)">
-            URL <span class="sort-arrow"></span>
-        </th>
-
-        <th style="padding:8px; cursor:pointer;" onclick="sortTable(5, this)">
-            Notes <span class="sort-arrow"></span>
-        </th>
-
-        <th style="padding:8px; cursor:pointer; width:120px;" onclick="sortTable(5, this)">
-            Visibility <span class="sort-arrow"></span>
-        </th>
+        <?php endforeach; ?>
+        <th style="padding:8px;">Favicon</th>
 		<th style="padding:8px; width:120px;" class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
     </tr>
 </thead>
@@ -259,22 +378,15 @@ if (!isset($crud_title)) {
                 <?php foreach ($bookmarks as $b): ?>
                     <tr style="border-bottom:1px solid var(--border);">
 
-    <!-- Checkbox -->
+    <?php if ($showBulkActions): ?>
     <td style="padding:8px;">
         <input type="checkbox" name="ids[]" value="<?php echo (int)$b['id']; ?>" form="bulk-delete-form">
     </td>
+    <?php endif; ?>
 
     <!-- Title -->
     <td style="padding:8px;">
         <?php echo sanitize($b['title']); ?>
-    </td>
-
-    <!-- Favicon -->
-    <td style="padding:8px; text-align:center;">
-        <img src="<?php echo bkm_get_favicon_url($b['url']); ?>"
-             alt="favicon"
-             style="width:16px; height:16px; vertical-align:middle;"
-             onerror="this.style.display='none';">
     </td>
 
     <!-- URL -->
@@ -299,6 +411,14 @@ if (!isset($crud_title)) {
         <?php else: ?>
             🔒 Private
         <?php endif; ?>
+    </td>
+
+    <!-- Favicon -->
+    <td style="padding:8px; text-align:center;">
+        <img src="<?php echo bkm_get_favicon_url($b['url']); ?>"
+             alt="favicon"
+             style="width:16px; height:16px; vertical-align:middle;"
+             onerror="this.style.display='none';">
     </td>
 
     <!-- Actions -->
@@ -329,6 +449,21 @@ if (!isset($crud_title)) {
             </tbody>
         </table>
 
+        <?php if ($totalRows > $perPage): ?>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <?php if ($page > 1): ?>
+                        <a class="btn btn-sm" href="<?php echo sanitize(bkm_build_index_query(array_merge($bkmListQueryState, ['page' => $page - 1]))); ?>" title="◀️ Previous">Previous</a>
+                    <?php endif; ?>
+                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                    <?php if ($page < $totalPages): ?>
+                        <a class="btn btn-sm" href="<?php echo sanitize(bkm_build_index_query(array_merge($bkmListQueryState, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
     <?php endif; ?>
 </div>
 
@@ -347,116 +482,80 @@ if (!isset($crud_title)) {
 
 <script src="../../js/theme.js"></script>
 <script src="./export.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
-/**
- * Custom logic for bulk delete in tree view because shared script expects table rows.
- */
-(function() {
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const toggleButton = document.getElementById('bulk-delete-toggle');
-    const checkboxWraps = document.querySelectorAll('.bookmark-checkbox-wrap');
-    const checkboxes = document.querySelectorAll('input[name="ids[]"]');
-    let selectionMode = false;
-
-    let cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'btn btn-sm';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.style.display = 'none';
-    toggleButton.insertAdjacentElement('afterend', cancelButton);
-
-    function setSelectionVisibility(visible) {
-        checkboxWraps.forEach(w => w.style.display = visible ? 'block' : 'none');
-    }
-
-    function exitSelectionMode() {
-        selectionMode = false;
-        setSelectionVisibility(false);
-        toggleButton.textContent = 'Select to Delete';
-        cancelButton.style.display = 'none';
-        checkboxes.forEach(cb => cb.checked = false);
-    }
-
-    cancelButton.addEventListener('click', exitSelectionMode);
-
-    bulkDeleteForm.addEventListener('submit', function(e) {
-        if (e.submitter !== toggleButton) return;
-
-        if (!selectionMode) {
-            e.preventDefault();
-            selectionMode = true;
-            setSelectionVisibility(true);
-            toggleButton.textContent = 'Delete Selected';
-            cancelButton.style.display = 'inline-block';
-            return;
-        }
-
-        const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-        if (!anyChecked) {
-            e.preventDefault();
-            alert('Please select at least one bookmark to delete.');
-            return;
-        }
-
-        if (!confirm('Delete selected bookmarks?')) {
-            e.preventDefault();
-        }
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-menu').forEach(function(el) {
+        el.classList.remove('show');
     });
+});
 
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function() {
-        document.querySelectorAll('.dropdown-menu').forEach(function(el) {
-            el.classList.remove('show');
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.delete-folder-btn');
+    if (!btn) return;
+
+    const id = btn.dataset.id;
+    const hasBookmarks = btn.dataset.hasBookmarks === '1';
+    let deleteContents = '0';
+
+    if (hasBookmarks) {
+        if (!confirm('This action will delete all bookmarks in the folder. Continue?')) {
+            return;
+        }
+        if (confirm('Delete all bookmarks? Click OK to delete everything, or Cancel to move bookmarks to the Root.')) {
+            deleteContents = '1';
+        } else {
+            deleteContents = '0';
+        }
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'delete_folder.php';
+
+    const idInput = document.createElement('input');
+    idInput.type = 'hidden';
+    idInput.name = 'id';
+    idInput.value = id;
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = '<?php echo sanitize($csrfToken); ?>';
+
+    const delContentInput = document.createElement('input');
+    delContentInput.type = 'hidden';
+    delContentInput.name = 'delete_contents';
+    delContentInput.value = deleteContents;
+
+    form.appendChild(idInput);
+    form.appendChild(csrfInput);
+    form.appendChild(delContentInput);
+    document.body.appendChild(form);
+    form.submit();
+});
+
+const bulkMoveForm = document.getElementById('bulk-move-form');
+if (bulkMoveForm) {
+    bulkMoveForm.addEventListener('submit', function(event) {
+        const checked = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]:checked');
+        if (!checked.length) {
+            event.preventDefault();
+            alert('Please select at least one bookmark to move.');
+            return;
+        }
+        bulkMoveForm.querySelectorAll('input[name="ids[]"]').forEach(function(input) {
+            input.remove();
+        });
+        checked.forEach(function(checkbox) {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'ids[]';
+            hidden.value = checkbox.value;
+            bulkMoveForm.appendChild(hidden);
         });
     });
-
-    // Folder deletion logic
-    document.addEventListener('click', function(e) {
-        const btn = e.target.closest('.delete-folder-btn');
-        if (!btn) return;
-
-        const id = btn.dataset.id;
-        const hasBookmarks = btn.dataset.hasBookmarks === '1';
-        let deleteContents = '0';
-
-        if (hasBookmarks) {
-            if (!confirm('This action will delete all bookmarks in the folder. Continue?')) {
-                return;
-            }
-            // Give options: Move or Delete
-            if (confirm('Delete all bookmarks? Click OK to delete everything, or Cancel to move bookmarks to the Root.')) {
-                deleteContents = '1';
-            } else {
-                deleteContents = '0';
-            }
-        }
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'delete_folder.php';
-
-        const idInput = document.createElement('input');
-        idInput.type = 'hidden';
-        idInput.name = 'id';
-        idInput.value = id;
-
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token';
-        csrfInput.value = '<?php echo sanitize($csrfToken); ?>';
-
-        const delContentInput = document.createElement('input');
-        delContentInput.type = 'hidden';
-        delContentInput.name = 'delete_contents';
-        delContentInput.value = deleteContents;
-
-        form.appendChild(idInput);
-        form.appendChild(csrfInput);
-        form.appendChild(delContentInput);
-        document.body.appendChild(form);
-        form.submit();
-    });
-})();
+}
 
 function copyUrl(text) {
     const el = document.createElement('textarea');
@@ -514,36 +613,6 @@ document.addEventListener('click', function() {
     const dropdown = document.getElementById('export-dropdown');
     if (dropdown) dropdown.style.display = 'none';
 });
-</script>
-<script>
-let sortState = {};
-
-function sortTable(colIndex, headerEl) {
-    const table = document.querySelector(".bookmarks-list table");
-    const tbody = table.querySelector("tbody");
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-
-    // Toggle direction
-    sortState[colIndex] = sortState[colIndex] === "asc" ? "desc" : "asc";
-
-    // Reset all arrows
-    document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
-
-    // Set arrow on clicked column
-    headerEl.querySelector(".sort-arrow").textContent =
-        sortState[colIndex] === "asc" ? "▲" : "▼";
-
-    rows.sort((a, b) => {
-        const A = a.children[colIndex].innerText.trim().toLowerCase();
-        const B = b.children[colIndex].innerText.trim().toLowerCase();
-
-        if (A < B) return sortState[colIndex] === "asc" ? -1 : 1;
-        if (A > B) return sortState[colIndex] === "asc" ? 1 : -1;
-        return 0;
-    });
-
-    rows.forEach(row => tbody.appendChild(row));
-}
 </script>
 
 </body>

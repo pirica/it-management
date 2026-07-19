@@ -13,6 +13,10 @@ if ($company_id <= 0) {
 $errors = [];
 $success = '';
 
+$all_folders = bkm_get_folders($conn, $company_id, $user_id);
+$folder_tree = bkm_build_folder_tree($all_folders);
+$import_folder_id = isset($_POST['folder_id']) ? (int)$_POST['folder_id'] : (isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
@@ -44,13 +48,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!empty($bookmarks_to_import)) {
-            $stmt = mysqli_prepare($conn, "INSERT INTO bookmarks (company_id, employee_id, title, url, notes) VALUES (?, ?, ?, ?, ?)");
+            $folder_id = (int)($_POST['folder_id'] ?? 0) ?: null;
             $count = 0;
             foreach ($bookmarks_to_import as $b) {
-                // Validation: Only http/https
-                if (!preg_match('/^https?:\/\//i', $b['url'])) continue;
-
-                mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $user_id, $b['title'], $b['url'], $b['notes']);
+                if (!preg_match('/^https?:\/\//i', $b['url'])) {
+                    continue;
+                }
+                if ($folder_id === null) {
+                    $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, NULL, ?, ?, ?)');
+                    mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $user_id, $b['title'], $b['url'], $b['notes']);
+                } else {
+                    $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, ?, ?, ?, ?)');
+                    mysqli_stmt_bind_param($stmt, 'iiisss', $company_id, $user_id, $folder_id, $b['title'], $b['url'], $b['notes']);
+                }
                 if (mysqli_stmt_execute($stmt)) {
                     $count++;
                 }
@@ -101,6 +111,13 @@ if (!isset($crud_title)) {
             <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                 <div class="form-group">
+                    <label for="importFolder">Folder</label>
+                    <select id="importFolder" name="folder_id">
+                        <option value="0"<?php echo $import_folder_id === 0 ? ' selected' : ''; ?>>Root</option>
+                        <?php echo bkm_render_folder_options($folder_tree, $import_folder_id ?: null); ?>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Select File (HTML from browser, or CSV)</label>
                     <input type="file" name="import_file" accept=".html,.csv">
                 </div>
@@ -114,6 +131,7 @@ if (!isset($crud_title)) {
             <h3>Instructions</h3>
             <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
+            <p><strong>Folder:</strong> Choose <code>Root</code> or a folder — imported bookmarks are saved into that location.</p>
         </div>
     </div>
 </div>

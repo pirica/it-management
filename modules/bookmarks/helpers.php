@@ -104,6 +104,23 @@ function bkm_render_folder_options(array $tree, $selectedId = null, $depth = 0) 
 }
 
 /**
+ * Builds index.php list URLs preserving folder/view/search/sort state.
+ */
+function bkm_build_index_query(array $params): string
+{
+    $filtered = [];
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === '' || ($key === 'view' && $value === 'all')) {
+            continue;
+        }
+        $filtered[$key] = $value;
+    }
+    $qs = http_build_query($filtered);
+
+    return $qs === '' ? 'index.php' : 'index.php?' . $qs;
+}
+
+/**
  * Permission check for editing a bookmark.
  */
 function bkm_can_edit_bookmark($bookmark, $user_id, $is_admin) {
