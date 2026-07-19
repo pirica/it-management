@@ -603,6 +603,49 @@ $totals = [
 $moduleFailures = [];
 $moduleExcludedFailures = [];
 
+/**
+ * Gate-excluded output order: fail first, then n/a, then pass (within each module).
+ */
+function itm_ui_config_gate_excluded_status_sort_rank(string $status): int
+{
+    if ($status === 'fail') {
+        return 0;
+    }
+    if ($status === 'n/a') {
+        return 1;
+    }
+    if ($status === 'pass') {
+        return 2;
+    }
+
+    return 3;
+}
+
+/**
+ * @param array<string, array{status:string,details:string}> $checks
+ * @return array<int, string>
+ */
+function itm_ui_config_resolve_check_order(array $checks, bool $isGateExcluded): array
+{
+    $checkNames = array_keys($checks);
+    if (!$isGateExcluded) {
+        return $checkNames;
+    }
+
+    $originalOrder = array_flip($checkNames);
+    usort($checkNames, static function (string $a, string $b) use ($checks, $originalOrder): int {
+        $rankA = itm_ui_config_gate_excluded_status_sort_rank($checks[$a]['status']);
+        $rankB = itm_ui_config_gate_excluded_status_sort_rank($checks[$b]['status']);
+        if ($rankA !== $rankB) {
+            return $rankA <=> $rankB;
+        }
+
+        return ($originalOrder[$a] ?? 0) <=> ($originalOrder[$b] ?? 0);
+    });
+
+    return $checkNames;
+}
+
 $argvList = $GLOBALS['argv'] ?? [];
 $listExcluded = in_array('--list-excluded', $argvList, true)
     || (PHP_SAPI !== 'cli' && (($_GET['list_excluded'] ?? '') === '1'));
@@ -665,7 +708,8 @@ foreach ($modules as $module) {
         'Back & Save (edit.php)' => itm_check_back_save_entry($modulePath, $editPath, $editContent, 'edit.php'),
     ];
 
-    foreach ($checks as $checkName => $result) {
+    foreach (itm_ui_config_resolve_check_order($checks, $isGateExcluded) as $checkName) {
+        $result = $checks[$checkName];
         $status = $result['status'];
         $moduleLabel = itm_script_format_module_link($module);
 
