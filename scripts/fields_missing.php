@@ -47,6 +47,7 @@ if (!$conn instanceof mysqli) {
 }
 
 $report = itm_fields_missing_collect_report($conn, $moduleFilter !== '' ? $moduleFilter : null);
+itm_fields_missing_apply_reviewed_flags_to_report($report);
 $auditNl = "\n";
 
 if ($jsonOutput) {
@@ -66,7 +67,8 @@ if (!$itmIsCli) {
         . 'discoverable <code>$crud_table</code> module. Employees uses the same critical-field list as '
         . '<a href="employee_fields_missing.php">employee_fields_missing.php</a>. '
         . 'Flattened scaffold modules with <code>$uiColumns</code> pass UI via dynamic scaffold. '
-        . 'Bespoke modules print gated results as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> (informational gate only — not counted in the Result failure total).</p>';
+        . 'Bespoke modules print gated results as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> / <code>[SKIP][fail][reviewed]</code> (informational gate only — not counted in the Result failure total). '
+        . 'Reviewed exceptions: <a href="fields_missing_reviewed.php">fields_missing_reviewed.php</a> · <code>scripts/data/fields_missing_reviewed.json</code>.</p>';
     echo '<details style="margin:12px 0;max-width:900px;"><summary style="cursor:pointer;font-weight:600;">Section legend</summary>';
     echo '<pre style="margin:8px 0;padding:12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;">';
     echo htmlspecialchars(itm_fields_missing_format_legend(''), ENT_QUOTES, 'UTF-8');
