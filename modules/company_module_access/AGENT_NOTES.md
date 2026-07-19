@@ -25,6 +25,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 - AJAX toggles must use CSRF and write through `itm_set_company_module_access()` (which busts the per-request `has_module_access()` cache after each write).
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 
 - `index.php` — company × module matrix with AJAX checkboxes and ✅/❌ indicators (`1` = ✅, `0` = ❌ only; never ✓/✗), compact editable emoji inputs (pre-filled with effective icon), Select All / Cancel Select / Unselect All, client-side filter. Matrix table uses `table-tools.js` Export Excel, Export PDF, and Import Excel (same toolbar as before the export opt-out was removed). List header uses `data-itm-new-button-managed` with centered `$moduleListHeading` from `itm_sidebar_label_for_module()` and Settings `new_button_position` create slots (Matrix / Registry List links stay in the left toolbar group).
 - `list_all.php` — flat registry list with search.

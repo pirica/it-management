@@ -20,6 +20,7 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - **Foreign Key Mapping:** AJAX handlers map empty/0 IDs to NULL.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Grid Layout**: Often rendered in a grid mimicking the physical switch layout (via equipment module tiles).
 - Wrapper entry files set `$crud_action` before `require index.php` — index must not overwrite wrapper value.
 - Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list/view keep `$visibleFieldColumns`.

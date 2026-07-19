@@ -26,6 +26,7 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 - **Unique-key audit:** `php scripts/check_database_sql_company_name_uniques.php` expects name/scope UNIQUEs on `floor_plans` / `floor_plan_folders` / `floor_plan_tags`, and **skips** `floor_plan_item_tags`.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Gallery View**: Shows thumbnails for supported image types.
 - **Folder Tree**: Interactive sidebar for navigating folders.
 - **Drag & Drop**: Supports moving files and folders via drag-and-drop.

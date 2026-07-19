@@ -56,6 +56,23 @@ if ($employee) {
         $employeeDisplayName = trim((string)($employee['first_name'] ?? '') . ' ' . (string)($employee['last_name'] ?? ''));
     }
 }
+
+$esaRow = [];
+if ($employee) {
+    $esaStmt = mysqli_prepare(
+        $conn,
+        'SELECT * FROM employee_system_access WHERE employee_id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+    );
+    if ($esaStmt) {
+        mysqli_stmt_bind_param($esaStmt, 'ii', $employee['id'], $company_id);
+        mysqli_stmt_execute($esaStmt);
+        $esaResult = mysqli_stmt_get_result($esaStmt);
+        if ($esaResult && mysqli_num_rows($esaResult) === 1) {
+            $esaRow = mysqli_fetch_assoc($esaResult);
+        }
+        mysqli_stmt_close($esaStmt);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -104,6 +121,15 @@ if (!isset($crud_title)) {
                         </tr>
                         </tbody>
                     </table>
+
+                    <?php if (!empty($esaRow)): ?>
+                    <h2 style="margin-top: 20px;">Record meta</h2>
+                    <table>
+                        <tbody>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $esaRow); ?>
+                        </tbody>
+                    </table>
+                    <?php endif; ?>
 
                     <h2 style="margin-top: 20px;">System Access Grants</h2>
                     <?php if (empty($systemAccessCatalog)): ?>

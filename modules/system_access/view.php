@@ -69,6 +69,7 @@ if (!isset($crud_title)) {
                             <th>Active</th>
                             <td><?php echo (int)($item['active'] ?? 0) === 1 ? '✅' : '❌'; ?></td>
                         </tr>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $item); ?>
                         </tbody>
                     </table>
                 <?php endif; ?>

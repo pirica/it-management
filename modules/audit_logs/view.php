@@ -180,6 +180,7 @@ if (!isset($crud_title)) {
                             <th>New Values</th>
                             <td><pre class="audit-json"><?php echo sanitize($newValuesDisplay); ?></pre></td>
                         </tr>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $logRow); ?>
                         </tbody>
                     </table>
                 <?php endif; ?>

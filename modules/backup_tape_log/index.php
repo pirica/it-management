@@ -700,6 +700,7 @@ if (!isset($crud_title)) {
                         <tr><th>Problems</th><td><?= nl2br(sanitize($data['problem_details'])) ?></td></tr>
                         <tr><th>Used for Restore?</th><td><?= $data['tape_used_for_restore'] ? '✅ Yes' : '❌ No' ?></td></tr>
                         <tr><th>ISM Review?</th><td><?= $data['ism_review'] ? '✅ Yes' : '❌ No' ?></td></tr>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
                     </table>
                     <div style="margin-top:20px;">
                         <a href="index.php" class="btn" title="Back">🔙</a>

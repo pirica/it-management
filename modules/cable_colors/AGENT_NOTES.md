@@ -15,6 +15,7 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 - **Hex Code**: `hex_color` should be a valid CSS hex color string (e.g., "#808080").
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Standard CRUD** with scaffold soft-delete (`itm_crud_build_soft_delete_sql()` on delete; list uses `itm_crud_append_not_deleted_predicate()`).
 - **List columns:** `index.php` list/search use `$uiColumns` with `itm_crud_is_list_hidden_audit_field()` so `deleted_*`, `created_*`, and `updated_*` stay off the index table; `view.php` detail uses `$viewColumns` (includes audit meta).
 - **Bulk toolbar:** `bulk-delete-form`, shared `bulk-delete-selection.js`, **Select to Delete**, **Cancel** (`data-itm-bulk-cancel="1"`, `type="button"`), and **Clear Table** when row count ≥ `records_per_page`.

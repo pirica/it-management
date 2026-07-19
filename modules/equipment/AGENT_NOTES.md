@@ -29,6 +29,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Switch port tiles:** RJ45/SFP icon mapping per AGENTS.md (Unknown vs active PNG paths).
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view lists all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) with employee names and `d-m-Y - H:i:s` timestamps; list hides meta fields. Employment/equipment/ticket **status** badges are separate from row `active` (soft-delete mirror).
 - **Standard CRUD**.
 - **Photo Upload**: Supports uploading photos of the equipment.
 - **Search & Filter**: Index list search uses `includes/itm_equipment_search.php` (`itm_equipment_search_join_sql()`, `itm_equipment_build_search_where_sql()`) to match scalar fields (including dates, purchase cost, workstation/switch/printer columns, `photo_filename`) plus all create/edit FK labels (department code, supplier code, location code, rack code, assignee username, type/manufacturer/status/warranty/workstation/switch lookup names, etc.). Supplier and assignee columns are not shown on the index table. Regression: `php scripts/verify_employees_equipment_search_coverage.php`.

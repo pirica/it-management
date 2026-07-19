@@ -24,6 +24,7 @@ The central helpdesk/ticketing module for managing support requests.
 - **Search vs archive filter**: when `?search=` is set, archive filter may include both active and archived rows (see `index.php`).
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view lists all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) with employee names and `d-m-Y - H:i:s` timestamps; list hides meta fields. Employment/equipment/ticket **status** badges are separate from row `active` (soft-delete mirror).
 - **Standard CRUD** with FK label columns (`status_name`, `priority_name`, etc.).
 - **Photo Upload**: Supports uploading photos/screenshots for troubleshooting.
 - **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view. List sort uses `$sort` / `$dir` GET params with `$sortSql` in `ORDER BY` (static UI audit contract).

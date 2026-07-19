@@ -199,6 +199,17 @@ if (!isset($crud_title)) {
                         </div>
                     </div>
                     <?php endif; ?>
+
+                    <div class="card mb-4">
+                        <div class="card-header"><h5>Record meta</h5></div>
+                        <div class="card-body">
+                            <table class="table mb-0">
+                                <tbody>
+                                <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $contact); ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

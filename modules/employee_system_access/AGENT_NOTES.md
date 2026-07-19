@@ -16,6 +16,7 @@ Manages and tracks the various systems and applications an employee has access t
 - **Revocation**: When an employee leaves, access should be marked as revoked or inactive.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - **Standard View/Edit**.
 - **Checklist View**: Often presented as a list of checkboxes for each available system.
 - **List header**: `index.php` uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` and Settings `new_button_position` gates; CSV export sits in the right create slot (no `create.php` in this module).

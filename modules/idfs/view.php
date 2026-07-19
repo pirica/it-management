@@ -1087,6 +1087,14 @@ if (!isset($crud_title)) {
                 <?php endfor; ?>
                 </tbody>
             </table>
+
+            <div class="card" style="margin-top:16px;">
+                <table class="table">
+                    <tbody>
+                    <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $idf); ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

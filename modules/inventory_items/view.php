@@ -129,6 +129,7 @@ if (!isset($crud_title)) {
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $item); ?>
                         </tbody>
                     </table>
                 <?php endif; ?>

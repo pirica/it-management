@@ -653,6 +653,7 @@ if (!isset($crud_title)) {
                                 <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
                             </tr>
                         <?php endforeach; ?>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
                         </tbody>
                     </table>
                     <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>

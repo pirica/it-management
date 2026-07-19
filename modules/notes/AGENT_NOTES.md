@@ -19,6 +19,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - Standard CSRF on all POST handlers.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract. Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Custom card/grid UI (not standard flattened table CRUD on index).
 - Sidebar filters: pinned, images, important, shared, labels.
 - Supports `import_excel_rows` JSON on index/list_all.

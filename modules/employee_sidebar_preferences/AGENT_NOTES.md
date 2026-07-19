@@ -16,6 +16,7 @@ Stores per-user sidebar section/item order and visibility (`employee_sidebar_pre
 - **Read-only UI:** list and view screens do not expose create, edit, delete, bulk, or import flows.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Bespoke read-only list:** search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), Export Excel/PDF via `table-tools.js`.
 - **No bulk toolbar:** no `bulk-delete-form`, Select to Delete, Cancel, or Clear Table.
 - **No Import Excel:** list `<table>` uses `data-itm-no-import-excel="1"` (not `data-itm-db-import-endpoint`).

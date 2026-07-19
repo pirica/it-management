@@ -681,6 +681,11 @@ if (!isset($crud_title)) {
                         </td></tr>
                         <tr><th>Reason for request:</th><td><?php echo sanitize($data['reason']); ?></td></tr>
                     </table>
+                    <table class="table-borderless" style="margin-top:16px;">
+                        <tbody>
+                        <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
+                        </tbody>
+                    </table>
 
                     <div class="signature-container">
                         <div class="signature-box">

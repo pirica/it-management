@@ -499,6 +499,11 @@ if (!isset($crud_title)) {
                                                       <?= sanitize((string)($viewRow['module_slug'] ?? '')) ?></a></p>
                             <p><strong>Global Icon:</strong> <?= sanitize((string)($viewRow['icon'] ?? '')) !== '' ? sanitize((string)$viewRow['icon']) : '—' ?></p>
                             <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
+                            <table style="margin-top:16px;">
+                                <tbody>
+                                <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $viewRow); ?>
+                                </tbody>
+                            </table>
                             <a class="btn btn-sm" href="edit.php?id=<?= (int)$viewRow['id'] ?>">✏️</a>
                             <a class="btn btn-sm" href="list_all.php">🔙</a>
                         <?php endif; ?>

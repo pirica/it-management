@@ -18,6 +18,7 @@ Maps employees (login accounts) to companies they may access after login. Drives
 - Module browser QA skips some write steps — read-only / shared auth constraints.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - Standard flattened CRUD with FK labels for `employee_id` and `company_id`.
 - Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; view keeps full `$fieldColumns` including audit meta.
 - Delete forms set `data-is-admin="1"` when row ties to admin user — JS confirm dialog warns before POST.

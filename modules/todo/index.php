@@ -1013,6 +1013,7 @@ if (!isset($crud_title)) {
                                         }
                                     ?></td>
                                 </tr>
+                                <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
                             </table>
 
                             <div class="form-actions" style="margin-top: 30px;">

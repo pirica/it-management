@@ -20,6 +20,7 @@ Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity
 - **Employees trigger redaction:** `trg_employees_audit_*` in `database.sql` must not log `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, or `reset_token_expires_at`. Regression: `php scripts/verify_audit_logs_disclosure.php` (static trigger scan + live disposable employee probe + retro scan).
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - **Searchable**: Search by table name, record ID, user, or action. List search matches employee full name, username, and email via `LEFT JOIN employees` (not only raw `employee_id`).
 - **Detailed View**: View the JSON diff between old and new states.
 - **Admin toolbar**: Download ALL Logs, Backup ALL Logs, and Clear ALL Logs buttons (admin role only). List header uses `data-itm-new-button-managed` with centered `$moduleListHeading` (`itm_sidebar_label_for_module()` fallback `🧾 Audit Logs`) and Settings-positioned Refresh controls (no create action — `create.php` redirects to index).

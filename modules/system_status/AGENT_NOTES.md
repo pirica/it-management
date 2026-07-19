@@ -48,6 +48,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 ---
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`). Invalid `tab` query falls back to `monitoring`.
 - **Cache display:** tabs render from `system_status.payload_json`; Chart.js gauges on Monitoring use embedded cached JSON (no live API calls on GET).
