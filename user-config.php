@@ -658,6 +658,7 @@ $activity_list = array_slice($activity_list, 0, 10);
 // --- 2. HANDLE POST UPDATES ---
 $message = '';
 $message_type = 'info';
+$message_action = '';
 // Why: after a successful theme save, sync employees.theme into localStorage for js/theme.js.
 $syncThemeToClient = false;
 
@@ -795,6 +796,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else { $message = $res['error']; $message_type = 'error'; }
         }
     }
+    if ($message !== '') {
+        $message_action = (string)$action;
+    }
     // Reload user data
     $stmt = mysqli_prepare($conn, 'SELECT e.*, ep.name AS position_name, d.name AS department_name, es.name AS status_name FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id LEFT JOIN departments d ON e.department_id = d.id LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.id = ?');
     mysqli_stmt_bind_param($stmt, 'i', $user_id);
@@ -808,6 +812,16 @@ foreach ($pc_fields as $f) if (!empty($current_user[$f])) $pc_filled++;
 $pc_percent = round(($pc_filled / count($pc_fields)) * 100);
 
 $messageClass = ($message_type === 'success') ? 'crud_success' : (($message_type === 'error') ? 'crud_error' : '');
+$user_config_render_flash = static function ($forAction = null) use ($message, $messageClass, $message_action) {
+    if ($message === '') {
+        return;
+    }
+    if ($forAction !== null && $message_action !== $forAction) {
+        return;
+    }
+    $extraClass = $forAction !== null ? ' user-config-section-flash' : '';
+    echo '<div class="' . sanitize($messageClass . $extraClass) . '">' . sanitize($message) . '</div>';
+};
 $profileTheme = $profile_normalize_theme($current_user['theme'] ?? ($_SESSION['ui_theme'] ?? 'light'));
 $_SESSION['ui_theme'] = $profileTheme;
 ?>
@@ -855,6 +869,7 @@ $_SESSION['ui_theme'] = $profileTheme;
         .timeline { list-style: none; padding: 0; font-size: 13px; }
         .timeline-item { padding-bottom: 12px; border-left: 2px solid var(--border); padding-left: 15px; position: relative; color: var(--text-primary); }
         .timeline-item::after { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+        .user-config-section-flash { margin: 0 0 12px; }
     </style>
 </head>
 <body>
@@ -863,7 +878,7 @@ $_SESSION['ui_theme'] = $profileTheme;
     <div class="main-content">
         <?php include 'includes/header.php'; ?>
         <div class="content">
-            <?php if ($message) echo "<div class='$messageClass'>".sanitize($message)."</div>"; ?>
+            <?php $user_config_render_flash(); ?>
             <div style="margin-top:20px;"><a class="btn" href="dashboard.php">🔙</a></div><br><br>
             <div class="emp-dashboard">
                 <!-- 1. DASHBOARD STAT CARDS -->
@@ -1121,6 +1136,7 @@ foreach ($access_fields as $f):
                                     <div class="form-group"><label>Current Password</label><input type="password" name="current_password" required></div>
                                     <div class="form-group"><label>New Password</label><input type="password" name="new_password" required></div>
                                     <div class="form-group"><label>Confirm</label><input type="password" name="confirm_password" required></div>
+                                    <?php $user_config_render_flash('change_password'); ?>
                                     <button type="submit" class="btn btn-primary" title="Save">💾</button>
                                 </form>
                             </div>
@@ -1132,6 +1148,7 @@ foreach ($access_fields as $f):
                                     <?php if($current_user['vault_key_hash']):?><div class="form-group"><label>Current Master Key</label><input type="password" name="old_master_key_verify" required></div><?php endif;?>
                                     <div class="form-group"><label>New Master Key</label><input type="password" name="new_master_key" required></div>
                                     <div class="form-group"><label>Confirm</label><input type="password" name="confirm_master_key" required></div>
+                                    <?php $user_config_render_flash('vault_key_change'); ?>
                                     <button type="submit" class="btn btn-primary" title="Save">💾</button>
                                 </form>
                             </div>
