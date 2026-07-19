@@ -927,7 +927,7 @@ if (!isset($crud_title)) {
                                     <a href="?sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
-                                            <?php echo $dir === 'ASC' ? 'â–²' : 'â–¼'; ?>
+                                            <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
                                         <?php endif; ?>
                                     </a>
                                 </th>
