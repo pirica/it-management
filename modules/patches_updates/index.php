@@ -1215,13 +1215,17 @@ if (!isset($crud_title)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
@@ -1266,7 +1270,7 @@ if (!isset($crud_title)) {
                                     <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?>
-                                            <?php echo $dir === 'ASC' ? 'â–²' : 'â–¼'; ?>
+                                            <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
                                         <?php endif; ?>
                                     </a>
                                 </th>
