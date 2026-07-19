@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     $data['active'] = $active;
 } elseif (!$needsVaultForForm) {
     bkm_hydrate_bookmark_row($data, $user_id);
+    $data['title'] = $data['title_plain'] ?? '';
     $data['url'] = $data['url_display'];
 }
 

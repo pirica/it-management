@@ -87,6 +87,7 @@ $searchRaw = trim((string)($_GET['search'] ?? ''));
 // Fetch folders
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
+$folderNameById = bkm_folder_name_map($all_folders);
 
 $bookmarks = [];
 $totalRows = 0;
@@ -95,6 +96,8 @@ $page = 1;
 $offset = 0;
 $showBulkActions = false;
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$sort = 'title';
+$dir = 'ASC';
 
 if (!empty($bkmVaultState['unlocked'])) {
 
@@ -104,51 +107,25 @@ $dir = strtoupper((string)($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 if (!in_array($sort, $bkmSortableColumns, true)) {
     $sort = 'title';
 }
-$sortSql = $sort . ' ' . $dir;
 
-$where = "company_id = $company_id AND active = 1 AND (employee_id = $user_id OR shared = 1)";
-if ($view_mode === 'private') {
-    $where .= ' AND shared = 0';
-}
-if ($view_mode === 'shared') {
-    $where .= ' AND shared = 1';
-}
-
-$searchConditions = [];
-if ($searchRaw !== '') {
-    $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
-        ? mysqli_real_escape_string($conn, $searchRaw)
-        : '%' . mysqli_real_escape_string($conn, $searchRaw) . '%';
-    $searchConditions[] = "(title LIKE '$searchPattern' OR notes LIKE '$searchPattern'"
-        . " OR (shared = 1 AND url LIKE '$searchPattern')"
-        . " OR EXISTS (SELECT 1 FROM bookmark_folders bf WHERE bf.id = bookmarks.folder_id AND bf.name LIKE '$searchPattern'))";
-    $where .= ' AND ' . $searchConditions[0];
-} elseif ($selected_folder_id) {
-    $where .= " AND folder_id = $selected_folder_id";
-} else {
-    $where .= ' AND folder_id IS NULL';
-}
-
-$countRes = mysqli_query($conn, "SELECT COUNT(*) AS c FROM bookmarks WHERE $where");
-$totalRows = (int)(mysqli_fetch_assoc($countRes)['c'] ?? 0);
-$perPage = itm_resolve_records_per_page($ui_config ?? null);
-$totalPages = max(1, (int)ceil($totalRows / $perPage));
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) {
-    $page = 1;
-}
-if ($page > $totalPages) {
-    $page = $totalPages;
-}
+$listResult = bkm_query_bookmarks_for_list($conn, [
+    'company_id' => $company_id,
+    'user_id' => $user_id,
+    'view_mode' => $view_mode,
+    'selected_folder_id' => $selected_folder_id,
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+    'page' => isset($_GET['page']) ? (int)$_GET['page'] : 1,
+    'per_page' => $perPage,
+    'folder_name_by_id' => $folderNameById,
+]);
+$bookmarks = $listResult['rows'];
+$totalRows = $listResult['totalRows'];
+$totalPages = $listResult['totalPages'];
+$page = $listResult['page'];
 $offset = ($page - 1) * $perPage;
 $showBulkActions = ($totalRows >= $perPage);
-
-$listSql = "SELECT * FROM bookmarks WHERE $where ORDER BY $sortSql LIMIT $offset, $perPage";
-$res = mysqli_query($conn, $listSql);
-while ($res && ($row = mysqli_fetch_assoc($res))) {
-    bkm_hydrate_bookmark_row($row, $user_id);
-    $bookmarks[] = $row;
-}
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
@@ -410,7 +387,7 @@ if (!isset($crud_title)) {
 
     <!-- Title -->
     <td style="padding:8px;">
-        <?php echo sanitize($b['title']); ?>
+        <?php echo sanitize($b['title_display'] ?? $b['title'] ?? ''); ?>
     </td>
 
     <!-- URL -->

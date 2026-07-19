@@ -140,6 +140,90 @@ if (!function_exists('itm_vault_reencrypt_bookmark_urls')) {
         mysqli_stmt_close($upd_stmt);
         mysqli_stmt_close($sel_stmt);
 
+        $title_sel = mysqli_prepare(
+            $conn,
+            'SELECT id, title FROM bookmarks WHERE employee_id = ? AND shared = 0 AND active = 1'
+        );
+        if (!$title_sel) {
+            return ['ok' => false, 'message' => 'Failed to load bookmark titles.'];
+        }
+        mysqli_stmt_bind_param($title_sel, 'i', $employeeId);
+        if (!mysqli_stmt_execute($title_sel)) {
+            mysqli_stmt_close($title_sel);
+            return ['ok' => false, 'message' => 'Failed to load bookmark titles.'];
+        }
+        $title_res = mysqli_stmt_get_result($title_sel);
+        $title_upd = mysqli_prepare($conn, 'UPDATE bookmarks SET title = ? WHERE id = ? AND employee_id = ?');
+        if (!$title_upd) {
+            mysqli_stmt_close($title_sel);
+            return ['ok' => false, 'message' => 'Failed to prepare bookmark title update.'];
+        }
+        while ($row = mysqli_fetch_assoc($title_res)) {
+            $bookmarkId = (int)($row['id'] ?? 0);
+            $stored = (string)($row['title'] ?? '');
+            $plain = itm_decrypt($stored, $oldKeySession);
+            if ($plain === false || $plain === '') {
+                if ($stored !== '' && strlen($stored) <= 255) {
+                    $plain = $stored;
+                } else {
+                    mysqli_stmt_close($title_upd);
+                    mysqli_stmt_close($title_sel);
+                    return ['ok' => false, 'message' => 'Failed to re-encrypt bookmark titles. Please try again.'];
+                }
+            }
+            $re_encrypted = itm_encrypt($plain, $newKeySession);
+            mysqli_stmt_bind_param($title_upd, 'sii', $re_encrypted, $bookmarkId, $employeeId);
+            if (!mysqli_stmt_execute($title_upd)) {
+                mysqli_stmt_close($title_upd);
+                mysqli_stmt_close($title_sel);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt bookmark titles. Please try again.'];
+            }
+        }
+        mysqli_stmt_close($title_upd);
+        mysqli_stmt_close($title_sel);
+
+        $folder_sel = mysqli_prepare(
+            $conn,
+            'SELECT id, name FROM bookmark_folders WHERE employee_id = ? AND shared = 0 AND active = 1'
+        );
+        if (!$folder_sel) {
+            return ['ok' => false, 'message' => 'Failed to load folder names.'];
+        }
+        mysqli_stmt_bind_param($folder_sel, 'i', $employeeId);
+        if (!mysqli_stmt_execute($folder_sel)) {
+            mysqli_stmt_close($folder_sel);
+            return ['ok' => false, 'message' => 'Failed to load folder names.'];
+        }
+        $folder_res = mysqli_stmt_get_result($folder_sel);
+        $folder_upd = mysqli_prepare($conn, 'UPDATE bookmark_folders SET name = ? WHERE id = ? AND employee_id = ?');
+        if (!$folder_upd) {
+            mysqli_stmt_close($folder_sel);
+            return ['ok' => false, 'message' => 'Failed to prepare folder name update.'];
+        }
+        while ($row = mysqli_fetch_assoc($folder_res)) {
+            $folderId = (int)($row['id'] ?? 0);
+            $stored = (string)($row['name'] ?? '');
+            $plain = itm_decrypt($stored, $oldKeySession);
+            if ($plain === false || $plain === '') {
+                if ($stored !== '' && strlen($stored) <= 255) {
+                    $plain = $stored;
+                } else {
+                    mysqli_stmt_close($folder_upd);
+                    mysqli_stmt_close($folder_sel);
+                    return ['ok' => false, 'message' => 'Failed to re-encrypt folder names. Please try again.'];
+                }
+            }
+            $re_encrypted = itm_encrypt($plain, $newKeySession);
+            mysqli_stmt_bind_param($folder_upd, 'sii', $re_encrypted, $folderId, $employeeId);
+            if (!mysqli_stmt_execute($folder_upd)) {
+                mysqli_stmt_close($folder_upd);
+                mysqli_stmt_close($folder_sel);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt folder names. Please try again.'];
+            }
+        }
+        mysqli_stmt_close($folder_upd);
+        mysqli_stmt_close($folder_sel);
+
         return ['ok' => true, 'message' => ''];
     }
 }

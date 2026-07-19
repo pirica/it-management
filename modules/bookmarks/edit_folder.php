@@ -1,10 +1,12 @@
 <?php
 require '../../config/config.php';
 require './helpers.php';
+require './bkm_vault_bootstrap.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+$bkmVaultState = bkm_handle_vault_requests($conn, $user_id);
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -20,8 +22,11 @@ if (!$data || !bkm_can_edit_folder($data, $user_id, $is_admin)) {
     die('Folder not found or access denied.');
 }
 
+$isPrivateFolder = (int)($data['shared'] ?? 0) === 0;
+$needsVaultForForm = $isPrivateFolder && empty($bkmVaultState['unlocked']);
+
 $errors = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
@@ -31,20 +36,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $shared = isset($_POST['shared']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($name === '') $errors[] = 'Folder name is required.';
-    if ($parent_folder_id == $id) $errors[] = 'A folder cannot be its own parent.';
+    if ($name === '') {
+        $errors[] = 'Folder name is required.';
+    }
+    if ($parent_folder_id == $id) {
+        $errors[] = 'A folder cannot be its own parent.';
+    }
+    if ($shared === 0 && empty($bkmVaultState['unlocked'])) {
+        $errors[] = 'Unlock your vault to save private folders.';
+    }
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "UPDATE bookmark_folders SET parent_folder_id = ?, name = ?, shared = ?, active = ? WHERE id = ?");
-        mysqli_stmt_bind_param($stmt, 'isiii', $parent_folder_id, $name, $shared, $active, $id);
-
-        if (mysqli_stmt_execute($stmt)) {
+        $result = bkm_update_folder_row($conn, $id, $company_id, $parent_folder_id, $name, $shared, $active);
+        if ($result['ok']) {
             header('Location: index.php');
             return;
-        } else {
-            $errors[] = 'Database error: ' . mysqli_error($conn);
         }
+        $errors[] = $result['message'] !== '' ? $result['message'] : 'Database error.';
     }
+
+    $data['name'] = $name;
+    $data['parent_folder_id'] = $parent_folder_id;
+    $data['shared'] = $shared;
+    $data['active'] = $active;
+} elseif (!$needsVaultForForm) {
+    bkm_hydrate_folder_row($data, $user_id);
 }
 
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
@@ -92,6 +108,9 @@ if (!isset($crud_title)) {
         <?php endif; ?>
 
         <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <?php if ($needsVaultForForm): ?>
+                <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'edit_folder.php?id=' . $id); ?>
+            <?php else: ?>
             <form method="POST" class="form-grid" style="flex: 1; min-width: 300px;">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                 <div class="form-group">
@@ -133,6 +152,7 @@ if (!isset($crud_title)) {
                         <button class="btn btn-danger" type="submit" style="width: 100%;" title="Delete">🗑️</button>
                     </form>
                 </div>
+            <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>

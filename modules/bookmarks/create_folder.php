@@ -1,10 +1,12 @@
 <?php
 require '../../config/config.php';
 require './helpers.php';
+require './bkm_vault_bootstrap.php';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $user_id = (int)($_SESSION['employee_id'] ?? 0);
 $is_admin = itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+$bkmVaultState = bkm_handle_vault_requests($conn, $user_id);
 
 if ($company_id <= 0) {
     header('Location: ../../index.php');
@@ -12,7 +14,7 @@ if ($company_id <= 0) {
 }
 
 $errors = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
         die('CSRF token validation failed.');
     }
@@ -22,18 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $shared = isset($_POST['shared']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
 
-    if ($name === '') $errors[] = 'Folder name is required.';
+    if ($name === '') {
+        $errors[] = 'Folder name is required.';
+    } elseif ($shared === 0 && empty($bkmVaultState['unlocked'])) {
+        $errors[] = 'Unlock your vault to save private folders.';
+    }
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "INSERT INTO bookmark_folders (company_id, employee_id, parent_folder_id, name, shared, active) VALUES (?, ?, ?, ?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, 'iiisii', $company_id, $user_id, $parent_folder_id, $name, $shared, $active);
-
-        if (mysqli_stmt_execute($stmt)) {
+        $result = bkm_insert_folder_row($conn, $company_id, $user_id, $parent_folder_id, $name, $shared, $active);
+        if ($result['ok']) {
             header('Location: index.php');
             return;
-        } else {
-            $errors[] = 'Database error: ' . mysqli_error($conn);
         }
+        $errors[] = $result['message'] !== '' ? $result['message'] : 'Database error.';
     }
 }
 

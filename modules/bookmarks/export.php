@@ -90,7 +90,7 @@ if ($format === 'html') {
 <body onload="window.print()">
     <h1>Bookmarks Export</h1>
     <?php if (empty($bkmVaultState['unlocked'])): ?>
-        <p><em>Private bookmark URLs are omitted until you unlock your vault. Shared bookmarks export with plaintext URLs.</em></p>
+        <p><em>Private bookmark titles and URLs are omitted until you unlock your vault. Shared bookmarks export with plaintext titles and URLs.</em></p>
     <?php endif; ?>
     <table>
         <thead>

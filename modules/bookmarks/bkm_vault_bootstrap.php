@@ -63,7 +63,7 @@ function bkm_render_vault_lock_screen($csrfToken, array $vaultState, $redirectTa
     <div style="max-width: 400px; margin: 80px auto; text-align: center;" class="card">
         <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
         <h2>Vault Locked</h2>
-        <p>Enter your master key to access private bookmark URLs.</p>
+        <p>Enter your master key to access private bookmark URLs, titles, and folder names.</p>
         <?php if ($error !== ''): ?>
             <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
         <?php endif; ?>
