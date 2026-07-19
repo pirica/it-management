@@ -1427,14 +1427,14 @@ if (!isset($crud_title)) {
                                         <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>)" title="Share to device">📱</button>
                                         <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>, null, 'event')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
                                         <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>, null, 'event')" title="Share on Outlook">📨</button>
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>" title="Edit">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
                                         </form>
                                     </div>
                                 </td>
