@@ -7433,6 +7433,7 @@ CREATE TABLE `bookmarks` (
   `folder_id` int DEFAULT NULL,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `url` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `url_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin GENERATED ALWAYS AS (sha2(`url`,256)) STORED,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `position` int DEFAULT '0',
   `shared` tinyint DEFAULT '0',
@@ -7445,7 +7446,7 @@ CREATE TABLE `bookmarks` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bookmarks_company_scope` (`company_id`, `employee_id`, `id`),
-  UNIQUE KEY `uq_bookmarks_employee_url` (`company_id`, `employee_id`, `url`),
+  UNIQUE KEY `uq_bookmarks_employee_url` (`company_id`, `employee_id`, `url_hash`),
   KEY `company_id` (`company_id`),
   KEY `employee_id` (`employee_id`),
   KEY `folder_id` (`folder_id`),
@@ -7453,7 +7454,8 @@ CREATE TABLE `bookmarks` (
   CONSTRAINT `bookmarks_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmarks_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Existing databases: DELETE inactive/duplicate bookmark rows per (company_id, employee_id, url) before adding uq_bookmarks_employee_url.
+-- Existing databases: DELETE duplicate bookmark rows per (company_id, employee_id, SHA2(url,256)); add
+-- url_hash CHAR(64) GENERATED ALWAYS AS (sha2(url,256)) STORED; drop uq_bookmarks_employee_url on url; add UNIQUE (company_id, employee_id, url_hash).
 -- Seed default shared bookmarks
 -- Retroactive default bookmarks for existing Admin users
 INSERT INTO bookmarks (company_id, employee_id, title, url, shared, active)

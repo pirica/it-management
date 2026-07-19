@@ -4,7 +4,7 @@
 Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — URL records (`title`, `url`, `shared`, `employee_id`, `folder_id`). Duplicate titles are allowed; row identity is `id`. **`UNIQUE (company_id, employee_id, url)`** — one exact URL per employee (any folder).
+- **bookmarks** — URL records (`title`, `url` up to 2048 chars, `url_hash` generated SHA-256 for indexing, `shared`, `employee_id`, `folder_id`). Duplicate titles are allowed; row identity is `id`. **`UNIQUE (company_id, employee_id, url_hash)`** — one exact URL per employee (any folder); full URL text stays in `url`.
 - **bookmark_folders** — folder tree (emoji icons in sidebar). **Duplicate folder names are allowed** (same employee / company / parent). Identity is `PRIMARY KEY (id)` only — there is **no** UNIQUE on `name` (and no `uq_bookmark_folders_company_scope`).
 
 ## 3. Required Relationships
