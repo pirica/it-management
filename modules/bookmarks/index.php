@@ -51,6 +51,40 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
 
+    if (isset($_POST['action']) && $_POST['action'] === 'rename_folder') {
+        $fid = (int)($_POST['folder_id'] ?? 0);
+        $name = trim((string)($_POST['name'] ?? ''));
+        $redirectView = trim((string)($_POST['redirect_view'] ?? 'all'));
+        if (!in_array($redirectView, ['all', 'private', 'shared'], true)) {
+            $redirectView = 'all';
+        }
+
+        $folder = bkm_get_folder_row_by_id($conn, $fid, $company_id, $user_id);
+        $redirectParams = ['view' => $redirectView, 'folder_id' => $fid];
+        if (!$folder || !bkm_can_edit_folder($folder, $user_id, $is_admin)) {
+            $redirectParams['rename_error'] = 'access';
+        } elseif ($name === '') {
+            $redirectParams['rename_error'] = 'empty';
+        } else {
+            $parentId = !empty($folder['parent_folder_id']) ? (int)$folder['parent_folder_id'] : null;
+            $result = bkm_update_folder_row(
+                $conn,
+                $fid,
+                $company_id,
+                $parentId,
+                $name,
+                (int)($folder['shared'] ?? 0),
+                (int)($folder['active'] ?? 1)
+            );
+            if (!$result['ok']) {
+                $redirectParams['rename_error'] = 'save';
+            }
+        }
+
+        header('Location: index.php?' . http_build_query($redirectParams));
+        exit;
+    }
+
     if (isset($_POST['action']) && $_POST['action'] === 'move_bookmarks') {
         $target_folder_id = (int)($_POST['target_folder_id'] ?? 0) ?: null;
         $ids = array_filter(array_map('intval', (array)($_POST['ids'] ?? [])));
@@ -81,6 +115,8 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $selected_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
 $view_mode = isset($_GET['view']) ? $_GET['view'] : 'all';
 $searchRaw = trim((string)($_GET['search'] ?? ''));
+$bkmVaultUnlocked = !empty($bkmVaultState['unlocked']);
+$bkmRenameError = trim((string)($_GET['rename_error'] ?? ''));
 
 // Fetch folders
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
@@ -198,6 +234,30 @@ if (!isset($crud_title)) {
         .dropdown-menu.show { display: block; }
         .dropdown-item { display: block; width: 100%; padding: 8px 15px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-primary); text-decoration: none; font-size: 0.9em; }
         .dropdown-item:hover { background: var(--bg-secondary); }
+
+        .bkm-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.45);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .bkm-modal-overlay.is-open { display: flex; }
+        .bkm-modal-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        .bkm-modal-card h3 { margin: 0 0 16px; }
+        .itm-folder-tree-actions .btn { flex-shrink: 0; }
+        .folder-tree li.active > div .itm-folder-tree-actions .btn { color: inherit; }
     </style>
 </head>
 <body>
@@ -207,6 +267,19 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
+        <?php if ($bkmRenameError !== ''): ?>
+            <div class="alert alert-danger" style="margin-bottom:16px;">
+                <?php
+                if ($bkmRenameError === 'empty') {
+                    echo 'Folder name is required.';
+                } elseif ($bkmRenameError === 'access') {
+                    echo 'You do not have permission to rename this folder.';
+                } else {
+                    echo 'Unable to rename folder. Unlock your vault for private folders and try again.';
+                }
+                ?>
+            </div>
+        <?php endif; ?>
             <?php if (empty($bkmVaultState['unlocked'])): ?>
                 <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'index.php'); ?>
             <?php else: ?>
@@ -252,7 +325,7 @@ if (!isset($crud_title)) {
                     <li class="<?php echo ($selected_folder_id === null && $searchRaw === '') ? 'active' : ''; ?>" ondrop="drop(event)" ondragover="allowDrop(event)" data-folder-id="0">
                         <div><a href="index.php?view=<?php echo $view_mode; ?>">🏠 Root Bookmarks</a></div>
                     </li>
-                    <?php echo bkm_render_folder_tree_html($conn, $folder_tree, $selected_folder_id, $company_id); ?>
+                    <?php echo bkm_render_folder_tree_html($conn, $folder_tree, $selected_folder_id, $company_id, 0, $user_id, $is_admin, $bkmVaultUnlocked); ?>
                 </ul>
             </div>
             <div class="bookmarks-main">
@@ -488,6 +561,26 @@ if (!isset($crud_title)) {
     <input type="hidden" name="merge_into_folder_id" id="move-merge-into-folder-id" value="">
 </form>
 
+<div id="bkm-edit-folder-modal" class="bkm-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="bkm-edit-folder-modal-title">
+    <div class="bkm-modal-card" onclick="event.stopPropagation();">
+        <h3 id="bkm-edit-folder-modal-title" title="Edit folder">✏️</h3>
+        <form id="bkm-rename-folder-form" method="POST" action="index.php">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+            <input type="hidden" name="action" value="rename_folder">
+            <input type="hidden" name="folder_id" id="bkm-rename-folder-id" value="">
+            <input type="hidden" name="redirect_view" value="<?php echo sanitize($view_mode); ?>">
+            <div class="form-group">
+                <label for="bkm-rename-folder-name">Folder Name</label>
+                <input type="text" name="name" id="bkm-rename-folder-name" required autocomplete="off">
+            </div>
+            <div class="form-actions" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="btn" id="bkm-rename-folder-cancel" title="Cancel">🔙</button>
+                <button type="submit" class="btn btn-primary" title="Save">💾</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="../../js/theme.js"></script>
 <script src="./export.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
@@ -501,6 +594,9 @@ document.addEventListener('click', function() {
 document.addEventListener('click', function(e) {
     const btn = e.target.closest('.delete-folder-btn');
     if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
 
     const id = btn.dataset.id;
     const hasBookmarks = btn.dataset.hasBookmarks === '1';
@@ -541,6 +637,58 @@ document.addEventListener('click', function(e) {
     form.appendChild(delContentInput);
     document.body.appendChild(form);
     form.submit();
+});
+
+const bkmEditFolderModal = document.getElementById('bkm-edit-folder-modal');
+const bkmRenameFolderNameInput = document.getElementById('bkm-rename-folder-name');
+const bkmRenameFolderIdInput = document.getElementById('bkm-rename-folder-id');
+
+function bkmCloseEditFolderModal() {
+    if (!bkmEditFolderModal) {
+        return;
+    }
+    bkmEditFolderModal.classList.remove('is-open');
+}
+
+function bkmOpenEditFolderModal(folderId, folderName) {
+    if (!bkmEditFolderModal || !bkmRenameFolderNameInput || !bkmRenameFolderIdInput) {
+        return;
+    }
+    bkmRenameFolderIdInput.value = folderId;
+    bkmRenameFolderNameInput.value = folderName;
+    bkmEditFolderModal.classList.add('is-open');
+    bkmRenameFolderNameInput.focus();
+    bkmRenameFolderNameInput.select();
+}
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.edit-folder-btn');
+    if (!btn) {
+        return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    bkmOpenEditFolderModal(btn.dataset.id, btn.dataset.name || '');
+});
+
+if (bkmEditFolderModal) {
+    bkmEditFolderModal.addEventListener('click', function() {
+        bkmCloseEditFolderModal();
+    });
+}
+
+const bkmRenameFolderCancel = document.getElementById('bkm-rename-folder-cancel');
+if (bkmRenameFolderCancel) {
+    bkmRenameFolderCancel.addEventListener('click', function(e) {
+        e.preventDefault();
+        bkmCloseEditFolderModal();
+    });
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && bkmEditFolderModal && bkmEditFolderModal.classList.contains('is-open')) {
+        bkmCloseEditFolderModal();
+    }
 });
 
 const bulkMoveForm = document.getElementById('bulk-move-form');

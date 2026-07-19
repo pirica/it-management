@@ -68,7 +68,7 @@ function bkm_folder_has_bookmarks($conn, $folder_id, $company_id) {
 /**
  * Renders the folder tree as HTML list items.
  */
-function bkm_render_folder_tree_html($conn, array $tree, $selectedFolderId, $company_id, $depth = 0) {
+function bkm_render_folder_tree_html($conn, array $tree, $selectedFolderId, $company_id, $depth = 0, $user_id = 0, $is_admin = false, $vaultUnlocked = false) {
     $html = '';
     foreach ($tree as $node) {
         $id = (int)$node['id'];
@@ -81,11 +81,21 @@ function bkm_render_folder_tree_html($conn, array $tree, $selectedFolderId, $com
         $html .= '<li class="itm-folder-tree-item' . $isActive . '" data-folder-id="' . $id . '" data-folder-name="' . $folderNameAttr . '" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)">';
         $html .= '<div class="itm-folder-tree-row" style="padding-left:' . $padding . 'px; display: flex; align-items: center; justify-content: space-between;">';
         $html .= '<a href="index.php?folder_id=' . $id . '" style="flex: 1;">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
-        $html .= '<button type="button" class="btn btn-sm btn-danger delete-folder-btn" data-id="' . $id . '" data-has-bookmarks="' . $hasBookmarks . '" title="Delete Folder" style="padding: 2px 6px; margin-left: 8px;">🗑️</button>';
+
+        $isPrivateFolder = (int)($node['shared'] ?? 0) === 0;
+        $canEditFolder = bkm_can_edit_folder($node, (int)$user_id, (bool)$is_admin)
+            && (!$isPrivateFolder || $vaultUnlocked);
+        $html .= '<span class="itm-folder-tree-actions" style="display:flex;gap:4px;margin-left:8px;">';
+        if ($canEditFolder) {
+            $html .= '<button type="button" class="btn btn-sm edit-folder-btn" data-id="' . $id . '" data-name="' . $folderNameAttr . '" title="Edit" style="padding:2px 6px;">✏️</button>';
+        }
+        $html .= '<button type="button" class="btn btn-sm btn-danger delete-folder-btn" data-id="' . $id . '" data-has-bookmarks="' . $hasBookmarks . '" title="Delete" style="padding:2px 6px;">🗑️</button>';
+        $html .= '</span>';
+
         $html .= '</div>';
 
         if (!empty($node['children'])) {
-            $html .= '<ul class="itm-folder-tree-children">' . bkm_render_folder_tree_html($conn, $node['children'], $selectedFolderId, $company_id, $depth + 1) . '</ul>';
+            $html .= '<ul class="itm-folder-tree-children">' . bkm_render_folder_tree_html($conn, $node['children'], $selectedFolderId, $company_id, $depth + 1, $user_id, $is_admin, $vaultUnlocked) . '</ul>';
         }
         $html .= '</li>';
     }
