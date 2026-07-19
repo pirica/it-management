@@ -1,6 +1,6 @@
 <?php
 /**
- * Insert server-side favicon <link> in module index/create/edit/view/list_all <head> blocks.
+ * Insert server-side favicon <link> in module index/create/edit/view/list_all/view_all <head> blocks.
  *
  * Why: fields_missing bespoke gate and first-paint tab icon require itm_render_head_favicon_link()
  * using Settings favicon_url (header.php JS alone leaves the default globe).
