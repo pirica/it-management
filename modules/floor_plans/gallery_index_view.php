@@ -4,14 +4,29 @@
  */
 $fpListUrl = $modulePath . '/list_all.php';
 $fpCreateUrl = $modulePath . '/create.php';
+$fpGalleryClearUrl = 'index.php';
+if ($galleryFolderId > 0) {
+    $fpGalleryClearUrl = 'index.php?folder_id=' . (int)$galleryFolderId;
+} elseif ($galleryUnfiled) {
+    $fpGalleryClearUrl = 'index.php?unfiled=1';
+}
 ?>
 <?php echo itm_render_alert_errors($fpGalleryAccessError ?? ''); ?>
-<div data-itm-new-button-managed="server" class="itm-floor-plan-toolbar">
+<div data-itm-new-button-managed="server" class="itm-floor-plan-toolbar" style="min-height:40px;">
     <div class="itm-floor-plan-toolbar-left">
-        <a href="<?php echo sanitize($fpCreateUrl); ?>" class="btn btn-primary">➕ Upload</a>
+        <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+            <a href="<?php echo sanitize($fpCreateUrl); ?>" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+        <?php endif; ?>
         <a href="<?php echo sanitize($fpListUrl); ?>" class="btn btn-sm">Table view</a>
     </div>
     <h1 class="itm-floor-plan-title"><?php echo sanitize($moduleListHeading); ?></h1>
+    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <a href="<?php echo sanitize($fpCreateUrl); ?>" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+        </div>
+    <?php else: ?>
+        <span></span>
+    <?php endif; ?>
 </div>
 
 <div class="itm-floor-plan-layout">
@@ -115,7 +130,7 @@ $fpCreateUrl = $modulePath . '/create.php';
                 </div>
                 <div class="form-actions" style="margin:0;">
                     <button type="submit" class="btn btn-primary">Search</button>
-                    <a href="index.php" class="btn">Clear</a>
+                    <a href="<?php echo sanitize($fpGalleryClearUrl); ?>" class="btn" title="Clear">🔙</a>
                 </div>
             </form>
         </div>
@@ -137,7 +152,7 @@ $fpCreateUrl = $modulePath . '/create.php';
                 <label for="uploadTags">Tags (optional, comma-separated)</label>
                 <input type="text" name="upload_tags" id="uploadTags" placeholder="e.g. Ground Floor, Building A">
             </div>
-            <button type="submit" class="btn btn-primary">Upload files</button>
+            <button type="submit" class="btn btn-primary" title="Save">💾</button>
         </form>
 
         <form id="floorPlanMoveForm" method="POST" action="index.php" style="display:none;">
