@@ -10,6 +10,7 @@
  *
  * Browser: scripts/generate_reassignment.php?employee_id=N or ?from=N&to=M
  * CLI: php scripts/generate_reassignment.php --employee-id=N [--to=M] [--all-tables] [--apply]
+ * Bare CLI (no employee id): prints usage and exits 0 (perform_audit.php safe).
  */
 
 declare(strict_types=1);
@@ -177,9 +178,15 @@ $nl = itm_script_output_nl();
 itm_script_output_begin('Employee reassignment plan');
 
 if ($fromId <= 0) {
-    echo colorText('[FAIL] Specify --employee-id=N or --from=N (or use the browser form).', 'fail') . $nl;
+    if ($itmIsCli) {
+        echo colorText('[INFO] No employee id — planner requires --employee-id=N or --from=N (browser form when opened without id).', 'info') . $nl;
+        echo 'Example: php scripts/generate_reassignment.php --employee-id=1 --to=2' . $nl;
+        echo '         php scripts/generate_reassignment.php --employee-id=1 --all-tables' . $nl;
+    } else {
+        echo colorText('[FAIL] Specify --employee-id=N or --from=N (or use the browser form).', 'fail') . $nl;
+    }
     itm_script_output_end();
-    exit(1);
+    exit($itmIsCli ? 0 : 1);
 }
 
 if ($apply && $toId <= 0) {
