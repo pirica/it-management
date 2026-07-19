@@ -17,7 +17,7 @@ Manages scheduled events, meetings, and maintenance windows. Private events (no 
 - **Visibility**: Owner (`employee_id`) or any employee listed in `shared_with_json` can view. Only the owner may edit, delete, or create share sessions.
 - **Private vs shared**: Empty/null `shared_with_json` → encrypt `title`, `description`, `location` with `$_SESSION['vault_key']` via `events_prepare_event_fields_for_storage()`. Non-empty `shared_with_json` → plaintext for recipients.
 - **Vault lock UI**: List/create and owner private edit/view require vault unlock (`events_vault_bootstrap.php`, `events_ui_requires_vault_lock_screen()`). Shared events remain readable when vault is locked.
-- **Search**: In-memory filter after hydrate (`events_query_events_for_list()` → `events_row_matches_search()` for `category_name` and shared assignee `username`); do not SQL `LIKE` on encrypted columns. Static audit: `scripts/check_fk_label_search_coverage.php` scans `events_vault_helpers.php`.
+- **Search / sort / pagination**: In-memory via `events_query_events_for_list()` after hydrate (`events_row_matches_search()`, `events_compare_event_rows()`); list UI contract checks detect this helper like notes/bookmarks. Static audit: `scripts/check_fk_label_search_coverage.php` scans `events_vault_helpers.php`.
 - **Master key change**: `itm_vault_reencrypt_events()` in `includes/itm_vault_master_key.php` (called from `user-config.php`).
 
 ## 5. UI Behavior Requirements
@@ -48,6 +48,7 @@ Manages scheduled events, meetings, and maintenance windows. Private events (no 
 - **Soft-delete + audit meta:** list hides meta fields and filters `deleted_at IS NULL`; view shows audit stamps.
 - Integrated into **calendar** — calendar must use `itm_events_visibility_sql()` and `events_hydrate_event_row()` for titles.
 - Import and private create/edit require unlocked vault.
+- Legacy seed/plaintext private rows: `events_resolve_private_text()` runs `legacy_plaintext_check` before `itm_decrypt()` to avoid openssl IV warnings on unencrypted titles/descriptions.
 - Do not expose raw ciphertext or `title_hash` in the UI.
 
 ## 11. Examples of Safe Code Patterns

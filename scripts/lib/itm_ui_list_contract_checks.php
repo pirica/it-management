@@ -94,6 +94,18 @@ if (!function_exists('itm_ui_todo_list_search_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_events_in_memory_list_search_detected')) {
+    /**
+     * Events decrypt private fields in PHP then filter in events_query_events_for_list() — no SQL LIKE on ciphertext.
+     */
+    function itm_ui_events_in_memory_list_search_detected(string $content): bool
+    {
+        return stripos($content, 'events_query_events_for_list(') !== false
+            && stripos($content, '$searchRaw') !== false
+            && preg_match('#[\'"]search[\'"]\s*=>#', $content) === 1;
+    }
+}
+
 if (!function_exists('itm_ui_bookmarks_in_memory_list_sort_detected')) {
     /**
      * Bookmarks sort in PHP via bkm_query_bookmarks_for_list() — no SQL ORDER BY in index.php.
@@ -133,6 +145,19 @@ if (!function_exists('itm_ui_todo_list_sort_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_events_in_memory_list_sort_detected')) {
+    /**
+     * Events sort in PHP via events_query_events_for_list() — no SQL ORDER BY on encrypted columns.
+     */
+    function itm_ui_events_in_memory_list_sort_detected(string $content): bool
+    {
+        return stripos($content, 'events_query_events_for_list(') !== false
+            && preg_match('#[\'"]sort[\'"]\s*=>#', $content) === 1
+            && stripos($content, '$sort') !== false
+            && (preg_match('#[\'"]dir[\'"]\s*=>#', $content) === 1 || stripos($content, '$dir') !== false);
+    }
+}
+
 if (!function_exists('itm_ui_todo_list_pagination_detected')) {
     /**
      * Todo list pagination uses Settings records_per_page via todo_query_tasks_for_list().
@@ -140,6 +165,23 @@ if (!function_exists('itm_ui_todo_list_pagination_detected')) {
     function itm_ui_todo_list_pagination_detected(string $content): bool
     {
         return stripos($content, 'todo_query_tasks_for_list(') !== false
+            && stripos($content, 'itm_resolve_records_per_page') !== false
+            && preg_match('#\$perPage\s*=#', $content) === 1
+            && preg_match('#[\'"]per_page[\'"]\s*=>\s*\$perPage#', $content) === 1
+            && (preg_match('#\$_GET\s*\[\s*[\'"]page[\'"]\s*\]#', $content) === 1 || preg_match('#\$page\s*=#', $content) === 1)
+            && stripos($content, '$totalRows') !== false
+            && stripos($content, 'Previous') !== false
+            && stripos($content, 'Next') !== false;
+    }
+}
+
+if (!function_exists('itm_ui_events_in_memory_list_pagination_detected')) {
+    /**
+     * Events list pagination uses Settings records_per_page via events_query_events_for_list().
+     */
+    function itm_ui_events_in_memory_list_pagination_detected(string $content): bool
+    {
+        return stripos($content, 'events_query_events_for_list(') !== false
             && stripos($content, 'itm_resolve_records_per_page') !== false
             && preg_match('#\$perPage\s*=#', $content) === 1
             && preg_match('#[\'"]per_page[\'"]\s*=>\s*\$perPage#', $content) === 1
@@ -168,6 +210,7 @@ if (!function_exists('itm_check_search')) {
             || itm_ui_bookmarks_in_memory_list_search_detected($listContent)
             || itm_ui_notes_in_memory_list_search_detected($listContent)
             || itm_ui_todo_list_search_detected($listContent)
+            || itm_ui_events_in_memory_list_search_detected($listContent)
             || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc|Like)|\$search\s*!==\s*[\'"][\s]*[\'"]#i', $listContent) === 1);
         $hasSearchReset = itm_ui_search_reset_control_detected($listContent);
 
@@ -181,6 +224,9 @@ if (!function_exists('itm_check_search')) {
             }
             if (itm_ui_todo_list_search_detected($listContent)) {
                 $details = 'Search via todo_query_tasks_for_list() (SQL FK label filter) and emoji-only 🔙 reset in ' . $sourceLabel;
+            }
+            if (itm_ui_events_in_memory_list_search_detected($listContent)) {
+                $details = 'Search via events_query_events_for_list() (in-memory decrypt filter) and emoji-only 🔙 reset in ' . $sourceLabel;
             }
 
             return ['status' => 'pass', 'details' => $details];
@@ -225,7 +271,8 @@ if (!function_exists('itm_check_sort')) {
         $hasOrderBySort = preg_match('#ORDER\s+BY[^\n;]*(\$sortSql|sortableColumns|\$sort\b)#i', $listContent) === 1
             || itm_ui_bookmarks_in_memory_list_sort_detected($listContent)
             || itm_ui_notes_in_memory_list_sort_detected($listContent)
-            || itm_ui_todo_list_sort_detected($listContent);
+            || itm_ui_todo_list_sort_detected($listContent)
+            || itm_ui_events_in_memory_list_sort_detected($listContent);
         $hasSortUi = strpos($listContent, '▲') !== false
             || strpos($listContent, '▼') !== false
             || preg_match('#\$nextDir\s*=#', $listContent) === 1;
@@ -240,6 +287,9 @@ if (!function_exists('itm_check_sort')) {
             }
             if (itm_ui_todo_list_sort_detected($listContent)) {
                 $details = 'Column sort via todo_query_tasks_for_list() in ' . $sourceLabel;
+            }
+            if (itm_ui_events_in_memory_list_sort_detected($listContent)) {
+                $details = 'Column sort via events_query_events_for_list() (in-memory) in ' . $sourceLabel;
             }
 
             return [
@@ -302,6 +352,13 @@ if (!function_exists('itm_check_pagination')) {
             return [
                 'status' => 'pass',
                 'details' => 'Pagination uses itm_resolve_records_per_page() via todo_query_tasks_for_list() in ' . $sourceLabel,
+            ];
+        }
+
+        if (itm_ui_events_in_memory_list_pagination_detected($listContent)) {
+            return [
+                'status' => 'pass',
+                'details' => 'Pagination uses itm_resolve_records_per_page() via events_query_events_for_list() in ' . $sourceLabel,
             ];
         }
 

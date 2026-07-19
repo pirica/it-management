@@ -93,13 +93,13 @@ function events_resolve_private_text($stored, $isShared, $ownerId, $viewerEmploy
         return ['text' => '', 'locked' => true, 'label' => $vaultLabel];
     }
 
+    if (is_callable($legacyPlaintextCheck) && $legacyPlaintextCheck($stored)) {
+        return ['text' => $stored, 'locked' => false, 'label' => ''];
+    }
+
     $plain = itm_decrypt($stored, $vaultKey);
     if ($plain !== false) {
         return ['text' => $plain, 'locked' => false, 'label' => ''];
-    }
-
-    if (is_callable($legacyPlaintextCheck) && $legacyPlaintextCheck($stored)) {
-        return ['text' => $stored, 'locked' => false, 'label' => ''];
     }
 
     return ['text' => '', 'locked' => true, 'label' => $decryptFailLabel];
@@ -110,7 +110,7 @@ function events_hydrate_event_row(array &$row, $viewerEmployeeId)
     $isShared = events_is_shared_with_others($row['shared_with_json'] ?? null) ? 1 : 0;
     $ownerId = (int)($row['employee_id'] ?? 0);
     $legacyTitle = static function ($stored) {
-        return $stored !== '' && strlen($stored) <= 255;
+        return events_private_text_legacy_plaintext_check($stored);
     };
     $legacyBody = static function ($stored) {
         return events_private_text_legacy_plaintext_check($stored);
