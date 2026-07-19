@@ -58,6 +58,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'lock') {
 $module_title = "Passwords";
 $current_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0;
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 
 ?>
 <!DOCTYPE html>
@@ -135,6 +140,22 @@ if (!isset($crud_title)) {
         }
         .strength-bar { height: 100%; width: 0; transition: width 0.3s, background-color 0.3s; }
         .pwd-actions-wrap .btn img { display: block; flex-shrink: 0; }
+        .pwd-inline-field {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 4px;
+            max-width: 100%;
+        }
+        .pwd-inline-field input.form-control {
+            flex: 1 1 auto;
+            min-width: 72px;
+            max-width: 180px;
+        }
+        .pwd-inline-field .btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -167,6 +188,23 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
             <?php else: ?>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="#" class="btn btn-primary itm-list-new-button" title="Create" onclick="openEntryModal(); return false;">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="#" class="btn btn-primary itm-list-new-button" title="Create" onclick="openEntryModal(); return false;">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                </div>
                 <div class="passwords-layout">
                     <div class="side-panel">
                         <div class="card">
@@ -206,7 +244,6 @@ if (!isset($crud_title)) {
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-primary" onclick="openEntryModal()">➕</button>
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
@@ -258,7 +295,7 @@ if (!isset($crud_title)) {
                     </div>
                     <div class="row">
                         <div class="col-md-6"><div class="form-group"><label>Login Name</label><input type="text" name="login_name" id="entry-login_name" class="form-control"></div></div>
-                        <div class="col-md-6"><div class="form-group"><label>Password</label><div class="input-group"><input type="password" name="password" id="entry-password" class="form-control" required><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('entry-password')">👁️</button></div></div></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Password</label><div class="pwd-inline-field"><input type="password" name="password" id="entry-password" class="form-control" required style="max-width:none;"><button class="btn btn-sm" type="button" onclick="togglePasswordVisibility('entry-password')" title="Toggle visibility">👁️</button><button class="btn btn-sm" type="button" onclick="copyText(document.getElementById('entry-password').value)" title="Copy">🗐</button></div></div></div>
                     </div>
                     <div class="form-group"><label>Website</label><input type="url" name="website" id="entry-website" class="form-control" placeholder="https://"></div>
                     <div class="form-group"><label>Comments</label><textarea name="comments" id="entry-comments" class="form-control" rows="3"></textarea></div>
@@ -466,7 +503,7 @@ function loadEntries() {
                 <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;"><div class="itm-actions-wrap pwd-actions-wrap"><button class="btn btn-sm" type="button" onclick="itmOpenQrShareModal('ajax_handler.php', ${e.id}, { action: 'create_share_session' })" title="Share to device">📱</button><button class="btn btn-sm" type="button" onclick="itmOpenWhatsAppShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button><button class="btn btn-sm" type="button" onclick="itmOpenOutlookShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on Outlook">📨</button><a class="btn btn-sm" href="view.php?id=${e.id}" title="View">🔎</a><button class="btn btn-sm" type="button" onclick="openEntryModal(${e.id})" title="Edit">✏️</button><button class="btn btn-sm btn-danger" type="button" onclick="deleteEntry(${e.id})" title="Delete">🗑️</button></div></td>
                 <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
                 <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
-                <td><div class="input-group input-group-sm" style="width: 140px;"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')">👁️</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('${addslashes(e.password)}')">🗐</button></div></div></td>
+                <td><div class="pwd-inline-field"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><button class="btn btn-sm" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')" title="Toggle visibility">👁️</button><button class="btn btn-sm" type="button" onclick="copyText('${addslashes(e.password)}')" title="Copy">🗐</button></div></td>
                 <td>${e.website ? `<a href="${sanitizeHtml(e.website)}" target="_blank" rel="nofollow noreferrer noopener" style="text-decoration: none !important;">${sanitizeHtml(e.website.replace(/^https?:\/\//, ''))}</a>` : '—'}</td>
             `;
             body.appendChild(row);
