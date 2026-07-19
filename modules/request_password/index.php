@@ -309,6 +309,90 @@ unset($_SESSION['crud_success']);
 $errorMessage = $_SESSION['crud_error'] ?? ($error ?? '');
 unset($_SESSION['crud_error']);
 
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
+
+$rpSortableColumns = ['name', 'department', 'application', 'hr_approval_status', 'hod_approval_status'];
+$sort = (string)($_GET['sort'] ?? 'name');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+if (!in_array($sort, $rpSortableColumns, true)) {
+    $sort = 'name';
+}
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+$totalRows = 0;
+$totalPages = 1;
+$offset = 0;
+$showBulkActions = false;
+$requestPasswordListRows = [];
+$rpSortMap = [
+    'name' => 'e.last_name',
+    'department' => 'd.name',
+    'application' => 'rp.application',
+    'hr_approval_status' => 'rp.hr_approval_status',
+    'hod_approval_status' => 'rp.hod_approval_status',
+];
+$sortSql = $rpSortMap[$sort] . ' ' . $dir;
+
+if ($crud_action === 'index' || $crud_action === 'list_all') {
+    $where = 'rp.company_id = ? AND rp.active = 1 AND rp.deleted_at IS NULL';
+    $params = [$company_id];
+    $types = 'i';
+    $searchConditions = [];
+    if ($searchRaw !== '') {
+        $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+            ? $searchRaw
+            : '%' . $searchRaw . '%';
+        $searchConditions[] = '(e.first_name LIKE ? OR e.last_name LIKE ? OR rp.application LIKE ? OR rp.reason LIKE ? OR d.name LIKE ?)';
+        for ($i = 0; $i < 5; $i++) {
+            $params[] = $searchPattern;
+            $types .= 's';
+        }
+    }
+    if (!empty($searchConditions)) {
+        $where .= ' AND ' . $searchConditions[0];
+    }
+
+    $countSql = "SELECT COUNT(*) AS c FROM request_password rp
+        JOIN employees e ON rp.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE {$where}";
+    $countStmt = mysqli_prepare($conn, $countSql);
+    mysqli_stmt_bind_param($countStmt, $types, ...$params);
+    mysqli_stmt_execute($countStmt);
+    $countRes = mysqli_stmt_get_result($countStmt);
+    $totalRows = (int)(mysqli_fetch_assoc($countRes)['c'] ?? 0);
+    mysqli_stmt_close($countStmt);
+
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+    $offset = ($page - 1) * $perPage;
+    $showBulkActions = ($totalRows >= $perPage);
+
+    $listSql = "SELECT rp.*, e.first_name, e.last_name, d.name AS department_name
+        FROM request_password rp
+        JOIN employees e ON rp.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
+        WHERE {$where} ORDER BY {$sortSql} LIMIT {$offset}, {$perPage}";
+    $listStmt = mysqli_prepare($conn, $listSql);
+    mysqli_stmt_bind_param($listStmt, $types, ...$params);
+    mysqli_stmt_execute($listStmt);
+    $listRes = mysqli_stmt_get_result($listStmt);
+    while ($row = mysqli_fetch_assoc($listRes)) {
+        $requestPasswordListRows[] = $row;
+    }
+    mysqli_stmt_close($listStmt);
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -359,55 +443,70 @@ if (!isset($crud_title)) {
             <?php endif; ?>
 
             <?php if ($crud_action == 'index' || $crud_action == 'list_all'): ?>
-                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
-                    <h1>🔑 <?php echo sanitize($crud_title); ?></h1>
-                    <span></span>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <input type="hidden" name="page" value="1">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="rpListSearch">Search (all fields)</label>
+                            <input type="text" id="rpListSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Search requests...">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn">🔙</a>
+                        </div>
+                    </form>
                 </div>
 
                 <div class="card">
-                    <form method="GET" style="margin-bottom: 15px; display: flex; gap: 10px;">
-                        <input type="text" name="search" placeholder="Search requests..." value="<?php echo sanitize($_GET['search'] ?? ''); ?>" style="flex: 1;">
-                        <button type="submit" class="btn">Search</button>
-                    </form>
-
                     <div class="table-responsive">
                         <table data-itm-db-import-endpoint="index.php">
                             <thead>
                                 <tr>
                                     <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
-                                    <th>Name</th>
-                                    <th>Department</th>
-                                    <th>Application</th>
-                                    <th>HR Status</th>
-                                    <th>HOD Status</th>
+                                    <?php
+                                    $rpListColumns = [
+                                        'name' => 'Name',
+                                        'department' => 'Department',
+                                        'application' => 'Application',
+                                        'hr_approval_status' => 'HR Status',
+                                        'hod_approval_status' => 'HOD Status',
+                                    ];
+                                    foreach ($rpListColumns as $colKey => $colLabel):
+                                        $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
+                                    ?>
+                                    <th>
+                                        <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($colKey); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                            <?php echo sanitize($colLabel); ?>
+                                            <?php if ($sort === $colKey): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                        </a>
+                                    </th>
+                                    <?php endforeach; ?>
                                     <th>ISM Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php
-                                $search = $_GET['search'] ?? '';
-                                $where = "rp.company_id = ? AND rp.active = 1";
-                                $params = [$company_id];
-                                $types = 'i';
-                                if ($search) {
-                                    $where .= " AND (e.first_name LIKE ? OR e.last_name LIKE ? OR rp.application LIKE ?)";
-                                    $searchTerm = "%$search%";
-                                    $params[] = $searchTerm;
-                                    $params[] = $searchTerm;
-                                    $params[] = $searchTerm;
-                                    $types .= 'sss';
-                                }
-                                $sql = "SELECT rp.*, e.first_name, e.last_name, d.name as department_name
-                                        FROM request_password rp
-                                        JOIN employees e ON rp.employee_id = e.id
-                                        LEFT JOIN departments d ON e.department_id = d.id
-                                        WHERE $where ORDER BY rp.id DESC";
-                                $stmt = mysqli_prepare($conn, $sql);
-                                mysqli_stmt_bind_param($stmt, $types, ...$params);
-                                mysqli_stmt_execute($stmt);
-                                $res = mysqli_stmt_get_result($stmt);
-                                while ($row = mysqli_fetch_assoc($res)):
+                                <?php if (!empty($requestPasswordListRows)): ?>
+                                <?php foreach ($requestPasswordListRows as $row):
                                     $ism_status = $row['ism_signature_date'] ? 'PROCESSED' : 'WAITING';
                                     $canDelete = rp_can_delete_request($row, (int)($_SESSION['employee_id'] ?? 0));
                                 ?>
@@ -435,11 +534,29 @@ if (!isset($crud_title)) {
                                     <td><span class="status-badge status-<?php echo strtolower($row['hod_approval_status']); ?>"><?php echo strtoupper($row['hod_approval_status']); ?></span></td>
                                     <td><span class="status-badge status-<?php echo strtolower($ism_status); ?>"><?php echo $ism_status; ?></span></td>
                                 </tr>
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
+                                <?php else: ?>
+                                <tr><td colspan="7" style="text-align:center;">No records found.</td></tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
+                <?php if ($totalRows > $perPage): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <?php if ($page > 1): ?>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="◀️ Previous">Previous</a>
+                            <?php endif; ?>
+                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="▶️ Next">Next</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
             <?php elseif ($crud_action == 'create' || $crud_action == 'edit'): ?>
                 <?php
