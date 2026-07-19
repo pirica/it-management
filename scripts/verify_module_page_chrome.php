@@ -3,9 +3,11 @@
  * Cross-check module page chrome: browser <title> (titles_list.php) + Settings favicon wiring.
  *
  * Why: fields_missing bespoke gate audits index/create/edit/view per module; titles_list.php
- * scans every modules PHP file under modules/. This script reports both in one place for debug/verify.
+ * scans every modules PHP file under modules/. This script reports title + favicon for the
+ * same primary CRUD entry scope only; auxiliary files (list_all, delete, export, partials) are
+ * [SKIP] not [FAIL].
  *
- * Browser + CLI (Admin). Exit 1 when any scanned <head> file fails title or favicon contract.
+ * Browser + CLI (Admin). Exit 1 when any in-scope scanned <head> file fails title or favicon.
  */
 declare(strict_types=1);
 
@@ -31,6 +33,8 @@ if (!is_dir($modulesDir)) {
 $files = itm_titles_list_collect_module_php_files($modulesDir);
 $stats = [
     'scanned' => count($files),
+    'skipped_out_of_scope' => 0,
+    'skipped_no_standalone_head' => 0,
     'with_head' => 0,
     'title_pass' => 0,
     'title_fail' => 0,
@@ -40,15 +44,24 @@ $stats = [
     'favicon_na' => 0,
 ];
 $failures = [];
+$skips = [];
 
 foreach ($files as $path) {
+    $modulePath = itm_titles_list_module_path_from_root($root, $path);
+    $skipReason = itm_verify_module_page_chrome_skip_reason($modulePath);
+    if ($skipReason !== null) {
+        $stats['skipped_out_of_scope']++;
+        $skips[] = $modulePath . ' — ' . $skipReason;
+        continue;
+    }
+
     $content = (string) file_get_contents($path);
     if (!itm_fields_missing_file_has_standalone_html_head($content)) {
+        $stats['skipped_no_standalone_head']++;
         continue;
     }
 
     $stats['with_head']++;
-    $modulePath = itm_titles_list_module_path_from_root($root, $path);
 
     $titleBlock = itm_ui_extract_title_block($content);
     if ($titleBlock === '') {
@@ -77,7 +90,9 @@ foreach ($files as $path) {
 
 echo '--- Module page chrome verify ---' . $nl;
 echo 'PHP files scanned: ' . (int) $stats['scanned'] . $nl;
-echo 'With standalone <head>: ' . (int) $stats['with_head'] . $nl;
+echo 'Skipped (out of scope — not index/create/edit/view): ' . (int) $stats['skipped_out_of_scope'] . $nl;
+echo 'Skipped (no standalone <head> on CRUD entry): ' . (int) $stats['skipped_no_standalone_head'] . $nl;
+echo 'In-scope with standalone <head>: ' . (int) $stats['with_head'] . $nl;
 echo 'Browser title pass: ' . (int) $stats['title_pass'] . $nl;
 echo 'Browser title fail: ' . (int) $stats['title_fail'] . $nl;
 echo 'Favicon pass: ' . (int) $stats['favicon_pass'] . $nl;
@@ -85,6 +100,14 @@ echo 'Favicon fail: ' . (int) $stats['favicon_fail'] . $nl;
 echo 'Canonical title pattern: ' . itm_titles_list_expected_title_literal() . $nl;
 echo 'Related: titles_list.php, titles_list_show.php, fields_missing.php, crud_titles.php' . $nl;
 echo '-------------------------------' . $nl . $nl;
+
+if ($skips !== []) {
+    echo 'Skipped (' . count($skips) . '):' . $nl;
+    foreach ($skips as $line) {
+        echo '  [SKIP] ' . $line . $nl;
+    }
+    echo $nl;
+}
 
 if ($failures !== []) {
     echo 'Failures (' . count($failures) . '):' . $nl;
