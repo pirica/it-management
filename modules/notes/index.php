@@ -743,7 +743,7 @@ if (!isset($crud_title)) {
                     <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
                     <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
 					<hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
-                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;" title="Edit">✏️</a>
+                    <a href="#" class="notes-sidebar-item" onclick="openEditTagsModal(); return false;" title="Edit tags">✏️ Tags</a>
                     <a href="list_all.php" class="notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
                     <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
                 </div>
