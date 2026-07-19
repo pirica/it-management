@@ -29,6 +29,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
+- **No flattened list contract:** single-day report grid omits standard Search/Sort/Pagination and primary ➕ create on `index.php` (reports open by date; `opr_ensure_report()` auto-creates the daily row). `fields_missing.php` bespoke gate still runs those checks as `[SKIP][fail]`; Search, Sort, Pagination, and New button are reviewed exceptions in `scripts/data/fields_missing_reviewed.json` (manifest: `scripts/fields_missing_reviewed.php`) and print as `[SKIP][fail][reviewed]`.
 - Custom single-day report layout (not standard CRUD list).
 - Inline AJAX: `ajax_inline_edit`, `ajax_add_row`, `ajax_delete_row`. Editable dates render **visible** inputs/textareas (blur saves); locked dates show read-only `.display-val` only. UI labels use `.edit-input-ui` and `scope=report_ui`.
 - `data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"`, and `data-itm-no-import-excel="1"` on `#opr-report-root` and every section table — custom 📗/📄 controls live only in the top `.opr-controls` bar (`exportOPR()`).
