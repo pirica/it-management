@@ -156,6 +156,41 @@ if (!isset($crud_title)) {
             flex-shrink: 0;
             white-space: nowrap;
         }
+        .pwd-search-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 8px;
+            width: 100%;
+        }
+        .pwd-search-row input.form-control {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .pwd-search-row .btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .pwd-toolbar-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: nowrap;
+        }
+        .pwd-toolbar-row .pwd-search-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .pwd-toolbar-tools {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        @media (max-width: 640px) {
+            .pwd-toolbar-row { flex-wrap: wrap; }
+        }
     </style>
 </head>
 <body>
@@ -236,14 +271,14 @@ if (!isset($crud_title)) {
                     </div>
                     <div class="main-panel">
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-                                <div style="flex: 1; min-width: 250px;">
-                                    <div class="input-group">
+                            <div class="pwd-toolbar-row">
+                                <div class="pwd-search-wrap">
+                                    <div class="pwd-search-row">
                                         <input type="text" id="entry-search" class="form-control" placeholder="Search entries..." value="<?php echo sanitize($search_query); ?>" onkeyup="if(event.key==='Enter') performSearch()">
-                                        <div class="input-group-append"><button class="btn btn-primary" onclick="performSearch()">🔍</button></div>
+                                        <button type="button" class="btn btn-primary" onclick="performSearch()" title="Search">🔍</button>
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 8px;">
+                                <div class="pwd-toolbar-tools">
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
