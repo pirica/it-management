@@ -770,6 +770,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression: Vertical odd/even grid placement vs Horizontal L→R (<code>grid-row</code> / <code>grid-column</code>).</td>
                     <td><code>php scripts/verify_port_visualizer_layout.php</code></td>
                 </tr>
+                <tr>
+                    <td><a href="verify_rack_planner.php" target="_blank" rel="nofollow noreferrer">verify_rack_planner.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Regression for <code>modules/rack_planner/</code>: <code>rack_planner</code> table + registry row, handler price-source sync wiring, audit triggers, and disposable <code>catalog:</code> / <code>equipment:</code> / <code>idf_unlinked:</code> price propagation to source tables.</td>
+                    <td><code>php scripts/verify_rack_planner.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/rack_planner/</code>, <code>rack_planner_sync_source_prices_from_layout()</code>, or related <code>database.sql</code> tables. PHPUnit: <code>php scripts/run_tests.php --filter RackPlanner</code>.</td>
+                </tr>
             </tbody>
         </table></div>
     </div>
@@ -1142,6 +1148,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_chatbot.php" target="_blank" rel="nofollow noreferrer">verify_chatbot.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Regression for IT Support Chatbot + <code>modules/knowledge_base/chat_api.php</code>: rate limit + CSRF guards, <code>escapeHtml()</code> before message <code>innerHTML</code>, <code>enable_chatbot</code> asset gating, audit triggers, and tenant-scoped <code>knowledge_base</code> search.</td>
+                    <td><code>php scripts/verify_chatbot.php</code> — exit <code>1</code> on failure. Run when changing <code>js/chatbot.js</code>, <code>chat_api.php</code>, <code>includes/header.php</code> chatbot toggle, or <code>knowledge_base</code> / <code>it_settings</code> schema.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Regression for <code>modules/request_password/</code>: RBAC guard, HMAC approval links, list import/Actions markers, creator-only soft-delete guard, audit triggers, and disposable-row delete-authorization check.</td>
+                    <td><code>php scripts/verify_request_password.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/request_password/</code> workflow, delete guard, or <code>request_password</code> in <code>database.sql</code>. PoC: <code>repro_request_password_bypass.php</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_reports_hub.php" target="_blank" rel="nofollow noreferrer">verify_reports_hub.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/reports/</code> Reports Hub: exercises every <code>api/helpers.php</code> chart payload, Hotel Operations MTD metrics (<code>ops_report</code>, <code>ops_report_fb_outlet</code>), budget vs actual / YoY totals, <code>modules_registry</code> slug <code>reports</code>, and core Chart.js canvas ids in <code>index.php</code>. Expects <code>database.sql</code> Reports Hub sample seeds.</td>
@@ -1306,8 +1324,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="repro_request_password_bypass.php" target="_blank" rel="nofollow noreferrer">repro_request_password_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction script for request_password module bypass.</td>
-                    <td><code>php scripts/repro_request_password_bypass.php</code></td>
+                    <td>Reproduction script for request_password module bypass (static RBAC string check). Named regression: <a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a>.</td>
+                    <td><code>php scripts/repro_request_password_bypass.php</code> · <code>php scripts/verify_request_password.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="repro_select_options_rbac.php" target="_blank" rel="nofollow noreferrer">repro_select_options_rbac.php</a></td>
