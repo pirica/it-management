@@ -323,7 +323,7 @@ if (!isset($crud_title)) {
                         <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
-                    <form id="bulk-move-form" method="POST" action="index.php" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <form id="bulk-move-form" method="POST" action="index.php" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <input type="hidden" name="action" value="move_bookmarks">
                         <label for="bulk-move-folder" style="margin:0;">Move to</label>
@@ -536,7 +536,27 @@ document.addEventListener('click', function(e) {
 });
 
 const bulkMoveForm = document.getElementById('bulk-move-form');
+function updateBulkMoveFormVisibility() {
+    if (!bulkMoveForm) {
+        return;
+    }
+    const checked = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]:checked');
+    bulkMoveForm.style.display = checked.length > 0 ? 'flex' : 'none';
+}
 if (bulkMoveForm) {
+    document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]').forEach(function(checkbox) {
+        checkbox.addEventListener('change', updateBulkMoveFormVisibility);
+    });
+    const selectAllRows = document.getElementById('select-all-rows');
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', updateBulkMoveFormVisibility);
+    }
+    const bulkCancelButton = document.querySelector('#bulk-delete-form [data-itm-bulk-cancel="1"]');
+    if (bulkCancelButton) {
+        bulkCancelButton.addEventListener('click', function() {
+            window.setTimeout(updateBulkMoveFormVisibility, 0);
+        });
+    }
     bulkMoveForm.addEventListener('submit', function(event) {
         const checked = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]:checked');
         if (!checked.length) {
@@ -555,6 +575,7 @@ if (bulkMoveForm) {
             bulkMoveForm.appendChild(hidden);
         });
     });
+    updateBulkMoveFormVisibility();
 }
 
 function copyUrl(text) {
