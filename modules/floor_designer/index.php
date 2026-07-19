@@ -9,6 +9,7 @@ $crud_title = 'Floor Designer';
 $crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
+require_once '../../includes/itm_crud_fk_label_search.php';
 
 // Validate table configuration
 
@@ -460,15 +461,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
 // Handle Deletion
 if ($crud_action === 'delete') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        exit('Method not allowed.');
+    }
+
     itm_require_crud_role_module_permission($conn, 'delete', $crud_table);
     cr_require_valid_csrf_token();
+
+    $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
+    $empId = (int)($_SESSION['employee_id'] ?? 0);
+
+    if ($bulkAction === 'clear_table') {
+        $where = ' WHERE company_id=?';
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            ? itm_crud_build_soft_delete_sql($crud_table, $where, $empId)
+            : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+        $stmt = mysqli_prepare($conn, $deleteSql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $company_id);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
+    if ($bulkAction === 'bulk_delete') {
+        $ids = $_POST['ids'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $idList = [];
+        foreach ($ids as $rawId) {
+            $id = (int)$rawId;
+            if ($id > 0) {
+                $idList[] = $id;
+            }
+        }
+        if (!empty($idList)) {
+            $placeholders = implode(',', array_fill(0, count($idList), '?'));
+            $where = ' WHERE id IN (' . $placeholders . ') AND company_id=?';
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, $empId)
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+            $stmt = mysqli_prepare($conn, $deleteSql);
+            if ($stmt) {
+                $types = str_repeat('i', count($idList)) . 'i';
+                $idList[] = (int)$company_id;
+                mysqli_stmt_bind_param($stmt, $types, ...$idList);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        }
+        header('Location: ' . $listUrl);
+        exit;
+    }
+
     $id = (int)($_POST['id'] ?? 0);
     if ($id > 0) {
-        $empId = (int)($_SESSION['employee_id'] ?? 0);
         $sql = "UPDATE floor_designer SET deleted_at=NOW(), deleted_by=? WHERE id=? AND company_id=? AND deleted_at IS NULL";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'iii', $empId, $id, $company_id);
         mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
     }
     header('Location: ' . $listUrl);
     exit;
@@ -523,13 +580,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 // Fetch Data for List
-$where = " WHERE company_id=$company_id";
+$where = ' WHERE company_id=' . (int)$company_id;
 if (function_exists('itm_crud_append_not_deleted_predicate')) {
     $where = itm_crud_append_not_deleted_predicate($where);
 }
-$sort = $_GET['sort'] ?? 'id';
-$dir = (isset($_GET['dir']) && strtoupper($_GET['dir']) === 'ASC') ? 'ASC' : 'DESC';
-$rows = mysqli_query($conn, "SELECT * FROM floor_designer $where ORDER BY " . cr_escape_identifier($sort) . " $dir");
+
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+if ($searchRaw !== '') {
+    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
+    $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
+    $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
+    foreach ($displayFieldColumns as $col) {
+        $fieldName = (string)($col['Field'] ?? '');
+        if ($fieldName === '') {
+            continue;
+        }
+        $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
+    }
+    $itmFkSearchFields = [];
+    foreach ($displayFieldColumns as $col) {
+        $itmFkFieldName = (string)($col['Field'] ?? '');
+        if ($itmFkFieldName !== '') {
+            $itmFkSearchFields[] = $itmFkFieldName;
+        }
+    }
+    if (!empty($fkMap)) {
+        $itmFkLabelSearch = itm_crud_fk_label_search_conditions($conn, $crud_table, '', $fkMap, $itmFkSearchFields, (int)$company_id, $searchEsc);
+        if (!empty($itmFkLabelSearch)) {
+            $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
+        }
+    }
+    if (!empty($searchConditions)) {
+        $where .= ' AND (' . implode(' OR ', $searchConditions) . ')';
+    }
+}
+
+$sortableColumns = array_map(static function ($col) {
+    return $col['Field'];
+}, $fieldColumns);
+$sort = (string)($_GET['sort'] ?? 'id');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!in_array($sort, $sortableColumns, true) && $sort !== 'id') {
+    $sort = 'id';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+$sortSql = cr_escape_identifier($sort) . ' ' . $dir;
+
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
+$totalRows = 0;
+if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+    $totalRows = (int)($countRow['total_rows'] ?? 0);
+}
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showBulkActions = ($totalRows >= $perPage);
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+
+$rows = null;
+if (in_array($crud_action, ['index', 'list_all'], true)) {
+    $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+}
 
 // Fetch Data for Edit/View
 $editId = (int)($_GET['id'] ?? 0);
@@ -554,7 +673,11 @@ if ($editId > 0) {
     }
 }
 
-$moduleListHeading = '🧩 ' . $crud_title;
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -635,16 +758,66 @@ if (!isset($crud_title)) {
             <?php echo itm_render_alert_errors($errors ?? []); ?>
 
             <?php if ($crud_action === 'index' || $crud_action === 'list_all'): ?>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <h1><?php echo sanitize($moduleListHeading); ?></h1>
-                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
                 </div>
+
+                <?php if ($showBulkActions): ?>
+                <div class="card" style="margin-bottom:16px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
+                <div class="card" style="margin-bottom:16px;">
+                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                        <input type="hidden" name="page" value="1">
+                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                            <label for="moduleSearch">Search (all fields)</label>
+                            <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+                        </div>
+                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="index.php" class="btn" title="Clear">🔙</a>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="card">
                     <table data-itm-db-import-endpoint="index.php">
                         <thead>
                         <tr>
+                            <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
-                                <th><?php echo sanitize(cr_humanize_field($col['Field'])); ?></th>
+                                <?php $field = (string)$col['Field']; ?>
+                                <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                                <th>
+                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                        <?php echo sanitize(cr_humanize_field($field)); ?>
+                                        <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    </a>
+                                </th>
                             <?php endforeach; ?>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
@@ -652,31 +825,48 @@ if (!isset($crud_title)) {
                         <tbody>
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
+                                <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                 <?php foreach ($uiColumns as $col): ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $col['Field'], $row[$col['Field']]); ?></td>
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>" title="Edit">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
                                         </form>
                                     </div>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($uiColumns) + 1; ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($uiColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
+                <?php if ($totalRows > $perPage): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <?php if ($page > 1): ?>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="◀️ Previous">Previous</a>
+                            <?php endif; ?>
+                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="▶️ Next">Next</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
             <?php elseif ($crud_action === 'create' || $crud_action === 'edit'): ?>
-                <h1><?php echo $crud_action === 'create' ? 'New' : 'Edit'; ?> Floor Plan</h1>
+                <h1 title="<?php echo $crud_action === 'create' ? 'New floor plan' : 'Edit floor plan'; ?>"><?php echo $crud_action === 'create' ? '➕' : '✏️'; ?></h1>
                 <form method="POST" class="form-grid">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php
@@ -731,8 +921,8 @@ if (!isset($crud_title)) {
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary"><?php echo $crud_action === 'create' ? 'Create & Design' : 'Save & Design'; ?></button>
-                        <a href="index.php" class="btn">🔙</a>
+                        <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
                     </div>
                 </form>
 
