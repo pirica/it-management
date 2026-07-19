@@ -30,12 +30,8 @@ if (!empty($data['it_location_id'])) {
         $fpLocationLabel = $fpLocLabel;
     }
 }
-$fpCreatedByLabel = '';
-if (!empty($data['created_by'])) {
-    $fpCreatedByLabel = cr_user_label_by_id($conn, (int)$company_id, $data['created_by']);
-}
 ?>
-<h1><?php echo sanitize((string)($data['display_name'] ?? 'Floor Plan')); ?></h1>
+<h1 title="View floor plan"><?php echo sanitize((string)($data['display_name'] ?? 'Floor Plan')); ?></h1>
 <?php
 $fpDownloadName = preg_replace('/[^\w.\-]+/u', '_', (string)($data['display_name'] ?? 'floor-plan'));
 if ($fpDownloadName === '') {
@@ -80,16 +76,15 @@ if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDow
             </td></tr>
             <tr><th>Type</th><td><?php echo sanitize($fpMime); ?> (<?php echo sanitize(strtoupper($fpExt)); ?>)</td></tr>
             <tr><th>Size</th><td><?php echo sanitize(fp_format_file_size((int)($data['file_size'] ?? 0))); ?></td></tr>
-            <?php if ($fpCreatedByLabel !== ''): ?>
-                <tr><th>Uploaded by</th><td><?php echo sanitize($fpCreatedByLabel); ?></td></tr>
+            <tr><th><?php echo sanitize(cr_humanize_field('active')); ?></th><td><?php echo cr_render_cell_value('floor_plans', 'active', $data['active'] ?? ''); ?></td></tr>
+            <?php if (function_exists('itm_crud_render_view_audit_meta_rows')): ?>
+                <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
             <?php endif; ?>
-            <tr><th>Active</th><td><?php echo ((int)($data['active'] ?? 0) === 1) ? '✅' : '❌'; ?></td></tr>
-            <tr><th>Created</th><td><?php echo sanitize((string)($data['created_at'] ?? '—')); ?></td></tr>
         </tbody>
     </table>
     <p class="itm-dropzone-hint" style="margin-top:12px;">To move this file between folders, open the <a href="index.php">Gallery</a> and drag the file card (⠿ handle) onto a folder row.</p>
     <p style="margin-top:16px;">
-        <a href="index.php" class="btn">Gallery</a>
+        <a href="index.php" class="btn" title="Back">🔙</a>
         <a href="edit.php?id=<?php echo $fpPlanId; ?>" class="btn btn-primary" title="Edit">✏️</a>
     </p>
 </div>

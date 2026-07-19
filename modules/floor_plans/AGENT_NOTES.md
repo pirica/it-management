@@ -26,7 +26,7 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 - **Unique-key audit:** `php scripts/check_database_sql_company_name_uniques.php` expects name/scope UNIQUEs on `floor_plans` / `floor_plan_folders` / `floor_plan_tags`, and **skips** `floor_plan_item_tags`.
 
 ## 5. UI Behavior Requirements
-- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
+- **View audit meta:** `view_detail.php` renders file metadata plus all six audit columns via `itm_crud_render_view_audit_meta_rows()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Gallery View**: Shows thumbnails for supported image types.
 - **Gallery list header**: `gallery_index_view.php` uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` (🗺️ from sidebar) and Settings `new_button_position` gates for canonical ➕ create/upload link (`title="Create"`, emoji-only visible text).
 - **Gallery search**: GET `search` on `index.php` filters via `fp_fetch_gallery_items()` (display name, folder, tag, IT location, file extension); reset control is emoji-only 🔙 on `<a>` and preserves `folder_id` / `unfiled` context when clearing. Gallery and `list_all` search rows use `.itm-floor-plan-search` (`flex-wrap: nowrap`) so Search + 🔙 stay on one line with the input.
