@@ -22,8 +22,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Custom list with search, sort, pagination, favourite star (AJAX), photo thumbnails.
 - **List header:** `data-itm-new-button-managed="server"` with centered `$moduleListHeading` from `itm_sidebar_label_for_module()` and Settings `new_button_position` create slots (`itm-list-new-button`).
-- **Search:** server-side GET `search` on `index.php` (`$searchRaw`, `$searchConditions`, LIKE on first/last name, email, organisation, phone (`phone1_value`), labels CSV, and full name concat) — aligned with visible list columns. Query logic in `private_contacts_list_helpers.php` (`pc_query_contacts_for_list()`).
-- **Sort:** GET `sort`/`dir` on visible columns (`first_name`, `email1_value`, `phone1_value`, `organization_name`, `labels`) with ▲/▼; favourites stay first via `ORDER BY is_favorite DESC`.
+- **Search:** server-side GET `search` on `index.php` (`$searchRaw`) — after vault hydrate, `pc_row_matches_search()` filters on first/last name, email, organisation, phone, labels, and full name (no SQL `LIKE` on ciphertext). Sort via `pc_compare_contact_rows()`; favourites stay first.
 - **Pagination:** `itm_resolve_records_per_page()`, `$perPage`, `$totalRows`, `LIMIT`/`$offset`, Previous/Next with `title="◀️ Previous"` / `title="▶️ Next"`.
 - `data-itm-db-import-endpoint="index.php"` on index table for Excel import.
 - Actions column uses `itm-actions-cell` markers.
