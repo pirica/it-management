@@ -531,6 +531,31 @@ function bkm_format_import_skip_summary($skipReason, $folderLabel)
 }
 
 /**
+ * Import success summary for result tables, e.g. "Successfully imported → WD".
+ */
+function bkm_format_import_success_summary($folderLabel)
+{
+    $folder = trim((string)$folderLabel);
+    if ($folder === '') {
+        $folder = 'Root';
+    }
+
+    return 'Successfully imported → ' . $folder;
+}
+
+/**
+ * Table row class for import skip reasons (duplicate URL → light red).
+ */
+function bkm_import_skip_row_class($skipReason)
+{
+    if (in_array((string)$skipReason, ['duplicate_file', 'duplicate_employee'], true)) {
+        return 'bkm-import-row-duplicate';
+    }
+
+    return '';
+}
+
+/**
  * Import one bookmark when URL is allowed and not already present for this employee.
  *
  * @param array<string,bool> $importedUrlKeys
