@@ -999,7 +999,7 @@ PHP;
         $this->assertFalse(itm_fields_missing_module_view_covers_audit_meta_field('updated_at', $files, 'companies'));
     }
 
-    public function testCompaniesBespokeGateFlagsMissingViewAuditMeta(): void
+    public function testCompaniesBespokeGatePassesViewAuditMeta(): void
     {
         $root = realpath(__DIR__ . '/../../../../');
         $this->assertNotFalse($root);
@@ -1013,12 +1013,17 @@ PHP;
             return (string) ($failure['message'] ?? '');
         }, $result['failures']);
 
-        $this->assertStringContainsString('excluded UI column created_at: missing on view', implode('|', $messages));
-        $this->assertStringContainsString('excluded UI column updated_at: missing on view', implode('|', $messages));
-        $this->assertStringContainsString('excluded UI column created_by: missing on view', implode('|', $messages));
-        $this->assertStringContainsString('excluded UI column updated_by: missing on view', implode('|', $messages));
-        $this->assertStringContainsString('excluded UI column deleted_by: missing on view', implode('|', $messages));
-        $this->assertStringContainsString('excluded UI column deleted_at: missing on view', implode('|', $messages));
+        foreach (['created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_by', 'deleted_at'] as $field) {
+            $this->assertStringContainsString(
+                "excluded UI column {$field}: present on view",
+                $passes,
+                'companies view audit meta passes'
+            );
+        }
+        $this->assertFalse(
+            $this->messagesContainAny($messages, ['missing on view']),
+            'companies view audit meta: ' . implode(' | ', $messages)
+        );
     }
 
     private function writeTempIndex(string $content): string
