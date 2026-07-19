@@ -620,6 +620,14 @@ function bkm_import_url_is_allowed($url)
 }
 
 /**
+ * SHA-256 hex digest of trimmed URL — matches bookmarks.url_hash (MySQL sha2(url, 256)).
+ */
+function bkm_bookmark_url_hash($url)
+{
+    return hash('sha256', trim((string)$url));
+}
+
+/**
  * Exact URL match for one employee in the tenant (any folder). Hard-delete only — no soft-deleted rows.
  */
 function bkm_bookmark_url_exists_for_employee($conn, $company_id, $user_id, $url, $excludeId = null)
