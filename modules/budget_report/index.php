@@ -54,6 +54,39 @@ if (isset($_GET['cost_center_id'])) {
 if (isset($_GET['gl_account_id'])) {
     $selectedGlAccountId = max(0, (int)$_GET['gl_account_id']);
 }
+$search = trim((string)($_GET['search'] ?? ''));
+$sort = trim((string)($_GET['sort'] ?? 'cost_center'));
+$dir = strtoupper(trim((string)($_GET['dir'] ?? 'ASC'))) === 'DESC' ? 'DESC' : 'ASC';
+
+$sortMap = [
+    'cost_center' => 'cc.name',
+    'account_code' => 'ga.account_code',
+    'account_name' => 'ga.account_name',
+    'budget_selected_period' => 'budget_selected_period',
+    'forecast_selected_period' => 'forecast_selected_period',
+    'actual_curr_period' => 'actual_curr_period',
+    'actual_prev_period' => 'actual_prev_period',
+    'actual_prev_year_same_month' => 'actual_prev_year_same_month',
+];
+if (!isset($sortMap[$sort])) {
+    $sort = 'cost_center';
+}
+$sortSql = $sortMap[$sort] . ' ' . $dir;
+if ($sort === 'cost_center') {
+    $sortSql .= ', ga.account_code ASC';
+} elseif ($sort === 'account_code') {
+    $sortSql .= ', ga.account_name ASC';
+}
+
+$reportSearchSql = '';
+$reportSearchBindTypes = '';
+$reportSearchBindParams = [];
+if ($search !== '') {
+    $searchPattern = (strpos($search, '%') !== false || strpos($search, '_') !== false) ? $search : '%' . $search . '%';
+    $reportSearchSql = ' AND (cc.name LIKE ? OR ga.account_code LIKE ? OR ga.account_name LIKE ?)';
+    $reportSearchBindTypes = 'sss';
+    $reportSearchBindParams = [$searchPattern, $searchPattern, $searchPattern];
+}
 
 if ($selectedYear < 2000 || $selectedYear > 2100) {
     $selectedYear = (int)date('Y');
@@ -201,8 +234,9 @@ if ($reportCompanyId <= 0) {
                AND b_cur.gl_account_id = ga.id
             WHERE cc.company_id = ?
               AND (? = 0 OR cc.id = ?)
-              AND (? = 0 OR ga.id = ?)
-            ORDER BY cc.name, ga.account_code";
+              AND (? = 0 OR ga.id = ?)"
+            . $reportSearchSql . '
+            ORDER BY ' . $sortSql;
     } else {
         $reportSql = "SELECT
                 cc.name AS cost_center,
@@ -276,16 +310,16 @@ if ($reportCompanyId <= 0) {
                AND b_cur.gl_account_id = ga.id
             WHERE cc.company_id = ?
               AND (? = 0 OR cc.id = ?)
-              AND (? = 0 OR ga.id = ?)
-            ORDER BY cc.name, ga.account_code";
+              AND (? = 0 OR ga.id = ?)"
+            . $reportSearchSql . '
+            ORDER BY ' . $sortSql;
     }
 
     $reportStmt = mysqli_prepare($conn, $reportSql);
     if ($reportStmt) {
         if ($isMonthMode) {
-            mysqli_stmt_bind_param(
-                $reportStmt,
-                'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii',
+            $reportTypes = 'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii';
+            $reportParams = [
                 $reportCompanyId,
                 $selectedYear,
                 $selectedMonth,
@@ -320,12 +354,11 @@ if ($reportCompanyId <= 0) {
                 $selectedCostCenterId,
                 $selectedCostCenterId,
                 $selectedGlAccountId,
-                $selectedGlAccountId
-            );
+                $selectedGlAccountId,
+            ];
         } else {
-            mysqli_stmt_bind_param(
-                $reportStmt,
-                'iiiiiiiiiiiiiiiiiiiiii',
+            $reportTypes = 'iiiiiiiiiiiiiiiiiiiiii';
+            $reportParams = [
                 $reportCompanyId,
                 $selectedYear,
                 $previousYear,
@@ -347,9 +380,14 @@ if ($reportCompanyId <= 0) {
                 $selectedCostCenterId,
                 $selectedCostCenterId,
                 $selectedGlAccountId,
-                $selectedGlAccountId
-            );
+                $selectedGlAccountId,
+            ];
         }
+        if ($reportSearchBindTypes !== '') {
+            $reportTypes .= $reportSearchBindTypes;
+            $reportParams = array_merge($reportParams, $reportSearchBindParams);
+        }
+        mysqli_stmt_bind_param($reportStmt, $reportTypes, ...$reportParams);
         mysqli_stmt_execute($reportStmt);
         $reportResult = mysqli_stmt_get_result($reportStmt);
         while ($reportResult && ($row = mysqli_fetch_assoc($reportResult))) {
@@ -366,6 +404,39 @@ $monthOptions = [
     5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
     9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
 ];
+
+function bgr_report_filter_query($year, $month, $costCenterId, $glAccountId, $search) {
+    $query = [
+        'year' => $year,
+        'cost_center_id' => $costCenterId,
+        'gl_account_id' => $glAccountId,
+    ];
+    if ($month >= 1 && $month <= 12) {
+        $query['month'] = $month;
+    }
+    if ($search !== '') {
+        $query['search'] = $search;
+    }
+
+    return $query;
+}
+
+function bgr_sort_url($column, $currentSort, $currentDir, $year, $month, $costCenterId, $glAccountId, $search) {
+    $nextDir = ($currentSort === $column && $currentDir === 'ASC') ? 'DESC' : 'ASC';
+    $query = bgr_report_filter_query($year, $month, $costCenterId, $glAccountId, $search);
+    $query['sort'] = $column;
+    $query['dir'] = $nextDir;
+
+    return 'index.php?' . http_build_query($query);
+}
+
+function bgr_sort_indicator($column, $currentSort, $currentDir) {
+    if ($currentSort !== $column) {
+        return '';
+    }
+
+    return $currentDir === 'ASC' ? ' ▲' : ' ▼';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -383,6 +454,12 @@ if (!isset($crud_title)) {
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .bgr-table thead a {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -437,8 +514,20 @@ if (!isset($crud_title)) {
                         </select>
                     </div>
 
-                    <div class="form-actions" style="margin:0;">
-                        <button type="submit" class="btn btn-primary">Generate Report</button>
+                    <div class="form-group" style="margin:0;min-width:220px;">
+                        <label for="search">Search (all fields)</label>
+                        <input type="search" name="search" id="search" class="form-control" value="<?php echo sanitize($search); ?>" placeholder="Type to search...">
+                    </div>
+
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+
+                    <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:flex-end;">
+                        <button type="submit" class="btn btn-primary" title="Generate report">Generate Report</button>
+                        <button type="submit" class="btn btn-primary" title="🔎 Search">Search</button>
+                        <?php if ($search !== ''): ?>
+                            <a class="btn" href="index.php?<?php echo sanitize(http_build_query(bgr_report_filter_query($selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, '') + ['sort' => $sort, 'dir' => $dir])); ?>" title="Clear">🔙</a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -448,17 +537,17 @@ if (!isset($crud_title)) {
             <?php endif; ?>
 
             <div class="card">
-                <table data-itm-db-import-endpoint="index.php">
+                <table class="bgr-table" data-itm-db-import-endpoint="index.php">
                     <thead>
                     <tr>
-                        <th>Cost Center</th>
-                        <th>Account Code</th>
-                        <th>Account Name</th>
-                        <th>Budget (Selected Period)</th>
-                        <th>Forecast (Selected Period)</th>
-                        <th><?php echo $isMonthMode ? 'Actual (Selected Month)' : 'Actual (Selected Year)'; ?></th>
-                        <th><?php echo $isMonthMode ? 'Actual (Previous Month)' : 'Actual (Previous Year)'; ?></th>
-                        <th>Actual (Same Month Previous Year)</th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('cost_center', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>">Cost Center<?php echo bgr_sort_indicator('cost_center', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('account_code', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>">Account Code<?php echo bgr_sort_indicator('account_code', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('account_name', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>">Account Name<?php echo bgr_sort_indicator('account_name', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('budget_selected_period', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>">Budget (Selected Period)<?php echo bgr_sort_indicator('budget_selected_period', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('forecast_selected_period', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>">Forecast (Selected Period)<?php echo bgr_sort_indicator('forecast_selected_period', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('actual_curr_period', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>"><?php echo $isMonthMode ? 'Actual (Selected Month)' : 'Actual (Selected Year)'; ?><?php echo bgr_sort_indicator('actual_curr_period', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('actual_prev_period', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>"><?php echo $isMonthMode ? 'Actual (Previous Month)' : 'Actual (Previous Year)'; ?><?php echo bgr_sort_indicator('actual_prev_period', $sort, $dir); ?></a></th>
+                        <th><a href="<?php echo sanitize(bgr_sort_url('actual_prev_year_same_month', $sort, $dir, $selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, $search)); ?>">Actual (Same Month Previous Year)<?php echo bgr_sort_indicator('actual_prev_year_same_month', $sort, $dir); ?></a></th>
                         <th>Forecast - Actual</th>
                         <th>Budget - Forecast</th>
                         <th>Budget - Actual</th>
