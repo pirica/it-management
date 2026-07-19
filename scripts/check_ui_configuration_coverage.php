@@ -556,7 +556,12 @@ function itm_check_back_save_entry(string $modulePath, string $entryPath, string
         ? $entryBasename
         : $entryBasename . ' via ' . implode(' → ', $resolved['chain']);
 
-    $result = itm_check_back_save($resolved['content'], $viaLabel);
+    $formContent = $resolved['content'];
+    if (stripos($formContent, '<form') === false) {
+        $formContent = itm_ui_merge_thin_router_audit_content($modulePath, $formContent);
+    }
+
+    $result = itm_check_back_save($formContent, $viaLabel);
     if ($result['status'] !== 'n/a' || stripos($result['details'], 'No form') === false) {
         return $result;
     }
@@ -680,6 +685,7 @@ foreach ($modules as $module) {
     $deletePath = $modulePath . '/delete.php';
 
     $indexContent = itm_read_file_or_empty($indexPath);
+    $indexContent = itm_ui_merge_thin_router_audit_content($modulePath, $indexContent);
     $createContent = itm_read_file_or_empty($createPath);
     $editContent = itm_read_file_or_empty($editPath);
     $viewContent = itm_read_file_or_empty($viewPath);

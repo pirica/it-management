@@ -24,6 +24,74 @@ if (!function_exists('itm_ui_resolve_list_table_screen')) {
     }
 }
 
+if (!function_exists('itm_ui_merge_thin_router_audit_content')) {
+    /**
+     * Merge index.php with direct __DIR__ requires (IPAM / rack planner thin routers).
+     *
+     * Why: list and form markup live in includes/partials/render.php; static audits must see the same contract as runtime.
+     *
+     * @return string
+     */
+    function itm_ui_merge_thin_router_audit_content(string $modulePath, string $baseContent = ''): string
+    {
+        $modulePath = rtrim(str_replace('\\', '/', $modulePath), '/');
+        $indexPath = $modulePath . '/index.php';
+        $merged = $baseContent;
+        if ($merged === '' && is_readable($indexPath)) {
+            $merged = (string) file_get_contents($indexPath);
+        }
+        if (!is_readable($indexPath)) {
+            return $merged;
+        }
+
+        $indexDir = dirname($indexPath);
+        $indexSource = (string) file_get_contents($indexPath);
+        if (!preg_match_all(
+            '#\brequire(?:_once)?\s+__DIR__\s*\.\s*[\'"]([^\'"]+\.php)[\'"]\s*;#',
+            $indexSource,
+            $matches
+        )) {
+            return $merged;
+        }
+
+        foreach ($matches[1] as $relative) {
+            $relative = str_replace('\\', '/', (string) $relative);
+            $candidate = $indexDir . '/' . ltrim($relative, '/');
+            if (!is_readable($candidate)) {
+                continue;
+            }
+            $merged .= "\n" . (string) file_get_contents($candidate);
+        }
+
+        return $merged;
+    }
+}
+
+if (!function_exists('itm_ui_ipam_address_list_search_detected')) {
+    function itm_ui_ipam_address_list_search_detected(string $content): bool
+    {
+        return stripos($content, 'itm_ipam_count_address_list(') !== false
+            && stripos($content, '$searchRaw') !== false;
+    }
+}
+
+if (!function_exists('itm_ui_ipam_address_list_sort_detected')) {
+    function itm_ui_ipam_address_list_sort_detected(string $content): bool
+    {
+        return stripos($content, 'itm_ipam_fetch_address_list(') !== false
+            && preg_match('#\$sort\s*=.*\$_GET\s*\[\s*[\'"]sort[\'"]\s*\]#s', $content) === 1;
+    }
+}
+
+if (!function_exists('itm_ui_ipam_address_list_pagination_detected')) {
+    function itm_ui_ipam_address_list_pagination_detected(string $content): bool
+    {
+        return stripos($content, 'itm_ipam_fetch_address_list(') !== false
+            && preg_match('#\$perPage\s*=#', $content) === 1
+            && preg_match('#\$offset\s*=#', $content) === 1;
+    }
+}
+
 if (!function_exists('itm_check_table_actions')) {
     /**
      * @return array{status:string,details:string}
@@ -216,6 +284,7 @@ if (!function_exists('itm_check_search')) {
             || itm_ui_notes_in_memory_list_search_detected($listContent)
             || itm_ui_todo_list_search_detected($listContent)
             || itm_ui_events_in_memory_list_search_detected($listContent)
+            || itm_ui_ipam_address_list_search_detected($listContent)
             || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc|Like)|\$search\s*!==\s*[\'"][\s]*[\'"]#i', $listContent) === 1);
         $hasSearchReset = itm_ui_search_reset_control_detected($listContent);
 
@@ -232,6 +301,9 @@ if (!function_exists('itm_check_search')) {
             }
             if (itm_ui_events_in_memory_list_search_detected($listContent)) {
                 $details = 'Search via events_query_events_for_list() (in-memory decrypt filter) and emoji-only 🔙 reset in ' . $sourceLabel;
+            }
+            if (itm_ui_ipam_address_list_search_detected($listContent)) {
+                $details = 'Search via itm_ipam_count_address_list() / itm_ipam_address_list_where_clause() and emoji-only 🔙 reset in ' . $sourceLabel;
             }
 
             return ['status' => 'pass', 'details' => $details];
@@ -277,7 +349,8 @@ if (!function_exists('itm_check_sort')) {
             || itm_ui_bookmarks_in_memory_list_sort_detected($listContent)
             || itm_ui_notes_in_memory_list_sort_detected($listContent)
             || itm_ui_todo_list_sort_detected($listContent)
-            || itm_ui_events_in_memory_list_sort_detected($listContent);
+            || itm_ui_events_in_memory_list_sort_detected($listContent)
+            || itm_ui_ipam_address_list_sort_detected($listContent);
         $hasSortUi = strpos($listContent, '▲') !== false
             || strpos($listContent, '▼') !== false
             || preg_match('#\$nextDir\s*=#', $listContent) === 1;
@@ -295,6 +368,9 @@ if (!function_exists('itm_check_sort')) {
             }
             if (itm_ui_events_in_memory_list_sort_detected($listContent)) {
                 $details = 'Column sort via events_query_events_for_list() (in-memory) in ' . $sourceLabel;
+            }
+            if (itm_ui_ipam_address_list_sort_detected($listContent)) {
+                $details = 'Column sort via itm_ipam_fetch_address_list() in ' . $sourceLabel;
             }
 
             return [
@@ -337,7 +413,8 @@ if (!function_exists('itm_check_pagination')) {
         $usesRecordsPerPage = stripos($listContent, 'itm_resolve_records_per_page') !== false;
         $hasPerPageVar = preg_match('#\$perPage\s*=#', $listContent) === 1;
         $hasLimitPaging = preg_match('#LIMIT\s+[^\n;]*\$perPage#i', $listContent) === 1
-            || (stripos($listContent, 'LIMIT') !== false && stripos($listContent, '$offset') !== false);
+            || (stripos($listContent, 'LIMIT') !== false && stripos($listContent, '$offset') !== false)
+            || itm_ui_ipam_address_list_pagination_detected($listContent);
         $hasPageState = preg_match('#\$_GET\s*\[\s*[\'"]page[\'"]\s*\]#', $listContent) === 1
             || preg_match('#\$page\s*=#', $listContent) === 1;
         $hasPageNav = (stripos($listContent, 'Previous') !== false

@@ -15,6 +15,7 @@ if (!isset($crud_title)) {
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -28,13 +29,13 @@ if (!isset($crud_title)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <a href="create.php" class="btn btn-primary">➕</a>
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
@@ -43,9 +44,10 @@ if (!isset($crud_title)) {
                 <!-- BULK ACTIONS -->
                 <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
@@ -76,7 +78,7 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">🔙</a>
+                            <a href="index.php" class="btn" title="Clear">🔙</a>
                             <?php if ($itmIpAddressFocusedList): ?>
                                 <a href="../ip_subnets/index.php" class="btn btn-sm">IP Subnets</a>
                             <?php endif; ?>
@@ -161,13 +163,13 @@ if (!isset($crud_title)) {
                                 <tr>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <div class="itm-actions-wrap">
-                                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
+                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>" title="Edit">✏️</a>
                                             <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                                 <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                                 <input type="hidden" name="bulk_action" value="single_delete">
                                                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                                <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                                <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
                                             </form>
                                         </div>
                                     </td>
@@ -218,13 +220,13 @@ if (!isset($crud_title)) {
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
+                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>" title="Edit">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                            <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
                                         </form>
                                     </div>
                                 </td>
@@ -263,7 +265,7 @@ if (!isset($crud_title)) {
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <!-- FORM VIEW (DELEGATED TO index.php VIA WRAPPERS) -->
-                <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
+                <h1 title="<?php echo $crud_action === 'create' ? 'New IP address' : 'Edit IP address'; ?>"><?php echo $crud_action === 'create' ? '➕' : '✏️'; ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
@@ -343,14 +345,14 @@ if (!isset($crud_title)) {
                     }
                     ?>
                     <div class="form-actions">
-                        <button class="btn btn-primary" type="submit">💾</button>
-                        <a href="index.php" class="btn">🔙</a>
+                        <button class="btn btn-primary" type="submit" title="Save">💾</button>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
                     </div>
                 </form>
 
             <?php elseif ($crud_action === 'view'): ?>
                 <!-- READ-ONLY VIEW -->
-                <h1>View <?php echo sanitize($crud_title); ?></h1>
+                <h1 title="View IP address">🔎</h1>
                 <?php $GLOBALS['itm_ipam_view_row'] = is_array($data) ? $data : []; ?>
                 <div class="card">
                     <table>
@@ -365,8 +367,8 @@ if (!isset($crud_title)) {
                         </tbody>
                     </table>
                     <p style="margin-top:16px;">
-                        <a href="index.php" class="btn">🔙</a> 
-                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
+                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a>
                     </p>
                 </div>
             <?php endif; ?>
