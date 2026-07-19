@@ -31,7 +31,7 @@ Manages Intermediate Distribution Frames (IDFs): physical network distribution p
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
-- **List (`index.php`):** standard search (`$searchRaw` / `$searchLike`), sort (`$sort` / `$dir` / `$sortSql`), pagination, search reset via emoji-only `🔙` (`title="Clear"`), bulk delete when row count ≥ `records_per_page` (Cancel + `bulk-delete-selection.js` in index HTML), Excel/PDF export, and `import_excel_rows` JSON import via `data-itm-db-import-endpoint`.
+- **List (`index.php`):** standard search (`$searchRaw` / `$searchLike`), sort (`$sort` / `$dir` / `$sortSql`), pagination, search reset via emoji-only `🔙` (`title="Clear"`), bulk delete when row count ≥ `records_per_page` (Cancel + `bulk-delete-selection.js` in index HTML), Excel/PDF export, and `import_excel_rows` JSON import via `data-itm-db-import-endpoint`. Search row uses `.itm-idf-search` (`flex-wrap: nowrap`) so Search + 🔙 stay on one line with the input. Server-side `LIKE` covers visible list columns: `id`, `name`, `idf_code`, location name, rack name, and active/inactive label; sort/pagination URLs preserve `search` via `itm_idf_list_url()` / `itm_idf_sort_url()`. `list_all.php` is sort-only (cap 200) — use index for search.
 - **Dashboard (`view.php`):** rack elevation, port visualiser, link management, and inline AJAX saves — not a flat CRUD table.
 - **Device screen (`device.php`):** equipment-centric port management within an IDF context.
 - **FK labels:** list and detail views must show location and rack names, not raw `location_id` / `rack_id`.
