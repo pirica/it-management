@@ -95,6 +95,35 @@ if ($joinUrl === '' || stripos($joinUrl, 'join.php?t=') === false) {
     notes_share_verify_pass('Join URL built.');
 }
 
+$hasImagesFlag = is_array($payload) && !empty($payload['images']);
+if ($hasImagesFlag) {
+    notes_share_verify_fail('has_images should be false for note without attachments.');
+} else {
+    notes_share_verify_pass('has_images contract false when note has no images.');
+}
+
+$imagesJson = json_encode(['share-test.png']);
+$upd = $conn->prepare('UPDATE notes SET images_json = ? WHERE id = ?');
+$upd->bind_param('si', $imagesJson, $noteId);
+if (!$upd->execute()) {
+    notes_share_verify_fail('Could not set images_json on test note.');
+} else {
+    $upd->close();
+    $conn->query('DELETE FROM note_share_sessions WHERE note_id = ' . (int)$noteId);
+    $withImages = notes_share_create_session($conn, $noteId, $companyId, $employeeId, $username, true);
+    if (!$withImages['ok'] || empty($withImages['session'])) {
+        notes_share_verify_fail('Share session with images failed.');
+    } else {
+        $payloadImages = notes_share_decode_payload($withImages['session']['payload_json'] ?? '');
+        $hasImagesFlag = is_array($payloadImages) && !empty($payloadImages['images']);
+        if (!$hasImagesFlag) {
+            notes_share_verify_fail('Share payload must include images when note has attachments.');
+        } else {
+            notes_share_verify_pass('Share payload and has_images contract true when note has attachments.');
+        }
+    }
+}
+
 $dummySession = null;
 $assetCheck = notes_share_validate_asset_request($conn, (string)$session['access_token'], '../evil.png', $dummySession);
 if ($assetCheck['ok']) {
