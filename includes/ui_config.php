@@ -1349,14 +1349,110 @@ function itm_normalize_ui_config_favicon_path($rawPath) {
 }
 
 /**
+ * Canonical per-tenant favicon path written by Settings upload (company-scoped .ico).
+ */
+function itm_ui_config_canonical_favicon_relative_path($companyId) {
+    $companyId = (int) $companyId;
+    if ($companyId <= 0) {
+        return '';
+    }
+
+    return 'images/favicons/company_' . $companyId . '.ico';
+}
+
+/**
+ * Resolves a usable favicon relative path: stored ui_configuration path first, then canonical on-disk file.
+ */
+function itm_ui_config_resolve_favicon_relative_path($uiConfig, $companyId = 0) {
+    if (!is_array($uiConfig)) {
+        $uiConfig = [];
+    }
+
+    if ($companyId <= 0 && isset($_SESSION['company_id'])) {
+        $companyId = (int) $_SESSION['company_id'];
+    }
+
+    $stored = itm_normalize_ui_config_favicon_path($uiConfig['favicon_path'] ?? '');
+    if ($stored !== '') {
+        $storedAbs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $stored);
+        if (is_file($storedAbs)) {
+            return $stored;
+        }
+    }
+
+    $canonical = itm_ui_config_canonical_favicon_relative_path($companyId);
+    if ($canonical === '') {
+        return '';
+    }
+
+    $canonicalAbs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $canonical);
+    if (is_file($canonicalAbs)) {
+        return $canonical;
+    }
+
+    return '';
+}
+
+/**
+ * Persists canonical favicon_path when Settings upload file exists but the row path is empty.
+ */
+function itm_ui_config_sync_favicon_path_from_disk($conn, $companyId, $employeeId) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    if ($companyId <= 0 || $employeeId <= 0) {
+        return false;
+    }
+
+    $canonical = itm_ui_config_canonical_favicon_relative_path($companyId);
+    if ($canonical === '') {
+        return false;
+    }
+
+    $canonicalAbs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $canonical);
+    if (!is_file($canonicalAbs)) {
+        return false;
+    }
+
+    $sql = "UPDATE ui_configuration
+            SET favicon_path = ?
+            WHERE company_id = ?
+              AND employee_id = ?
+              AND (favicon_path IS NULL OR favicon_path = '')
+            LIMIT 1";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'sii', $canonical, $companyId, $employeeId);
+    $ok = mysqli_stmt_execute($stmt);
+    $affected = $ok ? mysqli_stmt_affected_rows($stmt) : 0;
+    mysqli_stmt_close($stmt);
+
+    if ($affected > 0 && function_exists('itm_get_ui_configuration')) {
+        itm_get_ui_configuration(null, 0, 0, true);
+    }
+
+    return $affected > 0;
+}
+
+/**
  * Resolves the favicon URL for the active company configuration.
  */
-function itm_ui_config_favicon_url($uiConfig = null) {
+function itm_ui_config_favicon_url($uiConfig = null, $companyId = 0) {
     if (!is_array($uiConfig)) {
         return '';
     }
 
-    $relative = itm_normalize_ui_config_favicon_path($uiConfig['favicon_path'] ?? '');
+    if ($companyId <= 0 && isset($_SESSION['company_id'])) {
+        $companyId = (int) $_SESSION['company_id'];
+    }
+
+    $relative = itm_ui_config_resolve_favicon_relative_path($uiConfig, $companyId);
     if ($relative === '') {
         return '';
     }
@@ -1366,7 +1462,7 @@ function itm_ui_config_favicon_url($uiConfig = null) {
         return '';
     }
 
-    $version = (int)@filemtime($absolutePath);
+    $version = (int) @filemtime($absolutePath);
     $suffix = $version > 0 ? ('?v=' . $version) : '';
 
     return BASE_URL . $relative . $suffix;

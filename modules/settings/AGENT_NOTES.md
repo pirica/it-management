@@ -23,6 +23,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - **Sidebar Toggles**: Uses checkboxes with a specific `change` event listener to ensure configuration persistence.
 - **Sidebar emoji overrides**: SideMenu module rows render in a compact table (`Show` | `Icon` | `Module` | `Order`) with `.itm-module-icon-input` in the icon column; matching the company default on save clears `module_icon_overrides`.
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.
+- **Favicon preview**: On load, `itm_ui_config_sync_favicon_path_from_disk()` backfills empty `favicon_path` when `images/favicons/company_{company_id}.ico` already exists (uploaded file without DB path). Preview and tab icon use `itm_ui_config_resolve_favicon_relative_path()` + `itm_ui_config_favicon_url($config, $company_id)`.
 - **API key POST actions**: `save_api_key`, `generate_api_key` (CSRF required).
 
 ## 6. API Actions (If Applicable)
