@@ -1,11 +1,12 @@
 /* Chatbot Styles */
 .itm-chatbot-container {
     position: fixed;
-    bottom: 20px;
+    bottom: 72px;
     right: 20px;
     width: 350px;
     max-width: calc(100vw - 40px);
     height: 450px;
+    max-height: calc(100vh - 120px);
     background: var(--bg-primary);
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
@@ -105,7 +106,7 @@
 
 .itm-chatbot-toggle {
     position: fixed;
-    bottom: 20px;
+    bottom: 72px;
     right: 20px;
     width: 60px;
     height: 60px;
