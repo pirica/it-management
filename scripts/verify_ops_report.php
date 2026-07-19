@@ -184,6 +184,58 @@ if ($figureCnt !== 0) {
     opr_verify_pass('Cascade delete removed hotel figure child rows');
 }
 
+// Cross-date search: unique guest on a past report_date must be discoverable via child-table JOIN.
+$pastDate = date('Y-m-d', strtotime('-5 days'));
+$crossDateToken = 'MBQA-CROSSDATE-' . substr(md5((string)mt_rand()), 0, 8);
+
+$stmt = mysqli_prepare($conn, 'DELETE FROM ops_report WHERE company_id = ? AND report_date = ?');
+mysqli_stmt_bind_param($stmt, 'is', $companyId, $pastDate);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
+
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, today_shift, active) VALUES (?, ?, ?, 1)');
+$pastShift = 'MBQA past shift';
+mysqli_stmt_bind_param($stmt, 'iss', $companyId, $pastDate, $pastShift);
+if (!mysqli_stmt_execute($stmt)) {
+    opr_verify_fail('Insert past ops_report for cross-date search failed: ' . mysqli_error($conn));
+} else {
+    $pastReportId = (int)mysqli_insert_id($conn);
+}
+mysqli_stmt_close($stmt);
+
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report_guest_experience (company_id, ops_report_id, guest_name, sort_order, active) VALUES (?, ?, ?, 0, 1)');
+mysqli_stmt_bind_param($stmt, 'iis', $companyId, $pastReportId, $crossDateToken);
+if (!mysqli_stmt_execute($stmt)) {
+    opr_verify_fail('Insert past guest experience row for cross-date search failed');
+} else {
+    opr_verify_pass('Past guest experience row inserted for cross-date search');
+}
+mysqli_stmt_close($stmt);
+
+$crossPattern = '%' . $crossDateToken . '%';
+$stmt = mysqli_prepare(
+    $conn,
+    'SELECT DISTINCT r.report_date FROM ops_report r'
+    . ' INNER JOIN ops_report_guest_experience c ON c.ops_report_id = r.id AND c.company_id = r.company_id'
+    . ' WHERE r.company_id = ? AND r.active = 1 AND c.active = 1'
+    . ' AND CONCAT_WS(\' \', COALESCE(c.ref_id,\'\'), COALESCE(c.guest_name,\'\'), COALESCE(c.room_number,\'\'), COALESCE(c.time_reported,\'\'), COALESCE(c.checkout_date,\'\'), COALESCE(c.feedback,\'\'), COALESCE(c.action_taken,\'\'), COALESCE(c.case_closed,\'\'), COALESCE(c.monitor,\'\')) LIKE ?'
+);
+mysqli_stmt_bind_param($stmt, 'is', $companyId, $crossPattern);
+mysqli_stmt_execute($stmt);
+$crossHit = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+mysqli_stmt_close($stmt);
+
+if (!$crossHit || ($crossHit['report_date'] ?? '') !== $pastDate) {
+    opr_verify_fail('Cross-date search did not return past report_date for guest token');
+} else {
+    opr_verify_pass('Cross-date search finds past report_date via guest experience child row');
+}
+
+$stmt = mysqli_prepare($conn, 'DELETE FROM ops_report WHERE id = ? AND company_id = ?');
+mysqli_stmt_bind_param($stmt, 'ii', $pastReportId, $companyId);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
+
 // Table existence
 $requiredTables = [
     'ops_report',

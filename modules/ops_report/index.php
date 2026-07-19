@@ -450,6 +450,128 @@ if (!function_exists('opr_report_apply_search_filter')) {
     }
 }
 
+if (!function_exists('opr_search_like_pattern')) {
+    function opr_search_like_pattern($search) {
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string)$search);
+        return '%' . $escaped . '%';
+    }
+}
+
+if (!function_exists('opr_search_cross_date_section_labels')) {
+    function opr_search_cross_date_section_labels() {
+        return [
+            'report' => 'Duty Managers / Hotel Figures',
+            'fb_outlet' => 'Food & Beverage Overview',
+            'walk_round' => 'Hotel Walk-Round Check',
+            'courtesy_call' => 'Courtesy Calls',
+            'guest_experience' => 'Guest Experience Report',
+            'butler' => 'Suites Butler Service',
+            'night_shift' => 'Night Shift',
+            'hotel_figure' => 'Hotel Figures & Revenue',
+        ];
+    }
+}
+
+if (!function_exists('opr_search_merge_cross_date_hit')) {
+    function opr_search_merge_cross_date_hit(array &$hits, $reportDate, $sectionLabel) {
+        if ($reportDate === '' || $reportDate === null) {
+            return;
+        }
+        if (!isset($hits[$reportDate])) {
+            $hits[$reportDate] = [];
+        }
+        if (!in_array($sectionLabel, $hits[$reportDate], true)) {
+            $hits[$reportDate][] = $sectionLabel;
+        }
+    }
+}
+
+if (!function_exists('opr_search_cross_date_hits')) {
+    // Why: Find past/future report dates whose child rows or header text match the search term.
+    function opr_search_cross_date_hits($conn, $company_id, $search) {
+        if ($search === '') {
+            return [];
+        }
+        $pattern = opr_search_like_pattern($search);
+        $labels = opr_search_cross_date_section_labels();
+        $hits = [];
+
+        $reportConcatParts = [];
+        foreach (opr_report_fields() as $field) {
+            if (!itm_is_safe_identifier($field)) {
+                continue;
+            }
+            $reportConcatParts[] = "COALESCE(r.`{$field}`,'')";
+        }
+        if (!empty($reportConcatParts)) {
+            $reportConcat = 'CONCAT_WS(\' \', ' . implode(', ', $reportConcatParts) . ')';
+            $sql = 'SELECT DISTINCT r.report_date FROM ops_report r WHERE r.company_id = ? AND r.active = 1 AND ' . $reportConcat . ' LIKE ?';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'is', $company_id, $pattern);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                while ($row = mysqli_fetch_assoc($res)) {
+                    opr_search_merge_cross_date_hit($hits, $row['report_date'] ?? '', $labels['report']);
+                }
+                mysqli_stmt_close($stmt);
+            }
+        }
+
+        foreach (opr_child_table_map() as $scope => $cfg) {
+            $table = $cfg['table'];
+            if (!itm_is_safe_identifier($table)) {
+                continue;
+            }
+            $concatParts = [];
+            foreach ($cfg['fields'] as $field) {
+                if (!itm_is_safe_identifier($field)) {
+                    continue;
+                }
+                $concatParts[] = "COALESCE(c.`{$field}`,'')";
+            }
+            if (empty($concatParts)) {
+                continue;
+            }
+            $concat = 'CONCAT_WS(\' \', ' . implode(', ', $concatParts) . ')';
+            $sql = 'SELECT DISTINCT r.report_date FROM ops_report r'
+                . ' INNER JOIN `' . $table . '` c ON c.ops_report_id = r.id AND c.company_id = r.company_id'
+                . ' WHERE r.company_id = ? AND r.active = 1 AND c.active = 1 AND ' . $concat . ' LIKE ?';
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($stmt, 'is', $company_id, $pattern);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            while ($row = mysqli_fetch_assoc($res)) {
+                opr_search_merge_cross_date_hit($hits, $row['report_date'] ?? '', $labels[$scope] ?? $scope);
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        krsort($hits);
+        return $hits;
+    }
+}
+
+if (!function_exists('opr_report_index_url')) {
+    function opr_report_index_url($day, $month, $year, $search = '', $searchScope = 'day') {
+        $query = [
+            'day' => (int)$day,
+            'month' => (int)$month,
+            'year' => (int)$year,
+        ];
+        if ($search !== '') {
+            $query['search'] = $search;
+        }
+        if ($searchScope === 'all') {
+            $query['search_scope'] = 'all';
+        }
+        return 'index.php?' . http_build_query($query);
+    }
+}
+
 $selected_day = (int)($_GET['day'] ?? date('j'));
 $selected_month = (int)($_GET['month'] ?? date('n'));
 $selected_year = (int)($_GET['year'] ?? date('Y'));
@@ -462,7 +584,14 @@ if ($selected_day > $days_in_month) {
 }
 $selected_date = sprintf('%04d-%02d-%02d', $selected_year, $selected_month, $selected_day);
 $search = trim((string)($_GET['search'] ?? ''));
+$searchScope = trim((string)($_GET['search_scope'] ?? 'day'));
+if (!in_array($searchScope, ['day', 'all'], true)) {
+    $searchScope = 'day';
+}
 $can_edit_report = opr_is_editable_date($selected_date, $is_admin);
+$crossDateHits = ($search !== '' && $searchScope === 'all')
+    ? opr_search_cross_date_hits($conn, $company_id, $search)
+    : [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) {
     itm_require_post_csrf();
@@ -719,7 +848,7 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 mysqli_stmt_close($stmt);
 
-if ($search !== '') {
+if ($search !== '' && $searchScope === 'day') {
     $fb_outlets = opr_report_apply_search_filter($fb_outlets, $search);
     $walk_rounds = opr_report_apply_search_filter($walk_rounds, $search);
     $courtesy_calls = opr_report_apply_search_filter($courtesy_calls, $search);
@@ -730,7 +859,7 @@ if ($search !== '') {
 }
 
 $oprSearchClearHref = htmlspecialchars(
-    'index.php?day=' . (int)$selected_day . '&month=' . (int)$selected_month . '&year=' . (int)$selected_year,
+    opr_report_index_url($selected_day, $selected_month, $selected_year),
     ENT_QUOTES,
     'UTF-8'
 );
@@ -794,6 +923,8 @@ if (!isset($crud_title)) {
         .opr-subtitle .edit-input-ui { border:none; background:transparent; padding:0; width:100%; color:var(--text-secondary); }
         .opr-company-block .edit-input-ui { border:none; background:transparent; padding:0; min-width:120px; }
         .opr-btn-label .edit-input-ui { border:none; background:transparent; padding:0; min-width:80px; }
+        .opr-cross-date-hits { margin:0; padding-left:20px; }
+        .opr-cross-date-hits li { margin-bottom:6px; }
         @media print {
             @page { size: landscape; margin: 1cm; }
             .opr-controls, .opr-no-print, .btn { display:none !important; }
@@ -825,12 +956,51 @@ if (!isset($crud_title)) {
                         <label for="moduleSearch">Search (all fields)</label>
                         <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($search); ?>" placeholder="Type to search records...">
                     </div>
+                    <div class="form-group" style="margin:0; min-width:140px;">
+                        <label for="searchScope">Scope</label>
+                        <select name="search_scope" id="searchScope" class="form-control">
+                            <option value="day" <?= $searchScope === 'day' ? 'selected' : '' ?>>This day</option>
+                            <option value="all" <?= $searchScope === 'all' ? 'selected' : '' ?>>All dates</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Search</button>
                     <?php if ($search !== ''): ?>
                         <a class="btn" href="<?php echo $oprSearchClearHref; ?>" title="Clear">🔙</a>
                     <?php endif; ?>
                 </form>
             </div>
+
+            <?php if ($search !== '' && $searchScope === 'all'): ?>
+            <div class="card opr-no-print" style="margin-bottom:16px;">
+                <h2 style="margin:0 0 10px; font-size:1.1rem;">Matching report dates</h2>
+                <?php if (empty($crossDateHits)): ?>
+                    <p style="margin:0; color:var(--text-secondary);">No matches found across saved reports for this company.</p>
+                <?php else: ?>
+                    <ul class="opr-cross-date-hits">
+                        <?php foreach ($crossDateHits as $hitDate => $sections): ?>
+                            <?php
+                            $hitTs = strtotime((string)$hitDate);
+                            $hitHref = htmlspecialchars(
+                                opr_report_index_url(
+                                    (int)date('j', $hitTs),
+                                    (int)date('n', $hitTs),
+                                    (int)date('Y', $hitTs),
+                                    $search,
+                                    'day'
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            );
+                            ?>
+                            <li>
+                                <a href="<?php echo $hitHref; ?>"><?php echo sanitize(opr_format_date($hitDate)); ?></a>
+                                <span style="color:var(--text-secondary);"> — <?php echo sanitize(implode(', ', $sections)); ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
 
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
                 <div>
@@ -860,6 +1030,9 @@ if (!isset($crud_title)) {
                 <form method="GET" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                     <?php if ($search !== ''): ?>
                         <input type="hidden" name="search" value="<?php echo sanitize($search); ?>">
+                    <?php endif; ?>
+                    <?php if ($searchScope === 'all'): ?>
+                        <input type="hidden" name="search_scope" value="all">
                     <?php endif; ?>
                     <div class="form-group" style="margin:0;">
                         <label>Day</label>
