@@ -24,7 +24,7 @@ Manages scheduled events, meetings, and maintenance windows. Private events (no 
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
 - **CSRF**: Form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()`.
 - **Hide `company_id`**, `employee_id`, `title_hash`, and `shared_with_json` from list/view forms (shared-with multi-select rendered separately).
-- **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"`.
+- **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on one header + body cells; `itm-actions-wrap` holds ICS/share/CRUD controls. Settings → **Table actions position** (`table_actions_position` via `js/ui-layout.js`): `left_right` mirrors row action buttons on both sides of the table (single **Actions** header); `left` / `right` show one column only.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
 - **ICS Export**: Visibility-scoped; hydrates rows before building VCALENDAR (single id or date range).
 - **QR / code share (`join.php`):** owner-only; private events require vault unlock before `create_share_session`. Helpers: `events_share_helpers.php`, `events_vault_helpers.php`. Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_events_vault.php`.

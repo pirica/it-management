@@ -118,6 +118,11 @@
                 actionCell.classList.add('itm-actions-right');
                 placeActionCellAtRowEnd(row, actionCell);
 
+                // Why: left_right duplicates body action buttons only — keep a single Actions header.
+                if (actionCell.tagName !== 'TD') {
+                    return;
+                }
+
                 const leftClone = actionCell.cloneNode(true);
                 leftClone.dataset.itmActionsClone = '1';
                 leftClone.removeAttribute('data-itm-actions-origin');
