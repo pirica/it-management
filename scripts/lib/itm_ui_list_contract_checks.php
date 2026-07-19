@@ -58,6 +58,31 @@ if (!function_exists('itm_ui_search_reset_control_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_bookmarks_in_memory_list_search_detected')) {
+    /**
+     * Bookmarks decrypt private fields in PHP then filter in bkm_query_bookmarks_for_list() — no SQL LIKE in index.php.
+     */
+    function itm_ui_bookmarks_in_memory_list_search_detected(string $content): bool
+    {
+        return stripos($content, 'bkm_query_bookmarks_for_list(') !== false
+            && stripos($content, '$searchRaw') !== false
+            && preg_match('#[\'"]search[\'"]\s*=>#', $content) === 1;
+    }
+}
+
+if (!function_exists('itm_ui_bookmarks_in_memory_list_sort_detected')) {
+    /**
+     * Bookmarks sort in PHP via bkm_query_bookmarks_for_list() — no SQL ORDER BY in index.php.
+     */
+    function itm_ui_bookmarks_in_memory_list_sort_detected(string $content): bool
+    {
+        return stripos($content, 'bkm_query_bookmarks_for_list(') !== false
+            && preg_match('#[\'"]sort[\'"]\s*=>#', $content) === 1
+            && stripos($content, '$sort') !== false
+            && (preg_match('#[\'"]dir[\'"]\s*=>#', $content) === 1 || stripos($content, '$dir') !== false);
+    }
+}
+
 if (!function_exists('itm_check_search')) {
     /**
      * @return array{status:string,details:string}
@@ -73,11 +98,17 @@ if (!function_exists('itm_check_search')) {
             || preg_match('#\$search\s*=.*\$_GET\s*\[\s*[\'"]search[\'"]\s*\]#s', $listContent) === 1;
         $hasSearchInput = preg_match('#name\s*=\s*["\']search["\']#i', $listContent) === 1;
         $hasSearchQuery = stripos($listContent, 'searchConditions') !== false
+            || itm_ui_bookmarks_in_memory_list_search_detected($listContent)
             || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc|Like)|\$search\s*!==\s*[\'"][\s]*[\'"]#i', $listContent) === 1);
         $hasSearchReset = itm_ui_search_reset_control_detected($listContent);
 
         if ($hasSearchParam && $hasSearchInput && $hasSearchQuery && $hasSearchReset) {
-            return ['status' => 'pass', 'details' => 'Search input, server-side query, and emoji-only 🔙 reset detected in ' . $sourceLabel];
+            $details = 'Search input, server-side query, and emoji-only 🔙 reset detected in ' . $sourceLabel;
+            if (itm_ui_bookmarks_in_memory_list_search_detected($listContent)) {
+                $details = 'Search via bkm_query_bookmarks_for_list() (in-memory decrypt filter) and emoji-only 🔙 reset in ' . $sourceLabel;
+            }
+
+            return ['status' => 'pass', 'details' => $details];
         }
 
         $missing = [];
@@ -116,15 +147,21 @@ if (!function_exists('itm_check_sort')) {
         $hasDirParam = preg_match('#\$_GET\s*\[\s*[\'"]dir[\'"]\s*\]#', $listContent) === 1
             || preg_match('#\$dir\s*=.*\$_GET\s*\[\s*[\'"]dir[\'"]\s*\]#s', $listContent) === 1
             || preg_match('#\[\'ASC\'\s*,\s*\'DESC\'\]#', $listContent) === 1;
-        $hasOrderBySort = preg_match('#ORDER\s+BY[^\n;]*(\$sortSql|sortableColumns|\$sort\b)#i', $listContent) === 1;
+        $hasOrderBySort = preg_match('#ORDER\s+BY[^\n;]*(\$sortSql|sortableColumns|\$sort\b)#i', $listContent) === 1
+            || itm_ui_bookmarks_in_memory_list_sort_detected($listContent);
         $hasSortUi = strpos($listContent, '▲') !== false
             || strpos($listContent, '▼') !== false
             || preg_match('#\$nextDir\s*=#', $listContent) === 1;
 
         if ($hasSortParam && $hasDirParam && $hasOrderBySort && $hasSortUi) {
+            $details = 'Column sort (ASC/DESC) detected in ' . $sourceLabel;
+            if (itm_ui_bookmarks_in_memory_list_sort_detected($listContent)) {
+                $details = 'Column sort via bkm_query_bookmarks_for_list() (in-memory) in ' . $sourceLabel;
+            }
+
             return [
                 'status' => 'pass',
-                'details' => 'Column sort (ASC/DESC) detected in ' . $sourceLabel,
+                'details' => $details,
             ];
         }
 
