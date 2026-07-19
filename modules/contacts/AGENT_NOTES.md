@@ -18,6 +18,7 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 - **Categorized View**: Grouped by Department.
 - **Searchable**: Server-side search on `index.php` via `$_GET['search']` — filters departments and employees in PHP across all visible columns (name, extension, dect, phone, email, job role); Search submit + emoji-only 🔙 reset.
 - **No standard CRUD Actions column** and **no Excel import** — directory table uses `data-itm-no-import-excel="1"`; index compliance audit must not require `data-itm-db-import-endpoint` or Actions markers.
+- **ui_configuration reviewed gate:** intentionally omits flattened CRUD **Sort**, **Pagination**, scaffold **CRUD entry files**, and **bulk delete** (documented in `scripts/data/ui_configuration_reviewed.json`). Inline field edits use `api/inline_edit.php`; employee records are managed in `modules/employees/`.
 
 ## 6. API Actions (If Applicable)
 - **api/inline_edit.php**: Handles inline updates for contact fields. Restricted to the employee themselves or administrators (IDOR protection). Regression PoC: `php scripts/repro_contacts_idor.php`.
