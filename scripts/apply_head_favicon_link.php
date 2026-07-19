@@ -82,9 +82,9 @@ foreach ($entryFiles as $indexPath) {
 
     if (stripos($content, 'itm_render_head_favicon_link') === false) {
         $replaced = preg_replace_callback(
-            '/(<\/title>\s*(?:\r\n|\n|\r))/i',
+            '/(<\/title>)/i',
             static function (array $matches) use ($insertLine): string {
-                return $matches[1] . $insertLine;
+                return $matches[1] . "\n" . $insertLine;
             },
             $content,
             1,
