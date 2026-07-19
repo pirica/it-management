@@ -30,6 +30,7 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 - **Gallery View**: Shows thumbnails for supported image types.
 - **Folder Tree**: Interactive sidebar for navigating folders.
 - **Drag & Drop**: Supports moving files and folders via drag-and-drop.
+- **list_all.php**: Flat metadata table (`$crud_action === 'list_all'` in `index.php`) with standard bulk toolbar when `$totalRows >= $perPage` — `bulk-delete-form`, Select to Delete / Cancel / Clear Table, gated row `ids[]` checkboxes, and `bulk-delete-selection.js` in index HTML.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.

@@ -1426,16 +1426,17 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                 </div>
 
-                <!-- BULK ACTIONS -->
+                <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        
-                                                                                <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-<button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
+                <?php endif; ?>
 
                 <!-- SEARCH BAR -->
                 <div class="card" style="margin-bottom:16px;">
@@ -1449,7 +1450,7 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">🔙</a>
+                            <a href="list_all.php" class="btn" title="Clear">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -1513,7 +1514,7 @@ if (!isset($crud_title)) {
 
                 <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
-                        <form method="POST" action="index.php" style="display:flex;justify-content:center;">
+                        <form method="POST" action="list_all.php" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                                 <?php
                     if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
@@ -1566,6 +1567,9 @@ if (!isset($crud_title)) {
 
 <!-- JS FOR BULK ACTIONS AND UI INDICATORS -->
 <script src="../../js/theme.js"></script>
+<?php if ($crud_action === 'list_all'): ?>
+<script src="../../js/bulk-delete-selection.js"></script>
+<?php endif; ?>
 <script> window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>; </script>
 <script src="../../js/select-add-option.js"></script>
 <script>
