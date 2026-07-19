@@ -811,6 +811,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="verify_module_page_chrome.php">verify_module_page_chrome.php</a>. CLI: <code>php scripts/verify_module_page_chrome.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_favicon_root_cause.php" target="_blank" rel="nofollow noreferrer">verify_favicon_root_cause.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Admin diagnostic: <code>ui_configuration</code> favicon path + on-disk <code>.ico</code> (Settings data layer) and module <code>&lt;head&gt;</code> favicon gate counts. Explains why <code>apply_head_favicon_link.php</code> alone does not fix empty <code>$favicon_url</code>. Optional <code>?module=</code> / <code>--module=</code> sample.</td>
+                    <td>Browser: <a href="verify_favicon_root_cause.php">verify_favicon_root_cause.php</a>. CLI: <code>php scripts/verify_favicon_root_cause.php</code> · sample: <code>--module=employees</code></td>
+                </tr>
+                <tr>
                     <td><a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Audits <code>modules/*/index.php</code> vs live sidebar <code>match_dir</code> entries from <code>itm_sidebar_structure()</code> (base catalog, filesystem discovery, registry merge). Also lists active <code>modules_registry</code> rows without module folders (policy-hidden vs unexpected).</td>
