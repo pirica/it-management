@@ -507,7 +507,7 @@ if (!isset($crud_title)) {
                 <!-- Side Panel -->
                 <div class="calendar-side-panel">
                     <div style="margin-bottom: 20px;">
-                        <a href="../events/create.php?start_date=<?php echo $current_date_param; ?>" class="btn btn-primary w-100">Add a new event</a>
+                        <a href="../events/create.php?start_date=<?php echo $current_date_param; ?>" class="btn btn-primary w-100" title="Add a new event">➕</a>
                     </div>
 
                     <div class="side-panel-date"><?php echo date('l, d F', strtotime($current_date_param)); ?></div>

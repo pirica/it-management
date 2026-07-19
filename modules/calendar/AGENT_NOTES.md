@@ -27,7 +27,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - ICS import form (`POST` + `ics_file` upload) creates rows in **events** for the active company.
 - ICS export via `?export=ics` (events in ±1 year window).
 - Integrated sources skipped when parent module disabled (`has_module_access()` per slug).
-- Filtering by event category or source type where implemented; colour coding from `event_categories` / priority colours.
+- **Side panel create:** links to `modules/events/create.php` with `start_date` preset to the selected day; visible control is emoji-only ➕ (`title="Add a new event"`).
 - **Responsive:** side panel stacks above calendar below 768px; week/day grids scroll horizontally on narrow screens.
 
 ## 6. API Actions (If Applicable)
