@@ -30,6 +30,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - **List search/sort:** `list_all` uses `notes_query_notes_for_list()` — hydrate decrypt, then in-memory `notes_row_matches_search()` and `notes_compare_note_rows()` (no SQL `LIKE` on ciphertext). GET `search`, `sort`, `dir`, `page`; sortable headers with ▲/▼ on title, reminder, pinned, important, archived.
 - Sidebar filters: pinned, images, important, shared, labels.
 - Supports `import_excel_rows` JSON on index/list_all.
+- **Export/import:** card view (`index.php`) uses a hidden export table + `data-itm-db-import-endpoint="index.php"`; **table view (`list_all.php`)** uses only the visible list table with `data-itm-db-import-endpoint="list_all.php"` (do not duplicate a second hidden table — `table-tools.js` binds every `.content .card table`).
 - Hide `company_id` from views.
 - **Search:** after hydrate, matches title, content, decrypted label names, and shared-with employee names in PHP (not SQL `LIKE` on ciphertext).
 - **Responsive:** sidebar stacks above note list below 768px (`index.php` inline CSS).
