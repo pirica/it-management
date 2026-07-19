@@ -13,7 +13,7 @@ Defines which roles may assign other roles to users (e.g. Admin → IT Staff).
 - **Unique mapping:** one row per company + source role + target role.
 
 ## 5. UI Behavior Requirements
-- **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
+- **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage` (toolbar includes `data-itm-bulk-cancel="1"` Cancel + `bulk-delete-selection.js` in `index.php` for MBQA/fields_missing bulk-cancel gate), Export Excel/PDF, Import Excel via `table-tools.js`.
 - **CSRF**: Form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()` on the request body token. Forms include hidden `csrf_token` from `cr_get_csrf_token()`.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
