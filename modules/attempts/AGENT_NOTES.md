@@ -14,7 +14,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 - **Privacy**: IP addresses and emails are stored for auditing; handle according to local data protection laws. Login identifiers are normalized via `itm_normalize_login_attempt_identifier()` before insert — valid emails and simple usernames persist verbatim; password-like values (invalid `@` strings, special characters, mixed-case+digit secrets such as `Password123`) are stored as `[redacted:{hash}]`.
 
 ## 5. UI Behavior Requirements
-- **Read-Only mostly**: UI typically allows viewing and deleting (for cleanup) but not manual "creation" or "editing" through a standard form. No `create.php` / `edit.php` — reviewed in `scripts/data/ui_configuration_reviewed.json` for `check_ui_configuration_coverage.php` (`+ New Button`, create/edit entry checks).
+- **Read-Only mostly**: UI typically allows viewing and deleting (for cleanup) but not manual "creation" or "editing" through a standard form. No `create.php` / `edit.php` — reviewed in `scripts/data/ui_configuration_reviewed.json` for `check_ui_configuration_coverage.php` (`+ New Button`, `New button position`, `New button style`, create/edit entry checks).
 - **Filtering**: List view should support filtering by employee, IP, or type.
 - **FK labels**: list/view uses `cr_username_for_employee_id()` to render `employee_id` as username.
 

@@ -12,6 +12,16 @@
           "note": "Module has no create.php — list is append-only via authentication flows"
         },
         {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
           "check": "Create entry (create.php)",
           "code": "ui_config_create_entry",
           "note": "No create.php by design"
