@@ -978,6 +978,7 @@ if (!isset($crud_title)) {
         </div>
     </div>
 </div>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script src="../../js/itm-upload-helper.js"></script>
 <script>
 /**
