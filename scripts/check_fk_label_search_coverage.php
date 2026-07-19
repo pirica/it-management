@@ -4,14 +4,14 @@
  *
  * No per-module allowlists — every searchable module uses the same pass rules.
  *
+ * Browser: scripts/check_fk_label_search_coverage.php (Administrator session required).
  * CLI: php scripts/check_fk_label_search_coverage.php
  */
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('FK Label Search Coverage Check');
-    echo 'CLI only: <code>php scripts/check_fk_label_search_coverage.php</code>';
-    exit(0);
+    require_once dirname(__DIR__) . '/config/config.php';
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 }
 
 itm_script_output_begin('FK Label Search Coverage Check');

@@ -578,7 +578,7 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'GET',
             'path' => 'scripts/check_fk_label_search_coverage.php',
             'params' => '—',
-            'purpose' => 'Static audit: modules with server-side list search must match FK/label tables (smoke step 4).',
+            'purpose' => 'Static audit: modules with server-side list search must match FK/label tables (smoke step 4). Browser: Administrator session required.',
         ],
         [
             'group' => 'Scripts / tooling',
