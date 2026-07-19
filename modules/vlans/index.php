@@ -280,9 +280,12 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
-// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+// Why: Create/edit omit audit meta; list hides audit meta per soft-delete contract.
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) {
     $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
     if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
         return false;
     }
@@ -704,7 +707,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 }
 
-$displayFieldColumns = $fieldColumns;
+$displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if ($fieldName === 'company_id') {
+        return false;
+    }
+    return true;
+}));
 if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], true)) {
     $desiredOrder = ['vlan_number', 'vlan_name', 'gateway_ip', 'subnet', 'ip', 'vlan_color', 'comments', 'active'];
     $byField = [];
@@ -867,9 +879,10 @@ if (!isset($crud_title)) {
                 </div>
                 <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
@@ -1027,6 +1040,7 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>

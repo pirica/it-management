@@ -270,9 +270,12 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
-// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+// Why: Create/edit omit audit meta; list hides audit meta per soft-delete contract.
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) {
     $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
     if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
         return false;
     }
@@ -478,7 +481,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 
-$displayFieldColumns = $fieldColumns;
+$displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    if ($fieldName === 'company_id') {
+        return false;
+    }
+    return true;
+}));
 if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], true)) {
     $desiredOrder = ['vlan_number', 'vlan_name', 'gateway_ip', 'subnet', 'ip', 'vlan_color', 'comments', 'active'];
     $byField = [];
