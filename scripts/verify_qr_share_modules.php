@@ -1,7 +1,7 @@
 <?php
 /**
  * CLI: php scripts/verify_qr_share_modules.php
- * Verifies temporary QR/code share sessions for Passwords, Bookmarks, and Todo.
+ * Verifies temporary QR/code share sessions for Passwords, Bookmarks, Todo, and Events.
  */
 
 define('ITM_CLI_SCRIPT', true);
@@ -10,6 +10,7 @@ require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once ROOT_PATH . 'modules/passwords/passwords_share_helpers.php';
 require_once ROOT_PATH . 'modules/bookmarks/bookmarks_share_helpers.php';
 require_once ROOT_PATH . 'modules/todo/todo_share_helpers.php';
+require_once ROOT_PATH . 'modules/events/events_share_helpers.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
@@ -34,7 +35,7 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions'] as $tableName) {
+foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions', 'event_share_sessions'] as $tableName) {
     $tableRes = $conn->query("SHOW TABLES LIKE '{$tableName}'");
     if (!$tableRes || $tableRes->num_rows === 0) {
         qr_share_verify_fail("{$tableName} table missing — re-import database.sql.");
@@ -156,6 +157,43 @@ if (!$todoIns->execute()) {
     }
     $conn->query('DELETE FROM todo_share_sessions WHERE todo_id = ' . (int)$todoId);
     $conn->query('DELETE FROM todo WHERE id = ' . (int)$todoId);
+}
+
+// Events
+$eventTitle = 'QR Share Event ' . bin2hex(random_bytes(2));
+$eventDescription = 'Cross-device event payload';
+$startDatetime = date('Y-m-d H:i:s', strtotime('+1 day'));
+$endDatetime = date('Y-m-d H:i:s', strtotime('+1 day +2 hours'));
+$eventLocation = 'Conference Room A';
+$eventIns = $conn->prepare(
+    'INSERT INTO events (company_id, title, description, start_datetime, end_datetime, location, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+);
+$eventIns->bind_param('isssssi', $companyId, $eventTitle, $eventDescription, $startDatetime, $endDatetime, $eventLocation, $employeeId);
+if (!$eventIns->execute()) {
+    qr_share_verify_fail('Could not insert test event row.');
+} else {
+    $eventId = (int)$eventIns->insert_id;
+    $eventIns->close();
+    $eventCreated = events_share_create_session($conn, $eventId, $companyId, $employeeId, $username);
+    if (!$eventCreated['ok'] || empty($eventCreated['session'])) {
+        qr_share_verify_fail('events_share_create_session failed: ' . ($eventCreated['error'] ?? 'unknown'));
+    } else {
+        qr_share_verify_pass('Event share session created.');
+        $eventPayload = itm_qr_share_decode_payload($eventCreated['session']['payload_json'] ?? '');
+        if ($eventPayload === null || ($eventPayload['title'] ?? '') !== $eventTitle) {
+            qr_share_verify_fail('Event share payload mismatch.');
+        } else {
+            qr_share_verify_pass('Event share payload contains event title.');
+        }
+        $joinUrl = events_share_build_join_url((string)$eventCreated['session']['access_token']);
+        if ($joinUrl === '' || stripos($joinUrl, 'modules/events/join.php?t=') === false) {
+            qr_share_verify_fail('Event join URL was not built.');
+        } else {
+            qr_share_verify_pass('Event join URL built.');
+        }
+    }
+    $conn->query('DELETE FROM event_share_sessions WHERE event_id = ' . (int)$eventId);
+    $conn->query('DELETE FROM events WHERE id = ' . (int)$eventId);
 }
 
 $conn->query('DELETE FROM password_share_sessions WHERE password_entry_id = ' . (int)$passwordEntryId);

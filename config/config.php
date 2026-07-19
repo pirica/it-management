@@ -402,7 +402,7 @@ if (defined('ITM_NOTES_SHARE_PUBLIC') && ITM_NOTES_SHARE_PUBLIC) {
     $itmSkipWebAuth = true;
 }
 
-// Why: passwords/bookmarks/todo join.php serve time-limited public read links validated by access_token / share_code.
+// Why: passwords/bookmarks/todo/events join.php serve time-limited public read links validated by access_token / share_code.
 if (defined('ITM_QR_SHARE_PUBLIC') && ITM_QR_SHARE_PUBLIC) {
     $itmSkipWebAuth = true;
 }

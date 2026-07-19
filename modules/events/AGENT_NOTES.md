@@ -5,6 +5,7 @@ Manages scheduled events, meetings, and maintenance windows.
 
 ## 2. Key Tables
 - **events** — main event data. Features standard audit/metadata columns: `active` (tinyint), `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Note that `created_by_employee_id` has been removed and replaced with standard `created_by`.
+- **event_share_sessions** — temporary QR / 6-digit join snapshots (`payload_json`, `share_code`, `access_token`, `expires_at`). Private-data exempt (no `audit_logs`).
 
 ## 3. Required Relationships
 - **events** → depends on **companies**.
@@ -24,9 +25,11 @@ Manages scheduled events, meetings, and maintenance windows.
 - **`active` field**: Previously rendered as checkbox in create/edit, now handled as standard metadata column and rendered as `<input type="hidden">` along with `deleted_by`, `deleted_at`, `created_by`, and `updated_by`.
 
 - **ICS Export**: Often supports exporting to iCalendar format.
+- **QR / code share (`join.php`):** tenant-scoped temporary read links (30 min). `event_share_sessions` stores plaintext `payload_json` snapshot (title, description, start/end, location, category, assignee). UI: 📱, `images/whatsapp.svg`, and 📨 on list actions and view; modal via `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
+- **create_share_session** — JSON POST `index.php?ajax_action=create_share_session` with `id`; returns join URL + 6-digit code for QR/WhatsApp/Outlook share.
 
 ## 7. File Structure
 - Standard CRUD structure.

@@ -15,6 +15,7 @@ function itm_qr_share_allowed_tables()
         'password_share_sessions',
         'bookmark_share_sessions',
         'todo_share_sessions',
+        'event_share_sessions',
     ];
 }
 
@@ -25,6 +26,7 @@ function itm_qr_share_record_column($tableName)
         'password_share_sessions' => 'password_entry_id',
         'bookmark_share_sessions' => 'bookmark_id',
         'todo_share_sessions' => 'todo_id',
+        'event_share_sessions' => 'event_id',
     ];
 
     return $map[$tableName] ?? '';

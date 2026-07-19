@@ -79,6 +79,16 @@ function itm_qr_share_render_join_page($moduleLabel, $joinScriptPath, $accessTok
                     <?php if (!empty($payload['departments'])): ?><tr><th>Departments</th><td><?php echo sanitize((string)$payload['departments']); ?></td></tr><?php endif; ?>
                     <?php if (!empty($payload['assignees'])): ?><tr><th>Assigned To</th><td><?php echo sanitize((string)$payload['assignees']); ?></td></tr><?php endif; ?>
                 </table>
+            <?php elseif ($payloadType === 'event'): ?>
+                <table class="join-table">
+                    <tr><th>Title</th><td><?php echo sanitize((string)($payload['title'] ?? '')); ?></td></tr>
+                    <?php if (!empty($payload['description'])): ?><tr><th>Description</th><td style="white-space:pre-wrap;"><?php echo sanitize((string)$payload['description']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['start_datetime'])): ?><tr><th>Start</th><td><?php echo sanitize((string)$payload['start_datetime']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['end_datetime'])): ?><tr><th>End</th><td><?php echo sanitize((string)$payload['end_datetime']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['location'])): ?><tr><th>Location</th><td><?php echo sanitize((string)$payload['location']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['category_name'])): ?><tr><th>Category</th><td><?php echo sanitize((string)$payload['category_name']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['assignee_name'])): ?><tr><th>Assigned To</th><td><?php echo sanitize((string)$payload['assignee_name']); ?></td></tr><?php endif; ?>
+                </table>
             <?php else: ?>
                 <p class="join-expiry">Unsupported share payload.</p>
             <?php endif; ?>
