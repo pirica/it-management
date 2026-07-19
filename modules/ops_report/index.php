@@ -415,6 +415,41 @@ if (!function_exists('opr_json_response')) {
     }
 }
 
+if (!function_exists('opr_row_matches_search')) {
+    // Why: Bespoke daily report filters child rows in PHP after load (no flattened list SQL).
+    function opr_row_matches_search(array $row, $search) {
+        if ($search === '') {
+            return true;
+        }
+        $skip = [
+            'id', 'company_id', 'ops_report_id', 'active', 'sort_order',
+            'created_by', 'created_at', 'updated_by', 'updated_at', 'deleted_by', 'deleted_at',
+        ];
+        $needle = mb_strtolower((string)$search, 'UTF-8');
+        foreach ($row as $key => $value) {
+            if (in_array($key, $skip, true)) {
+                continue;
+            }
+            if ($value !== null && $value !== '' && mb_stripos((string)$value, $needle, 0, 'UTF-8') !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+if (!function_exists('opr_report_apply_search_filter')) {
+    function opr_report_apply_search_filter(array $rows, $search) {
+        if ($search === '') {
+            return $rows;
+        }
+        // searchConditions: in-memory match across visible child-row scalar columns.
+        return array_values(array_filter($rows, function ($row) use ($search) {
+            return opr_row_matches_search($row, $search);
+        }));
+    }
+}
+
 $selected_day = (int)($_GET['day'] ?? date('j'));
 $selected_month = (int)($_GET['month'] ?? date('n'));
 $selected_year = (int)($_GET['year'] ?? date('Y'));
@@ -426,6 +461,7 @@ if ($selected_day > $days_in_month) {
     $selected_day = $days_in_month;
 }
 $selected_date = sprintf('%04d-%02d-%02d', $selected_year, $selected_month, $selected_day);
+$search = trim((string)($_GET['search'] ?? ''));
 $can_edit_report = opr_is_editable_date($selected_date, $is_admin);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) {
@@ -683,6 +719,22 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 mysqli_stmt_close($stmt);
 
+if ($search !== '') {
+    $fb_outlets = opr_report_apply_search_filter($fb_outlets, $search);
+    $walk_rounds = opr_report_apply_search_filter($walk_rounds, $search);
+    $courtesy_calls = opr_report_apply_search_filter($courtesy_calls, $search);
+    $guest_experiences = opr_report_apply_search_filter($guest_experiences, $search);
+    $butler_rows = opr_report_apply_search_filter($butler_rows, $search);
+    $night_shift_rows = opr_report_apply_search_filter($night_shift_rows, $search);
+    $hotel_figure_rows = opr_report_apply_search_filter($hotel_figure_rows, $search);
+}
+
+$oprSearchClearHref = htmlspecialchars(
+    'index.php?day=' . (int)$selected_day . '&month=' . (int)$selected_month . '&year=' . (int)$selected_year,
+    ENT_QUOTES,
+    'UTF-8'
+);
+
 $stmt = mysqli_prepare($conn, 'SELECT company, unit_no FROM companies WHERE id = ?');
 mysqli_stmt_bind_param($stmt, 'i', $company_id);
 mysqli_stmt_execute($stmt);
@@ -764,6 +816,22 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <div class="card opr-no-print" style="margin-bottom:16px;">
+                <form method="GET" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                    <input type="hidden" name="day" value="<?= (int)$selected_day ?>">
+                    <input type="hidden" name="month" value="<?= (int)$selected_month ?>">
+                    <input type="hidden" name="year" value="<?= (int)$selected_year ?>">
+                    <div class="form-group" style="margin:0; min-width:220px;">
+                        <label for="moduleSearch">Search (all fields)</label>
+                        <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($search); ?>" placeholder="Type to search records...">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <?php if ($search !== ''): ?>
+                        <a class="btn" href="<?php echo $oprSearchClearHref; ?>" title="Clear">🔙</a>
+                    <?php endif; ?>
+                </form>
+            </div>
+
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
                 <div>
                     <h1 style="margin:0;" class="opr-page-title">
@@ -790,6 +858,9 @@ if (!isset($crud_title)) {
 
             <div class="card opr-controls opr-no-print">
                 <form method="GET" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                    <?php if ($search !== ''): ?>
+                        <input type="hidden" name="search" value="<?php echo sanitize($search); ?>">
+                    <?php endif; ?>
                     <div class="form-group" style="margin:0;">
                         <label>Day</label>
                         <select name="day" class="form-control" onchange="this.form.submit()">
