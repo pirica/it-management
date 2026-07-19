@@ -335,7 +335,7 @@ if (!isset($crud_title)) {
                         <form method="GET" action="index.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="moduleSearch">Search (all fields)</label>
-                                <input type="text" id="moduleSearch" name="search" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search records...">
+                                <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
                             </div>
                             <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                                 <button type="submit" class="btn btn-sm btn-primary">Search</button>
@@ -437,7 +437,7 @@ if (!isset($crud_title)) {
                         <form method="GET" action="list_all.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;">
                             <div class="form-group" style="margin:0;">
                                 <label for="moduleSearchList">Search (all fields)</label>
-                                <input type="text" id="moduleSearchList" name="search" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search records...">
+                                <input type="text" id="moduleSearchList" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
                             </div>
                             <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                                 <button type="submit" class="btn btn-sm btn-primary">Search</button>

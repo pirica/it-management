@@ -437,6 +437,15 @@ function bgr_sort_indicator($column, $currentSort, $currentDir) {
 
     return $currentDir === 'ASC' ? ' ▲' : ' ▼';
 }
+
+$bgrSearchClearHref = htmlspecialchars(
+    'index.php?' . http_build_query(
+        bgr_report_filter_query($selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, '')
+        + ['sort' => $sort, 'dir' => $dir]
+    ),
+    ENT_QUOTES,
+    'UTF-8'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -526,7 +535,7 @@ if (!isset($crud_title)) {
                         <button type="submit" class="btn btn-primary" title="Generate report">Generate Report</button>
                         <button type="submit" class="btn btn-primary" title="🔎 Search">Search</button>
                         <?php if ($search !== ''): ?>
-                            <a class="btn" href="index.php?<?php echo sanitize(http_build_query(bgr_report_filter_query($selectedYear, $selectedMonth, $selectedCostCenterId, $selectedGlAccountId, '') + ['sort' => $sort, 'dir' => $dir])); ?>" title="Clear">🔙</a>
+                            <a class="btn" href="<?php echo $bgrSearchClearHref; ?>" title="Clear">🔙</a>
                         <?php endif; ?>
                     </div>
                 </form>

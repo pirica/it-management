@@ -1309,6 +1309,7 @@ if (!isset($crud_title)) {
                             'online_type' => $catalogOnlineType,
                             'online_weblink' => $catalogOnlineSearchUrl,
                         ];
+                        $catalogAddProductHref = htmlspecialchars('create.php?' . http_build_query($catalogAddParams), ENT_QUOTES, 'UTF-8');
                     ?>
                     <div class="card" style="margin-bottom:16px;">
                         <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -1327,7 +1328,7 @@ if (!isset($crud_title)) {
                             <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
                                 <?php if ($catalogOnlineSearchUrl !== ''): ?>
                                     <a href="<?php echo sanitize($catalogOnlineSearchUrl); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm">Search Online</a>
-                                    <a href="create.php?<?php echo sanitize(http_build_query($catalogAddParams)); ?>" class="btn btn-primary">Add Product to Catalogs</a>
+                                    <a href="<?php echo $catalogAddProductHref; ?>" class="btn btn-primary">Add Product to Catalogs</a>
                                 <?php else: ?>
                                     <button type="submit" class="btn btn-primary">Prepare Search</button>
                                 <?php endif; ?>
