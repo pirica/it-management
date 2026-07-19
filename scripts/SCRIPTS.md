@@ -29,7 +29,7 @@
 
 # Scripts Development Standards
 
-> **Canonical source:** All rules for the `scripts/` directory live in this file. **`AGENTS.md` delegates here** — agents must read **`scripts/SCRIPTS.md` completely** at session start and again before any work under `scripts/`. Do not duplicate these standards in `AGENTS.md`; when scripts rules change, edit **only this file**. On conflict, **`SCRIPTS.md` wins** for scripts topics. Laragon PHP/MySQL paths remain in **`AGENTS.md` → Setup & Debugging**.
+> **Canonical source:** All rules for the `scripts/` directory live in this file. **`AGENTS.md` delegates here** — agents must read **`scripts/SCRIPTS.md` completely** at session start and again before any work under `scripts/`. Do not duplicate these standards in `AGENTS.md`; when scripts rules change, edit **only this file**. On conflict, **`SCRIPTS.md` wins** for scripts topics. **Script catalog rows (What / How / Access)** live only in **`scripts/scripts.php`** — link there instead of copying tables into this file. Laragon PHP/MySQL paths remain in **`AGENTS.md` → Setup & Debugging**.
 
 This document defines the rules for creating and updating tools within the `scripts/` directory.
 
@@ -44,6 +44,9 @@ This document defines the rules for creating and updating tools within the `scri
 State the map, summary, and analysis in the agent reply before the first implementation step. Exceptions match **`AGENTS.md` step 4** (read-only/exploratory sessions; documentation-only edits to `SCRIPTS.md` when that is the whole task; single known script with no cross-module impact).
 
 ## 1. Catalog Registration
+
+**Single source of truth:** **`scripts/scripts.php`** holds every catalog row (Script link, Access badges, **What it does**, **How to use**). Do **not** duplicate those four columns in `SCRIPTS.md`, `scripts/AGENT_NOTES.md`, or module notes — link to the catalog (or name the script + one-line purpose) and put behavioral contracts only in `SCRIPTS.md`. **`scripts/SCRIPTS_TEST_MATRIX.md`** classifies cataloged scripts by tier (not a second catalog).
+
 All scripts intended for administrative or developer use must be registered in `scripts/scripts.php`.
 - Use the standardized HTML table structure.
 - Include appropriate Browser/CLI access badges (`scripts-badge-web`, `scripts-badge-cli`).
@@ -943,15 +946,19 @@ Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/
 
 Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, `includes/itm_system_status_cache.php`, `database.sql` `system_status`, or any `includes/*.ps1` metrics script. On large tenants the storage tree scan and `information_schema` queries can be slow — run Refresh from CLI or raise PHP `max_execution_time` in browser if needed. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php` — tabs read cached JSON from `system_status`; **Refresh** POST runs `itm_system_status_refresh_all()`. Sub Storage parent nodes sum child totals plus direct files in each folder. For README screenshots see **Roles & Permissions scripts** above (`take_screenshots_modules.py`).
 
-### Resignations and employee profile scripts
+### Resignations, employees, and fields_missing audits
 
-| Script | Purpose |
-|--------|---------|
-| `php scripts/debug_resignations_termination_date.php` | Diagnose resignations weekly filter for a probe `termination_date` (default `18/06/2026`): literal ISO range + MONTH predicates, deprecated legacy YEAR/WEEK check, disposable probe employee module simulation (aligned with `verify_employee_type_resignations.php`). |
-| `php scripts/verify_employee_type_resignations.php` | Regression: `employee_type` seed rows, `employees.start_date` / `employee_type_id`, `modules_registry` slugs, weekly resignations ISO week date-range filter (`itm_iso_week_bounds()` + `MONTH(termination_date)` + `itm_sql_valid_date_predicate()`). Browser or CLI via `lib/script_cli_output.php` (no `STDERR` on web SAPI). |
-| `php scripts/employee_fields_missing.php` | Audit: `employees` columns in `database.sql` vs live schema vs `modules/employees/` create/edit/view/index coverage (critical fields include `termination_date`). Thin wrapper around `fields_missing.php` shared lib. |
-| `php scripts/fields_missing.php` | **All-module** schema/UI audit: every discoverable module with a `database.sql` table compares live MySQL columns to canonical schema; flattened **dynamic scaffold** modules print **`[PASS] audited UI column`** lines per business field (create/edit, view, index — detects `require __DIR__ . '/index.php'` wrappers, `$formColumns`, and `$uiColumns`/`$viewColumns` loops); manual modules keep legacy `UI covers {field}` checks; bespoke modules (`docs/list_bespoke_UI.txt`, including gallery/matrix UIs such as `floor_plans` and `role_*`) and status-driven slugs (`employees`, `equipment`, `patches_updates`, `tickets`) print gated **`[SKIP][pass]`** / **`[SKIP][fail]`** / **`[SKIP][fail][reviewed]`** only (page UI: browser `<title>`, server-side favicon in `<head>`, centered list `<h1>`, Settings `new_button_position` create slots; list UI when a table exists: Search/Sort/Pagination + nav titles, bulk delete/cancel, Actions layout, new button, Import/Export, sample data on scaffold hybrids, POST CSRF — mirrors `check_ui_configuration_coverage.php`, `check_index_table_compliance.php`, and MBQA `ui_check`/`bulk_cancel`/`pagination` static HTML); **`[PASS] excluded UI column`** for hidden meta on scaffold modules. Reviewed bespoke failures: **`scripts/data/fields_missing_reviewed.json`** (manifest: `php scripts/fields_missing_reviewed.php`). **`--strict-gate`** / `?strict_gate=1`: exit `1` when any unreviewed bespoke `[SKIP][fail]` line remains (reviewed lines still informational). Shared helpers: `scripts/lib/itm_ui_list_contract_checks.php`. CLI `--module=<slug>` / `--json`. Exit `1` on actionable **`[FAIL]`**; default exit `0` for bespoke `[SKIP][fail]` only. |
-| `php scripts/fields_missing_reviewed.php` | Read-only manifest for reviewed bespoke gate exceptions (`scripts/data/fields_missing_reviewed.json`). Validates registry shape; browser or CLI `--json`. Matching failures in `fields_missing.php` print **`[SKIP][fail][reviewed]`** (same exit semantics as `[SKIP][fail]`). |
+**Catalog (What / How / Access):** `scripts/scripts.php` — Database section rows for `debug_resignations_termination_date.php`, `verify_employee_type_resignations.php`, `employee_fields_missing.php`, `fields_missing.php`, `fields_missing_reviewed.php`.
+
+**When to run**
+
+- `debug_resignations_termination_date.php` — known `termination_date` missing from weekly report or `Incorrect DATE value: '0000-00-00'` on prepare.
+- `verify_employee_type_resignations.php` — after `employee_type`, `resignations`, or `employees` termination/type schema or filter changes.
+- `employee_fields_missing.php` or `fields_missing.php --module=employees` — after `database.sql` `employees` columns or profile/list UI changes.
+- `fields_missing.php` — after table column or scaffold/bespoke list UI changes; use `--strict-gate` in CI to fail on unreviewed bespoke `[SKIP][fail]` lines.
+- `fields_missing_reviewed.php` — after editing `scripts/data/fields_missing_reviewed.json`.
+
+**MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
 
 #### `fields_missing` reviewed exceptions (`scripts/data/fields_missing_reviewed.json`)
 
@@ -987,15 +994,7 @@ Use this registry when a bespoke module **intentionally** fails a gated UI check
 | `php scripts/verify_port_visualizer_layout.php` | CLI regression for IDF port visualizer Vertical vs Horizontal grid metadata and port 2 placement.
 | `php scripts/test_visualizer_v2.php` | Browser/CLI mock for IDF port visualizer Vertical vs Horizontal layouts (48-port demo). Regression: `php scripts/verify_port_visualizer_layout.php`. |
 
-Run `debug_resignations_termination_date.php` when a known `termination_date` (for example `18/06/2026`) does not appear on the resignations weekly report, when the report is empty despite valid rows, or when `verify_employee_type_resignations.php` fails the weekly filter step.
-
-Run `verify_employee_type_resignations.php` when changing `modules/employee_type/`, `modules/resignations/`, `modules/employees/` start/type/termination fields, or `employee_type` / `employees` schema in `database.sql`.
-
-Run `employee_fields_missing.php` or `fields_missing.php --module=employees` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
-
-Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print gated `[SKIP][pass] … OK` / `[SKIP][fail] … NOT OK` / `[SKIP][fail][reviewed] … NOT OK` lines per check (fail lines before pass lines per module; footer **Bespoke gate failure summary** repeats all gate failures — informational, not in Result total unless **`--strict-gate`**). Intentional bespoke gate gaps: add rows to `scripts/data/fields_missing_reviewed.json` and validate with `php scripts/fields_missing_reviewed.php` (see **fields_missing reviewed exceptions** above). **`php scripts/fields_missing.php --strict-gate`** fails when unreviewed bespoke `[SKIP][fail]` lines remain. **Bulk delete** is `n/a` when a module has no `delete.php` or intentionally omits `bulk-delete-form` on the list table. Audit meta on create/edit (`created_at`, `updated_at`, `*_by`, `deleted_*`) uses multi-method detection in `scripts/lib/itm_fields_missing_report.php` (named controls, `$data['field']` in forms, humanized labels, dynamic loops, PHP-stripped pseudo HTML scrape; optional live HTTP scrape when `ITM_FIELDS_MISSING_HTTP_SCRAPE=1` and Apache is up).
-
-**MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
+Catalog rows for the scripts above: **`scripts/scripts.php`** (UI &amp; modules / IDF sections). Do not duplicate What/How tables here.
 
 #### Full scripts test matrix (`scripts/SCRIPTS_TEST_MATRIX.md`)
 
@@ -1017,7 +1016,7 @@ When adding a catalog row, update `SCRIPTS_TEST_MATRIX.md` in the same PR.
 
 When adding or changing anything under `scripts/`:
 
-1. Confirm a row exists in **`scripts/scripts.php`** (what / how / access).
+1. Confirm a row exists in **`scripts/scripts.php`** (what / how / access) — do not mirror that row in `SCRIPTS.md`.
 2. Open the script in the **browser** (if applicable) — **← Scripts index** visible; module names use `../modules/…`; table names link only when a matching module folder exists; no phpMyAdmin links outside `scripts/scripts.php`.
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
