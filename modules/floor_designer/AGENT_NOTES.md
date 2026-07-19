@@ -26,6 +26,8 @@ Provides an interactive tool for designing and visualizing floor plans, includin
 - **Interactive Map**: Uses SVG or Canvas (check implementation) for point placement.
 - **AJAX Saving**: Points are often saved asynchronously to prevent page reloads.
 - **Standard CRUD**: Supports creating and managing multiple designs.
+- **List header**: `index.php` uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` (sidebar emoji, e.g. 🎨) and Settings `new_button_position` gates for the ➕ create button.
+- **List contract**: server-side search (`?search=`), column sort (`sort`/`dir` with ▲/▼), pagination via `itm_resolve_records_per_page()`, and bulk toolbar when `$totalRows >= $perPage`.
 - **Responsive:** designer wrapper height capped on mobile; control bar stacks below 768px; comment boxes wrap text.
 - **CSS variables:** `--designer-width` / `--designer-height` are declared on `.designer-wrapper` (not `:root`) so other pages never inherit artboard dimensions.
 
