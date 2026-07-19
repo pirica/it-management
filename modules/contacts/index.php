@@ -72,9 +72,9 @@ if ($searchRaw !== '') {
                 $matchingEmps[] = $emp;
             }
         }
-        if ($deptMatches || $matchingEmps !== []) {
+        if ($deptMatches === true || $matchingEmps !== []) {
             $filteredDepartments[] = $dept;
-            $filteredEmployeesByDept[$did] = $deptMatches ? $emps : $matchingEmps;
+            $filteredEmployeesByDept[$did] = ($deptMatches === true) ? $emps : $matchingEmps;
         }
     }
     $departments = $filteredDepartments;
@@ -149,7 +149,7 @@ if (!isset($crud_title)) {
                 <form method="GET" class="table-search-inline" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
                     <div class="form-group" style="margin:0;">
                         <label for="search">Search (all fields)</label>
-                        <input type="search" name="search" id="search" class="form-control" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search...">
+                        <input type="search" name="search" id="search" class="form-control" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search...">
                     </div>
                     <button type="submit" class="btn btn-primary" title="🔎 Search">Search</button>
                     <?php if ($searchRaw !== ''): ?>
@@ -159,7 +159,7 @@ if (!isset($crud_title)) {
             </div>
             <?php if ($searchRaw !== ''): ?>
             <div class="card" style="margin-bottom:8px;">
-                <p style="margin:0;" class="muted">Showing contacts matching <strong><?= sanitize($searchRaw) ?></strong>.</p>
+                <p style="margin:0;" class="muted">Showing contacts matching <strong><?php echo sanitize($searchRaw); ?></strong>.</p>
             </div>
             <?php endif; ?>
             <div class="card">
