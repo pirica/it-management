@@ -493,3 +493,105 @@ if (!function_exists('itm_vault_reencrypt_events')) {
         return ['ok' => true, 'message' => ''];
     }
 }
+
+if (!function_exists('itm_vault_reencrypt_private_contacts')) {
+    /**
+     * Re-encrypt private contact PII for one employee when the vault session key changes.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    function itm_vault_reencrypt_private_contacts($conn, $employeeId, $oldKeySession, $newKeySession)
+    {
+        if (!($conn instanceof mysqli)) {
+            return ['ok' => false, 'message' => 'Database connection unavailable.'];
+        }
+
+        require_once ROOT_PATH . 'modules/private_contacts/pc_vault_helpers.php';
+
+        $employeeId = (int)$employeeId;
+        if ($employeeId <= 0) {
+            return ['ok' => false, 'message' => 'Invalid employee.'];
+        }
+
+        $oldKeySession = (string)$oldKeySession;
+        $newKeySession = (string)$newKeySession;
+        if ($oldKeySession === '' || $newKeySession === '') {
+            return ['ok' => false, 'message' => 'Invalid vault key material.'];
+        }
+
+        $fields = pc_vault_encrypted_field_names();
+        $selectCols = implode(', ', array_map(static function ($field) {
+            return '`' . str_replace('`', '``', $field) . '`';
+        }, $fields));
+        $sql = 'SELECT id, ' . $selectCols . ' FROM private_contacts WHERE employee_id = ? AND active = 1 AND deleted_at IS NULL';
+        $sel_stmt = mysqli_prepare($conn, $sql);
+        if (!$sel_stmt) {
+            return ['ok' => false, 'message' => 'Failed to load private contacts.'];
+        }
+        mysqli_stmt_bind_param($sel_stmt, 'i', $employeeId);
+        if (!mysqli_stmt_execute($sel_stmt)) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to load private contacts.'];
+        }
+
+        $res = mysqli_stmt_get_result($sel_stmt);
+        while ($row = mysqli_fetch_assoc($res)) {
+            $contactId = (int)($row['id'] ?? 0);
+            if ($contactId <= 0) {
+                continue;
+            }
+
+            $plainRow = [];
+            foreach ($fields as $field) {
+                $stored = (string)($row[$field] ?? '');
+                if ($stored === '') {
+                    $plainRow[$field] = '';
+                    continue;
+                }
+                $plain = itm_decrypt($stored, $oldKeySession);
+                if ($plain === false && pc_private_text_legacy_plaintext_check($stored)) {
+                    $plain = $stored;
+                }
+                if ($plain === false) {
+                    mysqli_stmt_close($sel_stmt);
+                    return ['ok' => false, 'message' => 'Failed to re-encrypt private contacts. Please try again.'];
+                }
+                $plainRow[$field] = $plain;
+            }
+
+            $storedFields = pc_prepare_contact_fields_from_plain($plainRow, $newKeySession);
+            if ($storedFields === null) {
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt private contacts. Please try again.'];
+            }
+
+            $setParts = [];
+            $values = [];
+            $types = '';
+            foreach ($fields as $field) {
+                $setParts[] = '`' . str_replace('`', '``', $field) . '` = ?';
+                $values[] = $storedFields[$field];
+                $types .= 's';
+            }
+            $values[] = $contactId;
+            $values[] = $employeeId;
+            $types .= 'ii';
+            $updateSql = 'UPDATE private_contacts SET ' . implode(', ', $setParts) . ' WHERE id = ? AND employee_id = ?';
+            $upd_stmt = mysqli_prepare($conn, $updateSql);
+            if (!$upd_stmt) {
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to prepare private contact update.'];
+            }
+            mysqli_stmt_bind_param($upd_stmt, $types, ...$values);
+            if (!mysqli_stmt_execute($upd_stmt)) {
+                mysqli_stmt_close($upd_stmt);
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt private contacts. Please try again.'];
+            }
+            mysqli_stmt_close($upd_stmt);
+        }
+        mysqli_stmt_close($sel_stmt);
+
+        return ['ok' => true, 'message' => ''];
+    }
+}

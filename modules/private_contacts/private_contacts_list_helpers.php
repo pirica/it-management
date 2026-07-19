@@ -3,6 +3,8 @@
  * Private contacts list query helpers (server-side search, sort, pagination).
  */
 
+require_once __DIR__ . '/pc_vault_helpers.php';
+
 if (!function_exists('pc_list_sortable_columns')) {
     function pc_list_sortable_columns(): array
     {
@@ -41,61 +43,50 @@ if (!function_exists('pc_build_list_url')) {
 
 if (!function_exists('pc_query_contacts_for_list')) {
     /**
+     * Fetch, decrypt, search, sort, and paginate contacts in PHP (ciphertext is not SQL-searchable).
+     *
      * @return array{rows:array<int,array<string,mixed>>,totalRows:int,totalPages:int,page:int,offset:int}
      */
     function pc_query_contacts_for_list($conn, array $options): array
     {
         $employeeId = (int)($options['employee_id'] ?? 0);
         $searchRaw = trim((string)($options['search'] ?? ''));
-        $sortSql = pc_resolve_list_sort_sql((string)($options['sort'] ?? 'first_name'));
+        $sort = pc_resolve_list_sort_sql((string)($options['sort'] ?? 'first_name'));
         $dir = strtoupper((string)($options['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
         $page = max(1, (int)($options['page'] ?? 1));
         $perPage = max(1, (int)($options['per_page'] ?? 20));
 
-        $where = 'employee_id = ?';
-        $types = 'i';
-        $values = [$employeeId];
+        $listSql = 'SELECT * FROM private_contacts WHERE employee_id = ? AND deleted_at IS NULL ORDER BY is_favorite DESC, id ASC';
+        $listStmt = mysqli_prepare($conn, $listSql);
+        $rows = [];
+        if ($listStmt) {
+            mysqli_stmt_bind_param($listStmt, 'i', $employeeId);
+            mysqli_stmt_execute($listStmt);
+            $res = mysqli_stmt_get_result($listStmt);
+            while ($res && ($row = mysqli_fetch_assoc($res))) {
+                pc_hydrate_contact_row($row);
+                $rows[] = $row;
+            }
+            mysqli_stmt_close($listStmt);
+        }
 
         if ($searchRaw !== '') {
-            $searchParam = '%' . $searchRaw . '%';
-            $where .= " AND (first_name LIKE ? OR last_name LIKE ? OR email1_value LIKE ? OR organization_name LIKE ? OR phone1_value LIKE ? OR labels LIKE ? OR CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) LIKE ?)";
-            $types .= 'sssssss';
-            for ($i = 0; $i < 7; $i++) {
-                $values[] = $searchParam;
-            }
+            $rows = array_values(array_filter($rows, static function ($row) use ($searchRaw) {
+                return pc_row_matches_search($row, $searchRaw);
+            }));
         }
 
-        $countSql = 'SELECT COUNT(*) AS row_count FROM private_contacts WHERE ' . $where;
-        $countStmt = mysqli_prepare($conn, $countSql);
-        $totalRows = 0;
-        if ($countStmt) {
-            mysqli_stmt_bind_param($countStmt, $types, ...$values);
-            mysqli_stmt_execute($countStmt);
-            $countRow = mysqli_fetch_assoc(mysqli_stmt_get_result($countStmt));
-            mysqli_stmt_close($countStmt);
-            $totalRows = (int)($countRow['row_count'] ?? 0);
-        }
+        usort($rows, static function (array $a, array $b) use ($sort, $dir) {
+            return pc_compare_contact_rows($a, $b, $sort, $dir);
+        });
 
+        $totalRows = count($rows);
         $totalPages = max(1, (int)ceil($totalRows / $perPage));
         if ($page > $totalPages) {
             $page = $totalPages;
         }
         $offset = ($page - 1) * $perPage;
-
-        $listSql = 'SELECT * FROM private_contacts WHERE ' . $where
-            . ' ORDER BY is_favorite DESC, ' . $sortSql . ' ' . $dir
-            . ' LIMIT ' . (int)$offset . ', ' . (int)$perPage;
-        $listStmt = mysqli_prepare($conn, $listSql);
-        $rows = [];
-        if ($listStmt) {
-            mysqli_stmt_bind_param($listStmt, $types, ...$values);
-            mysqli_stmt_execute($listStmt);
-            $res = mysqli_stmt_get_result($listStmt);
-            while ($res && ($row = mysqli_fetch_assoc($res))) {
-                $rows[] = $row;
-            }
-            mysqli_stmt_close($listStmt);
-        }
+        $rows = array_slice($rows, $offset, $perPage);
 
         return [
             'rows' => $rows,

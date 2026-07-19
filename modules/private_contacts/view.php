@@ -1,25 +1,36 @@
 <?php
 require_once '../../config/config.php';
+require_once __DIR__ . '/pc_vault_bootstrap.php';
+require_once __DIR__ . '/pc_vault_helpers.php';
 
 if (!isset($_SESSION['employee_id'])) {
-    header("Location: ../../login.php");
+    header('Location: ../../login.php');
     exit();
 }
 
 $id = (int)($_GET['id'] ?? 0);
-$employeeId = $_SESSION['employee_id'];
+$employeeId = (int)$_SESSION['employee_id'];
+$csrfToken = itm_get_csrf_token();
+$pcVaultState = pc_handle_vault_requests($conn, $employeeId);
+$pcVaultUnlocked = !empty($pcVaultState['unlocked']);
+$pcVaultRedirect = 'view.php?id=' . $id;
 
-$stmt = $conn->prepare("SELECT * FROM private_contacts WHERE id = ? AND employee_id = ?");
-$stmt->bind_param("ii", $id, $employeeId);
+$stmt = $conn->prepare('SELECT * FROM private_contacts WHERE id = ? AND employee_id = ?');
+$stmt->bind_param('ii', $id, $employeeId);
 $stmt->execute();
 $contact = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
 if (!$contact) {
-    header("Location: index.php");
+    header('Location: index.php');
     exit();
 }
 
-$pageTitle = "View Contact - " . $contact['first_name'] . ' ' . $contact['last_name'];
+if ($pcVaultUnlocked) {
+    pc_hydrate_contact_row($contact);
+}
+
+$pageTitle = 'View Contact - ' . pc_contact_display_name($contact);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -43,12 +54,18 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <?php if (pc_ui_requires_vault_lock_screen($pcVaultState)): ?>
+                <?php pc_render_vault_lock_screen($csrfToken, $pcVaultState, $pcVaultRedirect); ?>
+            <?php else: ?>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <a href="index.php" class="btn btn-outline-secondary">🔙</a>
                 <div style="display:flex; gap:8px;">
-                    <a href="edit.php?id=<?php echo $id; ?>" class="btn btn-primary">✏️</a>
+                    <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$id; ?>)" title="Share to device">📱</button>
+                    <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$id; ?>, null, 'private contact')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                    <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$id; ?>, null, 'private contact')" title="Share on Outlook">📨</button>
+                    <a href="edit.php?id=<?php echo $id; ?>" class="btn btn-primary" title="Edit">✏️</a>
                     <form method="POST" action="index_logic.php" style="display:inline;" onsubmit="return confirm('Are you sure?');">
-                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="action" value="remove_contact">
                         <input type="hidden" name="id" value="<?php echo $id; ?>">
                         <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
                         <button type="submit" class="btn btn-danger">🗑️</button>
@@ -212,9 +229,11 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
 <script src="../../js/theme.js"></script>
 </body>
 </html>

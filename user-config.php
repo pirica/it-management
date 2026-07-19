@@ -756,7 +756,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $resNotes = itm_vault_reencrypt_notes($conn, $user_id, hash('sha256', $old_vk_verify), hash('sha256', $new_vk));
                             if (!$resNotes['ok']) throw new Exception($resNotes['message']);
                             $resEvents = itm_vault_reencrypt_events($conn, $user_id, hash('sha256', $old_vk_verify), hash('sha256', $new_vk));
+                            $resPrivateContacts = itm_vault_reencrypt_private_contacts($conn, $user_id, hash('sha256', $old_vk_verify), hash('sha256', $new_vk));
                             if (!$resEvents['ok']) throw new Exception($resEvents['message']);
+                            if (!$resPrivateContacts['ok']) throw new Exception($resPrivateContacts['message']);
                         }
                         $vk_hash = password_hash($new_vk, PASSWORD_DEFAULT);
                         $stmt = mysqli_prepare($conn, "UPDATE employees SET vault_key_hash = ? WHERE id = ? AND company_id = ?");
