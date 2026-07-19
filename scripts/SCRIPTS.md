@@ -998,7 +998,7 @@ Use this registry when a **gate-excluded** module (listed in `ui_configuration_e
 
 **Workflow:** reproduce with `php scripts/check_ui_configuration_coverage.php` → add rows to JSON → validate `php scripts/ui_configuration_reviewed.php` → update module `AGENT_NOTES.md` → re-run coverage and confirm `[reviewed]` suffix.
 
-**Seeded modules:** `attempts` — no `create.php` / `edit.php` (read-only security log).
+**Seeded modules:** `attempts` — no `create.php` / `edit.php` (read-only security log). `audit_logs` — immutable read-only trail (`create.php` redirect; no edit/delete entry files).
 
 ### Named module verifiers (catalog: `scripts/scripts.php`)
 
