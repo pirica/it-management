@@ -27,3 +27,4 @@
 <script src="../../js/qrcode.min.js"></script>
 <script src="../../js/itm-qr-share.js"></script>
 <script src="../../js/itm-whatsapp-share.js"></script>
+<script src="../../js/itm-outlook-share.js"></script>

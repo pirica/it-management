@@ -1669,6 +1669,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_whatsapp_share.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="verify_outlook_share.php" target="_blank" rel="nofollow noreferrer">verify_outlook_share.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for Outlook/mail share compose helpers: subject/body text, <code>mailto:</code> URL, and Outlook web compose deep link via <code>includes/itm_outlook_share.php</code>.</td>
+                    <td><code>php scripts/verify_outlook_share.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_json_import_validation.php" target="_blank" rel="nofollow noreferrer">verify_json_import_validation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for JSON import: invalid numeric, date/datetime, and enum column values are rejected instead of silent NULL inserts.</td>

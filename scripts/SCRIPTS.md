@@ -992,6 +992,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_notes_share.php` — notes temporary QR/code share sessions (`note_share_sessions`, `join.php`, `notes_share_helpers.php`)
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, and Todo temporary QR/code share sessions (`*_share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`)
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`)
+- `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 

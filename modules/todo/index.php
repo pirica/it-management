@@ -863,6 +863,7 @@ if (!isset($crud_title)) {
                                         <?php if ((int)($task['created_by'] ?? 0) === (int)$logged_user_id): ?>
                                         <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>)" title="Share to device">📱</button>
                                         <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>, null, 'task')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                        <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>, null, 'task')" title="Share on Outlook">📩</button>
                                         <?php endif; ?>
                                         <form method="POST" action="index.php?id=<?php echo $task["id"]; ?>" style="display:inline;" onsubmit="return confirm('Delete this task?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
@@ -1045,6 +1046,7 @@ if (!isset($crud_title)) {
                                 <?php if ((int)($data['created_by'] ?? 0) === (int)$logged_user_id): ?>
                                 <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>)" title="Share to device">📱</button>
                                 <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>, null, 'task')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>, null, 'task')" title="Share on Outlook">📩</button>
                                 <?php endif; ?>
                                 <a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary" title="Edit">✏️</a>
                                 <a href="index.php" class="btn" title="Back">🔙</a>
