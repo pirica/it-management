@@ -231,7 +231,7 @@ function cr_employee_companies_scope_link_exists($conn, int $companyId, int $emp
     }
 
     $sql = 'SELECT 1 FROM employee_companies WHERE company_id=' . (int)$companyId
-        . ' AND employee_id=' . (int)$employeeId . ' LIMIT 1';
+        . ' AND employee_id=' . (int)$employeeId . ' AND deleted_at IS NULL LIMIT 1';
     $res = mysqli_query($conn, $sql);
 
     return (bool)($res && mysqli_num_rows($res) > 0);
@@ -469,23 +469,27 @@ foreach ($fieldColumns as $c) {
     if ($c['Field'] === 'company_id') { $hasCompany = true; break; }
 }
 
-// Why: Search uses visible columns only; company_id stays in SQL scope but hidden from list/search UI.
-$displayFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
-    return ($col['Field'] ?? '') !== 'company_id';
-}));
-
-// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+// Why: List/search hide company_id and audit meta; create/edit omit audit meta via the same uiColumns loop.
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) {
     $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
     if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
         return false;
     }
     if (function_exists('itm_crud_is_delete_form_hidden_field') && itm_crud_is_delete_form_hidden_field($fieldName)) {
         return false;
     }
+    if ($fieldName === 'company_id') {
+        return false;
+    }
 
     return true;
 }));
+
+// Why: Search and list share visible columns.
+$displayFieldColumns = $uiColumns;
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -739,6 +743,9 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $scopeWhere = ' WHERE company_id=' . (int)$company_id;
         }
+        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+            $scopeWhere = itm_crud_append_not_deleted_predicate($scopeWhere);
+        }
 
         $candidateIds = [];
         $skippedAdminCount = 0;
@@ -756,11 +763,30 @@ if ($crud_action === 'delete') {
         }
 
         if (!empty($candidateIds)) {
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . ' WHERE id IN (' . implode(',', array_values($candidateIds)) . ')';
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-                header('Location: ' . $listUrl);
-                exit;
+            $idList = array_values($candidateIds);
+            $placeholders = implode(',', array_fill(0, count($idList), '?'));
+            $where = ' WHERE id IN (' . $placeholders . ')';
+            if ($hasCompany && $company_id > 0) {
+                $where .= ' AND company_id=?';
+            }
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+            $stmt = mysqli_prepare($conn, $deleteSql);
+            if ($stmt) {
+                $types = str_repeat('i', count($idList));
+                if ($hasCompany && $company_id > 0) {
+                    $types .= 'i';
+                    $idList[] = (int)$company_id;
+                }
+                mysqli_stmt_bind_param($stmt, $types, ...$idList);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                    mysqli_stmt_close($stmt);
+                    header('Location: ' . $listUrl);
+                    exit;
+                }
+                mysqli_stmt_close($stmt);
             }
         }
 
@@ -802,16 +828,31 @@ if ($crud_action === 'delete') {
         }
 
         if (!empty($idList)) {
-            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
-            if ($hasCompany && $company_id > 0) {
-                $where .= ' AND company_id=' . (int)$company_id;
+            $bindIds = array_values($idList);
+            $placeholders = implode(',', array_fill(0, count($bindIds), '?'));
+            $where = ' WHERE id IN (' . $placeholders . ')';
+            $hasCompanyFilter = ($hasCompany && $company_id > 0);
+            if ($hasCompanyFilter) {
+                $where .= ' AND company_id=?';
             }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            } elseif ($skippedAdminCount > 0) {
-                $_SESSION['crud_error'] = 'Deleted ' . count($idList) . ' record(s). '
-                    . $skippedAdminCount . ' Admin assignment(s) were skipped because they cannot be removed from this screen.';
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
+            $stmt = mysqli_prepare($conn, $deleteSql);
+            if ($stmt) {
+                $types = str_repeat('i', count($bindIds));
+                if ($hasCompanyFilter) {
+                    $types .= 'i';
+                    $bindIds[] = (int)$company_id;
+                }
+                mysqli_stmt_bind_param($stmt, $types, ...$bindIds);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                } elseif ($skippedAdminCount > 0) {
+                    $_SESSION['crud_error'] = 'Deleted ' . count($idList) . ' record(s). '
+                        . $skippedAdminCount . ' Admin assignment(s) were skipped because they cannot be removed from this screen.';
+                }
+                mysqli_stmt_close($stmt);
             }
         } else {
             if ($selectedCount === 0) {
@@ -848,15 +889,28 @@ if ($crud_action === 'delete') {
             exit;
         }
 
-        $where = ' WHERE id=' . $id;
-        if ($hasCompany && $company_id > 0) {
-            $where .= ' AND company_id=' . (int)$company_id;
+        $hasCompanyFilter = ($hasCompany && $company_id > 0);
+        $where = ' WHERE id=?';
+        if ($hasCompanyFilter) {
+            $where .= ' AND company_id=?';
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
-            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-            header('Location: ' . $listUrl);
-            exit;
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+            : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+        $stmt = mysqli_prepare($conn, $deleteSql);
+        if ($stmt) {
+            if ($hasCompanyFilter) {
+                mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
+            } else {
+                mysqli_stmt_bind_param($stmt, 'i', $id);
+            }
+            if (!mysqli_stmt_execute($stmt)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                mysqli_stmt_close($stmt);
+                header('Location: ' . $listUrl);
+                exit;
+            }
+            mysqli_stmt_close($stmt);
         }
     }
     header('Location: ' . $listUrl);
@@ -898,6 +952,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 
     $where = ' WHERE company_id=' . (int)$company_id;
+    if (function_exists('itm_crud_append_not_deleted_predicate')) {
+        $where = itm_crud_append_not_deleted_predicate($where);
+    }
     $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
@@ -1087,9 +1144,13 @@ if (!empty($searchConditions)) {
     }
 }
 
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
+
 $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
-}, $fieldColumns);
+}, $uiColumns);
 
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
@@ -1151,15 +1212,29 @@ if (!isset($crud_title)) {
             <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                    <h1><?php echo sanitize($moduleListHeading); ?></h1>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
                 </div>
                 <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1" style="display:none;">Cancel</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
                         <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
@@ -1186,7 +1261,7 @@ if (!isset($crud_title)) {
                         <thead>
                         <tr>
                             <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
-                            <?php foreach ($fieldColumns as $col): ?>
+                            <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -1205,7 +1280,7 @@ if (!isset($crud_title)) {
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
-                                <?php foreach ($fieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
@@ -1225,7 +1300,7 @@ if (!isset($crud_title)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
+                            <tr><td colspan="<?php echo count($uiColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -1336,6 +1411,7 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>

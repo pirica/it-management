@@ -20,7 +20,10 @@ Maps employees (login accounts) to companies they may access after login. Drives
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - Standard flattened CRUD with FK labels for `employee_id` and `company_id`.
-- Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; view keeps full `$fieldColumns` including audit meta.
+- List uses `$uiColumns` (hides `company_id` and audit meta); search shares `$displayFieldColumns = $uiColumns`; list query filters `deleted_at IS NULL` via `itm_crud_append_not_deleted_predicate()`.
+- Create/edit forms use `$uiColumns` with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; view keeps full `$fieldColumns` including audit meta.
+- Delete uses `itm_crud_build_soft_delete_sql()` (admin-row guards still skip protected mappings on bulk/clear/single delete).
+- List header uses `data-itm-new-button-managed` with centered `sanitize($moduleListHeading)`; bulk toolbar includes `bulk-delete-selection.js` and `data-itm-bulk-cancel` Cancel button.
 - Delete forms set `data-is-admin="1"` when row ties to admin user — JS confirm dialog warns before POST.
 - Bulk delete when row count ≥ `records_per_page`.
 
@@ -28,8 +31,9 @@ Maps employees (login accounts) to companies they may access after login. Drives
 - **import_excel_rows** (JSON POST on `index.php`) — bulk import with admin-row guards on each row.
 
 ## 7. File Structure
-- `index.php` — list, create (via `$crud_action === 'create'`), import, admin delete guards, bulk actions.
-- `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD entry wrappers (no standalone `create.php`).
+- `index.php` — list, edit (via `$crud_action === 'edit'`), import, admin delete guards, bulk actions.
+- `create.php` — wrapper that routes to `index.php` with `$crud_action = 'create'` (redirects to list; no standalone create form).
+- `edit.php`, `view.php`, `delete.php`, `list_all.php` — CRUD entry wrappers.
 
 ## 8. Multi-Tenant Rules
 - Cross-tenant by design: one user may map to many companies; each row still validates both `employee_id` and `company_id`.
@@ -46,10 +50,12 @@ Maps employees (login accounts) to companies they may access after login. Drives
 
 ## 11. Examples of Safe Code Patterns
 
-### Tenant-scoped mapping delete
+### Tenant-scoped mapping soft-delete
 ```php
-$stmt = $conn->prepare('DELETE FROM employee_companies WHERE id = ? AND company_id = ?');
-$stmt->bind_param('ii', $id, $companyId);
+$where = ' WHERE id=? AND company_id=?';
+$deleteSql = itm_crud_build_soft_delete_sql('employee_companies', $where, (int)$_SESSION['employee_id']);
+$stmt = mysqli_prepare($conn, $deleteSql);
+mysqli_stmt_bind_param($stmt, 'ii', $id, $companyId);
 ```
 
 ## 12. Module Owner Notes (Optional)
