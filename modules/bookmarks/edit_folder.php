@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
 
     $name = trim($_POST['name'] ?? '');
     $parent_folder_id = (int)($_POST['parent_folder_id'] ?? 0) ?: null;
+    $merge_into_folder_id = (int)($_POST['merge_into_folder_id'] ?? 0);
     $shared = isset($_POST['shared']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
 
@@ -42,12 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
     if ($parent_folder_id == $id) {
         $errors[] = 'A folder cannot be its own parent.';
     }
+    if ($parent_folder_id !== null && bkm_folder_is_descendant_of($conn, $parent_folder_id, $id)) {
+        $errors[] = 'A folder cannot be moved into one of its subfolders.';
+    }
     if ($shared === 0 && empty($bkmVaultState['unlocked'])) {
         $errors[] = 'Unlock your vault to save private folders.';
     }
 
     if (empty($errors)) {
-        $result = bkm_update_folder_row($conn, $id, $company_id, $parent_folder_id, $name, $shared, $active);
+        if ($merge_into_folder_id > 0) {
+            $result = bkm_move_folder($conn, $company_id, $user_id, $id, $parent_folder_id, $merge_into_folder_id, $is_admin);
+        } else {
+            $result = bkm_update_folder_row($conn, $id, $company_id, $parent_folder_id, $name, $shared, $active);
+        }
         if ($result['ok']) {
             header('Location: index.php');
             return;
@@ -65,6 +73,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
 
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
+$bkmFolderChildrenByParent = [];
+foreach ($all_folders as $folderRow) {
+    if ((int)$folderRow['id'] === $id) {
+        continue;
+    }
+    $parentKey = $folderRow['parent_folder_id'] ? (int)$folderRow['parent_folder_id'] : 0;
+    if (!isset($bkmFolderChildrenByParent[$parentKey])) {
+        $bkmFolderChildrenByParent[$parentKey] = [];
+    }
+    $bkmFolderChildrenByParent[$parentKey][] = [
+        'id' => (int)$folderRow['id'],
+        'name' => (string)$folderRow['name'],
+    ];
+}
 $csrfToken = itm_get_csrf_token();
 ?>
 <!DOCTYPE html>
@@ -111,8 +133,9 @@ if (!isset($crud_title)) {
             <?php if ($needsVaultForForm): ?>
                 <?php bkm_render_vault_lock_screen($csrfToken, $bkmVaultState, 'edit_folder.php?id=' . $id); ?>
             <?php else: ?>
-            <form method="POST" class="form-grid" style="flex: 1; min-width: 300px;">
+            <form method="POST" class="form-grid" style="flex: 1; min-width: 300px;" id="edit-folder-form">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                <input type="hidden" name="merge_into_folder_id" id="edit-folder-merge-into" value="">
                 <div class="form-group">
                     <label>Folder Name</label>
                     <input type="text" name="name" required value="<?php echo sanitize($data['name']); ?>">
@@ -173,6 +196,54 @@ document.addEventListener('change', function (event) {
         sharedIndicator.textContent = event.target.checked ? '🔓' : '🔒';
     }
 });
+
+const bkmFolderChildrenByParent = <?php echo json_encode($bkmFolderChildrenByParent, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const bkmEditFolderId = <?php echo (int)$id; ?>;
+const bkmEditFolderOriginalParentId = <?php echo $data['parent_folder_id'] ? (int)$data['parent_folder_id'] : 0; ?>;
+
+function bkmFindSiblingFolderInMap(parentId, sourceFolderId, folderName) {
+    const normalized = (folderName || '').trim().toLowerCase();
+    if (!normalized) {
+        return null;
+    }
+    const children = bkmFolderChildrenByParent[parentId] || bkmFolderChildrenByParent[String(parentId)] || [];
+    for (let i = 0; i < children.length; i++) {
+        if (String(children[i].id) === String(sourceFolderId)) {
+            continue;
+        }
+        if ((children[i].name || '').trim().toLowerCase() === normalized) {
+            return children[i].id;
+        }
+    }
+    return null;
+}
+
+const editFolderForm = document.getElementById('edit-folder-form');
+if (editFolderForm) {
+    editFolderForm.addEventListener('submit', function () {
+        const parentSelect = editFolderForm.querySelector('select[name="parent_folder_id"]');
+        const nameInput = editFolderForm.querySelector('input[name="name"]');
+        const mergeInput = document.getElementById('edit-folder-merge-into');
+        if (!parentSelect || !nameInput || !mergeInput) {
+            return;
+        }
+        const newParent = parentSelect.value === '' ? 0 : parseInt(parentSelect.value, 10);
+        mergeInput.value = '';
+        if (newParent === bkmEditFolderOriginalParentId) {
+            return;
+        }
+        const siblingId = bkmFindSiblingFolderInMap(newParent, bkmEditFolderId, nameInput.value);
+        if (!siblingId) {
+            return;
+        }
+        const merge = confirm(
+            'A folder named "' + nameInput.value.trim() + '" already exists in this location.\n\nMerge this folder into it?\n\nOK = merge contents\nCancel = keep both folders with the same name'
+        );
+        if (merge) {
+            mergeInput.value = siblingId;
+        }
+    });
+}
 </script>
 </body>
 </html>

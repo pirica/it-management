@@ -1154,6 +1154,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_bookmarks_import.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/bookmarks/helpers.php</code> import helpers, <code>import.php</code>, or private folder encryption.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_bookmarks_folder_move.php" target="_blank" rel="nofollow noreferrer">verify_bookmarks_folder_move.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Regression for bookmarks folder drag/move merge: duplicate same-named siblings can reparent without merge or merge bookmarks/subfolders into the existing folder via <code>bkm_move_folder()</code> / <code>bkm_merge_folder_into()</code>.</td>
+                    <td><code>php scripts/verify_bookmarks_folder_move.php</code> — exit <code>1</code> on failure. Run when changing folder move/merge helpers or <code>modules/bookmarks/index.php</code> / <code>edit_folder.php</code> move prompts.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_chatbot.php" target="_blank" rel="nofollow noreferrer">verify_chatbot.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Regression for IT Support Chatbot + <code>modules/knowledge_base/chat_api.php</code>: rate limit + CSRF guards, <code>escapeHtml()</code> before message <code>innerHTML</code>, <code>enable_chatbot</code> asset gating, audit triggers, and tenant-scoped <code>knowledge_base</code> search.</td>

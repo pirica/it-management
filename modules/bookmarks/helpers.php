@@ -77,7 +77,8 @@ function bkm_render_folder_tree_html($conn, array $tree, $selectedFolderId, $com
         $padding = $depth * 15;
         $hasBookmarks = bkm_folder_has_bookmarks($conn, $id, $company_id) ? '1' : '0';
 
-        $html .= '<li class="itm-folder-tree-item' . $isActive . '" data-folder-id="' . $id . '" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)">';
+        $folderNameAttr = htmlspecialchars((string)($node['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $html .= '<li class="itm-folder-tree-item' . $isActive . '" data-folder-id="' . $id . '" data-folder-name="' . $folderNameAttr . '" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)">';
         $html .= '<div class="itm-folder-tree-row" style="padding-left:' . $padding . 'px; display: flex; align-items: center; justify-content: space-between;">';
         $html .= '<a href="index.php?folder_id=' . $id . '" style="flex: 1;">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
         $html .= '<button type="button" class="btn btn-sm btn-danger delete-folder-btn" data-id="' . $id . '" data-has-bookmarks="' . $hasBookmarks . '" title="Delete Folder" style="padding: 2px 6px; margin-left: 8px;">🗑️</button>';
@@ -138,6 +139,259 @@ function bkm_can_edit_bookmark($bookmark, $user_id, $is_admin) {
 function bkm_can_edit_folder($folder, $user_id, $is_admin) {
     if ($is_admin) return true;
     return (int)($folder['employee_id'] ?? 0) === (int)$user_id;
+}
+
+/**
+ * @return array<string,mixed>|null
+ */
+function bkm_get_folder_row_by_id($conn, $folderId, $company_id, $viewerEmployeeId)
+{
+    $folderId = (int)$folderId;
+    $company_id = (int)$company_id;
+    if ($folderId <= 0) {
+        return null;
+    }
+
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM bookmark_folders WHERE id = ? AND company_id = ? AND active = 1 LIMIT 1');
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $folderId, $company_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return null;
+    }
+
+    bkm_hydrate_folder_row($row, $viewerEmployeeId);
+
+    return $row;
+}
+
+function bkm_folder_is_descendant_of($conn, $folderId, $possibleAncestorId)
+{
+    $folderId = (int)$folderId;
+    $possibleAncestorId = (int)$possibleAncestorId;
+    if ($folderId <= 0 || $possibleAncestorId <= 0) {
+        return false;
+    }
+    if ($folderId === $possibleAncestorId) {
+        return true;
+    }
+
+    $seen = [];
+    $current = $folderId;
+    while ($current > 0 && !isset($seen[$current])) {
+        $seen[$current] = true;
+        $stmt = mysqli_prepare($conn, 'SELECT parent_folder_id FROM bookmark_folders WHERE id = ? LIMIT 1');
+        if (!$stmt) {
+            break;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $current);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        $parent = $row && $row['parent_folder_id'] !== null ? (int)$row['parent_folder_id'] : 0;
+        if ($parent === $possibleAncestorId) {
+            return true;
+        }
+        $current = $parent;
+    }
+
+    return false;
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function bkm_merge_folder_into($conn, $company_id, $ownerEmployeeId, $sourceFolderId, $targetFolderId)
+{
+    $sourceFolderId = (int)$sourceFolderId;
+    $targetFolderId = (int)$targetFolderId;
+    $company_id = (int)$company_id;
+    $ownerEmployeeId = (int)$ownerEmployeeId;
+
+    if ($sourceFolderId <= 0 || $targetFolderId <= 0 || $sourceFolderId === $targetFolderId) {
+        return ['ok' => false, 'message' => 'Invalid folder merge.'];
+    }
+
+    mysqli_begin_transaction($conn);
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, url_hash FROM bookmarks WHERE company_id = ? AND employee_id = ? AND folder_id = ? AND active = 1'
+    );
+    if (!$stmt) {
+        mysqli_rollback($conn);
+
+        return ['ok' => false, 'message' => 'Could not merge folders.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'iii', $company_id, $ownerEmployeeId, $sourceFolderId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $bookmarkRows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $bookmarkRows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    foreach ($bookmarkRows as $bookmarkRow) {
+        $bookmarkId = (int)$bookmarkRow['id'];
+        $urlHash = (string)$bookmarkRow['url_hash'];
+        $dupStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url_hash = ? AND id <> ? AND active = 1 LIMIT 1'
+        );
+        if (!$dupStmt) {
+            mysqli_rollback($conn);
+
+            return ['ok' => false, 'message' => 'Could not merge folders.'];
+        }
+        mysqli_stmt_bind_param($dupStmt, 'iisi', $company_id, $ownerEmployeeId, $urlHash, $bookmarkId);
+        mysqli_stmt_execute($dupStmt);
+        $dupRes = mysqli_stmt_get_result($dupStmt);
+        $dupRow = $dupRes ? mysqli_fetch_assoc($dupRes) : null;
+        mysqli_stmt_close($dupStmt);
+
+        if ($dupRow) {
+            $deleteStmt = mysqli_prepare($conn, 'DELETE FROM bookmarks WHERE id = ? AND company_id = ? AND employee_id = ?');
+            if ($deleteStmt) {
+                mysqli_stmt_bind_param($deleteStmt, 'iii', $bookmarkId, $company_id, $ownerEmployeeId);
+                mysqli_stmt_execute($deleteStmt);
+                mysqli_stmt_close($deleteStmt);
+            }
+            continue;
+        }
+
+        $moveStmt = mysqli_prepare($conn, 'UPDATE bookmarks SET folder_id = ? WHERE id = ? AND company_id = ? AND employee_id = ?');
+        if (!$moveStmt) {
+            mysqli_rollback($conn);
+
+            return ['ok' => false, 'message' => 'Could not merge folders.'];
+        }
+        mysqli_stmt_bind_param($moveStmt, 'iiii', $targetFolderId, $bookmarkId, $company_id, $ownerEmployeeId);
+        if (!mysqli_stmt_execute($moveStmt)) {
+            mysqli_stmt_close($moveStmt);
+            mysqli_rollback($conn);
+
+            return ['ok' => false, 'message' => 'Could not merge folders.'];
+        }
+        mysqli_stmt_close($moveStmt);
+    }
+
+    $childStmt = mysqli_prepare(
+        $conn,
+        'UPDATE bookmark_folders SET parent_folder_id = ? WHERE parent_folder_id = ? AND company_id = ? AND employee_id = ?'
+    );
+    if (!$childStmt) {
+        mysqli_rollback($conn);
+
+        return ['ok' => false, 'message' => 'Could not merge folders.'];
+    }
+    mysqli_stmt_bind_param($childStmt, 'iiii', $targetFolderId, $sourceFolderId, $company_id, $ownerEmployeeId);
+    if (!mysqli_stmt_execute($childStmt)) {
+        mysqli_stmt_close($childStmt);
+        mysqli_rollback($conn);
+
+        return ['ok' => false, 'message' => 'Could not merge folders.'];
+    }
+    mysqli_stmt_close($childStmt);
+
+    $deleteFolderStmt = mysqli_prepare($conn, 'DELETE FROM bookmark_folders WHERE id = ? AND company_id = ? AND employee_id = ?');
+    if (!$deleteFolderStmt) {
+        mysqli_rollback($conn);
+
+        return ['ok' => false, 'message' => 'Could not merge folders.'];
+    }
+    mysqli_stmt_bind_param($deleteFolderStmt, 'iii', $sourceFolderId, $company_id, $ownerEmployeeId);
+    if (!mysqli_stmt_execute($deleteFolderStmt)) {
+        mysqli_stmt_close($deleteFolderStmt);
+        mysqli_rollback($conn);
+
+        return ['ok' => false, 'message' => 'Could not merge folders.'];
+    }
+    mysqli_stmt_close($deleteFolderStmt);
+
+    mysqli_commit($conn);
+
+    return ['ok' => true, 'message' => ''];
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function bkm_move_folder($conn, $company_id, $user_id, $folderId, $newParentId, $mergeIntoFolderId, $is_admin)
+{
+    $folderId = (int)$folderId;
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    $newParentId = $newParentId !== null && (int)$newParentId > 0 ? (int)$newParentId : null;
+    $mergeIntoFolderId = (int)$mergeIntoFolderId;
+
+    $folder = bkm_get_folder_row_by_id($conn, $folderId, $company_id, $user_id);
+    if (!$folder || !bkm_can_edit_folder($folder, $user_id, $is_admin)) {
+        return ['ok' => false, 'message' => 'Folder not found or access denied.'];
+    }
+
+    $ownerEmployeeId = (int)$folder['employee_id'];
+
+    if ($newParentId !== null && bkm_folder_is_descendant_of($conn, $newParentId, $folderId)) {
+        return ['ok' => false, 'message' => 'Cannot move a folder into itself or a subfolder.'];
+    }
+
+    if ($mergeIntoFolderId > 0) {
+        if ($mergeIntoFolderId === $folderId) {
+            return ['ok' => false, 'message' => 'Invalid merge target.'];
+        }
+
+        $target = bkm_get_folder_row_by_id($conn, $mergeIntoFolderId, $company_id, $user_id);
+        if (!$target || !bkm_can_edit_folder($target, $user_id, $is_admin)) {
+            return ['ok' => false, 'message' => 'Merge target not found or access denied.'];
+        }
+
+        $targetParent = $target['parent_folder_id'] !== null ? (int)$target['parent_folder_id'] : null;
+        if ($targetParent !== $newParentId) {
+            return ['ok' => false, 'message' => 'Merge target is not in the destination folder.'];
+        }
+
+        if (strcasecmp(trim((string)$folder['name']), trim((string)$target['name'])) !== 0) {
+            return ['ok' => false, 'message' => 'Folder names must match to merge.'];
+        }
+
+        return bkm_merge_folder_into($conn, $company_id, $ownerEmployeeId, $folderId, $mergeIntoFolderId);
+    }
+
+    if ($newParentId === null) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE bookmark_folders SET parent_folder_id = NULL WHERE id = ? AND company_id = ? AND employee_id = ?'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'message' => 'Could not move folder.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $folderId, $company_id, $ownerEmployeeId);
+    } else {
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ? AND company_id = ? AND employee_id = ?'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'message' => 'Could not move folder.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'iiii', $newParentId, $folderId, $company_id, $ownerEmployeeId);
+    }
+
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+
+        return ['ok' => false, 'message' => 'Could not move folder.'];
+    }
+    mysqli_stmt_close($stmt);
+
+    return ['ok' => true, 'message' => ''];
 }
 
 /**
