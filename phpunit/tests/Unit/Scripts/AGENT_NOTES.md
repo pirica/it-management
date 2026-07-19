@@ -18,6 +18,7 @@ Tests for maintenance/audit scripts under `scripts/`.
 - **ReproAuditDisclosureTest.php** — subprocess `scripts/repro_audit_disclosure.php`; asserts seed Admin `reset_token*` unchanged and no leftover `script-*` users. Output guard uses `\buser ID 1\b` so disposable IDs like 108 do not false-fail.
 - **check_script_disposable_employees.unittest.php** — subprocess `scripts/check_script_disposable_employees.php` static guard (exit 0).
 - **FieldsMissingBespokeGateTest.php** — bespoke gate contract checks; reviewed registry (`scripts/data/fields_missing_reviewed.json`, `[SKIP][fail][reviewed]` labels); strict gate exit (`--strict-gate` / unreviewed `[SKIP][fail]`); bookmarks in-memory Search/Sort via `bkm_query_bookmarks_for_list()` (`testBookmarksBespokeGatePassesSearchAndSort`, `testBookmarksBespokeGatePassesViewAuditMeta`); index list audit meta hidden via `itm_crud_is_list_hidden_audit_field()` (`testCableColorsBespokeGateHidesAuditMetaOnIndexList`); view audit meta required via `itm_fields_missing_module_view_covers_audit_meta_field()` (`testCompaniesBespokeGatePassesViewAuditMeta`, `testBespokeViewAuditMetaRejectsRawAliasHelperOnly`, `testBespokeViewAuditMetaPassesWithViewColumnsLoop`).
+- **UiConfigurationReviewedTest.php** — `itm_ui_configuration_reviewed.php` registry matcher for `[n/a][*][reviewed]` lines in `check_ui_configuration_coverage.php`.
 
 ## 10. Common Pitfalls
 

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "description": "Reviewed gate-excluded UI configuration coverage lines for check_ui_configuration_coverage.php. Matching entries print as [n/a][pass|fail|n/a][reviewed] (informational — exit semantics unchanged).",
+  "modules": {
+    "attempts": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Security log is read-only: no create.php and no manual create/edit forms; logs are inserted by login.php and forgot-password.php only.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — list is append-only via authentication flows"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    }
+  }
+}
