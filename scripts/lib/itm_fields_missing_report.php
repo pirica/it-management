@@ -791,7 +791,8 @@ if (!function_exists('itm_fields_missing_extract_form_blocks')) {
     function itm_fields_missing_extract_form_blocks(string $content): array
     {
         if (!preg_match_all('/<form\b[\s\S]*?<\/form>/i', $content, $matches)) {
-            return [$content];
+            // Why: PHP-only includes (e.g. rack_planner bootstrap defaults) must not be treated as a form.
+            return [];
         }
 
         return $matches[0];
