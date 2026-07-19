@@ -43,18 +43,18 @@ if (!function_exists('itm_not_operator_audit_line')) {
         return [
             [
                 'rule' => 'unary_not_on_variable',
-                'message' => 'Unary ! on $variable — prefer strict === false (or === null) when that is the intent; use itm-not-operator-exempt: for intentional falsy checks',
+                'message' => '[Warning] Unary ! on $variable — review case-by-case; === false is not always equivalent to falsy checks',
             ],
         ];
     }
 }
 
-if (!function_exists('itm_not_operator_collect_violations')) {
+if (!function_exists('itm_not_operator_collect_warnings')) {
     /**
      * @param array<int, string> $scanRelativeDirs
      * @return array<int, string>
      */
-    function itm_not_operator_collect_violations(string $repoRoot, array $scanRelativeDirs = ['modules', 'includes', 'config']): array
+    function itm_not_operator_collect_warnings(string $repoRoot, array $scanRelativeDirs = ['modules', 'includes', 'config']): array
     {
         $violations = [];
         $root = rtrim($repoRoot, '/\\');
@@ -107,5 +107,17 @@ if (!function_exists('itm_not_operator_collect_violations')) {
         sort($violations);
 
         return $violations;
+    }
+}
+
+if (!function_exists('itm_not_operator_collect_violations')) {
+    /**
+     * @deprecated Use itm_not_operator_collect_warnings()
+     * @param array<int, string> $scanRelativeDirs
+     * @return array<int, string>
+     */
+    function itm_not_operator_collect_violations(string $repoRoot, array $scanRelativeDirs = ['modules', 'includes', 'config']): array
+    {
+        return itm_not_operator_collect_warnings($repoRoot, $scanRelativeDirs);
     }
 }

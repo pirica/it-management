@@ -994,8 +994,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="check_not_operator.php" target="_blank" rel="nofollow noreferrer">check_not_operator.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Static audit: Codacy-style unary <code>!</code> on <code>$variables</code> in <code>modules/</code>, <code>includes/</code>, and <code>config/</code> — flags <code>if (!$ok)</code> patterns; excludes <code>!is_*()</code>, <code>!function_exists()</code>, and <code>!==</code>.</td>
-                    <td>Browser: plain-text report. CLI: <code>php scripts/check_not_operator.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Optional <code>--include-scripts</code> / <code>?include_scripts=1</code>. Run when tightening boolean checks or addressing Codacy <code>!</code> findings.</td>
+                    <td>Static audit <strong>[Warning]</strong>: Codacy-style unary <code>!</code> on <code>$variables</code> in <code>modules/</code>, <code>includes/</code>, and <code>config/</code> — flags <code>if (!$ok)</code> patterns for manual review; excludes <code>!is_*()</code>, <code>!function_exists()</code>, and <code>!==</code>. Always informational (exit <code>0</code>) — do not bulk-replace with <code>=== false</code>.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_not_operator.php</code> — always exit <code>0</code> (Warning tier). Optional <code>--include-scripts</code> / <code>?include_scripts=1</code>. Run when reviewing Codacy <code>!</code> findings; fix case-by-case or add <code>itm-not-operator-exempt:</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="check_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">check_ui_action_emoji.php</a></td>
