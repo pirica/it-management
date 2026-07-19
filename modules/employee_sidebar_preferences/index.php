@@ -587,6 +587,9 @@ $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
 }
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
