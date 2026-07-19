@@ -656,6 +656,7 @@ if (!empty($_SESSION['crud_success'])) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
 </script>
