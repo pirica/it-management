@@ -886,7 +886,16 @@ if (!function_exists('itm_fields_missing_file_renders_data_field_in_form')) {
         $pattern = '/\$data\s*\[\s*[\'"]' . preg_quote($field, '/') . '[\'"]\s*\]/';
 
         foreach (itm_fields_missing_extract_form_blocks($content) as $formBlock) {
-            if (preg_match($pattern, $formBlock)) {
+            if (!preg_match($pattern, $formBlock)) {
+                continue;
+            }
+            // Why: scaffold create/edit stamp audit meta via type=hidden value="$data['…']" — not visible UI.
+            $stripped = preg_replace(
+                '/<input\b(?:(?!>).)*\btype=["\']hidden["\'](?:(?!>).)*>/is',
+                '',
+                $formBlock
+            );
+            if (preg_match($pattern, $stripped)) {
                 return true;
             }
         }

@@ -587,6 +587,44 @@ PHP;
         }, $failures)));
     }
 
+    public function testRequestPasswordHiddenAuditMetaDoesNotExposeOnForms(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $files = itm_fields_missing_module_file_bundle('request_password', $root);
+        $formPaths = itm_fields_missing_merge_bespoke_form_paths(
+            $files,
+            itm_fields_missing_resolve_form_paths($files)
+        );
+        $passes = [];
+        $failures = [];
+
+        itm_fields_missing_audit_excluded_ui_columns(
+            'request_password',
+            ['created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at', 'deleted_by'],
+            $formPaths,
+            $passes,
+            $failures,
+            false,
+            $files
+        );
+
+        $this->assertSame([], $failures, implode('; ', array_map(static function ($row) {
+            return (string) ($row['message'] ?? '');
+        }, $failures)));
+    }
+
+    public function testHiddenAuditDataReferenceInsideFormIsNotVisibleExposure(): void
+    {
+        $content = <<<'HTML'
+<form method="POST">
+    <input type="hidden" name="created_by" value="<?php echo sanitize((string)($data['created_by'] ?? '')); ?>">
+</form>
+HTML;
+
+        $this->assertFalse(itm_fields_missing_file_renders_data_field_in_form('created_by', $content));
+    }
+
     public function testTicketsCreateExposesCreatedAtToAuditMetaDetector(): void
     {
         $root = realpath(__DIR__ . '/../../../../');
