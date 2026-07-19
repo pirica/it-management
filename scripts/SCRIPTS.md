@@ -1104,6 +1104,8 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 
 **Page chrome verify:** `php scripts/verify_module_page_chrome.php` — cross-checks every `modules/**/*.php` file with a standalone `<head>` for canonical browser `<title>` (`titles_list.php` / `itm_titles_list_audit.php`) and Settings favicon wiring (`itm_check_module_favicon_link()`). Exit `1` on any title or favicon failure. Use with `fields_missing.php` bespoke gate and `crud_titles.php` when debugging tab icon / title regressions.
 
+**Favicon root-cause verify:** `php scripts/verify_favicon_root_cause.php` — Admin diagnostic for the three-layer favicon pipeline: `ui_configuration.favicon_path` + on-disk `images/favicons/company_{id}.ico` (Settings data), `config.php` `$favicon_url`, and module `<head>` favicon gate pass/fail counts (`apply_head_favicon_link.php` fixes wiring only). Optional `--module=employees` / `?module=employees` sample. Exit `1` when any seed-admin row cannot resolve a favicon URL, or when module wiring failures remain after the data layer passes.
+
 **List new button style:** `php scripts/apply_list_new_button_style.php` — normalizes list-header `create.php` ➕ anchors to `class="btn btn-primary itm-list-new-button" title="Create"` (pairs with `styles.css` 40×40 footprint and `fields_missing` New button style gate).
 
 ---
