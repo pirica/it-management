@@ -45,6 +45,10 @@ if (!function_exists('itm_apply_script_bootstrap')) {
             require_once dirname(__DIR__) . '/../config/config.php';
         }
 
+        // Why: config.php sets $conn in the including scope; inside this function that is local,
+        // not $GLOBALS['conn'] — admin gates need the mysqli instance from the require above.
+        $itmApplyScriptConn = (isset($conn) && $conn instanceof mysqli) ? $conn : null;
+
         require_once __DIR__ . '/script_cli_output.php';
         itm_script_output_begin((string)$title);
 
@@ -68,12 +72,12 @@ if (!function_exists('itm_apply_script_bootstrap')) {
             // employee is honored after itm_script_begin_browser_isolated_session() swaps $_SESSION.
             if (function_exists('itm_script_require_admin_script_or_exit')) {
                 itm_script_require_admin_script_or_exit(
-                    $GLOBALS['conn'] ?? null,
+                    $itmApplyScriptConn,
                     'Forbidden: administrator login required.'
                 );
             } else {
                 $employeeId = (int)($_SESSION['employee_id'] ?? 0);
-                if (!function_exists('itm_is_admin') || !itm_is_admin($GLOBALS['conn'] ?? null, $employeeId)) {
+                if (!function_exists('itm_is_admin') || !itm_is_admin($itmApplyScriptConn, $employeeId)) {
                     http_response_code(403);
                     header('Content-Type: text/plain; charset=utf-8');
                     echo "Forbidden: administrator login required.\n";

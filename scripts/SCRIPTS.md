@@ -497,7 +497,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/mbqa_runner_tiers.php` | Canonical `$bespokeSmoke` (Tier D) and `$skipClear` lists; tier reference markdown/HTML for build reports |
 | `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
-| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, `itm_script_require_admin_script_or_exit()` for browser apply only, `itm_apply_script_echo_list()` |
+| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, `itm_script_require_admin_script_or_exit()` for browser apply only (passes function-local `$conn` from `config.php` — not `$GLOBALS['conn']`), `itm_apply_script_echo_list()` |
 | `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions, optional Admin browser gate |
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `scripts/lib/itm_mojibake_audit.php` | UTF-8 / mojibake scan + repair helpers for `verify_source_utf8_mojibake.php` and `fix_source_utf8_mojibake.php` |
