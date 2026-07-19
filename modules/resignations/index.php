@@ -41,7 +41,7 @@ $sortMap = [
 if (!isset($sortMap[$sort])) {
     $sort = 'termination_date';
 }
-$orderSql = $sortMap[$sort] . ' ' . $dir;
+$sortSql = $sortMap[$sort] . ' ' . $dir;
 
 // Why: Tenant-scoped status options drive the Employment Status multi-select and SQL IN filter.
 $statusOptions = [];
@@ -194,7 +194,7 @@ if ($selectedStatusIds !== [] && $selectedTypeIds !== [] && $isoWeekBounds !== n
         $params[] = $searchPattern;
     }
 
-    $sql .= ' ORDER BY ' . $orderSql;
+    $sql .= ' ORDER BY ' . $sortSql;
 
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
@@ -354,7 +354,7 @@ if (!isset($crud_title)) {
                             $clearQuery['employee_type_id'] = $selectedTypeIds;
                         }
                         ?>
-                        <a class="btn" href="index.php?<?= sanitize(http_build_query($clearQuery)) ?>">Clear</a>
+                        <a class="btn" href="index.php?<?= sanitize(http_build_query($clearQuery)) ?>" title="Clear">🔙</a>
                     <?php endif; ?>
                 </form>
             </div>
