@@ -71,8 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $skippedImports[] = [
                         'title' => $b['title'],
                         'url' => $b['url'],
-                        'folder' => $folderLabel,
-                        'reason' => $result['skip_label'],
+                        'summary' => bkm_format_import_skip_summary($result['skip_reason'], $folderLabel),
                     ];
                 }
             }
@@ -114,8 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $skippedImports[] = [
                         'title' => $b['title'],
                         'url' => $b['url'],
-                        'folder' => $folderLabel,
-                        'reason' => $result['skip_label'],
+                        'summary' => bkm_format_import_skip_summary($result['skip_reason'], $folderLabel),
                     ];
                 }
             }
@@ -181,7 +179,6 @@ if (!isset($crud_title)) {
                         <tr>
                             <th>Title</th>
                             <th>URL</th>
-                            <th>Folder</th>
                             <th>Reason</th>
                         </tr>
                     </thead>
@@ -190,8 +187,7 @@ if (!isset($crud_title)) {
                             <tr>
                                 <td><?php echo sanitize($row['title']); ?></td>
                                 <td><?php echo sanitize($row['url']); ?></td>
-                                <td><?php echo sanitize($row['folder']); ?></td>
-                                <td><?php echo sanitize($row['reason']); ?></td>
+                                <td><?php echo sanitize($row['summary']); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -223,7 +219,7 @@ if (!isset($crud_title)) {
             <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here. Folder headings (<code>&lt;H3&gt;</code>) in the file are created automatically and bookmarks are imported into the matching folder.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
             <p><strong>Folder:</strong> Choose <code>Root</code> or a parent folder. HTML imports nest file folders under that target; CSV imports place every row in the selected folder.</p>
-            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Duplicates are skipped when the exact same URL already exists in the target folder (similar URLs are allowed).</p>
+            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Skipped rows are listed as <code>Reason → Folder</code> (for example <code>Duplicate URL → WD</code>).</p>
         </div>
     </div>
 </div>

@@ -4,7 +4,7 @@
 Hierarchical bookmark manager with private and shared links, folder tree, drag-and-drop, and import/export.
 
 ## 2. Key Tables
-- **bookmarks** — URL records (`title`, `url`, `shared`, `employee_id`, `folder_id`). Duplicate titles are allowed; row identity is `id`.
+- **bookmarks** — URL records (`title`, `url`, `shared`, `employee_id`, `folder_id`). Duplicate titles are allowed; row identity is `id`. **`UNIQUE (company_id, employee_id, url)`** — one exact URL per employee (any folder).
 - **bookmark_folders** — folder tree (emoji icons in sidebar). **Duplicate folder names are allowed** (same employee / company / parent). Identity is `PRIMARY KEY (id)` only — there is **no** UNIQUE on `name` (and no `uq_bookmark_folders_company_scope`).
 
 ## 3. Required Relationships
@@ -16,12 +16,13 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **Permissions:** shared bookmarks read-only for regular users; admins (`itm_is_admin()`) and creators retain full CRUD.
 - **Dual-pane UI:** left folder tree (📁/📂), main list view.
 - **Drag-and-drop:** folders reordered/reparented via DnD interactions.
-- **Folder / bookmark naming (no uniqueness):**
-  - Do **not** re-add `UNIQUE (company_id, …, name)` on `bookmark_folders` or name UNIQUEs on `bookmarks`.
-  - UI and import may create multiple folders or bookmarks with the same display name; distinguish rows by `id`.
+- **Folder / bookmark naming:**
+  - Do **not** re-add `UNIQUE (company_id, …, name)` on `bookmark_folders`.
+  - Bookmark **URLs** are unique per `(company_id, employee_id)` — similar paths/schemes are allowed; exact URL string duplicates are not.
+  - Folder names may duplicate; distinguish rows by `id`.
   - Tenant unique-key audit (`php scripts/check_database_sql_company_name_uniques.php` / `includes/database_sql_unique_audit.php`) **skips** `bookmark_folders` and `bookmarks`.
 - **Import/export:** browser HTML bookmark files, CSV, and XLSX.
-- **Deletion:** single delete may require `bulk_action = 'single_delete'` for shared-handler compatibility.
+- **Deletion (private data — hard delete):** `delete.php` and `delete_folder.php` use `DELETE` (not soft-delete). Optional folder delete moves child bookmarks to root or deletes folder contents when confirmed. Employee delete cascades via FK.
 
 ## 5. UI Behavior Requirements
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
@@ -41,7 +42,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
-- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows. Imports accept `http://`, `https://`, and `ftp://` URLs only; skips exact URL duplicates per folder and lists not-imported rows with reasons.
+- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows. Imports accept `http://`, `https://`, and `ftp://` URLs only; skips exact URL duplicates per employee and lists not-imported rows as `Reason → Folder` (e.g. `Duplicate URL → WD`).
 - **export.php** / **export.js** — CSV, XLSX, and Netscape HTML export.
 
 ## 7. File Structure
@@ -63,7 +64,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - SQL ambiguity when joining `bookmark_folders` — alias `active`, `employee_id`. [Cursor-Valid]
 - URLs missing scheme — prepend `http://` or `https://` when saving. [Cursor-Valid]
 - `delete.php` expects `bulk_action=single_delete` for inline index deletes. [Cursor-Valid]
-- Folder delete moves bookmarks to root — do not CASCADE-delete bookmark rows silently. [Cursor-Valid]
+- Folder delete without contents moves bookmarks to root; **delete contents** hard-deletes bookmarks in the folder tree. [Cursor-Valid]
 - Do not enforce unique folder names in PHP validation — the schema allows duplicates. [Cursor-Valid]
 - Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `database.sql`). [Cursor-Valid]
 
