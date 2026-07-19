@@ -811,6 +811,28 @@ PHP;
         $this->assertSame('pass', $searchCheck['status'] ?? '', (string) ($searchCheck['details'] ?? ''));
     }
 
+    public function testBookmarksBespokeGatePassesSearchAndSort(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['bookmarks'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('bookmarks', $columns);
+        $passes = implode('|', $result['passes']);
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $result['failures']);
+
+        $this->assertStringContainsString('Search OK', $passes, implode(' | ', $messages));
+        $this->assertStringContainsString('Sort OK', $passes, implode(' | ', $messages));
+        $this->assertFalse(
+            $this->messagesContainAny($messages, ['Search NOT OK', 'Sort NOT OK']),
+            'bookmarks bespoke gate Search/Sort: ' . implode(' | ', $messages)
+        );
+    }
+
     public function testSortContractAcceptsBookmarksInMemoryListHelper(): void
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
