@@ -7460,6 +7460,7 @@ CREATE TABLE `bookmarks` (
 -- ADD url_hash char(64) NOT NULL; backfill url_hash from SHA2(url,256) for shared rows or re-encrypt private rows via app;
 -- CHANGE url to TEXT; ADD UNIQUE (company_id, employee_id, url_hash).
 -- Private bookmark titles: CHANGE title to TEXT; re-encrypt private titles via app (shared rows stay plaintext).
+-- Private bookmark notes: already TEXT; re-encrypt private notes via app (shared rows stay plaintext).
 -- Seed default shared bookmarks
 -- Retroactive default bookmarks for existing Admin users
 INSERT INTO bookmarks (company_id, employee_id, title, url, url_hash, shared, active)

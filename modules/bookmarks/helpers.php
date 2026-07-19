@@ -505,6 +505,26 @@ function bkm_text_hash($text)
     return hash('sha256', trim((string)$text));
 }
 
+/**
+ * True when a stored private field is likely legacy plaintext (pre-vault migration).
+ */
+function bkm_private_text_legacy_plaintext_check($stored)
+{
+    $stored = (string)$stored;
+    if ($stored === '') {
+        return true;
+    }
+
+    $decoded = base64_decode($stored, true);
+    if ($decoded === false) {
+        return true;
+    }
+
+    $ivLen = openssl_cipher_iv_length('aes-256-cbc');
+
+    return strlen($decoded) <= $ivLen;
+}
+
 function bkm_vault_session_key()
 {
     return isset($_SESSION['vault_key']) ? (string)$_SESSION['vault_key'] : '';
@@ -678,6 +698,23 @@ function bkm_hydrate_bookmark_row(array &$row, $viewerEmployeeId)
     $row['title_plain'] = $titleResolved['text'];
     $row['title_locked'] = $titleResolved['locked'];
     $row['title_locked_label'] = $titleResolved['label'];
+
+    $notesResolved = bkm_resolve_private_text(
+        (string)($row['notes'] ?? ''),
+        (int)($row['shared'] ?? 0),
+        (int)($row['employee_id'] ?? 0),
+        $viewerEmployeeId,
+        [
+            'other_user_label' => '🔒 Private notes',
+            'vault_label' => '🔒 Unlock vault to view notes',
+            'decrypt_fail_label' => '🔒 Unable to decrypt notes',
+            'legacy_plaintext_check' => 'bkm_private_text_legacy_plaintext_check',
+        ]
+    );
+    $row['notes_display'] = $notesResolved['locked'] ? $notesResolved['label'] : $notesResolved['text'];
+    $row['notes_plain'] = $notesResolved['text'];
+    $row['notes_locked'] = $notesResolved['locked'];
+    $row['notes_locked_label'] = $notesResolved['label'];
 }
 
 /**
@@ -706,7 +743,7 @@ function bkm_row_matches_search(array $row, $searchRaw, array $folderNameById)
     $needle = mb_strtolower($searchRaw);
     $haystacks = [
         mb_strtolower((string)($row['title_plain'] ?? $row['title_display'] ?? '')),
-        mb_strtolower((string)($row['notes'] ?? '')),
+        mb_strtolower((string)($row['notes_plain'] ?? $row['notes_display'] ?? '')),
     ];
     if (empty($row['url_locked'])) {
         $haystacks[] = mb_strtolower((string)($row['url_display'] ?? ''));
@@ -734,8 +771,8 @@ function bkm_compare_bookmark_rows(array $a, array $b, $sort, $dir, array $folde
             $vb = (string)($b['url_display'] ?? '');
             break;
         case 'notes':
-            $va = (string)($a['notes'] ?? '');
-            $vb = (string)($b['notes'] ?? '');
+            $va = (string)($a['notes_plain'] ?? $a['notes_display'] ?? '');
+            $vb = (string)($b['notes_plain'] ?? $b['notes_display'] ?? '');
             break;
         case 'shared':
             return $mult * (((int)($a['shared'] ?? 0)) <=> ((int)($b['shared'] ?? 0)));
@@ -825,7 +862,7 @@ function bkm_export_row(array $row, $viewerEmployeeId)
     return [
         'title' => !empty($row['title_locked']) ? '' : (string)($row['title_plain'] ?? $row['title_display'] ?? ''),
         'url' => !empty($row['url_locked']) ? '' : (string)$row['url_display'],
-        'notes' => (string)($row['notes'] ?? ''),
+        'notes' => !empty($row['notes_locked']) ? '' : (string)($row['notes_plain'] ?? $row['notes_display'] ?? ''),
         'shared' => (int)($row['shared'] ?? 0),
     ];
 }
@@ -845,6 +882,11 @@ function bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title
         return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
     }
 
+    $notesStorage = bkm_prepare_text_storage($notes, $shared);
+    if ($notesStorage === null) {
+        return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
+    }
+
     if ($folderId === null) {
         $stmt = mysqli_prepare(
             $conn,
@@ -858,7 +900,7 @@ function bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title
             $titleStorage['text'],
             $urlStorage['url'],
             $urlStorage['url_hash'],
-            $notes,
+            $notesStorage['text'],
             $shared,
             $active
         );
@@ -877,7 +919,7 @@ function bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title
             $titleStorage['text'],
             $urlStorage['url'],
             $urlStorage['url_hash'],
-            $notes,
+            $notesStorage['text'],
             $shared,
             $active
         );
@@ -910,6 +952,11 @@ function bkm_update_bookmark_row($conn, $id, $company_id, $folderId, $title, $pl
         return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
     }
 
+    $notesStorage = bkm_prepare_text_storage($notes, $shared);
+    if ($notesStorage === null) {
+        return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
+    }
+
     $stmt = mysqli_prepare(
         $conn,
         'UPDATE bookmarks SET folder_id = ?, title = ?, url = ?, url_hash = ?, notes = ?, shared = ?, active = ? WHERE id = ? AND company_id = ?'
@@ -921,7 +968,7 @@ function bkm_update_bookmark_row($conn, $id, $company_id, $folderId, $title, $pl
         $titleStorage['text'],
         $storage['url'],
         $storage['url_hash'],
-        $notes,
+        $notesStorage['text'],
         $shared,
         $active,
         $id,
@@ -1249,6 +1296,15 @@ function bkm_apply_import_row_url_storage(array &$rowValues, $conn)
             return 'Unlock your vault to import private bookmarks.';
         }
         $rowValues['title'] = "'" . mysqli_real_escape_string($conn, $titleStorage['text']) . "'";
+    }
+
+    if (isset($rowValues['notes']) && $rowValues['notes'] !== 'NULL') {
+        $plainNotes = bkm_import_row_literal_to_string($rowValues['notes']);
+        $notesStorage = bkm_prepare_text_storage($plainNotes, $shared);
+        if ($notesStorage === null) {
+            return 'Unlock your vault to import private bookmarks.';
+        }
+        $rowValues['notes'] = "'" . mysqli_real_escape_string($conn, $notesStorage['text']) . "'";
     }
 
     return '';

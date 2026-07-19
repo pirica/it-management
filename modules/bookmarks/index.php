@@ -125,7 +125,7 @@ $totalRows = $listResult['totalRows'];
 $totalPages = $listResult['totalPages'];
 $page = $listResult['page'];
 $offset = ($page - 1) * $perPage;
-$showBulkActions = ($totalRows >= $perPage);
+$showBulkActions = ($totalRows > 0);
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
@@ -317,7 +317,7 @@ if (!isset($crud_title)) {
 
                 <?php if ($showBulkActions): ?>
                 <div class="bulk-delete-bar card" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="button" class="btn btn-sm" id="bulk-select-toggle" data-itm-bulk-select="1">Select</button>
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
@@ -406,7 +406,7 @@ if (!isset($crud_title)) {
 
     <!-- Notes -->
     <td style="padding:8px;">
-        <?php echo sanitize($b['notes']); ?>
+        <?php echo sanitize($b['notes_display'] ?? $b['notes'] ?? ''); ?>
     </td>
 
     <!-- Visibility -->
