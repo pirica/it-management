@@ -912,9 +912,7 @@ if (!isset($crud_title)) {
                                                 📥
                                             </div>
                                             <?php if ($filter !== 'garbage' && (int)$note['employee_id'] === $logged_user_id): ?>
-                                            <div class="note-star note-qr-share" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>); event.stopPropagation();" title="Share to device" style="margin-left: 10px;">
-                                                <img src="../../images/QR.svg" alt="">
-                                            </div>
+                                            <div class="note-star note-qr-share" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>); event.stopPropagation();" title="Share to device" style="margin-left: 10px;">📱</div>
                                             <?php endif; ?>
                                             <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
                                             <?php if ($filter === "garbage"): ?>
@@ -1000,7 +998,7 @@ if (!isset($crud_title)) {
                                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                                     <div class="itm-actions-wrap">
                                                         <?php if ($filter !== 'garbage' && (int)$note['employee_id'] === $logged_user_id): ?>
-                                                        <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                                        <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>)" title="Share to device">📱</button>
                                                         <?php endif; ?>
                                                         <a class="btn btn-sm" href="view.php?id=<?php echo $note['id']; ?>">🔎</a>
                                                         <a class="btn btn-sm" href="edit.php?id=<?php echo $note['id']; ?>">✏️</a>
@@ -1133,7 +1131,7 @@ if (!isset($crud_title)) {
                                     <button class="btn btn-sm" onclick="downloadAllImages(<?php echo $data['id']; ?>)">📥 Download All Images</button>
                                 <?php endif; ?>
                                 <?php if ((int)($data['employee_id'] ?? 0) === $logged_user_id): ?>
-                                    <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$data['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                    <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$data['id']; ?>)" title="Share to device">📱</button>
                                 <?php endif; ?>
                             </div>
                             <?php $vimgs = json_decode($data['images_json'] ?? '[]', true); if (!empty($vimgs)): ?>

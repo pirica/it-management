@@ -544,7 +544,7 @@ if (!isset($crud_title)) {
         <?php endif; ?>
 
         <?php if (bkm_can_edit_bookmark($b, $user_id, $is_admin)): ?>
-            <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$b['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+            <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$b['id']; ?>)" title="Share to device">📱</button>
             <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm" title="Edit">✏️</a>
 
             <form method="POST" action="delete.php"
