@@ -981,6 +981,14 @@ Use this registry when a bespoke module **intentionally** fails a gated UI check
 
 **Seeded module:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI).
 
+### Named module verifiers (catalog: `scripts/scripts.php`)
+
+Run after changes to modules that previously relied only on MBQA/PHPUnit/repro scripts:
+
+- `php scripts/verify_rack_planner.php` — `modules/rack_planner/` price source sync
+- `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
+- `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
+
 ### Performance benchmarks
 
 | Script | Purpose |

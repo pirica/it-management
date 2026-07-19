@@ -38,5 +38,6 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - Do not regress list `data-itm-db-import-endpoint` or Actions header `data-itm-actions-origin="1"` when changing row actions. [Cursor-Fixed]
 - ISM final notification must wait until both HR and HOD are Approved. [Cursor-Valid]
 - Approval links use HMAC-SHA256 — verify with `hash_equals`; do not weaken token/secret handling. [Cursor-Valid]
+- **Named verifier:** `php scripts/verify_request_password.php` (catalog: `scripts/scripts.php`) — RBAC, HMAC, list markers, creator-only delete; PoC: `repro_request_password_bypass.php`.
 - Application dropdown built from `employee_system_access` must skip audit/meta columns or non-system flags appear as apps. [Cursor-Fixed]
 - Do not wrap create fields and Save/Back in one `.card` that `ui-layout.js` can mistake for the action bar — keep a dedicated `.form-actions` row. [Cursor-Fixed]

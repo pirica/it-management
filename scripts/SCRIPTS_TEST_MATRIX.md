@@ -340,8 +340,11 @@ php scripts/employees_delete_clear_table_test.php
 | 3 | `verify_metadata_column_cache.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_notes_ajax_contract.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_notes_ui.py` | MySQL | low | runtime | Domain regression verifier |
+| 3 | `verify_chatbot.php` | MySQL | low | runtime | Chatbot + knowledge_base contract verifier |
 | 3 | `verify_ops_report.php` | MySQL | low | runtime | Domain regression verifier |
+| 3 | `verify_rack_planner.php` | MySQL | low | runtime | Rack planner price source sync verifier |
 | 3 | `verify_reports_hub.php` | MySQL | low | runtime | Domain regression verifier |
+| 3 | `verify_request_password.php` | MySQL | low | runtime | Request Password workflow + delete guard verifier |
 | 3 | `verify_password_reset_flow.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_rbac_updated.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_roles_permissions.php` | MySQL | low | runtime | Domain regression verifier |

@@ -20,6 +20,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
   - `idf_unlinked:<token>` → `idf_positions.price` (token-style `equipment_id` `^[0-9]{4}-[0-9]{4}$`)
 - Do not keep price changes only inside `layout_json`.
 - **Tier D** bespoke module — navigation smoke in module browser QA; not standard flattened CRUD.
+- **Named verifier:** `php scripts/verify_rack_planner.php` (catalog: `scripts/scripts.php`) — price source sync + audit triggers; PHPUnit: `RackPlannerTest`.
 
 ## 5. UI Behavior Requirements
 - Vertical rack-unit grid; drag/drop placement.

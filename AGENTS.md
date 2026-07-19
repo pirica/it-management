@@ -311,6 +311,8 @@ When Rack Planner stores a priced device with code `catalog:<id>`, `equipment:<i
 
 Do not keep price edits only inside `rack_planner.layout_json`; source tables must remain aligned.
 
+**Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_rack_planner.php`; MBQA Tier D navigation smoke for `rack_planner`; PHPUnit: `php scripts/run_tests.php --filter RackPlanner`.
+
 #### Explorer module (mandatory)
 
 The explorer module (`modules/explorer/`) provides a secure, multi-tenant file system.
@@ -459,6 +461,8 @@ The chatbot module provides a floating technical assistance widget powered by a 
 3. **Configuration:** Chatbot visibility is controlled by `ui_configuration.enable_chatbot` (boolean).
 4. **Escalation:** When the keyword "escalate" is detected in the knowledge base response, the UI must display the IT department's contact information from `it_settings`.
 
+**Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_chatbot.php`.
+
 #### License Management (mandatory)
 
 The license management module (`modules/license_management/`) tracks software licenses per company.
@@ -483,6 +487,8 @@ The Request Password module (`modules/request_password/`) handles user requests 
 4. **Multi-tenancy:** Strictly scoped by `company_id`.
 5. **Index list contract:** list `<table>` must keep `data-itm-db-import-endpoint="index.php"` and Actions `th`/`td` must keep `class="itm-actions-cell"` + `data-itm-actions-origin="1"`.
 6. **Delete:** soft-delete only; **only the creating employee** (`created_by` = session `employee_id`) may delete. Non-owners who click Delete get a browser alert; crafted POSTs are rejected with the same flash + alert. Enforce again on the delete POST.
+
+**Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_request_password.php`; PoC: `php scripts/repro_request_password_bypass.php`.
 
 #### Company module access (mandatory)
 

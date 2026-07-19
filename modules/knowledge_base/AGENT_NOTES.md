@@ -42,6 +42,7 @@ Manage IT support articles, manuals, and procedures for the organization.
 - Always call `itm_api_enforce_rate_limit_or_exit()` and validate CSRF (`X-CSRF-Token`) on `chat_api.php`. [Cursor-Valid]
 - Knowledge-base search must keep `AND company_id = ?` — never allow cross-tenant article leaks into the chatbot. [Cursor-Valid]
 - Chatbot UI must HTML-escape replies (`escapeHtml`); escalate flows must read contact info from `it_settings`, not hardcode. [Cursor-Valid]
+- **Named verifier:** `php scripts/verify_chatbot.php` (catalog: `scripts/scripts.php`) — rate limit, CSRF, tenant scope, `escapeHtml`, `enable_chatbot` gating.
 
 ## 11. References
 - `AGENTS.md`
