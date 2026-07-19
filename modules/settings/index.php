@@ -125,13 +125,17 @@ if (isset($_SESSION['settings_flash_message'])) {
 }
 
 $csrfToken = itm_get_csrf_token();
+$settingsUserId = isset($_SESSION['employee_id']) ? (int) $_SESSION['employee_id'] : 0;
 $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+if ($settingsUserId > 0) {
+    itm_ui_config_sync_favicon_path_from_disk($conn, (int) $company_id, $settingsUserId);
+    $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+}
 
 // Why: Backup import/export can alter or exfiltrate the full database, so we enforce
 // an explicit per-request admin check here instead of relying only on menu visibility.
 $canManageBackups = false;
 $canManageMaintenanceTools = false;
-$settingsUserId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 if ($settingsUserId > 0) {
     $settingsRoleStmt = mysqli_prepare(
         $conn,
@@ -647,8 +651,9 @@ usort($backupFiles, static function ($a, $b) {
 });
 
 // Initialize configuration for form pre-filling.
-$currentFaviconUrl = itm_ui_config_favicon_url($currentUiConfig);
-$currentFaviconPath = trim((string)($currentUiConfig['favicon_path'] ?? ''));
+$currentFaviconResolvedPath = itm_ui_config_resolve_favicon_relative_path($currentUiConfig, (int) $company_id);
+$currentFaviconUrl = itm_ui_config_favicon_url($currentUiConfig, (int) $company_id);
+$currentFaviconPath = $currentFaviconResolvedPath;
 $currentFaviconDisplayPath = $currentFaviconPath !== '' ? '/' . ltrim($currentFaviconPath, '/') : '';
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
 $currentApiKey = trim((string)($currentUiConfig['api_key'] ?? ''));
