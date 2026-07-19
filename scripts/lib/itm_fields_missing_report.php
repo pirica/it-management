@@ -2679,10 +2679,71 @@ if (!function_exists('itm_fields_missing_extract_failure_message')) {
     }
 }
 
-if (!function_exists('itm_fields_missing_echo_status_line')) {
-    function itm_fields_missing_echo_status_line(string $line, string $nl): void
+if (!function_exists('itm_fields_missing_format_failure_message_with_module_link')) {
+    /**
+     * Browser: replace leading module slug with a link to modules/{slug}/index.php.
+     */
+    function itm_fields_missing_format_failure_message_with_module_link(string $message, string $moduleSlug): string
     {
-        $escaped = itm_script_escape_browser_pre_text($line);
+        $moduleSlug = trim($moduleSlug);
+        if ($moduleSlug === '' || strpos($message, $moduleSlug) !== 0) {
+            return $message;
+        }
+        if (!function_exists('itm_script_format_module_link')) {
+            require_once __DIR__ . '/script_browser_nav.php';
+        }
+        if (!function_exists('itm_script_format_module_link')) {
+            return $message;
+        }
+        if (function_exists('itm_script_is_cli_sapi') && itm_script_is_cli_sapi()) {
+            return $message;
+        }
+
+        $link = itm_script_format_module_link($moduleSlug);
+        if ($link === $moduleSlug) {
+            return $message;
+        }
+
+        return $link . substr($message, strlen($moduleSlug));
+    }
+}
+
+if (!function_exists('itm_fields_missing_format_status_line_with_module_link')) {
+    function itm_fields_missing_format_status_line_with_module_link(string $line, string $moduleSlug): string
+    {
+        $moduleSlug = trim($moduleSlug);
+        if ($moduleSlug === '') {
+            return $line;
+        }
+        if (strpos($line, '<a ') !== false) {
+            return $line;
+        }
+        if (preg_match('/^(\[(?:SKIP\]\[(?:pass|fail)(?:\[reviewed\])?|PASS|FAIL|WARN|INFO)\])\s+(.*)$/s', $line, $matches)) {
+            $body = itm_fields_missing_format_failure_message_with_module_link((string) $matches[2], $moduleSlug);
+
+            return (string) $matches[1] . ' ' . $body;
+        }
+
+        return itm_fields_missing_format_failure_message_with_module_link($line, $moduleSlug);
+    }
+}
+
+if (!function_exists('itm_fields_missing_status_line_contains_module_link')) {
+    function itm_fields_missing_status_line_contains_module_link(string $line): bool
+    {
+        return strpos($line, '<a ') !== false || strpos($line, '<a href=') !== false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_echo_status_line')) {
+    function itm_fields_missing_echo_status_line(string $line, string $nl, string $moduleSlug = ''): void
+    {
+        if ($moduleSlug !== '') {
+            $line = itm_fields_missing_format_status_line_with_module_link($line, $moduleSlug);
+        }
+        $escaped = itm_fields_missing_status_line_contains_module_link($line)
+            ? $line
+            : itm_script_escape_browser_pre_text($line);
         if (function_exists('itm_script_format_status_line')) {
             echo itm_script_format_status_line($escaped) . $nl;
             return;
@@ -2718,7 +2779,7 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
             $reviewed = is_array($failure)
                 && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure);
             $label = itm_fields_missing_result_status_label($skippedUi, false, $reviewed);
-            itm_fields_missing_echo_status_line("{$label} {$message}", $nl);
+            itm_fields_missing_echo_status_line("{$label} {$message}", $nl, $moduleSlug);
         }
         foreach ($moduleReport['passes'] ?? [] as $passLine) {
             $passText = trim((string) $passLine);
@@ -2749,12 +2810,14 @@ if (!function_exists('itm_fields_missing_echo_module_check_lines')) {
                 }
                 itm_fields_missing_echo_status_line(
                     $summaryLabel . ' ' . $moduleSlug . ' — bespoke gate: ' . $failCount . ' failure(s)' . $suffix,
-                    $nl
+                    $nl,
+                    $moduleSlug
                 );
             } else {
                 itm_fields_missing_echo_status_line(
                     '[SKIP][pass] ' . $moduleSlug . ' — bespoke gate passed (full UI coverage not audited)',
-                    $nl
+                    $nl,
+                    $moduleSlug
                 );
             }
         }
@@ -3206,7 +3269,8 @@ if (!function_exists('itm_fields_missing_format_skip_gate_failure_summary_block'
             $reviewed = !empty($failure['reviewed'])
                 || ($moduleSlug !== '' && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure));
             $prefix = $reviewed ? '[SKIP][fail][reviewed]' : '[SKIP][fail]';
-            $line = $prefix . ' ' . $message;
+            $messageOut = itm_fields_missing_format_failure_message_with_module_link($message, $moduleSlug);
+            $line = $prefix . ' ' . $messageOut;
             $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
         }
 
