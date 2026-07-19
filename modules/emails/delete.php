@@ -5,6 +5,11 @@
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    header('Location: index.php?tab=send_logs');
+    exit;
+}
+
 itm_require_post_csrf();
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
