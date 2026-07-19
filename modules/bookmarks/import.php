@@ -13,6 +13,7 @@ if ($company_id <= 0) {
 $errors = [];
 $success = '';
 $skippedImports = [];
+$importedRows = [];
 
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
 $folder_tree = bkm_build_folder_tree($all_folders);
@@ -67,11 +68,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($result['imported']) {
                     $bookmarkCount++;
+                    $importedRows[] = [
+                        'title' => $b['title'],
+                        'url' => $b['url'],
+                        'summary' => bkm_format_import_success_summary($folderLabel),
+                        'row_class' => 'bkm-import-row-success',
+                    ];
                 } else {
                     $skippedImports[] = [
                         'title' => $b['title'],
                         'url' => $b['url'],
                         'summary' => bkm_format_import_skip_summary($result['skip_reason'], $folderLabel),
+                        'row_class' => bkm_import_skip_row_class($result['skip_reason']),
                     ];
                 }
             }
@@ -109,11 +117,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($result['imported']) {
                     $bookmarkCount++;
+                    $importedRows[] = [
+                        'title' => $b['title'],
+                        'url' => $b['url'],
+                        'summary' => bkm_format_import_success_summary($folderLabel),
+                        'row_class' => 'bkm-import-row-success',
+                    ];
                 } else {
                     $skippedImports[] = [
                         'title' => $b['title'],
                         'url' => $b['url'],
                         'summary' => bkm_format_import_skip_summary($result['skip_reason'], $folderLabel),
+                        'row_class' => bkm_import_skip_row_class($result['skip_reason']),
                     ];
                 }
             }
@@ -154,6 +169,20 @@ if (!isset($crud_title)) {
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .bkm-import-results-table tr.bkm-import-row-success td {
+            background-color: #d4edda;
+        }
+        .bkm-import-results-table tr.bkm-import-row-duplicate td {
+            background-color: #f8d7da;
+        }
+        [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-success td {
+            background-color: rgba(40, 167, 69, 0.22);
+        }
+        [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-duplicate td {
+            background-color: rgba(220, 53, 69, 0.22);
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -171,10 +200,33 @@ if (!isset($crud_title)) {
                 <ul><?php foreach ($errors as $e): ?><li><?php echo sanitize($e); ?></li><?php endforeach; ?></ul>
             </div>
         <?php endif; ?>
+        <?php if (!empty($importedRows)): ?>
+            <div class="card" style="margin-bottom:16px;">
+                <h3>Imported (<?php echo count($importedRows); ?>)</h3>
+                <table class="table bkm-import-results-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>URL</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($importedRows as $row): ?>
+                            <tr class="<?php echo sanitize($row['row_class']); ?>">
+                                <td><?php echo sanitize($row['title']); ?></td>
+                                <td><?php echo sanitize($row['url']); ?></td>
+                                <td><?php echo sanitize($row['summary']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
         <?php if (!empty($skippedImports)): ?>
             <div class="card" style="margin-bottom:16px;">
                 <h3>Not imported (<?php echo count($skippedImports); ?>)</h3>
-                <table class="table">
+                <table class="table bkm-import-results-table">
                     <thead>
                         <tr>
                             <th>Title</th>
@@ -184,7 +236,7 @@ if (!isset($crud_title)) {
                     </thead>
                     <tbody>
                         <?php foreach ($skippedImports as $row): ?>
-                            <tr>
+                            <tr<?php echo $row['row_class'] !== '' ? ' class="' . sanitize($row['row_class']) . '"' : ''; ?>>
                                 <td><?php echo sanitize($row['title']); ?></td>
                                 <td><?php echo sanitize($row['url']); ?></td>
                                 <td><?php echo sanitize($row['summary']); ?></td>
@@ -219,7 +271,7 @@ if (!isset($crud_title)) {
             <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here. Folder headings (<code>&lt;H3&gt;</code>) in the file are created automatically and bookmarks are imported into the matching folder.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
             <p><strong>Folder:</strong> Choose <code>Root</code> or a parent folder. HTML imports nest file folders under that target; CSV imports place every row in the selected folder.</p>
-            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Skipped rows are listed as <code>Reason → Folder</code> (for example <code>Duplicate URL → WD</code>).</p>
+            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Imported rows are highlighted green; duplicate URL skips are highlighted red (<code>Reason → Folder</code>).</p>
         </div>
     </div>
 </div>
