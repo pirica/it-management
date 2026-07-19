@@ -464,6 +464,72 @@
           "note": "No edit.php form"
         }
       ]
+    },
+    "emails": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Three-tab Email Management shell (Send Logs | SMTP Configurations | Alert Rules): send-log list/search/sort/pagination/bulk live in tabs/send_logs.php; SMTP profiles use inline forms and create.php/edit.php redirects to index.php?tab=smtp; send-log soft-delete via delete.php (private-data exempt).",
+      "checks": [
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Standalone delete.php soft-deletes send logs (bulk/clear_table); POST enforced via itm_require_post_csrf() — static audit also expects $_SERVER REQUEST_METHOD in file"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php redirects to index.php?tab=smtp — SMTP profile form is inline on the SMTP tab, not a scaffold create.php screen"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php redirects to index.php?tab=smtp — SMTP edit is inline on the SMTP tab"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "Send Logs table (🔎 view + itm-actions-cell) is in tabs/send_logs.php — check_ui_configuration_coverage scans index.php only"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php redirects to SMTP tab — Send Logs are append-only via itm_send_email(); ➕ on SMTP tab is server-managed in index.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Settings new_button_position applies to index.php SMTP-tab header; audit treats create.php redirect as read-only scaffold"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "SMTP-tab ➕ uses btn-primary itm-list-new-button in index.php; audit does not see it when create.php redirects"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "Send Logs use bespoke 📗 Export Excel (exportEmailLogsXlsx) in tabs/send_logs.php, not table-tools.js on an index.php table"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Server-side search on to_email/subject/status/details/sent_at in tabs/send_logs.php — not visible to index.php static scan"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Send Logs column sort (sort/dir + ▲/▼) implemented in tabs/send_logs.php — audit scans index.php only"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Send Logs use itm_resolve_records_per_page() with Previous/Next in tabs/send_logs.php — list markup not in index.php"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar on Send Logs tab (tabs/send_logs.php) posts to delete.php — gate scan looks for table in index.php only"
+        }
+      ]
     }
   }
 }
