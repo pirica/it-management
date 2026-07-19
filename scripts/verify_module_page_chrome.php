@@ -2,7 +2,7 @@
 /**
  * Cross-check module page chrome: browser <title> (titles_list.php) + Settings favicon wiring.
  *
- * Why: fields_missing bespoke gate audits index/create/edit/view/list_all per module;
+ * Why: fields_missing bespoke gate audits index/create/edit/view/list_all/view_all per module;
  * titles_list.php scans every modules PHP file under modules/. This script reports title +
  * favicon for that scope; auxiliary files (delete, export, partials, join) are [SKIP] not [FAIL].
  *
@@ -89,7 +89,7 @@ foreach ($files as $path) {
 
 echo '--- Module page chrome verify ---' . $nl;
 echo 'PHP files scanned: ' . (int) $stats['scanned'] . $nl;
-echo 'Skipped (out of scope — not index/create/edit/view/list_all): ' . (int) $stats['skipped_out_of_scope'] . $nl;
+echo 'Skipped (out of scope — not index/create/edit/view/list_all/view_all): ' . (int) $stats['skipped_out_of_scope'] . $nl;
 echo 'Skipped (no standalone <head> on CRUD entry): ' . (int) $stats['skipped_no_standalone_head'] . $nl;
 echo 'In-scope with standalone <head>: ' . (int) $stats['with_head'] . $nl;
 echo 'Browser title pass: ' . (int) $stats['title_pass'] . $nl;

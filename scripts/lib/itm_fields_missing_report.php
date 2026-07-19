@@ -160,7 +160,7 @@ if (!function_exists('itm_fields_missing_discover_module_targets')) {
 
 if (!function_exists('itm_fields_missing_module_file_bundle')) {
     /**
-     * @return array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,delete:string}
+     * @return array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,view_all:string,delete:string}
      */
     function itm_fields_missing_module_file_bundle(string $moduleSlug, ?string $rootPath = null): array
     {
@@ -177,6 +177,7 @@ if (!function_exists('itm_fields_missing_module_file_bundle')) {
             'index' => $base . 'index.php',
             'includes' => $base . 'includes',
             'list_all' => $base . 'list_all.php',
+            'view_all' => $base . 'view_all.php',
         ];
     }
 }
@@ -2224,7 +2225,7 @@ if (!function_exists('itm_fields_missing_file_has_standalone_html_head')) {
 
 if (!function_exists('itm_fields_missing_collect_page_chrome_checks')) {
     /**
-     * Favicon + browser <title> checks for index/create/edit/view/list_all files with standalone <head>.
+     * Favicon + browser <title> checks for index/create/edit/view/list_all/view_all files with standalone <head>.
      *
      * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,delete?:string} $files
      * @return array<string, array{status:string,details:string}>
@@ -2238,6 +2239,7 @@ if (!function_exists('itm_fields_missing_collect_page_chrome_checks')) {
             'edit' => (string) ($files['edit'] ?? ''),
             'view' => (string) ($files['view'] ?? ''),
             'list_all' => (string) ($files['list_all'] ?? ''),
+            'view_all' => (string) ($files['view_all'] ?? ''),
         ];
 
         foreach ($screens as $screen => $path) {
