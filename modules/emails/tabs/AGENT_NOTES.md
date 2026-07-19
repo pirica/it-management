@@ -18,7 +18,7 @@ Hosts the individual PHP view files that render the tab panes (Send Logs, SMTP c
 
 ## 5. UI Behavior Requirements
 - **alert_rules.php** — Configures automatic notifications (expiry alerts, reminders) with toggles and target recipients.
-- **send_logs.php** — Lists historical emails with status indicators (Sent/Failed). Shows detail popups on click.
+- **send_logs.php** — Lists historical emails with status indicators (Sent/Failed); server-side search form (`$_GET['search']`, emoji-only 🔙 reset) filters rows loaded in parent `index.php`.
 - **smtp.php** — Renders the form to add/edit SMTP endpoints, including host, port, username, encrypted password, from address/name, and secure toggles.
 - Action column cells use `class="itm-actions-cell"` and `data-itm-actions-origin="1"`.
 
