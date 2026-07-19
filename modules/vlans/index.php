@@ -458,7 +458,12 @@ if ($crud_action === 'delete') {
         if ($hasCompany && $company_id > 0) {
             $where = ' WHERE company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+            $where = itm_crud_append_not_deleted_predicate($where);
+        }
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+            : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
@@ -484,7 +489,9 @@ if ($crud_action === 'delete') {
             if ($hasCompany && $company_id > 0) {
                 $where .= ' AND company_id=' . (int)$company_id;
             }
-            $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
+            $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+                ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
+                : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
@@ -497,11 +504,20 @@ if ($crud_action === 'delete') {
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
+        $usageError = '';
+        if (!itm_can_delete_record($conn, $crud_table, 'id', $id, $company_id, $usageError)) {
+            $_SESSION['crud_error'] = $usageError;
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
         $where = ' WHERE id=' . $id;
         if ($hasCompany && $company_id > 0) {
             $where .= ' AND company_id=' . (int)$company_id;
         }
-        $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
+        $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
+            ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
+            : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
@@ -749,6 +765,9 @@ if ($crud_table === 'vlans' && in_array($crud_action, ['index', 'list_all'], tru
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
+}
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
 }
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
