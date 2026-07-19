@@ -581,6 +581,10 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 
 // Pagination for Table View
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $perPage;
@@ -777,10 +781,13 @@ if (!isset($crud_title)) {
                 </div>
                 <div class="notes-content">
                     <?php if ($crud_action === "index" || $crud_action === "list_all"): ?>
-                        <div class="notes-header">
-                            <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="btn btn-primary itm-list-new-button" title="Create" style="margin-bottom: 20px;">➕</a>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h1>
+                        <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                            <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                                <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                            <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">
                                     <?php
                                         if ($filter === "reminders") echo "🔔 Reminders";
                                         elseif ($filter === "tag") echo "🏷️ " . sanitize($_GET["label"] ?? "");
@@ -793,17 +800,21 @@ if (!isset($crud_title)) {
                                         elseif ($filter === "shared_with") echo "👤 Shared With";
                                         else echo "💡 Notes";
                                     ?>
-                                </h1>
-                                <div style="display: flex; gap: 10px;">
+                            </h1>
+                            <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                                <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                        </div>
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 8px;">
                                     <?php if ($crud_action === 'index'): ?>
                                         <a href="list_all.php" class="btn btn-sm">📊 Table View</a>
                                     <?php else: ?>
                                         <a href="index.php" class="btn btn-sm">💡 Keep View</a>
                                     <?php endif; ?>
-                                </div>
                             </div>
                             <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
-                        </div>
 
                         <div class="card" style="margin-bottom:16px; margin-top: 20px;">
                             <form method="GET" action="<?php echo $crud_action === 'list_all' ? 'list_all.php' : 'index.php'; ?>" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
