@@ -176,11 +176,17 @@ if (!isset($crud_title)) {
         .bkm-import-results-table tr.bkm-import-row-duplicate td {
             background-color: #f8d7da;
         }
+        .bkm-import-results-table tr.bkm-import-row-invalid td {
+            background-color: #fff3cd;
+        }
         [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-success td {
             background-color: rgba(40, 167, 69, 0.22);
         }
         [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-duplicate td {
             background-color: rgba(220, 53, 69, 0.22);
+        }
+        [data-theme="dark"] .bkm-import-results-table tr.bkm-import-row-invalid td {
+            background-color: rgba(255, 193, 7, 0.22);
         }
     </style>
 </head>
