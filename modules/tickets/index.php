@@ -407,7 +407,7 @@ if (!isset($crud_title)) {
             <?php if ($showBulkActions): ?>
                 <!-- Guard bulk actions behind per-page threshold to align with global UX settings. -->
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
                         <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
@@ -503,6 +503,7 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 </body>
 </html>
 <?php

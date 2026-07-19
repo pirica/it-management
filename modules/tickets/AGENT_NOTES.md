@@ -29,6 +29,8 @@ The central helpdesk/ticketing module for managing support requests.
 - **Photo Upload**: Supports uploading photos/screenshots for troubleshooting.
 - **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view. List sort uses `$sort` / `$dir` GET params with `$sortSql` in `ORDER BY` (static UI audit contract).
 - **Archive toggle**: `archive.php` POST sets `is_archived` 0/1 with company scope.
+- **Bulk toolbar:** when `$totalRows >= $perPage`, include `bulk-delete-selection.js` and `data-itm-bulk-cancel="1"` Cancel in `index.php` HTML.
+- **Create/edit audit scrape:** business **Created By** (`created_by_employee_id`) and **ticket logged-at** (`created_at`) are editable on `create.php` — not scaffold audit columns; reviewed in `scripts/data/fields_missing_reviewed.json`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import on `index.php`.
