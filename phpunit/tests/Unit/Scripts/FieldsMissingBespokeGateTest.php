@@ -634,6 +634,42 @@ PHP;
         $this->assertStringContainsString('[SKIP][fail][reviewed] backup_tape_log bespoke gate: Search NOT OK', $plain);
     }
 
+    public function testSkipGateFailureSummaryUsesFailureCodeForReviewedTag(): void
+    {
+        $report = [
+            'modules' => [
+                [
+                    'module' => 'switch_ports',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        [
+                            'code' => 'bespoke_hard_delete',
+                            'message' => 'switch_ports bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)',
+                        ],
+                    ],
+                ],
+                [
+                    'module' => 'tickets',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        [
+                            'code' => 'ui_excluded_exposed',
+                            'message' => 'tickets excluded UI column created_by: visible on create/edit forms',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        itm_fields_missing_apply_reviewed_flags_to_report($report);
+
+        $block = itm_fields_missing_format_skip_gate_failure_summary_block($report, "\n");
+
+        $this->assertStringContainsString('[SKIP][fail][reviewed] switch_ports bespoke gate: delete uses hard DELETE', $block);
+        $this->assertStringContainsString('[SKIP][fail][reviewed] tickets excluded UI column created_by', $block);
+        $this->assertStringNotContainsString("\n[SKIP][fail] switch_ports", $block);
+        $this->assertStringNotContainsString("\n[SKIP][fail] tickets excluded", $block);
+    }
+
     public function testReviewedRegistryValidationPasses(): void
     {
         $registry = itm_fields_missing_load_reviewed_registry();

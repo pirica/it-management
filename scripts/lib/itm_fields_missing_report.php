@@ -3175,11 +3175,20 @@ if (!function_exists('itm_fields_missing_format_skip_gate_failure_summary_block'
             if (!is_array($moduleReport['failures'] ?? null)) {
                 continue;
             }
+            $moduleSlug = (string) ($moduleReport['module'] ?? '');
             foreach ($moduleReport['failures'] as $failure) {
-                $message = itm_fields_missing_extract_failure_message($failure);
-                if ($message !== '') {
-                    $messages[] = $message;
+                if (!is_array($failure)) {
+                    continue;
                 }
+                $message = itm_fields_missing_extract_failure_message($failure);
+                if ($message === '') {
+                    continue;
+                }
+                $messages[] = [
+                    'message' => $message,
+                    'failure' => $failure,
+                    'module' => $moduleSlug,
+                ];
             }
         }
 
@@ -3190,13 +3199,12 @@ if (!function_exists('itm_fields_missing_format_skip_gate_failure_summary_block'
 
         $out = str_repeat('-', 72) . $nl;
         $out .= 'Bespoke gate failure summary (' . $count . ' — informational, not in Result total):' . $nl;
-        foreach ($messages as $message) {
-            $failure = ['message' => $message];
-            $moduleSlug = '';
-            if (preg_match('/^([a-z0-9_]+)\s+bespoke gate:/i', $message, $matches) === 1) {
-                $moduleSlug = (string) ($matches[1] ?? '');
-            }
-            $reviewed = $moduleSlug !== '' && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure);
+        foreach ($messages as $entry) {
+            $message = (string) ($entry['message'] ?? '');
+            $failure = is_array($entry['failure'] ?? null) ? $entry['failure'] : ['message' => $message];
+            $moduleSlug = (string) ($entry['module'] ?? '');
+            $reviewed = !empty($failure['reviewed'])
+                || ($moduleSlug !== '' && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure));
             $prefix = $reviewed ? '[SKIP][fail][reviewed]' : '[SKIP][fail]';
             $line = $prefix . ' ' . $message;
             $out .= ($formatLine !== null ? $formatLine($line) : $line) . $nl;
