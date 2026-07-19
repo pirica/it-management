@@ -987,9 +987,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="check_fk_label_search_coverage.php" target="_blank" rel="nofollow noreferrer">check_fk_label_search_coverage.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
-                    <td>Static audit: every module with server-side list search must match visible FK/label columns (shared CRUD helper, EXISTS/JOIN label LIKE, employee JOIN/CONCAT, or scalar-only fields). No per-module allowlist.</td>
-                    <td><code>php scripts/check_fk_label_search_coverage.php</code> — smoke step 4 / AGENTS.md after list search changes; exit <code>0</code> on full coverage.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: every module with server-side list search must match visible FK/label columns (shared CRUD helper, scalar column helper, EXISTS/JOIN label LIKE, employee JOIN/CONCAT, or scalar-only fields). No per-module allowlist.</td>
+                    <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_fk_label_search_coverage.php</code> — smoke step 4 / AGENTS.md after list search changes; exit <code>0</code> on full coverage.</td>
                 </tr>
                 <tr>
                     <td><a href="check_display_field_columns_search.php" target="_blank" rel="nofollow noreferrer">check_display_field_columns_search.php</a></td>

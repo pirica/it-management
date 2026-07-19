@@ -551,7 +551,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 | 1 | `php -l` on every `*.php` | Syntax lint |
 | 2 | `php scripts/check_csrf_coverage.php` | POST handlers / forms have CSRF |
 | 3 | `php scripts/check_sql_injection_coverage.php` | SQLi coverage audit |
-| 4 | `php scripts/check_fk_label_search_coverage.php` | FK label search static coverage (100% gate) |
+| 4 | `php scripts/check_fk_label_search_coverage.php` | FK label search static coverage (100% gate). Browser: `scripts/check_fk_label_search_coverage.php` (Administrator session). |
 
 **database-import** job also runs `php scripts/verify_crud_fk_label_search.php` after import (requires MySQL).
 
