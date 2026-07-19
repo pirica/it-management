@@ -2224,7 +2224,7 @@ if (!function_exists('itm_fields_missing_file_has_standalone_html_head')) {
 
 if (!function_exists('itm_fields_missing_collect_page_chrome_checks')) {
     /**
-     * Favicon + browser <title> checks for index/create/edit/view files with standalone <head>.
+     * Favicon + browser <title> checks for index/create/edit/view/list_all files with standalone <head>.
      *
      * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string,delete?:string} $files
      * @return array<string, array{status:string,details:string}>
@@ -2237,6 +2237,7 @@ if (!function_exists('itm_fields_missing_collect_page_chrome_checks')) {
             'create' => (string) ($files['create'] ?? ''),
             'edit' => (string) ($files['edit'] ?? ''),
             'view' => (string) ($files['view'] ?? ''),
+            'list_all' => (string) ($files['list_all'] ?? ''),
         ];
 
         foreach ($screens as $screen => $path) {
