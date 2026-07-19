@@ -1018,13 +1018,14 @@ if (!isset($crud_title)) {
                         $catalogOnlineSupplier = trim((string)($_GET['online_supplier'] ?? ''));
                         $catalogOnlineType = trim((string)($_GET['online_type'] ?? ''));
                         $catalogOnlineSearchUrl = cr_catalog_search_url($catalogOnlineQuery);
-                        $catalogAddParams = [
-                            'online_query' => $catalogOnlineQuery,
-                            'online_supplier' => $catalogOnlineSupplier,
-                            'online_type' => $catalogOnlineType,
-                            'online_weblink' => $catalogOnlineSearchUrl,
-                        ];
-                        $catalogAddProductHref = htmlspecialchars('create.php?' . http_build_query($catalogAddParams), ENT_QUOTES, 'UTF-8');
+                        $catalogAddProductHref = htmlspecialchars(
+                            'create.php?online_query=' . rawurlencode($catalogOnlineQuery)
+                            . '&online_supplier=' . rawurlencode($catalogOnlineSupplier)
+                            . '&online_type=' . rawurlencode($catalogOnlineType)
+                            . '&online_weblink=' . rawurlencode($catalogOnlineSearchUrl),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        );
                     ?>
                     <div class="card" style="margin-bottom:16px;">
                         <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
