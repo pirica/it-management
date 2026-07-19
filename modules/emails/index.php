@@ -33,6 +33,8 @@ if (!in_array($status_filter, ['', 'sent', 'failed'], true)) {
     $status_filter = '';
 }
 
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+
 $errors = [];
 $notices = [];
 
@@ -223,6 +225,22 @@ if ($status_filter !== '') {
     $logTypes .= 's';
     $logParams[] = $status_filter;
 }
+if ($searchRaw !== '') {
+    $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false) ? $searchRaw : '%' . $searchRaw . '%';
+    $logSql .= ' AND (
+        to_email LIKE ?
+        OR subject LIKE ?
+        OR status LIKE ?
+        OR details LIKE ?
+        OR CAST(sent_at AS CHAR) LIKE ?
+    )';
+    $logTypes .= 'sssss';
+    $logParams[] = $searchPattern;
+    $logParams[] = $searchPattern;
+    $logParams[] = $searchPattern;
+    $logParams[] = $searchPattern;
+    $logParams[] = $searchPattern;
+}
 $logSql .= ' ORDER BY sent_at DESC, id DESC LIMIT 500';
 $logStmt = mysqli_prepare($conn, $logSql);
 if ($logStmt) {
@@ -267,6 +285,12 @@ if ($editSmtpId > 0) {
 
 $alertRules = itm_email_get_alert_rules($conn, $company_id);
 $alertCatalog = itm_email_alert_rule_catalog();
+
+$sendLogsBaseQuery = ['tab' => 'send_logs'];
+if ($searchRaw !== '') {
+    $sendLogsBaseQuery['search'] = $searchRaw;
+}
+$sendLogsClearUrl = 'index.php?tab=send_logs' . ($status_filter !== '' ? '&status=' . rawurlencode($status_filter) : '');
 
 $page_title = 'Email Management';
 $modulePath = dirname($_SERVER['PHP_SELF']);
@@ -328,15 +352,15 @@ if (!isset($crud_title)) {
             <?php endforeach; ?>
 
             <div class="email-stats">
-                <a class="stat-card stat-card-link" href="index.php?tab=send_logs&amp;status=">
+                <a class="stat-card stat-card-link" href="index.php?<?php echo sanitize(http_build_query($sendLogsBaseQuery)); ?>">
                     <div class="stat-label">Total Emails Logged</div>
                     <div class="stat-number"><?php echo (int)$totalEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="index.php?tab=send_logs&amp;status=sent">
+                <a class="stat-card stat-card-link" href="index.php?<?php echo sanitize(http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'sent']))); ?>">
                     <div class="stat-label">Successfully Sent</div>
                     <div class="stat-number"><?php echo (int)$sentEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="index.php?tab=send_logs&amp;status=failed">
+                <a class="stat-card stat-card-link" href="index.php?<?php echo sanitize(http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'failed']))); ?>">
                     <div class="stat-label">Failed</div>
                     <div class="stat-number"><?php echo (int)$failedEmails; ?></div>
                 </a>

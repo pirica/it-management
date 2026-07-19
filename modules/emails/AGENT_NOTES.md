@@ -25,7 +25,8 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Tabs: **Send Logs** | **SMTP Configurations** | **Alert Rules**.
 - Validation errors on `index.php` use `itm_render_alert_errors($errors)` (not raw `foreach` alert markup).
-- Stat cards link to filtered send logs (`status=sent` / `failed`).
+- Stat cards link to filtered send logs (`status=sent` / `failed`); search term preserved on stat-card links when active.
+- **Send Logs tab:** server-side search via `$_GET['search']` on `to_email`, `subject`, `status`, `details`, and `sent_at` (SQL `LIKE`); Search submit + emoji-only 🔙 reset on `tabs/send_logs.php`.
 - SMTP form: toggle **Set as default SMTP**; password field with reveal button; **IMAP** port; **POP3** port, TLS mode, and require-secure toggle; test send on edit.
 - Alert rules: per-rule toggle, days-before (expiry rules), comma-separated notify emails.
 - Sidebar: **Admin → 📧 Email Management** (`includes/ui_config.php`).

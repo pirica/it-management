@@ -1,9 +1,25 @@
+<div class="card" style="margin-bottom:16px;">
+    <form method="GET" class="table-search-inline" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <input type="hidden" name="tab" value="send_logs">
+        <?php if ($status_filter !== ''): ?>
+            <input type="hidden" name="status" value="<?php echo sanitize($status_filter); ?>">
+        <?php endif; ?>
+        <div class="form-group" style="margin:0;">
+            <label for="search">Search (all fields)</label>
+            <input type="search" name="search" id="search" class="form-control" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search...">
+        </div>
+        <button type="submit" class="btn btn-primary" title="🔎 Search">Search</button>
+        <?php if ($searchRaw !== ''): ?>
+            <a class="btn" href="<?php echo sanitize($sendLogsClearUrl); ?>" title="Clear">🔙</a>
+        <?php endif; ?>
+    </form>
+</div>
 <div class="card">
     <div class="email-toolbar">
         <h2>Send Log</h2>
         <button type="button" class="btn btn-sm btn-success" onclick="exportEmailLogsXlsx()">📗 Export Excel</button>
     </div>
-    <p><?php echo sanitize((string)count($sendLogs)); ?> email log entries<?php if ($status_filter !== ''): ?> (<?php echo sanitize(ucfirst($status_filter)); ?> only)<?php endif; ?></p>
+    <p><?php echo sanitize((string)count($sendLogs)); ?> email log entries<?php if ($status_filter !== ''): ?> (<?php echo sanitize(ucfirst($status_filter)); ?> only)<?php endif; ?><?php if ($searchRaw !== ''): ?> matching <strong><?php echo sanitize($searchRaw); ?></strong><?php endif; ?></p>
     <div class="table-responsive">
         <table class="data-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
             <thead>
