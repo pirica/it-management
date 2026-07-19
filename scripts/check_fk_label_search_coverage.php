@@ -28,6 +28,8 @@ $scanRelativeFiles = [
     'includes/partials/render.php',
     'ajax_handler.php',
     'gallery_helpers.php',
+    'events_vault_helpers.php',
+    'notes_vault_helpers.php',
 ];
 
 /**
@@ -67,6 +69,10 @@ function fk_search_content_has_label_coverage($content)
         'itm_ipam_fetch_address_list',
         'itm_ipam_count_address_list',
         'itm_ipam_address_list_where_clause',
+        'events_row_matches_search',
+        'events_query_events_for_list',
+        'notes_row_matches_search',
+        'notes_query_notes_for_list',
     ];
     foreach ($helperMarkers as $marker) {
         if (strpos($content, $marker) !== false) {

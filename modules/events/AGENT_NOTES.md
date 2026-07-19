@@ -17,7 +17,7 @@ Manages scheduled events, meetings, and maintenance windows. Private events (no 
 - **Visibility**: Owner (`employee_id`) or any employee listed in `shared_with_json` can view. Only the owner may edit, delete, or create share sessions.
 - **Private vs shared**: Empty/null `shared_with_json` → encrypt `title`, `description`, `location` with `$_SESSION['vault_key']` via `events_prepare_event_fields_for_storage()`. Non-empty `shared_with_json` → plaintext for recipients.
 - **Vault lock UI**: List/create and owner private edit/view require vault unlock (`events_vault_bootstrap.php`, `events_ui_requires_vault_lock_screen()`). Shared events remain readable when vault is locked.
-- **Search**: In-memory filter after hydrate (`events_query_events_for_list()`); do not SQL `LIKE` on encrypted columns.
+- **Search**: In-memory filter after hydrate (`events_query_events_for_list()` → `events_row_matches_search()` for `category_name` and shared assignee `username`); do not SQL `LIKE` on encrypted columns. Static audit: `scripts/check_fk_label_search_coverage.php` scans `events_vault_helpers.php`.
 - **Master key change**: `itm_vault_reencrypt_events()` in `includes/itm_vault_master_key.php` (called from `user-config.php`).
 
 ## 5. UI Behavior Requirements
