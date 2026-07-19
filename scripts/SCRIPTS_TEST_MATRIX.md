@@ -223,6 +223,7 @@ php scripts/employees_delete_clear_table_test.php
 | 3 | `detect_fk_dropdown_ui_risk_ui.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |
 | 3 | `employee_fields_missing.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |
 | 3 | `fields_missing.php` | MySQL | low | runtime | All-module schema/UI audit (`--module=` / `--json`) |
+| 3 | `fields_missing_reviewed.php` | PHP | low | runtime | Reviewed bespoke gate manifest (`fields_missing_reviewed.json`; `--json`) |
 | 3 | `extract_by_fields.php` | PHP | low | runtime | Read-mostly listing / diagram tool |
 | 3 | `generate_FK_employee_id.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |
 | 3 | `generate_reassignment.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |

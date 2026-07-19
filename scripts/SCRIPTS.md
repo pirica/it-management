@@ -953,6 +953,25 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 | `php scripts/fields_missing.php` | **All-module** schema/UI audit: every discoverable module with a `database.sql` table compares live MySQL columns to canonical schema; flattened **dynamic scaffold** modules print **`[PASS] audited UI column`** lines per business field (create/edit, view, index — detects `require __DIR__ . '/index.php'` wrappers, `$formColumns`, and `$uiColumns`/`$viewColumns` loops); manual modules keep legacy `UI covers {field}` checks; bespoke modules (`docs/list_bespoke_UI.txt`, including gallery/matrix UIs such as `floor_plans` and `role_*`) and status-driven slugs (`employees`, `equipment`, `patches_updates`, `tickets`) print gated **`[SKIP][pass]`** / **`[SKIP][fail]`** / **`[SKIP][fail][reviewed]`** only (page UI: browser `<title>`, server-side favicon in `<head>`, centered list `<h1>`, Settings `new_button_position` create slots; list UI when a table exists: Search/Sort/Pagination + nav titles, bulk delete/cancel, Actions layout, new button, Import/Export, sample data on scaffold hybrids, POST CSRF — mirrors `check_ui_configuration_coverage.php`, `check_index_table_compliance.php`, and MBQA `ui_check`/`bulk_cancel`/`pagination` static HTML); **`[PASS] excluded UI column`** for hidden meta on scaffold modules. Reviewed bespoke failures: **`scripts/data/fields_missing_reviewed.json`** (manifest: `php scripts/fields_missing_reviewed.php`). Shared helpers: `scripts/lib/itm_ui_list_contract_checks.php`. CLI `--module=<slug>` / `--json`. Exit `1` on actionable **`[FAIL]`** only — bespoke **`[SKIP][fail]`** lines are informational and do not increment `failure_count` or the Result footer. |
 | `php scripts/fields_missing_reviewed.php` | Read-only manifest for reviewed bespoke gate exceptions (`scripts/data/fields_missing_reviewed.json`). Validates registry shape; browser or CLI `--json`. Matching failures in `fields_missing.php` print **`[SKIP][fail][reviewed]`** (same exit semantics as `[SKIP][fail]`). |
 
+#### `fields_missing` reviewed exceptions (`scripts/data/fields_missing_reviewed.json`)
+
+Use this registry when a bespoke module **intentionally** fails a gated UI check (Search, Sort, Pagination, list heading layout, …) and the team has reviewed the gap. Matching failures still run every audit; output changes from `[SKIP][fail]` to **`[SKIP][fail][reviewed]`** only. Exit code and `failure_count` are unchanged (`[SKIP][fail]` remains informational).
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `version` | yes | Schema version (`1`) |
+| `description` | no | Registry purpose (shown in manifest) |
+| `modules.<slug>.reviewed_at` | no | Review date (`YYYY-MM-DD`) |
+| `modules.<slug>.reason` | recommended | Why the module is exempt from that gate |
+| `modules.<slug>.checks[]` | yes | One object per reviewed failure |
+| `checks[].check` | recommended | Gate label (`Search`, `Sort`, `Pagination`, …) — matched against `{slug} bespoke gate: {label} NOT OK` |
+| `checks[].code` | recommended | Failure code from report (`bespoke_list_ui_search`, …) — preferred match key |
+| `checks[].note` | no | Copy of audit detail for reviewers |
+
+**Workflow:** reproduce with `php scripts/fields_missing.php --module=<slug>` → add rows to JSON → validate `php scripts/fields_missing_reviewed.php` → update module `AGENT_NOTES.md` → re-run `fields_missing.php` and confirm `[SKIP][fail][reviewed]` lines.
+
+**Seeded module:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI).
+
 ### Performance benchmarks
 
 | Script | Purpose |
@@ -972,7 +991,7 @@ Run `verify_employee_type_resignations.php` when changing `modules/employee_type
 
 Run `employee_fields_missing.php` or `fields_missing.php --module=employees` when changing `database.sql` `employees` columns or employee profile/list screens in `modules/employees/`.
 
-Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print gated `[SKIP][pass] … OK` / `[SKIP][fail] … NOT OK` / `[SKIP][fail][reviewed] … NOT OK` lines per check (fail lines before pass lines per module; footer **Bespoke gate failure summary** repeats all gate failures — informational, not in Result total). Reviewed exceptions live in `scripts/data/fields_missing_reviewed.json` (manifest: `php scripts/fields_missing_reviewed.php`). **Bulk delete** is `n/a` when a module has no `delete.php` or intentionally omits `bulk-delete-form` on the list table. Audit meta on create/edit (`created_at`, `updated_at`, `*_by`, `deleted_*`) uses multi-method detection in `scripts/lib/itm_fields_missing_report.php` (named controls, `$data['field']` in forms, humanized labels, dynamic loops, PHP-stripped pseudo HTML scrape; optional live HTTP scrape when `ITM_FIELDS_MISSING_HTTP_SCRAPE=1` and Apache is up).
+Run `fields_missing.php` after changing `database.sql` table columns or scaffold module UI when validating schema drift across tenants. Use `--module=<slug>` to narrow output; bespoke modules print gated `[SKIP][pass] … OK` / `[SKIP][fail] … NOT OK` / `[SKIP][fail][reviewed] … NOT OK` lines per check (fail lines before pass lines per module; footer **Bespoke gate failure summary** repeats all gate failures — informational, not in Result total). Intentional bespoke gate gaps: add rows to `scripts/data/fields_missing_reviewed.json` and validate with `php scripts/fields_missing_reviewed.php` (see **fields_missing reviewed exceptions** above). **Bulk delete** is `n/a` when a module has no `delete.php` or intentionally omits `bulk-delete-form` on the list table. Audit meta on create/edit (`created_at`, `updated_at`, `*_by`, `deleted_*`) uses multi-method detection in `scripts/lib/itm_fields_missing_report.php` (named controls, `$data['field']` in forms, humanized labels, dynamic loops, PHP-stripped pseudo HTML scrape; optional live HTTP scrape when `ITM_FIELDS_MISSING_HTTP_SCRAPE=1` and Apache is up).
 
 **MySQL 8 date SQL:** resignations queries must not use the literal `'0000-00-00'` in WHERE clauses (`Incorrect DATE value` under `NO_ZERO_DATE`). Use `itm_sql_valid_date_predicate('e.termination_date')` from `includes/itm_date_format.php` instead.
 

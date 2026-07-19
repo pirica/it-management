@@ -7,6 +7,7 @@
  *
  * Browser: scripts/fields_missing.php (Admin). Optional ?module=slug filter.
  * CLI: php scripts/fields_missing.php [--module=slug] [--json]
+ * Reviewed bespoke [SKIP][fail] exceptions: scripts/data/fields_missing_reviewed.json (manifest: fields_missing_reviewed.php).
  */
 declare(strict_types=1);
 
