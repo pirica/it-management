@@ -988,6 +988,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_rack_planner.php` — `modules/rack_planner/` price source sync
 - `php scripts/verify_bookmarks_import.php` — `modules/bookmarks/import.php` HTML folder paths, duplicate URL skips (no orphan folders), disposable script employee + `scripts/data/bookmarks_import_sample.html`
 - `php scripts/verify_bookmarks_folder_move.php` — bookmarks folder move/merge (`bkm_move_folder()`, duplicate same-name sibling prompt)
+- `php scripts/verify_notes_vault.php` — notes private-field vault encryption (`notes_vault_helpers.php`, shared vs private persistence, label_hash)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 

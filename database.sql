@@ -7613,7 +7613,8 @@ CREATE TABLE `notes` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `company_id` INT NOT NULL,
   `employee_id` INT NOT NULL,
-  `title` VARCHAR(255),
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `title_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   `content` LONGTEXT,
   `is_checklist` TINYINT DEFAULT 0,
   `checklist_json` JSON DEFAULT NULL,
@@ -7638,6 +7639,7 @@ CREATE TABLE `notes` (
   CONSTRAINT `notes_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notes_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Private notes (empty shared_with_json): title/content/checklist_json encrypted at rest; title_hash = SHA-256(plaintext title). Shared notes keep plaintext for recipients.
 
 
 -- Table structure for `note_labels`
@@ -7647,7 +7649,8 @@ CREATE TABLE `note_labels` (
   `company_id` INT NOT NULL,
   `employee_id` INT NOT NULL,
   `note_id` INT DEFAULT NULL,
-  `label` VARCHAR(100) NOT NULL,
+  `label` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `label_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
