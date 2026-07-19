@@ -27,7 +27,7 @@ $sortMap = [
 if (!isset($sortMap[$sort])) {
     $sort = 'birth_day';
 }
-$orderSql = $sortMap[$sort] . ' ' . $dir;
+$sortSql = $sortMap[$sort] . ' ' . $dir;
 
 // Why: Tenant-scoped status options drive the Employment Status multi-select and SQL IN filter.
 $statusOptions = [];
@@ -109,7 +109,7 @@ if ($selectedStatusIds !== []) {
         $params[] = $searchPattern;
     }
 
-    $sql .= ' ORDER BY ' . $orderSql;
+    $sql .= ' ORDER BY ' . $sortSql;
 
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
