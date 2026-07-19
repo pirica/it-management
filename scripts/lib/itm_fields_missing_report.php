@@ -1412,6 +1412,75 @@ if (!function_exists('itm_fields_missing_form_exposes_visible_field')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_index_list_foreach_variable')) {
+    /**
+     * List table column loop variable in index.php (first match inside <table>).
+     */
+    function itm_fields_missing_index_list_foreach_variable(string $content): ?string
+    {
+        if (preg_match(
+            '/<table\b[^>]*>.*?foreach\s*\(\s*\$(uiColumns|displayFieldColumns|visibleFieldColumns)\s+as/is',
+            $content,
+            $matches
+        ) !== 1) {
+            return null;
+        }
+
+        return $matches[1];
+    }
+}
+
+if (!function_exists('itm_fields_missing_index_column_array_filters_list_hidden_audit')) {
+    /**
+     * True when $variableName is built with itm_crud_is_list_hidden_audit_field() (or aliases filtered uiColumns).
+     */
+    function itm_fields_missing_index_column_array_filters_list_hidden_audit(string $content, string $variableName): bool
+    {
+        if ($variableName === 'displayFieldColumns'
+            && preg_match('/\$displayFieldColumns\s*=\s*\$uiColumns\s*;/', $content) === 1
+        ) {
+            return itm_fields_missing_index_column_array_filters_list_hidden_audit($content, 'uiColumns');
+        }
+
+        if (preg_match(
+            '/\$' . preg_quote($variableName, '/') . '\s*=\s*array_values\s*\(\s*array_filter\s*\(/s',
+            $content,
+            $matches,
+            PREG_OFFSET_CAPTURE
+        ) !== 1) {
+            return false;
+        }
+
+        $slice = substr($content, (int) $matches[0][1], 4000);
+
+        return strpos($slice, 'itm_crud_is_list_hidden_audit_field') !== false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_index_list_exposes_audit_meta_field')) {
+    /**
+     * Audit meta (created_by/updated_by/deleted_*) must not render as list columns on index.php.
+     */
+    function itm_fields_missing_index_list_exposes_audit_meta_field(string $field, string $indexPath): bool
+    {
+        if (!itm_fields_missing_is_global_audit_meta_column($field) || !is_readable($indexPath)) {
+            return false;
+        }
+
+        $content = (string) file_get_contents($indexPath);
+        $loopVar = itm_fields_missing_index_list_foreach_variable($content);
+        if ($loopVar === null) {
+            return false;
+        }
+
+        if (itm_fields_missing_index_column_array_filters_list_hidden_audit($content, $loopVar)) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
 if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
     /**
      * @param list<string> $excludedColumns
@@ -1450,9 +1519,28 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
                     'code' => 'ui_excluded_exposed',
                     'message' => "{$moduleSlug} excluded UI column {$field}: visible on create/edit forms",
                 ];
+            } else {
+                $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on create/edit forms";
+            }
+
+            if (!itm_fields_missing_is_global_audit_meta_column($field)) {
                 continue;
             }
-            $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on create/edit forms";
+
+            $indexPath = (string) ($files['index'] ?? '');
+            if ($indexPath === '' || !is_readable($indexPath)) {
+                continue;
+            }
+
+            if (itm_fields_missing_index_list_exposes_audit_meta_field($field, $indexPath)) {
+                $failures[] = [
+                    'code' => 'ui_index_excluded_exposed',
+                    'message' => "{$moduleSlug} excluded UI column {$field}: visible on index list",
+                ];
+                continue;
+            }
+
+            $passes[] = "{$moduleSlug} excluded UI column {$field}: hidden or absent on index list";
         }
     }
 }

@@ -16,6 +16,7 @@ Lookup table for cable colors (e.g., "Gray", "Green", "Red"). Used to visually i
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD** with scaffold soft-delete (`itm_crud_build_soft_delete_sql()` on delete; list uses `itm_crud_append_not_deleted_predicate()`).
+- **List columns:** `index.php` list/search use `$uiColumns` with `itm_crud_is_list_hidden_audit_field()` so `deleted_*`, `created_*`, and `updated_*` stay off the index table; `view.php` detail uses `$viewColumns` (includes audit meta).
 - **Bulk toolbar:** `bulk-delete-form`, shared `bulk-delete-selection.js`, **Select to Delete**, **Cancel** (`data-itm-bulk-cancel="1"`, `type="button"`), and **Clear Table** when row count ≥ `records_per_page`.
 - **Color Preview**: The list and view pages should ideally show a small swatch of the hex color.
 - Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list/view keep `$visibleFieldColumns`.

@@ -413,9 +413,12 @@ $visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) 
     return !(($GLOBALS['crud_table'] ?? '') === 'cable_colors' && $col['Field'] === 'company_id');
 }));
 
-// Why: Create/edit omit audit meta; server stamps via itm_crud_render_form_hidden_audit_inputs().
+// Why: Create/edit omit audit meta; list hides deleted_*/created_*/updated_* via itm_crud_is_list_hidden_audit_field().
 $uiColumns = array_values(array_filter($visibleFieldColumns, function ($col) {
     $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
     if (function_exists('itm_crud_is_form_hidden_audit_field') && itm_crud_is_form_hidden_audit_field($fieldName)) {
         return false;
     }
@@ -426,8 +429,11 @@ $uiColumns = array_values(array_filter($visibleFieldColumns, function ($col) {
     return true;
 }));
 
-// Why: Search uses the same visible column set as the list table.
-$displayFieldColumns = $visibleFieldColumns;
+// Why: Search and list share visible columns; alias matches role/ui_configuration modules.
+$displayFieldColumns = $uiColumns;
+
+// Why: View shows create/update/delete audit stamps while list hides them.
+$viewColumns = $visibleFieldColumns;
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -892,7 +898,7 @@ if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($visibleFieldColumns as $col) {
+    foreach ($displayFieldColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
         if ($fieldName === '') {
             continue;
@@ -902,7 +908,7 @@ if ($searchRaw !== '') {
 
 
     $itmFkSearchFields = [];
-    foreach ($visibleFieldColumns as $col) {
+    foreach ($displayFieldColumns as $col) {
         $itmFkFieldName = (string)($col['Field'] ?? '');
         if ($itmFkFieldName !== '') {
             $itmFkSearchFields[] = $itmFkFieldName;
@@ -1029,7 +1035,7 @@ if (!isset($crud_title)) {
                         <thead>
                         <tr>
                             <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
-                            <?php foreach ($visibleFieldColumns as $col): ?>
+                            <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
@@ -1051,7 +1057,7 @@ if (!isset($crud_title)) {
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
-                                <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
+                                <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td><?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?></td>
                                     <?php if ($crud_table === 'cable_colors' && $f === 'hex_color'): ?>
                                         <td><?php echo cr_render_color_swatch(cr_cable_color_swatch_source($row)); ?></td>
@@ -1069,8 +1075,8 @@ if (!isset($crud_title)) {
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
-                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('hex_color', array_column($visibleFieldColumns, 'Field'), true)); ?>
-                            <tr><td colspan="<?php echo count($visibleFieldColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
+                            <?php $extraListColumns = (int)($crud_table === 'cable_colors' && in_array('hex_color', array_column($uiColumns, 'Field'), true)); ?>
+                            <tr><td colspan="<?php echo count($uiColumns) + 2 + $extraListColumns; ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -1182,7 +1188,7 @@ if (!isset($crud_title)) {
                 <div class="card">
                     <table>
                         <tbody>
-                        <?php foreach ($visibleFieldColumns as $col): $f = $col['Field']; ?>
+                        <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <?php
                                 $viewValue = $data[$f] ?? '';
                                 if ($crud_table === 'cable_colors' && $f === 'color_name') {
