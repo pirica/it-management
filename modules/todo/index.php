@@ -7,6 +7,7 @@ require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/todo_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/itm_todo_search.php';
+require_once ROOT_PATH . 'includes/itm_todo_list_query.php';
 
 if (!function_exists('todo_merge_assignee_users')) {
     /**
@@ -155,10 +156,7 @@ $editId = (int)($_GET["id"] ?? 0);
 $csrfToken = itm_get_csrf_token();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
-    if (!itm_validate_csrf_token($_POST["csrf_token"] ?? "")) {
-        die("CSRF token mismatch");
-    }
-
+    itm_require_post_csrf();
     $action = $_POST["bulk_action"] ?? "";
     if ($action === "delete" && !empty($_POST["ids"])) {
         $visSql = itm_todo_visibility_sql();
@@ -302,49 +300,45 @@ if (isset($_GET["ajax_action"])) {
 
 // Data fetching
 $filter = $_GET["filter"] ?? "tasks";
-$search = $_GET["search"] ?? "";
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$search = $searchRaw;
+$sortableColumns = todo_list_sortable_columns();
+$sort = (string)($_GET['sort'] ?? 'created_at');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!in_array($sort, $sortableColumns, true)) {
+    $sort = 'created_at';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+$sortSql = todo_resolve_list_sort_sql($sort, $dir);
+
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
+$offset = ($page - 1) * $perPage;
+$totalRows = 0;
+$totalPages = 1;
+$tasks = [];
 
 if ($crud_action === "index") {
-    $sql = "SELECT t.* FROM todo t WHERE t.company_id = ? AND t.active = 1";
-
-    $params = [$company_id];
-    $types = "i";
-
-    $visibilitySql = itm_todo_visibility_sql("t");
-    $sql .= " AND ($visibilitySql)";
-    $types .= "ii";
-    $params[] = $logged_user_id;
-    $params[] = $logged_user_id;
-
-    if ($filter === "my_day") {
-        $sql .= " AND DATE(t.due_date) = CURDATE()";
-    } elseif ($filter === "important") {
-        $sql .= " AND t.importance = 1";
-    } elseif ($filter === "planned") {
-        $sql .= " AND t.due_date IS NOT NULL";
-    } elseif ($filter === "assigned") {
-        $sql .= " AND FIND_IN_SET(?, t.assigned_to_employee_id)";
-        $types .= "i";
-        $params[] = $logged_user_id;
-    }
-
-    if ($search !== "") {
-        $todoSearch = itm_todo_build_search_clause($search);
-        if ($todoSearch['sql'] !== '') {
-            $sql .= $todoSearch['sql'];
-            $types .= $todoSearch['types'];
-            foreach ($todoSearch['params'] as $todoSearchParam) {
-                $params[] = $todoSearchParam;
-            }
-        }
-    }
-
-    $sql .= " ORDER BY t.completed ASC, t.importance DESC, t.created_at DESC";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    $listResult = todo_query_tasks_for_list($conn, [
+        'company_id' => $company_id,
+        'employee_id' => $logged_user_id,
+        'filter' => $filter,
+        'search' => $searchRaw,
+        'sort' => $sort,
+        'dir' => $dir,
+        'page' => $page,
+        'per_page' => $perPage,
+        'paginate' => true,
+    ]);
+    $tasks = $listResult['rows'];
+    $totalRows = $listResult['totalRows'];
+    $totalPages = $listResult['totalPages'];
+    $page = $listResult['page'];
     $assigneeCsv = array_column($tasks, 'assigned_to_employee_id');
     todo_merge_assignee_users($conn, $company_id, $users, $assigneeCsv);
 } elseif ($crud_action === "edit" || $crud_action === "view") {
@@ -487,7 +481,7 @@ if (!isset($crud_title)) {
                         <div class="todo-header">
                             
                                 
-                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="todo-sidebar-item" style="color: var(--accent);" title="New task">➕</a><br>
+                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="btn btn-primary itm-list-new-button" title="Create">➕</a><br>
 							<h1>
                                 <?php
                                     if ($filter === "my_day") echo "☀️ My Day";
@@ -504,13 +498,15 @@ if (!isset($crud_title)) {
                         <div class="card" style="margin-bottom:16px;">
                             <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
                                 <input type="hidden" name="filter" value="<?php echo sanitize($filter); ?>">
+                                <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                                <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                                 <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                     <label for="moduleSearch">Search (all fields)</label>
                                     <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($search); ?>" placeholder="Type to search records...">
                                 </div>
                                 <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                                     <button type="submit" class="btn btn-primary">Search</button>
-                                    <a href="index.php?filter=<?php echo urlencode($filter); ?>" class="btn">Clear</a>
+                                    <a href="index.php?filter=<?php echo urlencode($filter); ?>" class="btn" title="Clear">🔙</a>
                                 </div>
                             </form>
                             <!-- EXPORT_TABLE_START --><div class="itm-export-container" style="display:none;">
@@ -518,13 +514,35 @@ if (!isset($crud_title)) {
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Title</th>
+                                        <?php
+                                        $exportSortFields = [
+                                            'title' => 'Title',
+                                            'due_date' => 'Due Date',
+                                            'importance' => 'Importance',
+                                            'completed' => 'Completed',
+                                            'created_at' => 'Created At',
+                                        ];
+                                        foreach ($exportSortFields as $field => $label):
+                                            $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC';
+                                            $sortParams = [
+                                                'filter' => $filter,
+                                                'search' => $searchRaw,
+                                                'sort' => $field,
+                                                'dir' => $nextDir,
+                                                'page' => 1,
+                                            ];
+                                            $sortHref = 'index.php?' . http_build_query($sortParams);
+                                        ?>
+                                        <th>
+                                            <a href="<?php echo sanitize($sortHref); ?>" style="text-decoration:none;color:inherit;">
+                                                <?php echo sanitize($label); ?>
+                                                <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                            </a>
+                                        </th>
+                                        <?php endforeach; ?>
                                         <th>Description</th>
-                                        <th>Due Date</th>
                                         <th>Reminder</th>
                                         <th>Repeat</th>
-                                        <th>Importance</th>
-                                        <th>Completed</th>
                                         <th>Category</th>
                                         <th>Department</th>
                                         <th>Assigned To User</th>
@@ -535,12 +553,13 @@ if (!isset($crud_title)) {
                                     <tr>
                                         <td><?php echo (int)$t['id']; ?></td>
                                         <td><?php echo sanitize($t['title']); ?></td>
-                                        <td><?php echo sanitize($t['description']); ?></td>
                                         <td><?php echo sanitize($t['due_date']); ?></td>
-                                        <td><?php echo sanitize($t['reminder_at']); ?></td>
-                                        <td><?php echo sanitize($t['repeat_pattern']); ?></td>
                                         <td><?php echo $t['importance'] ? 'Yes' : 'No'; ?></td>
                                         <td><?php echo $t['completed'] ? 'Yes' : 'No'; ?></td>
+                                        <td><?php echo sanitize($t['created_at']); ?></td>
+                                        <td><?php echo sanitize($t['description']); ?></td>
+                                        <td><?php echo sanitize($t['reminder_at']); ?></td>
+                                        <td><?php echo sanitize($t['repeat_pattern']); ?></td>
                                         <td><?php
                                             $cIds = explode(',', (string)$t['category_id']);
                                             $cNames = [];
@@ -874,6 +893,21 @@ if (!isset($crud_title)) {
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
+
+                        <?php if ($totalRows > $perPage): ?>
+                            <?php $listOffset = ($page - 1) * $perPage; ?>
+                            <div class="card" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                                <div>Showing <?php echo $listOffset + 1; ?>-<?php echo min($listOffset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                                <div style="display:flex;gap:8px;">
+                                    <?php if ($page > 1): ?>
+                                        <a class="btn btn-sm" href="index.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1]); ?>" title="◀️ Previous">Previous</a>
+                                    <?php endif; ?>
+                                    <?php if ($page < $totalPages): ?>
+                                        <a class="btn btn-sm" href="index.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1]); ?>" title="▶️ Next">Next</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                     <?php elseif ($crud_action === "edit" || $crud_action === "create"): ?>
                         <h1><?php echo $crud_action === "edit" ? "Edit Task" : "New Task"; ?></h1>

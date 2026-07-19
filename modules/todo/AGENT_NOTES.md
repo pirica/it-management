@@ -24,7 +24,9 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - **Responsive:** sidebar stacks above task list below 768px; task titles wrap on narrow viewports (`index.php` inline CSS).
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
-- **Search:** index search matches title/description plus category, department, and assignee labels via `includes/itm_todo_search.php` (`FIND_IN_SET` on CSV `*_id` columns).
+- **Search:** index search matches title/description plus category, department, and assignee labels via `includes/itm_todo_search.php` (`FIND_IN_SET` on CSV `*_id` columns). List fetch uses `includes/itm_todo_list_query.php` (`todo_query_tasks_for_list()`) with Settings `records_per_page` pagination, sortable export-table headers, and emoji-only 🔙 search reset.
+- **Create control:** primary ➕ uses `btn btn-primary` + `create.php` (bespoke list UI contract).
+- **POST CSRF:** non-AJAX mutations call `itm_require_post_csrf()` on `index.php`.
 - **QR / code share (`join.php`):** task creator (`created_by`) may create 30-minute temporary read links. `todo_share_sessions` stores plaintext `payload_json`. UI: 📱, `images/whatsapp.svg`, and 📨 on task rows and view screen; modal via shared `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_whatsapp_share.php`, `php scripts/verify_outlook_share.php`.
 
 ## 6. API Actions (If Applicable)
