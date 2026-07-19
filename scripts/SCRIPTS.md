@@ -502,6 +502,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `scripts/lib/itm_codacy_xss_echo_audit.php` | Codacy XSS echo pattern matchers for `check_codacy_xss_echo.php` |
 | `scripts/lib/itm_manual_sql_string_audit.php` | Manual SQL string pattern matchers for `check_manual_sql_string.php` |
+| `scripts/lib/itm_not_operator_audit.php` | Unary `!` on `$variable` pattern matchers for `check_not_operator.php` (Codacy-style; excludes `!is_*()` / `!==`) |
 | `scripts/lib/itm_mojibake_audit.php` | UTF-8 / mojibake scan + repair helpers for `verify_source_utf8_mojibake.php` and `fix_source_utf8_mojibake.php` |
 | `scripts/lib/itm_script_regression_entry.php` | Browser + CLI regressions: `ITM_CLI_SCRIPT` on CLI only, Admin gate in browser, `config.php` at file scope |
 
@@ -1102,6 +1103,16 @@ php scripts/check_codacy_xss_echo.php --strict   # fail when violations remain
 ```
 
 Catches patterns Codacy flags as XSS: short-echo `<?= sanitize($search…)` in `value` / `href` / `<strong>`, and `echo sanitize(http_build_query(…))` inside `href`. Fix with `<?php echo sanitize(…); ?>` for search fields and pre-assign `htmlspecialchars('index.php?' . http_build_query(…), ENT_QUOTES, 'UTF-8')` for hrefs. Same-line `itm-codacy-xss-exempt:` comment for intentional legacy lines. Default run is informational (exit `0`); `--strict` exits `1`.
+
+**Unary not-operator (application PHP):** after tightening boolean checks or addressing Codacy `Operator ! prohibited` findings in `modules/`, `includes/`, or `config/` (optional `scripts/` with `--include-scripts`), run:
+
+```bash
+php scripts/check_not_operator.php
+php scripts/check_not_operator.php --strict   # fail when violations remain
+php scripts/check_not_operator.php --include-scripts
+```
+
+Flags unary `!` on `$variables` (for example `if (!$ok)`). Excludes `!function_exists()`, `!is_array()`, `!preg_match()`, and `!==`. When strict `false` is intended, prefer `$var === false` (lowercase `false`); when general falsiness is intended, keep `!` and add same-line `itm-not-operator-exempt:` with reason. Default run is informational (exit `0`); `--strict` exits `1`.
 
 **Manual SQL strings (module PHP):** after adding/changing dynamic SQL built via string concatenation or interpolation in `modules/` (or `scripts/` with `--include-scripts`), run:
 
