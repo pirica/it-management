@@ -9,6 +9,7 @@ $crud_title = 'Visitors Access Log';
 $crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_scalar_column_search.php';
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
@@ -344,6 +345,8 @@ $uiColumns = array_values(array_filter(
     }
 ));
 $displayFieldColumns = $uiColumns;
+$visibleSearchFieldNames = array_column($displayFieldColumns, 'Field');
+$dateTimeSearchFieldNames = ['date_time_in', 'date_time_out'];
 
 // BUILD THE MAIN LIST DATA QUERY
 $page = (int)($_GET['page'] ?? 1);
@@ -359,10 +362,17 @@ $countSql = "SELECT COUNT(*) as total FROM visitors_access_log WHERE company_id 
 $countParams = [$company_id];
 $countTypes = "i";
 if ($search !== '') {
-    $countSql .= " AND (visitor_name LIKE ? OR company_department LIKE ? OR reason_for_visit LIKE ? OR pre_approved_by LIKE ? OR room_opened_by LIKE ?)";
-    $searchParam = "%$search%";
-    $countParams = array_merge($countParams, array_fill(0, 5, $searchParam));
-    $countTypes .= "sssss";
+    $scalarSearchConditions = itm_crud_scalar_column_search_conditions(
+        'visitors_access_log',
+        $visibleSearchFieldNames,
+        $dateTimeSearchFieldNames
+    );
+    if (!empty($scalarSearchConditions)) {
+        $searchParam = '%' . $search . '%';
+        $countSql .= ' AND (' . implode(' OR ', $scalarSearchConditions) . ')';
+        $countParams = array_merge($countParams, array_fill(0, count($scalarSearchConditions), $searchParam));
+        $countTypes .= str_repeat('s', count($scalarSearchConditions));
+    }
 }
 $stmt = mysqli_prepare($conn, $countSql);
 mysqli_stmt_bind_param($stmt, $countTypes, ...$countParams);
@@ -381,10 +391,17 @@ $sql = "SELECT * FROM visitors_access_log WHERE company_id = ?";
 $params = [$company_id];
 $types = "i";
 if ($search !== '') {
-    $sql .= " AND (visitor_name LIKE ? OR company_department LIKE ? OR reason_for_visit LIKE ? OR pre_approved_by LIKE ? OR room_opened_by LIKE ?)";
-    $searchParam = "%$search%";
-    $params = array_merge($params, array_fill(0, 5, $searchParam));
-    $types .= "sssss";
+    $scalarSearchConditions = itm_crud_scalar_column_search_conditions(
+        'visitors_access_log',
+        $visibleSearchFieldNames,
+        $dateTimeSearchFieldNames
+    );
+    if (!empty($scalarSearchConditions)) {
+        $searchParam = '%' . $search . '%';
+        $sql .= ' AND (' . implode(' OR ', $scalarSearchConditions) . ')';
+        $params = array_merge($params, array_fill(0, count($scalarSearchConditions), $searchParam));
+        $types .= str_repeat('s', count($scalarSearchConditions));
+    }
 }
 $sql .= " ORDER BY $sort $dir LIMIT ? OFFSET ?";
 $params[] = $perPage;

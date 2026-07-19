@@ -1044,7 +1044,7 @@ When adding or changing anything under `scripts/`:
 
 **UI configuration coverage:** after changing flattened list UI (table actions, export card, search/sort/pagination, bulk toolbar, CRUD entry wrappers) or gate-exclusion lists, run `php scripts/check_ui_configuration_coverage.php`. Gated modules print `[pass]` / `[fail]` / `[n/a]`; gate-excluded slugs still appear as `[n/a][pass]`, `[n/a][fail]`, or `[n/a][n/a]` (informational — exit `2` only when a gated module has `[fail]`). Optional `--list-excluded` (CLI) or `?list_excluded=1` (browser) prints gate-excluded slug names in the header.
 
-**List search FK labels:** after changing flattened CRUD list search, FK display, bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `ip_addresses`, `bookmarks`, `passwords`), or adding a new searchable module:
+**List search FK labels:** after changing flattened CRUD list search, FK display, bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `ip_addresses`, `bookmarks`, `passwords`, `visitors_access_log`), or adding a new searchable module:
 
 ```bash
 php scripts/apply_crud_fk_label_search.php
@@ -1053,7 +1053,7 @@ php scripts/verify_crud_fk_label_search.php
 php scripts/verify_employees_equipment_search_coverage.php
 ```
 
-When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`. The static audit (`check_fk_label_search_coverage.php`) is smoke step 4 and uses **universal pass rules only** (no per-module N/A allowlist); runtime verify runs in the **database-import** CI job. Run `php scripts/verify_employees_equipment_search_coverage.php` after employees or equipment list search / FK label helper changes.
+When scaffolding new flattened modules, run `php scripts/apply_crud_fk_label_search.php` if the search block omits `itm_crud_fk_label_search_conditions()`. Bespoke modules whose visible list columns are scalar text/datetime only (no FK labels) may use `itm_crud_scalar_column_search_conditions()` from `includes/itm_crud_scalar_column_search.php` instead — recognized by the static audit. The static audit (`check_fk_label_search_coverage.php`) is smoke step 4 and uses **universal pass rules only** (no per-module N/A allowlist); runtime verify runs in the **database-import** CI job. Run `php scripts/verify_employees_equipment_search_coverage.php` after employees or equipment list search / FK label helper changes.
 
 **Script browser nav (no duplicate ← Scripts index):** after changing `scripts/lib/script_cli_output.php`, `scripts/lib/script_browser_nav.php`, or any browser HTML shell under `scripts/*.php`, run:
 
