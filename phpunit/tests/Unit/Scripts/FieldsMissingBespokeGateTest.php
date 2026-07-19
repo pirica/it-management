@@ -953,8 +953,8 @@ PHP;
             'list_all' => '',
             'delete' => '',
         ];
-        $this->assertTrue(itm_fields_missing_module_view_covers_field('created_by', $files, 'fixture_module'));
-        $this->assertTrue(itm_fields_missing_module_view_covers_field('deleted_at', $files, 'fixture_module'));
+        $this->assertTrue(itm_fields_missing_module_view_covers_audit_meta_field('created_by', $files, 'fixture_module'));
+        $this->assertTrue(itm_fields_missing_module_view_covers_audit_meta_field('deleted_at', $files, 'fixture_module'));
     }
 
     public function testBespokeViewAuditMetaPassesWithAuditCellRenderer(): void
@@ -962,6 +962,7 @@ PHP;
         $viewContent = <<<'PHP'
 <?php
 echo itm_crud_render_audit_cell_value($crud_table, 'created_by', $data['created_by'] ?? '');
+echo itm_crud_render_audit_cell_value($crud_table, 'created_at', $data['created_at'] ?? '');
 ?>
 PHP;
         $files = [
@@ -973,7 +974,29 @@ PHP;
             'list_all' => '',
             'delete' => '',
         ];
-        $this->assertTrue(itm_fields_missing_module_view_covers_field('created_by', $files, 'fixture_module'));
+        $this->assertTrue(itm_fields_missing_module_view_covers_audit_meta_field('created_by', $files, 'fixture_module'));
+        $this->assertTrue(itm_fields_missing_module_view_covers_audit_meta_field('created_at', $files, 'fixture_module'));
+    }
+
+    public function testBespokeViewAuditMetaRejectsRawAliasHelperOnly(): void
+    {
+        $viewContent = <<<'PHP'
+<?php
+echo sanitize(itm_company_view_value($itemNormalized, ['created_at', 'created']));
+echo sanitize(itm_company_view_value($itemNormalized, ['updated_at', 'updated']));
+?>
+PHP;
+        $files = [
+            'create' => '',
+            'edit' => '',
+            'view' => $this->writeTempView($viewContent),
+            'index' => '',
+            'includes' => '',
+            'list_all' => '',
+            'delete' => '',
+        ];
+        $this->assertFalse(itm_fields_missing_module_view_covers_audit_meta_field('created_at', $files, 'companies'));
+        $this->assertFalse(itm_fields_missing_module_view_covers_audit_meta_field('updated_at', $files, 'companies'));
     }
 
     public function testCompaniesBespokeGateFlagsMissingViewAuditMeta(): void
@@ -990,8 +1013,8 @@ PHP;
             return (string) ($failure['message'] ?? '');
         }, $result['failures']);
 
-        $this->assertStringContainsString('excluded UI column created_at: present on view', $passes);
-        $this->assertStringContainsString('excluded UI column updated_at: present on view', $passes);
+        $this->assertStringContainsString('excluded UI column created_at: missing on view', implode('|', $messages));
+        $this->assertStringContainsString('excluded UI column updated_at: missing on view', implode('|', $messages));
         $this->assertStringContainsString('excluded UI column created_by: missing on view', implode('|', $messages));
         $this->assertStringContainsString('excluded UI column updated_by: missing on view', implode('|', $messages));
         $this->assertStringContainsString('excluded UI column deleted_by: missing on view', implode('|', $messages));

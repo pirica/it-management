@@ -1552,7 +1552,7 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
                 continue;
             }
 
-            if (!itm_fields_missing_module_view_covers_field($field, $files, $moduleSlug)) {
+            if (!itm_fields_missing_module_view_covers_audit_meta_field($field, $files, $moduleSlug)) {
                 $failures[] = [
                     'code' => 'ui_view_audit_missing',
                     'message' => "{$moduleSlug} excluded UI column {$field}: missing on view",
@@ -1588,6 +1588,64 @@ if (!function_exists('itm_fields_missing_resolve_view_paths')) {
         }
 
         return array_values(array_unique($paths));
+    }
+}
+
+if (!function_exists('itm_fields_missing_view_has_audit_meta_field')) {
+    /**
+     * Audit meta on view must use shared renderers or dynamic scaffold loops — not raw field aliases.
+     */
+    function itm_fields_missing_view_has_audit_meta_field(string $field, string $viewPath, string $moduleSlug): bool
+    {
+        if (!is_readable($viewPath)) {
+            return false;
+        }
+        $content = (string) file_get_contents($viewPath);
+        if ($content === false) {
+            return false;
+        }
+
+        if (preg_match(
+            "/itm_crud_render_audit_cell_value\s*\([^)]*['\"]" . preg_quote($field, '/') . "['\"]/s",
+            $content
+        )) {
+            return true;
+        }
+
+        // Why: equipment view loops row keys and routes audit columns through the shared renderer.
+        if (strpos($content, 'itm_crud_is_view_audit_field') !== false
+            && preg_match('/itm_crud_render_audit_cell_value\s*\([^)]*,\s*\$\w+\s*,/', $content)
+        ) {
+            return true;
+        }
+
+        // Why: tickets view passes the loop variable into the audit renderer for every audit column.
+        if (preg_match('/itm_crud_render_audit_cell_value\s*\([^)]*,\s*\$field\s*,/', $content)) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_fields_missing_module_view_covers_audit_meta_field')) {
+    /**
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     */
+    function itm_fields_missing_module_view_covers_audit_meta_field(string $field, array $files, string $moduleSlug): bool
+    {
+        $viewPaths = itm_fields_missing_resolve_view_paths($files);
+        if (itm_fields_missing_dynamic_view_exposes_field($field, $viewPaths)) {
+            return true;
+        }
+
+        foreach ($viewPaths as $path) {
+            if (itm_fields_missing_view_has_audit_meta_field($field, $path, $moduleSlug)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
