@@ -12,12 +12,12 @@ Contains the frontend logic for the IT Management system, including UI helpers, 
 - **table-tools.js** — handles Excel imports and list view interactivity.
 - **select-add-option.js** — supports inline addition of parent records from dropdowns.
 - **ui-layout.js** — applies Settings `table_actions_position`, `new_button_position`, and `back_save_position`. For `table_actions_position` `left_right`, clones **tbody** action cells only (not the thead **Actions** header) so the header is not duplicated. Form Save/Back detection matches only the action bar whose **direct children** include submit + back (prefers `.form-actions`); it must not treat an ancestor `.card` as the bar or `.itm-form-actions { display:flex }` flattens the whole create form.
-- **bulk-delete-selection.js** — shared list bulk delete UX (`Select to Delete`, Cancel, optional `data-itm-bulk-select="1"` **Select All** button that enters selection mode and checks every `ids[]` row). Do not pre-set `data-itm-bulk-delete-bound="1"` on the form in PHP — the script sets it after binding.
+- **bulk-delete-selection.js** — shared list bulk delete UX (`Select to Delete`, Cancel, optional `data-itm-bulk-select="1"` **Select All** button that enters selection mode and checks every `ids[]` row). Do not pre-set `data-itm-bulk-delete-bound="1"` on the form in PHP — the script sets it after binding. Row `change` listeners use `data-itm-bulk-change-bound="1"` per checkbox so `JavaScriptPitfallsTest` does not flag the `forEach` attach loop.
 - **theme.js** — light/dark mode via `document.documentElement` `data-theme` and `localStorage.theme`. Prefers `window.ITM_PREFERRED_THEME` when set (from `employees.theme` / `$_SESSION['ui_theme']` via profile/`login.php`/`includes/header.php`).
 - **vendor/** — contains third-party libraries like `xlsx.full.min.js`.
 
 ## 10. Common Pitfalls
-- Attaching redundant event listeners in loops. [Cursor-Fixed]
+- Attaching redundant event listeners in loops — `bulk-delete-selection.js` guards row checkbox `change` with `data-itm-bulk-change-bound`. [Cursor-Fixed]
 - Loading utility scripts after the blocks that depend on them. [Cursor-Fixed]
 - **Upload targets with inner `<label for="fileInput">`:** `itm-upload-helper.js` skips programmatic `fileInput.click()` when the click originated on the associated label — otherwise the native label activation plus the target click handler opens the file picker twice. [Cursor-Fixed]
   - *Robust Check:* Uses standard DOM APIs (`label.control`, `label.contains`, `fileInput.labels`, and `label.htmlFor === fileInput.id`) to reliably skip programmatic clicks on all associated label click events. [Cursor-Valid]

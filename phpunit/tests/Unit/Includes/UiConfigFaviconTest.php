@@ -51,6 +51,6 @@ class UiConfigFaviconTest extends TestCase
 
         $url = itm_ui_config_favicon_url(['favicon_path' => ''], 1);
         $this->assertStringContainsString($canonical, $url);
-        $this->assertStringStartsWith('http://localhost/it-management/', $url);
+        $this->assertStringStartsWith((string) BASE_URL, $url);
     }
 }

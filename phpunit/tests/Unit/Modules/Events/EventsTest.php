@@ -23,8 +23,10 @@ class EventsTest extends TestCase
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
+        $data['employee_id'] = 1;
         $data['title'] = 'Test title';
-        $data['start_datetime'] = date('Y-m-d');
+        $data['title_hash'] = hash('sha256', 'Test title');
+        $data['start_datetime'] = date('Y-m-d H:i:s');
         $data['active'] = 1;
         // Find or fallback for category_id (event_categories)
         $rescategory_id = mysqli_query($this->conn, "SELECT id FROM `event_categories` WHERE " . (strpos('event_categories', 'companies') === false && strpos('event_categories', 'employees') === false ? "company_id = {$this->companyId}" : "1=1") . " LIMIT 1");
@@ -43,16 +45,18 @@ class EventsTest extends TestCase
             $data['assigned_to_employee_id'] = null;
         }
 
-        $sql = "INSERT INTO `events` (company_id, `title`, `start_datetime`, `active`) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO `events` (company_id, employee_id, `title`, `title_hash`, `start_datetime`, `active`) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, mysqli_error($this->conn));
         
         $bindValues = [];
         $bindValues[] = $data['company_id'];
+        $bindValues[] = $data['employee_id'];
         $bindValues[] = $data['title'];
+        $bindValues[] = $data['title_hash'];
         $bindValues[] = $data['start_datetime'];
         $bindValues[] = $data['active'];
-        $bindTypes = 'issi';
+        $bindTypes = 'iisssi';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt));

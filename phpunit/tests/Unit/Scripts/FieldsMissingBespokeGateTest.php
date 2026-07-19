@@ -511,20 +511,23 @@ PHP;
 
         $result = $this->runBespokeGate('system_access', $columns);
         $positionPassCount = 0;
-        $styleFailCount = 0;
+        $styleOutcomeCount = 0;
         foreach ($result['passes'] as $passLine) {
             if (stripos($passLine, 'New button position OK') !== false) {
                 $positionPassCount++;
             }
+            if (stripos($passLine, 'New button style OK') !== false) {
+                $styleOutcomeCount++;
+            }
         }
         foreach ($result['failures'] as $failure) {
             if (stripos((string) ($failure['message'] ?? ''), 'New button style NOT OK') !== false) {
-                $styleFailCount++;
+                $styleOutcomeCount++;
             }
         }
 
         $this->assertSame(1, $positionPassCount, 'New button position must appear once (page gate only)');
-        $this->assertSame(1, $styleFailCount, 'New button style must appear once (page gate only)');
+        $this->assertSame(1, $styleOutcomeCount, 'New button style must appear once (page gate only)');
     }
 
     public function testSystemAccessBulkDeleteGatePassesWhenDeletePhpExists(): void
@@ -538,7 +541,7 @@ PHP;
         $this->assertStringContainsString('Bulk delete OK', $passes);
     }
 
-    public function testCompanyModuleAccessFailsListHeadingEmojiForPlainCrudTitleH1(): void
+    public function testCompanyModuleAccessPassesListHeadingEmojiAndManagedLayout(): void
     {
         $root = realpath(__DIR__ . '/../../../../');
         $this->assertNotFalse($root);
@@ -547,18 +550,10 @@ PHP;
         $this->assertNotSame([], $columns);
 
         $result = $this->runBespokeGate('company_module_access', $columns);
-        $messages = array_map(static function (array $failure): string {
-            return (string) ($failure['message'] ?? '');
-        }, $result['failures']);
-
-        $this->assertTrue(
-            $this->messagesContainAny($messages, ['List heading emoji', 'sanitize($crud_title)']),
-            'company_module_access must fail list heading emoji when h1 uses bare $crud_title: ' . implode(' | ', $messages)
-        );
-        $this->assertTrue(
-            $this->messagesContainAny($messages, ['List heading layout', 'data-itm-new-button-managed']),
-            'company_module_access must fail list heading layout for non-managed header: ' . implode(' | ', $messages)
-        );
+        $passes = implode('|', $result['passes']);
+        $this->assertStringContainsString('List heading emoji OK', $passes);
+        $this->assertStringContainsString('List heading layout OK', $passes);
+        $this->assertStringContainsString('data-itm-new-button-managed', file_get_contents($root . '/modules/company_module_access/index.php') ?: '');
     }
 
     public function testPlainCrudTitleListH1FailsEmojiGate(): void

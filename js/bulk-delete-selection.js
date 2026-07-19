@@ -93,6 +93,10 @@
         }
 
         rowCheckboxes.forEach(function (checkbox) {
+            if (checkbox.getAttribute('data-itm-bulk-change-bound') === '1') {
+                return;
+            }
+            checkbox.setAttribute('data-itm-bulk-change-bound', '1');
             checkbox.addEventListener('change', itmDispatchBulkSelectionChange);
         });
 
