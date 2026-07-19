@@ -297,6 +297,13 @@ $sendLogsStatHrefFailed = htmlspecialchars('index.php?' . http_build_query(array
 
 $page_title = 'Email Management';
 $modulePath = dirname($_SERVER['PHP_SELF']);
+// Why: List h1 must use Settings sidebar label so per-user emoji overrides apply in the tab shell header.
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($uiConfig['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
+$showSmtpCreateButton = ($active_tab === 'smtp');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -342,10 +349,17 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div class="email-toolbar">
-                <h1 title="Email Management">📧</h1>
-                <?php if ($active_tab === 'smtp'): ?>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;min-height:40px;">
+                <?php if ($showSmtpCreateButton && in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if ($showSmtpCreateButton && in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                <?php else: ?>
+                    <span></span>
                 <?php endif; ?>
             </div>
 
