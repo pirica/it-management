@@ -74,12 +74,13 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **employee_fields_missing.php** — employees-only wrapper around **`fields_missing.php`** / `itm_fields_missing_report.php`. Catalog: **`scripts/scripts.php`**.
 - **fields_missing.php** — all-module schema/UI audit; optional **`--strict-gate`**. Catalog: **`scripts/scripts.php`**; reviewed JSON contract: **`SCRIPTS.md`** → *fields_missing reviewed exceptions*.
 - **fields_missing_reviewed.php** — manifest for `scripts/data/fields_missing_reviewed.json`. Catalog: **`scripts/scripts.php`**.
+- **ui_configuration_reviewed.php** — manifest for `scripts/data/ui_configuration_reviewed.json` (`[n/a][*][reviewed]` lines in `check_ui_configuration_coverage.php`). Catalog: **`scripts/scripts.php`**.
 - **verify_emails_module.php** — Email Management tables, registry row, SMTP/alert seeds, `itm_send_email()` helper, delivery test scripts, and company 1 alert-runner 30-day window (hard fail when empty; inserts disposable license sample then cleans up).
 - **verify_bookmarks_import.php** — Bookmarks HTML import (`L1/L2` nested folders), duplicate URL skips without orphan folders, legacy `name_hash` folder match, CSV folder target; disposable script employee + `data/bookmarks_import_sample.html`.
 - **verify_bookmarks_folder_move.php** — Bookmarks folder reparent vs merge into same-named sibling (`bkm_move_folder()`, `bkm_merge_folder_into()`).
 - **verify_user_config_profile.php** — `user-config.php` profile field regression: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute Explorer proxy (not `../../modules/…`).
 - **floor_plans_folder_move_test.php** — regression for floor-plan folder create/move and company upload hardening (`.htaccess` + `index.html` via `fp_company_upload_dir()`).
-- **data/** — static allowlists/baselines for audits (`ui_configuration_excluded_modules.txt`, `fields_missing_reviewed.json`, `multi_tenant_leak_allowlist.json`, …).
+- **data/** — static allowlists/baselines for audits (`ui_configuration_excluded_modules.txt`, `fields_missing_reviewed.json`, `ui_configuration_reviewed.json`, `multi_tenant_leak_allowlist.json`, …).
 - **bypass_login.php** — CLI-only utility to authenticate as **Admin** without the UI. Resolves the target user via prepared statement + `itm_mysqli_stmt_fetch_assoc()` (mysqlnd fallback), rejects non-admin users via `itm_is_admin()`, then sets session keys (including `vault_key` for Passwords). Not for production use.
 - **test_ajax.php** / **test_edit.php** — CLI-only Notes session-mock harnesses; require positional `<PHPSESSID>` + title (+ note id for edit); exit `1` with usage when argv is missing; excluded from `perform_audit.php` and CSRF coverage (`check_csrf_coverage.php`).
 - **take_screenshots_modules.py** — Python script using Playwright to automate screenshot capture for README.

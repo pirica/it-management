@@ -981,6 +981,25 @@ Use this registry when a bespoke module **intentionally** fails a gated UI check
 
 **Seeded modules:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI). `company_module_access` — Sort, Pagination (admin matrix UI; Search and Import Excel implemented on `index.php`).
 
+#### `ui_configuration` reviewed exceptions (`scripts/data/ui_configuration_reviewed.json`)
+
+Use this registry when a **gate-excluded** module (listed in `ui_configuration_excluded_modules.txt` or matching an excluded prefix) intentionally prints `[n/a][pass]`, `[n/a][fail]`, or `[n/a][n/a]` for a UI configuration check and the team has reviewed the gap. Matching lines add **`[reviewed]`** (for example `[n/a][n/a][reviewed]`). Exit code is unchanged — gate-excluded lines remain informational.
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `version` | yes | Schema version (`1`) |
+| `description` | no | Registry purpose (shown in manifest) |
+| `modules.<slug>.reviewed_at` | no | Review date (`YYYY-MM-DD`) |
+| `modules.<slug>.reason` | recommended | Why the module is exempt from that check |
+| `modules.<slug>.checks[]` | yes | One object per reviewed line |
+| `checks[].check` | recommended | Exact label from `check_ui_configuration_coverage.php` (`+ New Button`, `Search`, `Create entry (create.php)`, …) |
+| `checks[].code` | recommended | Stable match key (`ui_config_new_button`, …) |
+| `checks[].note` | no | Copy of audit detail for reviewers |
+
+**Workflow:** reproduce with `php scripts/check_ui_configuration_coverage.php` → add rows to JSON → validate `php scripts/ui_configuration_reviewed.php` → update module `AGENT_NOTES.md` → re-run coverage and confirm `[reviewed]` suffix.
+
+**Seeded modules:** `attempts` — no `create.php` / `edit.php` (read-only security log).
+
 ### Named module verifiers (catalog: `scripts/scripts.php`)
 
 Run after changes to modules that previously relied only on MBQA/PHPUnit/repro scripts:
@@ -1042,7 +1061,7 @@ When adding or changing anything under `scripts/`:
 
 **Index table compliance:** after changing list-table import/Actions markers or bespoke index UIs, run `php scripts/check_index_table_compliance.php`. `data-itm-no-import-excel="1"` means Import Excel / `data-itm-db-import-endpoint` is not required (e.g. `backup_tape_log`, `birthdays`, `contacts`). Actions `data-itm-actions-origin` / `itm-actions-cell` are required only when an Actions column exists. Browser report HTML-escapes lines inside `<pre>`.
 
-**UI configuration coverage:** after changing flattened list UI (table actions, export card, search/sort/pagination, bulk toolbar, CRUD entry wrappers) or gate-exclusion lists, run `php scripts/check_ui_configuration_coverage.php`. Gated modules print `[pass]` / `[fail]` / `[n/a]`; gate-excluded slugs still appear as `[n/a][pass]`, `[n/a][fail]`, or `[n/a][n/a]` (informational — exit `2` only when a gated module has `[fail]`). Optional `--list-excluded` (CLI) or `?list_excluded=1` (browser) prints gate-excluded slug names in the header.
+**UI configuration coverage:** after changing flattened list UI (table actions, export card, search/sort/pagination, bulk toolbar, CRUD entry wrappers) or gate-exclusion lists, run `php scripts/check_ui_configuration_coverage.php`. Gated modules print `[pass]` / `[fail]` / `[n/a]`; gate-excluded slugs still appear as `[n/a][pass]`, `[n/a][fail]`, or `[n/a][n/a]` with optional `[reviewed]` when listed in `scripts/data/ui_configuration_reviewed.json` (manifest: `ui_configuration_reviewed.php`). Exit `2` only when a gated module has `[fail]`. Optional `--list-excluded` (CLI) or `?list_excluded=1` (browser) prints gate-excluded slug names in the header.
 
 **List search FK labels:** after changing flattened CRUD list search, FK display, bespoke module search (`switch_ports`, `todo`, `notes`, `private_contacts`, `ip_subnets`, `ip_addresses`, `bookmarks`, `passwords`, `visitors_access_log`), or adding a new searchable module:
 

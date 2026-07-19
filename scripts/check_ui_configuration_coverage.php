@@ -18,6 +18,7 @@
  * Exemptions (gate only — excluded modules still print as [n/a][pass|fail|n/a]):
  *   - scripts/data/ui_configuration_excluded_modules.txt (explicit module slugs)
  *   - scripts/data/ui_configuration_excluded_prefixes.txt (e.g. is_* equipment façades)
+ * Reviewed gate-excluded lines: scripts/data/ui_configuration_reviewed.json (manifest: ui_configuration_reviewed.php)
  *
  * CLI: php scripts/check_ui_configuration_coverage.php [--list-excluded]
  * Browser: ?list_excluded=1 prints gate-excluded slug names in the header.
@@ -35,6 +36,7 @@ if (!is_dir($modulesDir)) {
 
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_ui_list_contract_checks.php';
+require_once __DIR__ . '/lib/itm_ui_configuration_reviewed.php';
 itm_script_output_begin('UI configuration coverage check');
 
 $excludeModulesFile = __DIR__ . '/data/ui_configuration_excluded_modules.txt';
@@ -578,6 +580,15 @@ function itm_check_back_save_entry(string $modulePath, string $entryPath, string
 
 $excludeModules = itm_ui_config_load_excluded_list($excludeModulesFile);
 $excludeModulePrefixes = itm_ui_config_load_excluded_list($excludePrefixesFile);
+$reviewedRegistry = itm_ui_configuration_load_reviewed_registry();
+$reviewedValidation = itm_ui_configuration_validate_reviewed_registry($reviewedRegistry);
+if (!$reviewedValidation['ok']) {
+    echo "FAIL: invalid ui_configuration_reviewed.json:\n";
+    foreach ($reviewedValidation['errors'] as $error) {
+        echo '  - ' . $error . "\n";
+    }
+    exit(1);
+}
 $modules = itm_ui_config_list_all_modules($modulesDir);
 $auditedModules = itm_list_modules($modulesDir, $excludeModules, $excludeModulePrefixes);
 $totals = [
@@ -587,6 +598,7 @@ $totals = [
     'excluded_pass' => 0,
     'excluded_fail' => 0,
     'excluded_n/a' => 0,
+    'excluded_reviewed' => 0,
 ];
 $moduleFailures = [];
 $moduleExcludedFailures = [];
@@ -599,7 +611,7 @@ $excludedCount = count($modules) - count($auditedModules);
 
 echo "UI Configuration Coverage Audit\n";
 echo "Root: {$modulesDir}\n";
-echo 'Modules: ' . count($modules) . ' total; ' . count($auditedModules) . " gated for flattened CRUD contract; {$excludedCount} gate-excluded (shown as [n/a][pass|fail|n/a]).\n";
+echo 'Modules: ' . count($modules) . ' total; ' . count($auditedModules) . " gated for flattened CRUD contract; {$excludedCount} gate-excluded (shown as [n/a][pass|fail|n/a][reviewed]).\n";
 if ($listExcluded) {
     $excludedSlugs = array_values(array_filter($modules, static function (string $slug) use ($excludeModules, $excludeModulePrefixes): bool {
         return itm_ui_config_module_exclusion_reason($slug, $excludeModules, $excludeModulePrefixes) !== null;
@@ -660,6 +672,11 @@ foreach ($modules as $module) {
         if ($isGateExcluded) {
             $suffix = $status;
             $label = '[n/a][' . $suffix . ']';
+            $isReviewed = itm_ui_configuration_check_is_reviewed($module, $checkName, $reviewedRegistry);
+            if ($isReviewed) {
+                $label .= '[reviewed]';
+                $totals['excluded_reviewed']++;
+            }
             if ($status === 'pass') {
                 $totals['excluded_pass']++;
             } elseif ($status === 'fail') {
@@ -675,9 +692,12 @@ foreach ($modules as $module) {
         }
 
         $totals[$status]++;
-        $label = str_pad($status, 4, ' ', STR_PAD_RIGHT);
+        $label = '[' . str_pad($status, 4, ' ', STR_PAD_RIGHT) . ']';
+        if (itm_ui_configuration_check_is_reviewed($module, $checkName, $reviewedRegistry)) {
+            $label .= '[reviewed]';
+        }
         $statusType = ($status === 'pass') ? 'pass' : (($status === 'fail') ? 'fail' : 'warn');
-        echo colorText("[{$label}] {$moduleLabel} :: {$checkName} - {$result['details']}", $statusType) . itm_script_output_nl();
+        echo colorText("{$label} {$moduleLabel} :: {$checkName} - {$result['details']}", $statusType) . itm_script_output_nl();
 
         if ($status === 'fail') {
             $moduleFailures[$module][] = "{$checkName}: {$result['details']}";
@@ -694,6 +714,7 @@ echo 'N/A  (gated): ' . $totals['n/a'] . "\n";
 echo 'Gate excluded [n/a][pass]: ' . $totals['excluded_pass'] . "\n";
 echo 'Gate excluded [n/a][fail]: ' . $totals['excluded_fail'] . " (informational — does not fail the run)\n";
 echo 'Gate excluded [n/a][n/a]: ' . $totals['excluded_n/a'] . "\n";
+echo 'Gate excluded [reviewed]: ' . $totals['excluded_reviewed'] . "\n";
 
 if ($totals['fail'] > 0) {
     echo "\nModules with gated failures:\n";
