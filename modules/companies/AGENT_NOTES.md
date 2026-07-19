@@ -15,6 +15,8 @@ Manages the top-level tenant entities ("Companies") in the multi-tenant system. 
 - **Active Status**: Inactivating a company should theoretically block access to its data, though implementation depends on session logic.
 
 ## 5. UI Behavior Requirements
+- **List heading:** centered `h1` with `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` inside `data-itm-new-button-managed="server"` row; `new_button_position` gates left/right ➕ create buttons.
+- **Bulk toolbar:** when `$totalRows >= $perPage`, `bulk-delete-form` includes Select to Delete, Cancel (`data-itm-bulk-cancel="1"`, `type="button"`), Clear Table, and `bulk-delete-selection.js` in index HTML (bespoke gate contract).
 - **Active checkbox** (`create.php`, used by `edit.php` wrapper): `itm-checkbox-control` + `itm-check-indicator` (✅/❌). Change listener lives in its own `<script>` block after closed `<script src="../../js/theme.js"></script>` — do not nest listener inside the external script tag.
 - **Dashboard Integration**: Selected company is stored in `$_SESSION['company_id']`.
 
