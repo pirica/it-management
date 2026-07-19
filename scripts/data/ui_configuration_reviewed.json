@@ -282,89 +282,24 @@
         }
       ]
     },
-    "calendar": {
+    "company_module_access": {
       "reviewed_at": "2026-07-19",
-      "reason": "Aggregated calendar grid (index.php only): no list table or local CRUD entry files — create/view deep-link to source modules (events, alerts, tickets, equipment, patches_updates).",
+      "reason": "Admin company × module matrix bespoke UI: all registry rows on one page ordered by module_slug ASC; AJAX bulk_toggle_access replaces scaffold bulk-delete toolbar.",
       "checks": [
-        {
-          "check": "Create entry (create.php)",
-          "code": "ui_config_create_entry",
-          "note": "No modules/calendar/create.php — side panel ➕ links to ../events/create.php with start_date preset"
-        },
-        {
-          "check": "View entry (view.php)",
-          "code": "ui_config_view_entry",
-          "note": "No modules/calendar/view.php — grid links to source-module view.php (events, alerts, tickets, equipment, patches_updates)"
-        },
-        {
-          "check": "Table Actions",
-          "code": "ui_config_table_actions",
-          "note": "No list table — calendar grid UI"
-        },
-        {
-          "check": "+ New Button",
-          "code": "ui_config_new_button",
-          "note": "No local create.php — new event via ../events/create.php side-panel link"
-        },
-        {
-          "check": "New button position",
-          "code": "ui_config_new_button_position",
-          "note": "No local create.php — Settings new_button_position slots not applicable"
-        },
-        {
-          "check": "New button style",
-          "code": "ui_config_new_button_style",
-          "note": "No local create.php — list-header create button style not applicable"
-        },
-        {
-          "check": "Export Buttons",
-          "code": "ui_config_export_buttons",
-          "note": "No list table — ICS export is bespoke GET ?export=ics, not table-tools.js"
-        },
-        {
-          "check": "Search",
-          "code": "ui_config_search",
-          "note": "No list table — month/week/day/year navigation replaces list search"
-        },
         {
           "check": "Column sort (ASC/DESC)",
           "code": "ui_config_sort",
-          "note": "No list table — grid ordering is chronological by integrated sources"
+          "note": "Matrix rows fixed ORDER BY module_slug ASC — no per-column sort headers or GET sort/dir"
         },
         {
           "check": "Pagination (records per page)",
           "code": "ui_config_pagination",
-          "note": "No list table — calendar view paging is by date range, not records_per_page"
+          "note": "Full registry matrix on one page — admin needs every module visible; no records_per_page paging"
         },
         {
           "check": "Bulk delete actions",
           "code": "ui_config_bulk_delete",
-          "note": "No list table or delete.php — mutations happen in source modules"
-        },
-        {
-          "check": "Edit entry (edit.php)",
-          "code": "ui_config_edit_entry",
-          "note": "No edit.php by design"
-        },
-        {
-          "check": "List-all entry (list_all.php)",
-          "code": "ui_config_list_all_entry",
-          "note": "No list_all.php by design"
-        },
-        {
-          "check": "Delete entry (delete.php)",
-          "code": "ui_config_delete_entry",
-          "note": "No delete.php by design"
-        },
-        {
-          "check": "Back & Save (create.php)",
-          "code": "ui_config_back_save_create",
-          "note": "No local create.php form"
-        },
-        {
-          "check": "Back & Save (edit.php)",
-          "code": "ui_config_back_save_edit",
-          "note": "No edit.php form"
+          "note": "Bulk toolbar omitted — matrix uses Select All / Cancel Select / Unselect All + ajax_action=bulk_toggle_access"
         }
       ]
     }
