@@ -764,6 +764,118 @@
           "note": "No edit.php form"
         }
       ]
+    },
+    "idfs": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Bespoke IDF Dashboard Studio: create/edit forms live on index.php; create.php and edit.php are redirect-only QA entry files.",
+      "checks": [
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php redirects to index.php — closet create form is inline on index.php, not a scaffold create.php screen"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php redirects to index.php?edit_idf= — inline edit panel on index.php, not a standalone edit.php form"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php redirects to index — create flow is the inline New closet profile panel on index.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No list-header create button — create is inline panel; audit treats create.php redirect as read-only scaffold"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Inline create panel on index.php — not a Settings-managed list-header ➕ button"
+        }
+      ]
+    },
+    "import": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Admin-only bulk-import wizard (Assets/Employees cards): no flattened CRUD table, CRUD entry files, or list toolbar — imports via AJAX JSON to import_excel_rows.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Dual-card upload UI — no server-side list search on index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No list table — template download and file upload cards only"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No paginated list — imports are one-shot file uploads"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column in index.php"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
     }
   }
 }

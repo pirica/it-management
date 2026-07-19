@@ -36,6 +36,7 @@ This module provides a centralized interface for importing Assets (Equipment) an
 ## 5. UI Behavior Requirements
 
 - **Dual-Card Layout:** Separate cards for Assets and Employees import.
+- **No flattened list contract:** `index.php` only — no CRUD entry files, Actions column, search/sort/pagination, or bulk toolbar. Gate-excluded UI configuration lines are reviewed in `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
 - **Template Downloads:** Provides links to download professional Excel templates.
 - **AJAX Import:** Both CSV and XLSX files are parsed in the browser (via `xlsx.full.min.js`) and sent as JSON to the server.
 - **Real-time Feedback:** Processing status and success/error messages are displayed via JavaScript and standard alerts.
