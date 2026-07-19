@@ -42,7 +42,7 @@ Secure private password manager with vault encryption. It allows users to store 
 - **Masking**: Password fields in the UI MUST be masked by default with a toggle visibility button.
 - **Special import/export (not table-tools):** Tools menu drives CSV/Excel import modals and `exportVault()` / `export_handler.php`. Entry list `<table>` uses `data-itm-no-import-excel="1"`, `data-itm-no-export-excel="1"`, and `data-itm-no-export-pdf="1"` so index compliance does not require `data-itm-db-import-endpoint`. Actions `th`/`td` (including JS-rendered rows) use `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - **Copy-to-Clipboard**: Provide a 🗐 icon for copying fields (Account, Login, Password, Website, Comments) to the clipboard.
-- **Password Generator**: Features length slider, character type toggles, and strength meter.
+- **Password Generator**: Features length slider, character type toggles, and strength meter. Manual edits to the generated password field update the displayed length and strength meter live.
 - **AJAX Driven**: Folder and entry CRUD operations are handled via AJAX to `ajax_handler.php`.
 - **QR / code share (`join.php`):** vault-unlocked temporary read links (30 min). `password_share_sessions` stores plaintext `payload_json` snapshot (decrypted fields). UI: 📱, `images/whatsapp.svg`, and 📨 on entry list actions and `view.php`; modal via `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_whatsapp_share.php`, `php scripts/verify_outlook_share.php`.
 - **View:** `view.php` read-only entry detail (vault-unlocked) with 🔎 list action, masked password + copy, share controls, and ✏️ link back to `index.php?edit_entry=` modal.

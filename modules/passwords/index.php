@@ -504,6 +504,28 @@ function generatePassword() {
     window.crypto.getRandomValues(array);
     for (let i = 0; i < length; i++) password += chars.charAt(array[i] % chars.length);
     document.getElementById('gen-password').value = password;
+    const lengthVal = document.getElementById('length-val');
+    if (lengthVal) {
+        lengthVal.textContent = String(password.length);
+    }
+    updateStrengthMeter(password);
+}
+
+function syncGeneratorFromManualPassword() {
+    const input = document.getElementById('gen-password');
+    const lengthSlider = document.getElementById('gen-length');
+    const lengthVal = document.getElementById('length-val');
+    if (!input) {
+        return;
+    }
+    const password = input.value || '';
+    const len = password.length;
+    if (lengthVal) {
+        lengthVal.textContent = String(len);
+    }
+    if (lengthSlider && len > 0) {
+        lengthSlider.value = String(Math.max(4, Math.min(50, len)));
+    }
     updateStrengthMeter(password);
 }
 
@@ -712,6 +734,10 @@ document.addEventListener('click', function(e) {
     }
 });
 document.addEventListener('DOMContentLoaded', () => {
+    const genPasswordInput = document.getElementById('gen-password');
+    if (genPasswordInput) {
+        genPasswordInput.addEventListener('input', syncGeneratorFromManualPassword);
+    }
     generatePassword(); loadFolderTree(); loadEntries();
     const editEntryParam = new URLSearchParams(window.location.search).get('edit_entry');
     if (editEntryParam) {
