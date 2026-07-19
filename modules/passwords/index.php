@@ -55,28 +55,71 @@ if (isset($_GET['action']) && $_GET['action'] === 'lock') {
 }
 
 // Module Configuration
-$module_title = "Passwords";
+$module_title = 'Passwords';
 $current_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0;
-$search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
+$searchRaw = trim((string)($_GET['search'] ?? ''));
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
 if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
 
+require_once __DIR__ . '/passwords_list_helpers.php';
+
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
-$totalRows = 0;
-if (!empty($_SESSION['vault_key'])) {
-    $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS row_count FROM password_entries WHERE employee_id = ?');
-    if ($countStmt) {
-        mysqli_stmt_bind_param($countStmt, 'i', $user_id);
-        mysqli_stmt_execute($countStmt);
-        $countRow = mysqli_fetch_assoc(mysqli_stmt_get_result($countStmt));
-        mysqli_stmt_close($countStmt);
-        $totalRows = (int)($countRow['row_count'] ?? 0);
-    }
+$sortableColumns = pwd_list_sortable_columns();
+$sort = (string)($_GET['sort'] ?? 'account');
+$dir = strtoupper((string)($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+if (!in_array($sort, $sortableColumns, true)) {
+    $sort = 'account';
 }
+$sortSql = pwd_resolve_list_sort_sql($sort);
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$searchConditions = [];
+if ($searchRaw !== '') {
+    $searchPattern = '%' . $searchRaw . '%';
+    $searchConditions[] = 'account LIKE ?';
+    $searchConditions[] = 'login_name LIKE ?';
+    $searchConditions[] = 'website LIKE ?';
+    $searchConditions[] = 'comments LIKE ?';
+}
+
+$entries = [];
+$totalRows = 0;
+$totalPages = 1;
+$offset = 0;
+$listOrderClause = 'ORDER BY ' . $sortSql . ' ' . $dir;
+$listLimitClause = 'LIMIT ' . (int)$offset . ', ' . (int)$perPage;
+
+if (!empty($_SESSION['vault_key'])) {
+    $listResult = pwd_query_entries_for_list($conn, [
+        'employee_id' => $user_id,
+        'folder_id' => $current_folder_id,
+        'search' => $searchRaw,
+        'sort' => $sort,
+        'dir' => $dir,
+        'page' => $page,
+        'per_page' => $perPage,
+        'vault_key' => (string)$_SESSION['vault_key'],
+    ]);
+    $entries = $listResult['rows'];
+    $totalRows = (int)$listResult['totalRows'];
+    $totalPages = (int)$listResult['totalPages'];
+    $page = (int)$listResult['page'];
+    $offset = (int)$listResult['offset'];
+    $listLimitClause = 'LIMIT ' . $offset . ', ' . (int)$perPage;
+}
+
 $showBulkActions = ($totalRows >= $perPage);
+
+$pwdListQueryState = [
+    'folder_id' => $current_folder_id > 0 ? $current_folder_id : null,
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+    'page' => $page,
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($crud_action ?? 'index') === 'delete') {
     itm_require_post_csrf();
@@ -339,10 +382,16 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                             <div class="pwd-toolbar-row">
                                 <div class="pwd-search-wrap">
-                                    <div class="pwd-search-row">
-                                        <input type="text" id="entry-search" class="form-control" placeholder="Search entries..." value="<?php echo sanitize($search_query); ?>" onkeyup="if(event.key==='Enter') performSearch()">
-                                        <button type="button" class="btn btn-primary" onclick="performSearch()" title="Search">🔍</button>
-                                    </div>
+                                    <form method="GET" action="index.php" class="pwd-search-row">
+                                        <?php if ($current_folder_id > 0): ?>
+                                            <input type="hidden" name="folder_id" value="<?php echo (int)$current_folder_id; ?>">
+                                        <?php endif; ?>
+                                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                                        <input type="text" name="search" id="entry-search" class="form-control" placeholder="Search entries..." value="<?php echo sanitize($searchRaw); ?>">
+                                        <button type="submit" class="btn btn-primary" title="Search">🔍</button>
+                                        <a href="<?php echo sanitize(pwd_build_list_url(['folder_id' => $current_folder_id > 0 ? $current_folder_id : null])); ?>" class="btn" title="Clear">🔙</a>
+                                    </form>
                                 </div>
                                 <div class="pwd-toolbar-tools">
                                     <div class="btn-group">
@@ -362,10 +411,99 @@ if (!isset($crud_title)) {
                             </div>
                             <div style="overflow-x: auto;">
                                 <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
-                                    <thead><tr><?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?><th class="itm-actions-cell" data-itm-actions-origin="1" style="min-width: 220px; text-align: center;">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
-                                    <tbody id="entries-body"><tr><td colspan="<?php echo $showBulkActions ? 6 : 5; ?>" class="text-center">Loading entries...</td></tr></tbody>
+                                    <thead>
+                                        <tr>
+                                            <?php if ($showBulkActions): ?>
+                                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                                            <?php endif; ?>
+                                            <th class="itm-actions-cell" data-itm-actions-origin="1" style="min-width: 220px; text-align: center;">Actions</th>
+                                            <?php
+                                            $pwdListColumns = [
+                                                'account' => 'Account',
+                                                'login_name' => 'Login Name',
+                                            ];
+                                            foreach ($pwdListColumns as $colKey => $colLabel):
+                                                $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
+                                                $sortHref = pwd_build_list_url(array_merge($pwdListQueryState, ['sort' => $colKey, 'dir' => $nextDir, 'page' => 1]));
+                                            ?>
+                                            <th>
+                                                <a href="<?php echo sanitize($sortHref); ?>" style="text-decoration:none;color:inherit;">
+                                                    <?php echo sanitize($colLabel); ?>
+                                                    <?php if ($sort === $colKey): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                                </a>
+                                            </th>
+                                            <?php endforeach; ?>
+                                            <th>Password</th>
+                                            <?php
+                                            $colKey = 'website';
+                                            $colLabel = 'Website';
+                                            $nextDir = ($sort === $colKey && $dir === 'ASC') ? 'DESC' : 'ASC';
+                                            $sortHref = pwd_build_list_url(array_merge($pwdListQueryState, ['sort' => $colKey, 'dir' => $nextDir, 'page' => 1]));
+                                            ?>
+                                            <th>
+                                                <a href="<?php echo sanitize($sortHref); ?>" style="text-decoration:none;color:inherit;">
+                                                    <?php echo sanitize($colLabel); ?>
+                                                    <?php if ($sort === $colKey): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                                </a>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="entries-body">
+                                        <?php if (empty($entries)): ?>
+                                            <tr><td colspan="<?php echo $showBulkActions ? 6 : 5; ?>" class="text-center" style="padding: 40px;">No entries found.</td></tr>
+                                        <?php else: ?>
+                                            <?php foreach ($entries as $entryRow):
+                                                $entryId = (int)$entryRow['id'];
+                                                $entryAccount = (string)($entryRow['account'] ?? '');
+                                                $entryLogin = (string)($entryRow['login_name'] ?? '');
+                                                $entryPassword = (string)($entryRow['password_plain'] ?? '');
+                                                $entryWebsite = (string)($entryRow['website'] ?? '');
+                                                $websiteLabel = $entryWebsite !== '' ? preg_replace('#^https?://#i', '', $entryWebsite) : '';
+                                            ?>
+                                            <tr>
+                                                <?php if ($showBulkActions): ?>
+                                                    <td><input type="checkbox" name="ids[]" value="<?php echo $entryId; ?>" form="bulk-delete-form"></td>
+                                                <?php endif; ?>
+                                                <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;">
+                                                    <div class="itm-actions-wrap pwd-actions-wrap">
+                                                        <button class="btn btn-sm" type="button" onclick="itmOpenQrShareModal('ajax_handler.php', <?php echo $entryId; ?>, { action: 'create_share_session' })" title="Share to device">📱</button>
+                                                        <button class="btn btn-sm" type="button" onclick="itmOpenWhatsAppShare('ajax_handler.php', <?php echo $entryId; ?>, { action: 'create_share_session' }, 'password')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                                        <button class="btn btn-sm" type="button" onclick="itmOpenOutlookShare('ajax_handler.php', <?php echo $entryId; ?>, { action: 'create_share_session' }, 'password')" title="Share on Outlook">📨</button>
+                                                        <a class="btn btn-sm" href="view.php?id=<?php echo $entryId; ?>" title="View">🔎</a>
+                                                        <button class="btn btn-sm" type="button" onclick="openEntryModal(<?php echo $entryId; ?>)" title="Edit">✏️</button>
+                                                        <button class="btn btn-sm btn-danger" type="button" onclick="deleteEntry(<?php echo $entryId; ?>)" title="Delete">🗑️</button>
+                                                    </div>
+                                                </td>
+                                                <td><?php echo sanitize($entryAccount); ?> <button class="btn btn-link btn-sm p-0" type="button" onclick="copyText(<?php echo json_encode($entryAccount, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>)" title="Copy">🗐</button></td>
+                                                <td><?php echo sanitize($entryLogin); ?> <button class="btn btn-link btn-sm p-0" type="button" onclick="copyText(<?php echo json_encode($entryLogin, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>)" title="Copy">🗐</button></td>
+                                                <td>
+                                                    <div class="pwd-inline-field">
+                                                        <input type="password" value="<?php echo sanitize($entryPassword); ?>" class="form-control" readonly id="pwd-<?php echo $entryId; ?>">
+                                                        <button class="btn btn-sm" type="button" onclick="togglePasswordVisibility('pwd-<?php echo $entryId; ?>')" title="Toggle visibility">👁️</button>
+                                                        <button class="btn btn-sm" type="button" onclick="copyText(<?php echo json_encode($entryPassword, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>)" title="Copy">🗐</button>
+                                                    </div>
+                                                </td>
+                                                <td><?php if ($entryWebsite !== ''): ?><a href="<?php echo sanitize($entryWebsite); ?>" target="_blank" rel="nofollow noreferrer noopener" style="text-decoration:none !important;"><?php echo sanitize($websiteLabel); ?></a><?php else: ?>—<?php endif; ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
                                 </table>
                             </div>
+                            <?php if ($totalPages > 1): ?>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:8px;flex-wrap:wrap;">
+                                    <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                                    <div style="display:flex;gap:8px;align-items:center;">
+                                        <?php if ($page > 1): ?>
+                                            <a class="btn btn-sm" href="<?php echo sanitize(pwd_build_list_url(array_merge($pwdListQueryState, ['page' => $page - 1]))); ?>" title="◀️ Previous">Previous</a>
+                                        <?php endif; ?>
+                                        <span class="btn btn-sm" style="pointer-events:none;"><?php echo (int)$page; ?> / <?php echo (int)$totalPages; ?></span>
+                                        <?php if ($page < $totalPages): ?>
+                                            <a class="btn btn-sm" href="<?php echo sanitize(pwd_build_list_url(array_merge($pwdListQueryState, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -468,10 +606,8 @@ if (!isset($crud_title)) {
 <script>
 const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 const pwdShowBulkActions = <?php echo $showBulkActions ? 'true' : 'false'; ?>;
-const pwdListColspan = <?php echo (int)($showBulkActions ? 6 : 5); ?>;
+const currentFolderId = <?php echo (int)$current_folder_id; ?>;
 let pwdFoldersData = [];
-let currentFolderId = 0;
-let searchQuery = '';
 
 async function apiCall(action, data = {}) {
     data.action = action;
@@ -757,7 +893,6 @@ function pwdFolderDrop(ev) {
                 currentFolderId = parseInt(payload.merge_into_folder_id, 10);
             }
             loadFolderTree();
-            loadEntries();
         } else {
             alert(res.message || 'Could not move folder.');
         }
@@ -771,49 +906,28 @@ document.addEventListener('dragleave', function(ev) {
     }
 });
 
-function selectFolder(id) { currentFolderId = id; loadEntries(); loadFolderTree(); }
-function performSearch() { searchQuery = document.getElementById('entry-search').value; loadEntries(); }
-
-function pwdRebindBulkDeleteSelection() {
-    if (!pwdShowBulkActions) {
-        return;
-    }
-    const bulkForm = document.getElementById('bulk-delete-form');
-    if (bulkForm) {
-        bulkForm.removeAttribute('data-itm-bulk-delete-bound');
-    }
-    if (typeof window.itmInitBulkDeleteSelection === 'function') {
-        window.itmInitBulkDeleteSelection();
-    }
-}
-
-function loadEntries() {
-    apiCall('list_entries', { folder_id: currentFolderId, search: searchQuery }).then(data => {
-        const body = document.getElementById('entries-body');
-        if (!body) return;
-        body.innerHTML = '';
-        if (!Array.isArray(data) || data.length === 0) {
-            body.innerHTML = '<tr><td colspan="' + pwdListColspan + '" class="text-center" style="padding: 40px;">No entries found.</td></tr>';
-            pwdRebindBulkDeleteSelection();
+function pwdBuildListUrl(params) {
+    const query = new URLSearchParams();
+    Object.keys(params || {}).forEach((key) => {
+        const value = params[key];
+        if (value === null || value === undefined || value === '') {
             return;
         }
-        data.forEach(e => {
-            const row = document.createElement('tr');
-            const bulkCell = pwdShowBulkActions
-                ? `<td><input type="checkbox" name="ids[]" value="${e.id}" form="bulk-delete-form"></td>`
-                : '';
-            row.innerHTML = `
-                ${bulkCell}
-                <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;"><div class="itm-actions-wrap pwd-actions-wrap"><button class="btn btn-sm" type="button" onclick="itmOpenQrShareModal('ajax_handler.php', ${e.id}, { action: 'create_share_session' })" title="Share to device">📱</button><button class="btn btn-sm" type="button" onclick="itmOpenWhatsAppShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button><button class="btn btn-sm" type="button" onclick="itmOpenOutlookShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on Outlook">📨</button><a class="btn btn-sm" href="view.php?id=${e.id}" title="View">🔎</a><button class="btn btn-sm" type="button" onclick="openEntryModal(${e.id})" title="Edit">✏️</button><button class="btn btn-sm btn-danger" type="button" onclick="deleteEntry(${e.id})" title="Delete">🗑️</button></div></td>
-                <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
-                <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
-                <td><div class="pwd-inline-field"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><button class="btn btn-sm" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')" title="Toggle visibility">👁️</button><button class="btn btn-sm" type="button" onclick="copyText('${addslashes(e.password)}')" title="Copy">🗐</button></div></td>
-                <td>${e.website ? `<a href="${sanitizeHtml(e.website)}" target="_blank" rel="nofollow noreferrer noopener" style="text-decoration: none !important;">${sanitizeHtml(e.website.replace(/^https?:\/\//, ''))}</a>` : '—'}</td>
-            `;
-            body.appendChild(row);
-        });
-        pwdRebindBulkDeleteSelection();
+        if (key === 'folder_id' && String(value) === '0') {
+            return;
+        }
+        query.set(key, String(value));
     });
+    const qs = query.toString();
+    return 'index.php' + (qs ? '?' + qs : '');
+}
+
+function selectFolder(id) {
+    window.location.href = pwdBuildListUrl({ folder_id: id, page: 1 });
+}
+
+function pwdReloadList() {
+    window.location.reload();
 }
 
 function openEntryModal(id = 0) {
@@ -839,7 +953,7 @@ function openEntryModal(id = 0) {
 }
 
 function deleteEntry(id) {
-    if (confirm('Delete entry?')) apiCall('delete_entry', { id }).then(res => { if (res.ok) loadEntries(); });
+    if (confirm('Delete entry?')) apiCall('delete_entry', { id }).then(res => { if (res.ok) pwdReloadList(); });
 }
 
 function openFolderModal(id = 0, name = '', parentId = 0) {
@@ -855,7 +969,7 @@ function openFolderModal(id = 0, name = '', parentId = 0) {
 }
 
 function deleteFolder(id) {
-    if (confirm('Delete folder and contents?')) apiCall('delete_folder', { id }).then(res => { if (res.ok) { loadFolderTree(); loadEntries(); } });
+    if (confirm('Delete folder and contents?')) apiCall('delete_folder', { id }).then(res => { if (res.ok) pwdReloadList(); });
 }
 
 function openImportModal() { $('body').append('<div class="modal-backdrop show"></div>'); $('#importModal').addClass('show').show(); $('body').addClass('modal-open'); }
@@ -887,7 +1001,7 @@ function handleExcelImport() {
             if (res.ok) {
                 alert('Imported ' + res.imported + ' entries!');
                 $('#importExcelModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
-                loadEntries();
+                pwdReloadList();
             } else alert(res.message);
         });
     };
@@ -906,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (genPasswordInput) {
         genPasswordInput.addEventListener('input', syncGeneratorFromManualPassword);
     }
-    generatePassword(); loadFolderTree(); loadEntries();
+    generatePassword(); loadFolderTree();
     const editEntryParam = new URLSearchParams(window.location.search).get('edit_entry');
     if (editEntryParam) {
         const editId = parseInt(editEntryParam, 10);
@@ -924,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apiCall('save_entry', data).then(res => {
             if (res.ok) {
                 $('#entryModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open');
-                loadEntries();
+                pwdReloadList();
             } else {
                 alert(res.message);
             }
@@ -961,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const fd = new FormData(this); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'import_csv');
         fetch('ajax_handler.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
-            if (res.ok) { alert('Imported!'); $('#importModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); loadEntries(); } else alert(res.message);
+            if (res.ok) { alert('Imported!'); $('#importModal').removeClass('show').hide(); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); pwdReloadList(); } else alert(res.message);
         });
     };
 });
@@ -970,6 +1084,7 @@ function sanitizeHtml(t) { if (!t) return ''; const d = document.createElement('
 function addslashes(s) { if (!s) return ''; return s.replace(/[\\\'\"]/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 </script>
 <?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>window.ITM_CSRF_TOKEN = CSRF_TOKEN;</script>
 </body>
 </html>
