@@ -25,6 +25,34 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         itm_handle_json_table_import($conn, 'bookmarks', (int)($_SESSION['company_id'] ?? 0));
         exit;
     }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'move_bookmarks') {
+        if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+            die('CSRF validation failed.');
+        }
+        $target_folder_id = (int)($_POST['target_folder_id'] ?? 0) ?: null;
+        $ids = array_filter(array_map('intval', (array)($_POST['ids'] ?? [])));
+        foreach ($ids as $bookmark_id) {
+            $check_res = mysqli_query(
+                $conn,
+                'SELECT * FROM bookmarks WHERE id = ' . (int)$bookmark_id . ' AND company_id = ' . (int)$company_id . ' AND active = 1 LIMIT 1'
+            );
+            $bookmark_row = $check_res ? mysqli_fetch_assoc($check_res) : null;
+            if (!$bookmark_row || !bkm_can_edit_bookmark($bookmark_row, $user_id, $is_admin)) {
+                continue;
+            }
+            if ($target_folder_id === null) {
+                $stmt = mysqli_prepare($conn, 'UPDATE bookmarks SET folder_id = NULL WHERE id = ? AND company_id = ?');
+                mysqli_stmt_bind_param($stmt, 'ii', $bookmark_id, $company_id);
+            } else {
+                $stmt = mysqli_prepare($conn, 'UPDATE bookmarks SET folder_id = ? WHERE id = ? AND company_id = ?');
+                mysqli_stmt_bind_param($stmt, 'iii', $target_folder_id, $bookmark_id, $company_id);
+            }
+            mysqli_stmt_execute($stmt);
+        }
+        header('Location: list_all.php');
+        exit;
+    }
 }
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
@@ -66,6 +94,7 @@ $totalPages = 1;
 
 if (!empty($bkmVaultState['unlocked'])) {
 $all_folders = bkm_get_folders($conn, $company_id, $user_id);
+$folder_tree = bkm_build_folder_tree($all_folders);
 $folderNameById = bkm_folder_name_map($all_folders);
 
 $listResult = bkm_query_bookmarks_for_list($conn, [
@@ -94,7 +123,8 @@ unset($listRow);
 }
 
 $csrfToken = itm_get_csrf_token();
-$showBulkActions = true;
+$showBulkActions = ($totalRows > 0);
+$folder_tree = $folder_tree ?? [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -143,13 +173,27 @@ if (!isset($crud_title)) {
             </div>
         </div>
 
-        <div class="card" style="margin-bottom:16px;">
-            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+        <?php if ($showBulkActions): ?>
+        <div class="card" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" data-itm-bulk-delete-bound="1">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                <button type="button" class="btn btn-sm" id="bulk-select-toggle" data-itm-bulk-select="1">Select</button>
                 <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear table?');">Clear Table</button>
+                <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+            </form>
+            <form id="bulk-move-form" method="POST" action="list_all.php" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                <input type="hidden" name="action" value="move_bookmarks">
+                <label for="bulk-move-folder" style="margin:0;">Move to</label>
+                <select id="bulk-move-folder" name="target_folder_id" class="form-control" style="min-width:180px;">
+                    <option value="0">Root</option>
+                    <?php echo bkm_render_folder_options($folder_tree); ?>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary" id="bulk-move-submit">Move to</button>
             </form>
         </div>
+        <?php endif; ?>
 
         <div class="card" style="margin-bottom:16px;">
             <form method="GET" style="display:flex; gap:10px; align-items:flex-end;">
@@ -261,14 +305,37 @@ if (!isset($crud_title)) {
 <script src="../../js/theme.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
 <script>
-document.addEventListener('change', function (event) {
-    if (event.target.id === 'select-all-rows') {
-        const checkboxes = document.querySelectorAll('input[name="ids[]"]');
-        checkboxes.forEach(cb => cb.checked = event.target.checked);
+const bulkMoveForm = document.getElementById('bulk-move-form');
+function updateBulkMoveFormVisibility() {
+    if (!bulkMoveForm) {
+        return;
     }
-});
+    const checked = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]:checked');
+    bulkMoveForm.style.display = checked.length > 0 ? 'flex' : 'none';
+}
+if (bulkMoveForm) {
+    document.addEventListener('itm-bulk-selection-change', updateBulkMoveFormVisibility);
+    bulkMoveForm.addEventListener('submit', function(event) {
+        const checked = document.querySelectorAll('input[name="ids[]"][form="bulk-delete-form"]:checked');
+        if (!checked.length) {
+            event.preventDefault();
+            alert('Please select at least one bookmark to move.');
+            return;
+        }
+        bulkMoveForm.querySelectorAll('input[name="ids[]"]').forEach(function(input) {
+            input.remove();
+        });
+        checked.forEach(function(checkbox) {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'ids[]';
+            hidden.value = checkbox.value;
+            bulkMoveForm.appendChild(hidden);
+        });
+    });
+    updateBulkMoveFormVisibility();
+}
 
-// Close dropdowns when clicking outside
 document.addEventListener('click', function() {
     document.querySelectorAll('.dropdown-menu').forEach(function(el) {
         el.classList.remove('show');
