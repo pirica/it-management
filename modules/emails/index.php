@@ -217,6 +217,12 @@ if ($countStmt) {
 $sendLogs = [];
 $perPage = itm_resolve_records_per_page($uiConfig ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
+$sendLogsSortable = ['to_email', 'subject', 'status', 'sent_at', 'details', 'id'];
+$sort = trim((string)($_GET['sort'] ?? 'sent_at'));
+if (!in_array($sort, $sendLogsSortable, true)) {
+    $sort = 'sent_at';
+}
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
 $sendLogsWhereSql = 'company_id = ? AND active = 1';
 $sendLogsTypes = 'i';
 $sendLogsParams = [$company_id];
@@ -262,7 +268,7 @@ $sendLogsOffset = ($page - 1) * $perPage;
 
 $logSql = 'SELECT id, to_email, subject, status, details, sent_at
            FROM emails
-           WHERE ' . $sendLogsWhereSql . ' ORDER BY sent_at DESC, id DESC LIMIT ? OFFSET ?';
+           WHERE ' . $sendLogsWhereSql . ' ORDER BY ' . $sort . ' ' . $dir . ', id DESC LIMIT ? OFFSET ?';
 $logTypes = $sendLogsTypes . 'ii';
 $logParams = array_merge($sendLogsParams, [$perPage, $sendLogsOffset]);
 $logStmt = mysqli_prepare($conn, $logSql);
@@ -276,7 +282,7 @@ if ($logStmt) {
     mysqli_stmt_close($logStmt);
 }
 
-$emailsSendLogsPageUrl = static function (array $extra = []) use ($status_filter, $searchRaw, $page): string {
+$emailsSendLogsPageUrl = static function (array $extra = []) use ($status_filter, $searchRaw, $page, $sort, $dir): string {
     $query = ['tab' => 'send_logs'];
     if ($status_filter !== '') {
         $query['status'] = $status_filter;
@@ -284,6 +290,8 @@ $emailsSendLogsPageUrl = static function (array $extra = []) use ($status_filter
     if ($searchRaw !== '') {
         $query['search'] = $searchRaw;
     }
+    $query['sort'] = $sort;
+    $query['dir'] = $dir;
     if (!array_key_exists('page', $extra)) {
         $query['page'] = $page;
     }
@@ -291,6 +299,8 @@ $emailsSendLogsPageUrl = static function (array $extra = []) use ($status_filter
 
     return 'index.php?' . http_build_query($query);
 };
+
+$showSendLogsBulkActions = ($sendLogsTotalRows >= $perPage);
 
 $smtpConfigs = [];
 $smtpStmt = mysqli_prepare(

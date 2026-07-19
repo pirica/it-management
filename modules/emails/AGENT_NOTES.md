@@ -27,7 +27,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - Validation errors on `index.php` use `itm_render_alert_errors($errors)` (not raw `foreach` alert markup).
 - Stat cards link to filtered send logs (`status=sent` / `failed`); search term preserved on stat-card links when active.
 - **List header:** centered `h1` echoes `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` inside `data-itm-new-button-managed="server"` (Settings emoji/icon overrides); SMTP tab ➕ create respects `new_button_position`.
-- **Send Logs tab:** server-side search via `$_GET['search']` on `to_email`, `subject`, `status`, `details`, and `sent_at` (SQL `LIKE`); Search submit + emoji-only 🔙 reset on `tabs/send_logs.php`. Pagination uses `itm_resolve_records_per_page()` with `LIMIT`/`OFFSET`, filtered row count, and **Previous** / **Next** controls (`title="◀️ Previous"` / `title="▶️ Next"`) preserving `tab`, `status`, `search`, and `page`.
+- **Send Logs tab:** server-side search via `$_GET['search']` on `to_email`, `subject`, `status`, `details`, and `sent_at` (SQL `LIKE`); Search submit + emoji-only 🔙 reset on `tabs/send_logs.php` (preserves `sort` / `dir`). Column sort (`to_email`, `subject`, `status`, `sent_at`, `details`) via `sort` + `dir` with ▲/▼ headers. Pagination uses `itm_resolve_records_per_page()` with `LIMIT`/`OFFSET`, filtered row count, and **Previous** / **Next** controls preserving `tab`, `status`, `search`, `sort`, `dir`, and `page`. Bulk toolbar (`Select to Delete`, `Cancel`, `Clear Table`) visible when row count ≥ `records_per_page`; soft-delete via `delete.php` (private-data exempt — no `audit_logs`).
 - SMTP form: toggle **Set as default SMTP**; password field with reveal button; **IMAP** port; **POP3** port, TLS mode, and require-secure toggle; test send on edit.
 - Alert rules: per-rule toggle, days-before (expiry rules), comma-separated notify emails.
 - Sidebar: **Admin → 📧 Email Management** (`includes/ui_config.php`).
@@ -39,6 +39,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 ## 7. File Structure
 - `index.php` — tab shell, POST handlers, stats.
 - `tabs/send_logs.php`, `tabs/smtp.php`, `tabs/alert_rules.php`.
+- `delete.php` — send-log soft-delete (bulk / clear table).
 - Wrappers `create.php` / `edit.php` redirect to SMTP tab.
 
 ## 8. Multi-Tenant Rules
