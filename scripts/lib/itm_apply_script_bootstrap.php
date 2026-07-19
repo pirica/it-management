@@ -64,14 +64,22 @@ if (!function_exists('itm_apply_script_bootstrap')) {
         }
 
         if (!$isCli && $apply) {
-            // Why: Browser file writes require Admin; dry-run preview is read-only for any signed-in user.
-            $employeeId = (int)($_SESSION['employee_id'] ?? 0);
-            if (!function_exists('itm_is_admin') || !itm_is_admin($GLOBALS['conn'] ?? null, $employeeId)) {
-                http_response_code(403);
-                header('Content-Type: text/plain; charset=utf-8');
-                echo "Forbidden: administrator login required.\n";
-                itm_script_output_end();
-                exit(1);
+            // Why: Browser file writes require Admin; use script bootstrap gate so pre-swap authorization
+            // employee is honored after itm_script_begin_browser_isolated_session() swaps $_SESSION.
+            if (function_exists('itm_script_require_admin_script_or_exit')) {
+                itm_script_require_admin_script_or_exit(
+                    $GLOBALS['conn'] ?? null,
+                    'Forbidden: administrator login required.'
+                );
+            } else {
+                $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+                if (!function_exists('itm_is_admin') || !itm_is_admin($GLOBALS['conn'] ?? null, $employeeId)) {
+                    http_response_code(403);
+                    header('Content-Type: text/plain; charset=utf-8');
+                    echo "Forbidden: administrator login required.\n";
+                    itm_script_output_end();
+                    exit(1);
+                }
             }
         }
 
