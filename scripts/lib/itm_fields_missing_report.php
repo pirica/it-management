@@ -2301,6 +2301,69 @@ if (!function_exists('itm_fields_missing_count_skip_gate_failures')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_compute_skip_gate_review_counts')) {
+    /**
+     * Populate reviewed vs unreviewed bespoke gate failure counts on the report root.
+     * Call after itm_fields_missing_apply_reviewed_flags_to_report().
+     *
+     * @param array<string,mixed> $report
+     */
+    function itm_fields_missing_compute_skip_gate_review_counts(array &$report): void
+    {
+        $reviewed = 0;
+        $unreviewed = 0;
+
+        foreach ($report['modules'] ?? [] as $moduleReport) {
+            if (!is_array($moduleReport) || !itm_fields_missing_module_ui_coverage_skipped($moduleReport)) {
+                continue;
+            }
+            $moduleSlug = (string) ($moduleReport['module'] ?? '');
+            foreach ($moduleReport['failures'] ?? [] as $failure) {
+                if (!is_array($failure)) {
+                    continue;
+                }
+                if (!empty($failure['reviewed'])
+                    || ($moduleSlug !== '' && itm_fields_missing_failure_is_reviewed($moduleSlug, $failure))
+                ) {
+                    $reviewed++;
+                    continue;
+                }
+                $unreviewed++;
+            }
+        }
+
+        $report['reviewed_skip_gate_failure_count'] = $reviewed;
+        $report['unreviewed_skip_gate_failure_count'] = $unreviewed;
+    }
+}
+
+if (!function_exists('itm_fields_missing_strict_gate_failed')) {
+    /**
+     * @param array<string,mixed> $report
+     */
+    function itm_fields_missing_strict_gate_failed(array $report): bool
+    {
+        return (int) ($report['unreviewed_skip_gate_failure_count'] ?? 0) > 0;
+    }
+}
+
+if (!function_exists('itm_fields_missing_resolve_exit_code')) {
+    /**
+     * @param array<string,mixed> $report
+     */
+    function itm_fields_missing_resolve_exit_code(array $report, bool $strictGate): int
+    {
+        if ((int) ($report['failure_count'] ?? 0) > 0) {
+            return 1;
+        }
+        if ($strictGate && itm_fields_missing_strict_gate_failed($report)) {
+            return 1;
+        }
+
+        return 0;
+    }
+}
+
 if (!function_exists('itm_fields_missing_result_status_label')) {
     function itm_fields_missing_result_status_label(bool $uiCoverageSkipped, bool $passed, bool $reviewed = false): string
     {
@@ -3640,6 +3703,12 @@ if (!function_exists('itm_fields_missing_format_audit_summary')) {
             . (int) ($summary['skip_pass_modules'] ?? 0) . ' [SKIP][pass], '
             . (int) ($summary['skip_fail_modules'] ?? 0) . ' [SKIP][fail] '
             . '(' . (int) ($summary['skip_gate_failure_lines'] ?? 0) . ' gated failure line(s); not counted in Result total)' . $nl;
+        $reviewedLines = (int) ($report['reviewed_skip_gate_failure_count'] ?? 0);
+        $unreviewedLines = (int) ($report['unreviewed_skip_gate_failure_count'] ?? 0);
+        if ($reviewedLines > 0 || $unreviewedLines > 0) {
+            $out .= '  Bespoke gate review: ' . $reviewedLines . ' [SKIP][fail][reviewed], '
+                . $unreviewedLines . ' unreviewed [SKIP][fail]' . $nl;
+        }
         $out .= '  Dynamic scaffold / manual full UI modules: '
             . (int) ($summary['scaffold_audited_pass_lines'] ?? 0) . ' audited UI [PASS] lines, '
             . (int) ($summary['scaffold_fail_modules'] ?? 0) . ' module(s) with [FAIL], '

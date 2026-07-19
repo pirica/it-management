@@ -6,8 +6,9 @@
  * checks across every module with a resolvable $crud_table (plus dynamic scaffold modules).
  *
  * Browser: scripts/fields_missing.php (Admin). Optional ?module=slug filter.
- * CLI: php scripts/fields_missing.php [--module=slug] [--json]
+ * CLI: php scripts/fields_missing.php [--module=slug] [--json] [--strict-gate]
  * Reviewed bespoke [SKIP][fail] exceptions: scripts/data/fields_missing_reviewed.json (manifest: fields_missing_reviewed.php).
+ * --strict-gate: exit 1 when any bespoke [SKIP][fail] line is not listed in fields_missing_reviewed.json.
  */
 declare(strict_types=1);
 
@@ -24,6 +25,7 @@ itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator pri
 
 $moduleFilter = '';
 $jsonOutput = false;
+$strictGate = false;
 if ($itmIsCli) {
     foreach ($GLOBALS['argv'] ?? [] as $arg) {
         if (strpos((string) $arg, '--module=') === 0) {
@@ -32,6 +34,9 @@ if ($itmIsCli) {
         if ((string) $arg === '--json') {
             $jsonOutput = true;
         }
+        if ((string) $arg === '--strict-gate') {
+            $strictGate = true;
+        }
     }
 } else {
     if (isset($_GET['module'])) {
@@ -39,6 +44,9 @@ if ($itmIsCli) {
     }
     if (isset($_GET['json'])) {
         $jsonOutput = true;
+    }
+    if (isset($_GET['strict_gate']) && (string) $_GET['strict_gate'] !== '0') {
+        $strictGate = true;
     }
 }
 
@@ -49,6 +57,8 @@ if (!$conn instanceof mysqli) {
 
 $report = itm_fields_missing_collect_report($conn, $moduleFilter !== '' ? $moduleFilter : null);
 itm_fields_missing_apply_reviewed_flags_to_report($report);
+itm_fields_missing_compute_skip_gate_review_counts($report);
+$report['strict_gate'] = $strictGate;
 $auditNl = "\n";
 
 if ($jsonOutput) {
@@ -56,7 +66,7 @@ if ($jsonOutput) {
         header('Content-Type: application/json; charset=utf-8');
     }
     echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit($report['failure_count'] > 0 ? 1 : 0);
+    exit(itm_fields_missing_resolve_exit_code($report, $strictGate));
 }
 
 itm_script_output_begin('Fields missing — schema/UI audit');
@@ -68,7 +78,7 @@ if (!$itmIsCli) {
         . 'discoverable <code>$crud_table</code> module. Employees uses the same critical-field list as '
         . '<a href="employee_fields_missing.php">employee_fields_missing.php</a>. '
         . 'Flattened scaffold modules with <code>$uiColumns</code> pass UI via dynamic scaffold. '
-        . 'Bespoke modules print gated results as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> / <code>[SKIP][fail][reviewed]</code> (informational gate only — not counted in the Result failure total). '
+        . 'Bespoke modules print gated results as <code>[SKIP][pass]</code> / <code>[SKIP][fail]</code> / <code>[SKIP][fail][reviewed]</code> (informational gate only — not counted in the Result failure total unless <strong>Strict gate</strong> is enabled). '
         . 'Reviewed exceptions: <a href="fields_missing_reviewed.php">fields_missing_reviewed.php</a> · <code>scripts/data/fields_missing_reviewed.json</code>.</p>';
     echo '<details style="margin:12px 0;max-width:900px;"><summary style="cursor:pointer;font-weight:600;">Section legend</summary>';
     echo '<pre style="margin:8px 0;padding:12px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;">';
@@ -77,8 +87,19 @@ if (!$itmIsCli) {
     echo '<form method="get" style="margin:16px 0;padding:12px;border:1px solid #d0d7de;border-radius:8px;max-width:720px;">';
     echo '<label for="module" style="display:block;margin-bottom:8px;font-weight:600;">Module filter (optional)</label>';
     echo '<input type="text" name="module" id="module" value="' . htmlspecialchars($moduleFilter, ENT_QUOTES, 'UTF-8') . '" placeholder="e.g. employees" style="width:100%;padding:8px;margin-bottom:12px;">';
+    echo '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+    echo '<input type="checkbox" name="strict_gate" value="1"' . ($strictGate ? ' checked' : '') . '>';
+    echo '<span>Strict gate — fail when unreviewed bespoke <code>[SKIP][fail]</code> lines remain</span>';
+    echo '</label>';
     echo '<button type="submit" style="padding:8px 12px;">Run audit</button>';
-    echo ' <a href="fields_missing.php?json=1' . ($moduleFilter !== '' ? '&amp;module=' . rawurlencode($moduleFilter) : '') . '" style="margin-left:8px;">JSON</a>';
+    $jsonHref = 'fields_missing.php?json=1';
+    if ($moduleFilter !== '') {
+        $jsonHref .= '&amp;module=' . rawurlencode($moduleFilter);
+    }
+    if ($strictGate) {
+        $jsonHref .= '&amp;strict_gate=1';
+    }
+    echo ' <a href="' . $jsonHref . '" style="margin-left:8px;">JSON</a>';
     echo '</form><pre>';
 }
 
@@ -86,6 +107,9 @@ echo itm_script_escape_browser_pre_text('Schema tables (database.sql): ' . (int)
 echo itm_script_escape_browser_pre_text('Modules audited: ' . (int) $report['module_count']) . $auditNl;
 if ($moduleFilter !== '') {
     echo itm_script_escape_browser_pre_text('Module filter: ' . $moduleFilter) . $auditNl;
+}
+if ($strictGate) {
+    echo itm_script_escape_browser_pre_text('Strict gate: enabled (unreviewed bespoke [SKIP][fail] lines fail the run)') . $auditNl;
 }
 echo itm_script_escape_browser_pre_text(itm_fields_missing_format_legend($auditNl));
 echo itm_script_escape_browser_pre_text(str_repeat('-', 72) . $auditNl . $auditNl);
@@ -150,12 +174,43 @@ if ((int) $report['failure_count'] > 0) {
     exit(1);
 }
 
-echo colorText(itm_script_escape_browser_pre_text('Result: all checks passed.'), 'pass') . $auditNl;
-$skipGateFailures = (int) ($report['skip_gate_failure_count'] ?? 0);
-if ($skipGateFailures > 0) {
+if ($strictGate && itm_fields_missing_strict_gate_failed($report)) {
+    $unreviewed = (int) ($report['unreviewed_skip_gate_failure_count'] ?? 0);
     echo colorText(
         itm_script_escape_browser_pre_text(
-            'Note: ' . $skipGateFailures . ' bespoke [SKIP][fail] line(s) above are informational only (not counted here).'
+            'Result: strict gate failed — ' . $unreviewed
+            . ' unreviewed bespoke [SKIP][fail] line(s). Fix the module or add rows to scripts/data/fields_missing_reviewed.json.'
+        ),
+        'fail'
+    ) . $auditNl;
+    itm_script_output_end();
+    exit(1);
+}
+
+$reviewedSkipGate = (int) ($report['reviewed_skip_gate_failure_count'] ?? 0);
+$unreviewedSkipGate = (int) ($report['unreviewed_skip_gate_failure_count'] ?? 0);
+if ($strictGate && $reviewedSkipGate > 0 && $unreviewedSkipGate === 0) {
+    echo colorText(
+        itm_script_escape_browser_pre_text(
+            'Result: all checks passed (strict gate: ' . $reviewedSkipGate . ' reviewed bespoke [SKIP][fail] line(s) only).'
+        ),
+        'pass'
+    ) . $auditNl;
+} else {
+    echo colorText(itm_script_escape_browser_pre_text('Result: all checks passed.'), 'pass') . $auditNl;
+}
+
+if ($unreviewedSkipGate > 0 && !$strictGate) {
+    echo colorText(
+        itm_script_escape_browser_pre_text(
+            'Note: ' . $unreviewedSkipGate . ' unreviewed bespoke [SKIP][fail] line(s) above are informational only (not counted here). Use --strict-gate to fail on them.'
+        ),
+        'warn'
+    ) . $auditNl;
+} elseif ($reviewedSkipGate > 0 && !$strictGate) {
+    echo colorText(
+        itm_script_escape_browser_pre_text(
+            'Note: ' . $reviewedSkipGate . ' bespoke [SKIP][fail][reviewed] line(s) above are informational only (not counted here).'
         ),
         'warn'
     ) . $auditNl;
