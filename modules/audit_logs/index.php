@@ -529,10 +529,7 @@ function itm_audit_describe_payload($action, $normalizedValue, $isOldValue) {
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '🧾 Audit Logs';
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -1201,8 +1201,7 @@ $rows = mysqli_query($conn, 'SELECT e.*, ec.name as category_name, ec.color as c
      LEFT JOIN employees u ON e.assigned_to_employee_id = u.id LEFT JOIN employees uc ON e.created_by = uc.id
      ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
 <!DOCTYPE html>
 <html lang="en">

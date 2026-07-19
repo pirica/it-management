@@ -961,6 +961,25 @@ function itm_equipment_type_sidebar_item_id($typeName) {
 }
 
 /**
+ * Resolves Settings → new_button_position for list-header create button slots.
+ * Why: One canonical default (left) instead of per-module copy-paste with stale left_right fallbacks.
+ *
+ * @param array<string,mixed>|null $uiConfig Row from itm_get_ui_configuration() or partial array.
+ */
+function itm_resolve_new_button_position($uiConfig = null) {
+    $defaults = itm_ui_config_defaults();
+    $default = (string)($defaults['new_button_position'] ?? 'left');
+    $allowed = itm_ui_allowed_positions()['new_button_position'] ?? ['left', 'right', 'left_right'];
+
+    $value = $default;
+    if (is_array($uiConfig) && array_key_exists('new_button_position', $uiConfig)) {
+        $value = (string)$uiConfig['new_button_position'];
+    }
+
+    return in_array($value, $allowed, true) ? $value : $default;
+}
+
+/**
  * Returns the list of valid position values for UI elements
  */
 function itm_ui_allowed_positions() {

@@ -790,7 +790,7 @@ function emp_build_query($params) {
 }
 
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: '👤 Employees';
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
 <!DOCTYPE html>
 <html lang="en">

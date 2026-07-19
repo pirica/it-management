@@ -1376,8 +1376,7 @@ if ($crud_action !== 'index') {
     $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 }
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) { $newButtonPosition = 'left_right'; }
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 $showBulkActions = ($crud_action === 'list_all' && $totalRows >= $perPage);
 $listTableColspan = count($uiColumns) + 1 + ($showBulkActions ? 1 : 0);
 ?>
