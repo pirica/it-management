@@ -796,15 +796,13 @@ if (!isset($crud_title)) {
                             </form>
                         </div>
 
-                        <!-- Toolbar for Tools (Excel/PDF) — card view only; list_all uses the visible table below -->
-                        <?php if ($crud_action === 'index'): ?>
+                        <!-- Toolbar for Tools (Excel/PDF) — hidden data table (same pattern as card view) -->
                         <div class="card" style="margin-bottom: 20px;">
-                            <table data-itm-db-import-endpoint="index.php" style="display:none;">
+                            <table data-itm-db-import-endpoint="<?php echo $crud_action === 'list_all' ? 'list_all.php' : 'index.php'; ?>" style="display:none;">
                                 <thead><tr><th>ID</th><th>Title</th><th>Content</th><th>Reminder</th><th>Tags</th><th>Shared With</th><th>Pinned</th><th>Important</th><th>Archived</th></tr></thead>
                                 <tbody><?php foreach ($notes as $note): ?><tr><td><?=$note['id']?></td><td><?=sanitize($note['title'])?></td><td><?=sanitize($note['content'])?></td><td><?=$note['reminder_at']?></td><td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td><td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td><td><?=$note['is_pinned']?'Yes':'No'?></td><td><?=$note['is_important']?'Yes':'No'?></td><td><?=$note['is_archived']?'Yes':'No'?></td></tr><?php endforeach; ?></tbody>
                             </table>
                         </div>
-                        <?php endif; ?>
 
                         <?php if ($crud_action === "index"): ?>
 
@@ -914,7 +912,7 @@ if (!isset($crud_title)) {
                             </div>
                             <?php endif; ?>
                             <div class="card" style="overflow:auto;">
-                                <table data-itm-db-import-endpoint="list_all.php">
+                                <table data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                                     <thead>
                                         <tr>
                                             <?php if ($showBulkActions): ?>
