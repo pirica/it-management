@@ -6,19 +6,26 @@
 require_once "../../config/config.php";
 require_once ROOT_PATH . "includes/notes_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+require_once __DIR__ . '/notes_vault_bootstrap.php';
+require_once __DIR__ . '/notes_vault_helpers.php';
 $crud_title = "Notes";
 $crud_action = $crud_action ?? 'index';
 $logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
 $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 $data = [];
+$notesVaultState = notes_handle_vault_requests($conn, $logged_user_id);
+$notesVaultUnlocked = !empty($notesVaultState['unlocked']);
+$notesVaultRedirect = 'index.php';
+if ($crud_action === 'list_all') {
+    $notesVaultRedirect = 'list_all.php';
+} elseif ($crud_action === 'create') {
+    $notesVaultRedirect = 'create.php';
+} elseif (in_array($crud_action, ['edit', 'view'], true) && !empty($_GET['id'])) {
+    $notesVaultRedirect = $crud_action . '.php?id=' . (int)$_GET['id'];
+}
 
 // Metadata
-$user_tags = [];
-$stmtUL = $conn->prepare("SELECT DISTINCT label FROM note_labels WHERE company_id = ? AND employee_id = ? AND active = 1 ORDER BY label ASC");
-$stmtUL->bind_param("ii", $company_id, $logged_user_id);
-$stmtUL->execute();
-$resUserLabels = $stmtUL->get_result();
-if ($resUserLabels) { while ($row = mysqli_fetch_assoc($resUserLabels)) { $user_tags[] = $row["label"]; } }
+$user_tags = notes_load_distinct_user_labels($conn, $company_id, $logged_user_id, $logged_user_id);
 
 $crud_table = "notes";
 $join = itm_employee_active_employment_status_join_sql('e', 'es');
@@ -67,6 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         if (!itm_validate_csrf_token($jsonBody['csrf_token'] ?? '')) {
             echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.']); exit;
         }
+        if (!$notesVaultUnlocked) {
+            echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing notes.']); exit;
+        }
 
         // Map Tag names to labels and Usernames to IDs for this company
         $tagMap = [];
@@ -74,7 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         $stmtT->bind_param("ii", $company_id, $logged_user_id);
         $stmtT->execute();
         $resTags = $stmtT->get_result();
-        while ($row = mysqli_fetch_assoc($resTags)) { $tagMap[strtolower($row['label'])] = $row['label']; }
+        while ($row = mysqli_fetch_assoc($resTags)) {
+            $plainTag = notes_hydrate_label_text((string)$row['label'], $logged_user_id, $logged_user_id);
+            if ($plainTag !== '') {
+                $tagMap[strtolower($plainTag)] = $plainTag;
+            }
+        }
 
         $userMap = [];
         $stmtU = $conn->prepare("SELECT id, username FROM employees WHERE company_id = ?");
@@ -117,6 +132,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             }
             $sharedJson = !empty($sharedIds) ? json_encode(array_values($sharedIds)) : null;
 
+            $prepared = notes_prepare_note_fields_for_storage($title, $content, null, $sharedJson);
+            if ($prepared === null) {
+                echo json_encode(['ok' => false, 'error' => 'Unlock your vault before saving private notes.']); exit;
+            }
+            $title = $prepared['title'];
+            $content = $prepared['content'];
+            $titleHash = $prepared['title_hash'];
+
             $existingId = 0;
             if ($id > 0) {
                 $stmtCheckNote = $conn->prepare("SELECT id FROM notes WHERE id = ? AND company_id = ? AND employee_id = ?");
@@ -126,12 +149,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             }
 
             if ($existingId > 0) {
-                $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, reminder_at=?, is_pinned=?, is_important=?, is_archived=?, shared_with_json=?, updated_by=? WHERE id=?");
-                $stmt->bind_param("sssiiisii", $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $logged_user_id, $existingId);
+                $stmt = $conn->prepare("UPDATE notes SET title=?, title_hash=?, content=?, reminder_at=?, is_pinned=?, is_important=?, is_archived=?, shared_with_json=?, updated_by=? WHERE id=?");
+                $stmt->bind_param("ssssiiisii", $title, $titleHash, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $logged_user_id, $existingId);
                 if ($stmt->execute()) { $updated++; $noteId = $existingId; }
             } else {
-                $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("iisssiiisi", $company_id, $logged_user_id, $title, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $logged_user_id);
+                $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, title_hash, content, reminder_at, is_pinned, is_important, is_archived, shared_with_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("iissssiiisi", $company_id, $logged_user_id, $title, $titleHash, $content, $remAt, $isPin, $isImp, $isArc, $sharedJson, $logged_user_id);
                 if ($stmt->execute()) { $inserted++; $noteId = mysqli_insert_id($conn); }
             }
 
@@ -143,9 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 foreach (explode(',', $row[$tagIdx]) as $tagName) {
                     $tagName = trim($tagName);
                     if ($tagName === '') continue;
-                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, employee_id, note_id, label) VALUES (?, ?, ?, ?)");
-                    $stmtL->bind_param("iiis", $company_id, $logged_user_id, $noteId, $tagName);
-                    $stmtL->execute();
+                    notes_insert_label_row($conn, $company_id, $logged_user_id, $noteId, $tagName);
                 }
             }
         }
@@ -227,12 +248,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         }
         $checklist_json = !empty($checklist_data) ? json_encode($checklist_data) : null;
 
+        $prepared = notes_prepare_note_fields_for_storage($title, $content, $checklist_json, $shared_with_json);
+        if ($prepared === null) {
+            header("Location: " . ($crud_action === 'edit' ? "edit.php?id=$editId" : 'create.php') . "&vault_error=1");
+            die();
+        }
+        $title = $prepared['title'];
+        $content = $prepared['content'];
+        $titleHash = $prepared['title_hash'];
+        $checklist_json = $prepared['checklist_json'];
+
         if ($crud_action === "edit" && $editId > 0) {
-            $stmt = $conn->prepare("UPDATE notes SET title=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=?, updated_by=? WHERE id=? AND company_id=? AND employee_id=?");
-            $stmt->bind_param("ssisiiissssiiii", $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id, $editId, $company_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE notes SET title=?, title_hash=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=?, updated_by=? WHERE id=? AND company_id=? AND employee_id=?");
+            $stmt->bind_param("sssisiiissssiiii", $title, $titleHash, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id, $editId, $company_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("iissisiiissssi", $company_id, $logged_user_id, $title, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id);
+            $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, title_hash, content, is_checklist, color, is_pinned, is_important, is_archived, reminder_at, checklist_json, images_json, shared_with_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iisssisiiissssi", $company_id, $logged_user_id, $title, $titleHash, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id);
         }
 
         if ($stmt->execute()) {
@@ -245,12 +276,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
                 $label_name = is_numeric($label_id) ? null : $label_id;
                 if (is_numeric($label_id)) {
                     $stmtGL = $conn->prepare("SELECT label FROM note_labels WHERE id = ?"); $stmtGL->bind_param("i", $label_id); $stmtGL->execute(); $resL = $stmtGL->get_result();
-                    if ($rowL = mysqli_fetch_assoc($resL)) $label_name = $rowL['label'];
+                    if ($rowL = mysqli_fetch_assoc($resL)) $label_name = notes_hydrate_label_text($rowL['label'], $logged_user_id, $logged_user_id);
                 }
                 if (!empty($label_name)) {
-                    $stmtL = $conn->prepare("INSERT INTO note_labels (company_id, employee_id, note_id, label) VALUES (?, ?, ?, ?)");
-                    $stmtL->bind_param("iiis", $company_id, $logged_user_id, $noteId, $label_name);
-                    $stmtL->execute();
+                    notes_insert_label_row($conn, $company_id, $logged_user_id, $noteId, $label_name);
                 }
             }
             header("Location: index.php?msg=saved");
@@ -281,6 +310,11 @@ if (isset($_GET["ajax_action"])) {
 
     $action = $_GET["ajax_action"];
     if ($action === "quick_add") {
+        if (!$notesVaultUnlocked) {
+            http_response_code(403);
+            echo json_encode(["ok" => false, "error" => "Unlock your vault before creating private notes."]);
+            die();
+        }
         $title = $_POST["title"] ?? "";
         $content = $_POST["content"] ?? "";
         $is_checklist = (int)($_POST["is_checklist"] ?? 0);
@@ -297,9 +331,15 @@ if (isset($_GET["ajax_action"])) {
             }
         }
         $images_json = !empty($image_files) ? json_encode($image_files) : null;
-        $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, content, is_checklist, images_json, reminder_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $prepared = notes_prepare_note_fields_for_storage($title, $content, null, null);
+        if ($prepared === null) {
+            http_response_code(403);
+            echo json_encode(["ok" => false, "error" => "Unlock your vault before creating private notes."]);
+            die();
+        }
+        $stmt = $conn->prepare("INSERT INTO notes (company_id, employee_id, title, title_hash, content, is_checklist, images_json, reminder_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if ($stmt) {
-            $stmt->bind_param("iississi", $company_id, $logged_user_id, $title, $content, $is_checklist, $images_json, $reminder_at, $logged_user_id);
+            $stmt->bind_param("iisssissi", $company_id, $logged_user_id, $prepared['title'], $prepared['title_hash'], $prepared['content'], $is_checklist, $images_json, $reminder_at, $logged_user_id);
             if ($stmt->execute()) echo json_encode(["ok" => true]);
             else echo json_encode(["ok" => false, "error" => $stmt->error]);
         } else {
@@ -352,6 +392,11 @@ if (isset($_GET["ajax_action"])) {
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "rename_tag") {
+        if (!$notesVaultUnlocked) {
+            http_response_code(403);
+            echo json_encode(["ok" => false, "error" => "Unlock your vault before editing labels."]);
+            die();
+        }
         $old = $_POST["old_name"] ?? "";
         $new = $_POST["new_name"] ?? "";
         if ($new === "") {
@@ -359,46 +404,62 @@ if (isset($_GET["ajax_action"])) {
             echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]);
             die();
         }
-        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE employee_id = ? AND label = ? AND company_id = ? LIMIT 1");
-        $stmtC->bind_param("isi", $logged_user_id, $new, $company_id);
-        $stmtC->execute();
-        if ($stmtC->get_result()->fetch_assoc()) {
+        if (notes_label_exists_for_employee($conn, $company_id, $logged_user_id, $new)) {
             http_response_code(409);
             echo json_encode(["ok" => false, "error" => "Tag already exists"]);
             die();
         }
-        $stmt = $conn->prepare("UPDATE note_labels SET label = ? WHERE label = ? AND employee_id = ? AND company_id = ?");
-        $stmt->bind_param("ssii", $new, $old, $logged_user_id, $company_id);
+        $newPrepared = notes_prepare_label_storage($new);
+        $oldHash = notes_text_hash($old);
+        if ($newPrepared === null) {
+            http_response_code(403);
+            echo json_encode(["ok" => false, "error" => "Unlock your vault before editing labels."]);
+            die();
+        }
+        $stmt = $conn->prepare("UPDATE note_labels SET label = ?, label_hash = ? WHERE label_hash = ? AND employee_id = ? AND company_id = ?");
+        $stmt->bind_param("sssii", $newPrepared['label'], $newPrepared['label_hash'], $oldHash, $logged_user_id, $company_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "delete_tag") {
+        if (!$notesVaultUnlocked) {
+            http_response_code(403);
+            echo json_encode(["ok" => false, "error" => "Unlock your vault before editing labels."]);
+            die();
+        }
         $name = $_POST["name"] ?? "";
-        $stmt = $conn->prepare("DELETE FROM note_labels WHERE label = ? AND employee_id = ? AND company_id = ?");
-        $stmt->bind_param("sii", $name, $logged_user_id, $company_id);
+        $nameHash = notes_text_hash($name);
+        $stmt = $conn->prepare("DELETE FROM note_labels WHERE label_hash = ? AND employee_id = ? AND company_id = ?");
+        $stmt->bind_param("sii", $nameHash, $logged_user_id, $company_id);
         itm_notes_json_mutation_response($stmt);
     }
     if ($action === "add_tag") {
+        if (!$notesVaultUnlocked) {
+            http_response_code(403);
+            echo json_encode(["ok" => false, "error" => "Unlock your vault before editing labels."]);
+            die();
+        }
         $name = trim($_POST["name"] ?? "");
         if ($name === "") {
             http_response_code(400);
             echo json_encode(["ok" => false, "error" => "Tag name cannot be empty"]);
             die();
         }
-        $stmtC = $conn->prepare("SELECT 1 FROM note_labels WHERE employee_id = ? AND label = ? AND company_id = ? LIMIT 1");
-        $stmtC->bind_param("isi", $logged_user_id, $name, $company_id);
-        $stmtC->execute();
-        if ($stmtC->get_result()->fetch_assoc()) {
+        if (notes_label_exists_for_employee($conn, $company_id, $logged_user_id, $name)) {
             http_response_code(409);
             echo json_encode(["ok" => false, "error" => "Tag already exists"]);
             die();
         }
-        $stmt = $conn->prepare("INSERT INTO note_labels (company_id, employee_id, label) VALUES (?, ?, ?)");
-        $stmt->bind_param("iis", $company_id, $logged_user_id, $name);
-        itm_notes_json_mutation_response($stmt);
+        if (!notes_insert_label_row($conn, $company_id, $logged_user_id, null, $name)) {
+            http_response_code(500);
+            echo json_encode(["ok" => false, "error" => "Unable to save tag"]);
+            die();
+        }
+        echo json_encode(["ok" => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        die();
     }
     if ($action === "download_all_images") {
         $id = (int)($_POST["id"] ?? 0);
-        $stmt = $conn->prepare("SELECT title, images_json FROM notes WHERE id = ? AND company_id = ? AND employee_id = ?");
+        $stmt = $conn->prepare("SELECT title, images_json, shared_with_json, employee_id FROM notes WHERE id = ? AND company_id = ? AND employee_id = ?");
         $stmt->bind_param("iii", $id, $company_id, $logged_user_id);
         $stmt->execute();
         $resD = $stmt->get_result()->fetch_assoc();
@@ -414,7 +475,14 @@ if (isset($_GET["ajax_action"])) {
             die();
         }
 
-        $title = $resD['title'] ?: "note_{$id}";
+        $titleResolved = notes_resolve_private_text(
+            (string)($resD['title'] ?? ''),
+            notes_is_shared_with_others($resD['shared_with_json'] ?? null) ? 1 : 0,
+            (int)($resD['employee_id'] ?? $logged_user_id),
+            $logged_user_id,
+            ['legacy_plaintext_check' => static function ($stored) { return $stored !== '' && strlen($stored) <= 255; }]
+        );
+        $title = $titleResolved['text'] !== '' ? $titleResolved['text'] : "note_{$id}";
         $safeTitle = preg_replace('/[^A-Za-z0-9_\-]/', '_', $title);
         $zip = new ZipArchive();
         $zipName = "{$safeTitle}_download.zip";
@@ -474,9 +542,10 @@ if ($crud_action === "index" || $crud_action === "list_all") {
         $baseSql .= " AND t.reminder_at IS NOT NULL";
     } elseif ($filter === "tag") {
         $label_filter = $_GET["label"] ?? "";
-        $baseSql .= " AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label = ? AND nl.active = 1)";
+        $labelHash = notes_text_hash($label_filter);
+        $baseSql .= " AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label_hash = ? AND nl.active = 1)";
         $types .= "s";
-        $params[] = $label_filter;
+        $params[] = $labelHash;
     } elseif ($filter === "archive") {
         $baseSql .= " AND t.is_archived = 1";
     } elseif ($filter === "checklist") {
@@ -499,41 +568,20 @@ if ($crud_action === "index" || $crud_action === "list_all") {
     }
 
     if ($search !== "") {
-        $baseSql .= " AND (t.title LIKE ? OR t.content LIKE ? OR EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label LIKE ?) OR EXISTS (
-            SELECT 1 FROM employees e
-            WHERE JSON_CONTAINS(t.shared_with_json, CAST(e.id AS JSON), '$')
-              AND (
-                e.username LIKE ?
-                OR COALESCE(e.display_name, '') LIKE ?
-                OR COALESCE(e.first_name, '') LIKE ?
-                OR COALESCE(e.last_name, '') LIKE ?
-                OR CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')) LIKE ?
-              )
-        ))";
-        $types .= "ssssssss";
-        $searchTerm = "%$search%";
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
+        // Why: Private note title/content/labels are encrypted at rest; search runs after hydrate.
     }
 
-    // Count total rows
+    // Count total rows (search applied after hydrate below when needed)
     $countSql = "SELECT COUNT(*) as total $baseSql";
     $stmtCount = $conn->prepare($countSql);
     $stmtCount->bind_param($types, ...$params);
     $stmtCount->execute();
-    $totalRows = $stmtCount->get_result()->fetch_assoc()['total'];
-    $totalPages = max(1, ceil($totalRows / $perPage));
+    $totalRows = (int)$stmtCount->get_result()->fetch_assoc()['total'];
 
     $sql = "SELECT t.* $baseSql";
     $sql .= " ORDER BY t.is_pinned DESC, t.created_at DESC";
 
-    if ($crud_action === "list_all") {
+    if ($crud_action === "list_all" && $search === "") {
         $sql .= " LIMIT ?, ?";
         $types .= "ii";
         $params[] = $offset;
@@ -551,14 +599,34 @@ if ($crud_action === "index" || $crud_action === "list_all") {
     if (!empty($notes)) {
         $note_ids = array_column($notes, 'id');
         $placeholders = implode(',', array_fill(0, count($note_ids), '?'));
-        $stmtTags = $conn->prepare("SELECT note_id, label FROM note_labels WHERE note_id IN ($placeholders) AND active = 1");
+        $stmtTags = $conn->prepare("SELECT note_id, label, employee_id FROM note_labels WHERE note_id IN ($placeholders) AND active = 1");
         $stmtTags->bind_param(str_repeat('i', count($note_ids)), ...$note_ids);
         $stmtTags->execute();
         $resTags = $stmtTags->get_result();
         while ($rowTags = $resTags->fetch_assoc()) {
-            $note_tags_map[$rowTags['note_id']][] = $rowTags['label'];
+            $plainLabel = notes_hydrate_label_text((string)$rowTags['label'], (int)$rowTags['employee_id'], $logged_user_id);
+            if ($plainLabel !== '') {
+                $note_tags_map[$rowTags['note_id']][] = $plainLabel;
+            }
         }
     }
+
+    foreach ($notes as &$noteRow) {
+        notes_hydrate_note_row($noteRow, $logged_user_id);
+    }
+    unset($noteRow);
+
+    if ($search !== "") {
+        $notes = array_values(array_filter($notes, static function ($note) use ($search, $note_tags_map, $users) {
+            return notes_row_matches_search($note, $search, $note_tags_map[$note['id']] ?? [], $users);
+        }));
+        $totalRows = count($notes);
+        if ($crud_action === "list_all") {
+            $notes = array_slice($notes, $offset, $perPage);
+        }
+    }
+
+    $totalPages = max(1, ceil($totalRows / $perPage));
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     if ($editId <= 0) {
         header("Location: index.php");
@@ -569,6 +637,7 @@ if ($crud_action === "index" || $crud_action === "list_all") {
         header("Location: index.php");
         die();
     }
+    notes_hydrate_note_row($data, $logged_user_id);
 }
 
 $uiColumns = [['Field'=>'id'],['Field'=>'title'],['Field'=>'content'],['Field'=>'reminder_at'],['Field'=>'tags'],['Field'=>'shared_with'],['Field'=>'is_pinned'],['Field'=>'is_important'],['Field'=>'is_archived']];
@@ -650,6 +719,9 @@ if (!isset($crud_title)) {
     <div class="main-content">
 	    <?php include ROOT_PATH . "includes/header.php"; ?>
         <div class="content">
+            <?php if (notes_ui_requires_vault_lock_screen($crud_action, $notesVaultState, $logged_user_id, $data ?: null)): ?>
+                <?php notes_render_vault_lock_screen($csrfToken, $notesVaultState, $notesVaultRedirect); ?>
+            <?php else: ?>
             <div class="notes-container">
                 <div class="notes-sidebar">
                     <a href="index.php" class="notes-sidebar-item <?php echo ($filter === "all" || $filter === "") ? "active" : ""; ?>">💡 Notes</a>
@@ -928,7 +1000,7 @@ if (!isset($crud_title)) {
                             <div class="form-group"><label>Tags</label>
                                 <select name="category_id[]" multiple size="5" data-addable-select="1" data-add-table="note_labels" data-add-label-col="label" data-add-company-scoped="1">
                                     <option value="">-- None --</option><option value="__add_new__">➕</option>
-                                    <?php $nId = $data['id'] ?? 0; $selL = []; if ($nId > 0) { $stmtL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtL->bind_param("i", $nId); $stmtL->execute(); $rL = $stmtL->get_result(); while ($rowL = mysqli_fetch_assoc($rL)) $selL[] = $rowL['label']; }
+                                    <?php $nId = $data['id'] ?? 0; $selL = $nId > 0 ? notes_fetch_labels_for_note($conn, (int)$nId, $logged_user_id, $logged_user_id) : [];
                                     foreach ($user_tags as $ul): ?><option value="<?php echo sanitize($ul); ?>" <?php echo in_array($ul, $selL) ? "selected" : ""; ?>><?php echo sanitize($ul); ?></option><?php endforeach; ?>
                                 </select>
                             </div>
@@ -996,7 +1068,7 @@ if (!isset($crud_title)) {
                                 <?php if (!empty($data['reminder_at'])): ?>
                                     <tr><th style="text-align: left; padding-right: 20px;">Reminder</th><td>🔔 <?php echo date("M j, Y H:i", strtotime($data['reminder_at'])); ?></td></tr>
                                 <?php endif; ?>
-                                <tr><th style="text-align: left; padding-right: 20px;">Tags</th><td><?php $lbls = []; $noteId = (int)$data['id']; $stmtVL = $conn->prepare("SELECT label FROM note_labels WHERE note_id = ? AND active = 1"); $stmtVL->bind_param("i", $noteId); $stmtVL->execute(); $resL = $stmtVL->get_result(); while ($rowL = mysqli_fetch_assoc($resL)) $lbls[] = $rowL['label']; echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
+                                <tr><th style="text-align: left; padding-right: 20px;">Tags</th><td><?php $lbls = notes_fetch_labels_for_note($conn, (int)$data['id'], (int)($data['employee_id'] ?? $logged_user_id), $logged_user_id); echo empty($lbls) ? "None" : sanitize(implode(', ', $lbls)); ?></td></tr>
                                 <tr><th style="text-align: left; padding-right: 20px;">Shared With</th><td><?php $uIds = json_decode($data['shared_with_json'] ?? '[]', true); if (empty($uIds)) echo "Private"; else { $names = []; foreach ($uIds as $uid) { if (isset($users[$uid])) $names[] = $users[$uid]['username']; } echo sanitize(implode(', ', $names)); } ?></td></tr>
                                 <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
                             </table>
@@ -1005,6 +1077,7 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

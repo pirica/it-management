@@ -422,6 +422,18 @@ The Bookmarks module provides a hierarchical management system for links, featur
 - **Permissions:** Shared bookmarks are read-only for regular users, while admins and creators retain full CRUD access.
 - **Folder names:** duplicate `bookmark_folders.name` values are allowed; identity is `PRIMARY KEY (id)` only (no UNIQUE on `name`). Do not re-add company/employee name UNIQUEs. Tenant unique-key audit skips `bookmark_folders` and `bookmarks`.
 
+#### Notes module (mandatory)
+
+The Notes module (`modules/notes/`) stores personal note content with vault encryption matching bookmarks:
+
+1. **Private notes:** when `shared_with_json` is empty/null, encrypt `title`, `content`, and `checklist_json` at rest with `itm_encrypt()` using `$_SESSION['vault_key']`; store `title_hash` (SHA-256 of plaintext title) for tag/filter helpers.
+2. **Shared notes:** when `shared_with_json` lists share targets, keep `title`, `content`, and `checklist_json` as plaintext so recipients can read without the owner's vault.
+3. **Labels:** `note_labels.label` is always encrypted for the owning employee; use `label_hash` for tag filter and rename/delete lookups.
+4. **Vault UI:** `modules/notes/notes_vault_bootstrap.php` — lock screen on index/list_all/create when vault is locked; private owned edit/view also require unlock. Shared notes remain readable without unlock.
+5. **Master key rotation:** `itm_vault_reencrypt_notes()` in `includes/itm_vault_master_key.php`; hooked from `user-config.php` with passwords/bookmarks re-encryption.
+6. **Search:** list search runs in PHP after `notes_hydrate_note_row()` — encrypted columns are not SQL-`LIKE` searchable.
+7. **Regression script** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_notes_vault.php`.
+
 #### Passwords module (mandatory)
 
 The Passwords module provides a secure, private manager for user credentials.
