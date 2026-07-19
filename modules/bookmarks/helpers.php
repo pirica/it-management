@@ -490,7 +490,7 @@ function bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $name
 }
 
 /**
- * SHA-256 hex digest of trimmed URL — used for dedupe (plaintext, before encryption).
+ * SHA-256 hex digest of trimmed URL — dedupe index (plaintext, before encryption).
  */
 function bkm_bookmark_url_hash($url)
 {
