@@ -980,6 +980,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="fix_source_utf8_mojibake.php">selection UI</a>. CLI: <code>php scripts/fix_source_utf8_mojibake.php --files=modules/foo/index.php --apply</code>. Bulk all files: <code>apply_utf8_mojibake_fix.php --apply</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="check_codacy_xss_echo.php" target="_blank" rel="nofollow noreferrer">check_codacy_xss_echo.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: Codacy-risky user-input echo patterns in <code>modules/**/*.php</code> — short-echo <code>&lt;?= sanitize($search…)</code> in <code>value</code>/<code>href</code>/<code>&lt;strong&gt;</code>, and <code>echo sanitize(http_build_query(…))</code> inside <code>href</code>.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_codacy_xss_echo.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Run after search form or dynamic <code>href</code> query changes.</td>
+                </tr>
+                <tr>
                     <td><a href="check_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">check_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: NO MIXED gate on <code>&lt;a&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;h1&gt;</code>–<code>&lt;h3&gt;</code> — seven emoji+word regex families, known compound literals, plain-text action outliers, header <code>intentRules</code> drift.</td>

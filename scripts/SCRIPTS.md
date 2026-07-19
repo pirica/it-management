@@ -500,6 +500,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, `itm_script_require_admin_script_or_exit()` for browser apply only (passes function-local `$conn` from `config.php` — not `$GLOBALS['conn']`), `itm_apply_script_echo_list()` |
 | `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions, optional Admin browser gate |
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
+| `scripts/lib/itm_codacy_xss_echo_audit.php` | Codacy XSS echo pattern matchers for `check_codacy_xss_echo.php` |
 | `scripts/lib/itm_mojibake_audit.php` | UTF-8 / mojibake scan + repair helpers for `verify_source_utf8_mojibake.php` and `fix_source_utf8_mojibake.php` |
 | `scripts/lib/itm_script_regression_entry.php` | Browser + CLI regressions: `ITM_CLI_SCRIPT` on CLI only, Admin gate in browser, `config.php` at file scope |
 
@@ -1089,6 +1090,15 @@ php scripts/check_ui_action_emoji.php   # 0 violations incl. mixed emoji+word
 php -l includes/itm_ui_action_labels.php
 bash scripts/smoke_test.sh
 ```
+
+**Codacy XSS echo (module PHP):** after adding/changing search inputs, dynamic `href` query strings, or other echoed request-derived values in `modules/`, run:
+
+```bash
+php scripts/check_codacy_xss_echo.php
+php scripts/check_codacy_xss_echo.php --strict   # fail when violations remain
+```
+
+Catches patterns Codacy flags as XSS: short-echo `<?= sanitize($search…)` in `value` / `href` / `<strong>`, and `echo sanitize(http_build_query(…))` inside `href`. Fix with `<?php echo sanitize(…); ?>` for search fields and pre-assign `htmlspecialchars('index.php?' . http_build_query(…), ENT_QUOTES, 'UTF-8')` for hrefs. Same-line `itm-codacy-xss-exempt:` comment for intentional legacy lines. Default run is informational (exit `0`); `--strict` exits `1`.
 
 **UTF-8 / mojibake:** after copy/paste from Excel or editors that mis-save encoding, or when UI shows corrupted emoji instead of the intended symbol:
 

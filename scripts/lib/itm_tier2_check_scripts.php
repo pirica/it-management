@@ -22,6 +22,7 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
     {
         return [
             'check_audit_logs_coverage.php',
+            'check_codacy_xss_echo.php',
             'check_crud_audit_soft_delete.php',
             'check_crud_rbac_coverage.php',
             'check_database_sql_company_name_uniques.php',

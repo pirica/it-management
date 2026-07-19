@@ -141,6 +141,7 @@ Individual scripts:
 
 ```bash
 php scripts/check_ui_action_emoji.php
+php scripts/check_codacy_xss_echo.php
 php scripts/check_crud_audit_soft_delete.php
 php scripts/check_audit_logs_coverage.php
 php scripts/check_crud_rbac_coverage.php
@@ -185,6 +186,7 @@ php scripts/employees_delete_clear_table_test.php
 | 1 | `verify_crud_fk_label_search.php` | MySQL | low | CI database-import | Runtime FK label search after import |
 | 1 | `verify_database_sql_import.sh` | MySQL | destroys-DB | CI database-import | Full database.sql re-import — baseline clone |
 | 2 | `check_audit_logs_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
+| 2 | `check_codacy_xss_echo.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_crud_audit_soft_delete.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_crud_rbac_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_database_sql_company_name_uniques.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
