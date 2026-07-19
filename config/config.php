@@ -397,6 +397,11 @@ if (defined('ITM_API_RATE_LIMIT_PROBE') && ITM_API_RATE_LIMIT_PROBE) {
     $itmSkipWebAuth = true;
 }
 
+// Why: notes/join.php and share_asset.php serve time-limited public read links validated by access_token / share_code.
+if (defined('ITM_NOTES_SHARE_PUBLIC') && ITM_NOTES_SHARE_PUBLIC) {
+    $itmSkipWebAuth = true;
+}
+
 // Why: Read-only aggregate diagnostics may run without a session when explicitly allowlisted.
 if (
     !$itmSkipWebAuth

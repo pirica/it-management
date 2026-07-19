@@ -130,6 +130,7 @@ function audit_logs_private_data_tables(): array
         'todo' => true,
         'notes' => true,
         'note_labels' => true,
+        'note_share_sessions' => true,
         'bookmark_folders' => true,
         'bookmarks' => true,
     ];

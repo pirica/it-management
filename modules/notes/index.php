@@ -8,6 +8,7 @@ require_once ROOT_PATH . "includes/notes_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once __DIR__ . '/notes_vault_bootstrap.php';
 require_once __DIR__ . '/notes_vault_helpers.php';
+require_once __DIR__ . '/notes_share_helpers.php';
 $crud_title = "Notes";
 $crud_action = $crud_action ?? 'index';
 $logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
@@ -538,6 +539,27 @@ if (isset($_GET["ajax_action"])) {
         }
         die();
     }
+    if ($action === 'create_share_session') {
+        header('Content-Type: application/json; charset=utf-8');
+        $noteId = (int)($_POST['id'] ?? 0);
+        $ownerUsername = (string)($_SESSION['username'] ?? '');
+        $result = notes_share_create_session($conn, $noteId, $company_id, $logged_user_id, $ownerUsername, $notesVaultUnlocked);
+        if (!$result['ok']) {
+            http_response_code(!empty($result['error']) && stripos((string)$result['error'], 'vault') !== false ? 403 : 400);
+            echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            die();
+        }
+        $session = $result['session'];
+        $joinUrl = notes_share_build_join_url((string)$session['access_token']);
+        echo json_encode([
+            'ok' => true,
+            'share_code' => (string)$session['share_code'],
+            'join_url' => $joinUrl,
+            'expires_at' => (string)$session['expires_at'],
+            'ttl_seconds' => notes_share_session_ttl_seconds(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        die();
+    }
 }
 
 // Data fetching
@@ -674,6 +696,9 @@ if (!isset($crud_title)) {
         .note-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
         .note-star { cursor: pointer; font-size: 20px; color: var(--text-tertiary); margin-left: 10px; }
         .note-star.active { color: var(--accent); }
+        .note-qr-share { display: flex; align-items: center; justify-content: center; opacity: 0.8; }
+        .note-qr-share:hover { opacity: 1; }
+        .note-qr-share img { width: 20px; height: 20px; display: block; }
         .color-option input[type="radio"]:checked + div { border-color: var(--accent) !important; }
         .empty-state { text-align: center; padding: 100px 50px; color: var(--text-tertiary); }
         .quick-add { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-secondary); margin-bottom: 24px; }
@@ -886,6 +911,11 @@ if (!isset($crud_title)) {
                                             <div class="note-star <?php echo $note["is_archived"] ? "active" : ""; ?>" onclick="toggleArchived(<?php echo $note["id"]; ?>, this)" data-archived="<?php echo $note['is_archived']; ?>" title="Archive" style="margin-left: 10px;">
                                                 📥
                                             </div>
+                                            <?php if ($filter !== 'garbage' && (int)$note['employee_id'] === $logged_user_id): ?>
+                                            <div class="note-star note-qr-share" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>); event.stopPropagation();" title="Share to device" style="margin-left: 10px;">
+                                                <img src="../../images/QR.svg" alt="">
+                                            </div>
+                                            <?php endif; ?>
                                             <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
                                             <?php if ($filter === "garbage"): ?>
                                                 <div class="note-star" onclick="restoreNote(<?php echo $note["id"]; ?>)" title="Restore" style="margin-left: 10px; color: var(--success);">
@@ -969,6 +999,9 @@ if (!isset($crud_title)) {
                                                 <td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td>
                                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                                     <div class="itm-actions-wrap">
+                                                        <?php if ($filter !== 'garbage' && (int)$note['employee_id'] === $logged_user_id): ?>
+                                                        <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                                        <?php endif; ?>
                                                         <a class="btn btn-sm" href="view.php?id=<?php echo $note['id']; ?>">🔎</a>
                                                         <a class="btn btn-sm" href="edit.php?id=<?php echo $note['id']; ?>">✏️</a>
                                                         <?php if ($filter === "garbage"): ?>
@@ -1099,6 +1132,9 @@ if (!isset($crud_title)) {
                                 <?php if (!empty(json_decode($data['images_json'] ?? '[]', true))): ?>
                                     <button class="btn btn-sm" onclick="downloadAllImages(<?php echo $data['id']; ?>)">📥 Download All Images</button>
                                 <?php endif; ?>
+                                <?php if ((int)($data['employee_id'] ?? 0) === $logged_user_id): ?>
+                                    <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$data['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                <?php endif; ?>
                             </div>
                             <?php $vimgs = json_decode($data['images_json'] ?? '[]', true); if (!empty($vimgs)): ?>
                                 <div class="itm-floor-plan-view-preview" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;"><?php foreach ($vimgs as $img): $imgPath = itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $logged_user_id . '/notes/' . $img); ?>
@@ -1133,6 +1169,7 @@ if (!isset($crud_title)) {
 <script src="../../js/bulk-delete-selection.js"></script>
 <script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 <script src="../../js/xlsx.full.min.js"></script>
+<script src="../../js/qrcode.min.js"></script>
 <script src="../../js/table-tools.js"></script>
 
 <script>
@@ -1280,6 +1317,54 @@ if (!isset($crud_title)) {
     function openImageModal(src) { document.getElementById('modalImage').src = src; document.getElementById('downloadModalImage').href = src; document.getElementById('imageModal').classList.add('show'); document.getElementById('modalBackdrop').classList.add('show'); }
     function closeImageModal() { document.getElementById('imageModal').classList.remove('show'); document.getElementById('modalBackdrop').classList.remove('show'); }
     function downloadAllImages(id) { const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("id", id); fetch("index.php?ajax_action=download_all_images", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (data.ok) window.location.href = data.zip_url; else alert(data.error || "Error downloading images"); }); }
+    let shareQrTimer = null;
+    function closeNoteShareQr() {
+        document.getElementById('shareQrModal').classList.remove('show');
+        document.getElementById('modalBackdrop').classList.remove('show');
+        if (shareQrTimer) { clearInterval(shareQrTimer); shareQrTimer = null; }
+        const mount = document.getElementById('shareQrMount');
+        if (mount) mount.innerHTML = '';
+    }
+    function openNoteShareQr(noteId) {
+        const formData = new FormData();
+        formData.append('csrf_token', CSRF_TOKEN);
+        formData.append('id', noteId);
+        const ajaxBase = <?php echo json_encode($crud_action === 'list_all' ? 'list_all.php' : ($crud_action === 'view' ? 'view.php' : 'index.php')); ?>;
+        fetch(ajaxBase + '?ajax_action=create_share_session', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.ok) {
+                    alert(data.error || 'Could not create share link.');
+                    return;
+                }
+                document.getElementById('shareQrCodeText').textContent = data.share_code || '';
+                document.getElementById('shareQrJoinUrl').textContent = data.join_url || '';
+                const mount = document.getElementById('shareQrMount');
+                mount.innerHTML = '';
+                if (window.QRCode && data.join_url) {
+                    new QRCode(mount, { text: data.join_url, width: 200, height: 200 });
+                }
+                const expiryEl = document.getElementById('shareQrExpiry');
+                if (shareQrTimer) clearInterval(shareQrTimer);
+                const expires = new Date(String(data.expires_at || '').replace(' ', 'T'));
+                function tickShareExpiry() {
+                    const diff = expires - new Date();
+                    if (diff <= 0) {
+                        expiryEl.textContent = 'Session ended.';
+                        if (shareQrTimer) clearInterval(shareQrTimer);
+                        return;
+                    }
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    expiryEl.textContent = 'Session ends in ' + mins + ':' + String(secs).padStart(2, '0');
+                }
+                tickShareExpiry();
+                shareQrTimer = setInterval(tickShareExpiry, 1000);
+                document.getElementById('shareQrModal').classList.add('show');
+                document.getElementById('modalBackdrop').classList.add('show');
+            })
+            .catch(() => alert('Could not create share link.'));
+    }
     function openEditTagsModal() { document.getElementById('editTagsModal').classList.add('show'); document.getElementById('modalBackdrop').classList.add('show'); }
     function closeEditTagsModal() { document.getElementById('editTagsModal').classList.remove('show'); document.getElementById('modalBackdrop').classList.remove('show'); location.reload(); }
     function renameTag(oldName, newName) { if (!newName || oldName === newName) return; const formData = new FormData(); formData.append("csrf_token", CSRF_TOKEN); formData.append("old_name", oldName); formData.append("new_name", newName); fetch("index.php?ajax_action=rename_tag", { method: "POST", body: formData }).then(r => r.json()).then(data => { if (!data.ok) alert(data.error || "Error renaming tag"); }); }
@@ -1334,6 +1419,27 @@ if (!isset($crud_title)) {
             <div class="modal-footer">
                 <button type="button" class="btn" onclick="closeDatePickerModal()" title="Cancel">🔙</button>
                 <button type="button" class="btn btn-primary" onclick="saveQuickDate()">Set Date</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="shareQrModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Share to device</h5>
+                <button type="button" class="close" onclick="closeNoteShareQr()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align:center;">
+                <p style="margin-top:0;">Scan on the other device or enter the code at <code>modules/notes/join.php</code></p>
+                <div id="shareQrMount" style="display:inline-block;margin:12px auto;"></div>
+                <div style="font-size:28px;letter-spacing:0.35em;font-weight:700;margin:12px 0;" id="shareQrCodeText"></div>
+                <div style="font-size:13px;color:var(--text-secondary);word-break:break-all;" id="shareQrJoinUrl"></div>
+                <p id="shareQrExpiry" style="margin-top:16px;color:var(--text-secondary);"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeNoteShareQr()" title="Close">Done</button>
             </div>
         </div>
     </div>

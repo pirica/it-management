@@ -1651,6 +1651,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_notes_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/notes/notes_vault_helpers.php</code>, persistence in <code>modules/notes/index.php</code>, or <code>itm_vault_reencrypt_notes()</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_notes_share.php" target="_blank" rel="nofollow noreferrer">verify_notes_share.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>note_share_sessions</code> in <code>database.sql</code>.</td>
+                    <td><code>php scripts/verify_notes_share.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_json_import_validation.php" target="_blank" rel="nofollow noreferrer">verify_json_import_validation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for JSON import: invalid numeric, date/datetime, and enum column values are rejected instead of silent NULL inserts.</td>
