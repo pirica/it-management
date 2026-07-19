@@ -23,7 +23,7 @@ Read-only weekly resignation report for the active company. Data is sourced from
 ## 5. UI Behavior Requirements
 - **index.php only** — no create/edit/delete handlers.
 - Filter card: Week, Month, Year, Employment Status multi-select, Employee Type multi-select, Search (all fields). Search reset uses emoji-only 🔙 (`title="Clear"`) when a query is active. Control card uses `data-itm-no-export-pdf` and `data-itm-no-export-excel`.
-- Table columns: ID TM (`external_id`), Name, Team member / Internship (`employee_type.name_type`), Department, Admission date (`start_date`), Last work day (`termination_date`), Official Resignation Week.
+- Table columns: ID TM (`external_id`), Name, Team member / Internship (`employee_type.name_type`), Department, Admission date (`start_date`), Last work day (`termination_date`), Official Resignation Week. No Actions column — UI config **Table Actions** check is `n/a`.
 - Default sort: Last work day ASC (`e.termination_date`). Also sortable: ID TM, Name, Employee Type, Department, Admission date, Official Resignation Week (`resignation_week` maps to `e.termination_date`). Sortable headers use ▲/▼ indicators.
 - Date columns display as **dd/mm/yyyy** via `itm_format_date_display()`.
 - Header actions: **Employees**.
