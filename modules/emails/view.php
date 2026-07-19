@@ -30,6 +30,7 @@ $crud_title = 'Email send log';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo sanitize($crud_title); ?> - <?php echo sanitize($app_name ?? 'IT Management'); ?></title>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
