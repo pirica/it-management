@@ -42,6 +42,11 @@ if (!function_exists('itm_check_table_actions')) {
             return ['status' => 'pass', 'details' => 'Action column discoverable'];
         }
 
+        // Why: read-only bespoke lists (birthdays, resignations, contacts, …) have no Actions column — same rule as itm_check_table_actions_layout().
+        if (!itm_ui_index_has_actions_column($indexContent)) {
+            return ['status' => 'n/a', 'details' => 'No Actions column in index.php'];
+        }
+
         return ['status' => 'fail', 'details' => 'Table exists but action column marker/header was not detected'];
     }
 }
