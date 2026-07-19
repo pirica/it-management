@@ -34,6 +34,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Shared checkbox on bookmark/folder forms: unchecked = private **🔒**; checked = shared **🔓** (`itm-shared-indicator`). Active uses `itm-check-indicator` (✅/❌). Change listener must live in its own `<script>` block after closed `<script src="..."></script>` tags (`create.php`, `edit.php`, `create_folder.php`, `edit_folder.php`).
 - **Responsive:** dual-pane stacks below 1200px; bookmark cards single column below 480px.
 - `list_all.php` provides flattened table view; bulk delete toolbar is always shown (`$showBulkActions = true`), not gated by `records_per_page`.
+- Dual-pane `index.php` bulk toolbar (`Select to Delete`, Cancel, Clear Table) and row `ids[]` checkboxes appear only when `$showBulkActions = ($totalRows >= $perPage)`; uses shared `bulk-delete-selection.js` with `#select-all-rows` in the table header.
 - Excel import endpoint: `data-itm-db-import-endpoint="list_all.php"` on the flattened list table. Dual-pane `index.php` uses **custom** Tools import/export (`import.php`, `exportBookmarks` / `export.php`) — its list table opts out of table-tools via `data-itm-no-import-excel="1"` / `data-itm-no-export-excel="1"` / `data-itm-no-export-pdf="1"`. Actions header and body cells keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - Dual-pane `index.php` also accepts JSON `import_excel_rows` for compatibility, but the dual-pane table must not require `data-itm-db-import-endpoint`.
 
