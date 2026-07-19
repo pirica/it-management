@@ -120,6 +120,17 @@ function bkm_verify_import_sample_html()
     return (string)file_get_contents($path);
 }
 
+$breadcrumbFixture = [
+    1 => ['id' => 1, 'name' => 'L1', 'parent_folder_id' => null],
+    2 => ['id' => 2, 'name' => 'L2', 'parent_folder_id' => 1],
+];
+$nestedImportLabel = bkm_format_import_folder_label(['L2'], 1, $breadcrumbFixture);
+if ($nestedImportLabel !== 'Root / L1 / L2') {
+    bkm_verify_fail('Import folder label expected Root / L1 / L2, got: ' . $nestedImportLabel);
+} else {
+    bkm_verify_pass('Import folder labels include Root / nested segments.');
+}
+
 $conn = bkm_verify_conn();
 if (!$conn) {
     bkm_verify_fail('No database connection.');
@@ -177,6 +188,7 @@ $importedUrlKeys = [];
 $importedCount = 0;
 
 foreach ($entries as $entry) {
+    $importFolderLabel = bkm_format_import_folder_label($entry['folder_path'], null, []);
     $result = bkm_try_import_html_bookmark(
         $conn,
         $companyId,
@@ -188,6 +200,7 @@ foreach ($entries as $entry) {
         $entry['title'],
         $entry['url'],
         $entry['notes'],
+        $importFolderLabel,
         $importedUrlKeys
     );
     if (!empty($result['imported'])) {
@@ -207,6 +220,11 @@ if ($l1Id === null || $l2Id === null) {
     bkm_verify_fail('Could not resolve imported folder path L1/L2 by name.');
 } else {
     bkm_verify_pass('Resolved folders L1 (#' . $l1Id . ') and L2 (#' . $l2Id . ').');
+}
+
+$foldersById = [];
+foreach (bkm_get_folders($conn, $companyId, $employeeId, false) as $folderRow) {
+    $foldersById[(int)$folderRow['id']] = $folderRow;
 }
 
 $l2BookmarkCount = bkm_verify_count_bookmarks_in_folder($conn, $employeeId, $companyId, $l2Id);
@@ -231,6 +249,7 @@ if ($l2FolderDupes !== 1) {
 }
 
 $duplicateKeys = [];
+$dupImportLabel = bkm_format_import_folder_label(['L1', 'L2'], null, $foldersById);
 $duplicateResult = bkm_try_import_html_bookmark(
     $conn,
     $companyId,
@@ -242,12 +261,81 @@ $duplicateResult = bkm_try_import_html_bookmark(
     'Import A duplicate',
     'https://itm-verify.example/import-a',
     '',
+    $dupImportLabel,
     $duplicateKeys
 );
 if (!empty($duplicateResult['imported']) || ($duplicateResult['skip_reason'] ?? '') !== 'duplicate_employee') {
     bkm_verify_fail('Duplicate employee URL should skip with duplicate_employee (got ' . ($duplicateResult['skip_reason'] ?? 'none') . ').');
 } else {
     bkm_verify_pass('Duplicate URL skip does not create orphan folders (precheck before folder path).');
+}
+
+$existingDupLabel = bkm_resolve_import_duplicate_folder_label(
+    'duplicate_employee',
+    'https://itm-verify.example/import-a',
+    $dupImportLabel,
+    $duplicateKeys,
+    $conn,
+    $companyId,
+    $employeeId,
+    $foldersById
+);
+if ($existingDupLabel !== 'Root / L1 / L2') {
+    bkm_verify_fail('Duplicate employee skip should show existing folder Root / L1 / L2, got: ' . $existingDupLabel);
+} else {
+    bkm_verify_pass('Duplicate employee skip reports full existing folder path.');
+}
+
+$fileDupKeys = [];
+$fileDupUrl = 'https://itm-verify.example/dup-in-file';
+$fileDupLabelFirst = bkm_format_import_folder_label(['L1'], null, $foldersById);
+$fileDupFirst = bkm_try_import_html_bookmark(
+    $conn,
+    $companyId,
+    $employeeId,
+    ['L1'],
+    null,
+    $folderCache,
+    $foldersCreated,
+    'Dup in file first',
+    $fileDupUrl,
+    '',
+    $fileDupLabelFirst,
+    $fileDupKeys
+);
+$fileDupLabelSecond = bkm_format_import_folder_label(['L2'], null, $foldersById);
+$fileDupSecond = bkm_try_import_html_bookmark(
+    $conn,
+    $companyId,
+    $employeeId,
+    ['L2'],
+    null,
+    $folderCache,
+    $foldersCreated,
+    'Dup in file second',
+    $fileDupUrl,
+    '',
+    $fileDupLabelSecond,
+    $fileDupKeys
+);
+if (empty($fileDupFirst['imported']) || ($fileDupSecond['skip_reason'] ?? '') !== 'duplicate_file') {
+    bkm_verify_fail('In-file duplicate URL test failed setup.');
+} else {
+    $fileDupReportLabel = bkm_resolve_import_duplicate_folder_label(
+        'duplicate_file',
+        $fileDupUrl,
+        $fileDupLabelSecond,
+        $fileDupKeys,
+        $conn,
+        $companyId,
+        $employeeId,
+        $foldersById
+    );
+    if ($fileDupReportLabel !== 'Root / L1') {
+        bkm_verify_fail('Duplicate file skip should show first row folder Root / L1, got: ' . $fileDupReportLabel);
+    } else {
+        bkm_verify_pass('Duplicate file skip reports first occurrence folder path.');
+    }
 }
 
 $l2FolderDupesAfterSkip = bkm_verify_count_folders_named($conn, $employeeId, $companyId, $l1Id, 'L2');
@@ -259,6 +347,7 @@ if ($l2FolderDupesAfterSkip !== 1 || $l2BookmarksAfterSkip !== 2) {
 }
 
 $csvKeys = [];
+$csvFolderLabel = bkm_format_folder_breadcrumb($l2Id, $foldersById);
 $csvResult = bkm_try_import_bookmark(
     $conn,
     $companyId,
@@ -267,6 +356,7 @@ $csvResult = bkm_try_import_bookmark(
     'CSV Target',
     'https://itm-verify.example/csv-target',
     'csv notes',
+    $csvFolderLabel,
     $csvKeys
 );
 if (empty($csvResult['imported'])) {
@@ -287,6 +377,7 @@ $preseed = bkm_insert_bookmark_row($conn, $companyId, $employeeId, null, 'Presee
 if (empty($preseed['ok'])) {
     bkm_verify_fail('Could not preseed bookmark for orphan-folder test.');
 } else {
+    $orphanImportLabel = bkm_format_import_folder_label(['L1', 'L2'], null, []);
     $orphanResult = bkm_try_import_html_bookmark(
         $conn,
         $companyId,
@@ -298,6 +389,7 @@ if (empty($preseed['ok'])) {
         'Should not create folders',
         $preseedUrl,
         '',
+        $orphanImportLabel,
         $importedUrlKeys
     );
     if (!empty($orphanResult['imported']) || ($orphanResult['skip_reason'] ?? '') !== 'duplicate_employee') {

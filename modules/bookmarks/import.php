@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
                     $b['title'],
                     $b['url'],
                     $b['notes'],
+                    $folderLabel,
                     $importedUrlKeys
                 );
 
@@ -74,10 +75,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
                         'row_class' => 'bkm-import-row-success',
                     ];
                 } else {
+                    $skipFolderLabel = bkm_resolve_import_duplicate_folder_label(
+                        $result['skip_reason'],
+                        $b['url'],
+                        $folderLabel,
+                        $importedUrlKeys,
+                        $conn,
+                        $company_id,
+                        $user_id,
+                        $foldersById
+                    );
                     $skippedImports[] = [
                         'title' => $b['title'],
                         'url' => $b['url'],
-                        'summary' => bkm_format_import_skip_summary($result['skip_reason'], $folderLabel),
+                        'summary' => bkm_format_import_skip_summary($result['skip_reason'], $skipFolderLabel),
                         'row_class' => bkm_import_skip_row_class($result['skip_reason']),
                     ];
                 }
@@ -110,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
                     $b['title'],
                     $b['url'],
                     $b['notes'],
+                    $folderLabel,
                     $importedUrlKeys
                 );
 
@@ -122,10 +134,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
                         'row_class' => 'bkm-import-row-success',
                     ];
                 } else {
+                    $skipFolderLabel = bkm_resolve_import_duplicate_folder_label(
+                        $result['skip_reason'],
+                        $b['url'],
+                        $folderLabel,
+                        $importedUrlKeys,
+                        $conn,
+                        $company_id,
+                        $user_id,
+                        $foldersById
+                    );
                     $skippedImports[] = [
                         'title' => $b['title'],
                         'url' => $b['url'],
-                        'summary' => bkm_format_import_skip_summary($result['skip_reason'], $folderLabel),
+                        'summary' => bkm_format_import_skip_summary($result['skip_reason'], $skipFolderLabel),
                         'row_class' => bkm_import_skip_row_class($result['skip_reason']),
                     ];
                 }
@@ -287,7 +309,7 @@ if (!isset($crud_title)) {
             <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here. Folder headings (<code>&lt;H3&gt;</code>) in the file are created automatically and bookmarks are imported into the matching folder.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
             <p><strong>Folder:</strong> Choose <code>Root</code> or a parent folder. HTML imports nest file folders under that target; CSV imports place every row in the selected folder.</p>
-            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Imported rows are highlighted green; duplicate URL skips are red; invalid URLs are yellow; vault errors are grey (<code>Reason → Folder</code>).</p>
+            <p><strong>URLs:</strong> Only <code>http://</code>, <code>https://</code>, and <code>ftp://</code> links are imported. Each employee may have a URL only once (any folder). Imported rows are highlighted green; duplicate URL skips are red; invalid URLs are yellow; vault errors are grey (<code>Reason → Root / folder / sub-folder</code>).</p>
         </div>
         <?php endif; ?>
     </div>
