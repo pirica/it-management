@@ -134,6 +134,7 @@ if (!isset($crud_title)) {
             overflow: hidden;
         }
         .strength-bar { height: 100%; width: 0; transition: width 0.3s, background-color 0.3s; }
+        .pwd-actions-wrap .btn img { display: block; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -223,7 +224,7 @@ if (!isset($crud_title)) {
                             </div>
                             <div style="overflow-x: auto;">
                                 <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
-                                    <thead><tr><th style="width: 100px; text-align: center;" class="itm-actions-cell" data-itm-actions-origin="1">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
+                                    <thead><tr><th class="itm-actions-cell" data-itm-actions-origin="1" style="min-width: 220px; text-align: center;">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
                                     <tbody id="entries-body"><tr><td colspan="5" class="text-center">Loading entries...</td></tr></tbody>
                                 </table>
                             </div>
@@ -462,7 +463,7 @@ function loadEntries() {
         data.forEach(e => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;"><div class="itm-actions-wrap"><button class="btn btn-sm" type="button" onclick="itmOpenQrShareModal('ajax_handler.php', ${e.id}, { action: 'create_share_session' })" title="Share to device">📱</button> <button class="btn btn-sm" type="button" onclick="itmOpenWhatsAppShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button> <button class="btn btn-sm" type="button" onclick="itmOpenOutlookShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on Outlook">📨</button> <button class="btn btn-sm btn-outline-primary" onclick="openEntryModal(${e.id})" title="Edit">✏️</button> <button class="btn btn-sm btn-outline-danger" onclick="deleteEntry(${e.id})" title="Delete">🗑️</button></div></td>
+                <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;"><div class="itm-actions-wrap pwd-actions-wrap"><button class="btn btn-sm" type="button" onclick="itmOpenQrShareModal('ajax_handler.php', ${e.id}, { action: 'create_share_session' })" title="Share to device">📱</button><button class="btn btn-sm" type="button" onclick="itmOpenWhatsAppShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button><button class="btn btn-sm" type="button" onclick="itmOpenOutlookShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on Outlook">📨</button><a class="btn btn-sm" href="view.php?id=${e.id}" title="View">🔎</a><button class="btn btn-sm" type="button" onclick="openEntryModal(${e.id})" title="Edit">✏️</button><button class="btn btn-sm btn-danger" type="button" onclick="deleteEntry(${e.id})" title="Delete">🗑️</button></div></td>
                 <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
                 <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
                 <td><div class="input-group input-group-sm" style="width: 140px;"><input type="password" value="${sanitizeHtml(e.password)}" class="form-control" readonly id="pwd-${e.id}"><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pwd-${e.id}')">👁️</button><button class="btn btn-outline-secondary" type="button" onclick="copyText('${addslashes(e.password)}')">🗐</button></div></div></td>
@@ -559,6 +560,16 @@ document.addEventListener('click', function(e) {
 });
 document.addEventListener('DOMContentLoaded', () => {
     generatePassword(); loadFolderTree(); loadEntries();
+    const editEntryParam = new URLSearchParams(window.location.search).get('edit_entry');
+    if (editEntryParam) {
+        const editId = parseInt(editEntryParam, 10);
+        if (editId > 0) {
+            openEntryModal(editId);
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, '', 'index.php');
+            }
+        }
+    }
     document.getElementById('entryForm').onsubmit = function(e) {
         e.preventDefault();
         const data = {};
