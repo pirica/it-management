@@ -717,7 +717,7 @@ function fp_delete_plans_by_ids(mysqli $conn, array $ids, int $companyId): void 
 function fp_fetch_gallery_items(mysqli $conn, int $companyId, string $searchRaw, ?int $folderFilter, bool $unfiledOnly): array {
     $params = [];
     $types = '';
-    $where = 'fp.company_id=?';
+    $where = 'fp.company_id=? AND fp.deleted_at IS NULL';
     $params[] = $companyId;
     $types .= 'i';
 

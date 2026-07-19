@@ -4,8 +4,8 @@
  */
 $fpFolders = fp_fetch_folders($conn, (int)$company_id);
 ?>
-<h1>Upload Floor Plans</h1>
-<p><a href="index.php" class="btn btn-sm">← Gallery</a></p>
+<h1 title="Upload floor plans">➕</h1>
+<p><a href="index.php" class="btn btn-sm" title="Back">🔙</a></p>
 <form method="POST" action="index.php" enctype="multipart/form-data" class="form-grid itm-floor-plan-upload-form" id="floorPlanCreateForm" style="max-width:720px;">
     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
     <input type="hidden" name="fp_action" value="upload_files">
@@ -32,7 +32,7 @@ $fpFolders = fp_fetch_folders($conn, (int)$company_id);
         <input type="text" name="upload_tags" id="uploadTagsCreate" placeholder="Ground Floor, Building A">
     </div>
     <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Upload</button>
+        <button type="submit" class="btn btn-primary" title="Save">💾</button>
         <a href="index.php" class="btn" title="Cancel">🔙</a>
     </div>
 </form>
