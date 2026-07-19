@@ -64,6 +64,56 @@ if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
     $newButtonPosition = 'left_right';
 }
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalRows = 0;
+if (!empty($_SESSION['vault_key'])) {
+    $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS row_count FROM password_entries WHERE employee_id = ?');
+    if ($countStmt) {
+        mysqli_stmt_bind_param($countStmt, 'i', $user_id);
+        mysqli_stmt_execute($countStmt);
+        $countRow = mysqli_fetch_assoc(mysqli_stmt_get_result($countStmt));
+        mysqli_stmt_close($countStmt);
+        $totalRows = (int)($countRow['row_count'] ?? 0);
+    }
+}
+$showBulkActions = ($totalRows >= $perPage);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($crud_action ?? 'index') === 'delete') {
+    itm_require_post_csrf();
+    $bulkAction = (string)($_POST['bulk_action'] ?? '');
+
+    if ($bulkAction === 'clear_table') {
+        $clearStmt = mysqli_prepare($conn, 'DELETE FROM password_entries WHERE employee_id = ?');
+        if ($clearStmt) {
+            mysqli_stmt_bind_param($clearStmt, 'i', $user_id);
+            mysqli_stmt_execute($clearStmt);
+            mysqli_stmt_close($clearStmt);
+        }
+        header('Location: index.php?msg=deleted');
+        exit;
+    }
+
+    if ($bulkAction === 'bulk_delete') {
+        $ids = array_map('intval', (array)($_POST['ids'] ?? []));
+        $deleteStmt = mysqli_prepare($conn, 'DELETE FROM password_entries WHERE id = ? AND employee_id = ?');
+        if ($deleteStmt) {
+            foreach ($ids as $entryId) {
+                if ($entryId <= 0) {
+                    continue;
+                }
+                mysqli_stmt_bind_param($deleteStmt, 'ii', $entryId, $user_id);
+                mysqli_stmt_execute($deleteStmt);
+            }
+            mysqli_stmt_close($deleteStmt);
+        }
+        header('Location: index.php?msg=deleted');
+        exit;
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -271,6 +321,16 @@ if (!isset($crud_title)) {
                     </div>
                     <div class="main-panel">
                         <div class="card">
+                            <?php if ($showBulkActions): ?>
+                            <div style="margin-bottom:16px;">
+                                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                                </form>
+                            </div>
+                            <?php endif; ?>
                             <div class="pwd-toolbar-row">
                                 <div class="pwd-search-wrap">
                                     <div class="pwd-search-row">
@@ -296,8 +356,8 @@ if (!isset($crud_title)) {
                             </div>
                             <div style="overflow-x: auto;">
                                 <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
-                                    <thead><tr><th class="itm-actions-cell" data-itm-actions-origin="1" style="min-width: 220px; text-align: center;">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
-                                    <tbody id="entries-body"><tr><td colspan="5" class="text-center">Loading entries...</td></tr></tbody>
+                                    <thead><tr><?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?><th class="itm-actions-cell" data-itm-actions-origin="1" style="min-width: 220px; text-align: center;">Actions</th><th>Account</th><th>Login Name</th><th>Password</th><th>Website</th></tr></thead>
+                                    <tbody id="entries-body"><tr><td colspan="<?php echo $showBulkActions ? 6 : 5; ?>" class="text-center">Loading entries...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
@@ -401,6 +461,8 @@ if (!isset($crud_title)) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+const pwdShowBulkActions = <?php echo $showBulkActions ? 'true' : 'false'; ?>;
+const pwdListColspan = <?php echo (int)($showBulkActions ? 6 : 5); ?>;
 let currentFolderId = 0;
 let searchQuery = '';
 
@@ -523,18 +585,36 @@ function loadFolderTree() {
 function selectFolder(id) { currentFolderId = id; loadEntries(); loadFolderTree(); }
 function performSearch() { searchQuery = document.getElementById('entry-search').value; loadEntries(); }
 
+function pwdRebindBulkDeleteSelection() {
+    if (!pwdShowBulkActions) {
+        return;
+    }
+    const bulkForm = document.getElementById('bulk-delete-form');
+    if (bulkForm) {
+        bulkForm.removeAttribute('data-itm-bulk-delete-bound');
+    }
+    if (typeof window.itmInitBulkDeleteSelection === 'function') {
+        window.itmInitBulkDeleteSelection();
+    }
+}
+
 function loadEntries() {
     apiCall('list_entries', { folder_id: currentFolderId, search: searchQuery }).then(data => {
         const body = document.getElementById('entries-body');
         if (!body) return;
         body.innerHTML = '';
         if (!Array.isArray(data) || data.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px;">No entries found.</td></tr>';
+            body.innerHTML = '<tr><td colspan="' + pwdListColspan + '" class="text-center" style="padding: 40px;">No entries found.</td></tr>';
+            pwdRebindBulkDeleteSelection();
             return;
         }
         data.forEach(e => {
             const row = document.createElement('tr');
+            const bulkCell = pwdShowBulkActions
+                ? `<td><input type="checkbox" name="ids[]" value="${e.id}" form="bulk-delete-form"></td>`
+                : '';
             row.innerHTML = `
+                ${bulkCell}
                 <td class="itm-actions-cell" data-itm-actions-origin="1" style="text-align: center;"><div class="itm-actions-wrap pwd-actions-wrap"><button class="btn btn-sm" type="button" onclick="itmOpenQrShareModal('ajax_handler.php', ${e.id}, { action: 'create_share_session' })" title="Share to device">📱</button><button class="btn btn-sm" type="button" onclick="itmOpenWhatsAppShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button><button class="btn btn-sm" type="button" onclick="itmOpenOutlookShare('ajax_handler.php', ${e.id}, { action: 'create_share_session' }, 'password')" title="Share on Outlook">📨</button><a class="btn btn-sm" href="view.php?id=${e.id}" title="View">🔎</a><button class="btn btn-sm" type="button" onclick="openEntryModal(${e.id})" title="Edit">✏️</button><button class="btn btn-sm btn-danger" type="button" onclick="deleteEntry(${e.id})" title="Delete">🗑️</button></div></td>
                 <td>${sanitizeHtml(e.account)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.account)}')">🗐</button></td>
                 <td>${sanitizeHtml(e.login_name)} <button class="btn btn-link btn-sm p-0" onclick="copyText('${addslashes(e.login_name)}')">🗐</button></td>
@@ -543,6 +623,7 @@ function loadEntries() {
             `;
             body.appendChild(row);
         });
+        pwdRebindBulkDeleteSelection();
     });
 }
 

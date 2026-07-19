@@ -154,4 +154,6 @@
     } else {
         itmInitBulkDeleteSelection();
     }
+
+    window.itmInitBulkDeleteSelection = itmInitBulkDeleteSelection;
 })();

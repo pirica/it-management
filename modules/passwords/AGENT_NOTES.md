@@ -38,6 +38,7 @@ Secure private password manager with vault encryption. It allows users to store 
 
 - **Three-Column Layout**: Responsive UI with Password Generator, Folder Tree, and Entry List.
 - **List header (Settings UI):** when vault is unlocked, `index.php` uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()`; `new_button_position` gates left/right ➕ create controls (`btn btn-primary itm-list-new-button`, opens entry modal — no `create.php`).
+- **Bulk delete:** when employee row count `>= records_per_page`, show standard `bulk-delete-form` (Select to Delete, Cancel, Clear Table) posting to `delete.php` → `index.php` (`crud_action=delete`); AJAX-rendered rows include `ids[]` checkboxes and rebind `bulk-delete-selection.js` via `window.itmInitBulkDeleteSelection()` after `loadEntries()`.
 - **Masking**: Password fields in the UI MUST be masked by default with a toggle visibility button.
 - **Special import/export (not table-tools):** Tools menu drives CSV/Excel import modals and `exportVault()` / `export_handler.php`. Entry list `<table>` uses `data-itm-no-import-excel="1"`, `data-itm-no-export-excel="1"`, and `data-itm-no-export-pdf="1"` so index compliance does not require `data-itm-db-import-endpoint`. Actions `th`/`td` (including JS-rendered rows) use `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - **Copy-to-Clipboard**: Provide a 🗐 icon for copying fields (Account, Login, Password, Website, Comments) to the clipboard.
@@ -68,6 +69,7 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 ## 7. File Structure
 
 - **index.php** — main interface (Generator | Tree | List)
+- **delete.php** — bulk delete / clear table wrapper (`crud_action=delete`)
 - **view.php** — read-only entry detail with share actions
 - **ajax_handler.php** — central AJAX handler for encryption and CRUD
 - **passwords_share_helpers.php** — QR share session builder (`passwords_share_create_session()`)
