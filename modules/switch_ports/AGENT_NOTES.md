@@ -23,7 +23,9 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Grid Layout**: Often rendered in a grid mimicking the physical switch layout (via equipment module tiles).
 - Wrapper entry files set `$crud_action` before `require index.php` — index must not overwrite wrapper value.
-- Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list/view keep `$visibleFieldColumns`.
+- Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps; list uses `$visibleFieldColumns` (audit meta hidden via `itm_crud_is_list_hidden_audit_field()`); view shows business fields plus `itm_crud_render_view_audit_meta_rows()`.
+- **Hard delete (IDF sync):** `clear_table`, `bulk_delete`, and single delete use `DELETE FROM switch_ports` inside transactions, then `cr_switch_port_delete_synced_snapshots()` — not scaffold soft-delete (`itm_crud_build_soft_delete_sql`). Bespoke gate exceptions are listed in `scripts/data/fields_missing_reviewed.json`.
+- **Bulk toolbar:** when `$totalRows >= $perPage`, include `bulk-delete-selection.js` and `data-itm-bulk-cancel="1"` Cancel in index HTML.
 - Standard flattened list in `list_all.php` when not embedded in equipment view.
 - **List search:** `index.php` / `list_all.php` search matches FK label tables via `itm_crud_fk_label_search_conditions()` (status, VLAN, equipment hostname, etc.), not only raw numeric IDs.
 

@@ -64,6 +64,22 @@
           "note": "create.php exists but index.php has no detectable primary create/add action"
         }
       ]
+    },
+    "switch_ports": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Switch port delete must hard DELETE with IDF sync (idf_ports, idf_links). Scaffold soft-delete would leave orphaned infrastructure rows; list has no deleted_at filter because rows are removed.",
+      "checks": [
+        {
+          "check": "Hard delete contract",
+          "code": "bespoke_hard_delete",
+          "note": "switch_ports bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)"
+        },
+        {
+          "check": "List live filter",
+          "code": "bespoke_list_missing_soft_delete_filter",
+          "note": "switch_ports bespoke gate: list query missing deleted_at IS NULL filter (or itm_crud_append_not_deleted_predicate)"
+        }
+      ]
     }
   }
 }
