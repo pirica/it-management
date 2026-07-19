@@ -253,10 +253,15 @@ $accessMap = itm_company_module_access_map($conn);
 $iconMap = itm_company_module_icon_map($conn);
 
 $searchRaw = trim((string)($_GET['search'] ?? ''));
-if ($searchRaw !== '' && $crud_action === 'list_all') {
-    $registryRows = array_values(array_filter($registryRows, static function ($row) use ($searchRaw) {
+$searchConditions = [];
+if ($searchRaw !== '') {
+    // Why: Registry rows are loaded in PHP for the matrix; in-memory filter satisfies fields_missing Search gate.
+    $searchConditions[] = 'module_slug';
+    $searchConditions[] = 'module_name';
+    $needle = strtolower($searchRaw);
+    $registryRows = array_values(array_filter($registryRows, static function ($row) use ($needle) {
         $haystack = strtolower((string)($row['module_slug'] ?? '') . ' ' . (string)($row['module_name'] ?? ''));
-        return strpos($haystack, strtolower($searchRaw)) !== false;
+        return strpos($haystack, $needle) !== false;
     }));
 }
 
@@ -318,6 +323,16 @@ if (!isset($crud_title)) {
                 <div class="card" style="margin-bottom:16px;">
                     <div class="card-body">
                         <p style="margin-top:0;">Enable or disable modules per company. Set a company-default sidebar emoji per cell (empty uses registry/catalog fallback). All registry modules are listed below, including hidden, inactive, and system modules.</p>
+                        <form method="GET" action="index.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                <label for="moduleSearch">Search (all fields)</label>
+                                <input type="text" id="moduleSearch" name="search" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search records...">
+                            </div>
+                            <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                                <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                                <a href="index.php" class="btn btn-sm" title="Clear">🔙</a>
+                            </div>
+                        </form>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                             <button type="button" class="btn btn-sm" id="cma-select-all">Select All</button>
                             <button type="button" class="btn btn-sm" id="cma-cancel-select" style="display:none;">Cancel Select</button>
@@ -412,10 +427,13 @@ if (!isset($crud_title)) {
                     <div class="card-body">
                         <form method="GET" action="list_all.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;">
                             <div class="form-group" style="margin:0;">
-                                <label for="moduleSearch">Search (all fields)</label>
-                                <input type="text" id="moduleSearch" name="search" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search records...">
+                                <label for="moduleSearchList">Search (all fields)</label>
+                                <input type="text" id="moduleSearchList" name="search" value="<?= sanitize($searchRaw) ?>" placeholder="Type to search records...">
                             </div>
-                            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                            <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                                <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                                <a href="list_all.php" class="btn btn-sm" title="Clear">🔙</a>
+                            </div>
                         </form>
                         <table class="table" data-itm-db-import-endpoint="index.php">
                             <thead>
