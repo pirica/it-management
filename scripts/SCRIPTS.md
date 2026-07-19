@@ -1100,7 +1100,9 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 
 **Bulk fix:** `php scripts/apply_ui_action_emoji.php` — **Browser + CLI**, dry-run default; `--apply` / `?apply=1` writes; lists changed files. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 
-**Head favicon:** `php scripts/apply_head_favicon_link.php` — inserts `<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>` after `<title>` in module `index.php` files that have `<head>` but no Settings-backed favicon helper (dry-run default; `--apply` / `?apply=1` writes). Replaces legacy Settings/explorer hardcoded `<link rel="icon">` blocks with the shared helper.
+**Head favicon:** `php scripts/apply_head_favicon_link.php` — inserts `<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>` after `<title>` in module `index.php`, `create.php`, `edit.php`, and `view.php` files that have `<head>` but no Settings-backed favicon helper (dry-run default; `--apply` / `?apply=1` writes). Replaces legacy Settings/explorer hardcoded `<link rel="icon">` blocks with the shared helper.
+
+**Page chrome verify:** `php scripts/verify_module_page_chrome.php` — cross-checks every `modules/**/*.php` file with a standalone `<head>` for canonical browser `<title>` (`titles_list.php` / `itm_titles_list_audit.php`) and Settings favicon wiring (`itm_check_module_favicon_link()`). Exit `1` on any title or favicon failure. Use with `fields_missing.php` bespoke gate and `crud_titles.php` when debugging tab icon / title regressions.
 
 **List new button style:** `php scripts/apply_list_new_button_style.php` — normalizes list-header `create.php` ➕ anchors to `class="btn btn-primary itm-list-new-button" title="Create"` (pairs with `styles.css` 40×40 footprint and `fields_missing` New button style gate).
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Insert server-side favicon <link> in module index.php <head> blocks.
+ * Insert server-side favicon <link> in module index/create/edit/view <head> blocks.
  *
  * Why: fields_missing bespoke gate and first-paint tab icon require itm_render_head_favicon_link()
  * using Settings favicon_url (header.php JS alone leaves the default globe).
@@ -26,7 +26,14 @@ $skippedNoHead = 0;
 $warned = [];
 $changed = [];
 
-foreach (glob($root . 'modules' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'index.php') ?: [] as $indexPath) {
+$entryFiles = [];
+foreach (['index.php', 'create.php', 'edit.php', 'view.php'] as $entryName) {
+    foreach (glob($root . 'modules' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . $entryName) ?: [] as $entryPath) {
+        $entryFiles[] = $entryPath;
+    }
+}
+
+foreach ($entryFiles as $indexPath) {
     $scanned++;
     $content = (string) file_get_contents($indexPath);
     if (stripos($content, '<head') === false) {

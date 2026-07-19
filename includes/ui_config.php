@@ -1381,7 +1381,18 @@ if (!function_exists('itm_render_head_favicon_link')) {
      */
     function itm_render_head_favicon_link($faviconUrl = null, $uiConfig = null): string
     {
+        if (is_array($faviconUrl)) {
+            $uiConfig = $faviconUrl;
+            $faviconUrl = null;
+        }
+
         if ($faviconUrl === null || trim((string) $faviconUrl) === '') {
+            if (!is_array($uiConfig) || $uiConfig === []) {
+                global $ui_config;
+                if (is_array($ui_config ?? null) && $ui_config !== []) {
+                    $uiConfig = $ui_config;
+                }
+            }
             $faviconUrl = itm_ui_config_favicon_url(is_array($uiConfig) ? $uiConfig : []);
         }
 
