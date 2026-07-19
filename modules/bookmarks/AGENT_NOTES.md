@@ -26,7 +26,9 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 5. UI Behavior Requirements
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
 - View modes: `all`, `private`, `shared` via `?view=`; folder filter via `?folder_id=`.
-- **Search:** `index.php` and `list_all.php` match bookmark title/url/notes and folder name (`bookmark_folders` JOIN or EXISTS).
+- **Search:** `index.php` and `list_all.php` match bookmark title/url/notes and folder name (`bookmark_folders` JOIN or EXISTS). Dual-pane list uses `$searchRaw` + `$searchConditions`, emoji-only `🔙` reset, server-side sort (`$_GET['sort']`/`dir`, `ORDER BY $sortSql`), and pagination (`LIMIT $offset, $perPage`, Previous/Next).
+- Dual-pane `index.php` list heading uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()`. POST mutations on `index.php` call `itm_require_post_csrf()` (JSON `import_excel_rows` keeps token validation on the JSON body).
+- Dual-pane `index.php` bulk toolbar (`Select to Delete`, Cancel, Clear Table, **Move to** folder select) and row `ids[]` checkboxes appear only when `$showBulkActions = ($totalRows >= $perPage)`; uses shared `bulk-delete-selection.js` with `#select-all-rows`.
 - Folder drag-and-drop reparenting posts `action=move_folder` (CSRF on form).
 - Shared bookmarks: edit/delete only for admin or owning `employee_id` (`bkm_can_edit_bookmark()`).
 - Shared checkbox on bookmark/folder forms: unchecked = private **🔒**; checked = shared **🔓** (`itm-shared-indicator`). Active uses `itm-check-indicator` (✅/❌). Change listener must live in its own `<script>` block after closed `<script src="..."></script>` tags (`create.php`, `edit.php`, `create_folder.php`, `edit_folder.php`).
@@ -39,7 +41,8 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
-- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmarks()`).
+- **move_bookmarks** (POST on `index.php`) — `action=move_bookmarks`, `ids[]`, `target_folder_id` (`0` = Root); updates `bookmarks.folder_id` for editable rows only.
+- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmarks()`); **Folder** target select (`Root` or folder tree via `bkm_render_folder_options()`).
 - **export.php** / **export.js** — CSV, XLSX, and Netscape HTML export.
 
 ## 7. File Structure
