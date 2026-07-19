@@ -96,22 +96,6 @@
           "note": "tickets excluded UI column created_at: visible on create/edit forms"
         }
       ]
-    },
-    "vlans": {
-      "reviewed_at": "2026-07-19",
-      "reason": "VLAN delete must hard DELETE when clearing switch_ports, idf_ports, and ip_subnets references. Scaffold soft-delete would leave orphaned network FKs; list has no deleted_at filter because rows are removed.",
-      "checks": [
-        {
-          "check": "Hard delete contract",
-          "code": "bespoke_hard_delete",
-          "note": "vlans bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)"
-        },
-        {
-          "check": "List live filter",
-          "code": "bespoke_list_missing_soft_delete_filter",
-          "note": "vlans bespoke gate: list query missing deleted_at IS NULL filter (or itm_crud_append_not_deleted_predicate)"
-        }
-      ]
     }
   }
 }
