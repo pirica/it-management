@@ -6,6 +6,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 ## 2. Key Tables
 - **notes** — main note records (`title`, `title_hash`, `content`, `checklist_json`, `is_pinned`, `is_important`, `images_json`, `shared_with_json`, `color`, `employee_id`). Standard audit and deletion tracking columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) are supported and managed by the application code and DB triggers.
 - **note_labels** — per-user label/tag names (`label`, `label_hash`) used when filtering and importing.
+- **note_share_sessions** — temporary QR / 6-digit join snapshots (`payload_json`, `share_code`, `access_token`, `expires_at`). Private-data exempt (no `audit_logs`).
 
 ## 3. Required Relationships
 - **notes** → depends on **companies** (`company_id`), **employees** (`employee_id`, share targets).
@@ -39,6 +40,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - **AJAX on index** — pin, archive, share, label, image upload mutations; use `itm_notes_json_mutation_response()` (404 when `affected_rows === 0`). `quick_add` and label mutations require unlocked vault.
 - **import_excel_rows** (JSON POST on `index.php` / `list_all.php`) — resolves tags via **note_labels** and share targets via usernames; requires unlocked vault.
 - **download_all_images** — ZIP of note attachments via `itm_notes_resolve_image_path()` (never raw JSON paths).
+- **QR / code share (`join.php`):** owner-only temporary read links (30 min). `note_share_sessions` stores `share_code`, `access_token`, and a plaintext `payload_json` snapshot (private notes require unlocked vault at create time). UI: `images/QR.svg` on card rows, table actions, and view; modal uses `js/qrcode.min.js`. Public pages: `join.php`, `share_asset.php` (`ITM_NOTES_SHARE_PUBLIC`). Regression: `php scripts/verify_notes_share.php`.
 
 ## 7. File Structure
 - `index.php` — main UI, filters, import API, CRUD routing.
