@@ -42,6 +42,7 @@ Secure private password manager with vault encryption. It allows users to store 
 - **Copy-to-Clipboard**: Provide a 🗐 icon for copying fields (Account, Login, Password, Website, Comments) to the clipboard.
 - **Password Generator**: Features length slider, character type toggles, and strength meter.
 - **AJAX Driven**: Folder and entry CRUD operations are handled via AJAX to `ajax_handler.php`.
+- **QR / code share (`join.php`):** vault-unlocked temporary read links (30 min). `password_share_sessions` stores plaintext `payload_json` snapshot (decrypted fields). UI: `images/QR.svg` on entry row actions; modal via `includes/itm_qr_share_modal.php` + `js/itm-qr-share.js`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`.
 
 ---
 
@@ -58,6 +59,7 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 - **delete_entry** — remove entry
 - **import_rows** — JSON-based import for Excel/XLSX
 - **import_csv** — CSV import supporting Edge and KeePass formats
+- **create_share_session** — owner-scoped temporary QR/code share (`password_share_sessions`); requires unlocked vault
 
 ---
 
@@ -65,6 +67,8 @@ All POST to `ajax_handler.php` with `action` and `csrf_token`. Responses are JSO
 
 - **index.php** — main interface (Generator | Tree | List)
 - **ajax_handler.php** — central AJAX handler for encryption and CRUD
+- **passwords_share_helpers.php** — QR share session builder (`passwords_share_create_session()`)
+- **join.php** — public 6-digit / token join page for shared password snapshots
 - **export_handler.php** — secure export handler (XLSX, CSV, PDF, TXT)
 
 ---
