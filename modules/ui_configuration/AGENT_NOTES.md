@@ -17,7 +17,7 @@ Manages per-company and per-employee UI layout preferences (such as action butto
 
 - All queries must be strictly scoped to the logged-in employee (`employee_id = $_SESSION['employee_id']` / `company_id = $_SESSION['company_id']`) to maintain individual preferences and private API keys.
 - **API rate limits:** keyless requests are only allowed for active sessions on the Free tier. Paid tiers (Basic, Pro, Enterprise) require a valid `api_key` and enforce sliding-window quotas.
-- **Fresh-import seeds:** one default row per company bound to **that company’s** seed Admin (`INSERT … SELECT` from `employees` where `work_email LIKE 'admin@techcorp.example%.com'`). Do not set `employee_id = 1` for companies 2–5.
+- **Fresh-import seeds:** one default row per company bound to **that company’s** seed Admin (`INSERT … SELECT` from `employees` where `work_email LIKE 'admin@techcorp.example%.com'`). Position fields seed as **`left`** for `table_actions_position`, `new_button_position`, `export_buttons_position`, and `back_save_position` (matches `CREATE TABLE` column defaults and `itm_ui_config_defaults()`). Do not set `employee_id = 1` for companies 2–5.
 - **Cross-company replicate:** copies TechCorp UI defaults onto other tenants by matching `username` on the target company (and sets `favicon_path` to `company_{id}`); never reuse TechCorp `employee_id` on foreign `company_id` values.
 
 ## 5. UI Behavior Requirements

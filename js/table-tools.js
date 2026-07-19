@@ -497,7 +497,7 @@
 
     function placeToolbar(table, toolbar) {
         const cfg = window.ITM_UI_CONFIG || {};
-        const mode = (cfg.export_buttons_position || 'left_right').toString();
+        const mode = (cfg.export_buttons_position || 'left').toString();
         const card = table.closest('.card');
         if (!card || !table.parentNode) return;
 
