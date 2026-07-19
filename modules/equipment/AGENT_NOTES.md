@@ -25,7 +25,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Create/edit layout:** Row 1 ends with MAC Address (swapped with Manufacturer); row 2 ends with Manufacturer. Serial / Model / Supplier share one `form-row-3`. Purchase Date / Cost row has no Department. **Assign To Employee** (hidden `equipment_id` + `assigned_date`) and **Department** share a `form-row-3` immediately before Notes.
 - **IDF synchronization:** Create/Edit/Update/Delete/Copy/Move must keep `idf_ports`, `switch_ports`, `equipment`, `idf_device_type`, `idf_positions`, `idfs`, and `idf_links` aligned — transactions required; run `php scripts/idfs_sync_human_test.php` after changes.
 - **Asset Tagging:** Each item should ideally have a unique serial or asset number within the company.
-- **Type-Specific Logic:** `modules/is_*` façades delegate here; do not delete canonical `is_switch`, `is_server`, etc.
+- **Type-Specific Logic:** `modules/is_*` façades delegate here; do not delete canonical `is_switch`, `is_server`, etc. Gate-excluded UI configuration list-contract gaps for façades are reviewed under registry key `is_*` in `scripts/data/ui_configuration_reviewed.json` (no local `index.php` table — list chrome is here).
 - **Switch port tiles:** RJ45/SFP icon mapping per AGENTS.md (Unknown vs active PNG paths).
 
 ## 5. UI Behavior Requirements

@@ -23,6 +23,7 @@ A filtered view of the Equipment module specifically for network switch devices.
 - **List restrictions:** `index.php` sets `$equipmentAllowCreate`, `$equipmentAllowDelete`, and `$equipmentAllowImport` to `false`.
 
 ## 5. UI Behavior Requirements
+- **UI configuration reviewed:** Gate-excluded prefix `is_*` — list/search/sort/pagination/export/bulk/new-button checks are `[n/a][fail|n/a][reviewed]` via registry key `is_*` in `scripts/data/ui_configuration_reviewed.json` (façade `index.php` only `require`s equipment).
 - **Standard Equipment list** (search, sort, pagination, export) scoped to switches.
 - **Switch port manager** tiles and RJ45/SFP icon mapping (Unknown vs active PNG paths) inherited from equipment.
 - **List and view** enforce the type filter via wrapper variables; **edit** routes to `equipment/edit.php` without setting `$equipmentTypeNameFilter` — a direct edit URL can open any company-scoped equipment id (type filter not enforced on edit; `company_id` still enforced in `equipment/create.php`).

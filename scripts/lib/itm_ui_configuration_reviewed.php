@@ -92,6 +92,28 @@ if (!function_exists('itm_ui_configuration_validate_reviewed_registry')) {
     }
 }
 
+if (!function_exists('itm_ui_configuration_reviewed_registry_key_matches_module')) {
+    /**
+     * Registry keys may be an exact module slug or a prefix wildcard (e.g. is_*).
+     */
+    function itm_ui_configuration_reviewed_registry_key_matches_module(string $registryKey, string $moduleSlug): bool
+    {
+        $registryKey = trim($registryKey);
+        $moduleSlug = trim($moduleSlug);
+        if ($registryKey === '' || $moduleSlug === '') {
+            return false;
+        }
+
+        if (substr($registryKey, -1) === '*') {
+            $prefix = substr($registryKey, 0, -1);
+
+            return $prefix !== '' && strpos($moduleSlug, $prefix) === 0;
+        }
+
+        return strcasecmp($registryKey, $moduleSlug) === 0;
+    }
+}
+
 if (!function_exists('itm_ui_configuration_check_is_reviewed')) {
     /**
      * @param array<string,mixed>|null $registry
@@ -99,28 +121,36 @@ if (!function_exists('itm_ui_configuration_check_is_reviewed')) {
     function itm_ui_configuration_check_is_reviewed(string $moduleSlug, string $checkName, ?array $registry = null): bool
     {
         $registry = $registry ?? itm_ui_configuration_load_reviewed_registry();
-        $moduleEntry = $registry['modules'][$moduleSlug] ?? null;
-        if (!is_array($moduleEntry)) {
-            return false;
-        }
-
-        $checks = $moduleEntry['checks'] ?? [];
-        if (!is_array($checks) || $checks === []) {
-            return false;
-        }
-
         $checkName = trim($checkName);
-        foreach ($checks as $checkEntry) {
-            if (!is_array($checkEntry)) {
+        if ($checkName === '') {
+            return false;
+        }
+
+        foreach ($registry['modules'] ?? [] as $registryKey => $moduleEntry) {
+            if (!is_string($registryKey) || !itm_ui_configuration_reviewed_registry_key_matches_module($registryKey, $moduleSlug)) {
                 continue;
             }
-            $registryLabel = trim((string) ($checkEntry['check'] ?? ''));
-            $registryCode = trim((string) ($checkEntry['code'] ?? ''));
-            if ($registryLabel !== '' && strcasecmp($registryLabel, $checkName) === 0) {
-                return true;
+            if (!is_array($moduleEntry)) {
+                continue;
             }
-            if ($registryCode !== '' && strcasecmp($registryCode, $checkName) === 0) {
-                return true;
+
+            $checks = $moduleEntry['checks'] ?? [];
+            if (!is_array($checks) || $checks === []) {
+                continue;
+            }
+
+            foreach ($checks as $checkEntry) {
+                if (!is_array($checkEntry)) {
+                    continue;
+                }
+                $registryLabel = trim((string) ($checkEntry['check'] ?? ''));
+                $registryCode = trim((string) ($checkEntry['code'] ?? ''));
+                if ($registryLabel !== '' && strcasecmp($registryLabel, $checkName) === 0) {
+                    return true;
+                }
+                if ($registryCode !== '' && strcasecmp($registryCode, $checkName) === 0) {
+                    return true;
+                }
             }
         }
 
