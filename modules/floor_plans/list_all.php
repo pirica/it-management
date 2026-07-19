@@ -1,9 +1,7 @@
 <?php
 /**
- * Budget Categories Module - List All
- * 
-
- * Delegates to index.php.
+ * Floor Plans — flat metadata list (export/import compliance).
+ * Delegates to index.php with $crud_action = list_all.
  */
 
 $crud_table = 'floor_plans';
