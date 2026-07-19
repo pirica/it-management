@@ -3,6 +3,10 @@
  * Why: inline copies had no way to exit selection mode without deleting or reloading.
  */
 (function () {
+    function itmDispatchBulkSelectionChange() {
+        document.dispatchEvent(new CustomEvent('itm-bulk-selection-change'));
+    }
+
     function itmInitBulkDeleteSelection() {
         const selectAllRows = document.getElementById('select-all-rows') || document.getElementById('select-all-departments');
         const bulkDeleteForm = document.querySelector('form[id="bulk-delete-form"], form[id="department-bulk-form"]');
@@ -16,6 +20,7 @@
             return;
         }
 
+        const selectButton = bulkDeleteForm.querySelector('[data-itm-bulk-select="1"]');
         const selectLabel = (toggleButton.textContent || 'Select to Delete').trim();
         const rowCheckboxes = document.querySelectorAll('input[name="ids[]"][form="' + bulkDeleteForm.id + '"]');
         const deleteCells = Array.from(rowCheckboxes).map(function (checkbox) {
@@ -23,6 +28,7 @@
         }).filter(Boolean);
         const selectAllHeaderCell = selectAllRows ? selectAllRows.closest('th') : null;
         let selectionMode = false;
+        let deleteArmed = false;
 
         let cancelButton = bulkDeleteForm.querySelector('[data-itm-bulk-cancel="1"]');
         if (!cancelButton) {
@@ -44,17 +50,37 @@
             });
         }
 
+        function setSelectButtonVisible(visible) {
+            if (!selectButton) {
+                return;
+            }
+            selectButton.style.display = visible ? '' : 'none';
+        }
+
+        function enterSelectionMode(armDelete) {
+            selectionMode = true;
+            deleteArmed = !!armDelete;
+            setSelectionVisibility(true);
+            cancelButton.style.display = '';
+            toggleButton.textContent = deleteArmed ? 'Delete Selected' : selectLabel;
+            setSelectButtonVisible(false);
+            itmDispatchBulkSelectionChange();
+        }
+
         function exitSelectionMode() {
             selectionMode = false;
+            deleteArmed = false;
             setSelectionVisibility(false);
             toggleButton.textContent = selectLabel;
             cancelButton.style.display = 'none';
+            setSelectButtonVisible(true);
             if (selectAllRows) {
                 selectAllRows.checked = false;
             }
             rowCheckboxes.forEach(function (checkbox) {
                 checkbox.checked = false;
             });
+            itmDispatchBulkSelectionChange();
         }
 
         if (selectAllRows) {
@@ -62,12 +88,26 @@
                 rowCheckboxes.forEach(function (checkbox) {
                     checkbox.checked = selectAllRows.checked;
                 });
+                itmDispatchBulkSelectionChange();
+            });
+        }
+
+        rowCheckboxes.forEach(function (checkbox) {
+            checkbox.addEventListener('change', itmDispatchBulkSelectionChange);
+        });
+
+        if (selectButton) {
+            selectButton.addEventListener('click', function () {
+                if (!selectionMode) {
+                    enterSelectionMode(false);
+                }
             });
         }
 
         cancelButton.addEventListener('click', exitSelectionMode);
 
         setSelectionVisibility(false);
+        setSelectButtonVisible(!!selectButton);
 
         bulkDeleteForm.addEventListener('submit', function (event) {
             if (event.submitter !== toggleButton) {
@@ -76,10 +116,14 @@
 
             if (!selectionMode) {
                 event.preventDefault();
-                selectionMode = true;
-                setSelectionVisibility(true);
+                enterSelectionMode(true);
+                return;
+            }
+
+            if (!deleteArmed) {
+                event.preventDefault();
+                deleteArmed = true;
                 toggleButton.textContent = 'Delete Selected';
-                cancelButton.style.display = '';
                 return;
             }
 
