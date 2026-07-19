@@ -91,6 +91,38 @@ if (!function_exists('itm_titles_list_module_path_from_root')) {
     }
 }
 
+if (!function_exists('itm_verify_module_page_chrome_entry_basenames')) {
+    /**
+     * Primary CRUD browser entry files audited by fields_missing bespoke page chrome.
+     *
+     * @return string[]
+     */
+    function itm_verify_module_page_chrome_entry_basenames(): array
+    {
+        return ['index.php', 'create.php', 'edit.php', 'view.php'];
+    }
+}
+
+if (!function_exists('itm_verify_module_page_chrome_skip_reason')) {
+    /**
+     * Return a skip reason when a modules path is out of page-chrome verify scope.
+     *
+     * Why: list_all/delete/export/partials/join pages are auxiliary or bespoke; the mandatory
+     * contract matches fields_missing bespoke gate (index/create/edit/view only).
+     */
+    function itm_verify_module_page_chrome_skip_reason(string $moduleRelativePath): ?string
+    {
+        $moduleRelativePath = str_replace('\\', '/', trim($moduleRelativePath));
+        $basename = basename($moduleRelativePath);
+
+        if (in_array($basename, itm_verify_module_page_chrome_entry_basenames(), true)) {
+            return null;
+        }
+
+        return 'page chrome verify audits primary CRUD entry files only (index/create/edit/view)';
+    }
+}
+
 if (!function_exists('itm_titles_list_echo_summary')) {
     /**
      * @param array{scanned:int,with_title:int,match:int,not_match:int,no_title:int} $stats
