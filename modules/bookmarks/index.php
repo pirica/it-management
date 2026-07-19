@@ -172,7 +172,8 @@ if (!isset($crud_title)) {
         .view-filters { margin-bottom: 20px; display: flex; gap: 5px; flex-wrap: wrap; }
         .view-filters a { padding: 6px 12px; border-radius: 4px; background: var(--bg-secondary); text-decoration: none; color: var(--text-secondary); font-size: 0.9em; border: 1px solid var(--border); }
         .view-filters a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .bookmarks-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+        /* Why: table list is full-width; grid card columns pushed pagination beside the table. */
+        .bookmarks-list { display: block; width: 100%; }
         .bookmark-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, box-shadow 0.2s; }
         .bookmark-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .bookmark-info { margin-bottom: 12px; }
@@ -193,10 +194,6 @@ if (!isset($crud_title)) {
             .bookmarks-layout { flex-direction: column; }
             .bookmarks-sidebar { width: 100%; }
         }
-        @media (max-width: 480px) {
-            .bookmarks-list { grid-template-columns: 1fr; }
-        }
-
         .dropdown-menu { display: none; position: absolute; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; padding: 5px 0; margin-top: 5px; }
         .dropdown-menu.show { display: block; }
         .dropdown-item { display: block; width: 100%; padding: 8px 15px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-primary); text-decoration: none; font-size: 0.9em; }
@@ -343,6 +340,7 @@ if (!isset($crud_title)) {
         </div>
     <?php else: ?>
 
+        <div class="card" style="overflow:auto;">
         <table style="width:100%; border-collapse:collapse;" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
 <thead>
     <tr style="background:var(--bg-secondary);">
@@ -455,24 +453,25 @@ if (!isset($crud_title)) {
                 <?php endforeach; ?>
             </tbody>
         </table>
-
-        <?php if ($totalRows > $perPage): ?>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
-                <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <?php if ($page > 1): ?>
-                        <a class="btn btn-sm" href="<?php echo sanitize(bkm_build_index_query(array_merge($bkmListQueryState, ['page' => $page - 1]))); ?>" title="◀️ Previous">Previous</a>
-                    <?php endif; ?>
-                    <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
-                    <?php if ($page < $totalPages): ?>
-                        <a class="btn btn-sm" href="<?php echo sanitize(bkm_build_index_query(array_merge($bkmListQueryState, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        </div>
 
     <?php endif; ?>
 </div>
+
+                <?php if (!empty($bookmarks) && $totalRows > $perPage): ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+                        <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <?php if ($page > 1): ?>
+                                <a class="btn btn-sm" href="<?php echo sanitize(bkm_build_index_query(array_merge($bkmListQueryState, ['page' => $page - 1]))); ?>" title="◀️ Previous">Previous</a>
+                            <?php endif; ?>
+                            <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a class="btn btn-sm" href="<?php echo sanitize(bkm_build_index_query(array_merge($bkmListQueryState, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
             </div>
         </div>
