@@ -670,6 +670,58 @@ PHP;
         $this->assertStringNotContainsString("\n[SKIP][fail] tickets excluded", $block);
     }
 
+    public function testFormatFailureMessageWithModuleLinkLeavesCliOutputUnchanged(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_browser_nav.php';
+        $message = 'backup_tape_log bespoke gate: Search NOT OK — missing search wiring';
+        $formatted = itm_fields_missing_format_failure_message_with_module_link($message, 'backup_tape_log');
+        $this->assertSame($message, $formatted);
+    }
+
+    public function testFormatStatusLineWithModuleLinkLeavesCliOutputUnchanged(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_browser_nav.php';
+        $line = '[SKIP][fail][reviewed] tickets excluded UI column created_by: visible on create/edit forms';
+        $formatted = itm_fields_missing_format_status_line_with_module_link($line, 'tickets');
+        $this->assertSame($line, $formatted);
+    }
+
+    public function testSkipGateFailureSummaryDoesNotEmbedModuleLinkInCli(): void
+    {
+        $report = [
+            'modules' => [
+                [
+                    'module' => 'backup_tape_log',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        [
+                            'code' => 'bespoke_list_ui_search',
+                            'message' => 'backup_tape_log bespoke gate: Search NOT OK — missing search wiring',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $block = itm_fields_missing_format_skip_gate_failure_summary_block($report, "\n");
+        $this->assertStringContainsString('backup_tape_log bespoke gate: Search NOT OK', $block);
+        $this->assertStringNotContainsString('<a href=', $block);
+    }
+
+    public function testStatusLineContainsModuleLinkDetectsAnchor(): void
+    {
+        $this->assertTrue(
+            itm_fields_missing_status_line_contains_module_link(
+                '[SKIP][fail][reviewed] <a href="../modules/tickets/index.php">tickets</a> excluded UI column created_by'
+            )
+        );
+        $this->assertFalse(
+            itm_fields_missing_status_line_contains_module_link(
+                '[SKIP][fail][reviewed] tickets excluded UI column created_by'
+            )
+        );
+    }
+
     public function testReviewedRegistryValidationPasses(): void
     {
         $registry = itm_fields_missing_load_reviewed_registry();
