@@ -581,9 +581,26 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 
 // Pagination for Table View
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+if ($filter === 'reminders') {
+    $moduleListHeading = '🔔 Reminders';
+} elseif ($filter === 'tag') {
+    $moduleListHeading = '🏷️ ' . trim((string)($_GET['label'] ?? ''));
+} elseif ($filter === 'archive') {
+    $moduleListHeading = '📥 Archive';
+} elseif ($filter === 'garbage') {
+    $moduleListHeading = '🗑️ Garbage';
+} elseif ($filter === 'checklist') {
+    $moduleListHeading = '☑️ Checklist';
+} elseif ($filter === 'pinned') {
+    $moduleListHeading = '📌 Pinned';
+} elseif ($filter === 'images') {
+    $moduleListHeading = '🖼️ Images';
+} elseif ($filter === 'important') {
+    $moduleListHeading = '★ Important';
+} elseif ($filter === 'shared_with') {
+    $moduleListHeading = '👤 Shared With';
 }
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
@@ -787,20 +804,7 @@ if (!isset($crud_title)) {
                             <?php else: ?>
                                 <span></span>
                             <?php endif; ?>
-                            <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;">
-                                    <?php
-                                        if ($filter === "reminders") echo "🔔 Reminders";
-                                        elseif ($filter === "tag") echo "🏷️ " . sanitize($_GET["label"] ?? "");
-                                        elseif ($filter === "archive") echo "📥 Archive";
-                                        elseif ($filter === "garbage") echo "🗑️ Garbage";
-                                        elseif ($filter === "checklist") echo "☑️ Checklist";
-                                        elseif ($filter === "pinned") echo "📌 Pinned";
-                                        elseif ($filter === "images") echo "🖼️ Images";
-                                        elseif ($filter === "important") echo "★ Important";
-                                        elseif ($filter === "shared_with") echo "👤 Shared With";
-                                        else echo "💡 Notes";
-                                    ?>
-                            </h1>
+                            <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                             <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                                 <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                             <?php else: ?>
