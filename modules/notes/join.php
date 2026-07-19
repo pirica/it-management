@@ -33,13 +33,17 @@ $payload = $session ? notes_share_decode_payload($session['payload_json'] ?? '')
 $expiresAtIso = $session ? (string)$session['expires_at'] : '';
 $shareCode = $session ? (string)$session['share_code'] : '';
 $joinBase = rtrim((string)BASE_URL, '/') . '/modules/notes/join.php';
+$crud_title = 'Join shared note';
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join shared note</title>
+    <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         body { background: var(--bg-secondary); }

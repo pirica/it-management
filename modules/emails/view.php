@@ -23,13 +23,16 @@ if ($id > 0 && $company_id > 0) {
 }
 
 $crud_title = 'Email send log';
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo sanitize($crud_title); ?> - <?php echo sanitize($app_name ?? 'IT Management'); ?></title>
+    <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
