@@ -38,6 +38,32 @@
           "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
         }
       ]
+    },
+    "ops_report": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Daily hotel operations report uses day/month/year selectors and opr_ensure_report() auto-create — not a flattened CRUD list. create.php is a wrapper to index.php; no list search/sort/pagination or primary ➕ create link.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "bespoke_list_ui_search",
+          "note": "Table in index.php missing search wiring: GET/search variable, search input, server-side search conditions, search reset control (emoji-only 🔙 on <a>, not plain Clear or other text)"
+        },
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, total row/page count"
+        },
+        {
+          "check": "New button",
+          "code": "bespoke_list_ui_new_button",
+          "note": "create.php exists but index.php has no detectable primary create/add action"
+        }
+      ]
     }
   }
 }
