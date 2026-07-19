@@ -544,12 +544,18 @@ function bkm_format_import_success_summary($folderLabel)
 }
 
 /**
- * Table row class for import skip reasons (duplicate URL → light red).
+ * Table row class for import skip reasons (duplicate URL → light red, invalid URL → light yellow).
  */
 function bkm_import_skip_row_class($skipReason)
 {
-    if (in_array((string)$skipReason, ['duplicate_file', 'duplicate_employee'], true)) {
+    $skipReason = (string)$skipReason;
+
+    if (in_array($skipReason, ['duplicate_file', 'duplicate_employee'], true)) {
         return 'bkm-import-row-duplicate';
+    }
+
+    if ($skipReason === 'invalid_url') {
+        return 'bkm-import-row-invalid';
     }
 
     return '';
