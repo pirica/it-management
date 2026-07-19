@@ -12,6 +12,11 @@ if ($company_id <= 0) {
     return;
 }
 
+$crud_title = 'Bookmarks';
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+
 $format = isset($_GET['format']) ? strtolower((string)$_GET['format']) : 'csv';
 $folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
 
@@ -59,7 +64,7 @@ if ($format === 'html') {
     header('Content-Disposition: attachment; filename=bookmarks.html');
     echo "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n";
     echo "<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n";
-    echo "<title>Bookmarks</title>\n";
+    echo '<' . 'title' . '>' . sanitize($crud_title) . ' - ' . sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)) . '</' . 'title' . ">\n";
     echo "<H1>Bookmarks</H1>\n";
     echo "<DL><p>\n";
     foreach ($data as $row) {
@@ -80,7 +85,7 @@ if ($format === 'html') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bookmarks Export</title>
+    <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <style>
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }

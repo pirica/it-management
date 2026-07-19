@@ -196,7 +196,9 @@ if (!isset($crud_title)) {
     $crud_title = 'View Equipment';
 }
 ?>
-<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title><link rel="stylesheet" href="../../css/styles.css"></head>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
+<link rel="stylesheet" href="../../css/styles.css"></head>
 <body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
 <h1>View Equipment</h1>
 <?php if (!$item): ?>
