@@ -7454,8 +7454,7 @@ CREATE TABLE `bookmarks` (
   CONSTRAINT `bookmarks_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `bookmarks_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Existing databases: DELETE duplicate bookmark rows per (company_id, employee_id, SHA2(url,256)); add
--- url_hash CHAR(64) GENERATED ALWAYS AS (sha2(url,256)) STORED; drop uq_bookmarks_employee_url on url; add UNIQUE (company_id, employee_id, url_hash).
+-- Existing databases: DELETE duplicate bookmark rows per (company_id, employee_id, SHA2(url,256)); DROP INDEX uq_bookmarks_employee_url ON bookmarks; ADD COLUMN url_hash char(64) GENERATED ALWAYS AS (sha2(url,256)) STORED AFTER url; ADD UNIQUE KEY uq_bookmarks_employee_url (company_id, employee_id, url_hash);
 -- Seed default shared bookmarks
 -- Retroactive default bookmarks for existing Admin users
 INSERT INTO bookmarks (company_id, employee_id, title, url, shared, active)
@@ -7483,7 +7482,7 @@ WHERE
         FROM bookmarks bk
         WHERE bk.company_id = e.company_id
           AND bk.employee_id = e.id
-          AND bk.url = b.url
+          AND bk.url_hash = SHA2(b.url, 256)
     );
 
 
@@ -7826,7 +7825,7 @@ BEGIN
             SELECT 1 FROM bookmarks bk
             WHERE bk.company_id = NEW.company_id
               AND bk.employee_id = NEW.id
-              AND bk.url = b.url
+              AND bk.url_hash = SHA2(b.url, 256)
         );
 
     ELSEIF EXISTS (
@@ -7854,7 +7853,7 @@ BEGIN
             SELECT 1 FROM bookmarks bk
             WHERE bk.company_id = NEW.company_id
               AND bk.employee_id = NEW.id
-              AND bk.url = b.url
+              AND bk.url_hash = SHA2(b.url, 256)
         );
 
     END IF;
