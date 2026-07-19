@@ -250,7 +250,6 @@ function resign_format_week_label($terminationDate) {
 
 $yearShort = substr((string)$selectedYear, -2);
 $reportTitle = 'Weekly Resignations Report - Week ' . $selectedWeek . '/' . $yearShort;
-$resignSearchMatchSuffix = $search !== '' ? ' matching <strong>' . sanitize($search) . '</strong>' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -361,7 +360,7 @@ if (!isset($crud_title)) {
             </div>
 
             <div class="card" style="margin-bottom:8px;">
-                <p style="margin:0;" class="muted">Showing resignations <strong><?= (int)$selectedWeek ?></strong><?= !empty($selectedStatusNames) ? ' for <strong>' . sanitize(implode(', ', $selectedStatusNames)) . '</strong> employees' : '' ?><?php echo $resignSearchMatchSuffix; ?>.</p>
+                <p style="margin:0;" class="muted">Showing resignations <strong><?= (int)$selectedWeek ?></strong><?= count($selectedStatusNames) > 0 ? ' for <strong>' . sanitize(implode(', ', $selectedStatusNames)) . '</strong> employees' : '' ?><?php if ($search !== ''): ?> matching <strong><?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?></strong><?php endif; ?>.</p>
             </div>
 
             <div class="card" style="overflow:auto;">
