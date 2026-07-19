@@ -80,6 +80,22 @@
           "note": "switch_ports bespoke gate: list query missing deleted_at IS NULL filter (or itm_crud_append_not_deleted_predicate)"
         }
       ]
+    },
+    "tickets": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Ticket create/edit intentionally expose business Created By (`created_by_employee_id` dropdown) and ticket logged-at (`created_at` datetime-local) — not scaffold audit meta; audit `created_by`/`updated_by` remain server-stamped on save.",
+      "checks": [
+        {
+          "check": "Excluded audit meta on create/edit forms",
+          "code": "ui_excluded_exposed",
+          "note": "tickets excluded UI column created_by: visible on create/edit forms"
+        },
+        {
+          "check": "Excluded audit meta on create/edit forms",
+          "code": "ui_excluded_exposed",
+          "note": "tickets excluded UI column created_at: visible on create/edit forms"
+        }
+      ]
     }
   }
 }
