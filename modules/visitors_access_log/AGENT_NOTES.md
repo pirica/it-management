@@ -17,8 +17,8 @@ Manual visitor entry log for physical IT/office access with quick-add on the ind
 - **Restricted fields:** follow module rules for who may edit authorisation / escort fields.
 
 ## 5. UI Behavior Requirements
-- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
-- Action-wrapper layout with sidebar/header.
+- **View audit meta:** Detail view loops business columns from filtered `$uiColumns` plus `itm_crud_render_view_audit_meta_rows()` for the six audit stamps. List/index builds `$uiColumns` with `itm_crud_is_list_hidden_audit_field()` so audit meta never renders as list columns.
+- Action-wrapper layout with sidebar/header; list heading uses `itm_sidebar_label_for_module()`; bulk toolbar loads `bulk-delete-selection.js` when `$totalRows >= $perPage`.
 - Standard search where implemented; inline quick-add row always visible on index.
 - Historical rows (not today) show read-only cells — no edit/delete actions.
 - `tape_used_for_restore` / `ism_review` style restricted fields: only Admin or IT department staff may edit (when implemented on row).
