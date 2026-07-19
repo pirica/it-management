@@ -37,7 +37,7 @@ Static data files consumed by audit and compliance scripts (allowlists, baseline
 
 ## 4. Business Rules (Critical for Agents)
 - Update these files when intentionally excluding a module from an audit — do not silence checks by editing the checker alone.
-- **`fields_missing_reviewed.json`:** add reviewed rows when a bespoke module intentionally fails Search/Sort/Pagination (or other bespoke gate checks) and the team has signed off. Update the matching module `AGENT_NOTES.md` with the same rationale.
+- **`fields_missing_reviewed.json`:** add reviewed rows when a bespoke module intentionally fails Search/Sort/Pagination (or other bespoke gate checks) and the team has signed off. Update the matching module `AGENT_NOTES.md` with the same rationale. Enforce hygiene in CI with `php scripts/fields_missing.php --strict-gate` (fails on unreviewed `[SKIP][fail]` only).
 - `index.html` blocks directory listing.
 
 ## 10. Common Pitfalls

@@ -642,6 +642,66 @@ PHP;
         $this->assertSame([], $validation['errors']);
     }
 
+    public function testStrictGateFailsOnUnreviewedSkipGateFailures(): void
+    {
+        $report = [
+            'failure_count' => 0,
+            'modules' => [
+                [
+                    'module' => 'fixture_gate',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        [
+                            'code' => 'bespoke_list_ui_search',
+                            'message' => 'fixture_gate bespoke gate: Search NOT OK — missing search wiring',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        itm_fields_missing_apply_reviewed_flags_to_report($report);
+        itm_fields_missing_compute_skip_gate_review_counts($report);
+
+        $this->assertSame(1, (int) ($report['unreviewed_skip_gate_failure_count'] ?? 0));
+        $this->assertTrue(itm_fields_missing_strict_gate_failed($report));
+        $this->assertSame(1, itm_fields_missing_resolve_exit_code($report, true));
+        $this->assertSame(0, itm_fields_missing_resolve_exit_code($report, false));
+    }
+
+    public function testStrictGatePassesWhenBackupTapeLogFailuresAreReviewed(): void
+    {
+        $report = [
+            'failure_count' => 0,
+            'modules' => [
+                [
+                    'module' => 'backup_tape_log',
+                    'ui_coverage_audit_skipped' => true,
+                    'failures' => [
+                        [
+                            'code' => 'bespoke_list_ui_search',
+                            'message' => 'backup_tape_log bespoke gate: Search NOT OK — missing search wiring',
+                        ],
+                        [
+                            'code' => 'bespoke_list_ui_sort',
+                            'message' => 'backup_tape_log bespoke gate: Sort NOT OK — missing sort wiring',
+                        ],
+                        [
+                            'code' => 'bespoke_list_ui_pagination',
+                            'message' => 'backup_tape_log bespoke gate: Pagination NOT OK — missing pagination wiring',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        itm_fields_missing_apply_reviewed_flags_to_report($report);
+        itm_fields_missing_compute_skip_gate_review_counts($report);
+
+        $this->assertSame(3, (int) ($report['reviewed_skip_gate_failure_count'] ?? 0));
+        $this->assertSame(0, (int) ($report['unreviewed_skip_gate_failure_count'] ?? 0));
+        $this->assertFalse(itm_fields_missing_strict_gate_failed($report));
+        $this->assertSame(0, itm_fields_missing_resolve_exit_code($report, true));
+    }
+
     public function testBulkDeleteGateIsNaWhenBulkFormOmitted(): void
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
