@@ -4,7 +4,7 @@
 Manages scheduled events, meetings, and maintenance windows. Private events (no `shared_with_json` recipients) encrypt `title`, `description`, and `location` at rest with the user's vault key; shared events keep plaintext for recipients.
 
 ## 2. Key Tables
-- **events** — main event data. Columns: `employee_id` (owner), `title_hash` (SHA-256 of plaintext title), `shared_with_json` (JSON array of employee ids), standard audit/metadata columns. `title`, `description`, and `location` are `TEXT`/`LONGTEXT` to hold ciphertext.
+- **events** — main event data. Columns: `employee_id` (owner), `title_hash` (SHA-256 of plaintext title), `shared_with_json` (JSON array of employee ids), standard audit/metadata columns. `title`, `description`, and `location` are `TEXT`/`LONGTEXT` to hold ciphertext. Tenant unique-key audit skips `events` (duplicate titles allowed; encrypted titles — see `includes/database_sql_unique_audit.php`).
 - **event_share_sessions** — temporary QR / 6-digit join snapshots (`payload_json`, `share_code`, `access_token`, `expires_at`). Private-data exempt (no `audit_logs`).
 
 ## 3. Required Relationships
