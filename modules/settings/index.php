@@ -40,19 +40,19 @@ $uiFieldLabels = [
 
 $uiFieldOptions = [
     'table_actions_position' => [
-        'left_right' => 'Left & Right (default)',
-        'left' => 'Left',
+        'left' => 'Left (default)',
         'right' => 'Right',
+        'left_right' => 'Left & Right',
     ],
     'new_button_position' => [
-        'left_right' => 'Left & Right (default)',
-        'left' => 'Left',
+        'left' => 'Left (default)',
         'right' => 'Right',
+        'left_right' => 'Left & Right',
     ],
     'export_buttons_position' => [
-        'left_right' => 'Left & Right (default)',
-        'left' => 'Left',
+        'left' => 'Left (default)',
         'right' => 'Right',
+        'left_right' => 'Left & Right',
         'bottom_right' => 'Bottom Right',
         'bottom_left' => 'Bottom Left',
         'top_right' => 'Top Right',
@@ -61,9 +61,9 @@ $uiFieldOptions = [
         'top_bottom_left' => 'Top & Bottom Left',
     ],
     'back_save_position' => [
-        'left_right' => 'Left & Right (default)',
-        'left' => 'Left',
+        'left' => 'Left (default)',
         'right' => 'Right',
+        'left_right' => 'Left & Right',
         'bottom_right' => 'Bottom Right',
         'bottom_left' => 'Bottom Left',
         'top_right' => 'Top Right',

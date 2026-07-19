@@ -37,7 +37,7 @@
     }
 
     function applyTableActionsPosition() {
-        const mode = configValue('table_actions_position', 'left_right');
+        const mode = configValue('table_actions_position', 'left');
         const tables = document.querySelectorAll('.content .card table');
 
         tables.forEach((table) => {
@@ -134,7 +134,7 @@
     }
 
     function moveNewButtons() {
-        const mode = configValue('new_button_position', 'left_right');
+        const mode = configValue('new_button_position', 'left');
         const bars = Array.from(document.querySelectorAll('.content > div, .content .card > div')).filter((bar) => {
             if (!(bar instanceof HTMLElement)) return false;
             const heading = bar.querySelector(':scope > h1, :scope > h2, :scope > h3');
@@ -230,7 +230,7 @@
     }
 
     function applyBackSaveLayout() {
-        const mode = configValue('back_save_position', 'left_right');
+        const mode = configValue('back_save_position', 'left');
         const forms = document.querySelectorAll('.content form');
 
         forms.forEach((form) => {
