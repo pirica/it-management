@@ -403,3 +403,167 @@ function notes_insert_label_row($conn, $companyId, $employeeId, $noteId, $plainL
 
     return $ok;
 }
+
+/**
+ * @return string[]
+ */
+function notes_list_sortable_columns()
+{
+    return ['id', 'title', 'reminder_at', 'is_pinned', 'is_important', 'is_archived', 'created_at'];
+}
+
+/**
+ * @return array{base_sql:string,types:string,params:array<int,mixed>}
+ */
+function notes_build_list_base_sql($companyId, $loggedUserId, $filter, $labelFilter = '')
+{
+    $companyId = (int)$companyId;
+    $loggedUserId = (int)$loggedUserId;
+    $filter = (string)$filter;
+
+    if ($filter === 'garbage') {
+        $baseSql = 'FROM notes t WHERE t.company_id = ? AND t.active = 0';
+    } else {
+        $baseSql = 'FROM notes t WHERE t.company_id = ? AND t.active = 1';
+    }
+    $params = [$companyId];
+    $types = 'i';
+    $visibilitySql = itm_notes_visibility_sql('t');
+    $baseSql .= ' AND (' . $visibilitySql . ')';
+    $types .= 'ii';
+    $params[] = $loggedUserId;
+    $params[] = $loggedUserId;
+
+    if ($filter === 'reminders') {
+        $baseSql .= ' AND t.reminder_at IS NOT NULL';
+    } elseif ($filter === 'tag') {
+        $labelHash = notes_text_hash((string)$labelFilter);
+        $baseSql .= ' AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label_hash = ? AND nl.active = 1)';
+        $types .= 's';
+        $params[] = $labelHash;
+    } elseif ($filter === 'archive') {
+        $baseSql .= ' AND t.is_archived = 1';
+    } elseif ($filter === 'checklist') {
+        $baseSql .= ' AND t.is_checklist = 1 AND t.is_archived = 0';
+    } elseif ($filter === 'pinned') {
+        $baseSql .= ' AND t.is_pinned = 1 AND t.is_archived = 0';
+    } elseif ($filter === 'images') {
+        $baseSql .= ' AND t.images_json IS NOT NULL AND t.is_archived = 0';
+    } elseif ($filter === 'important') {
+        $baseSql .= ' AND t.is_important = 1 AND t.is_archived = 0';
+    } elseif ($filter === 'shared_with') {
+        $baseSql .= " AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND JSON_CONTAINS(t.shared_with_json, CAST($loggedUserId AS JSON), '$') AND t.is_archived = 0";
+    } elseif ($filter !== 'garbage') {
+        $baseSql .= ' AND t.is_archived = 0';
+    }
+
+    return ['base_sql' => $baseSql, 'types' => $types, 'params' => $params];
+}
+
+function notes_compare_note_rows(array $a, array $b, $sort, $dir)
+{
+    $sort = (string)$sort;
+    $dirMult = strtoupper((string)$dir) === 'DESC' ? -1 : 1;
+
+    $left = $a[$sort] ?? null;
+    $right = $b[$sort] ?? null;
+    if ($sort === 'title') {
+        $left = mb_strtolower((string)($a['title'] ?? ''));
+        $right = mb_strtolower((string)($b['title'] ?? ''));
+    }
+
+    if ($left == $right) {
+        return ((int)($a['id'] ?? 0) <=> (int)($b['id'] ?? 0)) * $dirMult;
+    }
+
+    return ($left < $right ? -1 : 1) * $dirMult;
+}
+
+/**
+ * Decrypt, search, sort, and paginate notes for list_all (and bespoke gates).
+ *
+ * @return array{rows:list<array<string,mixed>>,note_tags_map:array<int,list<string>>,totalRows:int,totalPages:int,page:int}
+ */
+function notes_query_notes_for_list($conn, array $options)
+{
+    $companyId = (int)($options['company_id'] ?? 0);
+    $loggedUserId = (int)($options['employee_id'] ?? 0);
+    $filter = (string)($options['filter'] ?? 'all');
+    $labelFilter = (string)($options['label'] ?? '');
+    $searchRaw = trim((string)($options['search'] ?? ''));
+    $sort = (string)($options['sort'] ?? 'created_at');
+    $dir = strtoupper((string)($options['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+    $page = max(1, (int)($options['page'] ?? 1));
+    $perPage = max(1, (int)($options['per_page'] ?? 25));
+    $users = (array)($options['users'] ?? []);
+    $paginate = !empty($options['paginate']);
+
+    $sortableColumns = notes_list_sortable_columns();
+    if (!in_array($sort, $sortableColumns, true)) {
+        $sort = 'created_at';
+    }
+
+    $built = notes_build_list_base_sql($companyId, $loggedUserId, $filter, $labelFilter);
+    $sql = 'SELECT t.* ' . $built['base_sql'];
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return ['rows' => [], 'note_tags_map' => [], 'totalRows' => 0, 'totalPages' => 1, 'page' => 1];
+    }
+    $stmt->bind_param($built['types'], ...$built['params']);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $notes = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+
+    $note_tags_map = [];
+    if (!empty($notes)) {
+        $noteIds = array_column($notes, 'id');
+        $placeholders = implode(',', array_fill(0, count($noteIds), '?'));
+        $stmtTags = $conn->prepare("SELECT note_id, label, employee_id FROM note_labels WHERE note_id IN ($placeholders) AND active = 1");
+        if ($stmtTags) {
+            $stmtTags->bind_param(str_repeat('i', count($noteIds)), ...$noteIds);
+            $stmtTags->execute();
+            $resTags = $stmtTags->get_result();
+            while ($rowTags = $resTags->fetch_assoc()) {
+                $plainLabel = notes_hydrate_label_text((string)$rowTags['label'], (int)$rowTags['employee_id'], $loggedUserId);
+                if ($plainLabel !== '') {
+                    $note_tags_map[$rowTags['note_id']][] = $plainLabel;
+                }
+            }
+            $stmtTags->close();
+        }
+    }
+
+    foreach ($notes as &$noteRow) {
+        notes_hydrate_note_row($noteRow, $loggedUserId);
+    }
+    unset($noteRow);
+
+    if ($searchRaw !== '') {
+        $notes = array_values(array_filter($notes, static function ($note) use ($searchRaw, $note_tags_map, $users) {
+            return notes_row_matches_search($note, $searchRaw, $note_tags_map[$note['id']] ?? [], $users);
+        }));
+    }
+
+    usort($notes, static function (array $a, array $b) use ($sort, $dir) {
+        return notes_compare_note_rows($a, $b, $sort, $dir);
+    });
+
+    $totalRows = count($notes);
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+    if ($paginate) {
+        $offset = ($page - 1) * $perPage;
+        $notes = array_slice($notes, $offset, $perPage);
+    }
+
+    return [
+        'rows' => $notes,
+        'note_tags_map' => $note_tags_map,
+        'totalRows' => $totalRows,
+        'totalPages' => $totalPages,
+        'page' => $page,
+    ];
+}

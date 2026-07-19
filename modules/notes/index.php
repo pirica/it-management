@@ -178,18 +178,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     itm_require_post_csrf();
 
-    $action = $_POST["bulk_action"] ?? "";
-    if ($action === "delete" && !empty($_POST["ids"])) {
-        $ids = array_map("intval", $_POST["ids"]);
-        foreach ($ids as $id) {
+    if ($crud_action === 'delete') {
+        itm_require_crud_role_module_permission($conn, 'delete', 'notes');
+        $bulkAction = (string)($_POST['bulk_action'] ?? '');
+        $visSql = itm_notes_visibility_sql();
+
+        if ($bulkAction === 'clear_table') {
+            $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE company_id = ? AND employee_id = ? AND active = 1");
+            $stmt->bind_param('iii', $logged_user_id, $company_id, $logged_user_id);
+            $stmt->execute();
+            header('Location: list_all.php?msg=deleted');
+            die();
+        }
+
+        if ($bulkAction === 'bulk_delete') {
+            $ids = array_map('intval', (array)($_POST['ids'] ?? []));
+            foreach ($ids as $id) {
+                if ($id <= 0) {
+                    continue;
+                }
+                $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND ($visSql)");
+                $stmt->bind_param('iiiii', $logged_user_id, $id, $company_id, $logged_user_id, $logged_user_id);
+                $stmt->execute();
+            }
+            header('Location: list_all.php?msg=deleted');
+            die();
+        }
+
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
             $stmt = $conn->prepare("UPDATE notes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ?");
-            $stmt->bind_param("iiii", $logged_user_id, $id, $company_id, $logged_user_id);
+            $stmt->bind_param('iiii', $logged_user_id, $id, $company_id, $logged_user_id);
             $stmt->execute();
         }
-        header("Location: index.php?msg=deleted");
+        header('Location: list_all.php?msg=deleted');
         die();
     }
 
+    $action = $_POST["bulk_action"] ?? "";
     if ($action === "single_delete" && $editId > 0) {
         $visSql = itm_notes_visibility_sql();
         $stmtCheck = $conn->prepare("SELECT active FROM notes WHERE id = ? AND company_id = ? AND ($visSql)");
@@ -516,117 +542,95 @@ if (isset($_GET["ajax_action"])) {
 
 // Data fetching
 $filter = $_GET["filter"] ?? "all";
-$search = $_GET["search"] ?? "";
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$search = $searchRaw;
+$sortableColumns = notes_list_sortable_columns();
+$sort = (string)($_GET['sort'] ?? 'created_at');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!in_array($sort, $sortableColumns, true)) {
+    $sort = 'created_at';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
 
 // Pagination for Table View
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $perPage;
+$showBulkActions = false;
+$totalRows = 0;
+$totalPages = 1;
+$note_tags_map = [];
 
 if ($crud_action === "index" || $crud_action === "list_all") {
-    if ($filter === "garbage") {
-        $baseSql = "FROM notes t WHERE t.company_id = ? AND t.active = 0";
+    if ($crud_action === 'list_all') {
+        $listResult = notes_query_notes_for_list($conn, [
+            'company_id' => $company_id,
+            'employee_id' => $logged_user_id,
+            'filter' => $filter,
+            'label' => (string)($_GET['label'] ?? ''),
+            'search' => $searchRaw,
+            'sort' => $sort,
+            'dir' => $dir,
+            'page' => $page,
+            'per_page' => $perPage,
+            'users' => $users,
+            'paginate' => true,
+        ]);
+        $notes = $listResult['rows'];
+        $note_tags_map = $listResult['note_tags_map'];
+        $totalRows = $listResult['totalRows'];
+        $totalPages = $listResult['totalPages'];
+        $page = $listResult['page'];
+        $showBulkActions = ($totalRows >= $perPage);
     } else {
-        $baseSql = "FROM notes t WHERE t.company_id = ? AND t.active = 1";
-    }
-    $params = [$company_id];
-    $types = "i";
-    $visibilitySql = itm_notes_visibility_sql("t");
-    $baseSql .= " AND ($visibilitySql)";
-    $types .= "ii";
-    $params[] = $logged_user_id;
-    $params[] = $logged_user_id;
+        $built = notes_build_list_base_sql($company_id, $logged_user_id, $filter, (string)($_GET['label'] ?? ''));
+        $baseSql = $built['base_sql'];
+        $params = $built['params'];
+        $types = $built['types'];
 
-    if ($filter === "reminders") {
-        $baseSql .= " AND t.reminder_at IS NOT NULL";
-    } elseif ($filter === "tag") {
-        $label_filter = $_GET["label"] ?? "";
-        $labelHash = notes_text_hash($label_filter);
-        $baseSql .= " AND EXISTS (SELECT 1 FROM note_labels nl WHERE nl.note_id = t.id AND nl.label_hash = ? AND nl.active = 1)";
-        $types .= "s";
-        $params[] = $labelHash;
-    } elseif ($filter === "archive") {
-        $baseSql .= " AND t.is_archived = 1";
-    } elseif ($filter === "checklist") {
-        $baseSql .= " AND t.is_checklist = 1 AND t.is_archived = 0";
-    } elseif ($filter === "pinned") {
-        $baseSql .= " AND t.is_pinned = 1 AND t.is_archived = 0";
-    } elseif ($filter === "images") {
-        $baseSql .= " AND t.images_json IS NOT NULL AND t.is_archived = 0";
-    } elseif ($filter === "important") {
-        $baseSql .= " AND t.is_important = 1 AND t.is_archived = 0";
-    } elseif ($filter === "shared_with") {
-       // $baseSql .= " AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND t.is_archived = 0";
-		$baseSql .= "AND t.shared_with_json IS NOT NULL AND t.shared_with_json != '[]' AND JSON_CONTAINS(t.shared_with_json, CAST($logged_user_id AS JSON), '$') AND t.is_archived = 0";
-    } elseif ($filter === "garbage") {
-        // No additional filter for archived state needed in garbage
-    } elseif ($filter === "all") {
-        $baseSql .= " AND t.is_archived = 0";
-    } else {
-        $baseSql .= " AND t.is_archived = 0";
-    }
+        $countSql = "SELECT COUNT(*) as total $baseSql";
+        $stmtCount = $conn->prepare($countSql);
+        $stmtCount->bind_param($types, ...$params);
+        $stmtCount->execute();
+        $totalRows = (int)$stmtCount->get_result()->fetch_assoc()['total'];
 
-    if ($search !== "") {
-        // Why: Private note title/content/labels are encrypted at rest; search runs after hydrate.
-    }
+        $sql = "SELECT t.* $baseSql ORDER BY t.is_pinned DESC, t.created_at DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $notes = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 
-    // Count total rows (search applied after hydrate below when needed)
-    $countSql = "SELECT COUNT(*) as total $baseSql";
-    $stmtCount = $conn->prepare($countSql);
-    $stmtCount->bind_param($types, ...$params);
-    $stmtCount->execute();
-    $totalRows = (int)$stmtCount->get_result()->fetch_assoc()['total'];
-
-    $sql = "SELECT t.* $baseSql";
-    $sql .= " ORDER BY t.is_pinned DESC, t.created_at DESC";
-
-    if ($crud_action === "list_all" && $search === "") {
-        $sql .= " LIMIT ?, ?";
-        $types .= "ii";
-        $params[] = $offset;
-        $params[] = $perPage;
-    }
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $notes = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-
-    // Pre-fetch tags for all notes to avoid N+1 query problem
-    $note_tags_map = [];
-    if (!empty($notes)) {
-        $note_ids = array_column($notes, 'id');
-        $placeholders = implode(',', array_fill(0, count($note_ids), '?'));
-        $stmtTags = $conn->prepare("SELECT note_id, label, employee_id FROM note_labels WHERE note_id IN ($placeholders) AND active = 1");
-        $stmtTags->bind_param(str_repeat('i', count($note_ids)), ...$note_ids);
-        $stmtTags->execute();
-        $resTags = $stmtTags->get_result();
-        while ($rowTags = $resTags->fetch_assoc()) {
-            $plainLabel = notes_hydrate_label_text((string)$rowTags['label'], (int)$rowTags['employee_id'], $logged_user_id);
-            if ($plainLabel !== '') {
-                $note_tags_map[$rowTags['note_id']][] = $plainLabel;
+        if (!empty($notes)) {
+            $note_ids = array_column($notes, 'id');
+            $placeholders = implode(',', array_fill(0, count($note_ids), '?'));
+            $stmtTags = $conn->prepare("SELECT note_id, label, employee_id FROM note_labels WHERE note_id IN ($placeholders) AND active = 1");
+            $stmtTags->bind_param(str_repeat('i', count($note_ids)), ...$note_ids);
+            $stmtTags->execute();
+            $resTags = $stmtTags->get_result();
+            while ($rowTags = $resTags->fetch_assoc()) {
+                $plainLabel = notes_hydrate_label_text((string)$rowTags['label'], (int)$rowTags['employee_id'], $logged_user_id);
+                if ($plainLabel !== '') {
+                    $note_tags_map[$rowTags['note_id']][] = $plainLabel;
+                }
             }
         }
-    }
 
-    foreach ($notes as &$noteRow) {
-        notes_hydrate_note_row($noteRow, $logged_user_id);
-    }
-    unset($noteRow);
+        foreach ($notes as &$noteRow) {
+            notes_hydrate_note_row($noteRow, $logged_user_id);
+        }
+        unset($noteRow);
 
-    if ($search !== "") {
-        $notes = array_values(array_filter($notes, static function ($note) use ($search, $note_tags_map, $users) {
-            return notes_row_matches_search($note, $search, $note_tags_map[$note['id']] ?? [], $users);
-        }));
-        $totalRows = count($notes);
-        if ($crud_action === "list_all") {
-            $notes = array_slice($notes, $offset, $perPage);
+        if ($searchRaw !== '') {
+            $notes = array_values(array_filter($notes, static function ($note) use ($searchRaw, $note_tags_map, $users) {
+                return notes_row_matches_search($note, $searchRaw, $note_tags_map[$note['id']] ?? [], $users);
+            }));
+            $totalRows = count($notes);
         }
     }
-
-    $totalPages = max(1, ceil($totalRows / $perPage));
 } elseif ($crud_action === "edit" || $crud_action === "view") {
     if ($editId <= 0) {
         header("Location: index.php");
@@ -774,8 +778,10 @@ if (!isset($crud_title)) {
                         </div>
 
                         <div class="card" style="margin-bottom:16px; margin-top: 20px;">
-                            <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <form method="GET" action="<?php echo $crud_action === 'list_all' ? 'list_all.php' : 'index.php'; ?>" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                                 <input type="hidden" name="filter" value="<?php echo sanitize($filter); ?>">
+                                <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                                <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                                 <?php if ($filter === 'tag' && isset($_GET['label'])): ?>
                                     <input type="hidden" name="label" value="<?php echo sanitize($_GET['label']); ?>">
                                 <?php endif; ?>
@@ -895,32 +901,72 @@ if (!isset($crud_title)) {
                             </div>
                         <?php else: ?>
                             <!-- TABLE VIEW -->
+                            <?php if ($showBulkActions): ?>
+                            <div class="card" style="margin-bottom:16px;">
+                                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                                </form>
+                            </div>
+                            <?php endif; ?>
                             <div class="card" style="overflow:auto;">
-                                <table data-itm-db-import-endpoint="index.php">
+                                <table data-itm-db-import-endpoint="list_all.php">
                                     <thead>
                                         <tr>
-                                            <th>Title</th>
-                                            <th>Reminder</th>
+                                            <?php if ($showBulkActions): ?>
+                                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                                            <?php endif; ?>
+                                            <?php
+                                            $listSortableHeaders = [
+                                                'title' => 'Title',
+                                                'reminder_at' => 'Reminder',
+                                                'is_pinned' => 'Pinned',
+                                                'is_important' => 'Important',
+                                                'is_archived' => 'Archived',
+                                            ];
+                                            foreach ($listSortableHeaders as $field => $label):
+                                                $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC';
+                                                $sortParams = [
+                                                    'filter' => $filter,
+                                                    'search' => $searchRaw,
+                                                    'sort' => $field,
+                                                    'dir' => $nextDir,
+                                                    'page' => 1,
+                                                ];
+                                                if ($filter === 'tag' && isset($_GET['label'])) {
+                                                    $sortParams['label'] = (string)$_GET['label'];
+                                                }
+                                                $sortHref = 'list_all.php?' . http_build_query($sortParams);
+                                            ?>
+                                            <th>
+                                                <a href="<?php echo sanitize($sortHref); ?>" style="text-decoration:none;color:inherit;">
+                                                    <?php echo sanitize($label); ?>
+                                                    <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                                </a>
+                                            </th>
+                                            <?php endforeach; ?>
                                             <th>Tags</th>
                                             <th>Shared With</th>
-                                            <th>Pinned</th>
-                                            <th>Important</th>
-                                            <th>Archived</th>
                                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if (empty($notes)): ?>
-                                            <tr><td colspan="8" style="text-align:center;">No records found.</td></tr>
+                                            <tr><td colspan="<?php echo 8 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
                                         <?php else: foreach ($notes as $note): ?>
                                             <tr style="background-color: <?php echo $note['color']; ?>22;">
+                                                <?php if ($showBulkActions): ?>
+                                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$note['id']; ?>" form="bulk-delete-form"></td>
+                                                <?php endif; ?>
                                                 <td><?php echo sanitize($note['title'] ?: '(Untitled)'); ?></td>
                                                 <td><?php echo $note['reminder_at'] ? date("M j, H:i", strtotime($note['reminder_at'])) : '—'; ?></td>
-                                                <td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td>
-                                                <td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td>
                                                 <td><?php echo $note['is_pinned'] ? '✅' : '❌'; ?></td>
                                                 <td><?php echo $note['is_important'] ? '✅' : '❌'; ?></td>
                                                 <td><?php echo $note['is_archived'] ? '✅' : '❌'; ?></td>
+                                                <td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td>
+                                                <td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td>
                                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                                     <div class="itm-actions-wrap">
                                                         <a class="btn btn-sm" href="view.php?id=<?php echo $note['id']; ?>">🔎</a>
@@ -937,15 +983,16 @@ if (!isset($crud_title)) {
                                 </table>
                             </div>
                             <?php if ($totalPages > 1): ?>
+                                <?php $listOffset = ($page - 1) * $perPage; ?>
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
-                                    <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+                                    <div>Showing <?php echo $listOffset + 1; ?>-<?php echo min($listOffset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                                     <div style="display:flex;gap:6px;">
                                         <?php if ($page > 1): ?>
-                                            <a class="btn btn-sm" href="?filter=<?php echo urlencode($filter); ?>&search=<?php echo urlencode($search); ?>&page=<?php echo $page - 1; ?>" title="◀️ Previous">Previous</a>
+                                            <a class="btn btn-sm" href="list_all.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1] + ($filter === 'tag' && isset($_GET['label']) ? ['label' => (string)$_GET['label']] : [])); ?>" title="◀️ Previous">Previous</a>
                                         <?php endif; ?>
                                         <span class="btn btn-sm" style="pointer-events:none;"><?php echo $page; ?> / <?php echo $totalPages; ?></span>
                                         <?php if ($page < $totalPages): ?>
-                                            <a class="btn btn-sm" href="?filter=<?php echo urlencode($filter); ?>&search=<?php echo urlencode($search); ?>&page=<?php echo $page + 1; ?>" title="▶️ Next">Next</a>
+                                            <a class="btn btn-sm" href="list_all.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1] + ($filter === 'tag' && isset($_GET['label']) ? ['label' => (string)$_GET['label']] : [])); ?>" title="▶️ Next">Next</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -1083,6 +1130,7 @@ if (!isset($crud_title)) {
 </div>
 
 <script src="../../js/theme.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;</script>
 <script src="../../js/xlsx.full.min.js"></script>
 <script src="../../js/table-tools.js"></script>
