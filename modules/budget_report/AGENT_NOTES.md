@@ -17,6 +17,7 @@ Provides a financial overview and comparison of actual expenses vs. budgets. It 
 - **Period selector:** Form filters via `year`, `month` (optional), `cost_center_id`, and `gl_account_id`.
 - **Search (all fields):** `search` query param filters cost center name, GL account code, and account name via prepared `LIKE` clauses; reset uses emoji-only 🔙 (`title="Clear"`).
 - **Column sort:** `sort` / `dir` query params with ▲/▼ header links on cost center, GL fields, and numeric period columns; default `cost_center` ASC with `ga.account_code` tie-break. Variance columns (Forecast − Actual, etc.) are computed in PHP and are not sortable.
+- **No pagination / CRUD shell:** full result set on one page; no Actions column or create/edit/view/delete/list_all entry files. Gate-excluded UI configuration checks for pagination, Table Actions, new-button layout, bulk delete, and CRUD entry files are reviewed in `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
 - **Comparison Columns:** Shows current actuals, previous month, and previous year same month.
 
 ## 6. API Actions (If Applicable)
