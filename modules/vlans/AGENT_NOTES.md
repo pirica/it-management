@@ -12,10 +12,12 @@ Manages Virtual LAN (VLAN) definitions, including names, IDs, and descriptions.
 
 ## 4. Business Rules (Critical for Agents)
 - **Unique ID**: VLAN ID must be unique within a company.
+- **Hard delete**: `delete.php` / bulk/clear use hard `DELETE` (detach `switch_ports`, `idf_ports`, `ip_subnets` `vlan_id` first). Reviewed in `scripts/data/fields_missing_reviewed.json` — no scaffold soft-delete or `deleted_at IS NULL` list filter.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
-- **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
+- **List columns:** `$displayFieldColumns` and `$uiColumns` filter with `itm_crud_is_list_hidden_audit_field()` so audit meta never appears on index/list_all tables.
+- **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage` (loads `bulk-delete-selection.js` + Cancel on index), Export Excel/PDF, Import Excel via `table-tools.js`.
 - **CSRF**: Form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()` on the request body token. Forms include hidden `csrf_token` from `cr_get_csrf_token()`.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - Create/edit forms use `$uiColumns` (business fields only) with `itm_crud_render_form_hidden_audit_inputs()` for audit stamps across all duplicated entry files.
