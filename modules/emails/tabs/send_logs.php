@@ -19,7 +19,15 @@
         <h2>Send Log</h2>
         <button type="button" class="btn btn-sm btn-success" onclick="exportEmailLogsXlsx()">📗 Export Excel</button>
     </div>
-    <p><?php echo sanitize((string)count($sendLogs)); ?> email log entries<?php if ($status_filter !== ''): ?> (<?php echo sanitize(ucfirst($status_filter)); ?> only)<?php endif; ?><?php if ($searchRaw !== ''): ?> matching <strong><?php echo sanitize($searchRaw); ?></strong><?php endif; ?></p>
+    <p>
+        <?php if ($sendLogsTotalRows > 0): ?>
+            Showing <?php echo sanitize((string)($sendLogsOffset + 1)); ?>-<?php echo sanitize((string)min($sendLogsOffset + $perPage, $sendLogsTotalRows)); ?> of <?php echo sanitize((string)$sendLogsTotalRows); ?> email log entries
+        <?php else: ?>
+            0 email log entries
+        <?php endif; ?>
+        <?php if ($status_filter !== ''): ?> (<?php echo sanitize(ucfirst($status_filter)); ?> only)<?php endif; ?>
+        <?php if ($searchRaw !== ''): ?> matching <strong><?php echo sanitize($searchRaw); ?></strong><?php endif; ?>
+    </p>
     <div class="table-responsive">
         <table class="data-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
             <thead>
@@ -60,5 +68,17 @@
             </tbody>
         </table>
     </div>
-    <p><strong>Total:</strong> <?php echo sanitize((string)count($sendLogs)); ?> entries</p>
+    <?php if ($sendLogsTotalRows > $perPage): ?>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap;gap:12px;">
+            <div>Page <?php echo (int)$page; ?> of <?php echo (int)$sendLogsTotalPages; ?></div>
+            <div style="display:flex;gap:8px;">
+                <?php if ($page > 1): ?>
+                    <a class="btn btn-sm" href="<?php echo sanitize($emailsSendLogsPageUrl(['page' => $page - 1])); ?>" title="◀️ Previous">Previous</a>
+                <?php endif; ?>
+                <?php if ($page < $sendLogsTotalPages): ?>
+                    <a class="btn btn-sm" href="<?php echo sanitize($emailsSendLogsPageUrl(['page' => $page + 1])); ?>" title="▶️ Next">Next</a>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
