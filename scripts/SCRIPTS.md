@@ -986,6 +986,7 @@ Use this registry when a bespoke module **intentionally** fails a gated UI check
 Run after changes to modules that previously relied only on MBQA/PHPUnit/repro scripts:
 
 - `php scripts/verify_rack_planner.php` — `modules/rack_planner/` price source sync
+- `php scripts/verify_bookmarks_import.php` — `modules/bookmarks/import.php` HTML folder paths, duplicate URL skips (no orphan folders), disposable script employee + `scripts/data/bookmarks_import_sample.html`
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 
