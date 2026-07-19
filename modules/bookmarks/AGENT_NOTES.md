@@ -28,12 +28,13 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
 - View modes: `all`, `private`, `shared` via `?view=`; folder filter via `?folder_id=`.
 - **Search:** `index.php` and `list_all.php` decrypt private title/url/notes and folder names in PHP, then filter/sort/paginate in memory (`bkm_query_bookmarks_for_list()`). SQL `LIKE` is not used on encrypted private fields. `fields_missing.php` bespoke Search/Sort gates recognize this helper via `itm_ui_list_contract_checks.php`.
+- **List table layout (dual-pane `index.php`):** bookmark rows render in a `.card` wrapper (same as `list_all.php`) so `js/ui-layout.js` can honour Settings → **Table actions position** (`table_actions_position`) via `itm-actions-cell` + `data-itm-actions-origin="1"`. Pagination sits below the card in `.bookmarks-main` (full width); `.bookmarks-list` is block layout — not the legacy bookmark-card grid.
 - Dual-pane `index.php` list heading uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()`. POST mutations on `index.php` call `itm_require_post_csrf()` (JSON `import_excel_rows` keeps token validation on the JSON body).
 - Dual-pane `index.php` bulk toolbar (`Select All`, `Select to Delete`, Cancel, Clear Table, **Move to** folder select) and row `ids[]` checkboxes appear when the list has at least one bookmark (`$showBulkActions = ($totalRows > 0)`); uses shared `bulk-delete-selection.js` with `#select-all-rows` and `data-itm-bulk-select="1"` on **Select All** (enters selection mode and checks every row). **Move to** form (`#bulk-move-form`) stays hidden until at least one row checkbox is checked.
 - Folder drag-and-drop reparenting posts `action=move_folder` (CSRF on form). When the destination already has a same-named folder, the UI prompts to merge (move bookmarks/subfolders into the existing folder and delete the source) or keep both folders with the same name.
 - Shared bookmarks: edit/delete only for admin or owning `employee_id` (`bkm_can_edit_bookmark()`).
 - Shared checkbox on bookmark/folder forms: unchecked = private **🔒**; checked = shared **🔓** (`itm-shared-indicator`). Active uses `itm-check-indicator` (✅/❌). Change listener must live in its own `<script>` block after closed `<script src="..."></script>` tags (`create.php`, `edit.php`, `create_folder.php`, `edit_folder.php`).
-- **Responsive:** dual-pane stacks below 1200px; bookmark cards single column below 480px.
+- **Responsive:** dual-pane stacks below 1200px.
 - `list_all.php` provides flattened table view; bulk toolbar matches dual-pane (`Select All`, `Select to Delete`, Cancel, Clear Table, **Move to**) when `$totalRows > 0`.
 - Excel import endpoint: `data-itm-db-import-endpoint="list_all.php"` on the flattened list table. Dual-pane `index.php` uses **custom** Tools import/export (`import.php`, `exportBookmarks` / `export.php`) — its list table opts out of table-tools via `data-itm-no-import-excel="1"` / `data-itm-no-export-excel="1"` / `data-itm-no-export-pdf="1"`. Actions header and body cells keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - Dual-pane `index.php` also accepts JSON `import_excel_rows` for compatibility, but the dual-pane table must not require `data-itm-db-import-endpoint`.
@@ -69,6 +70,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Legacy private folders missing `name_hash` are matched by decrypted name during import (`bkm_find_folder_id_by_decrypted_name()`). [Cursor-Valid]
 - Private bookmarks with **empty notes** store encrypted ciphertext; `bkm_resolve_private_text()` must treat successful decrypt of `''` as valid — do not treat empty plaintext like decrypt failure. [Cursor-Valid]
 - Do not enforce unique folder names in PHP validation — the schema allows duplicates. [Cursor-Valid]
+- Dual-pane list table must stay inside `.content .card` — `ui-layout.js` only applies `table_actions_position` to `.content .card table`. [Cursor-Valid]
 - Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `database.sql`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
