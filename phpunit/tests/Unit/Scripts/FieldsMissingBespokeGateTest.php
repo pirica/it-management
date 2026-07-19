@@ -722,6 +722,36 @@ PHP;
         );
     }
 
+    public function testResolveStatusLineColorTypeUsesWarnForReviewedSkipFail(): void
+    {
+        $this->assertSame(
+            'warn',
+            itm_fields_missing_resolve_status_line_color_type('[SKIP][fail][reviewed] backup_tape_log bespoke gate: Search NOT OK')
+        );
+        $this->assertSame(
+            'fail',
+            itm_fields_missing_resolve_status_line_color_type('[SKIP][fail] manufacturers audited UI column name')
+        );
+    }
+
+    public function testEscapeStatusLineBodyPreservesModuleLinkAndLeavesLiteralAnchorInCli(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_cli_output.php';
+        $body = '<a href="../modules/ops_report/index.php">ops_report</a> bespoke gate: Search NOT OK — reset (emoji-only 🔙 on <a>, not plain Clear)';
+        $escaped = itm_fields_missing_escape_status_line_body_preserving_module_link($body);
+        $this->assertStringContainsString('<a href="../modules/ops_report/index.php">ops_report</a>', $escaped);
+        $this->assertStringContainsString('on <a>, not plain Clear', $escaped);
+    }
+
+    public function testEscapeStatusLineBodyPreservesHardDeleteMessageText(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/script_cli_output.php';
+        $body = '<a href="../modules/switch_ports/index.php">switch_ports</a> bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)';
+        $escaped = itm_fields_missing_escape_status_line_body_preserving_module_link($body);
+        $this->assertStringContainsString('switch_ports</a> bespoke gate: delete uses hard DELETE', $escaped);
+        $this->assertStringContainsString('itm_crud_build_soft_delete_sql', $escaped);
+    }
+
     public function testReviewedRegistryValidationPasses(): void
     {
         $registry = itm_fields_missing_load_reviewed_registry();

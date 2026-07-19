@@ -2735,29 +2735,78 @@ if (!function_exists('itm_fields_missing_status_line_contains_module_link')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_resolve_status_line_color_type')) {
+    function itm_fields_missing_resolve_status_line_color_type(string $line): string
+    {
+        if (preg_match('/^\[SKIP\]\[pass\]|\[PASS\]/', $line)) {
+            return 'pass';
+        }
+        if (preg_match('/^\[SKIP\]\[fail\]\[reviewed\]/', $line)) {
+            return 'warn';
+        }
+        if (preg_match('/^\[SKIP\]\[fail\]|\[FAIL\]/', $line)) {
+            return 'fail';
+        }
+        if (preg_match('/^\[WARN\]/', $line)) {
+            return 'warn';
+        }
+        if (preg_match('/^\[INFO\]/', $line)) {
+            return 'info';
+        }
+
+        return 'info';
+    }
+}
+
+if (!function_exists('itm_fields_missing_escape_status_line_body_preserving_module_link')) {
+    /**
+     * Escape audit text for browser <pre> while keeping one leading module <a>…</a> intact.
+     */
+    function itm_fields_missing_escape_status_line_body_preserving_module_link(string $body): string
+    {
+        if (!preg_match('/^(<a href="[^"]*"[^>]*>.*?<\/a>)(.*)$/s', $body, $matches)) {
+            return itm_script_escape_browser_pre_text($body);
+        }
+
+        $suffix = (string) $matches[2];
+        if (function_exists('itm_script_cli_is_cli') && itm_script_cli_is_cli()) {
+            return (string) $matches[1] . $suffix;
+        }
+
+        return (string) $matches[1] . htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('itm_fields_missing_format_colored_status_line')) {
+    function itm_fields_missing_format_colored_status_line(string $line): string
+    {
+        $type = itm_fields_missing_resolve_status_line_color_type($line);
+        if (function_exists('itm_script_cli_is_cli') && itm_script_cli_is_cli()) {
+            return colorText($line, $type);
+        }
+
+        if (!itm_fields_missing_status_line_contains_module_link($line)) {
+            return colorText(itm_script_escape_browser_pre_text($line), $type);
+        }
+
+        if (!preg_match('/^(\[(?:SKIP\]\[(?:pass|fail)(?:\[reviewed\])?|PASS|FAIL|WARN|INFO)\])\s+(.*)$/s', $line, $matches)) {
+            return colorText(itm_script_escape_browser_pre_text($line), $type);
+        }
+
+        $prefix = itm_script_escape_browser_pre_text((string) $matches[1]);
+        $body = itm_fields_missing_escape_status_line_body_preserving_module_link((string) $matches[2]);
+
+        return colorText($prefix . ' ' . $body, $type);
+    }
+}
+
 if (!function_exists('itm_fields_missing_echo_status_line')) {
     function itm_fields_missing_echo_status_line(string $line, string $nl, string $moduleSlug = ''): void
     {
         if ($moduleSlug !== '') {
             $line = itm_fields_missing_format_status_line_with_module_link($line, $moduleSlug);
         }
-        $escaped = itm_fields_missing_status_line_contains_module_link($line)
-            ? $line
-            : itm_script_escape_browser_pre_text($line);
-        if (function_exists('itm_script_format_status_line')) {
-            echo itm_script_format_status_line($escaped) . $nl;
-            return;
-        }
-
-        $type = 'info';
-        if (preg_match('/^\[SKIP\]\[pass\]|\[PASS\]/', $line)) {
-            $type = 'pass';
-        } elseif (preg_match('/^\[SKIP\]\[fail\]\[reviewed\]/', $line)) {
-            $type = 'warn';
-        } elseif (preg_match('/^\[SKIP\]\[fail\]|\[FAIL\]/', $line)) {
-            $type = 'fail';
-        }
-        echo colorText($escaped, $type) . $nl;
+        echo itm_fields_missing_format_colored_status_line($line) . $nl;
     }
 }
 
