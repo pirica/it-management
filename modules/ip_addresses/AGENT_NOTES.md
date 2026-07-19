@@ -17,6 +17,9 @@ Manages individual IP address assignments within subnets.
 - **Equipment Link**: When an IP is assigned to equipment, it should update the `equipment_id` and `hostname`.
 
 ## 5. UI Behavior Requirements
+- **Settings UI contract:** Gate-excluded bespoke module (`ui_configuration_excluded_modules.txt`). Thin `index.php` delegates list/create/edit/view to `includes/partials/render.php`; `check_ui_configuration_coverage.php` merges `__DIR__` requires via `itm_ui_merge_thin_router_audit_content()` so Search, Sort, Pagination, bulk toolbar, Actions column, new-button position/style, and Back & Save audits see the same markup as runtime.
+- **List toolbar:** `data-itm-new-button-managed="server"`; Settings `new_button_position` gates ➕ create links (`itm-list-new-button`, `title="Create"`); bulk form uses `data-itm-bulk-delete-bound="1"` and `data-itm-bulk-cancel="1"`; search reset is emoji-only 🔙 with `title="Clear"`.
+- **NO MIXED actions:** list/view/create/edit use emoji-only visible controls with `title` on 🔎/✏️/🗑️/💾/🔙/➕ headings and buttons (`check_ui_action_emoji.php`).
 - **View audit meta:** Detail view must expose all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` — required by `fields_missing.php` bespoke view gate.
 - **Standard CRUD** with IPAM-focused list (`itm_ipam_*` helpers) and includes-based create/edit partials.
 - **Audit meta on forms:** `$uiColumns` filters `itm_crud_is_form_hidden_audit_field()` / delete/list-hidden audit columns; create/edit loop uses `$uiColumns` plus `itm_crud_render_form_hidden_audit_inputs()`; view uses `$fieldColumns` so `deleted_*` / `*_by` remain visible on detail.
