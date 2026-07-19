@@ -356,12 +356,86 @@ function bkm_resolve_import_folder_path($conn, $company_id, $user_id, array $fol
             continue;
         }
 
-        $parentId = bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $segment);
+        $newId = bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $segment);
+        if ($newId <= 0) {
+            return null;
+        }
+        $parentId = $newId;
         $cache[$cacheKey] = $parentId;
         $foldersCreated++;
     }
 
     return $parentId;
+}
+
+/**
+ * Normalize folder id for bookmark inserts (0 and negative → root).
+ */
+function bkm_normalize_folder_id($folderId)
+{
+    if ($folderId === null) {
+        return null;
+    }
+
+    $folderId = (int)$folderId;
+
+    return $folderId > 0 ? $folderId : null;
+}
+
+/**
+ * Find a private folder by decrypted display name when name_hash lookup misses legacy rows.
+ */
+function bkm_find_folder_id_by_decrypted_name($conn, $company_id, $user_id, $parentId, $plainName)
+{
+    $plainName = trim((string)$plainName);
+    if ($plainName === '') {
+        return null;
+    }
+
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($parentId === null) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT * FROM bookmark_folders WHERE company_id = ? AND employee_id = ? AND active = 1 AND shared = 0 AND parent_folder_id IS NULL'
+        );
+        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
+    } else {
+        $parentId = (int)$parentId;
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT * FROM bookmark_folders WHERE company_id = ? AND employee_id = ? AND active = 1 AND shared = 0 AND parent_folder_id = ?'
+        );
+        mysqli_stmt_bind_param($stmt, 'iii', $company_id, $user_id, $parentId);
+    }
+
+    if (!$stmt) {
+        return null;
+    }
+
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        bkm_hydrate_folder_row($row, $user_id);
+        if (strcasecmp((string)($row['name'] ?? ''), $plainName) === 0) {
+            $folderId = (int)$row['id'];
+            $nameHash = bkm_text_hash($plainName);
+            if ((string)($row['name_hash'] ?? '') !== $nameHash) {
+                $upd = mysqli_prepare($conn, 'UPDATE bookmark_folders SET name_hash = ? WHERE id = ? AND employee_id = ?');
+                if ($upd) {
+                    mysqli_stmt_bind_param($upd, 'sii', $nameHash, $folderId, $user_id);
+                    mysqli_stmt_execute($upd);
+                    mysqli_stmt_close($upd);
+                }
+            }
+            mysqli_stmt_close($stmt);
+
+            return $folderId;
+        }
+    }
+    mysqli_stmt_close($stmt);
+
+    return null;
 }
 
 function bkm_find_folder_id_by_name($conn, $company_id, $user_id, $parentId, $name)
@@ -387,7 +461,11 @@ function bkm_find_folder_id_by_name($conn, $company_id, $user_id, $parentId, $na
     $row = $res ? mysqli_fetch_assoc($res) : null;
     mysqli_stmt_close($stmt);
 
-    return $row ? (int)$row['id'] : null;
+    if ($row) {
+        return (int)$row['id'];
+    }
+
+    return bkm_find_folder_id_by_decrypted_name($conn, $company_id, $user_id, $parentId, $name);
 }
 
 /**
@@ -887,6 +965,8 @@ function bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title
         return ['ok' => false, 'message' => 'Unlock your vault to save private bookmarks.'];
     }
 
+    $folderId = bkm_normalize_folder_id($folderId);
+
     if ($folderId === null) {
         $stmt = mysqli_prepare(
             $conn,
@@ -1131,16 +1211,14 @@ function bkm_import_skip_row_class($skipReason)
 }
 
 /**
- * Import one bookmark when URL is allowed and not already present for this employee.
+ * Pre-import validation — does not create folders or insert rows.
  *
  * @param array<string,bool> $importedUrlKeys
- * @return array{imported:bool,skip_reason:string,skip_label:string}
+ * @return array{imported:bool,skip_reason:string,skip_label:string}|null null when import may proceed
  */
-function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, array &$importedUrlKeys)
+function bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, array &$importedUrlKeys)
 {
     $url = trim((string)$url);
-    $title = trim((string)$title);
-    $notes = trim((string)$notes);
 
     if (!bkm_import_url_is_allowed($url)) {
         return [
@@ -1150,8 +1228,7 @@ function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title
         ];
     }
 
-    $batchKey = $url;
-    if (isset($importedUrlKeys[$batchKey])) {
+    if (isset($importedUrlKeys[$url])) {
         return [
             'imported' => false,
             'skip_reason' => 'duplicate_file',
@@ -1175,9 +1252,31 @@ function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title
         ];
     }
 
-    $insertResult = bkm_insert_bookmark_row($conn, $company_id, $user_id, $folderId, $title, $url, $notes, 0, 1);
+    return null;
+}
+
+/**
+ * Insert one bookmark after precheck and folder resolution.
+ *
+ * @param array<string,bool> $importedUrlKeys
+ * @return array{imported:bool,skip_reason:string,skip_label:string}
+ */
+function bkm_commit_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, array &$importedUrlKeys)
+{
+    $insertResult = bkm_insert_bookmark_row(
+        $conn,
+        $company_id,
+        $user_id,
+        bkm_normalize_folder_id($folderId),
+        trim((string)$title),
+        trim((string)$url),
+        trim((string)$notes),
+        0,
+        1
+    );
     if (!$insertResult['ok']) {
         $isVault = stripos($insertResult['message'], 'vault') !== false;
+
         return [
             'imported' => false,
             'skip_reason' => $isVault ? 'vault_locked' : 'insert_failed',
@@ -1185,13 +1284,92 @@ function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title
         ];
     }
 
-    $importedUrlKeys[$batchKey] = true;
+    $importedUrlKeys[trim((string)$url)] = true;
 
     return [
         'imported' => true,
         'skip_reason' => '',
         'skip_label' => '',
     ];
+}
+
+/**
+ * HTML import: resolve folder path only after duplicate/URL/vault checks pass.
+ *
+ * @param list<string> $folderPath
+ * @param array<string,int> $folderCache
+ * @return array{imported:bool,skip_reason:string,skip_label:string}
+ */
+function bkm_try_import_html_bookmark(
+    $conn,
+    $company_id,
+    $user_id,
+    array $folderPath,
+    $baseParentId,
+    array &$folderCache,
+    &$foldersCreated,
+    $title,
+    $url,
+    $notes,
+    array &$importedUrlKeys
+) {
+    $precheck = bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, $importedUrlKeys);
+    if ($precheck !== null) {
+        return $precheck;
+    }
+
+    $targetFolderId = bkm_resolve_import_folder_path(
+        $conn,
+        $company_id,
+        $user_id,
+        $folderPath,
+        $baseParentId,
+        $folderCache,
+        $foldersCreated
+    );
+    if ($targetFolderId === null) {
+        return [
+            'imported' => false,
+            'skip_reason' => 'insert_failed',
+            'skip_label' => 'Could not create import folder path',
+        ];
+    }
+
+    return bkm_commit_import_bookmark(
+        $conn,
+        $company_id,
+        $user_id,
+        $targetFolderId,
+        $title,
+        $url,
+        $notes,
+        $importedUrlKeys
+    );
+}
+
+/**
+ * Import one bookmark when URL is allowed and not already present for this employee.
+ *
+ * @param array<string,bool> $importedUrlKeys
+ * @return array{imported:bool,skip_reason:string,skip_label:string}
+ */
+function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, array &$importedUrlKeys)
+{
+    $precheck = bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, $importedUrlKeys);
+    if ($precheck !== null) {
+        return $precheck;
+    }
+
+    return bkm_commit_import_bookmark(
+        $conn,
+        $company_id,
+        $user_id,
+        $folderId,
+        $title,
+        $url,
+        $notes,
+        $importedUrlKeys
+    );
 }
 
 /**

@@ -41,7 +41,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
-- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows. **Vault required** before upload (`bkm_vault_bootstrap.php`); imports create **private** bookmarks with URLs encrypted at rest via `bkm_insert_bookmark_row()`. Imports accept `http://`, `https://`, and `ftp://` URLs only; skips exact URL duplicates per employee. Post-import tables: imported rows light green (`Successfully imported → Folder`); duplicate URL skips light red (`Duplicate URL → Folder`); invalid URL skips light yellow (`Invalid URL → Folder`); vault locked skips light grey (`Vault locked → Folder`).
+- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders only after URL/vault/duplicate precheck passes via `bkm_try_import_html_bookmark()`; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). Regression: `php scripts/verify_bookmarks_import.php` + fixture `scripts/data/bookmarks_import_sample.html`.
 - **export.php** / **export.js** — CSV, XLSX (CSV payload), TXT, HTML, and PDF (print view) via `export.php`. `bkm_export_row()` decrypts **own private** titles, URLs, and notes when `$_SESSION['vault_key']` is set; **shared** rows always export as plaintext. Private fields export blank when the vault is locked. `export.js` routes every format to `export.php` (no DOM scrape).
 
 ## 7. File Structure
@@ -64,6 +64,8 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - URLs missing scheme — prepend `http://` or `https://` when saving. [Cursor-Valid]
 - `delete.php` expects `bulk_action=single_delete` for inline index deletes. [Cursor-Valid]
 - Folder delete without contents moves bookmarks to root; **delete contents** hard-deletes bookmarks in the folder tree. [Cursor-Valid]
+- HTML import must not create folder paths when the row is skipped (duplicate URL / invalid URL / vault locked) — folders are resolved only after `bkm_precheck_import_bookmark()` passes. [Cursor-Valid]
+- Legacy private folders missing `name_hash` are matched by decrypted name during import (`bkm_find_folder_id_by_decrypted_name()`). [Cursor-Valid]
 - Do not enforce unique folder names in PHP validation — the schema allows duplicates. [Cursor-Valid]
 - Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `database.sql`). [Cursor-Valid]
 

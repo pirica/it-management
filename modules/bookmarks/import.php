@@ -50,21 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['master_key'])) {
 
             foreach ($entries as $b) {
                 $entriesSeen++;
-                $target_folder_id = bkm_resolve_import_folder_path(
+                $folderLabel = bkm_format_import_folder_label($b['folder_path'], $base_folder_id, $foldersById);
+                $result = bkm_try_import_html_bookmark(
                     $conn,
                     $company_id,
                     $user_id,
                     $b['folder_path'],
                     $base_folder_id,
                     $folderCache,
-                    $foldersCreated
-                );
-                $folderLabel = bkm_format_import_folder_label($b['folder_path'], $target_folder_id, $foldersById);
-                $result = bkm_try_import_bookmark(
-                    $conn,
-                    $company_id,
-                    $user_id,
-                    $target_folder_id,
+                    $foldersCreated,
                     $b['title'],
                     $b['url'],
                     $b['notes'],

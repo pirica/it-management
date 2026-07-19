@@ -1148,6 +1148,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_bookmarks_import.php" target="_blank" rel="nofollow noreferrer">verify_bookmarks_import.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td>Regression for <code>modules/bookmarks/import.php</code> HTML folder paths: nested <code>L1/L2</code> placement, duplicate URL skips without orphan empty folders, legacy <code>name_hash</code> folder lookup, CSV folder target, and vault-gated private import. Uses disposable script employee + <code>scripts/data/bookmarks_import_sample.html</code>.</td>
+                    <td><code>php scripts/verify_bookmarks_import.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/bookmarks/helpers.php</code> import helpers, <code>import.php</code>, or private folder encryption.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_chatbot.php" target="_blank" rel="nofollow noreferrer">verify_chatbot.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Regression for IT Support Chatbot + <code>modules/knowledge_base/chat_api.php</code>: rate limit + CSRF guards, <code>escapeHtml()</code> before message <code>innerHTML</code>, <code>enable_chatbot</code> asset gating, audit triggers, and tenant-scoped <code>knowledge_base</code> search.</td>
