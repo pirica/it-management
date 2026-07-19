@@ -39,6 +39,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - `list_all.php` provides flattened table view; bulk toolbar matches dual-pane (`Select All`, `Select to Delete`, Cancel, Clear Table, **Move to**) when `$totalRows > 0`.
 - Excel import endpoint: `data-itm-db-import-endpoint="list_all.php"` on the flattened list table. Dual-pane `index.php` uses **custom** Tools import/export (`import.php`, `exportBookmarks` / `export.php`) — its list table opts out of table-tools via `data-itm-no-import-excel="1"` / `data-itm-no-export-excel="1"` / `data-itm-no-export-pdf="1"`. Actions header and body cells keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - Dual-pane `index.php` also accepts JSON `import_excel_rows` for compatibility, but the dual-pane table must not require `data-itm-db-import-endpoint`.
+- **View audit meta:** `view.php` read-only detail shows all six scaffold audit columns via `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` formatted timestamps). Private bookmarks require an unlocked vault before decrypted fields render.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
