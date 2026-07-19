@@ -41,8 +41,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php` or `list_all.php`) — bulk import via `itm_handle_json_table_import($conn, 'bookmarks', $company_id)`; 📥 Import Excel on the flattened list uses `list_all.php` as `data-itm-db-import-endpoint`.
 - **move_folder** (POST on `index.php`) — `folder_id`, `new_parent_id`; updates `bookmark_folders.parent_folder_id` when `itm_is_admin()` or folder owner.
-- **move_bookmarks** (POST on `index.php`) — `action=move_bookmarks`, `ids[]`, `target_folder_id` (`0` = Root); updates `bookmarks.folder_id` for editable rows only.
-- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmarks()`); **Folder** target select (`Root` or folder tree via `bkm_render_folder_options()`).
+- **import.php** — browser HTML bookmark file upload (`bkm_parse_html_bookmark_entries()` creates missing `<H3>` folders and imports links into each folder; `bkm_parse_html_bookmarks()` remains a flat compatibility wrapper). **Folder** target select (`Root` or folder tree) is the parent for HTML folder paths / the destination for CSV rows.
 - **export.php** / **export.js** — CSV, XLSX, and Netscape HTML export.
 
 ## 7. File Structure

@@ -137,19 +137,312 @@ function bkm_can_edit_folder($folder, $user_id, $is_admin) {
 }
 
 /**
+ * Parses browser-exported HTML bookmarks (Netscape format) including folder paths.
+ *
+ * @return list<array{title:string,url:string,notes:string,folder_path:list<string>}>
+ */
+function bkm_parse_html_bookmark_entries($html)
+{
+    $entries = [];
+    if (trim($html) === '') {
+        return $entries;
+    }
+
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument();
+    $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_NOWARNING | LIBXML_NOERROR);
+    libxml_clear_errors();
+
+    $body = $dom->getElementsByTagName('body')->item(0);
+    if ($body === null) {
+        return $entries;
+    }
+
+    for ($child = $body->firstChild; $child !== null; $child = $child->nextSibling) {
+        if ($child->nodeType === XML_ELEMENT_NODE && strtoupper($child->nodeName) === 'DL') {
+            bkm_walk_html_dl_node($child, [], $entries);
+        }
+    }
+
+    if ($entries === []) {
+        for ($child = $body->firstChild; $child !== null; $child = $child->nextSibling) {
+            bkm_walk_html_bookmark_roots($child, [], $entries);
+        }
+    }
+
+    return $entries;
+}
+
+/**
+ * Fallback: locate any top-level DL nodes when the export omits a body wrapper match.
+ *
+ * @param list<string> $folderPath
+ * @param list<array{title:string,url:string,notes:string,folder_path:list<string>}> $entries
+ */
+function bkm_walk_html_bookmark_roots(DOMNode $node, array $folderPath, array &$entries)
+{
+    if ($node->nodeType !== XML_ELEMENT_NODE) {
+        return;
+    }
+
+    $tag = strtoupper($node->nodeName);
+    if ($tag === 'DL') {
+        bkm_walk_html_dl_node($node, $folderPath, $entries);
+        return;
+    }
+
+    for ($child = $node->firstChild; $child !== null; $child = $child->nextSibling) {
+        bkm_walk_html_bookmark_roots($child, $folderPath, $entries);
+    }
+}
+
+/**
+ * Walk a Netscape bookmark DL: folder headers are DT+H3 with a sibling DL for contents.
+ *
+ * @param list<string> $folderPath
+ * @param list<array{title:string,url:string,notes:string,folder_path:list<string>}> $entries
+ */
+function bkm_walk_html_dl_node(DOMNode $dlNode, array $folderPath, array &$entries)
+{
+    if ($dlNode->nodeType !== XML_ELEMENT_NODE || strtoupper($dlNode->nodeName) !== 'DL') {
+        return;
+    }
+
+    $skipNodes = [];
+
+    for ($child = $dlNode->firstChild; $child !== null; $child = $child->nextSibling) {
+        if ($child->nodeType !== XML_ELEMENT_NODE) {
+            continue;
+        }
+
+        if (in_array($child, $skipNodes, true)) {
+            continue;
+        }
+
+        $tag = strtoupper($child->nodeName);
+        if ($tag === 'DL') {
+            bkm_walk_html_dl_node($child, $folderPath, $entries);
+            continue;
+        }
+
+        if ($tag === 'DT') {
+            $consumedDl = bkm_process_html_dt_node($child, $folderPath, $entries);
+            if ($consumedDl !== null) {
+                $skipNodes[] = $consumedDl;
+            }
+        }
+    }
+}
+
+/**
+ * @param list<string> $folderPath
+ * @param list<array{title:string,url:string,notes:string,folder_path:list<string>}> $entries
+ */
+function bkm_process_html_dt_node(DOMNode $dtNode, array $folderPath, array &$entries)
+{
+    if ($dtNode->nodeType !== XML_ELEMENT_NODE || strtoupper($dtNode->nodeName) !== 'DT') {
+        return null;
+    }
+
+    $folderName = null;
+    $anchor = null;
+    $childDl = null;
+
+    for ($child = $dtNode->firstChild; $child !== null; $child = $child->nextSibling) {
+        if ($child->nodeType !== XML_ELEMENT_NODE) {
+            continue;
+        }
+        $childTag = strtoupper($child->nodeName);
+        if ($childTag === 'H3') {
+            $folderName = trim(html_entity_decode($child->textContent, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        } elseif ($childTag === 'DL') {
+            $childDl = $child;
+        } elseif ($childTag === 'A') {
+            $anchor = $child;
+        } elseif ($childTag === 'DT') {
+            bkm_process_html_dt_node($child, $folderPath, $entries);
+        }
+    }
+
+    if ($folderName !== null && $folderName !== '') {
+        $folderDl = $childDl !== null ? $childDl : bkm_find_next_element_sibling($dtNode, 'DL');
+        if ($folderDl !== null) {
+            $nextPath = array_merge($folderPath, [$folderName]);
+            bkm_walk_html_dl_node($folderDl, $nextPath, $entries);
+            return $folderDl;
+        }
+        return null;
+    }
+
+    if ($anchor instanceof DOMElement) {
+        $href = trim(html_entity_decode($anchor->getAttribute('href'), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($href !== '') {
+            $entries[] = [
+                'title' => trim(html_entity_decode($anchor->textContent, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+                'url' => $href,
+                'notes' => '',
+                'folder_path' => $folderPath,
+            ];
+        }
+    }
+
+    return null;
+}
+
+function bkm_find_next_element_sibling(DOMNode $node, $tagName)
+{
+    $wanted = strtoupper($tagName);
+    for ($sibling = $node->nextSibling; $sibling !== null; $sibling = $sibling->nextSibling) {
+        if ($sibling->nodeType === XML_ELEMENT_NODE && strtoupper($sibling->nodeName) === $wanted) {
+            return $sibling;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @deprecated Use bkm_walk_html_dl_node — kept for backward compatibility in case of nested non-DL walks.
+ * @param list<string> $folderPath
+ * @param list<array{title:string,url:string,notes:string,folder_path:list<string>}> $entries
+ */
+function bkm_walk_html_bookmark_node(DOMNode $node, array $folderPath, array &$entries)
+{
+    if ($node->nodeType !== XML_ELEMENT_NODE) {
+        return;
+    }
+
+    $tag = strtoupper($node->nodeName);
+    if ($tag === 'DL') {
+        bkm_walk_html_dl_node($node, $folderPath, $entries);
+        return;
+    }
+
+    for ($child = $node->firstChild; $child !== null; $child = $child->nextSibling) {
+        bkm_walk_html_bookmark_node($child, $folderPath, $entries);
+    }
+}
+
+/**
+ * Find or create folders for an import path under an optional base parent folder.
+ *
+ * @param list<string> $folderPath
+ * @param array<string,int> $cache
+ */
+function bkm_resolve_import_folder_path($conn, $company_id, $user_id, array $folderPath, $baseParentId, array &$cache, &$foldersCreated = 0)
+{
+    $parentId = $baseParentId !== null ? (int)$baseParentId : null;
+
+    foreach ($folderPath as $segment) {
+        $segment = trim($segment);
+        if ($segment === '') {
+            continue;
+        }
+
+        $cacheKey = ($parentId ?? 0) . '|' . $segment;
+        if (isset($cache[$cacheKey])) {
+            $parentId = $cache[$cacheKey];
+            continue;
+        }
+
+        $existingId = bkm_find_folder_id_by_name($conn, $company_id, $user_id, $parentId, $segment);
+        if ($existingId !== null) {
+            $parentId = $existingId;
+            $cache[$cacheKey] = $parentId;
+            continue;
+        }
+
+        $parentId = bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $segment);
+        $cache[$cacheKey] = $parentId;
+        $foldersCreated++;
+    }
+
+    return $parentId;
+}
+
+function bkm_find_folder_id_by_name($conn, $company_id, $user_id, $parentId, $name)
+{
+    if ($parentId === null) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM bookmark_folders WHERE company_id = ? AND employee_id = ? AND active = 1 AND parent_folder_id IS NULL AND name = ? LIMIT 1'
+        );
+        mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $name);
+    } else {
+        $parentId = (int)$parentId;
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM bookmark_folders WHERE company_id = ? AND employee_id = ? AND active = 1 AND parent_folder_id = ? AND name = ? LIMIT 1'
+        );
+        mysqli_stmt_bind_param($stmt, 'iiis', $company_id, $user_id, $parentId, $name);
+    }
+
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ? (int)$row['id'] : null;
+}
+
+function bkm_create_import_folder($conn, $company_id, $user_id, $parentId, $name)
+{
+    $shared = 0;
+    $active = 1;
+    if ($parentId === null) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO bookmark_folders (company_id, employee_id, parent_folder_id, name, shared, active) VALUES (?, ?, NULL, ?, ?, ?)'
+        );
+        mysqli_stmt_bind_param($stmt, 'iisii', $company_id, $user_id, $name, $shared, $active);
+    } else {
+        $parentId = (int)$parentId;
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO bookmark_folders (company_id, employee_id, parent_folder_id, name, shared, active) VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        mysqli_stmt_bind_param($stmt, 'iiisii', $company_id, $user_id, $parentId, $name, $shared, $active);
+    }
+    mysqli_stmt_execute($stmt);
+    $newId = (int)mysqli_insert_id($conn);
+    mysqli_stmt_close($stmt);
+
+    return $newId;
+}
+
+function bkm_insert_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes)
+{
+    if ($folderId === null) {
+        $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, NULL, ?, ?, ?)');
+        mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $user_id, $title, $url, $notes);
+    } else {
+        $folderId = (int)$folderId;
+        $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, ?, ?, ?, ?)');
+        mysqli_stmt_bind_param($stmt, 'iiisss', $company_id, $user_id, $folderId, $title, $url, $notes);
+    }
+
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    return $ok;
+}
+
+/**
  * Parses browser-exported HTML bookmarks (Netscape format).
+ *
+ * @return list<array{title:string,url:string,notes:string}>
  */
 function bkm_parse_html_bookmarks($html) {
+    $entries = bkm_parse_html_bookmark_entries($html);
     $bookmarks = [];
-    // Basic regex-based parser for <A HREF="...">Label</A>
-    preg_match_all('/<A HREF="([^"]+)"[^>]*>(.*?)<\/A>/i', $html, $matches, PREG_SET_ORDER);
-    foreach ($matches as $match) {
+    foreach ($entries as $entry) {
         $bookmarks[] = [
-            'url' => $match[1],
-            'title' => strip_tags($match[2]),
-            'notes' => ''
+            'title' => $entry['title'],
+            'url' => $entry['url'],
+            'notes' => $entry['notes'],
         ];
     }
+
     return $bookmarks;
 }
 

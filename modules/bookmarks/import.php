@@ -26,15 +26,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $filename = $_FILES['import_file']['name'];
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-        $bookmarks_to_import = [];
+        $bookmarkCount = 0;
+        $foldersCreated = 0;
 
         if ($ext === 'html') {
             $content = file_get_contents($_FILES['import_file']['tmp_name']);
-            $bookmarks_to_import = bkm_parse_html_bookmarks($content);
+            $entries = bkm_parse_html_bookmark_entries($content);
+            $base_folder_id = (int)($_POST['folder_id'] ?? 0) ?: null;
+            $folderCache = [];
+
+            foreach ($entries as $b) {
+                if (!preg_match('/^https?:\/\//i', $b['url'])) {
+                    continue;
+                }
+                $target_folder_id = bkm_resolve_import_folder_path(
+                    $conn,
+                    $company_id,
+                    $user_id,
+                    $b['folder_path'],
+                    $base_folder_id,
+                    $folderCache,
+                    $foldersCreated
+                );
+                if (bkm_insert_import_bookmark($conn, $company_id, $user_id, $target_folder_id, $b['title'], $b['url'], $b['notes'])) {
+                    $bookmarkCount++;
+                }
+            }
         } elseif ($ext === 'csv') {
             $handle = fopen($_FILES['import_file']['tmp_name'], 'r');
             // Skip header row
             fgetcsv($handle);
+            $bookmarks_to_import = [];
             while (($data = fgetcsv($handle)) !== FALSE) {
                 if (count($data) >= 2) {
                     $bookmarks_to_import[] = [
@@ -45,29 +67,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             fclose($handle);
-        }
 
-        if (!empty($bookmarks_to_import)) {
             $folder_id = (int)($_POST['folder_id'] ?? 0) ?: null;
-            $count = 0;
             foreach ($bookmarks_to_import as $b) {
                 if (!preg_match('/^https?:\/\//i', $b['url'])) {
                     continue;
                 }
-                if ($folder_id === null) {
-                    $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, NULL, ?, ?, ?)');
-                    mysqli_stmt_bind_param($stmt, 'iisss', $company_id, $user_id, $b['title'], $b['url'], $b['notes']);
-                } else {
-                    $stmt = mysqli_prepare($conn, 'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, notes) VALUES (?, ?, ?, ?, ?, ?)');
-                    mysqli_stmt_bind_param($stmt, 'iiisss', $company_id, $user_id, $folder_id, $b['title'], $b['url'], $b['notes']);
-                }
-                if (mysqli_stmt_execute($stmt)) {
-                    $count++;
+                if (bkm_insert_import_bookmark($conn, $company_id, $user_id, $folder_id, $b['title'], $b['url'], $b['notes'])) {
+                    $bookmarkCount++;
                 }
             }
-            $success = "Successfully imported $count bookmarks.";
+        }
+
+        if ($bookmarkCount > 0) {
+            $success = 'Successfully imported ' . $bookmarkCount . ' bookmark' . ($bookmarkCount === 1 ? '' : 's');
+            if ($foldersCreated > 0) {
+                $success .= ' into ' . $foldersCreated . ' new folder' . ($foldersCreated === 1 ? '' : 's');
+            }
+            $success .= '.';
         } else {
-            $errors[] = "No valid bookmarks found in the file.";
+            $errors[] = 'No valid bookmarks found in the file.';
         }
     } else {
         $errors[] = "Please select a file to import.";
@@ -129,9 +148,9 @@ if (!isset($crud_title)) {
         </div>
         <div style="margin-top: 20px;">
             <h3>Instructions</h3>
-            <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here.</p>
+            <p><strong>HTML:</strong> Export your bookmarks from Chrome, Firefox, or Edge as an HTML file and upload it here. Folder headings (<code>&lt;H3&gt;</code>) in the file are created automatically and bookmarks are imported into the matching folder.</p>
             <p><strong>CSV:</strong> Upload a CSV file with columns: <code>Title, URL, Notes</code>. The first row (header) will be skipped.</p>
-            <p><strong>Folder:</strong> Choose <code>Root</code> or a folder — imported bookmarks are saved into that location.</p>
+            <p><strong>Folder:</strong> Choose <code>Root</code> or a parent folder. HTML imports nest file folders under that target; CSV imports place every row in the selected folder.</p>
         </div>
     </div>
 </div>
