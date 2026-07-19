@@ -20,6 +20,7 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | `SwitchPortApiHelpersTest.php` | `includes/switch_port_api_helpers.php` |
 | `ApiRateLimitTest.php` | `includes/itm_api_rate_limit.php` (tier caps, Free no API key, probe payload) |
 | `ItmDateFormatTest.php` | `includes/itm_date_format.php` (dd/mm/yyyy parse/display contract) |
+| `ItmCrudScalarColumnSearchTest.php` | `includes/itm_crud_scalar_column_search.php` (scalar list search OR fragments) |
 | `CompanyModuleAccessDiscoveryTest.php` | `itm_ensure_registry_rows_for_module_slugs()`, `itm_sidebar_structure()` table discovery (requires MySQL) |
 
 ## 10. Common Pitfalls

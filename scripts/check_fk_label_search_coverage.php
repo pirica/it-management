@@ -63,6 +63,7 @@ function fk_search_content_has_label_coverage($content)
 {
     $helperMarkers = [
         'itm_crud_fk_label_search_conditions',
+        'itm_crud_scalar_column_search_conditions',
         'itm_employees_build_search_conditions',
         'itm_equipment_build_search_where_sql',
         'itm_todo_build_search_clause',
