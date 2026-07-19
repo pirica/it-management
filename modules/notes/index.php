@@ -914,6 +914,7 @@ if (!isset($crud_title)) {
                                             <?php if ($filter !== 'garbage' && (int)$note['employee_id'] === $logged_user_id): ?>
                                             <div class="note-star note-qr-share" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>); event.stopPropagation();" title="Share to device" style="margin-left: 10px;">📱</div>
                                             <div class="note-star note-whatsapp-share" onclick="openNoteShareWhatsApp(<?php echo (int)$note['id']; ?>); event.stopPropagation();" title="Share on WhatsApp" style="margin-left: 10px;"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></div>
+                                            <div class="note-star note-outlook-share" onclick="openNoteShareOutlook(<?php echo (int)$note['id']; ?>); event.stopPropagation();" title="Share on Outlook" style="margin-left: 10px;">📩</div>
                                             <?php endif; ?>
                                             <a href="edit.php?id=<?php echo $note["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
                                             <?php if ($filter === "garbage"): ?>
@@ -1001,6 +1002,7 @@ if (!isset($crud_title)) {
                                                         <?php if ($filter !== 'garbage' && (int)$note['employee_id'] === $logged_user_id): ?>
                                                         <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$note['id']; ?>)" title="Share to device">📱</button>
                                                         <button type="button" class="btn btn-sm" onclick="openNoteShareWhatsApp(<?php echo (int)$note['id']; ?>)" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                                        <button type="button" class="btn btn-sm" onclick="openNoteShareOutlook(<?php echo (int)$note['id']; ?>)" title="Share on Outlook">📩</button>
                                                         <?php endif; ?>
                                                         <a class="btn btn-sm" href="view.php?id=<?php echo $note['id']; ?>">🔎</a>
                                                         <a class="btn btn-sm" href="edit.php?id=<?php echo $note['id']; ?>">✏️</a>
@@ -1135,6 +1137,7 @@ if (!isset($crud_title)) {
                                 <?php if ((int)($data['employee_id'] ?? 0) === $logged_user_id): ?>
                                     <button type="button" class="btn btn-sm" onclick="openNoteShareQr(<?php echo (int)$data['id']; ?>)" title="Share to device">📱</button>
                                     <button type="button" class="btn btn-sm" onclick="openNoteShareWhatsApp(<?php echo (int)$data['id']; ?>)" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                    <button type="button" class="btn btn-sm" onclick="openNoteShareOutlook(<?php echo (int)$data['id']; ?>)" title="Share on Outlook">📩</button>
                                 <?php endif; ?>
                             </div>
                             <?php $vimgs = json_decode($data['images_json'] ?? '[]', true); if (!empty($vimgs)): ?>
@@ -1172,6 +1175,7 @@ if (!isset($crud_title)) {
 <script src="../../js/xlsx.full.min.js"></script>
 <script src="../../js/qrcode.min.js"></script>
 <script src="../../js/itm-whatsapp-share.js"></script>
+<script src="../../js/itm-outlook-share.js"></script>
 <script src="../../js/table-tools.js"></script>
 
 <script>
@@ -1370,6 +1374,10 @@ if (!isset($crud_title)) {
     function openNoteShareWhatsApp(noteId) {
         const ajaxBase = <?php echo json_encode($crud_action === 'list_all' ? 'list_all.php' : ($crud_action === 'view' ? 'view.php' : 'index.php')); ?>;
         itmOpenWhatsAppShare(ajaxBase + '?ajax_action=create_share_session', noteId, null, 'note');
+    }
+    function openNoteShareOutlook(noteId) {
+        const ajaxBase = <?php echo json_encode($crud_action === 'list_all' ? 'list_all.php' : ($crud_action === 'view' ? 'view.php' : 'index.php')); ?>;
+        itmOpenOutlookShare(ajaxBase + '?ajax_action=create_share_session', noteId, null, 'note');
     }
     function openEditTagsModal() { document.getElementById('editTagsModal').classList.add('show'); document.getElementById('modalBackdrop').classList.add('show'); }
     function closeEditTagsModal() { document.getElementById('editTagsModal').classList.remove('show'); document.getElementById('modalBackdrop').classList.remove('show'); location.reload(); }
