@@ -759,22 +759,7 @@ if (!isset($crud_title)) {
                                 <th>Notes</th>
                                 <td><?php echo sanitize($data['notes']); ?></td>
                             </tr>
-                            <tr>
-                                <th>Created By</th>
-                                <td><?php echo sanitize($data['created_by_name']); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Created At</th>
-                                <td><?php echo sanitize($data['formatted_created_at']); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Updated By</th>
-                                <td><?php echo sanitize($data['updated_by_name']); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Updated At</th>
-                                <td><?php echo sanitize($data['formatted_updated_at']); ?></td>
-                            </tr>
+                            <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $data); ?>
                         </tbody>
                     </table>
                 </div>

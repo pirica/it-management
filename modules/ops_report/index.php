@@ -1073,6 +1073,14 @@ if (!isset($crud_title)) {
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="night_shift"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_night_shift'), $can_edit_report, 'buttons.add_night_shift', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
             </div>
+
+            <div class="card" style="margin-top:24px;">
+                <table>
+                    <tbody>
+                    <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $report); ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

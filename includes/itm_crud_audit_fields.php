@@ -303,6 +303,45 @@ if (!function_exists('itm_crud_render_status_label_badge')) {
     }
 }
 
+if (!function_exists('itm_crud_humanize_audit_field_label')) {
+    function itm_crud_humanize_audit_field_label($field)
+    {
+        $field = (string)$field;
+        $map = [
+            'created_by' => 'Created By',
+            'created_at' => 'Created At',
+            'updated_by' => 'Updated By',
+            'updated_at' => 'Updated At',
+            'deleted_by' => 'Deleted By',
+            'deleted_at' => 'Deleted At',
+        ];
+
+        return $map[$field] ?? ucwords(str_replace('_', ' ', $field));
+    }
+}
+
+if (!function_exists('itm_crud_render_view_audit_meta_rows')) {
+    /**
+     * Emit scaffold view rows for all six global audit meta columns.
+     *
+     * @param array<string,mixed> $row
+     */
+    function itm_crud_render_view_audit_meta_rows($conn, $companyId, array $row, $thWidth = '220px')
+    {
+        foreach (itm_crud_view_audit_fields() as $field) {
+            $width = trim((string)$thWidth);
+            if ($width === '') {
+                $width = '220px';
+            }
+            echo '<tr><th style="width:' . sanitize($width) . ';">'
+                . sanitize(itm_crud_humanize_audit_field_label($field))
+                . '</th><td>';
+            echo itm_crud_render_audit_cell_value($conn, $companyId, $field, $row[$field] ?? null);
+            echo '</td></tr>';
+        }
+    }
+}
+
 if (!function_exists('itm_crud_render_audit_cell_value')) {
     /**
      * Render audit meta for list/view cells. Returns null when $field is not an audit meta column.

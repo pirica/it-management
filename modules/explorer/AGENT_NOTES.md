@@ -30,6 +30,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **`downloadZip` (`api.php`):** allows **only** the exact path `Private/{username}_{employee_id}` for the signed-in employee. Blocks `Private` root, other users' folders, own private subfolders as zip targets, `Common`, `Departments`, `Trash`, and Home. The ZIP still includes all files recursively inside the allowed private folder.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - **ZIP backup UI:** **Download as ZIP** appears only when browsing the exact `Private/{username}_{employee_id}` folder (not Home, not the `Private` root, not Common/Departments, and not private subfolders). The request always targets that root private path. **Compress** is hidden for `Common`, `Departments`, `Private`, `Trash`, and virtual trash items at Home.
 - Quick Access sidebar opens scoped Private/Department folders, not blocked roots.
 - **Trash at Home:** virtual `Trash` folder (`type: trash`, 🗑️ icon) on Home only when the user has recoverable items; double-click or sidebar **🗑️ Trash** opens recycle view (`openRecycle()`). Trash entries are not draggable.

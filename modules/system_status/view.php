@@ -1,6 +1,6 @@
 <?php
 /**
- * Emails Module — send log detail (read-only).
+ * System Status — read-only tab payload detail with audit meta.
  */
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
@@ -10,7 +10,7 @@ $id = (int)($_GET['id'] ?? 0);
 $row = null;
 
 if ($id > 0 && $company_id > 0) {
-    $stmt = mysqli_prepare($conn, 'SELECT * FROM emails WHERE id = ? AND company_id = ? LIMIT 1');
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM system_status WHERE id = ? AND company_id = ? LIMIT 1');
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
         mysqli_stmt_execute($stmt);
@@ -22,7 +22,7 @@ if ($id > 0 && $company_id > 0) {
     }
 }
 
-$crud_title = 'Email send log';
+$crud_title = 'System status';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -38,23 +38,21 @@ $crud_title = 'Email send log';
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <h1 title="View email send log">🔎</h1>
+            <h1 title="View system status tab">🔎</h1>
             <div class="card">
                 <?php if (!$row): ?>
                     <div class="alert alert-danger">Record not found.</div>
                 <?php else: ?>
                     <table>
                         <tbody>
-                        <tr><th style="width:220px;">To</th><td><?php echo sanitize((string)($row['recipient'] ?? '')); ?></td></tr>
-                        <tr><th>Subject</th><td><?php echo sanitize((string)($row['subject'] ?? '')); ?></td></tr>
-                        <tr><th>Status</th><td><?php echo sanitize((string)($row['status'] ?? '')); ?></td></tr>
-                        <tr><th>Sent at</th><td><?php echo sanitize((string)($row['sent_at'] ?? '')); ?></td></tr>
+                        <tr><th style="width:220px;">Tab</th><td><?php echo sanitize((string)($row['tab_key'] ?? '')); ?></td></tr>
+                        <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '✅' : '❌'; ?></td></tr>
                         <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $row); ?>
                         </tbody>
                     </table>
                 <?php endif; ?>
                 <div style="display:flex;gap:10px;margin-top:20px;">
-                    <a href="index.php?tab=send_logs" class="btn" title="Back">🔙</a>
+                    <a href="index.php" class="btn" title="Back">🔙</a>
                 </div>
             </div>
         </div>

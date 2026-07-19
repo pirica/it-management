@@ -23,6 +23,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - **Named verifier:** `php scripts/verify_rack_planner.php` (catalog: `scripts/scripts.php`) — price source sync + audit triggers; PHPUnit: `RackPlannerTest`.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view must expose all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` — required by `fields_missing.php` bespoke view gate.
 - Vertical rack-unit grid; drag/drop placement.
 - Custom handlers in `includes/handlers.php` — disable redundant default exports when custom layout applies.
 - Auto-save AJAX (`ajax_update_layout`) returns HTTP 404 when `rack_planner` row is not tenant-scoped.

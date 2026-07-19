@@ -17,6 +17,7 @@ Company-scoped lookup of IT systems and applications (e.g. ERP, Email, VPN) used
 - **Clear table:** `delete.php` bulk `clear_table` deletes all tenant rows without per-row FK check — use with caution in production.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - Standard flattened CRUD: search, sort, pagination, export/import.
 - Bulk toolbar when `$totalRows >= $perPage`; `bulk-delete-selection.js` Cancel button contract.
 - `includes/employee_system_access.php` loaded on index/create/delete for shared helpers (`esa_ensure_table()`).

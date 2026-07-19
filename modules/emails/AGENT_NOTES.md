@@ -22,6 +22,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - Manual delivery tests: `php scripts/test_email_forgot.php email=… [--company=1]`, `php scripts/test_register_mail.php email=… [--company=1]`. Forgot-password emails include a **Reset password** CTA button plus the full reset URL in the body for copy/paste. The forgot test script stores a **real 24-hour reset token** for the matching employee (not a fixed placeholder).
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Tabs: **Send Logs** | **SMTP Configurations** | **Alert Rules**.
 - Validation errors on `index.php` use `itm_render_alert_errors($errors)` (not raw `foreach` alert markup).
 - Stat cards link to filtered send logs (`status=sent` / `failed`).

@@ -23,6 +23,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
   4. ISM "Submit Email" button only enables after BOTH HR and HOD have 'Approved'.
   5. ISM submits email to applicant, saving ISM Signature Date.
 - **Date Format**: DD/MM/YYYY in UI.
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 
 ## Security
 - Authorize/Decline links use HMAC-SHA256 signed tokens to prevent tampering.

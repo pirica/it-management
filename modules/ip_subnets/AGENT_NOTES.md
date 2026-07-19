@@ -16,6 +16,7 @@ Manages IP subnets (CIDR blocks), including gateways, DNS, and DHCP configuratio
 - **Gateway/DNS**: Gateway and DNS IPs should belong to the subnet range.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view must expose all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` — required by `fields_missing.php` bespoke view gate.
 - **Standard CRUD**.
 - **Audit meta on forms:** `$uiColumns` filters `itm_crud_is_form_hidden_audit_field()` / delete/list-hidden audit columns; create/edit loop uses `$uiColumns` plus `itm_crud_render_form_hidden_audit_inputs()`; view uses `$fieldColumns` so `deleted_*` / `*_by` remain visible on detail.
 - **List search:** matches `vlan_id` label via `itm_crud_fk_label_search_conditions()` in `includes/list_query.php`.

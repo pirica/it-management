@@ -18,6 +18,7 @@ Manages inventory of consumables and spare parts. Tracks quantities on hand and 
 - **Unit Price**: Tracks price per unit for valuation.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 - **Standard CRUD**.
 - **List header**: `data-itm-new-button-managed` row uses `position:relative`, centered `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()`, Settings `new_button_position` create slots, and `min-height:40px` for the uniform list-header footprint (`fields_missing` gates).
 - **Bulk toolbar**: when `$totalRows >= $perPage`, `bulk-delete-form` includes Select to Delete, Cancel (`data-itm-bulk-cancel="1"`), Clear Table, and `bulk-delete-selection.js` in index HTML (static audit contract).

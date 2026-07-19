@@ -16,6 +16,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - Distinct from `modules/contacts/` (company directory).
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Custom list with search, favourite star (AJAX), photo thumbnails.
 - **Search:** matches first/last name, email, organisation, phone (`phone1_value`), labels CSV, and full name concat — aligned with visible list columns.
 - `data-itm-db-import-endpoint` on index table for Excel import.

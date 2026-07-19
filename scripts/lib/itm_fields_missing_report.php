@@ -1564,6 +1564,40 @@ if (!function_exists('itm_fields_missing_audit_excluded_ui_columns')) {
     }
 }
 
+if (!function_exists('itm_fields_missing_append_delegated_view_paths')) {
+    /**
+     * @param list<string> $paths
+     * @return list<string>
+     */
+    function itm_fields_missing_append_delegated_view_paths(string $viewFilePath, array $paths): array
+    {
+        if (!is_readable($viewFilePath)) {
+            return $paths;
+        }
+        $content = (string) file_get_contents($viewFilePath);
+        $patterns = [
+            "/require(?:_once)?\s+__DIR__\s*\.\s*['\"]([^'\"]+)['\"]\s*;/",
+            "/require(?:_once)?\s+['\"]([^'\"]+)['\"]\s*;/",
+        ];
+        foreach ($patterns as $pattern) {
+            if (!preg_match_all($pattern, $content, $matches)) {
+                continue;
+            }
+            foreach ($matches[1] as $relative) {
+                if (stripos($relative, 'view.php') === false) {
+                    continue;
+                }
+                $resolved = realpath(dirname($viewFilePath) . '/' . str_replace('\\', '/', $relative));
+                if ($resolved !== false && is_readable($resolved)) {
+                    $paths[] = $resolved;
+                }
+            }
+        }
+
+        return array_values(array_unique($paths));
+    }
+}
+
 if (!function_exists('itm_fields_missing_resolve_view_paths')) {
     /**
      * View wrappers that require index.php must be scanned on index for dynamic $viewColumns loops.
@@ -1575,19 +1609,115 @@ if (!function_exists('itm_fields_missing_resolve_view_paths')) {
     {
         $paths = [];
         if (is_readable($files['view'])) {
-            $viewContent = (string) file_get_contents($files['view']);
             if (itm_fields_missing_file_requires_index($files['view'])) {
                 if (is_readable($files['index'])) {
                     $paths[] = $files['index'];
                 }
             } else {
                 $paths[] = $files['view'];
+                $paths = itm_fields_missing_append_delegated_view_paths($files['view'], $paths);
             }
         } elseif (is_readable($files['index'])) {
             $paths[] = $files['index'];
         }
 
+        $paths = itm_fields_missing_append_index_included_view_paths($paths);
+
         return array_values(array_unique($paths));
+    }
+}
+
+if (!function_exists('itm_fields_missing_append_index_included_view_paths')) {
+    /**
+     * Follow index.php requires of module partial render files (IPAM, rack planner, etc.).
+     *
+     * @param list<string> $paths
+     * @return list<string>
+     */
+    function itm_fields_missing_append_index_included_view_paths(array $paths): array
+    {
+        foreach ($paths as $path) {
+            if (!is_readable($path) || substr($path, -9) !== 'index.php') {
+                continue;
+            }
+            $content = (string) file_get_contents($path);
+            $patterns = [
+                "/require(?:_once)?\s+__DIR__\s*\.\s*['\"]([^'\"]*partials\/render\.php)['\"]\s*;/",
+                "/require(?:_once)?\s+['\"][^'\"]*partials\/render\.php['\"]\s*;/",
+            ];
+            foreach ($patterns as $pattern) {
+                if (!preg_match_all($pattern, $content, $matches)) {
+                    continue;
+                }
+                foreach ($matches[0] as $idx => $_) {
+                    if (!empty($matches[1][$idx])) {
+                        $relative = $matches[1][$idx];
+                        $resolved = realpath(dirname($path) . '/' . str_replace('\\', '/', $relative));
+                    } else {
+                        $resolved = realpath(dirname($path) . '/includes/partials/render.php');
+                    }
+                    if ($resolved !== false && is_readable($resolved)) {
+                        $paths[] = $resolved;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($paths));
+    }
+}
+
+if (!function_exists('itm_fields_missing_content_has_audit_renderer_for_field')) {
+    function itm_fields_missing_content_has_audit_renderer_for_field(string $content, string $field): bool
+    {
+        if (strpos($content, 'itm_crud_render_view_audit_meta_rows(') !== false) {
+            return true;
+        }
+
+        if (preg_match('/foreach\s*\(\s*itm_crud_view_audit_fields\s*\(\)/', $content)) {
+            return true;
+        }
+
+        $needle = 'itm_crud_render_audit_cell_value';
+        $offset = 0;
+        $fieldPattern = '/[\'"]' . preg_quote($field, '/') . '[\'"]/';
+        while (($pos = strpos($content, $needle, $offset)) !== false) {
+            $open = strpos($content, '(', $pos);
+            if ($open === false) {
+                break;
+            }
+            $depth = 0;
+            $close = $open;
+            $length = strlen($content);
+            for ($i = $open; $i < $length; $i++) {
+                $char = $content[$i];
+                if ($char === '(') {
+                    $depth++;
+                } elseif ($char === ')') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $close = $i;
+                        break;
+                    }
+                }
+            }
+            $args = substr($content, $open + 1, $close - $open - 1);
+            if (preg_match($fieldPattern, $args)) {
+                return true;
+            }
+            if (preg_match('/,\s*\$(?:field|f|k)\s*,/', $args)) {
+                return true;
+            }
+            $offset = $close + 1;
+        }
+
+        if (strpos($content, 'itm_crud_is_view_audit_field') !== false
+            && strpos($content, 'itm_crud_render_audit_cell_value') !== false
+        ) {
+            return true;
+        }
+
+        return false;
     }
 }
 
@@ -1605,26 +1735,7 @@ if (!function_exists('itm_fields_missing_view_has_audit_meta_field')) {
             return false;
         }
 
-        if (preg_match(
-            "/itm_crud_render_audit_cell_value\s*\([^)]*['\"]" . preg_quote($field, '/') . "['\"]/s",
-            $content
-        )) {
-            return true;
-        }
-
-        // Why: equipment view loops row keys and routes audit columns through the shared renderer.
-        if (strpos($content, 'itm_crud_is_view_audit_field') !== false
-            && preg_match('/itm_crud_render_audit_cell_value\s*\([^)]*,\s*\$\w+\s*,/', $content)
-        ) {
-            return true;
-        }
-
-        // Why: tickets view passes the loop variable into the audit renderer for every audit column.
-        if (preg_match('/itm_crud_render_audit_cell_value\s*\([^)]*,\s*\$field\s*,/', $content)) {
-            return true;
-        }
-
-        return false;
+        return itm_fields_missing_content_has_audit_renderer_for_field($content, $field);
     }
 }
 

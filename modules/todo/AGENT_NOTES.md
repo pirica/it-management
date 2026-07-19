@@ -19,6 +19,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - Use `itm_todo_visibility_sql()` on all list queries.
 
 ## 5. UI Behavior Requirements
+- **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract. Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Custom task UI on index (not standard table-only list).
 - **Responsive:** sidebar stacks above task list below 768px; task titles wrap on narrow viewports (`index.php` inline CSS).
 - `import_excel_rows` JSON handler on POST.
