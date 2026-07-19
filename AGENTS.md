@@ -267,6 +267,7 @@ Tables that store **private user content** must **not** be copied into `audit_lo
 | `private_contacts` | `modules/private_contacts/` — per-user address book. |
 | `todo_categories`, `todo` | `modules/todo/` — personal/assigned tasks. |
 | `notes`, `note_labels` | `modules/notes/` — personal/shared note content. |
+| `events` | `modules/events/` — private/shared event title, description, and location (vault-encrypted when not shared). |
 | `bookmark_folders`, `bookmarks` | `modules/bookmarks/`, `modules/bookmark_folders/` — private/shared links. |
 
 `scripts/check_audit_logs_coverage.php` treats these tables as intentionally exempt from database triggers.

@@ -9,6 +9,8 @@
  */
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/events_visibility.php';
+require_once ROOT_PATH . 'modules/events/events_vault_helpers.php';
 $logged_user_id = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
 
 // Handle ICS Import
@@ -179,17 +181,20 @@ $events_data = [];
 
 // Events
 if (has_module_access($conn, (int)$company_id, 'events')) {
+$visSql = itm_events_visibility_sql('e');
 $sql_events = "SELECT e.*, ec.name as category_name, ec.color as category_color
                FROM events e
-               LEFT JOIN event_categories ec ON e.category_id = ec.id
-               WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL)
+               LEFT JOIN event_categories ec ON e.category_id = ec.id AND ec.company_id = e.company_id
+               WHERE e.company_id = ? AND (e.active = 1 OR e.active IS NULL) AND e.deleted_at IS NULL
+               AND ($visSql)
                AND NOT (DATE(COALESCE(e.end_datetime, e.start_datetime)) < ? OR DATE(e.start_datetime) > ?)";
 $stmt = mysqli_prepare($conn, $sql_events);
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'iss', $company_id, $start_range, $end_range);
+    mysqli_stmt_bind_param($stmt, 'iiiss', $company_id, $logged_user_id, $logged_user_id, $start_range, $end_range);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($row = mysqli_fetch_assoc($res)) {
+        events_hydrate_event_row($row, $logged_user_id);
         $start_dt = strtotime($row['start_datetime']);
         $end_dt = $row['end_datetime'] ? strtotime($row['end_datetime']) : $start_dt;
 
@@ -203,9 +208,13 @@ if ($stmt) {
             if ($d >= $start_range && $d <= $end_range) {
                 $ev_color = $row['category_color'] ?: '#3b82f6';
                 if (!preg_match('/^#[0-9a-fA-F]{6}$/i', $ev_color)) { $ev_color = '#3b82f6'; }
+                $displayTitle = (string)($row['title'] ?? '');
+                if ($displayTitle === '' && !empty($row['title_locked']) && !empty($row['title_locked_label'])) {
+                    $displayTitle = (string)$row['title_locked_label'];
+                }
                 $events_data[$d][] = [
                     'type' => 'event',
-                    'title' => $row['title'],
+                    'title' => $displayTitle,
                     'color' => $ev_color,
                     'icon' => '📅',
                     'start' => $row['start_datetime'],

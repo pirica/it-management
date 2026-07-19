@@ -4,7 +4,7 @@
 Central calendar grid aggregating time-sensitive records from multiple modules into one company-scoped view.
 
 ## 2. Key Tables (read-only sources)
-- **events** — scheduled events.
+- **events** — scheduled events (owner or `shared_with_json` visibility; hydrate with `events_hydrate_event_row()` for decrypted titles).
 - **event_categories** — colour/label for events.
 - **alerts** — only rows with **`end_datetime`** set.
 - **tickets** — tasks with **`due_date`**.
@@ -19,6 +19,7 @@ Central calendar grid aggregating time-sensitive records from multiple modules i
 - **Alerts:** include only alerts that have `end_datetime` populated.
 - **Grid layout:** Monday–Sunday week columns (UK English labels).
 - **Tenant isolation:** never mix companies on the grid.
+- **Events vault:** calendar queries use `itm_events_visibility_sql()` and `events_hydrate_event_row()` so private ciphertext is not shown as raw titles; locked vault shows the lock label on the grid.
 
 ## 5. UI Behavior Requirements
 - Month/week/day/year views via `?view=` (`month` default).

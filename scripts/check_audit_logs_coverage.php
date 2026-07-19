@@ -129,6 +129,7 @@ function audit_logs_private_data_tables(): array
         'todo_categories' => true,
         'todo' => true,
         'notes' => true,
+        'events' => true,
         'note_labels' => true,
         'note_share_sessions' => true,
         'password_share_sessions' => true,

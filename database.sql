@@ -6568,13 +6568,16 @@ DROP TABLE IF EXISTS `events`;
 CREATE TABLE `events` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` int NOT NULL,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `title_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `start_datetime` datetime DEFAULT NULL,
   `end_datetime` datetime DEFAULT NULL,
-  `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `location` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `category_id` int DEFAULT NULL,
   `assigned_to_employee_id` int DEFAULT NULL,
+  `shared_with_json` json DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -6583,14 +6586,17 @@ CREATE TABLE `events` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `company_id_2` (`company_id`,`title`),
+  UNIQUE KEY `uq_events_company_scope` (`company_id`, `employee_id`, `id`),
   KEY `company_id` (`company_id`),
+  KEY `employee_id` (`employee_id`),
   KEY `category_id` (`category_id`),
   KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
   CONSTRAINT `events_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `events_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `events_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `event_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `events_ibfk_assigned_to` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Private events (empty shared_with_json): title/description/location encrypted at rest; title_hash = SHA-256(plaintext title). Shared events keep plaintext for recipients.
 
 -- Triggers for `event_categories`
 DELIMITER $$
@@ -6608,21 +6614,7 @@ CREATE TRIGGER `trg_event_categories_audit_delete` AFTER DELETE ON `event_catego
 END$$
 DELIMITER ;
 
--- Triggers for `events`
-DELIMITER $$
-CREATE TRIGGER `trg_events_audit_insert` AFTER INSERT ON `events` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'events', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'location', NEW.`location`, 'category_id', NEW.`category_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_events_audit_update` AFTER UPDATE ON `events` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'events', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'location', OLD.`location`, 'category_id', OLD.`category_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'description', NEW.`description`, 'start_datetime', NEW.`start_datetime`, 'end_datetime', NEW.`end_datetime`, 'location', NEW.`location`, 'category_id', NEW.`category_id`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
-END$$
-CREATE TRIGGER `trg_events_audit_delete` AFTER DELETE ON `events` FOR EACH ROW BEGIN
-  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'events', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'description', OLD.`description`, 'start_datetime', OLD.`start_datetime`, 'end_datetime', OLD.`end_datetime`, 'location', OLD.`location`, 'category_id', OLD.`category_id`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
-END$$
-DELIMITER ;
+-- Private-data exempt: events may store vault-encrypted title/description/location (no audit_logs triggers).
 
 -- Data for `event_categories`
 INSERT INTO `event_categories` (`company_id`, `name`, `color`) VALUES
@@ -6648,10 +6640,10 @@ INSERT INTO `event_categories` (`company_id`, `name`, `color`) VALUES
 (5, 'Other', '#6b7280');
 
 -- Data for `events`
-INSERT INTO `events` (`company_id`, `assigned_to_employee_id`, `created_by`, `title`, `description`, `start_datetime`, `end_datetime`, `location`, `category_id`, `active`) VALUES
-(1,1,1, 'Project Kickoff', 'Initial meeting for the new project', '2026-05-01 09:00:00', '2026-05-01 11:00:00', 'Meeting Room A', 1, 1),
-(1, NULL, NULL, 'Server Maintenance', 'Monthly server updates and backup verification', '2026-05-15 22:00:00', '2026-05-16 02:00:00', 'Data Center', 2, 1),
-(1, NULL, NULL, 'Team Lunch', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
+INSERT INTO `events` (`company_id`, `employee_id`, `assigned_to_employee_id`, `created_by`, `title`, `title_hash`, `description`, `start_datetime`, `end_datetime`, `location`, `category_id`, `active`) VALUES
+(1, 1, 1, 1, 'Project Kickoff', 'fd3be7accd3a3a8c43472283ed4dd18dc3e70d95c16861e8ed2c7de79a727de1', 'Initial meeting for the new project', '2026-05-01 09:00:00', '2026-05-01 11:00:00', 'Meeting Room A', 1, 1),
+(1, 1, NULL, NULL, 'Server Maintenance', 'f78625785dce5adc93b013e1962ff81f09c6f4908c1277469c95d5cfc02c96cd', 'Monthly server updates and backup verification', '2026-05-15 22:00:00', '2026-05-16 02:00:00', 'Data Center', 2, 1),
+(1, 1, NULL, NULL, 'Team Lunch', 'af65330d1edc5952b1f4283b470c6d2a5b8a14f334a785016235f16c45986610', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
 
 -- Table structure for `visitors_access_log`
 DROP TABLE IF EXISTS `visitors_access_log`;
