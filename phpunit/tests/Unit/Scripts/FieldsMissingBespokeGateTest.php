@@ -833,6 +833,33 @@ PHP;
         );
     }
 
+    public function testBookmarksBespokeGatePassesViewAuditMeta(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['bookmarks'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('bookmarks', $columns);
+        $passes = implode('|', $result['passes']);
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $result['failures']);
+
+        foreach (['created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_by', 'deleted_at'] as $field) {
+            $this->assertStringContainsString(
+                "excluded UI column {$field}: present on view",
+                $passes,
+                'bookmarks view audit meta passes'
+            );
+        }
+        $this->assertFalse(
+            $this->messagesContainAny($messages, ['missing on view']),
+            'bookmarks view audit meta: ' . implode(' | ', $messages)
+        );
+    }
+
     public function testSortContractAcceptsBookmarksInMemoryListHelper(): void
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
