@@ -853,6 +853,75 @@ PHP;
         $this->assertSame('pass', $sortCheck['status'] ?? '', (string) ($sortCheck['details'] ?? ''));
     }
 
+    public function testIndexListAuditMetaFailsWhenVisibleFieldColumnsLoopUnfiltered(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_fields_missing_report.php';
+        $content = <<<'PHP'
+<?php
+$visibleFieldColumns = array_values(array_filter($fieldColumns, function ($col) {
+    return $col['Field'] !== 'company_id';
+}));
+?>
+<table>
+<thead><tr><?php foreach ($visibleFieldColumns as $col): ?><th></th><?php endforeach; ?></tr></thead>
+</table>
+PHP;
+        $this->assertTrue(itm_fields_missing_index_list_exposes_audit_meta_field('created_by', $this->writeTempIndex($content)));
+        $this->assertTrue(itm_fields_missing_index_list_exposes_audit_meta_field('deleted_at', $this->writeTempIndex($content)));
+    }
+
+    public function testIndexListAuditMetaPassesWhenUiColumnsFilterListHiddenAudit(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_fields_missing_report.php';
+        $content = <<<'PHP'
+<?php
+$uiColumns = array_values(array_filter($visibleFieldColumns, function ($col) {
+    $fieldName = (string)($col['Field'] ?? '');
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
+        return false;
+    }
+    return true;
+}));
+?>
+<table>
+<thead><tr><?php foreach ($uiColumns as $col): ?><th></th><?php endforeach; ?></tr></thead>
+</table>
+PHP;
+        $path = $this->writeTempIndex($content);
+        $this->assertFalse(itm_fields_missing_index_list_exposes_audit_meta_field('created_by', $path));
+        $this->assertFalse(itm_fields_missing_index_list_exposes_audit_meta_field('deleted_at', $path));
+    }
+
+    public function testCableColorsBespokeGateHidesAuditMetaOnIndexList(): void
+    {
+        $root = realpath(__DIR__ . '/../../../../');
+        $this->assertNotFalse($root);
+        $schema = itm_fields_missing_parse_database_sql_table_columns($root);
+        $columns = $schema['cable_colors'] ?? [];
+        $this->assertNotSame([], $columns);
+
+        $result = $this->runBespokeGate('cable_colors', $columns);
+        $passes = implode('|', $result['passes']);
+        $messages = array_map(static function (array $failure): string {
+            return (string) ($failure['message'] ?? '');
+        }, $result['failures']);
+
+        $this->assertStringContainsString('excluded UI column created_by: hidden or absent on index list', $passes);
+        $this->assertStringContainsString('excluded UI column deleted_at: hidden or absent on index list', $passes);
+        $this->assertFalse(
+            $this->messagesContainAny($messages, ['visible on index list']),
+            'cable_colors audit meta on index list: ' . implode(' | ', $messages)
+        );
+    }
+
+    private function writeTempIndex(string $content): string
+    {
+        $path = sys_get_temp_dir() . '/itm_fm_index_' . uniqid('', true) . '.php';
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
     /**
      * @param list<string> $messages
      * @param list<string> $needles
