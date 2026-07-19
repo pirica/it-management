@@ -16,7 +16,7 @@ Provides a consolidated "Resume" or "Directory" view of employees and department
 
 ## 5. UI Behavior Requirements
 - **Categorized View**: Grouped by Department.
-- **Searchable**: Fast lookup for names and numbers.
+- **Searchable**: Server-side search on `index.php` via `$_GET['search']` — filters departments and employees in PHP across all visible columns (name, extension, dect, phone, email, job role); Search submit + emoji-only 🔙 reset.
 - **No standard CRUD Actions column** and **no Excel import** — directory table uses `data-itm-no-import-excel="1"`; index compliance audit must not require `data-itm-db-import-endpoint` or Actions markers.
 
 ## 6. API Actions (If Applicable)
