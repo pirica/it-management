@@ -42,6 +42,52 @@
           "note": "No edit.php form"
         }
       ]
+    },
+    "audit_logs": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Immutable read-only audit trail: create.php redirects to index; no manual create/edit/delete; rows are written by triggers and application audit hooks only.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php redirects to index — read-only / immutable module; no create action expected"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "create.php redirects to index — no list create button layout"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "create.php redirects to index — no list create button style"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — audit rows must not be bulk-deleted from UI"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "Create entry has no detectable form in create.php (redirect-only)"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
     }
   }
 }
