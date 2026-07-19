@@ -1,6 +1,6 @@
 <?php
 /**
- * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/117 tables).
+ * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/130 tables).
  * Compare tables defined in database.sql with information_schema for itmanagement.
  */
 declare(strict_types=1);

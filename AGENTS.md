@@ -264,7 +264,8 @@ Tables that store **private user content** must **not** be copied into `audit_lo
 |-------|----------------|
 | `emails` | Send log (`modules/emails/` tab) — may contain recipient/subject/body metadata; **not** `email_smtp_configurations` or `email_alert_rules` (those remain auditable). |
 | `password_entries`, `password_folders` | `modules/passwords/` — vault credentials; encrypted at rest. |
-| `private_contacts` | `modules/private_contacts/` — per-user address book. |
+| `private_contacts` | `modules/private_contacts/` — per-user address book; PII vault-encrypted at rest. |
+| `*_share_sessions` (`note_`, `password_`, `bookmark_`, `todo_`, `event_`, `private_contact_`) | Temporary QR/code share snapshots (`payload_json` plaintext until expiry); no audit triggers. |
 | `todo_categories`, `todo` | `modules/todo/` — personal/assigned tasks. |
 | `notes`, `note_labels` | `modules/notes/` — personal/shared note content. |
 | `events` | `modules/events/` — private/shared event title, description, and location (vault-encrypted when not shared). |
@@ -444,6 +445,19 @@ The Passwords module provides a secure, private manager for user credentials.
 4. **Master Key Change**: Re-encryption of all entries during a master key change must be atomic via database transactions.
 5. **UI behavior**: Password fields MUST be masked by default with a toggle visibility button. Always provide a 🗐 icon for copying fields to the clipboard.
 6. **Special import/export:** Tools menu (CSV/Excel modals + `exportVault` / `export_handler.php`), not table-tools. Entry list table uses `data-itm-no-import-excel` / `data-itm-no-export-*`; Actions cells (including JS rows) keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_qr_share_modules.php` (password share sessions among Passwords, Bookmarks, Todo, Events, Private Contacts).
+
+#### Private Contacts module (mandatory)
+
+The Private Contacts module (`modules/private_contacts/`) is a per-user address book with vault encryption and optional temporary share links.
+
+1. **Privacy scoping:** All queries MUST filter `employee_id = $_SESSION['employee_id']` (plus `company_id`). Never expose another user's contacts.
+2. **Encryption at rest:** PII text columns on `private_contacts` are `TEXT` in `database.sql` and stored encrypted via `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked. Legacy plaintext rows still load via `pc_private_text_legacy_plaintext_check()`.
+3. **List search/sort/pagination:** Load rows for the employee, hydrate/decrypt, then filter and paginate in PHP (`pc_row_matches_search()`, `pc_compare_contact_rows()`) — no SQL `LIKE` on ciphertext.
+4. **Master key change:** `itm_vault_reencrypt_private_contacts()` in `includes/itm_vault_master_key.php` re-encrypts all contact fields atomically during master-key change in `user-config.php`.
+5. **Temporary share:** `private_contact_share_sessions` + `join.php` + `pc_share_helpers.php`; registered in `includes/itm_qr_share.php` / `itm_qr_share_join.php` (`type: private_contact`). QR / 6-digit / WhatsApp / Outlook share on list and view; `create_share_session` AJAX requires unlocked vault. Share payload is plaintext until expiry; table is **private-data exempt** from audit triggers.
+6. **Settings list contract:** Managed list header (`data-itm-new-button-managed="server"`), server-side search/sort/pagination wiring, `data-itm-db-import-endpoint="index.php"`, and `import_excel_rows` (requires unlocked vault; encrypts via `pc_encrypt_contact_import_row_values()` in `config/config.php`).
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_private_contacts_vault.php`; share table covered by `php scripts/verify_qr_share_modules.php`.
 
 #### Email Management (mandatory)
 
@@ -917,7 +931,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
     "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
     ```
-    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **117**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`employee_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
+    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **130**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`employee_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
   * **PowerShell piping:** `database.sql` in git is **LF**; `-split "`r`n"` can yield a single “line” and skip the strip branch — still import the **complete** file. Prefer `cmd /c "\"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe\" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql"` from the repo directory over stdin `Process` piping when imports truncate.
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
@@ -1063,7 +1077,7 @@ Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-
 | **MySQL 8.0** | `sudo mkdir -p /var/run/mysqld && sudo chown mysql:mysql /var/run/mysqld && sudo chmod 755 /var/run/mysqld && sudo mysqld --user=mysql --datadir=/var/lib/mysql &` then `sleep 5` | `mysqladmin -u root -pitmanagement ping` → `mysqld is alive` |
 | **Apache 2.4** | `sudo apachectl start` | `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` |
 
-MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 124 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
+MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 130 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
 
 ### Apache alias
 
@@ -1107,7 +1121,7 @@ playwright install chromium   # or: ~/.local/bin/playwright install chromium whe
     php -r '$c=mysqli_connect("127.0.0.1","root","itmanagement","itmanagement"); echo $c?"db ok\n":mysqli_connect_error();'
     ```
 
-    Re-run the import when the datadir is fresh; expect ~124 tables in `itmanagement``.
+    Re-run the import when the datadir is fresh; expect ~130 tables in `itmanagement``.
 
 **Capture (Roles & Permissions example — verified on Cloud Agent):**
 

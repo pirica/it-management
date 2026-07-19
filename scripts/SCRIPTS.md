@@ -542,7 +542,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
-| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `database.sql` import on MySQL 8.0 service; asserts table count matches **117** `CREATE TABLE` entries; runtime FK label search regression |
+| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `database.sql` import on MySQL 8.0 service; asserts table count matches **130** `CREATE TABLE` entries; runtime FK label search regression |
 
 **smoke** job steps only:
 
@@ -991,7 +991,8 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_notes_vault.php` — notes private-field vault encryption (`notes_vault_helpers.php`, shared vs private persistence, label_hash)
 - `php scripts/verify_events_vault.php` — events private-field vault encryption (`events_vault_helpers.php`, shared vs private persistence, hydrate when vault locked/unlocked)
 - `php scripts/verify_notes_share.php` — notes temporary QR/code share sessions (`note_share_sessions`, `join.php`, `notes_share_helpers.php`)
-- `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, and Events temporary QR/code share sessions (`*_share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`)
+- `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt)
+- `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, and Private Contacts temporary QR/code share sessions (`*_share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`)
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`)
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
@@ -1310,10 +1311,10 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 - **Regression scripts:** `php scripts/test_explorer_paths.php`, `php scripts/verify_explorer_zip_leak.php` (three-step ZIP contract); `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`; Import data loss: `repro_employee_dataloss.php`, `repro_generic_dataloss.php`.
 
 ### 10. Private Contacts
-- **Paths:** `modules/private_contacts/create.php`, `modules/private_contacts/edit.php`
+- **Paths:** `modules/private_contacts/index.php`, `create.php`, `edit.php`, `view.php`, `join.php`
 - **Storage:** `files/{company_id}/Private/{username}_{employee_id}/private_contacts/` (`deny_http` chain)
-- **Description:** PNG contact photos.
-- **Implementation:** Creates storage via `itm_ensure_files_storage_directory()`; UI serves images through `itm_files_serve_url()` → `modules/explorer/file.php`.
+- **Description:** Per-user vault-encrypted contacts (PNG photos, favourites, temporary QR/share via `private_contact_share_sessions`).
+- **Implementation:** PII encrypted with `$_SESSION['vault_key']`; list search/sort/pagination runs on hydrated plaintext in PHP. Photos via `itm_ensure_files_storage_directory()` and `itm_files_serve_url()` → `modules/explorer/file.php`. Regression: `php scripts/verify_private_contacts_vault.php`, `php scripts/verify_qr_share_modules.php`.
 
 ### 11. Employee profile photos
 - **Paths:** `modules/employees/create.php`, `modules/employees/edit.php`, `modules/employees/includes/profile_fields.php`, `includes/employee_profile_photo.php`

@@ -127,13 +127,13 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>database.sql</code> provisions <strong>124 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>database.sql</code> provisions <strong>130 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 124 |
+| **Tables** | 130 |
 | **Sample rows** | ~3,085 (from <code>database.sql</code>) |
 | **Module folders** | 125 under <code>modules/</code> |
 | **Registry entries** | 130 in <code>modules_registry</code> |
@@ -207,25 +207,25 @@
 
 #### Password vault
 
-`password_entries`, `password_folders`
+`password_entries`, `password_folders`, `password_share_sessions`
 
-**Purpose:** User-private encrypted password vault with folder hierarchy (no seed rows in a fresh install).
+**Purpose:** User-private encrypted password vault with folder hierarchy and optional temporary share sessions (no seed rows in a fresh install).
 
 **Modules:** `passwords` (UI for both tables; entries encrypted per user vault key)
 
 #### Notes, bookmarks, and personal productivity
 
-`notes`, `note_labels`, `bookmarks`, `bookmark_folders`, `todo`, `todo_categories`, `private_contacts`
+`notes`, `note_labels`, `note_share_sessions`, `bookmarks`, `bookmark_folders`, `bookmark_share_sessions`, `todo`, `todo_categories`, `todo_share_sessions`, `private_contacts`, `private_contact_share_sessions`
 
-**Purpose:** Personal and shared productivity — labelled notes, hierarchical bookmarks, to-do lists, and user-scoped contacts.
+**Purpose:** Personal and shared productivity — labelled notes, hierarchical bookmarks, to-do lists, and user-scoped contacts (vault-encrypted PII with optional temporary QR/share links).
 
 **Modules:** `notes`, `note_labels`, `bookmarks`, `bookmark_folders`, `todo`, `todo_categories`, `private_contacts`
 
 #### Planning, calendar, and events
 
-`events`, `event_categories`
+`events`, `event_categories`, `event_share_sessions`
 
-**Purpose:** Company events and categories; the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates.
+**Purpose:** Company events and categories (vault-encrypted private fields where applicable); the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates.
 
 **Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view)
 
@@ -248,12 +248,12 @@
 | Inventory and assets | 14 | ~300 |
 | Networking and IPAM | 23 | ~400 |
 | Floor plans and locations | 8 | ~60 |
-| Password vault | 2 | 0 |
-| Notes, bookmarks, productivity | 6 | ~5 |
-| Planning and events | 2 | ~10 |
+| Password vault | 3 | 0 |
+| Notes, bookmarks, productivity | 10 | ~5 |
+| Planning and events | 3 | ~10 |
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
-| **Total** | **124** | **~3,075** |
+| **Total** | **130** | **~3,075** |
 
 <h3 align="center">What this means</h3>
 
@@ -366,7 +366,7 @@ For an existing database, apply the Floor Plans tables from `database.sql` (`flo
 | Employee refs | `employee_positions/`, `employee_statuses/`, `employee_assignment_history/`, `employee_onboarding_requests/`, `employee_system_access/`, `assignment_types/` | Positions, status, history, onboarding, and access |
 | Request Password | `modules/request_password/` | User password reset requests with HR/HOD workflow |
 | Contacts | `modules/contacts/` | Company-wide contact directory with inline editing |
-| Private Contacts | `modules/private_contacts/` | User-scoped contacts with photo uploads |
+| Private Contacts | `modules/private_contacts/` | User-scoped vault-encrypted contacts with photo uploads and temporary QR/share links |
 | Org Chart | `modules/org_chart/` | Visual hierarchy with drag-and-drop reporting lines |
 | Birthdays | `modules/birthdays/` | Read-only monthly birthday list from employee records |
 
