@@ -58,6 +58,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'lock') {
 $module_title = "Passwords";
 $current_folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : 0;
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
+$moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
+    $newButtonPosition = 'left_right';
+}
 
 ?>
 <!DOCTYPE html>
@@ -167,6 +172,23 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
             <?php else: ?>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="#" class="btn btn-primary itm-list-new-button" title="Create" onclick="openEntryModal(); return false;">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="#" class="btn btn-primary itm-list-new-button" title="Create" onclick="openEntryModal(); return false;">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                </div>
                 <div class="passwords-layout">
                     <div class="side-panel">
                         <div class="card">
@@ -206,7 +228,6 @@ if (!isset($crud_title)) {
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-primary" onclick="openEntryModal()">➕</button>
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
