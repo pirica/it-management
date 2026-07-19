@@ -986,6 +986,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_codacy_xss_echo.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Run after search form or dynamic <code>href</code> query changes.</td>
                 </tr>
                 <tr>
+                    <td><a href="check_manual_sql_string.php" target="_blank" rel="nofollow noreferrer">check_manual_sql_string.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: manually-constructed SQL strings in <code>modules/**/*.php</code> — SQL keyword literals concatenated/interpolated with variables, or <code>mysqli_query</code>/<code>itm_run_query</code> with user input in the SQL string. Excludes URL <code>http_build_query()</code> / <code>.php?</code> href patterns.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_manual_sql_string.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Optional <code>--include-scripts</code> / <code>?include_scripts=1</code>. Run after dynamic SQL changes; complements <code>check_sql_injection_coverage.php</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="check_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">check_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: NO MIXED gate on <code>&lt;a&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;h1&gt;</code>–<code>&lt;h3&gt;</code> — seven emoji+word regex families, known compound literals, plain-text action outliers, header <code>intentRules</code> drift.</td>
