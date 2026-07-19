@@ -861,7 +861,7 @@ if (!isset($crud_title)) {
                                         </div>
                                         <a href="edit.php?id=<?php echo $task["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
                                         <?php if ((int)($task['created_by'] ?? 0) === (int)$logged_user_id): ?>
-                                        <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                        <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>)" title="Share to device">📱</button>
                                         <?php endif; ?>
                                         <form method="POST" action="index.php?id=<?php echo $task["id"]; ?>" style="display:inline;" onsubmit="return confirm('Delete this task?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
@@ -1042,7 +1042,7 @@ if (!isset($crud_title)) {
 
                             <div class="form-actions" style="margin-top: 30px;">
                                 <?php if ((int)($data['created_by'] ?? 0) === (int)$logged_user_id): ?>
-                                <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>)" title="Share to device"><img src="../../images/QR.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>)" title="Share to device">📱</button>
                                 <?php endif; ?>
                                 <a href="edit.php?id=<?php echo $data["id"]; ?>" class="btn btn-primary" title="Edit">✏️</a>
                                 <a href="index.php" class="btn" title="Back">🔙</a>
