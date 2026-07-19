@@ -25,7 +25,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
 - **Search:** index search matches title/description plus category, department, and assignee labels via `includes/itm_todo_search.php` (`FIND_IN_SET` on CSV `*_id` columns).
-- **QR / code share (`join.php`):** task creator (`created_by`) may create 30-minute temporary read links. `todo_share_sessions` stores plaintext `payload_json`. UI: 📱, `images/whatsapp.svg`, and 📩 on task rows and view screen; modal via shared `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_whatsapp_share.php`, `php scripts/verify_outlook_share.php`.
+- **QR / code share (`join.php`):** task creator (`created_by`) may create 30-minute temporary read links. `todo_share_sessions` stores plaintext `payload_json`. UI: 📱, `images/whatsapp.svg`, and 📨 on task rows and view screen; modal via shared `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_whatsapp_share.php`, `php scripts/verify_outlook_share.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — bulk task import with category/department/username resolution.

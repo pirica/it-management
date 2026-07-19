@@ -510,6 +510,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file'])) {
     exit;
 }
 
+if (isset($_GET['ajax_action'])) {
+    $action = (string)$_GET['ajax_action'];
+    if ($action === 'create_share_session') {
+        header('Content-Type: application/json; charset=utf-8');
+        require_once __DIR__ . '/events_share_helpers.php';
+        $eventId = (int)($_POST['id'] ?? 0);
+        $ownerUsername = (string)($_SESSION['username'] ?? '');
+        $result = events_share_create_session($conn, $eventId, $company_id, $logged_user_id, $ownerUsername);
+        if (!$result['ok']) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            die();
+        }
+        $session = $result['session'];
+        echo json_encode([
+            'ok' => true,
+            'share_code' => (string)$session['share_code'],
+            'join_url' => events_share_build_join_url((string)$session['access_token']),
+            'expires_at' => (string)$session['expires_at'],
+            'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        die();
+    }
+}
+
 // Handle ICS Export
 if (isset($_GET['export']) && $_GET['export'] === 'ics') {
     $export_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -1324,6 +1349,9 @@ if (!isset($crud_title)) {
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="?export=ics&id=<?php echo (int)$row['id']; ?>" title="Export to ICS">📅</a>
+                                        <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>)" title="Share to device">📱</button>
+                                        <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>, null, 'event')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                                        <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$row['id']; ?>, null, 'event')" title="Share on Outlook">📨</button>
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
@@ -1487,12 +1515,17 @@ if (!isset($crud_title)) {
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn">🔙</a>
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
+                        <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)($data['id'] ?? 0); ?>)" title="Share to device">📱</button>
+                        <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)($data['id'] ?? 0); ?>, null, 'event')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                        <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)($data['id'] ?? 0); ?>, null, 'event')" title="Share on Outlook">📨</button>
                     </p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
+
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
 
 <script src="../../js/theme.js"></script>
 <script src="../../js/itm-upload-helper.js"></script>

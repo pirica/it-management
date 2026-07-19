@@ -7790,6 +7790,36 @@ CREATE TABLE `todo_share_sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Temporary read-only todo snapshots for QR / 6-digit join links (private-data exempt; payload_json is plaintext until expiry).
 
+-- Table structure for `event_share_sessions`
+DROP TABLE IF EXISTS `event_share_sessions`;
+CREATE TABLE `event_share_sessions` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `company_id` INT NOT NULL,
+  `employee_id` INT NOT NULL,
+  `event_id` INT NOT NULL,
+  `share_code` CHAR(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `access_token` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `payload_json` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_event_share_access_token` (`access_token`),
+  KEY `idx_event_share_code_active` (`share_code`, `expires_at`),
+  KEY `event_id` (`event_id`),
+  KEY `company_id` (`company_id`),
+  KEY `employee_id` (`employee_id`),
+  CONSTRAINT `event_share_sessions_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `event_share_sessions_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `event_share_sessions_ibfk_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Temporary read-only event snapshots for QR / 6-digit join links (private-data exempt; payload_json is plaintext until expiry).
+
 
 -- Table structure for `system_status` (admin diagnostics cache — one row per tab)
 DROP TABLE IF EXISTS `system_status`;
