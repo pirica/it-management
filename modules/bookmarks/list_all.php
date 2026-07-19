@@ -53,13 +53,7 @@ if (function_exists('itm_is_safe_identifier') && !itm_is_safe_identifier($sort))
     $sort = 'title';
 }
 
-$orderByMap = [
-    'title'  => 'b.title',
-    'url'    => 'b.url',
-    'folder' => 'f.name',
-    'shared' => 'b.shared'
-];
-$orderBy = $orderByMap[$sort] ?? 'b.title';
+// Sorting handled in PHP after decrypting private titles/URLs.
 
 $searchRaw = isset($_GET['search']) ? $_GET['search'] : '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -71,27 +65,32 @@ $totalRows = 0;
 $totalPages = 1;
 
 if (!empty($bkmVaultState['unlocked'])) {
-$where = "b.company_id = $company_id AND b.active = 1 AND (b.employee_id = $user_id OR b.shared = 1)";
-$joinFolders = ' LEFT JOIN bookmark_folders f ON b.folder_id = f.id';
-if ($searchRaw !== '') {
-    $s = mysqli_real_escape_string($conn, $searchRaw);
-    $where .= " AND (b.title LIKE '%$s%' OR b.notes LIKE '%$s%' OR (b.shared = 1 AND b.url LIKE '%$s%') OR f.name LIKE '%$s%')";
-}
+$all_folders = bkm_get_folders($conn, $company_id, $user_id);
+$folderNameById = bkm_folder_name_map($all_folders);
 
-$sql = "SELECT b.*, f.name as folder_display_name
-        FROM bookmarks b"
-        . $joinFolders
-        . " WHERE $where ORDER BY $orderBy $dir LIMIT $offset, $perPage";
-$res = mysqli_query($conn, $sql);
-while ($res && ($row = mysqli_fetch_assoc($res))) {
-    bkm_hydrate_bookmark_row($row, $user_id);
-    $rows[] = $row;
-}
+$listResult = bkm_query_bookmarks_for_list($conn, [
+    'company_id' => $company_id,
+    'user_id' => $user_id,
+    'view_mode' => 'all',
+    'folder_scope' => 'any',
+    'selected_folder_id' => null,
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+    'page' => $page,
+    'per_page' => $perPage,
+    'folder_name_by_id' => $folderNameById,
+]);
+$rows = $listResult['rows'];
+$totalRows = $listResult['totalRows'];
+$totalPages = $listResult['totalPages'];
+$page = $listResult['page'];
 
-$countSql = "SELECT COUNT(*) as total FROM bookmarks b" . $joinFolders . " WHERE $where";
-$countRes = mysqli_query($conn, $countSql);
-$totalRows = (int)(mysqli_fetch_assoc($countRes)['total'] ?? 0);
-$totalPages = max(1, (int)ceil($totalRows / $perPage));
+foreach ($rows as &$listRow) {
+    $folderId = (int)($listRow['folder_id'] ?? 0);
+    $listRow['folder_display_name'] = $folderId > 0 ? ($folderNameById[$folderId] ?? '') : '';
+}
+unset($listRow);
 }
 
 $csrfToken = itm_get_csrf_token();
@@ -203,7 +202,7 @@ if (!isset($crud_title)) {
                                 <?php if ($showBulkActions): ?>
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
                                 <?php endif; ?>
-                                <td><?php echo sanitize($row['title']); ?></td>
+                                <td><?php echo sanitize($row['title_display'] ?? $row['title'] ?? ''); ?></td>
                                 <td style="text-align:center;">
                                     <?php if (empty($row['url_locked']) && !empty($row['url_display'])): ?>
                                     <img src="<?php echo bkm_get_favicon_url($row['url_display']); ?>"

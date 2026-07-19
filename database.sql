@@ -7404,7 +7404,8 @@ CREATE TABLE `bookmark_folders` (
   `company_id` int NOT NULL,
   `employee_id` int NOT NULL,
   `parent_folder_id` int DEFAULT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   `position` int DEFAULT '0',
   `shared` tinyint DEFAULT '0',
   `active` tinyint(1) DEFAULT '1',
@@ -7423,6 +7424,7 @@ CREATE TABLE `bookmark_folders` (
   CONSTRAINT `bookmark_folders_ibfk_parent` FOREIGN KEY (`parent_folder_id`) REFERENCES `bookmark_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Existing databases that still have uq_bookmark_folders_company_scope: DROP INDEX uq_bookmark_folders_company_scope ON bookmark_folders;
+-- Private folder names: CHANGE name to TEXT; ADD name_hash char(64); backfill name_hash from SHA2(name,256) for shared rows or re-encrypt private names via app.
 
 -- Table structure for `bookmarks`
 DROP TABLE IF EXISTS `bookmarks`;
@@ -7431,7 +7433,7 @@ CREATE TABLE `bookmarks` (
   `company_id` int NOT NULL,
   `employee_id` int NOT NULL,
   `folder_id` int DEFAULT NULL,
-  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `url_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -7457,6 +7459,7 @@ CREATE TABLE `bookmarks` (
 -- Existing databases: DELETE duplicate rows per (company_id, employee_id, SHA2(plaintext url,256)); DROP INDEX uq_bookmarks_employee_url ON bookmarks;
 -- ADD url_hash char(64) NOT NULL; backfill url_hash from SHA2(url,256) for shared rows or re-encrypt private rows via app;
 -- CHANGE url to TEXT; ADD UNIQUE (company_id, employee_id, url_hash).
+-- Private bookmark titles: CHANGE title to TEXT; re-encrypt private titles via app (shared rows stay plaintext).
 -- Seed default shared bookmarks
 -- Retroactive default bookmarks for existing Admin users
 INSERT INTO bookmarks (company_id, employee_id, title, url, url_hash, shared, active)
@@ -7811,12 +7814,13 @@ BEGIN
     -- Verifica se é admin pelo username
     IF LOWER(NEW.username) = 'admin' THEN
 
-        INSERT INTO bookmarks (company_id, employee_id, title, url, shared, active)
+        INSERT INTO bookmarks (company_id, employee_id, title, url, url_hash, shared, active)
         SELECT 
             NEW.company_id,
             NEW.id,
             b.title,
             b.url,
+            SHA2(b.url, 256),
             1,
             1
         FROM (
@@ -7839,12 +7843,13 @@ BEGIN
           AND LOWER(ur.name) = 'admin'
     ) THEN
 
-        INSERT INTO bookmarks (company_id, employee_id, title, url, shared, active)
+        INSERT INTO bookmarks (company_id, employee_id, title, url, url_hash, shared, active)
         SELECT 
             NEW.company_id,
             NEW.id,
             b.title,
             b.url,
+            SHA2(b.url, 256),
             1,
             1
         FROM (
