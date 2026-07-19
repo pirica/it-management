@@ -1118,34 +1118,130 @@ function bkm_bookmark_exists_in_folder($conn, $company_id, $user_id, $folderId, 
 }
 
 /**
+ * Folder names from root ancestor down to $folderId (empty when bookmark is at Root).
+ *
+ * @return list<string>
+ */
+function bkm_folder_breadcrumb_segments($folderId, array $foldersById)
+{
+    $folderId = $folderId !== null ? (int)$folderId : 0;
+    if ($folderId <= 0 || !isset($foldersById[$folderId])) {
+        return [];
+    }
+
+    $segments = [];
+    $seen = [];
+    $currentId = $folderId;
+    while ($currentId > 0 && isset($foldersById[$currentId]) && !isset($seen[$currentId])) {
+        $seen[$currentId] = true;
+        $name = trim((string)($foldersById[$currentId]['name'] ?? ''));
+        $segments[] = $name !== '' ? $name : ('Folder #' . $currentId);
+        $parent = $foldersById[$currentId]['parent_folder_id'] ?? null;
+        $currentId = $parent ? (int)$parent : 0;
+    }
+
+    return array_reverse($segments);
+}
+
+/**
+ * Full folder path for import reports, e.g. "Root / L1 / L2".
+ */
+function bkm_format_folder_breadcrumb($folderId, array $foldersById)
+{
+    $segments = bkm_folder_breadcrumb_segments($folderId, $foldersById);
+    if ($segments === []) {
+        return 'Root';
+    }
+
+    return 'Root / ' . implode(' / ', $segments);
+}
+
+/**
+ * @return int|null Existing bookmark folder_id for this employee URL, or null at Root / not found.
+ */
+function bkm_find_bookmark_folder_id_for_employee_url($conn, $company_id, $user_id, $url)
+{
+    $urlHash = bkm_bookmark_url_hash(trim((string)$url));
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT folder_id FROM bookmarks WHERE company_id = ? AND employee_id = ? AND url_hash = ? AND active = 1 LIMIT 1'
+    );
+    mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $urlHash);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    if (!$row) {
+        return null;
+    }
+
+    $folderId = $row['folder_id'];
+    if ($folderId === null || (int)$folderId <= 0) {
+        return null;
+    }
+
+    return (int)$folderId;
+}
+
+/**
+ * Folder label shown on duplicate import rows (existing bookmark path or first in-file path).
+ *
+ * @param array<string,string> $importedUrlKeys
+ */
+function bkm_resolve_import_duplicate_folder_label($skipReason, $url, $targetFolderLabel, array $importedUrlKeys, $conn, $company_id, $user_id, array $foldersById)
+{
+    $skipReason = (string)$skipReason;
+    $url = trim((string)$url);
+
+    if ($skipReason === 'duplicate_file' && isset($importedUrlKeys[$url])) {
+        $firstLabel = trim((string)$importedUrlKeys[$url]);
+        if ($firstLabel !== '') {
+            return $firstLabel;
+        }
+    }
+
+    if ($skipReason === 'duplicate_employee') {
+        return bkm_format_folder_breadcrumb(
+            bkm_find_bookmark_folder_id_for_employee_url($conn, $company_id, $user_id, $url),
+            $foldersById
+        );
+    }
+
+    return $targetFolderLabel;
+}
+
+/**
  * Human-readable folder label for import skip reports.
  *
  * @param list<string> $folderPath
  */
 function bkm_format_import_folder_label(array $folderPath, $folderId, array $foldersById)
 {
-    $pathLabel = implode(' / ', array_filter(array_map('trim', $folderPath), static function ($segment) {
-        return $segment !== '';
-    }));
+    $segments = [];
+    if ($folderId !== null && (int)$folderId > 0) {
+        $segments = bkm_folder_breadcrumb_segments((int)$folderId, $foldersById);
+    }
 
-    if ($pathLabel === '' && $folderId === null) {
+    foreach ($folderPath as $segment) {
+        $segment = trim((string)$segment);
+        if ($segment !== '') {
+            $segments[] = $segment;
+        }
+    }
+
+    if ($segments === []) {
         return 'Root';
     }
 
-    if ($pathLabel === '' && $folderId !== null) {
-        $folderId = (int)$folderId;
-        return isset($foldersById[$folderId]) ? $foldersById[$folderId]['name'] : ('Folder #' . $folderId);
-    }
-
-    if ($folderId !== null && isset($foldersById[(int)$folderId])) {
-        return $foldersById[(int)$folderId]['name'] . ' / ' . $pathLabel;
-    }
-
-    return $pathLabel;
+    return 'Root / ' . implode(' / ', $segments);
 }
 
 /**
- * Short skip summary for import reports, e.g. "Duplicate URL → WD".
+ * Short skip summary for import reports, e.g. "Duplicate URL → Root / L1 / L2".
  */
 function bkm_format_import_skip_summary($skipReason, $folderLabel)
 {
@@ -1176,7 +1272,7 @@ function bkm_format_import_skip_summary($skipReason, $folderLabel)
 }
 
 /**
- * Import success summary for result tables, e.g. "Successfully imported → WD".
+ * Import success summary for result tables, e.g. "Successfully imported → Root / L1 / L2".
  */
 function bkm_format_import_success_summary($folderLabel)
 {
@@ -1213,7 +1309,7 @@ function bkm_import_skip_row_class($skipReason)
 /**
  * Pre-import validation — does not create folders or insert rows.
  *
- * @param array<string,bool> $importedUrlKeys
+ * @param array<string,string> $importedUrlKeys URL => folder label from first successful import in this file
  * @return array{imported:bool,skip_reason:string,skip_label:string}|null null when import may proceed
  */
 function bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, array &$importedUrlKeys)
@@ -1258,10 +1354,10 @@ function bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, array 
 /**
  * Insert one bookmark after precheck and folder resolution.
  *
- * @param array<string,bool> $importedUrlKeys
+ * @param array<string,string> $importedUrlKeys URL => folder label from first successful import in this file
  * @return array{imported:bool,skip_reason:string,skip_label:string}
  */
-function bkm_commit_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, array &$importedUrlKeys)
+function bkm_commit_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, $importFolderLabel, array &$importedUrlKeys)
 {
     $insertResult = bkm_insert_bookmark_row(
         $conn,
@@ -1284,7 +1380,9 @@ function bkm_commit_import_bookmark($conn, $company_id, $user_id, $folderId, $ti
         ];
     }
 
-    $importedUrlKeys[trim((string)$url)] = true;
+    $urlKey = trim((string)$url);
+    $label = trim((string)$importFolderLabel);
+    $importedUrlKeys[$urlKey] = $label !== '' ? $label : 'Root';
 
     return [
         'imported' => true,
@@ -1311,6 +1409,7 @@ function bkm_try_import_html_bookmark(
     $title,
     $url,
     $notes,
+    $importFolderLabel,
     array &$importedUrlKeys
 ) {
     $precheck = bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, $importedUrlKeys);
@@ -1343,6 +1442,7 @@ function bkm_try_import_html_bookmark(
         $title,
         $url,
         $notes,
+        $importFolderLabel,
         $importedUrlKeys
     );
 }
@@ -1350,10 +1450,10 @@ function bkm_try_import_html_bookmark(
 /**
  * Import one bookmark when URL is allowed and not already present for this employee.
  *
- * @param array<string,bool> $importedUrlKeys
+ * @param array<string,string> $importedUrlKeys URL => folder label from first successful import in this file
  * @return array{imported:bool,skip_reason:string,skip_label:string}
  */
-function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, array &$importedUrlKeys)
+function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title, $url, $notes, $importFolderLabel, array &$importedUrlKeys)
 {
     $precheck = bkm_precheck_import_bookmark($conn, $company_id, $user_id, $url, $importedUrlKeys);
     if ($precheck !== null) {
@@ -1368,6 +1468,7 @@ function bkm_try_import_bookmark($conn, $company_id, $user_id, $folderId, $title
         $title,
         $url,
         $notes,
+        $importFolderLabel,
         $importedUrlKeys
     );
 }
