@@ -215,33 +215,56 @@ if ($countStmt) {
 }
 
 $sendLogs = [];
-$logSql = 'SELECT id, to_email, subject, status, details, sent_at
-           FROM emails
-           WHERE company_id = ? AND active = 1';
-$logTypes = 'i';
-$logParams = [$company_id];
+$perPage = itm_resolve_records_per_page($uiConfig ?? null);
+$page = max(1, (int)($_GET['page'] ?? 1));
+$sendLogsWhereSql = 'company_id = ? AND active = 1';
+$sendLogsTypes = 'i';
+$sendLogsParams = [$company_id];
 if ($status_filter !== '') {
-    $logSql .= ' AND status = ?';
-    $logTypes .= 's';
-    $logParams[] = $status_filter;
+    $sendLogsWhereSql .= ' AND status = ?';
+    $sendLogsTypes .= 's';
+    $sendLogsParams[] = $status_filter;
 }
 if ($searchRaw !== '') {
     $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false) ? $searchRaw : '%' . $searchRaw . '%';
-    $logSql .= ' AND (
+    $sendLogsWhereSql .= ' AND (
         to_email LIKE ?
         OR subject LIKE ?
         OR status LIKE ?
         OR details LIKE ?
         OR CAST(sent_at AS CHAR) LIKE ?
     )';
-    $logTypes .= 'sssss';
-    $logParams[] = $searchPattern;
-    $logParams[] = $searchPattern;
-    $logParams[] = $searchPattern;
-    $logParams[] = $searchPattern;
-    $logParams[] = $searchPattern;
+    $sendLogsTypes .= 'sssss';
+    $sendLogsParams[] = $searchPattern;
+    $sendLogsParams[] = $searchPattern;
+    $sendLogsParams[] = $searchPattern;
+    $sendLogsParams[] = $searchPattern;
+    $sendLogsParams[] = $searchPattern;
 }
-$logSql .= ' ORDER BY sent_at DESC, id DESC LIMIT 500';
+
+$sendLogsTotalRows = 0;
+$sendLogsCountSql = 'SELECT COUNT(*) FROM emails WHERE ' . $sendLogsWhereSql;
+$sendLogsCountStmt = mysqli_prepare($conn, $sendLogsCountSql);
+if ($sendLogsCountStmt) {
+    mysqli_stmt_bind_param($sendLogsCountStmt, $sendLogsTypes, ...$sendLogsParams);
+    mysqli_stmt_execute($sendLogsCountStmt);
+    mysqli_stmt_bind_result($sendLogsCountStmt, $sendLogsTotalRows);
+    mysqli_stmt_fetch($sendLogsCountStmt);
+    mysqli_stmt_close($sendLogsCountStmt);
+}
+$sendLogsTotalRows = (int)$sendLogsTotalRows;
+
+$sendLogsTotalPages = max(1, (int)ceil($sendLogsTotalRows / $perPage));
+if ($page > $sendLogsTotalPages) {
+    $page = $sendLogsTotalPages;
+}
+$sendLogsOffset = ($page - 1) * $perPage;
+
+$logSql = 'SELECT id, to_email, subject, status, details, sent_at
+           FROM emails
+           WHERE ' . $sendLogsWhereSql . ' ORDER BY sent_at DESC, id DESC LIMIT ? OFFSET ?';
+$logTypes = $sendLogsTypes . 'ii';
+$logParams = array_merge($sendLogsParams, [$perPage, $sendLogsOffset]);
 $logStmt = mysqli_prepare($conn, $logSql);
 if ($logStmt) {
     mysqli_stmt_bind_param($logStmt, $logTypes, ...$logParams);
@@ -252,6 +275,22 @@ if ($logStmt) {
     }
     mysqli_stmt_close($logStmt);
 }
+
+$emailsSendLogsPageUrl = static function (array $extra = []) use ($status_filter, $searchRaw, $page): string {
+    $query = ['tab' => 'send_logs'];
+    if ($status_filter !== '') {
+        $query['status'] = $status_filter;
+    }
+    if ($searchRaw !== '') {
+        $query['search'] = $searchRaw;
+    }
+    if (!array_key_exists('page', $extra)) {
+        $query['page'] = $page;
+    }
+    $query = array_merge($query, $extra);
+
+    return 'index.php?' . http_build_query($query);
+};
 
 $smtpConfigs = [];
 $smtpStmt = mysqli_prepare(
