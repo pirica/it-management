@@ -1440,15 +1440,15 @@ if (!isset($crud_title)) {
 
                 <!-- SEARCH BAR -->
                 <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <form method="GET" class="itm-floor-plan-search">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
                         <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
                         <input type="hidden" name="page" value="1">
-                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                        <div class="form-group">
                             <label for="moduleSearch">Search (all fields)</label>
                             <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
                         </div>
-                        <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                        <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Search</button>
                             <a href="list_all.php" class="btn" title="Clear">🔙</a>
                         </div>

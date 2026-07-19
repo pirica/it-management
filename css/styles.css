@@ -1789,6 +1789,26 @@ input[type="submit"] {
     margin-bottom: 16px;
 }
 
+.itm-floor-plan-search {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: nowrap;
+}
+
+.itm-floor-plan-search .form-group {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+.itm-floor-plan-search .form-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    margin: 0;
+}
+
 .itm-floor-plan-upload-target,
 .itm-photo-upload-target {
     padding: 20px;

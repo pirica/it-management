@@ -29,7 +29,7 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
 - **Gallery View**: Shows thumbnails for supported image types.
 - **Gallery list header**: `gallery_index_view.php` uses `data-itm-new-button-managed="server"` with centered `sanitize($moduleListHeading)` (🗺️ from sidebar) and Settings `new_button_position` gates for canonical ➕ create/upload link (`title="Create"`, emoji-only visible text).
-- **Gallery search**: GET `search` on `index.php` filters via `fp_fetch_gallery_items()` (display name, folder, tag, IT location, file extension); reset control is emoji-only 🔙 on `<a>` and preserves `folder_id` / `unfiled` context when clearing.
+- **Gallery search**: GET `search` on `index.php` filters via `fp_fetch_gallery_items()` (display name, folder, tag, IT location, file extension); reset control is emoji-only 🔙 on `<a>` and preserves `folder_id` / `unfiled` context when clearing. Gallery and `list_all` search rows use `.itm-floor-plan-search` (`flex-wrap: nowrap`) so Search + 🔙 stay on one line with the input.
 - **Folder Tree**: Interactive sidebar for navigating folders.
 - **Drag & Drop**: Supports moving files and folders via drag-and-drop.
 - **list_all.php**: Flat metadata table (`$crud_action === 'list_all'` in `index.php`) with standard bulk toolbar when `$totalRows >= $perPage` — `bulk-delete-form`, Select to Delete / Cancel / Clear Table, gated row `ids[]` checkboxes, and `bulk-delete-selection.js` in index HTML.
