@@ -25,7 +25,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - **Search:** server-side GET `search` on `index.php` (`$searchRaw`) — after vault hydrate, `pc_row_matches_search()` filters on first/last name, email, organisation, phone, labels, and full name (no SQL `LIKE` on ciphertext). Sort via `pc_compare_contact_rows()`; favourites stay first.
 - **Pagination:** `itm_resolve_records_per_page()`, `$perPage`, `$totalRows`, `LIMIT`/`$offset`, Previous/Next with `title="◀️ Previous"` / `title="▶️ Next"`.
 - `data-itm-db-import-endpoint="index.php"` on index table for Excel import.
-- Actions column uses `itm-actions-cell` markers.
+- Actions column uses `itm-actions-cell` + `itm-actions-wrap` (no `flex-wrap` — share + CRUD buttons stay on one line).
 - Create/edit profile photo uses the employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, **PNG only**). Hint: `Drag and drop or click to upload PNG.` Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
 
 ## 6. API Actions (If Applicable)
