@@ -208,7 +208,7 @@ if (!isset($crud_title)) {
                                     </a>
                                 </th>
                             <?php endforeach; ?>
-                            <th width="220" class="text-right itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                            <th class="text-right itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -251,7 +251,7 @@ if (!isset($crud_title)) {
                                         ?>
                                     </td>
                                     <td class="text-right itm-actions-cell" data-itm-actions-origin="1">
-                                        <div class="itm-actions-wrap" style="display:flex;justify-content:flex-end;gap:4px;flex-wrap:wrap;">
+                                        <div class="itm-actions-wrap">
                                             <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$contact['id']; ?>)" title="Share to device">📱</button>
                                             <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$contact['id']; ?>, null, 'private contact')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
                                             <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$contact['id']; ?>, null, 'private contact')" title="Share on Outlook">📨</button>
