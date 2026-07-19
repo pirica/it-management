@@ -76,6 +76,10 @@ while ($res && ($row = mysqli_fetch_assoc($res))) {
     $bookmarks[] = $row;
 }
 
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+$totalRows = count($bookmarks);
+$showBulkActions = ($totalRows >= $perPage);
+
 $csrfToken = itm_get_csrf_token();
 ?>
 <!DOCTYPE html>
@@ -214,12 +218,16 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
 
-                <div class="bulk-delete-bar">
+                <?php if ($showBulkActions): ?>
+                <div class="bulk-delete-bar card" style="margin-bottom:16px;">
                     <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
+                <?php endif; ?>
 
                 <div class="bookmarks-list">
     <?php if (empty($bookmarks)): ?>
@@ -232,7 +240,9 @@ if (!isset($crud_title)) {
         <table style="width:100%; border-collapse:collapse;" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
 <thead>
     <tr style="background:var(--bg-secondary);">
-
+        <?php if ($showBulkActions): ?>
+        <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+        <?php endif; ?>
         <th style="padding:8px; cursor:pointer;" onclick="sortTable(1, this)">
             Title <span class="sort-arrow"></span>
         </th>
@@ -259,10 +269,11 @@ if (!isset($crud_title)) {
                 <?php foreach ($bookmarks as $b): ?>
                     <tr style="border-bottom:1px solid var(--border);">
 
-    <!-- Checkbox -->
+    <?php if ($showBulkActions): ?>
     <td style="padding:8px;">
         <input type="checkbox" name="ids[]" value="<?php echo (int)$b['id']; ?>" form="bulk-delete-form">
     </td>
+    <?php endif; ?>
 
     <!-- Title -->
     <td style="padding:8px;">
@@ -347,116 +358,58 @@ if (!isset($crud_title)) {
 
 <script src="../../js/theme.js"></script>
 <script src="./export.js"></script>
+<script src="../../js/bulk-delete-selection.js"></script>
 <script>
-/**
- * Custom logic for bulk delete in tree view because shared script expects table rows.
- */
-(function() {
-    const bulkDeleteForm = document.getElementById('bulk-delete-form');
-    const toggleButton = document.getElementById('bulk-delete-toggle');
-    const checkboxWraps = document.querySelectorAll('.bookmark-checkbox-wrap');
-    const checkboxes = document.querySelectorAll('input[name="ids[]"]');
-    let selectionMode = false;
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-menu').forEach(function(el) {
+        el.classList.remove('show');
+    });
+});
 
-    let cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'btn btn-sm';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.style.display = 'none';
-    toggleButton.insertAdjacentElement('afterend', cancelButton);
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.delete-folder-btn');
+    if (!btn) return;
 
-    function setSelectionVisibility(visible) {
-        checkboxWraps.forEach(w => w.style.display = visible ? 'block' : 'none');
-    }
+    const id = btn.dataset.id;
+    const hasBookmarks = btn.dataset.hasBookmarks === '1';
+    let deleteContents = '0';
 
-    function exitSelectionMode() {
-        selectionMode = false;
-        setSelectionVisibility(false);
-        toggleButton.textContent = 'Select to Delete';
-        cancelButton.style.display = 'none';
-        checkboxes.forEach(cb => cb.checked = false);
-    }
-
-    cancelButton.addEventListener('click', exitSelectionMode);
-
-    bulkDeleteForm.addEventListener('submit', function(e) {
-        if (e.submitter !== toggleButton) return;
-
-        if (!selectionMode) {
-            e.preventDefault();
-            selectionMode = true;
-            setSelectionVisibility(true);
-            toggleButton.textContent = 'Delete Selected';
-            cancelButton.style.display = 'inline-block';
+    if (hasBookmarks) {
+        if (!confirm('This action will delete all bookmarks in the folder. Continue?')) {
             return;
         }
-
-        const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-        if (!anyChecked) {
-            e.preventDefault();
-            alert('Please select at least one bookmark to delete.');
-            return;
+        if (confirm('Delete all bookmarks? Click OK to delete everything, or Cancel to move bookmarks to the Root.')) {
+            deleteContents = '1';
+        } else {
+            deleteContents = '0';
         }
+    }
 
-        if (!confirm('Delete selected bookmarks?')) {
-            e.preventDefault();
-        }
-    });
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'delete_folder.php';
 
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function() {
-        document.querySelectorAll('.dropdown-menu').forEach(function(el) {
-            el.classList.remove('show');
-        });
-    });
+    const idInput = document.createElement('input');
+    idInput.type = 'hidden';
+    idInput.name = 'id';
+    idInput.value = id;
 
-    // Folder deletion logic
-    document.addEventListener('click', function(e) {
-        const btn = e.target.closest('.delete-folder-btn');
-        if (!btn) return;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = '<?php echo sanitize($csrfToken); ?>';
 
-        const id = btn.dataset.id;
-        const hasBookmarks = btn.dataset.hasBookmarks === '1';
-        let deleteContents = '0';
+    const delContentInput = document.createElement('input');
+    delContentInput.type = 'hidden';
+    delContentInput.name = 'delete_contents';
+    delContentInput.value = deleteContents;
 
-        if (hasBookmarks) {
-            if (!confirm('This action will delete all bookmarks in the folder. Continue?')) {
-                return;
-            }
-            // Give options: Move or Delete
-            if (confirm('Delete all bookmarks? Click OK to delete everything, or Cancel to move bookmarks to the Root.')) {
-                deleteContents = '1';
-            } else {
-                deleteContents = '0';
-            }
-        }
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'delete_folder.php';
-
-        const idInput = document.createElement('input');
-        idInput.type = 'hidden';
-        idInput.name = 'id';
-        idInput.value = id;
-
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token';
-        csrfInput.value = '<?php echo sanitize($csrfToken); ?>';
-
-        const delContentInput = document.createElement('input');
-        delContentInput.type = 'hidden';
-        delContentInput.name = 'delete_contents';
-        delContentInput.value = deleteContents;
-
-        form.appendChild(idInput);
-        form.appendChild(csrfInput);
-        form.appendChild(delContentInput);
-        document.body.appendChild(form);
-        form.submit();
-    });
-})();
+    form.appendChild(idInput);
+    form.appendChild(csrfInput);
+    form.appendChild(delContentInput);
+    document.body.appendChild(form);
+    form.submit();
+});
 
 function copyUrl(text) {
     const el = document.createElement('textarea');
