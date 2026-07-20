@@ -74,7 +74,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **employee_fields_missing.php** — employees-only wrapper around **`fields_missing.php`** / `itm_fields_missing_report.php`. Catalog: **`scripts/scripts.php`**.
 - **fields_missing.php** — all-module schema/UI audit; optional **`--strict-gate`**. Catalog: **`scripts/scripts.php`**; reviewed JSON contract: **`SCRIPTS.md`** → *fields_missing reviewed exceptions*.
 - **fields_missing_reviewed.php** — manifest for `scripts/data/fields_missing_reviewed.json`. Catalog: **`scripts/scripts.php`**.
-- **ui_configuration_reviewed.php** — manifest for `scripts/data/ui_configuration_reviewed.json` (`[n/a][*][reviewed]` lines in `check_ui_configuration_coverage.php`). Catalog: **`scripts/scripts.php`**.
+- **ui_configuration_reviewed.php** — manifest for `scripts/data/ui_configuration_reviewed.json` (`[n/a][*][reviewed]` lines in `check_ui_configuration_coverage.php`; reviewed `[n/a][fail]` omitted from footer summary). Catalog: **`scripts/scripts.php`**.
 - **verify_emails_module.php** — Email Management tables, registry row, SMTP/alert seeds, `itm_send_email()` helper, delivery test scripts, and company 1 alert-runner 30-day window (hard fail when empty; inserts disposable license sample then cleans up).
 - **verify_bookmarks_import.php** — Bookmarks HTML import (`L1/L2` nested folders), duplicate URL skips without orphan folders, legacy `name_hash` folder match, CSV folder target; disposable script employee + `data/bookmarks_import_sample.html`.
 - **verify_bookmarks_folder_move.php** — Bookmarks folder reparent vs merge into same-named sibling (`bkm_move_folder()`, `bkm_merge_folder_into()`).
