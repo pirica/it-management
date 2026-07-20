@@ -177,53 +177,139 @@ function rp_can_delete_request(array $row, $employeeId)
 }
 
 /**
+ * Load a live request_password row for delete permission checks.
+ *
+ * @return array<string,mixed>|null
+ */
+function rp_lookup_request_for_delete(mysqli $conn, int $id, int $companyId)
+{
+    $lookupStmt = mysqli_prepare(
+        $conn,
+        'SELECT id, created_by, employee_id FROM request_password WHERE id = ? AND company_id = ? AND active = 1 AND deleted_at IS NULL LIMIT 1'
+    );
+    if (!$lookupStmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($lookupStmt, 'ii', $id, $companyId);
+    mysqli_stmt_execute($lookupStmt);
+    $lookupRes = mysqli_stmt_get_result($lookupStmt);
+    $row = $lookupRes ? mysqli_fetch_assoc($lookupRes) : null;
+    mysqli_stmt_close($lookupStmt);
+    return $row ?: null;
+}
+
+/**
+ * Soft-delete one request when the session employee is the creator.
+ */
+function rp_soft_delete_request_if_allowed(mysqli $conn, int $id, int $companyId, int $sessionEmployeeId): bool
+{
+    $row = rp_lookup_request_for_delete($conn, $id, $companyId);
+    if (!$row || !rp_can_delete_request($row, $sessionEmployeeId)) {
+        return false;
+    }
+
+    $where = 'WHERE id = ? AND company_id = ?';
+    if (function_exists('itm_crud_build_soft_delete_sql')) {
+        $deleteSql = itm_crud_build_soft_delete_sql('request_password', $where, $sessionEmployeeId);
+        $stmt = mysqli_prepare($conn, $deleteSql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ii', $id, $companyId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+            return true;
+        }
+        return false;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'UPDATE request_password SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+    );
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'iii', $sessionEmployeeId, $id, $companyId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return true;
+}
+
+/**
  * Handle CRUD Actions
  */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit', 'delete'])) {
     itm_require_post_csrf();
 
     if ($crud_action == 'delete') {
-        $id = (int)($_POST['id'] ?? 0);
         $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
-
-        $lookupStmt = mysqli_prepare(
-            $conn,
-            'SELECT id, created_by, employee_id FROM request_password WHERE id = ? AND company_id = ? AND active = 1 AND deleted_at IS NULL LIMIT 1'
-        );
-        $row = null;
-        if ($lookupStmt) {
-            mysqli_stmt_bind_param($lookupStmt, 'ii', $id, $company_id);
-            mysqli_stmt_execute($lookupStmt);
-            $lookupRes = mysqli_stmt_get_result($lookupStmt);
-            $row = $lookupRes ? mysqli_fetch_assoc($lookupRes) : null;
-            mysqli_stmt_close($lookupStmt);
+        $bulkAction = (string)($_POST['bulk_action'] ?? '');
+        if ($bulkAction === '' && (int)($_POST['id'] ?? 0) > 0) {
+            $bulkAction = 'single_delete';
         }
 
-        if (!$row || !rp_can_delete_request($row, $sessionEmployeeId)) {
-            $_SESSION['crud_error'] = 'Only the employee who created this request can delete it.';
+        if ($bulkAction === 'clear_table') {
+            $listStmt = mysqli_prepare(
+                $conn,
+                'SELECT id, created_by, employee_id FROM request_password WHERE company_id = ? AND active = 1 AND deleted_at IS NULL'
+            );
+            $cleared = 0;
+            if ($listStmt) {
+                mysqli_stmt_bind_param($listStmt, 'i', $company_id);
+                mysqli_stmt_execute($listStmt);
+                $listRes = mysqli_stmt_get_result($listStmt);
+                while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
+                    if (!rp_can_delete_request($row, $sessionEmployeeId)) {
+                        continue;
+                    }
+                    if (rp_soft_delete_request_if_allowed($conn, (int)$row['id'], (int)$company_id, $sessionEmployeeId)) {
+                        $cleared++;
+                    }
+                }
+                mysqli_stmt_close($listStmt);
+            }
+            $_SESSION['crud_success'] = $cleared > 0 ? 'Deleted ' . $cleared . ' request(s).' : 'No deletable requests found.';
             header('Location: index.php');
             exit;
         }
 
-        $where = 'WHERE id = ? AND company_id = ?';
-        if (function_exists('itm_crud_build_soft_delete_sql')) {
-            $deleteSql = itm_crud_build_soft_delete_sql('request_password', $where, $sessionEmployeeId);
-            $stmt = mysqli_prepare($conn, $deleteSql);
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
-                mysqli_stmt_execute($stmt);
-                mysqli_stmt_close($stmt);
+        if ($bulkAction === 'bulk_delete') {
+            $ids = $_POST['ids'] ?? [];
+            if (!is_array($ids)) {
+                $ids = [];
             }
-        } else {
-            $stmt = mysqli_prepare(
-                $conn,
-                'UPDATE request_password SET active = 0, deleted_by = ?, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
-            );
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'iii', $sessionEmployeeId, $id, $company_id);
-                mysqli_stmt_execute($stmt);
-                mysqli_stmt_close($stmt);
+            $idList = [];
+            foreach ($ids as $rawId) {
+                $id = (int)$rawId;
+                if ($id > 0) {
+                    $idList[] = $id;
+                }
             }
+            if (empty($idList)) {
+                $_SESSION['crud_error'] = 'No requests selected.';
+                header('Location: index.php');
+                exit;
+            }
+            foreach ($idList as $id) {
+                $row = rp_lookup_request_for_delete($conn, $id, (int)$company_id);
+                if (!$row || !rp_can_delete_request($row, $sessionEmployeeId)) {
+                    $_SESSION['crud_error'] = 'Only the employee who created this request can delete it.';
+                    header('Location: index.php');
+                    exit;
+                }
+            }
+            foreach ($idList as $id) {
+                rp_soft_delete_request_if_allowed($conn, $id, (int)$company_id, $sessionEmployeeId);
+            }
+            $_SESSION['crud_success'] = 'Selected request(s) deleted.';
+            header('Location: index.php');
+            exit;
+        }
+
+        $id = (int)($_POST['id'] ?? 0);
+        if (!$id || !rp_soft_delete_request_if_allowed($conn, $id, (int)$company_id, $sessionEmployeeId)) {
+            $_SESSION['crud_error'] = 'Only the employee who created this request can delete it.';
+            header('Location: index.php');
+            exit;
         }
         $_SESSION['crud_success'] = 'Request deleted.';
         header('Location: index.php');
@@ -458,6 +544,17 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                 </div>
 
+                <?php if ($showBulkActions): ?>
+                <div class="card" style="margin-bottom:16px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                        <input type="hidden" name="csrf_token" value="<?php echo itm_get_csrf_token(); ?>">
+                        <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
                 <div class="card" style="margin-bottom:16px;">
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
@@ -469,7 +566,7 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">🔙</a>
+                            <a href="index.php" class="btn" title="Clear">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -479,6 +576,7 @@ if (!isset($crud_title)) {
                         <table data-itm-db-import-endpoint="index.php">
                             <thead>
                                 <tr>
+                                    <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                                     <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                                     <?php
                                     $rpListColumns = [
@@ -508,6 +606,7 @@ if (!isset($crud_title)) {
                                     $canDelete = rp_can_delete_request($row, (int)($_SESSION['employee_id'] ?? 0));
                                 ?>
                                 <tr>
+                                    <?php if ($showBulkActions): ?><td><?php if ($canDelete): ?><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"><?php endif; ?></td><?php endif; ?>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <div class="itm-actions-wrap">
                                             <a href="view.php?id=<?php echo (int)$row['id']; ?>" class="btn btn-sm" title="View">🔎</a>
@@ -533,7 +632,7 @@ if (!isset($crud_title)) {
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php else: ?>
-                                <tr><td colspan="7" style="text-align:center;">No records found.</td></tr>
+                                <tr><td colspan="<?php echo $showBulkActions ? 8 : 7; ?>" style="text-align:center;">No records found.</td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
