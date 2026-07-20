@@ -351,7 +351,7 @@ mysqli_stmt_execute($dataStmt);
 $items = mysqli_stmt_get_result($dataStmt);
 
 $showBulkActions = $totalRows >= $perPage;
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 ?>
 <!DOCTYPE html>

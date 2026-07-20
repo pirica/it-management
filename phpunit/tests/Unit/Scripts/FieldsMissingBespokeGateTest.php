@@ -270,7 +270,7 @@ PHP;
         $content = <<<'PHP'
 <!DOCTYPE html><html><head><title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title></head>
 <body>
-<?php $moduleListHeading = $crud_title; $newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right'); ?>
+<?php $moduleListHeading = $crud_title; $newButtonPosition = itm_resolve_new_button_position($ui_config); ?>
 <div data-itm-new-button-managed="server" style="position:relative;display:flex;">
 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
@@ -303,7 +303,7 @@ PHP;
 <body>
 <?php
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
 <div data-itm-new-button-managed="server" style="position:relative;display:flex;">
 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary">➕</a><?php endif; ?>
@@ -330,7 +330,7 @@ PHP;
     {
         require_once __DIR__ . '/../../../../scripts/lib/itm_ui_list_contract_checks.php';
         $index = <<<'PHP'
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;">
 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
 <a href="create.php" class="btn btn-primary" title="Create">➕</a>

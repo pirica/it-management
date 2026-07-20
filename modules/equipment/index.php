@@ -233,10 +233,7 @@ if ($showSwitchPortManager && $selectedSwitchId > 0) {
 // Final check for SPM visibility
 $showSwitchPortManager = $showSwitchPortManager && $selectedSwitchData !== null;
 
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: 'Equipment';
 $moduleSearchPlaceholder = (string)($equipmentSearchPlaceholder ?? 'Use SQL wildcards, e.g. %%switch%%');
 $locationTypeExtraOptions = [];

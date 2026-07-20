@@ -794,10 +794,7 @@ $offset = ($page - 1) * $perPage;
 // Final data fetch
 $rows = mysqli_query($conn, 'SELECT e.*, COALESCE(d.name, CONCAT(\'[Shared] \', ds.name)) AS department_name FROM ' . cr_escape_identifier($crud_table) . ' e LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id LEFT JOIN departments ds ON ds.id = e.department_id ' . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: ('🧩 ' . $crud_title);
-$newButtonPosition = (string)(($ui_config ?? [])['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
 <!DOCTYPE html>
 <html lang="en">

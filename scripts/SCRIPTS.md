@@ -1162,6 +1162,8 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 
 **List new button style:** `php scripts/apply_list_new_button_style.php` — normalizes list-header `create.php` ➕ anchors to `class="btn btn-primary itm-list-new-button" title="Create"` (pairs with `styles.css` 40×40 footprint and `fields_missing` New button style gate).
 
+**New button position helper:** `php scripts/apply_new_button_position_helper.php` — replaces inline `$ui_config['new_button_position'] ?? 'left_right'` blocks with `itm_resolve_new_button_position($ui_config)` from `includes/ui_config.php` (canonical default **`left`**). Default dry-run; `--apply` or `?apply=1` writes.
+
 ---
 
 

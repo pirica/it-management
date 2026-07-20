@@ -956,6 +956,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="apply_list_new_button_style.php">dry-run</a> / <a href="apply_list_new_button_style.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_list_new_button_style.php</code> then <code>php scripts/apply_list_new_button_style.php --apply</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_new_button_position_helper.php" target="_blank" rel="nofollow noreferrer">apply_new_button_position_helper.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Maintenance: replace duplicated <code>new_button_position</code> fallbacks with <code>itm_resolve_new_button_position($ui_config)</code> (default <code>left</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td>Browser: <a href="apply_new_button_position_helper.php">dry-run</a> / <a href="apply_new_button_position_helper.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_new_button_position_helper.php</code> then <code>php scripts/apply_new_button_position_helper.php --apply</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="apply_itm_actions_cell_markers.php" target="_blank" rel="nofollow noreferrer">apply_itm_actions_cell_markers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>One-time/maintenance: add <code>class="itm-actions-cell"</code> and <code>data-itm-actions-origin="1"</code> on Actions column header and body cells in module list tables (module browser QA <code>ui_check</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped files under <code>modules/*/index.php</code> and <code>modules/*/includes/partials/render.php</code>.</td>
