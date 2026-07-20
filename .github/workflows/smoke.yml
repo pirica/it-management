@@ -53,6 +53,7 @@ jobs:
           extensions: mysqli
           coverage: none
 
+      # CI uses monolith database.sql; local dev may use bash scripts/import_database_split.sh (db/01→03→02).
       - name: Import database.sql
         env:
           MYSQL_HOST: 127.0.0.1

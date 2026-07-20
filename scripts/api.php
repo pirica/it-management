@@ -561,6 +561,27 @@ function itmDocProjectJsonEndpoints(): array
         ],
         [
             'group' => 'Scripts / tooling',
+            'method' => 'CLI',
+            'path' => 'scripts/split_database_sql.php',
+            'params' => '--apply (optional)',
+            'purpose' => 'Generate db/01_schema.sql, db/03_data.sql, db/02_triggers.sql from database.sql (dry-run default).',
+        ],
+        [
+            'group' => 'Scripts / tooling',
+            'method' => 'CLI',
+            'path' => 'scripts/verify_database_split_parity.php',
+            'params' => '—',
+            'purpose' => 'Static parity gate: db/ split files match database.sql (130 tables, 337 triggers).',
+        ],
+        [
+            'group' => 'Scripts / tooling',
+            'method' => 'CLI',
+            'path' => 'scripts/import_database_split.sh',
+            'params' => 'MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD',
+            'purpose' => 'Import db/ split in one MySQL session (01_schema → 03_data → 02_triggers). See db/AGENT_NOTES.md.',
+        ],
+        [
+            'group' => 'Scripts / tooling',
             'method' => 'GET',
             'path' => 'scripts/compare_database_sql_modules.php',
             'params' => '—',
@@ -592,7 +613,7 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'GET',
             'path' => 'scripts/SCRIPTS_TEST_MATRIX.md',
             'params' => '—',
-            'purpose' => 'Full catalog scripts verification matrix (tiers 0-5, runner coverage, destroy->fresh database.sql clone protocol). Destroy log: scripts/data/scripts-matrix-destroy-log.md. Safe-matrix run report: scripts/data/scripts_errors.txt.',
+            'purpose' => 'Full catalog scripts verification matrix (tiers 0-5, runner coverage, destroy→fresh database.sql or db/ split clone protocol). Destroy log: scripts/data/scripts-matrix-destroy-log.md. Safe-matrix run report: scripts/data/scripts_errors.txt.',
         ],
         [
             'group' => 'Scripts / tooling',

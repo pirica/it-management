@@ -2,7 +2,7 @@
 /**
  * Set created_at on every row in every table that has a created_at column.
  *
- * Why: After importing database.sql, DEFAULT CURRENT_TIMESTAMP and replication gaps
+ * Why: After importing database.sql or the db/ split bundle, DEFAULT CURRENT_TIMESTAMP and replication gaps
  * can leave live rows with import-time created_at values. Run from the browser after
  * import (or via CLI for automation).
  *
@@ -328,7 +328,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
     <div class="itm-created-at-card">
         <h1>Update all <code>created_at</code></h1>
         <p class="itm-created-at-muted">
-            Run this <strong>after</strong> importing <code>database.sql</code> in phpMyAdmin.
+            Run this <strong>after</strong> importing <code>database.sql</code> or running <code>bash scripts/import_database_split.sh</code> (see <code>db/AGENT_NOTES.md</code>).
             Every table that has a <code>created_at</code> column is updated to one timestamp
             (default <code>2026-01-01 00:00:01</code>). <code>updated_at</code> and other date columns are not changed.
         </p>
