@@ -1229,7 +1229,7 @@ if (!function_exists('itm_check_new_button')) {
 if (!function_exists('itm_ui_index_primary_create_link_pattern')) {
     function itm_ui_index_primary_create_link_pattern(): string
     {
-        return '/<a\b(?=[^>]*\bhref\s*=\s*["\']create\.php["\'])(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bbtn-primary\b)[^>]*>/i';
+        return '/<a\b(?=[^>]*\bhref\s*=\s*["\']create\.php[^"\']*["\'])(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bbtn-primary\b)[^>]*>/i';
     }
 }
 
@@ -1369,7 +1369,7 @@ if (!function_exists('itm_ui_index_has_btn_sm_create_link')) {
 if (!function_exists('itm_ui_index_canonical_list_new_button_pattern')) {
     function itm_ui_index_canonical_list_new_button_pattern(): string
     {
-        return '/<a\b(?=[^>]*\bhref\s*=\s*["\']create\.php(?:\?[^"\']*)?["\'])(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bbtn\b[^"\']*\bbtn-primary\b[^"\']*["\'])(?=[^>]*\btitle\s*=\s*["\']Create["\'])(?![^>]*\bbtn-sm\b)[^>]*>\s*➕\s*<\/a>/i';
+        return '/<a\b(?=[^>]*\bhref\s*=\s*["\']create\.php[^"\']*["\'])(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bbtn\b[^"\']*\bbtn-primary\b[^"\']*["\'])(?=[^>]*\btitle\s*=\s*["\']Create["\'])(?![^>]*\bbtn-sm\b)[^>]*>\s*➕\s*<\/a>/i';
     }
 }
 

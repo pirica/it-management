@@ -4,7 +4,7 @@
  */
 
 $crud_table = 'todo';
-$crud_title = 'Todo';
+$crud_title = 'To-Do';
 $crud_action = 'create';
 
 require_once '../../config/config.php';
