@@ -64,6 +64,49 @@ function vss_delete_company(mysqli $conn, int $companyId): void
     mysqli_stmt_close($stmt);
 }
 
+/**
+ * Tables with company_id but no parsed rows in db/02_data_sample.sql (fallback path).
+ *
+ * @return array<int, string>
+ */
+function vss_fallback_candidate_tables(): array
+{
+    return [
+        'gl_accounts',
+        'expenses',
+        'license_management',
+        'annual_budgets',
+    ];
+}
+
+function vss_table_has_sample_template(string $tableName): bool
+{
+    if (!function_exists('itm_database_sql_read_sample') || !function_exists('itm_parse_database_sql_inserts')) {
+        return false;
+    }
+
+    $parsed = itm_parse_database_sql_inserts(itm_database_sql_read_sample(), $tableName);
+
+    return !empty($parsed[$tableName]);
+}
+
+/**
+ * @return string Empty when no suitable table found.
+ */
+function vss_resolve_fallback_test_table(): string
+{
+    foreach (vss_fallback_candidate_tables() as $tableName) {
+        if (!itm_is_safe_identifier($tableName)) {
+            continue;
+        }
+        if (!vss_table_has_sample_template($tableName)) {
+            return $tableName;
+        }
+    }
+
+    return '';
+}
+
 $disposableIds = [];
 $companyA = vss_create_disposable_company($conn, 'A');
 $companyB = vss_create_disposable_company($conn, 'B');
@@ -147,12 +190,11 @@ if ($positionInserted < 1) {
     }
 }
 
-// Random fallback when no template exists (use a tenant-scoped table unlikely in sample file).
-$fallbackTable = 'approver_type';
-$sampleBody = itm_database_sql_read_sample();
-$hasTemplate = strpos($sampleBody, 'INSERT INTO `approver_type`') !== false;
-if ($hasTemplate) {
-    echo '[SKIP] approver_type has templates — fallback covered by empty-template tables in manual QA.' . $nl;
+// Random fallback when no template exists in db/02_data_sample.sql (gl_accounts has no VALUES templates).
+$fallbackTable = vss_resolve_fallback_test_table();
+if ($fallbackTable === '') {
+    echo '[FAIL] No fallback candidate table without db/02_data_sample.sql templates.' . $nl;
+    $failures++;
 } else {
     vss_purge_company_table($conn, $fallbackTable, $companyA);
     $seedErr = '';
@@ -161,7 +203,18 @@ if ($hasTemplate) {
         echo '[FAIL] Random fallback expected 1 row for ' . $fallbackTable . ', got ' . $fallbackCount . ': ' . $seedErr . $nl;
         $failures++;
     } else {
-        echo '[PASS] Random fallback inserted 1 row for ' . $fallbackTable . ' on company A.' . $nl;
+        $scopeRes = mysqli_query(
+            $conn,
+            'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $fallbackTable) . '` WHERE company_id = ' . (int)$companyA
+        );
+        $scopeRow = $scopeRes ? mysqli_fetch_assoc($scopeRes) : null;
+        $scopedCount = (int)($scopeRow['c'] ?? 0);
+        if ($scopedCount !== 1) {
+            echo '[FAIL] Random fallback row for ' . $fallbackTable . ' not scoped to company A (' . $companyA . ').' . $nl;
+            $failures++;
+        } else {
+            echo '[PASS] Random fallback inserted 1 tenant-scoped row for ' . $fallbackTable . ' on company A (' . $companyA . ').' . $nl;
+        }
     }
 }
 
@@ -169,7 +222,9 @@ foreach ($disposableIds as $disposeId) {
     vss_purge_company_table($conn, 'workstation_ram', $disposeId);
     vss_purge_company_table($conn, 'employee_positions', $disposeId);
     vss_purge_company_table($conn, 'departments', $disposeId);
-    vss_purge_company_table($conn, 'approver_type', $disposeId);
+    if ($fallbackTable !== '') {
+        vss_purge_company_table($conn, $fallbackTable, $disposeId);
+    }
     vss_delete_company($conn, $disposeId);
 }
 
