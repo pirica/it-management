@@ -123,7 +123,7 @@
 
 <p align="center"><strong>Database schema</strong> — core table relationships for the company-scoped multi-tenant data model.</p>
 
-<p align="center"><img src="docs/readme/database-diagram.png" alt="Database schema overview" /></p>
+<p align="center"><a href="docs/readme/database-diagram.svg" target="_blank"><img src="docs/readme/database-diagram.svg" alt="Database schema overview" /></a></p>
 
 <h2 align="center">Database Structure Overview</h2>
 
