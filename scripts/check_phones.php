@@ -1,6 +1,6 @@
 <?php
 /**
- * Identify tables in database.sql that contain phone-related columns.
+ * Identify tables in db/ that contain phone-related columns.
  *
  * Why: Useful for auditing PII (Personally Identifiable Information) coverage
  * and ensuring consistent phone number formatting across the system.
@@ -17,15 +17,16 @@ if (PHP_SAPI === 'cli') {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 itm_script_output_begin('Check Phones');
 $nl = itm_script_output_nl();
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath" . $nl;
+    echo "Error: db/01_schema.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 

@@ -13,7 +13,7 @@ Tenant-scoped lookup for employee classification labels (`Team member`, `Interns
 
 ## 4. Business Rules (Critical for Agents)
 - **Unique name**: `name_type` must be unique per `company_id`.
-- Seed data ships **Team member** and **Internship** for all five demo companies in `database.sql`.
+- Seed data ships **Team member** and **Internship** for all five demo companies in `db/03_triggers.sql`.
 - Employees default to **Team member** on create/import when no type is supplied.
 
 ## 5. UI Behavior Requirements

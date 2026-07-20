@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 /**
  * Verifies employees audit triggers do not disclose auth secrets in audit_logs.
  *
  * Checks:
- *  1) database.sql trg_employees_audit_* omit sensitive JSON keys
+ *  1) db/ trg_employees_audit_* omit sensitive JSON keys
  *  2) Live UPDATE on disposable employee — audit row must not contain secrets
  *  3) Retro scan of recent employees audit_logs rows (informational)
  *
@@ -17,6 +17,7 @@ if (PHP_SAPI === 'cli') {
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_employees_auth_sensitive_fields.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
@@ -31,7 +32,7 @@ $failed = false;
 echo 'Verifying sensitive information disclosure in audit_logs...' . $nl;
 echo $nl;
 echo 'This script checks:' . $nl;
-echo '  1) database.sql — trg_employees_audit_insert|update|delete omit auth secrets from JSON_OBJECT payloads' . $nl;
+echo '  1) db/03_triggers.sql — trg_employees_audit_insert|update|delete omit auth secrets from JSON_OBJECT payloads' . $nl;
 echo '  2) Live probe — disposable employee UPDATE (reset_token + password) must not leak secrets into audit_logs' . $nl;
 echo '  3) Retro scan — last 25 employees audit rows for company ' . $companyId . ' (no password/reset_token JSON keys or plaintext)' . $nl;
 echo $nl;
@@ -41,9 +42,9 @@ echo $nl;
  */
 function vald_scan_employees_audit_triggers_in_database_sql(array $sensitiveFields): array
 {
-    $path = dirname(__DIR__) . '/database.sql';
+    $path = itm_database_sql_schema_path();
     if (!is_readable($path)) {
-        return ['database.sql is not readable'];
+        return ['db/ split bundle is not readable'];
     }
 
     $sql = (string)file_get_contents($path);
@@ -57,7 +58,7 @@ function vald_scan_employees_audit_triggers_in_database_sql(array $sensitiveFiel
     foreach ($triggerNames as $triggerName) {
         $pattern = '/CREATE TRIGGER `' . preg_quote($triggerName, '/') . '`.+?END\$\$/s';
         if (!preg_match($pattern, $sql, $match)) {
-            $issues[] = $triggerName . ' not found in database.sql';
+            $issues[] = $triggerName . ' not found in db/03_triggers.sql01_schema.sql';
             continue;
         }
 
@@ -146,8 +147,8 @@ function vald_scan_recent_employees_audit_logs(mysqli $conn, int $companyId, $pl
     return ['rows' => $rows, 'issues' => $issues];
 }
 
-// --- Step 1: static trigger contract in database.sql ---
-echo 'Step 1 — database.sql employees audit triggers' . $nl;
+// --- Step 1: static trigger contract In db/01_schema.sql ---
+echo 'Step 1 — db/ employees audit triggers' . $nl;
 $triggerIssues = vald_scan_employees_audit_triggers_in_database_sql($sensitiveFields);
 if ($triggerIssues === []) {
     echo colorText('[PASS] trg_employees_audit_insert|update|delete omit ' . implode(', ', $sensitiveFields) . '.', 'pass') . $nl;

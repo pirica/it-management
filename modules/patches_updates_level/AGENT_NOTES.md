@@ -30,7 +30,7 @@ Lookup table for severity or priority levels of patches (e.g., "Critical", "Reco
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_patches_updates_level_audit_insert`, `trg_patches_updates_level_audit_update`, `trg_patches_updates_level_audit_delete` on `patches_updates_level` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_patches_updates_level_audit_insert`, `trg_patches_updates_level_audit_update`, `trg_patches_updates_level_audit_delete` on `patches_updates_level` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

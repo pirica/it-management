@@ -19,7 +19,7 @@ Manage IT support articles, manuals, and procedures for the organization.
 ## 5. Business Rules
 - Articles are visible to the IT Support Chatbot for diagnosing issues.
 - Category field should be used to classify articles (e.g., Technical Documentation, Common Issues, etc.).
-- `database.sql` seeds company 1 via `INSERT … VALUES`; companies 2–5 copy rows with `INSERT … SELECT N, category, title, content, active FROM knowledge_base WHERE company_id = 1`. Add new seed articles with `php scripts/apply_module_sample_data_seed.php --module=knowledge_base --sample="Title:Body text"` (dry-run default; `--apply` writes `database.sql` only).
+- `db/` seeds company 1 via `INSERT … VALUES`; companies 2–5 copy rows with `INSERT … SELECT N, category, title, content, active FROM knowledge_base WHERE company_id = 1`. Add new seed articles with `php scripts/apply_module_sample_data_seed.php --module=knowledge_base --sample="Title:Body text"` (dry-run default; `--apply` writes `db/` only).
 
 ## 6. UI / Layout
 - Standard flattened CRUD module (independent).

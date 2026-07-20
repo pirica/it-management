@@ -5,7 +5,7 @@ Unit/regression tests for `modules/workstation_os_versions/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/workstation_os_versions/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `*Test.php` / `*.unittest.php` — test classes for this module.

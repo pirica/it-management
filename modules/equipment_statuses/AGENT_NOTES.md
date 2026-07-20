@@ -30,7 +30,7 @@ Lookup table for asset lifecycle statuses (e.g., "Active", "Retired", "In Repair
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_equipment_statuses_audit_insert`, `trg_equipment_statuses_audit_update`, `trg_equipment_statuses_audit_delete` on `equipment_statuses` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_equipment_statuses_audit_insert`, `trg_equipment_statuses_audit_update`, `trg_equipment_statuses_audit_delete` on `equipment_statuses` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

@@ -43,7 +43,7 @@ itm_script_test_employee_register_teardown($conn, $employeeId, []);
 
 $schemaRes = $conn->query("SHOW COLUMNS FROM notes LIKE 'title_hash'");
 if (!$schemaRes || $schemaRes->num_rows === 0) {
-    notes_vault_fail('notes.title_hash column missing — re-import database.sql, bash scripts/import_database_split.sh, or apply the notes vault schema migration.');
+    notes_vault_fail('notes.title_hash column missing — re-import via bash scripts/import_database_split.sh, bash scripts/import_database_split.sh, or apply the notes vault schema migration.');
     itm_script_test_employee_delete($conn, $employeeId);
     exit(1);
 }

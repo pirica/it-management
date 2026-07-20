@@ -1,6 +1,6 @@
 <?php
 /**
- * Audit database.sql for duplicate column definitions in CREATE TABLE blocks.
+ * Audit db/ for duplicate column definitions in CREATE TABLE blocks.
  *
  * Why: Duplicate column names in the same table cause SQL import errors.
  * This script identifies these duplicates before they reach the database.
@@ -14,6 +14,7 @@ declare(strict_types=1);
 $isCli = PHP_SAPI === 'cli';
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (!$isCli) {
     require_once dirname(__DIR__) . '/config/config.php';
@@ -23,9 +24,9 @@ if (!$isCli) {
 itm_script_output_begin('Check Duplicates');
 $nl = itm_script_output_nl();
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath" . $nl;
+    echo "Error: db/01_schema.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 

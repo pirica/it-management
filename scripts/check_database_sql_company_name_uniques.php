@@ -1,6 +1,6 @@
 <?php
 /**
- * Audit database.sql for tenant unique-key policy.
+ * Audit db/ for tenant unique-key policy.
  *
  * Scope column (per table): `name` when present, else the 3rd column after `id` + `company_id`
  * (e.g. `display_name` on `floor_plans`). `employee_companies` uses `employee_id`.
@@ -36,11 +36,12 @@ function itm_db_sql_unique_escape($value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 
 if ($itmIsCli) {
     require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 itm_script_output_begin();
 
 $nl = itm_script_output_nl();
@@ -96,7 +97,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>database.sql tenant unique-key audit</title>
+    <title>db/01_schema.sql tenant unique-key audit</title>
     <link rel="stylesheet" href="<?= itm_db_sql_unique_escape($baseUrl . 'css/styles.css'); ?>">
     <style>
         .itm-dsu-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -128,9 +129,9 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 <div class="itm-dsu-wrap">
 <?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="itm-dsu-card">
-        <h1>database.sql — tenant unique-key audit</h1>
+        <h1>db/03_triggers.sql — tenant unique-key audit</h1>
         <p class="itm-dsu-muted">
-            Parses <code>database.sql</code> for every table with <code>company_id</code>.
+            Parses <code>db/</code> split bundle for every table with <code>company_id</code>.
             <strong>Scope column:</strong> <code>name</code> when present, otherwise the <strong>3rd column</strong> after
             <code>id</code> and <code>company_id</code> (e.g. <code>annual_budget_id</code> on <code>monthly_budgets</code>,
             <code>display_name</code> on <code>floor_plans</code>). <code>employee_companies</code> uses <code>employee_id</code>.
@@ -161,7 +162,7 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
         <h2>Run audit</h2>
         <form method="post" action="<?= itm_db_sql_unique_escape($scriptSelf); ?>">
             <input type="hidden" name="csrf_token" value="<?= itm_db_sql_unique_escape(itm_get_csrf_token()); ?>">
-            <button type="submit" class="btn-primary">Scan database.sql</button>
+            <button type="submit" class="btn-primary">Scan db/01_schema.sql</button>
         </form>
         <p class="itm-dsu-muted" style="margin-top:12px;">
             CLI: <code>php scripts/check_database_sql_company_name_uniques.php</code>

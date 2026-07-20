@@ -20,7 +20,7 @@ $itmFloorPlansModuleUrl = rtrim((string)(defined('BASE_URL') ? BASE_URL : ''), '
     <h2 style="margin-top:0;">Link to Floor Plans</h2>
     <p style="opacity:0.85;margin-top:0;">Floor plan files optionally linked to this IT location (<code>floor_plans.it_location_id</code>).</p>
     <?php if (!itm_floor_plans_schema_ready($conn)): ?>
-        <p class="alert alert-error">Floor Plans tables are not installed. Apply the Floor Plans section from <code>database.sql</code>.</p>
+        <p class="alert alert-error">Floor Plans tables are not installed. Apply the Floor Plans section from <code>db/</code> split bundle.</p>
     <?php elseif (empty($itmLinkedFloorPlans)): ?>
         <p>No floor plans are linked to this location. Link files from <a href="<?php echo sanitize($itmFloorPlansModuleUrl); ?>">Floor Plans</a> using <strong>Link to IT Location</strong> on upload or edit.</p>
     <?php else: ?>

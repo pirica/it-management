@@ -4,7 +4,7 @@
 Secure multi-tenant file manager. Physical files under `files/{company_id}/` with metadata in **explorer** (when used).
 
 ## 2. Key Tables
-- **explorer** — file/folder metadata (optional tracking). Supports standard audit columns: `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Uniques are declared on `CREATE TABLE`: `uq_explorer_company_path_name` (`company_id`, `folder_path`(191), `file_name`(191)) and `uq_explorer_user_path_name` (adds `employee_id`) — no live `ALTER TABLE` in `database.sql`.
+- **explorer** — file/folder metadata (optional tracking). Supports standard audit columns: `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`. Uniques are declared on `CREATE TABLE`: `uq_explorer_company_path_name` (`company_id`, `folder_path`(191), `file_name`(191)) and `uq_explorer_user_path_name` (adds `employee_id`) — no live `ALTER TABLE` in `db/03_triggers.sql`.
 - **Physical storage:** `files/{company_id}/Common/`, `Departments/{dept_code}/`, `Private/{username}_{user_id}/`, `Trash/`.
 
 ## 3. Required Relationships

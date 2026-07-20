@@ -47,7 +47,7 @@ Manages individual port rows on IDF rack positions (RJ45 and SFP), including sta
 - Tenant-safe FK fallback: company-scoped lookup first, then id-only fallback only for legacy shared reference rows.
 
 ## 9. Audit Logging Requirements
-`database.sql` defines AFTER INSERT/UPDATE/DELETE triggers that write JSON payloads to `audit_logs`:
+`db/` defines AFTER INSERT/UPDATE/DELETE triggers that write JSON payloads to `audit_logs`:
 
 | Trigger | Actions | Payload highlights |
 |---------|---------|-------------------|

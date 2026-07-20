@@ -5,7 +5,7 @@ Shared PHP partials and helpers for the IP Addresses module UI (list cells, form
 
 ## 3. Required Relationships
 - Parent module: `modules/ip_addresses/`.
-- Related: `modules/ip_subnets/`, `database.sql` tables `ip_addresses`, `ip_subnets`.
+- Related: `modules/ip_subnets/`, `db/` tables `ip_addresses`, `ip_subnets`.
 
 ## 7. File Structure
 - **partials/** — reusable render fragments (see `partials/AGENT_NOTES.md`).

@@ -4,7 +4,7 @@
 Per-user private address book (not the shared company Contacts module). Stores personal contacts with photos, favourites, labels, and organisation fields.
 
 ## 2. Key Tables
-- **private_contacts** — contact records scoped by `employee_id` and `company_id`. PII text columns are `TEXT` in `database.sql` so vault ciphertext fits (re-import or widen legacy `varchar` columns before enabling encryption on existing DBs).
+- **private_contacts** — contact records scoped by `employee_id` and `company_id`. PII text columns are `TEXT` in `db/03_triggers.sql` so vault ciphertext fits (re-import or widen legacy `varchar` columns before enabling encryption on existing DBs).
 - **private_contact_share_sessions** — temporary QR / 6-digit share snapshots (`payload_json` plaintext until expiry; private-data exempt from audit triggers).
 
 ## 3. Required Relationships

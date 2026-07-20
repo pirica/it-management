@@ -6,7 +6,7 @@ Unit/regression tests for `modules/rack_planner/`.
 ## 3. Required Relationships
 - Production docs: `modules/rack_planner/AGENT_NOTES.md`.
 - Named CLI/browser regression: `php scripts/verify_rack_planner.php` (catalog: `scripts/scripts.php`).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `*Test.php` / `*.unittest.php` — test classes for this module.

@@ -31,7 +31,7 @@ Lookup table for workstation Modes (e.g., specific to workstation configurations
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_workstation_modes_audit_insert`, `trg_workstation_modes_audit_update`, `trg_workstation_modes_audit_delete` on `workstation_modes` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_workstation_modes_audit_insert`, `trg_workstation_modes_audit_update`, `trg_workstation_modes_audit_delete` on `workstation_modes` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

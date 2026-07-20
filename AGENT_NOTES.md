@@ -8,15 +8,15 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **Multi-Tenancy**: All data (except Companies and certain maintenance logs) must be scoped by `company_id` from the session.
 - **Architecture**: No Composer, No NPM. Use `config/config.php` for environment setup.
 - **API rate limits**: **Free** tier — unlimited, **no API key**, **session required** (`company_id` + `employee_id` in `PHPSESSID`). **Paid** tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits (mandatory)** and `includes/itm_api_rate_limit.php`.
-- **`database.sql` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**. Regenerate `db/*.sql` after monolith edits (`php scripts/split_database_sql.php --apply`, then `php scripts/verify_database_split_parity.php`).
+- **`db/` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**. Edit `db/01_schema.sql`, `db/02_data.sql`, and `db/03_triggers.sql` directly.
 - **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification and before writing auth fields into `$_SESSION` (mitigates session fixation).
 - **Entry pages / errors:** root `index.php` must not force `display_errors`; error visibility comes from `config/config.php` via `enable_all_error_reporting`.
 
 ## 10. Common Pitfalls
 - Bypassing the session-based company isolation. [Cursor-Valid]
 - Introducing external libraries. [Cursor-Valid]
-- Forgetting to update `database.sql` when changing the schema. [Cursor-Valid]
-- Editing `db/*.sql` by hand instead of regenerating from `database.sql`. [Cursor-Valid]
+- Forgetting to update `db/` when changing the schema. [Cursor-Valid]
+- Editing `db/*.sql` by hand instead of regenerating from `db/01_schema.sql`. [Cursor-Valid]
 - Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper). [Cursor-Fixed]
 - Session fixation: reusing the pre-login session id after authentication without regeneration. [Cursor-Fixed]
 - Session cookie missing HttpOnly / SameSite / Secure (when HTTPS). [Cursor-Fixed]
@@ -27,7 +27,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **Manual SQL string false positives:** URL href builders (`create.php?` + `rawurlencode` / `http_build_query`) are not SQL — use `scripts/check_manual_sql_string.php`; see `scripts/SCRIPTS.md` → Pre-merge verification (manual SQL strings). [Cursor-Valid]
 - `user-config.php` profile photo: “Photo updated!” with broken image (alt text “Profile”) means `emp_profile_photo_url()` used module-relative `../../modules/explorer/file.php` from the app root — must be app-absolute under `BASE_URL`. [Cursor-Fixed]
 - `user-config.php` dashboard stats: consolidated COUNTs live in `includes/itm_user_config_stats.php`; `floor_plans` counts `created_by` (schema column), not `created_by_employee_id`. [Cursor-Fixed]
-- `database.sql` tenant replicas with per-company lookup rows must resolve child FK seeds by `company_id` + business key (for example cost center code, GL account code, approval stage/status name, access level name) instead of assuming raw auto-increment ids line up across companies. [Cursor-Fixed]
+- `db/` tenant replicas with per-company lookup rows must resolve child FK seeds by `company_id` + business key (for example cost center code, GL account code, approval stage/status name, access level name) instead of assuming raw auto-increment ids line up across companies. [Cursor-Fixed]
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.

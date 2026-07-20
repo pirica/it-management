@@ -2,7 +2,7 @@
 /**
  * Extract Table Fields by Keywords
  *
- * Why: Scans database.sql to extract table column definitions matching specific keywords
+ * Why: Scans db/ to extract table column definitions matching specific keywords
  * (by, to, employee_id, employee) and outputs them in a standardized schema report.
  *
  * Browser: open while logged in as Admin.
@@ -22,15 +22,15 @@ $nl = itm_script_output_nl();
 
 if (!$isCli) {
     echo "<h2>Extract Table Fields by Keywords</h2>";
-    echo "<p class=\"report-muted\">Scans database.sql and lists fields containing keywords: <code>by</code>, <code>to</code>, <code>employee_id</code>, <code>employee</code>.</p>";
+    echo "<p class=\"report-muted\">Scans db/ and lists fields containing keywords: <code>by</code>, <code>to</code>, <code>employee_id</code>, <code>employee</code>.</p>";
     echo "<pre style='background:#f4f4f4; padding:15px; border-radius:4px; overflow-x:auto; max-height: 600px;'>";
 }
 
-$sqlFile = ROOT_PATH . 'database.sql';
+$sqlFile = itm_database_sql_schema_path();
 $outputFile = ROOT_PATH . 'scripts/fields_by.txt';
 
 if (!file_exists($sqlFile)) {
-    die("Error: database.sql not found." . $nl);
+    die("Error: db/01_schema.sql not found." . $nl);
 }
 
 $sqlContent = file_get_contents($sqlFile);

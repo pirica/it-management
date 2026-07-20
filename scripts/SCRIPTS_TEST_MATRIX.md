@@ -22,10 +22,8 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **234**.
 |--------|--------|----------------|
 | `bash scripts/smoke_test.sh` | PHP lint; `check_csrf_coverage.php`; `check_sql_injection_coverage.php`; `check_fk_label_search_coverage.php` | MySQL, PHPUnit, MBQA, most `check_*` / `verify_*` |
 | `php scripts/run_tier2_checks.php` | All Tier 2 static `check_*` scripts from this matrix (parse or fallback list) | Tier 1 smoke trio, Tier 3+ runtime verifiers, MBQA |
-| `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import + table count; calls schema verify | Module HTTP behaviour |
-| `bash scripts/import_database_split.sh` | Split `db/` import (01→02→03, one session) + schema verify + parity gate | CI (monolith path only) |
-| `php scripts/split_database_sql.php` | Dry-run split parser metrics | Writes files unless `--apply` |
-| `php scripts/verify_database_split_parity.php` | Static parity: `db/*` vs `database.sql` | MySQL not required |
+| `bash scripts/verify_database_sql_import.sh` | Full `db/` import + table count; calls schema verify | Module HTTP behaviour |
+| `bash scripts/import_database_split.sh` | `db/` import (01→02→03, one session) + schema verify | — |
 | `php scripts/verify_crud_fk_label_search.php` | Runtime FK label search (CI database-import) | Non-search modules |
 | `php scripts/run_tests.php` | PHPUnit suite under `phpunit/tests/Unit/` | Module entry HTTP flows; most `scripts/verify_*` |
 | `php scripts/module_browser_qa_runner.php` | HTTP CRUD matrix across modules/companies | `scripts/` verifiers; deep bespoke Tier D modules |
@@ -38,12 +36,12 @@ If any script **destroys or corrupts** the live `itmanagement` database, seed da
 
 1. **Stop** the matrix batch.
 2. **Document** the culprit in `scripts/data/scripts-matrix-destroy-log.md` (and mark the matrix row `DESTROYED_ENV`).
-3. **Fresh clone** the database from `database.sql` or the generated `db/` split (`bash scripts/import_database_split.sh` — order 01→02→03 in one session). Do not continue on partial state.
+3. **Fresh clone** the database from `db/01_schema.sql` or the generated `db/` split (`bash scripts/import_database_split.sh` — order 01→02→03 in one session). Do not continue on partial state.
 4. **Sanity-check**, then resume at the **next** script (or re-run only if the failure was a false alarm).
 
 ### Detect destruction
 
-- Table count far below expected (see `scripts/number_db_tables.txt` / `CREATE TABLE` count in `database.sql`)
+- Table count far below expected (see `scripts/number_db_tables.txt` / `CREATE TABLE` count in `db/03_triggers.sql`)
 - Seed admins / companies wiped; login broken
 - Constraint storms leaving tenants unusable
 - Core rows deleted beyond disposable test cleanup
@@ -65,12 +63,12 @@ If any script **destroys or corrupts** the live `itmanagement` database, seed da
 
 ```cmd
 cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
+"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < db/
 ```
 
 Or: `bash scripts/verify_database_sql_import.sh`
 
-Split alternative (same seed, one MySQL session): `bash scripts/import_database_split.sh` (requires `php scripts/split_database_sql.php --apply` first). See `db/AGENT_NOTES.md`.
+`db/` import (one session): `bash scripts/import_database_split.sh`. See `db/AGENT_NOTES.md`.
 
 Then: `php scripts/verify_database_schema.php` (or `php scripts/count_db_tables.php`) and re-run Tier 1 smoke once before continuing.
 
@@ -189,7 +187,7 @@ php scripts/employees_delete_clear_table_test.php
 | 1 | `check_sql_injection_coverage.php` | PHP | none | CI smoke | Invoked by smoke_test.sh |
 | 1 | `run_tests.php` | MySQL optional | low | PHPUnit meta | Unit/integration suite under phpunit/tests/Unit |
 | 1 | `smoke_test.sh` | PHP | none | CI smoke | Lint + CSRF + SQLi + FK label static |
-| 1 | `verify_database_sql_import.sh` | MySQL | destroys-DB | CI database-import | Full database.sql re-import — baseline clone |
+| 1 | `verify_database_sql_import.sh` | MySQL | destroys-DB | CI database-import | Full db/ re-import — baseline clone |
 | 1 | `import_database_split.sh` | MySQL | destroys-DB | manual / local | Split db/ re-import (01→02→03); runs schema + parity checks |
 | 1 | `verify_crud_fk_label_search.php` | MySQL | low | CI database-import | Runtime FK label search after import |
 | 2 | `check_audit_logs_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
@@ -210,8 +208,6 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_points.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_script_disposable_employees.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_sql_errors.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
-| 2 | `split_database_sql.php` | PHP | writes-repo | static-manual | Dry-run default; `--apply` regenerates `db/*.sql` from `database.sql` |
-| 2 | `verify_database_split_parity.php` | PHP | none | static-manual | Parity gate after split regeneration (130 tables, 337 triggers) |
 | 2 | `check_stale_user_id_sql.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_stale_user_terminology.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_standard_crud_delegate_requires.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
@@ -398,7 +394,7 @@ php scripts/employees_delete_clear_table_test.php
 | 5 | `apply_form_failed_save_display_fix.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_human_friendly_error_display.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_itm_actions_cell_markers.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
-| 5 | `apply_module_sample_data_seed.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Writes database.sql seed blocks |
+| 5 | `apply_module_sample_data_seed.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Writes db/ seed blocks |
 | 5 | `apply_ui_action_emoji.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `bypass_login.php` | isolated-env | destructive | excluded-blanket | Dev session hijack |
 | 5 | `bypass_v2.php` | isolated-env | destructive | excluded-blanket | Dev session hijack |

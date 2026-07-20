@@ -4,15 +4,16 @@
  *
  * Why: Some environments can hit InnoDB metadata drift where a table appears
  * in phpMyAdmin but returns "doesn't exist in engine" during ANALYZE TABLE.
- * This helper rebuilds one table from database.sql safely by explicit table name.
+ * This helper rebuilds one table from db/ safely by explicit table name.
  */
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     itm_script_output_begin('Table Repair Helper');
     itm_script_output_close_pre();
-    echo '<p><strong>CLI only.</strong> Rebuilds one InnoDB table from <code>database.sql</code> (destructive). Backup first.</p>';
+    echo '<p><strong>CLI only.</strong> Rebuilds one InnoDB table from <code>db/</code> split bundle (destructive). Backup first.</p>';
     echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/repair_table_from_schema.php --table=table_name</pre>';
     exit(1);
 }
@@ -49,27 +50,27 @@ if (!itm_is_safe_identifier($tableName)) {
     exit(1);
 }
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    fwrite(STDERR, "database.sql not found at expected path.\n");
+    fwrite(STDERR, "db/01_schema.sql not found at expected path.\n");
     exit(1);
 }
 
 $schemaSql = file_get_contents($sqlPath);
 if ($schemaSql === false || $schemaSql === '') {
-    fwrite(STDERR, "Unable to read database.sql content.\n");
+    fwrite(STDERR, "Unable to read db/ content.\n");
     exit(1);
 }
 
 $createPattern = '/CREATE TABLE\s+`' . preg_quote($tableName, '/') . '`\s*\(.*?\)\s*ENGINE=.*?;/si';
 if (!preg_match($createPattern, $schemaSql, $matches)) {
-    fwrite(STDERR, "Could not find CREATE TABLE statement for '{$tableName}' in database.sql.\n");
+    fwrite(STDERR, "Could not find CREATE TABLE statement for '{$tableName}' in db/.\n");
     exit(1);
 }
 
 $createSql = trim((string) $matches[0]);
 
-fwrite(STDOUT, "Rebuilding table '{$tableName}' from database.sql...\n");
+fwrite(STDOUT, "Rebuilding table '{$tableName}' from db/...\n");
 
 if (!itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 0')) {
     fwrite(STDERR, "Failed to disable FOREIGN_KEY_CHECKS.\n");

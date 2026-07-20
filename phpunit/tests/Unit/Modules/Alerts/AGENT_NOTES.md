@@ -5,7 +5,7 @@ Unit/regression tests for `modules/alerts/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/alerts/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `AlertsTest.php` — CRUD/visibility; seeds extra employees via `itm_script_test_employee_create()` when fewer than three rows exist (never `employees.active`). Global (unassigned) alert fixtures omit `assigned_to_employee_id` instead of binding NULL as integer. Temporary companies named `Alerts Visibility Test {uniqid}` are removed via `itm_force_delete_company()` in `finally` and `tearDown()` (same helper as `scripts/force_delete_company.php`).

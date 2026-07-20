@@ -52,7 +52,7 @@ Defines rack-unit placement of devices within an IDF (`position_no`, device type
 - Equipment lookups must filter by `company_id` when resolving `equipment_id`.
 
 ## 9. Audit Logging Requirements
-`database.sql` registers audit triggers on `idf_positions`:
+`db/` registers audit triggers on `idf_positions`:
 
 | Trigger | Actions | Payload highlights |
 |---------|---------|-------------------|

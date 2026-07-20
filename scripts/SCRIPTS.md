@@ -131,9 +131,9 @@ Catalog: `scripts/scripts.php`.
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/list_boolean_integer_fields.php` | Parses both `database.sql` and the live database to list fields of Boolean, int, tinyint, and other numeric types, matching tables to modules by name. |
-| `php scripts/list_enum_fields.php` | Parses both `database.sql` and the live database to list ENUM fields, matching tables to modules by name. |
-| `php scripts/extract_by_fields.php` | Parses `database.sql` to extract column definitions containing keywords like `by`, `to`, `employee_id`, `employee`. Output is formatted and saved to `scripts/fields_by.txt`. |
+| `php scripts/list_boolean_integer_fields.php` | Parses both `db/` and the live database to list fields of Boolean, int, tinyint, and other numeric types, matching tables to modules by name. |
+| `php scripts/list_enum_fields.php` | Parses both `db/` and the live database to list ENUM fields, matching tables to modules by name. |
+| `php scripts/extract_by_fields.php` | Parses `db/` to extract column definitions containing keywords like `by`, `to`, `employee_id`, `employee`. Output is formatted and saved to `scripts/fields_by.txt`. |
 
 ### Select Options API verification
 
@@ -238,7 +238,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/repro_visitors_bac.php` | PoC — Broken Access Control in visitors access log. |
 | `php scripts/repro_visitors_sqli.php` | PoC — SQL Injection in visitors access log inline edit. |
 | `php scripts/verify_audit_updated.php` | Verification — audit log redaction of sensitive fields. |
-| `php scripts/verify_audit_logs_disclosure.php` | Three-step employees audit disclosure regression: static `database.sql` trigger scan, live disposable employee UPDATE probe, retro scan of recent `employees` audit rows. Prints each step; optional `ITM_TEST_COMPANY_ID`. |
+| `php scripts/verify_audit_logs_disclosure.php` | Three-step employees audit disclosure regression: static `db/` trigger scan, live disposable employee UPDATE probe, retro scan of recent `employees` audit rows. Prints each step; optional `ITM_TEST_COMPANY_ID`. |
 | `php scripts/verify_status_leak_fixed.php` | Verification — fixed scoping for employee status. |
 | `php scripts/verify_visitors_bac_fix.php` | Verification — blocked unauthorized visitor log additions (against live module). |
 | `php scripts/verify_visitors_sqli_fix.php` | Verification — fixed SQL Injection in visitors access log. |
@@ -545,7 +545,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
-| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `database.sql` import on MySQL 8.0 service; asserts table count matches **130** `CREATE TABLE` entries; runtime FK label search regression |
+| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service; asserts table count matches **130** `CREATE TABLE` entries; runtime FK label search regression |
 
 **smoke** job steps only:
 
@@ -560,7 +560,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Local split alternative: `bash scripts/import_database_split.sh` (see `db/AGENT_NOTES.md`). Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
-**Split database import (optional):** generated files under `db/` (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`) are produced from `database.sql` via `php scripts/split_database_sql.php --apply`. Import in **one MySQL session** in order **01 → 02 → 03** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Parity gate: `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
+**Database import (`db/`):** canonical files under `db/` (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`). Import in **one MySQL session** in order **01 → 02 → 03** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Details: `db/AGENT_NOTES.md`.
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
@@ -584,7 +584,7 @@ Browser menu: `scripts/run_tier2_checks.php` → **Run Tier 2 batch**. Optional 
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
-Module seed expansion in `database.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes). Parses single-row and multi-row `INSERT … VALUES` blocks; adds one row per seeded `company_id` when a sample value is missing for that tenant. **Mirror mode:** when `database.sql` uses `INSERT … SELECT N, cols FROM table WHERE company_id = 1` (e.g. `knowledge_base`), new samples append only to the source company VALUES block — other tenants replicate on import. Use `--sample=title:content` for title/content tables. Browser dry-run: `scripts/apply_module_sample_data_seed.php?module=idf_device_type`; apply (Admin): `...?module=idf_device_type&apply=1`. Error paths use `itm_seed_fwrite_stderr()` (not raw `fwrite(STDERR)` — undefined in browser SAPI).
+Module seed expansion in `db/03_triggers.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes). Parses single-row and multi-row `INSERT … VALUES` blocks; adds one row per seeded `company_id` when a sample value is missing for that tenant. **Mirror mode:** when `db/` uses `INSERT … SELECT N, cols FROM table WHERE company_id = 1` (e.g. `knowledge_base`), new samples append only to the source company VALUES block — other tenants replicate on import. Use `--sample=title:content` for title/content tables. Browser dry-run: `scripts/apply_module_sample_data_seed.php?module=idf_device_type`; apply (Admin): `...?module=idf_device_type&apply=1`. Error paths use `itm_seed_fwrite_stderr()` (not raw `fwrite(STDERR)` — undefined in browser SAPI).
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 
@@ -693,7 +693,7 @@ Full-module browser QA runs HTTP session checks across the five seeded companies
 
 | Script | Role |
 |--------|------|
-| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`database.sql` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Early module/company preflight; auto-detected Base URL on Laragon (HTTPS→HTTP on localhost); structured **`import_db`** JSON parsing; stale AJAX progress cleanup; optional browser-only **UI click smoke** (one module + one company) appending `bulk_cancel_click`, `pagination_click`, `export_xlsx_click`, and `import_excel_click`. Browser **Run QA** silently runs `module_clean_tests_qa_runner.php` at start and end. Writes timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` and matching **`.xlsx`** each run. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
+| `scripts/module_browser_qa_runner.php` | **Browser + CLI:** HTTP session runner — login (`Admin`/`Admin`), company scope, per-module **`mysql`** preflight (`db/` INSERT count), **`error_log`** scope, FK-aware clear, sample data, **`add`** (random rows capped by unique scope), **`bulk_delete`** after `add` when rows ≥ `records_per_page`, then search/sort/CRUD/export/**`clear_table`** (before second **`clear`**)/import/`single_delete`/end sample restore + **`error_log`** check. Early module/company preflight; auto-detected Base URL on Laragon (HTTPS→HTTP on localhost); structured **`import_db`** JSON parsing; stale AJAX progress cleanup; optional browser-only **UI click smoke** (one module + one company) appending `bulk_cancel_click`, `pagination_click`, `export_xlsx_click`, and `import_excel_click`. Browser **Run QA** silently runs `module_clean_tests_qa_runner.php` at start and end. Writes timestamped `qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json` and matching **`.xlsx`** each run. Form + **Run QA** (AJAX poll + **Stop**); do not use bare `?run=1` without `ajax=1`. |
 | `scripts/module_browser_qa_build_report.php` | **Browser + CLI:** Builds markdown from a runner JSON (pick by date): summary, tier reference, configured step exceptions, **Results by module**, failure categories, **Failures only** and **Skip** quick indexes, preview in browser. Re-Run links preserve **UI click smoke** when set. Writes `qa-reports/module-browser-qa.md` (overwritten each build). |
 
 **Scripts that write sample/test data (DB mutation):**
@@ -704,11 +704,11 @@ Full-module browser QA runs HTTP session checks across the five seeded companies
 * `scripts/floor_plans_folder_move_test.php` (creates temporary folder hierarchy rows).
 * `scripts/idfs_sync_human_test.php` (creates temporary equipment/switch/idf rows for end-to-end sync checks).
 * `scripts/auth_register_reset_human_test.php` (creates disposable invitations and script-test employees for auth flows).
-* `scripts/tickets_related_equipment_delete_test.php` (seeds sample ticket rows from `database.sql`).
+* `scripts/tickets_related_equipment_delete_test.php` (seeds sample ticket rows from `db/01_schema.sql`).
 
 **Script that dumps seed SQL (no DB writes):**
 
-* `scripts/export_floor_plan_folders_seed.php` prints `INSERT` statements to stdout for pasting into `database.sql`.
+* `scripts/export_floor_plan_folders_seed.php` prints `INSERT` statements to stdout for pasting into `db/`.
 
 **Commands (repository root, Laragon — PowerShell):**
 
@@ -767,13 +767,13 @@ CLI: omit `--module` / `--company` or use `--module=all` / `--company=all` for a
 
 Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other steps are Pass with notes `N/A smoke`, `Skip (bespoke smoke)`, or `N/A`. **`$skipClear`:** tenant FK-aware clear is never run on these tables (shared auth). Tier D also skips start-of-module clear with note `Skip (bespoke smoke)`.
 
-**Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php`** (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `employee_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in database.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
+**Tier A step exceptions:** edit `mbqa_runner_module_step_exceptions()` in **`scripts/module_browser_qa_runner.php`** (module slug → step → N/A note). Mapped steps are **not executed**; all other Tier A steps still run. Examples: `employee_companies` skips `create`, `add`, `import_db`; `idf_positions` skips both `sample_data` steps with note `N/A (HTTP sample seed failed or empty)`; `patches_updates` skips both `sample_data` steps with note `No sample rows found in db/02_data.sql for this module.`; `audit_logs` skips read-only / delete-disabled steps (see runner map).
 
 **Checklist per standard module (Tier A, including bespoke folders)** — step order (runner slug = table name unless a step exception applies):
 
 | # | Step | What it checks |
 |---|------|----------------|
-| 1 | **`mysql`** | Whether `database.sql` defines sample `INSERT` rows for the module table. Parsed from `database.sql` via `itm_parse_database_sql_inserts()` (same tuples as UI sample seed). Manual equivalent: `SELECT * FROM \`{table}\`` in phpMyAdmin on a fresh import — **0 row(s) (empty)** e.g. `ip_addresses`, or **N row(s)** e.g. `departments`. Informational **Pass**; note records the count. Fails only if `database.sql` is missing/unreadable. Tier C/D report `N/A`. |
+| 1 | **`mysql`** | Whether `db/` defines sample `INSERT` rows for the module table. Parsed from `db/01_schema.sql` via `itm_parse_database_sql_inserts()` (same tuples as UI sample seed). Manual equivalent: `SELECT * FROM \`{table}\`` in phpMyAdmin on a fresh import — **0 row(s) (empty)** e.g. `ip_addresses`, or **N row(s)** e.g. `departments`. Informational **Pass**; note records the count. Fails only if `db/` is missing/unreadable. Tier C/D report `N/A`. |
 | 2 | **`error_log`** | Start scope: rename `error_log.txt` to next `error_log-N.txt` when present; else record byte offset (only *new* lines count for this module). |
 | 3 | **`list`** | Index HTTP 200, no fatal; Tier A also verifies bulk/pagination gates vs row count. |
 | 4 | **`ui_check`** | When an Actions column is present on the index HTML, verifies **`class="itm-actions-cell"`** + **`data-itm-actions-origin="1"`** on the Actions header and at least one body cell when real data rows render (`js/ui-layout.js` / `table_actions_position`). Single-cell colspan empty-state rows (`No records found`, etc.) are ignored. |
@@ -798,7 +798,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | 23 | **`sample_data`** | End restore on empty table (HTTP). |
 | 24 | **`error_log`** | End check: 0 new errors since module scope. |
 
-**`mysql` verification (file or SQL):** prefer reading `database.sql` (runner step 1). To spot-check in MySQL: `SELECT COUNT(*) FROM \`{table}\`` on a database loaded from `database.sql` — expect the same N as the runner note (global insert count, not per-tenant). Empty modules (`patches_updates`, `ip_addresses`, …) drive **`sample_data`** N/A notes such as `No sample rows found in database.sql for this module.`
+**`mysql` verification (file or SQL):** prefer reading `db/` (runner step 1). To spot-check in MySQL: `SELECT COUNT(*) FROM \`{table}\`` on a database loaded from `db/01_schema.sql` — expect the same N as the runner note (global insert count, not per-tenant). Empty modules (`patches_updates`, `ip_addresses`, …) drive **`sample_data`** N/A notes such as `No sample rows found in db/02_data.sql for this module.`
 
 **Tier A `add` / bulk UI (runner vs browser):**
 
@@ -820,7 +820,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 * Sample seed prerequisites are seeded first when configured (e.g. `expenses` → `departments`, `budget_categories`, `cost_centers`, `gl_accounts`; `employee_positions` → `departments`).
 * **`error_log`:** If `error_log.txt` cannot be renamed (e.g. Windows file lock), the runner records the current file size and only attributes **new** lines to the active module — avoids false failures from earlier modules. When rotation succeeds, archives are `error_log-1.txt`, `error_log-2.txt`, … under `ROOT_PATH`.
 * **Export Excel** is simulated by parsing the list `<table>` HTML (same columns as `table-tools.js`).
-* **Import Excel** POSTs **one** derived row to `data-itm-db-import-endpoint` (round-trip smoke, not re-import of every exported line). Uses export headers with insertable values from `database.sql` when UI labels are not IDs. Export row payloads are captured from HTML **before** **`clear_table`** / the second **`clear`**. The runner runs **`clear_table`** (when the bulk gate passes) then **second `clear`** after **`export_xlsx`** so import runs on an empty table. **`expenses`:** import picks a **free** `cost_center_id` for the tenant (`uq_expenses_company_scope`); do not expect `inserted` to match export row count.
+* **Import Excel** POSTs **one** derived row to `data-itm-db-import-endpoint` (round-trip smoke, not re-import of every exported line). Uses export headers with insertable values from `db/01_schema.sql` when UI labels are not IDs. Export row payloads are captured from HTML **before** **`clear_table`** / the second **`clear`**. The runner runs **`clear_table`** (when the bulk gate passes) then **second `clear`** after **`export_xlsx`** so import runs on an empty table. **`expenses`:** import picks a **free** `cost_center_id` for the tenant (`uq_expenses_company_scope`); do not expect `inserted` to match export row count.
 
 **Tiers (do not treat all failures alike):**
 
@@ -861,7 +861,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_dashboard_active_employees.php` | Regression: dashboard row 2 **Active** / **On Leave** call `itm_employee_count_by_employment_status_name()` (no inline `LOWER(es.name)`); helper matches live `deleted_at IS NULL` counts; optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_dashboard_online_employees.php` | Regression: dashboard **Online now** stat, session presence touch hook, count after touch |
 
-Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `database.sql`.
+Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `db/03_triggers.sql`.
 
 Run `verify_dashboard_active_employees.php` when changing `dashboard.php` or `includes/itm_employee_employment_status.php` Active/On Leave count logic.
 
@@ -907,27 +907,27 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/seed_ops_report_search_demo.php` | Seeds company 1 demo rows (`DemoManager` on two past dates) for manual QA and screenshot script; prints expected hit lines |
 | `python scripts/verify_ops_report_search_screenshot.py` | Seeds demo data, bypass login, captures five human-flow PNGs under `qa-reports/ops_report_search/` (all-dates hits, section filter, sort, this-day navigation, search bar). Playwright + local Apache. Env: `ITM_SCREENSHOT_BASE_URL`, `ITM_PHP_BIN`, `ITM_OPS_SEARCH_DEMO_KEYWORD` |
 
-Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
+Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `db/03_triggers.sql`.
 
 ### Reports Hub scripts
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_reports_hub.php` | Regression for `modules/reports/`: all `api/helpers.php` chart payloads, Hotel Operations MTD metrics (`ops_report` / `ops_report_fb_outlet`), budget vs actual / YoY totals, `modules_registry` slug `reports`, and core Chart.js canvas ids in `index.php`. Optional `ITM_TEST_COMPANY_ID` (default 1). Requires `database.sql` Reports Hub sample seeds (ops_report daily trend, F&B covers, expanded budgets/expenses). Browser + CLI. |
+| `php scripts/verify_reports_hub.php` | Regression for `modules/reports/`: all `api/helpers.php` chart payloads, Hotel Operations MTD metrics (`ops_report` / `ops_report_fb_outlet`), budget vs actual / YoY totals, `modules_registry` slug `reports`, and core Chart.js canvas ids in `index.php`. Optional `ITM_TEST_COMPANY_ID` (default 1). Requires `db/` Reports Hub sample seeds (ops_report daily trend, F&B covers, expanded budgets/expenses). Browser + CLI. |
 
-Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/api/helpers.php`, or Reports Hub-related seeds in `database.sql`.
+Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/api/helpers.php`, or Reports Hub-related seeds in `db/03_triggers.sql`.
 
 ### Email Management scripts
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper; company 1 warranty/license **30-day alert window is a hard fail** (script inserts disposable license sample when empty, then deletes it). `database.sql` uses relative `DATE_ADD(CURDATE(), …)` expiry seeds so fresh imports stay in-window |
+| `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper; company 1 warranty/license **30-day alert window is a hard fail** (script inserts disposable license sample when empty, then deletes it). `db/` uses relative `DATE_ADD(CURDATE(), …)` expiry seeds so fresh imports stay in-window |
 | `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`) |
 | `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 
-Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_email.php`, or `email*` tables in `database.sql`.
+Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_email.php`, or `email*` tables in `db/03_triggers.sql`.
 
 Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/employee_profile_photo.php`, or Explorer `file.php` profile-photo serving.
 
@@ -951,7 +951,7 @@ Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/
 | `php scripts/test_mysql_databases.php` | Validates `mysql_databases.ps1` |
 | `php scripts/test_mysql_size.php` | Validates `mysql_size.ps1` |
 
-Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, `includes/itm_system_status_cache.php`, `database.sql` `system_status`, or any `includes/*.ps1` metrics script. On large tenants the storage tree scan and `information_schema` queries can be slow — run Refresh from CLI or raise PHP `max_execution_time` in browser if needed. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php` — tabs read cached JSON from `system_status`; **Refresh** POST runs `itm_system_status_refresh_all()`. Sub Storage parent nodes sum child totals plus direct files in each folder. For README screenshots see **Roles & Permissions scripts** above (`take_screenshots_modules.py`).
+Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/system_status_api.php`, `includes/itm_system_status_native.php`, `includes/itm_system_status_powershell.php`, `includes/itm_system_status_storage.php`, `includes/itm_system_status_cache.php`, `db/` `system_status`, or any `includes/*.ps1` metrics script. On large tenants the storage tree scan and `information_schema` queries can be slow — run Refresh from CLI or raise PHP `max_execution_time` in browser if needed. API dispatcher: `scripts/system_status_api.php?action=…` (Admin only; invalid action → HTTP 400). Module UI: `modules/system_status/index.php` — tabs read cached JSON from `system_status`; **Refresh** POST runs `itm_system_status_refresh_all()`. Sub Storage parent nodes sum child totals plus direct files in each folder. For README screenshots see **Roles & Permissions scripts** above (`take_screenshots_modules.py`).
 
 ### Resignations, employees, and fields_missing audits
 
@@ -961,7 +961,7 @@ Run `verify_system_status.php` when changing `modules/system_status/`, `scripts/
 
 - `debug_resignations_termination_date.php` — known `termination_date` missing from weekly report or `Incorrect DATE value: '0000-00-00'` on prepare.
 - `verify_employee_type_resignations.php` — after `employee_type`, `resignations`, or `employees` termination/type schema or filter changes.
-- `employee_fields_missing.php` or `fields_missing.php --module=employees` — after `database.sql` `employees` columns or profile/list UI changes.
+- `employee_fields_missing.php` or `fields_missing.php --module=employees` — after `db/` `employees` columns or profile/list UI changes.
 - `fields_missing.php` — after table column or scaffold/bespoke list UI changes; use `--strict-gate` in CI to fail on unreviewed bespoke `[SKIP][fail]` lines.
 - `fields_missing_reviewed.php` — after editing `scripts/data/fields_missing_reviewed.json`.
 
@@ -1053,7 +1053,7 @@ Canonical map of **all cataloged** `scripts/scripts.php` entries into execution 
 
 **Do not** use `perform_audit.php` as a blanket quality gate. It scans Tier 1–3 CLI scripts only (skips Tier 4 MBQA, Tier 5 maintenance, `repro_*`, `verify_*`, `_tmp_*`, `health.php`, and session-mock harnesses `test_ajax.php` / `test_edit.php`). Allowlisted intentional exit codes live in `scripts/data/perform_audit_allowlist.json`. Prefer Tier 1 runners first, then Tier 2/3 batches, then Tier 4 on a healthy clone; run `repro_*` / `verify_*` individually when needed.
 
-**Destroy -> document -> fresh clone:** if a script wrecks `itmanagement` or critical trees, record the culprit in `scripts/data/scripts-matrix-destroy-log.md` (status `DESTROYED_ENV`), re-import `database.sql` (`bash scripts/verify_database_sql_import.sh`) or split bundle (`bash scripts/import_database_split.sh`), sanity-check, then resume. Full protocol lives in `SCRIPTS_TEST_MATRIX.md`.
+**Destroy -> document -> fresh clone:** if a script wrecks `itmanagement` or critical trees, record the culprit in `scripts/data/scripts-matrix-destroy-log.md` (status `DESTROYED_ENV`), re-import `db/` (`bash scripts/verify_database_sql_import.sh`) or split bundle (`bash scripts/import_database_split.sh`), sanity-check, then resume. Full protocol lives in `SCRIPTS_TEST_MATRIX.md`.
 
 When adding a catalog row, update `SCRIPTS_TEST_MATRIX.md` in the same PR.
 
@@ -1066,7 +1066,7 @@ When adding or changing anything under `scripts/`:
 3. Run **`php -l scripts/<changed>.php`** on touched PHP files.
 4. Run the script’s CLI command once when behavior is non-trivial.
 
-**Tenant unique keys (`database.sql`):** after changing `CREATE TABLE` uniques or exempt skips in `includes/database_sql_unique_audit.php`, run `php scripts/check_database_sql_company_name_uniques.php`. Intentional skips include `bookmark_folders` / `bookmarks` (duplicate display names allowed), `floor_plan_item_tags` (junction identity is `PRIMARY KEY (floor_plan_id, tag_id)` only — never add `UNIQUE (company_id, floor_plan_id)`), `events` (duplicate/encrypted titles — never add `UNIQUE (company_id, title)`), and all `*_share_sessions` tables (ephemeral QR snapshots — `UNIQUE (access_token)` only; never add `UNIQUE (company_id, employee_id)`). Module notes: `modules/bookmarks/`, `modules/bookmark_folders/`, `modules/floor_plans/`, `modules/events/`, `includes/itm_qr_share.php`.
+**Tenant unique keys (`db/`):** after changing `CREATE TABLE` uniques or exempt skips in `includes/database_sql_unique_audit.php`, run `php scripts/check_database_sql_company_name_uniques.php`. Intentional skips include `bookmark_folders` / `bookmarks` (duplicate display names allowed), `floor_plan_item_tags` (junction identity is `PRIMARY KEY (floor_plan_id, tag_id)` only — never add `UNIQUE (company_id, floor_plan_id)`), `events` (duplicate/encrypted titles — never add `UNIQUE (company_id, title)`), and all `*_share_sessions` tables (ephemeral QR snapshots — `UNIQUE (access_token)` only; never add `UNIQUE (company_id, employee_id)`). Module notes: `modules/bookmarks/`, `modules/bookmark_folders/`, `modules/floor_plans/`, `modules/events/`, `includes/itm_qr_share.php`.
 
 **Index table compliance:** after changing list-table import/Actions markers or bespoke index UIs, run `php scripts/check_index_table_compliance.php`. `data-itm-no-import-excel="1"` means Import Excel / `data-itm-db-import-endpoint` is not required (e.g. `backup_tape_log`, `birthdays`, `contacts`). Actions `data-itm-actions-origin` / `itm-actions-cell` are required only when an Actions column exists. Browser report HTML-escapes lines inside `<pre>`.
 

@@ -585,7 +585,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Action: Seed every empty table with sample INSERT rows from database.sql.
+    // Action: Seed every empty table with sample INSERT rows from db/.
     if ($action === 'add_sample_data_all_tables') {
         if (!$canManageMaintenanceTools) {
             $error = 'Only admin users can manage SQL maintenance tools.';

@@ -1,6 +1,6 @@
 <?php
 /**
- * Reproduction script for incorrect UNIQUE constraints and trigger errors in database.sql.
+ * Reproduction script for incorrect UNIQUE constraints and trigger errors in db/.
  */
 
 define('ITM_CLI_SCRIPT', true);

@@ -16,7 +16,7 @@ Admin-only module that manages per-company module visibility. Administrators use
 ## 4. Business Rules (Critical for Agents)
 
 - Only `itm_is_admin()` users may access this module.
-- Opt-in policy: `has_module_access()` requires `company_module_access.enabled = 1` plus active registry row; missing row denies access. Fresh installs seed all company × module rows in `database.sql`.
+- Opt-in policy: `has_module_access()` requires `company_module_access.enabled = 1` plus active registry row; missing row denies access. Fresh installs seed all company × module rows in `db/03_triggers.sql`.
 - The admin matrix must show **all** registry modules — never filter rows like the sidebar does.
 - Matrix and registry list order: `module_slug ASC` (stable ascending; avoids emoji-prefixed `module_name` sorting after letters).
 - Sidebar emoji precedence (rendered in `includes/sidebar.php` via `itm_resolve_module_sidebar_label()`): **Settings per-user override** → **company_module_access.icon** → **modules_registry.icon** → **ui_config catalog** fallback. Icons are stored separately from `module_name` for stable sorting.

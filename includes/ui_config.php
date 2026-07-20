@@ -2276,7 +2276,7 @@ function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_i
 
 /**
  * Seeds default sidebar layout rows for QA sample data and empty tenants.
- * Why: database.sql uses INSERT…SELECT for this table; itm_parse_database_sql_inserts only reads INSERT…VALUES.
+ * Why: db/ uses INSERT…SELECT for this table; itm_parse_database_sql_inserts only reads INSERT…VALUES.
  *
  * @return int Rows for the company after seed (0 on failure)
  */

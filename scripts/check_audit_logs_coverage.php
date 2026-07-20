@@ -4,8 +4,8 @@
  *
  * Why: AGENTS.md requires INSERT/UPDATE/DELETE traceability in audit_logs when enabled.
  * Modules can satisfy that via PHP helpers (itm_run_query / itm_log_audit / bulk helpers)
- * or database triggers defined in database.sql (trg_{table}_audit_*).
- * Also compares every CREATE TABLE in database.sql against trg_{table}_audit_insert
+ * or database triggers defined in db/ (trg_{table}_audit_*).
+ * Also compares every CREATE TABLE in db/ against trg_{table}_audit_insert
  * (audit_logs and private-data tables per AGENTS.md are exempt) and exits non-zero
  * when other schema tables are missing triggers.
  *
@@ -33,9 +33,10 @@ if ($root === false) {
 }
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $modulesDir = $root . DIRECTORY_SEPARATOR . 'modules';
-$databaseSqlPath = $root . DIRECTORY_SEPARATOR . 'database.sql';
+$databaseSqlPath = itm_database_sql_schema_path();
 
 $options = [
     'json' => false,
@@ -484,12 +485,12 @@ function audit_logs_assess_module(
         $details = 'Audit path: ' . implode(' + ', $channels);
 
         if (!$phpAudit && ($dbTrigger || $allMutatedTablesHaveTriggers)) {
-            $details .= ' (PHP uses prepared statements; relies on database.sql triggers)';
+            $details .= ' (PHP uses prepared statements; relies on db/ triggers)';
         }
 
         if (!empty($uncoveredTables)) {
             $status = 'warn';
-            $details .= '; tables without trg_*_audit_insert in database.sql: ' . implode(', ', $uncoveredTables);
+            $details .= '; tables without trg_*_audit_insert in db/: ' . implode(', ', $uncoveredTables);
         }
 
         return [
@@ -569,8 +570,8 @@ $nl = itm_script_output_nl();
 
 echo "Audit Logs Coverage Check" . $nl;
 echo "Root: {$root}" . $nl;
-echo 'Schema tables in database.sql: ' . count($schemaTables) . $nl;
-echo 'Tables with trg_*_audit_insert in database.sql: ' . count($triggerTables) . $nl;
+echo 'Schema tables in db/: ' . count($schemaTables) . $nl;
+echo 'Tables with trg_*_audit_insert in db/: ' . count($triggerTables) . $nl;
 if (!empty($schemaTablesMissingTriggers)) {
     echo 'Schema tables missing audit triggers: ' . implode(', ', $schemaTablesMissingTriggers) . $nl;
 } else {
@@ -615,7 +616,7 @@ if ($totals['warn'] > 0) {
 }
 
 if (!empty($schemaTablesMissingTriggers)) {
-    echo $nl . "Schema gaps (add trg_{table}_audit_insert/update/delete in database.sql):" . $nl;
+    echo $nl . "Schema gaps (add trg_{table}_audit_insert/update/delete in db/):" . $nl;
     foreach ($schemaTablesMissingTriggers as $tableName) {
         echo " - {$tableName}" . $nl;
     }

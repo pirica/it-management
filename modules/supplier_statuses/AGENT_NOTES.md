@@ -31,7 +31,7 @@ Lookup table for the status of suppliers (e.g., "Active", "Preferred", "Blacklis
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_supplier_statuses_audit_insert`, `trg_supplier_statuses_audit_update`, `trg_supplier_statuses_audit_delete` on `supplier_statuses` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_supplier_statuses_audit_insert`, `trg_supplier_statuses_audit_update`, `trg_supplier_statuses_audit_delete` on `supplier_statuses` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

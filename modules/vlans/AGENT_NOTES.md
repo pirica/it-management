@@ -35,7 +35,7 @@ Manages Virtual LAN (VLAN) definitions, including names, IDs, and descriptions.
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_vlans_audit_insert`, `trg_vlans_audit_update`, `trg_vlans_audit_delete` on `vlans` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_vlans_audit_insert`, `trg_vlans_audit_update`, `trg_vlans_audit_delete` on `vlans` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]

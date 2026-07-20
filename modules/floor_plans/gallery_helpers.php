@@ -37,7 +37,7 @@ function fp_gallery_access_error(mysqli $conn): string
         return 'Select a company from the home page before using Floor Plans.';
     }
     if (!fp_floor_plan_schema_ready($conn)) {
-        return 'Floor Plans database tables are missing. Apply the floor plan section from database.sql (tables floor_plan_folders, floor_plan_tags, floor_plans, floor_plan_item_tags).';
+        return 'Floor Plans database tables are missing. Apply the floor plan section from db/ (tables floor_plan_folders, floor_plan_tags, floor_plans, floor_plan_item_tags).';
     }
     return '';
 }

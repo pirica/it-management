@@ -38,7 +38,7 @@ if (!($conn instanceof mysqli)) {
 foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions', 'event_share_sessions', 'private_contact_share_sessions'] as $tableName) {
     $tableRes = $conn->query("SHOW TABLES LIKE '{$tableName}'");
     if (!$tableRes || $tableRes->num_rows === 0) {
-        qr_share_verify_fail("{$tableName} table missing — re-import database.sql or bash scripts/import_database_split.sh.");
+        qr_share_verify_fail("{$tableName} table missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh.");
         exit(1);
     }
 }

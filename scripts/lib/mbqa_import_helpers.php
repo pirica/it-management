@@ -2,7 +2,7 @@
 /**
  * Module browser QA — import_db row builders (unique scope, tenant FK ids, header alignment).
  *
- * Why: import_db smoke tests must insert one row; duplicate unique keys and stale database.sql FK ids caused inserted=0.
+ * Why: import_db smoke tests must insert one row; duplicate unique keys and stale db/02_data.sql FK ids caused inserted=0.
  */
 
 declare(strict_types=1);

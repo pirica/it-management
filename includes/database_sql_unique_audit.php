@@ -1,6 +1,6 @@
 <?php
 /**
- * Parse database.sql CREATE TABLE blocks and audit tenant unique-key policy.
+ * Parse db/ CREATE TABLE blocks and audit tenant unique-key policy.
  *
  * Why: Tenant tables should define exactly two uniques — PRIMARY KEY (`id`) plus one
  * business unique led by `company_id` and either `name` or the 3rd column (e.g. annual_budget_id).

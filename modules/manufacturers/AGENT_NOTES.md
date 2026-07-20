@@ -33,7 +33,7 @@ Lookup table for equipment and inventory manufacturers (e.g., "Dell", "Cisco", "
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_manufacturers_audit_insert`, `trg_manufacturers_audit_update`, `trg_manufacturers_audit_delete` on `manufacturers` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_manufacturers_audit_insert`, `trg_manufacturers_audit_update`, `trg_manufacturers_audit_delete` on `manufacturers` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

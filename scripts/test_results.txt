@@ -93,7 +93,7 @@ curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.p
                             <tr>
                     <td>GET</td>
                     <td><code>scripts/DBdesign.php?format=html|mermaid|json</code></td>
-                    <td>Generate database.sql ER diagram output (drawdb-style viewer, Mermaid, or JSON).</td>
+                    <td>Generate db/ ER diagram output (drawdb-style viewer, Mermaid, or JSON).</td>
                 </tr>
                             <tr>
                     <td>GET</td>

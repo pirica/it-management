@@ -127,14 +127,14 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>database.sql</code> provisions <strong>130 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>130 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
 | **Tables** | 130 |
-| **Sample rows** | ~3,085 (from <code>database.sql</code>) |
+| **Sample rows** | ~3,085 (from <code>db/</code> split bundle) |
 | **Module folders** | 125 under <code>modules/</code> |
 | **Registry entries** | 130 in <code>modules_registry</code> |
 | **Company × module matrix** | 650 rows (5 seed companies × 130 modules) |
@@ -269,7 +269,7 @@
 
 <p align="center"><img src="docs/readme/company-module-access-architecture.svg" alt="Company Module Access architectural map: UI surfaces, request bootstrap, and database tables" /></p>
 
-<p align="center">UI entry points (<code>sidebar.php</code>, <code>dashboard.php</code>, <code>modules/company_module_access/</code>) call shared helpers in <code>includes/itm_company_module_access.php</code>. Enforcement gates every <code>modules/*</code> request after login. Data lives in <code>modules_registry</code> (global catalog) and <code>company_module_access</code> (per-company <code>enabled</code> flags). Fresh installs seed all company × module rows from <code>database.sql</code>; upgrades can run <code>php scripts/seed_company_module_access.php</code>.</p>
+<p align="center">UI entry points (<code>sidebar.php</code>, <code>dashboard.php</code>, <code>modules/company_module_access/</code>) call shared helpers in <code>includes/itm_company_module_access.php</code>. Enforcement gates every <code>modules/*</code> request after login. Data lives in <code>modules_registry</code> (global catalog) and <code>company_module_access</code> (per-company <code>enabled</code> flags). Fresh installs seed all company × module rows from <code>db/</code> split bundle; upgrades can run <code>php scripts/seed_company_module_access.php</code>.</p>
 
 <h2 align="center">API & Examples</h2>
 
@@ -285,7 +285,7 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 <h2 align="center">Installation</h2>
 
 1. Extract the project files into your web root.
-2. Import `database.sql` into MySQL (or run `bash scripts/import_database_split.sh` for the generated `db/` split — see `db/AGENT_NOTES.md`).
+2. Import `db/` into MySQL (or run `bash scripts/import_database_split.sh` for the generated `db/` split — see `db/AGENT_NOTES.md`).
 3. Update database credentials in `config/config.php`.
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
@@ -293,7 +293,7 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 7. Create a `floor_plans/` directory for floor plan file uploads (company subfolders are created automatically).
 8. Open `http://localhost/it-management/` in your browser.
 
-For an existing database, apply the Floor Plans tables from `database.sql` (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`) if they are not already present.
+For an existing database, apply the Floor Plans tables from `db/01_schema.sql` (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`) if they are not already present.
 
 <h2 align="center">Modules</h2>
 
@@ -423,7 +423,7 @@ Reference Data → **Floor Plans** (`modules/floor_plans/`) stores building layo
 
 **Move folder:** open a folder in the sidebar → **Move folder** → choose **Move into** (target folder or **— Root —**), or drag the folder in the tree. The module blocks moving a folder into itself or its subfolders and rejects duplicate names at the same level.
 
-**Setup:** import the Floor Plans section from `database.sql` on existing databases. If tables are missing, the gallery shows an explicit migration message instead of a generic company error.
+**Setup:** import the Floor Plans section from `db/01_schema.sql` on existing databases. If tables are missing, the gallery shows an explicit migration message instead of a generic company error.
 
 <h2 align="center">System Requirements</h2>
 
@@ -460,7 +460,7 @@ If phpMyAdmin returns an error when using **Analyze table** at the database leve
 
 This helper runs `ANALYZE TABLE` per base table and prints table-specific warnings/errors so you can quickly identify which table is failing.
 
-If a table reports `doesn't exist in engine`, rebuild only that table from `database.sql`:
+If a table reports `doesn't exist in engine`, rebuild only that table from `db/01_schema.sql`:
 
 - `php scripts/repair_table_from_schema.php --table=<table_name>`
 

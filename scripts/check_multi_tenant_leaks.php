@@ -10,7 +10,7 @@
  */
 
 $modules_dir = __DIR__ . '/../modules';
-$database_sql = __DIR__ . '/../database.sql';
+$database_sql = itm_database_sql_schema_path();
 $project_root = realpath(__DIR__ . '/..');
 $allowlist_file = __DIR__ . '/data/multi_tenant_leak_allowlist.json';
 
@@ -22,7 +22,7 @@ function get_table_exceptions() {
 }
 
 /**
- * Parse table definitions from database.sql and separate scoped/non-scoped tables.
+ * Parse table definitions from db/ and separate scoped/non-scoped tables.
  */
 function parse_database_tables($sql_file) {
     if (!file_exists($sql_file)) {
@@ -1121,6 +1121,7 @@ if ($table_regex === null) {
 $allowlist_rules = load_allowlist_rules($allowlist_file);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $is_cli = (PHP_SAPI === 'cli');
 

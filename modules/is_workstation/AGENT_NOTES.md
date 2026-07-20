@@ -41,7 +41,7 @@ A filtered view of the Equipment module specifically for workstation devices (de
 - Equipment rows cannot be moved between companies from this façade.
 
 ## 9. Audit Logging Requirements
-- INSERT, UPDATE, and DELETE on `equipment` are logged by MySQL triggers `trg_equipment_audit_insert`, `trg_equipment_audit_update`, and `trg_equipment_audit_delete` (see `database.sql`).
+- INSERT, UPDATE, and DELETE on `equipment` are logged by MySQL triggers `trg_equipment_audit_insert`, `trg_equipment_audit_update`, and `trg_equipment_audit_delete` (see `db/03_triggers.sql`).
 - Entries are written to **audit_logs** with `table_name = 'equipment'` and JSON payloads (including workstation-specific fields); session context comes from `@app_employee_id` / `@app_company_id` in `config/config.php`.
 - This façade has no local audit handlers.
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/130 tables).
- * Compare tables defined in database.sql with information_schema for itmanagement.
+ * Compare tables defined in db/ with information_schema for itmanagement.
  */
 declare(strict_types=1);
 
@@ -12,6 +12,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (!$conn instanceof mysqli) {
     $msg = "Database connection failed.";
@@ -35,9 +36,9 @@ $nl = itm_script_output_nl();
 function itm_verify_expected_tables_from_database_sql(): array
 {
     global $nl;
-    $path = ROOT_PATH . 'database.sql';
+    $path = itm_database_sql_schema_path();
     if (!is_readable($path)) {
-        $msg = "Cannot read database.sql at {$path}";
+        $msg = "Cannot read db/ at {$path}";
         if (PHP_SAPI === 'cli') {
             fwrite(STDERR, $msg . "\n");
         } else {
@@ -47,7 +48,7 @@ function itm_verify_expected_tables_from_database_sql(): array
     }
     $sql = file_get_contents($path);
     if ($sql === false) {
-        $msg = "Failed to read database.sql";
+        $msg = "Failed to read db/01_schema.sql";
         if (PHP_SAPI === 'cli') {
             fwrite(STDERR, $msg . "\n");
         } else {
@@ -56,7 +57,7 @@ function itm_verify_expected_tables_from_database_sql(): array
         exit(2);
     }
     if (!preg_match_all('/^CREATE TABLE `([^`]+)`/m', $sql, $matches)) {
-        $msg = "No CREATE TABLE entries found in database.sql";
+        $msg = "No CREATE TABLE entries found in db/01_schema.sql";
         if (PHP_SAPI === 'cli') {
             fwrite(STDERR, $msg . "\n");
         } else {
@@ -103,7 +104,7 @@ $missing = array_values(array_diff($expected, $actual));
 $extra = array_values(array_diff($actual, $expected));
 
 echo "Database: {$schema}" . $nl;
-echo "Expected tables (database.sql): " . count($expected) . $nl;
+echo "Expected tables (db/): " . count($expected) . $nl;
 echo "Actual tables (MySQL): " . count($actual) . $nl;
 
 if ($missing !== []) {
@@ -114,18 +115,18 @@ if ($missing !== []) {
 }
 
 if ($extra !== []) {
-    echo $nl . "Extra tables not in database.sql (" . count($extra) . "):" . $nl;
+    echo $nl . "Extra tables not in db/ (" . count($extra) . "):" . $nl;
     foreach ($extra as $name) {
         echo "  - {$name}" . $nl;
     }
 }
 
 if ($missing === [] && $extra === [] && count($actual) === count($expected)) {
-    echo $nl . itm_script_format_status_line("[PASS] OK — schema matches database.sql.") . $nl;
+    echo $nl . itm_script_format_status_line("[PASS] OK — schema matches db/.") . $nl;
     exit(0);
 }
 
-echo $nl . itm_script_format_status_line("[FAIL] FAIL — import incomplete or stale schema. Re-import the full database.sql (include DROP DATABASE at top; password itmanagement) or run bash scripts/import_database_split.sh after regenerating db/*.sql.") . $nl;
+echo $nl . itm_script_format_status_line("[FAIL] FAIL — import incomplete or stale schema. Re-import the full db/ (include DROP DATABASE at top; password itmanagement) or run bash scripts/import_database_split.sh after regenerating db/*.sql.") . $nl;
 echo "Check mysql stderr (e.g. mysql-import.err) for the first ERROR after the last table created." . $nl;
 exit(1);
 

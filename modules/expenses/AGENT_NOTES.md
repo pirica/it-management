@@ -36,7 +36,7 @@ Tracks actual financial expenditures against budgets.
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_expenses_audit_insert`, `trg_expenses_audit_update`, `trg_expenses_audit_delete` on `expenses` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_expenses_audit_insert`, `trg_expenses_audit_update`, `trg_expenses_audit_delete` on `expenses` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

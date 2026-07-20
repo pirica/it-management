@@ -4,7 +4,7 @@
  */
 
 /**
- * Sample ticket codes from database.sql that must link to Primary File Server.
+ * Sample ticket codes from db/ that must link to Primary File Server.
  *
  * @return string[]
  */
@@ -14,7 +14,7 @@ function tickets_sample_ticket_external_codes(): array
 }
 
 /**
- * Recursively seed database.sql parents required by a target table.
+ * Recursively seed db/02_data.sql parents required by a target table.
  */
 function tickets_seed_database_sql_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void
 {
@@ -44,7 +44,7 @@ function tickets_seed_database_sql_parents_for_table(mysqli $conn, string $table
 }
 
 /**
- * Seed ticket lookup parents from database.sql when tenant tables are empty.
+ * Seed ticket lookup parents from db/ when tenant tables are empty.
  */
 function tickets_seed_lookup_parents(mysqli $conn, int $companyId): void
 {
@@ -93,7 +93,7 @@ function tickets_seed_sample_equipment(mysqli $conn, int $companyId): void
 }
 
 /**
- * Resolve tenant Primary File Server id used by database.sql ticket samples.
+ * Resolve tenant Primary File Server id used by db/ ticket samples.
  */
 function tickets_sample_primary_file_server_id(mysqli $conn, int $companyId): int
 {

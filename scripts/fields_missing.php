@@ -1,6 +1,6 @@
 <?php
 /**
- * All-module schema/UI audit: database.sql columns vs live MySQL vs module screens.
+ * All-module schema/UI audit: db/ columns vs live MySQL vs module screens.
  *
  * Why: employee_fields_missing.php covers employees only; this script generalizes the same
  * checks across every module with a resolvable $crud_table (plus dynamic scaffold modules).
@@ -74,7 +74,7 @@ itm_script_output_begin('Fields missing — schema/UI audit');
 if (!$itmIsCli) {
     itm_script_output_close_pre();
     echo '<h1>Fields missing — schema/UI audit</h1>';
-    echo '<p>Compares <code>database.sql</code> columns, live MySQL schema, and module UI coverage for every '
+    echo '<p>Compares <code>db/</code> split bundle columns, live MySQL schema, and module UI coverage for every '
         . 'discoverable <code>$crud_table</code> module. Employees uses the same critical-field list as '
         . '<a href="employee_fields_missing.php">employee_fields_missing.php</a>. '
         . 'Flattened scaffold modules with <code>$uiColumns</code> pass UI via dynamic scaffold. '
@@ -103,7 +103,7 @@ if (!$itmIsCli) {
     echo '</form><pre>';
 }
 
-echo itm_script_escape_browser_pre_text('Schema tables (database.sql): ' . (int) $report['schema_table_count']) . $auditNl;
+echo itm_script_escape_browser_pre_text('Schema tables (db/): ' . (int) $report['schema_table_count']) . $auditNl;
 echo itm_script_escape_browser_pre_text('Modules audited: ' . (int) $report['module_count']) . $auditNl;
 if ($moduleFilter !== '') {
     echo itm_script_escape_browser_pre_text('Module filter: ' . $moduleFilter) . $auditNl;
@@ -136,7 +136,7 @@ foreach ($report['modules'] as $moduleReport) {
 
 if ($moduleFilter === '' && $report['tables_without_module'] !== []) {
     echo itm_script_escape_browser_pre_text(
-        'Tables in database.sql without a discoverable module folder (' . count($report['tables_without_module']) . ')'
+        'Tables in db/ without a discoverable module folder (' . count($report['tables_without_module']) . ')'
     ) . $auditNl;
     foreach ($report['tables_without_module'] as $tableName) {
         $label = function_exists('itm_script_format_table_link')

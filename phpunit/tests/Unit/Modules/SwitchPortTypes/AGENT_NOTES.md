@@ -5,7 +5,7 @@ Unit/regression tests for `modules/switch_port_types/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/switch_port_types/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `*Test.php` / `*.unittest.php` — test classes for this module.

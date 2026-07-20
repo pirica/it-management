@@ -1,6 +1,6 @@
 <?php
 /**
- * CLI-only: fix cable_colors and switch_port_types table structure in database.sql.
+ * CLI-only: fix cable_colors and switch_port_types table structure in db/.
  */
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     require_once __DIR__ . '/lib/script_browser_nav.php';
@@ -17,7 +17,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 $nl = itm_script_output_nl();
 itm_script_output_begin('Fix SQL (Cable Colors & Switch Port Types)');
 
-$sqlPath = 'database.sql';
+$sqlPath = itm_database_sql_schema_path();
 $content = file_get_contents($sqlPath);
 
 // Fix cable_colors table structure if already updated
@@ -77,6 +77,6 @@ if (strpos($content, 'CREATE TABLE `switch_port_types`') !== false) {
 }
 
 file_put_contents($sqlPath, $content);
-echo "Updated database.sql for cable_colors and switch_port_types" . $nl;
+echo "Updated db/ for cable_colors and switch_port_types" . $nl;
 
 itm_script_output_end();

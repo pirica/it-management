@@ -90,7 +90,7 @@ if (!function_exists('itm_fk_label_by_id')) {
 
 if (!function_exists('itm_first_tenant_row_id')) {
     /**
-     * First tenant row for database.sql sample seed only (not edit-form FK resolution).
+     * First tenant row for db/02_data.sql sample seed only (not edit-form FK resolution).
      */
     function itm_first_tenant_row_id(mysqli $conn, string $refTable, int $companyId): int
     {

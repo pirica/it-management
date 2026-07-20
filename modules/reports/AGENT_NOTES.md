@@ -42,7 +42,7 @@ This module is read-only and aggregates data from:
 - Module access is controlled via `has_module_access($conn, $company_id, 'reports')`.
 - All statistical queries must be scoped to the active `company_id`.
 - Advanced Budgeting assumes current year (`YEAR(CURDATE())`) for most comparisons unless specified (e.g. YOY).
-- `database.sql` seeds Reports Hub demo rows for company 1: `ops_report` (2025 monthly anchors, Jun–Jul 2026 daily trend), `ops_report_fb_outlet` covers (Jul 2026 MTD), expanded `monthly_budgets` / `expenses`, and 2025 `annual_budgets` for YoY charts. Regression: `php scripts/verify_reports_hub.php`.
+- `db/` seeds Reports Hub demo rows for company 1: `ops_report` (2025 monthly anchors, Jun–Jul 2026 daily trend), `ops_report_fb_outlet` covers (Jul 2026 MTD), expanded `monthly_budgets` / `expenses`, and 2025 `annual_budgets` for YoY charts. Regression: `php scripts/verify_reports_hub.php`.
 
 ---
 

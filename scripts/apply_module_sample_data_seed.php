@@ -1,6 +1,6 @@
 <?php
 /**
- * Apply module/table sample seed rows to database.sql across all seeded companies.
+ * Apply module/table sample seed rows to db/ across all seeded companies.
  *
  * Why: idf_device_type sample rows were added manually across companies. This script automates
  * that same process per module/table so new sample values can be propagated safely.
@@ -142,20 +142,20 @@ Usage:
 
 Options:
   --module=<name>         Module/table name (e.g. idf_device_type). If --table is missing, table = module.
-  --table=<name>          Database table in database.sql.
+  --table=<name>          Database table in db/.
   --value-column=<name>   Column used for uniqueness per company (default: idfdevicetype_name, then name).
   --emoji-column=<name>   Optional column for emoji/value metadata (default: field_edit_emoji when present).
   --sample=<name>         Sample value to add for every company (repeatable).
   --sample=<name:emoji>   Sample value plus emoji in one option (repeatable).
-  --dry-run               Preview changes; do not write database.sql (default).
-  --apply                 Write database.sql (CLI only; browser uses ?apply=1, Admin required).
+  --dry-run               Preview changes; do not write db/02_data.sql (default).
+  --apply                 Write db/02_data.sql (CLI only; browser uses ?apply=1, Admin required).
   --help                  Show this help.
 
 How to use it in the browser:
   Dry-run (preview):
     http://localhost/it-management/scripts/apply_module_sample_data_seed.php?module=idf_device_type
 
-  Apply (Admin, writes database.sql):
+  Apply (Admin, writes db/):
     http://localhost/it-management/scripts/apply_module_sample_data_seed.php?module=idf_device_type&apply=1
 
 Defaults:
@@ -163,7 +163,7 @@ Defaults:
     other:📦, server:🖥️, ups:🔋, patch_panel:➿, switch:🔀, firewall:🛡️, router:📡, pdu:🔌
 
 Mirror INSERT … SELECT (e.g. knowledge_base):
-  When database.sql copies tenant rows via SELECT N, cols FROM table WHERE company_id = 1,
+  When db/ copies tenant rows via SELECT N, cols FROM table WHERE company_id = 1,
   new samples are added only to the source company VALUES block; other tenants replicate on import.
   Use --sample=title or --sample=title:content for tables with a title/content pair.
 
@@ -891,21 +891,21 @@ if ($normalizedSamples === []) {
 }
 
 $root = dirname(__DIR__);
-$schemaPath = $root . DIRECTORY_SEPARATOR . 'database.sql';
+$schemaPath = itm_database_sql_schema_path();
 if (!is_file($schemaPath)) {
-    itm_seed_fwrite_stderr("database.sql not found.\n");
+    itm_seed_fwrite_stderr("db/01_schema.sql not found.\n");
     exit(2);
 }
 
 $sql = (string)file_get_contents($schemaPath);
 if ($sql === '') {
-    itm_seed_fwrite_stderr("database.sql is empty.\n");
+    itm_seed_fwrite_stderr("db/02_data.sql is empty.\n");
     exit(2);
 }
 
 $meta = itm_seed_find_table_metadata($sql, $table);
 if ($meta === null) {
-    itm_seed_fwrite_stderr("Table '{$table}' not found in database.sql CREATE TABLE blocks.\n");
+    itm_seed_fwrite_stderr("Table '{$table}' not found in db/ CREATE TABLE blocks.\n");
     exit(2);
 }
 
@@ -926,14 +926,14 @@ $emojiColumn = itm_seed_pick_emoji_column($tableColumns, $args['emoji_column']);
 
 $companyIds = itm_seed_extract_company_ids($sql);
 if ($companyIds === []) {
-    itm_seed_fwrite_stderr("No company ids found in database.sql companies seed rows.\n");
+    itm_seed_fwrite_stderr("No company ids found in db/ companies seed rows.\n");
     exit(2);
 }
 
 $insertData = itm_seed_collect_insert_rows($sql, $table);
 $insertRows = $insertData['rows'];
 if ($insertRows === []) {
-    itm_seed_fwrite_stderr("No INSERT … VALUES seed rows found for '{$table}' in database.sql.\n");
+    itm_seed_fwrite_stderr("No INSERT … VALUES seed rows found for '{$table}' in db/.\n");
     exit(2);
 }
 
@@ -1140,18 +1140,18 @@ if ($nextAutoIncrement > 0) {
 itm_apply_script_echo_list('New INSERT statements', $newInsertLines);
 
 if (!$apply) {
-    echo '[DRY-RUN] database.sql was not modified.' . $nl;
+    echo '[DRY-RUN] db/02_data.sql was not modified.' . $nl;
     itm_apply_script_finish_hint(false, $boot['is_cli'], $addedCount, $nl, 'apply_module_sample_data_seed.php');
     itm_script_output_end();
     exit(0);
 }
 
 if (file_put_contents($schemaPath, $newSql) === false) {
-    itm_seed_fwrite_stderr("Failed to write database.sql\n");
+    itm_seed_fwrite_stderr("Failed to write db/02_data.sql\n");
     exit(2);
 }
 
-echo colorText('[OK] database.sql updated successfully.', 'pass') . $nl;
+echo colorText('[OK] db/02_data.sql updated successfully.', 'pass') . $nl;
 itm_apply_script_finish_hint(true, $boot['is_cli'], $addedCount, $nl, 'apply_module_sample_data_seed.php');
 
 itm_script_output_end();

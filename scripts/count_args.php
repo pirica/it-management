@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 /**
- * Count arguments in the trg_employees_audit_insert trigger in database.sql.
+ * Count arguments in the trg_employees_audit_insert trigger In db/01_schema.sql.
  *
  * Why: Ensures that the audit trigger for employees correctly captures all
  * expected columns in its JSON_OBJECT payload.
@@ -17,15 +17,16 @@ if (PHP_SAPI === 'cli') {
 
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
 
 itm_script_output_begin('Count Args');
 $nl = itm_script_output_nl();
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath" . $nl;
+    echo "Error: db/01_schema.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 
@@ -58,7 +59,7 @@ if (preg_match('/CREATE TRIGGER `trg_employees_audit_insert`.*?JSON_OBJECT\((.+?
         echo ($i+1) . ": " . $arg . $nl;
     }
 } else {
-    echo "Trigger trg_employees_audit_insert not found in database.sql" . $nl;
+    echo "Trigger trg_employees_audit_insert not found in db/03_triggers.sql01_schema.sql" . $nl;
 }
 
 itm_script_output_end();

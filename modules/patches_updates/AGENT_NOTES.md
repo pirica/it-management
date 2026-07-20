@@ -37,7 +37,7 @@ Tracks software patches, security updates, and system upgrades across equipment.
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_patches_updates_audit_insert`, `trg_patches_updates_audit_update`, `trg_patches_updates_audit_delete` on `patches_updates` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_patches_updates_audit_insert`, `trg_patches_updates_audit_update`, `trg_patches_updates_audit_delete` on `patches_updates` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 - Do not delete rows still referenced by inbound FKs — reassign or detach dependents for the active `company_id` first. [Cursor-Valid]

@@ -5,7 +5,7 @@ Unit/regression tests for `modules/employee_companies/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/employee_companies/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `UserCompaniesTest.php` — CRUD on `employee_companies`; `getOrCreateUser()` uses `itm_script_test_employee_create()` when no unlinked employee exists (never `employees.email` / `employees.active`).

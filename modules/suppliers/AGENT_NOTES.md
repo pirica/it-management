@@ -31,7 +31,7 @@ Manages vendor and supplier information for equipment and services.
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_suppliers_audit_insert`, `trg_suppliers_audit_update`, `trg_suppliers_audit_delete` on `suppliers` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_suppliers_audit_insert`, `trg_suppliers_audit_update`, `trg_suppliers_audit_delete` on `suppliers` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

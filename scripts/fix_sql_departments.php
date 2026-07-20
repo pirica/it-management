@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 /**
- * Fix column count mismatch in departments INSERT statements in database.sql.
+ * Fix column count mismatch in departments INSERT statements In db/01_schema.sql.
  *
  * Why: Manual edits to departments table schema can leave seed data with
  * mismatched column counts. This script normalizes these INSERTs to 11 columns.
@@ -22,10 +22,10 @@ if (PHP_SAPI !== 'cli') {
 
 define('ITM_CLI_SCRIPT', true);
 
-$sqlFile = dirname(__DIR__) . '/database.sql';
+$sqlFile = itm_database_sql_schema_path();
 
 if (!file_exists($sqlFile)) {
-    die("Error: 'database.sql' could not be found.\n");
+    die("Error: 'db/01_schema.sql' could not be found.\n");
 }
 
 $content = file_get_contents($sqlFile);
@@ -91,7 +91,7 @@ foreach ($lines as $line) {
 
 if ($fixedCount > 0) {
     file_put_contents($sqlFile, implode("\n", $newLines));
-    echo "Fixed $fixedCount lines in database.sql." . $nl;
+    echo "Fixed $fixedCount lines In db/01_schema.sql." . $nl;
 } else {
     echo "No departments INSERT lines needed fixing." . $nl;
 }

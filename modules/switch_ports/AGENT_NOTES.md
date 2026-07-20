@@ -49,7 +49,7 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - Scoped by `company_id`; ports must match parent switch/equipment tenant.
 
 ## 9. Audit Logging Requirements
-- `trg_switch_ports_audit_insert|update|delete` in `database.sql`.
+- `trg_switch_ports_audit_insert|update|delete` in `db/03_triggers.sql`.
 - IDF-linked port changes may also appear in **idf_ports** audit triggers — keep both tables in sync.
 
 ## 10. Common Pitfalls

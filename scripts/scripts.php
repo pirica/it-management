@@ -152,7 +152,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="SCRIPTS_TEST_MATRIX.md" target="_blank" rel="nofollow noreferrer">SCRIPTS_TEST_MATRIX.md</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
-                    <td>Full catalog verification matrix: tiers 0–5, runner coverage map, Tier 5 exclusion list, destroy→document→fresh <code>database.sql</code> or <code>db/</code> split clone protocol. Companion logs: <code>data/scripts-matrix-destroy-log.md</code>, <code>data/scripts_errors.txt</code> (latest safe-matrix run).</td>
+                    <td>Full catalog verification matrix: tiers 0–5, runner coverage map, Tier 5 exclusion list, destroy→document→fresh <code>db/</code> split bundle or <code>db/</code> split clone protocol. Companion logs: <code>data/scripts-matrix-destroy-log.md</code>, <code>data/scripts_errors.txt</code> (latest safe-matrix run).</td>
                     <td>Read before blanket <code>scripts/*</code> verification. Update in the same PR when adding catalog rows. Do not use <code>perform_audit.php</code> as a quality gate.</td>
                 </tr>
             </tbody>
@@ -174,7 +174,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>ER-style diagram generated from <code>database.sql</code> (Mermaid render, zoom, SVG/PNG export).</td>
+                    <td>ER-style diagram generated from <code>db/</code> split bundle (Mermaid render, zoom, SVG/PNG export).</td>
                     <td>
                         Open <a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a>. Optional:
                         <a href="DBdesign.php?format=mermaid">?format=mermaid</a>,
@@ -203,7 +203,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="update_all_created_at.php" target="_blank" rel="nofollow noreferrer">update_all_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>After importing <code>database.sql</code>, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>
+                    <td>After importing <code>db/</code> split bundle, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>
                     <td><strong>Log in first.</strong> Open <a href="update_all_created_at.php" target="_blank" rel="nofollow noreferrer">update_all_created_at.php</a> (HTML + <strong>← Scripts index</strong>). CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
                 </tr>
                 <tr>
@@ -245,7 +245,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="extract_by_fields.php" target="_blank" rel="nofollow noreferrer">extract_by_fields.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Scans database.sql and lists table fields matching keywords (by, to, employee_id, employee).</td>
+                    <td>Scans db/ and lists table fields matching keywords (by, to, employee_id, employee).</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="extract_by_fields.php">extract_by_fields.php</a>.
                         CLI: <code>php scripts/extract_by_fields.php</code>
@@ -345,7 +345,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_emails_module.php" target="_blank" rel="nofollow noreferrer">verify_emails_module.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, <code>itm_send_email()</code>, and company 1 30-day warranty/license alert window (hard fail; disposable sample insert when empty).</td>
-                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> / alert-window seed rows in <code>database.sql</code>.</td>
+                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> / alert-window seed rows in <code>db/</code> split bundle.</td>
                 </tr>
                 <tr>
                     <td><a href="run_email_alert_rules.php" target="_blank" rel="nofollow noreferrer">run_email_alert_rules.php</a></td>
@@ -464,13 +464,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audits <code>database.sql</code>: each <code>company_id</code> table needs 2 uniques (PRIMARY + scope UNIQUE). Floor plans: <code>IFNULL(parent_folder_id,0)+name</code> / <code>IFNULL(folder_id,0)+display_name</code> (not <code>company_id+folder_id</code> alone). Skips <code>bookmark_folders</code> (duplicate names OK) and <code>floor_plan_item_tags</code> (junction PK only).</td>
+                    <td>Audits <code>db/</code> split bundle: each <code>company_id</code> table needs 2 uniques (PRIMARY + scope UNIQUE). Floor plans: <code>IFNULL(parent_folder_id,0)+name</code> / <code>IFNULL(folder_id,0)+display_name</code> (not <code>company_id+folder_id</code> alone). Skips <code>bookmark_folders</code> (duplicate names OK) and <code>floor_plan_item_tags</code> (junction PK only).</td>
                     <td>Open <a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a> or <code>php scripts/check_database_sql_company_name_uniques.php</code> (exit 1 if any fail).</td>
                 </tr>
                 <tr>
                     <td><a href="repair_table_from_schema.php" target="_blank" rel="nofollow noreferrer">repair_table_from_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Rebuilds one InnoDB table from <code>database.sql</code> when metadata drift causes "doesn't exist in engine" errors. Refuses web requests (<code>PHP_SAPI !== 'cli'</code>).</td>
+                    <td>Rebuilds one InnoDB table from <code>db/</code> split bundle when metadata drift causes "doesn't exist in engine" errors. Refuses web requests (<code>PHP_SAPI !== 'cli'</code>).</td>
                     <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
                 </tr>
                 <tr>
@@ -482,43 +482,31 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_database_schema.php" target="_blank" rel="nofollow noreferrer">verify_database_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Compares <code>CREATE TABLE</code> names in <code>database.sql</code> with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 130). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
-                    <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>database.sql</code> import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
+                    <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 130). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
+                    <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>db/</code> split bundle import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
                 <tr>
                     <td>verify_database_sql_import.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Imports the full <code>database.sql</code> against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>database.sql</code> (currently <strong>130</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>. Split alternative: <code>import_database_split.sh</code>.</td>
+                    <td>Imports the full <code>db/</code> split bundle against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>db/</code> split bundle (currently <strong>130</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>. Split alternative: <code>import_database_split.sh</code>.</td>
                     <td><code>bash scripts/verify_database_sql_import.sh</code> — requires MySQL on <code>127.0.0.1</code>, user <code>root</code>, password <code>itmanagement</code>. Env: <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>, optional <code>EXPECTED_TABLE_COUNT</code> override.</td>
-                </tr>
-                <tr>
-                    <td><a href="split_database_sql.php" target="_blank" rel="nofollow noreferrer">split_database_sql.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Generates <code>db/01_schema.sql</code>, <code>db/02_data.sql</code>, and <code>db/03_triggers.sql</code> from canonical <code>database.sql</code> (DDL / DML / triggers). Dry-run default; <code>--apply</code> or <code>?apply=1</code> (Admin) writes files. Shared lib: <code>lib/itm_database_sql_split.php</code>.</td>
-                    <td><code>php scripts/split_database_sql.php</code> then <code>php scripts/split_database_sql.php --apply</code> after <code>database.sql</code> edits. Regenerate before commit when the monolith changes.</td>
-                </tr>
-                <tr>
-                    <td><a href="verify_database_split_parity.php" target="_blank" rel="nofollow noreferrer">verify_database_split_parity.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Asserts split files under <code>db/</code> match <code>database.sql</code>: <strong>130</strong> tables, <strong>337</strong> triggers, identical data-statement multiset, and no DML/trigger leakage in <code>01_schema.sql</code>.</td>
-                    <td><code>php scripts/verify_database_split_parity.php</code> — run after <code>split_database_sql.php --apply</code> or when reviewing split-file PRs.</td>
                 </tr>
                 <tr>
                     <td>import_database_split.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Imports split database files in one MySQL session: <code>01_schema.sql</code> → <code>02_data.sql</code> → <code>03_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> and <code>verify_database_split_parity.php</code> on success.</td>
+                    <td>Imports <code>db/</code> SQL in one MySQL session: <code>01_schema.sql</code> → <code>02_data.sql</code> → <code>03_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> on success.</td>
                     <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>db/AGENT_NOTES.md</code> for import order.</td>
                 </tr>
                 <tr>
                     <td><a href="employee_fields_missing.php" target="_blank" rel="nofollow noreferrer">employee_fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Compares <code>employees</code> columns in <code>database.sql</code> and the live schema with create/edit/view/index coverage in <code>modules/employees/</code>. Fails when critical columns (including <code>termination_date</code>) are missing from the DB or module UI; lists optional gaps as <code>[INFO]</code>. Uses shared lib <code>itm_fields_missing_report.php</code>.</td>
-                    <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>database.sql</code>, <code>modules/employees/</code> profile fields, or employee list/import columns. Full multi-module audit: <code>php scripts/fields_missing.php</code>.</td>
+                    <td>Compares <code>employees</code> columns in <code>db/</code> split bundle and the live schema with create/edit/view/index coverage in <code>modules/employees/</code>. Fails when critical columns (including <code>termination_date</code>) are missing from the DB or module UI; lists optional gaps as <code>[INFO]</code>. Uses shared lib <code>itm_fields_missing_report.php</code>.</td>
+                    <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>db/</code> split bundle, <code>modules/employees/</code> profile fields, or employee list/import columns. Full multi-module audit: <code>php scripts/fields_missing.php</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="fields_missing.php" target="_blank" rel="nofollow noreferrer">fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>All-module schema/UI audit: <code>database.sql</code> columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold: <code>[PASS]</code>/<code>[FAIL]</code>; bespoke/status-driven slugs: gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code>/<code>[SKIP][fail][reviewed]</code> (page + list UI contract via <code>scripts/lib/itm_ui_list_contract_checks.php</code>). Reviewed exceptions: <a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a> · <code>scripts/data/fields_missing_reviewed.json</code>. Shared lib: <code>itm_fields_missing_report.php</code>.</td>
+                    <td>All-module schema/UI audit: <code>db/</code> split bundle columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold: <code>[PASS]</code>/<code>[FAIL]</code>; bespoke/status-driven slugs: gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code>/<code>[SKIP][fail][reviewed]</code> (page + list UI contract via <code>scripts/lib/itm_ui_list_contract_checks.php</code>). Reviewed exceptions: <a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a> · <code>scripts/data/fields_missing_reviewed.json</code>. Shared lib: <code>itm_fields_missing_report.php</code>.</td>
                     <td>Browser: optional <code>?module=</code> · <code>?strict_gate=1</code> · <code>?json=1</code>. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code> · <code>--strict-gate</code>. Exit <code>1</code> on actionable <code>[FAIL]</code>; default exit <code>0</code> for bespoke <code>[SKIP][fail]</code> only; <code>--strict-gate</code> also fails on unreviewed bespoke <code>[SKIP][fail]</code>. JSON schema for reviewed exceptions: <code>scripts/SCRIPTS.md</code> → <em>fields_missing reviewed exceptions</em>.</td>
                 </tr>
                 <tr>
@@ -543,24 +531,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_employee_type_resignations.php" target="_blank" rel="nofollow noreferrer">verify_employee_type_resignations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs, and the weekly resignations SQL filter (<code>itm_iso_week_bounds()</code>, <code>MONTH(termination_date)</code>, <code>itm_sql_valid_date_predicate()</code>) aligned with <code>modules/resignations/index.php</code>.</td>
-                    <td><code>php scripts/verify_employee_type_resignations.php</code> — after changes to <code>modules/employee_type/</code>, <code>modules/resignations/</code>, <code>modules/employees/</code> termination/type fields, or related <code>database.sql</code> tables.</td>
+                    <td><code>php scripts/verify_employee_type_resignations.php</code> — after changes to <code>modules/employee_type/</code>, <code>modules/resignations/</code>, <code>modules/employees/</code> termination/type fields, or related <code>db/</code> split bundle tables.</td>
                 </tr>
                 <tr>
                     <td><a href="normalize_database_sql_created_at.php" target="_blank" rel="nofollow noreferrer">normalize_database_sql_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Sets every seed <code>created_at</code> literal in <code>database.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Writes</strong> <code>database.sql</code>.</td>
+                    <td>Sets every seed <code>created_at</code> literal in <code>db/</code> split bundle INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Writes</strong> <code>db/</code> split bundle.</td>
                     <td><strong>CLI only</strong> (browser shows instructions + <strong>← Scripts index</strong>): <code>php scripts/normalize_database_sql_created_at.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="apply_module_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">apply_module_sample_data_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Automates per-module/table seed expansion: adds missing sample rows for every company listed in <code>companies</code> into <code>database.sql</code>. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values supported. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists new INSERT statements and skipped targets before apply. Requires <code>--module</code> / <code>?module=</code>.</td>
+                    <td>Automates per-module/table seed expansion: adds missing sample rows for every company listed in <code>companies</code> into <code>db/</code> split bundle. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values supported. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists new INSERT statements and skipped targets before apply. Requires <code>--module</code> / <code>?module=</code>.</td>
                     <td>Browser: <a href="apply_module_sample_data_seed.php?module=idf_device_type">dry-run</a> / <a href="apply_module_sample_data_seed.php?module=idf_device_type&amp;apply=1">apply=1</a>. CLI: <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code> then <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --apply</code> · <code>--value-column=name --sample=LabPoE</code></td>
                 </tr>
                 <tr>
                     <td><a href="export_floor_plan_folders_seed.php" target="_blank" rel="nofollow noreferrer">export_floor_plan_folders_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>database.sql</code>-style <code>INSERT</code> statements for pasting into seed data.</td>
+                    <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>db/</code> split bundle-style <code>INSERT</code> statements for pasting into seed data.</td>
                     <td>
                         <code>php scripts/export_floor_plan_folders_seed.php</code><br>
                         <code>php scripts/export_floor_plan_folders_seed.php --company=1</code> — stdout INSERTs; exit <code>1</code> when no rows.
@@ -569,55 +557,55 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="check_delimiters.php" target="_blank" rel="nofollow noreferrer">check_delimiters.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audit database.sql for correct DELIMITER usage in trigger blocks.</td>
+                    <td>Audit db/ for correct DELIMITER usage in trigger blocks.</td>
                     <td>Open <a href="check_delimiters.php">check_delimiters.php</a> while logged in. CLI: <code>php scripts/check_delimiters.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="check_duplicates.php" target="_blank" rel="nofollow noreferrer">check_duplicates.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audit database.sql for duplicate column definitions in CREATE TABLE blocks.</td>
+                    <td>Audit db/ for duplicate column definitions in CREATE TABLE blocks.</td>
                     <td>Open <a href="check_duplicates.php">check_duplicates.php</a> while logged in. CLI: <code>php scripts/check_duplicates.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="check_phones.php" target="_blank" rel="nofollow noreferrer">check_phones.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Identify tables in database.sql that contain phone-related columns for PII auditing.</td>
+                    <td>Identify tables in db/ that contain phone-related columns for PII auditing.</td>
                     <td>Open <a href="check_phones.php">check_phones.php</a> while logged in. CLI: <code>php scripts/check_phones.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="check_sql_errors.php" target="_blank" rel="nofollow noreferrer">check_sql_errors.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audit database.sql for column mismatches in triggers and INSERT statements.</td>
+                    <td>Audit db/ for column mismatches in triggers and INSERT statements.</td>
                     <td>Open <a href="check_sql_errors.php">check_sql_errors.php</a> while logged in. CLI: <code>php scripts/check_sql_errors.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="count_args.php" target="_blank" rel="nofollow noreferrer">count_args.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Count arguments in the <code>trg_employees_audit_insert</code> trigger in database.sql.</td>
+                    <td>Count arguments in the <code>trg_employees_audit_insert</code> trigger in db/.</td>
                     <td>Open <a href="count_args.php">count_args.php</a> while logged in. CLI: <code>php scripts/count_args.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="fix_sql_departments.php" target="_blank" rel="nofollow noreferrer">fix_sql_departments.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Fix column count mismatch in departments INSERT statements in database.sql.</td>
+                    <td>Fix column count mismatch in departments INSERT statements in db/.</td>
                     <td><code>php scripts/fix_sql_departments.php</code> — CLI only (browser shows instructions).</td>
                 </tr>
                 <tr>
                     <td><a href="list_phone_columns.php" target="_blank" rel="nofollow noreferrer">list_phone_columns.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>List columns for each table defined in database.sql, filtering for phone columns.</td>
+                    <td>List columns for each table defined in db/, filtering for phone columns.</td>
                     <td>Open <a href="list_phone_columns.php">list_phone_columns.php</a> while logged in. CLI: <code>php scripts/list_phone_columns.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_sql.php" target="_blank" rel="nofollow noreferrer">verify_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Comprehensive SQL audit script for database.sql (delimiters, duplicates, references).</td>
+                    <td>Comprehensive SQL audit script for db/ (delimiters, duplicates, references).</td>
                     <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="fix_sql.php" target="_blank" rel="nofollow noreferrer">fix_sql.php</td></a>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Utility to fix common SQL errors in database.sql.</td>
+                    <td>Utility to fix common SQL errors in db/.</td>
                     <td>CLI: <code>php scripts/fix_sql.php</code></td>
                 </tr>
                 <tr>
@@ -798,7 +786,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_rack_planner.php" target="_blank" rel="nofollow noreferrer">verify_rack_planner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Regression for <code>modules/rack_planner/</code>: <code>rack_planner</code> table + registry row, handler price-source sync wiring, audit triggers, and disposable <code>catalog:</code> / <code>equipment:</code> / <code>idf_unlinked:</code> price propagation to source tables.</td>
-                    <td><code>php scripts/verify_rack_planner.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/rack_planner/</code>, <code>rack_planner_sync_source_prices_from_layout()</code>, or related <code>database.sql</code> tables. PHPUnit: <code>php scripts/run_tests.php --filter RackPlanner</code>.</td>
+                    <td><code>php scripts/verify_rack_planner.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/rack_planner/</code>, <code>rack_planner_sync_source_prices_from_layout()</code>, or related <code>db/</code> split bundle tables. PHPUnit: <code>php scripts/run_tests.php --filter RackPlanner</code>.</td>
                 </tr>
             </tbody>
         </table></div>
@@ -853,7 +841,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Compares every <code>CREATE TABLE</code> in <code>database.sql</code> with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
+                    <td>Compares every <code>CREATE TABLE</code> in <code>db/</code> split bundle with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a> or
                         <a href="compare_database_sql_modules.php?format=json">?format=json</a>.<br>
@@ -1114,7 +1102,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="module_browser_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>
-                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, then per module <strong>mysql</strong> (<code>database.sql</code> INSERT row count), <strong>rotate error_log.txt</strong>, list/<strong>clear</strong>/sample_data, <strong>add</strong>, <strong>bulk_delete</strong>, CRUD/export, <strong>clear_table</strong>, second <strong>clear</strong>, import/<strong>single_delete</strong>, end sample restore + <strong>error_log</strong>. <strong>Mutates DB:</strong> seeds sample data and inserts/imports test rows as part of the flow. Tier lists: <code>$bespokeSmoke</code> / <code>$skipClear</code> in <code>scripts/lib/mbqa_runner_tiers.php</code>. Browser <strong>Run QA</strong> silently runs <code>module_clean_tests_qa_runner.php</code> at start and end. Preflight validation, auto-detected Base URL on Laragon, structured <strong>import_db</strong> JSON parsing, stale AJAX cleanup. Optional browser-only <strong>UI click smoke</strong> (one module + one company) appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, <code>import_excel_click</code>. Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run.
+                        Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, then per module <strong>mysql</strong> (<code>db/</code> split bundle INSERT row count), <strong>rotate error_log.txt</strong>, list/<strong>clear</strong>/sample_data, <strong>add</strong>, <strong>bulk_delete</strong>, CRUD/export, <strong>clear_table</strong>, second <strong>clear</strong>, import/<strong>single_delete</strong>, end sample restore + <strong>error_log</strong>. <strong>Mutates DB:</strong> seeds sample data and inserts/imports test rows as part of the flow. Tier lists: <code>$bespokeSmoke</code> / <code>$skipClear</code> in <code>scripts/lib/mbqa_runner_tiers.php</code>. Browser <strong>Run QA</strong> silently runs <code>module_clean_tests_qa_runner.php</code> at start and end. Preflight validation, auto-detected Base URL on Laragon, structured <strong>import_db</strong> JSON parsing, stale AJAX cleanup. Optional browser-only <strong>UI click smoke</strong> (one module + one company) appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, <code>import_excel_click</code>. Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run.
                     </td>
                     <td>
                         Browser: <a href="module_browser_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_runner.php</a> — form: <strong>Run QA</strong> + <strong>Stop</strong> (AJAX poll every 400ms). Optional <strong>UI click smoke</strong> (one module + one company).<br>
@@ -1157,7 +1145,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="check_audit_logs_coverage.php" target="_blank" rel="nofollow noreferrer">check_audit_logs_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>database.sql</code>.</td>
+                    <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>db/</code> split bundle.</td>
                     <td>
                         Browser: HTML/plain report (PHP 7.4+); query <code>?module=NAME</code> or <code>?json=1</code>. CLI: <code>php scripts/check_audit_logs_coverage.php</code> — exit <code>2</code> on failures.<br>
                         <code>--module=NAME</code> · <code>--json</code>
@@ -1205,7 +1193,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_ops_report.php" target="_blank" rel="nofollow noreferrer">verify_ops_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, cross-date hit line format, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
-                    <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>database.sql</code>.</td>
+                    <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>db/</code> split bundle.</td>
                 </tr>
                 <tr>
                     <td><a href="seed_ops_report_search_demo.php" target="_blank" rel="nofollow noreferrer">seed_ops_report_search_demo.php</a></td>
@@ -1241,13 +1229,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
                     <td>Regression for <code>modules/request_password/</code>: RBAC guard, HMAC approval links, list import/Actions markers, creator-only soft-delete guard, audit triggers, and disposable-row delete-authorization check.</td>
-                    <td><code>php scripts/verify_request_password.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/request_password/</code> workflow, delete guard, or <code>request_password</code> in <code>database.sql</code>. PoC: <code>repro_request_password_bypass.php</code>.</td>
+                    <td><code>php scripts/verify_request_password.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/request_password/</code> workflow, delete guard, or <code>request_password</code> in <code>db/</code> split bundle. PoC: <code>repro_request_password_bypass.php</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_reports_hub.php" target="_blank" rel="nofollow noreferrer">verify_reports_hub.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>modules/reports/</code> Reports Hub: exercises every <code>api/helpers.php</code> chart payload, Hotel Operations MTD metrics (<code>ops_report</code>, <code>ops_report_fb_outlet</code>), budget vs actual / YoY totals, <code>modules_registry</code> slug <code>reports</code>, and core Chart.js canvas ids in <code>index.php</code>. Expects <code>database.sql</code> Reports Hub sample seeds.</td>
-                    <td>Browser: <a href="verify_reports_hub.php">verify_reports_hub.php</a>. CLI: <code>php scripts/verify_reports_hub.php</code>. Optional <code>ITM_TEST_COMPANY_ID</code> (default 1). Run when changing <code>modules/reports/</code>, helpers, or Reports Hub seeds in <code>database.sql</code>.</td>
+                    <td>Regression for <code>modules/reports/</code> Reports Hub: exercises every <code>api/helpers.php</code> chart payload, Hotel Operations MTD metrics (<code>ops_report</code>, <code>ops_report_fb_outlet</code>), budget vs actual / YoY totals, <code>modules_registry</code> slug <code>reports</code>, and core Chart.js canvas ids in <code>index.php</code>. Expects <code>db/</code> split bundle Reports Hub sample seeds.</td>
+                    <td>Browser: <a href="verify_reports_hub.php">verify_reports_hub.php</a>. CLI: <code>php scripts/verify_reports_hub.php</code>. Optional <code>ITM_TEST_COMPANY_ID</code> (default 1). Run when changing <code>modules/reports/</code>, helpers, or Reports Hub seeds in <code>db/</code> split bundle.</td>
                 </tr>
                 <tr>
                     <td><a href="benchmark_sidebar_module_access.php" target="_blank" rel="nofollow noreferrer">benchmark_sidebar_module_access.php</a></td>
@@ -1659,7 +1647,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_audit_logs_disclosure.php" target="_blank" rel="nofollow noreferrer">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Three-step regression for employees audit disclosure: (1) static <code>database.sql</code> trigger scan — <code>trg_employees_audit_*</code> must omit <code>password</code>, <code>vault_key_hash</code>, <code>reset_token*</code>; (2) live disposable employee UPDATE probe via <code>itm_script_test_employee.php</code>; (3) retro scan of last 25 <code>employees</code> audit rows. Prints each step with <code>[PASS]</code>/<code>[FAIL]</code>. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
+                    <td>Three-step regression for employees audit disclosure: (1) static <code>db/</code> split bundle trigger scan — <code>trg_employees_audit_*</code> must omit <code>password</code>, <code>vault_key_hash</code>, <code>reset_token*</code>; (2) live disposable employee UPDATE probe via <code>itm_script_test_employee.php</code>; (3) retro scan of last 25 <code>employees</code> audit rows. Prints each step with <code>[PASS]</code>/<code>[FAIL]</code>. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
                 </tr>
                 <tr>
@@ -1737,13 +1725,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_notes_share.php" target="_blank" rel="nofollow noreferrer">verify_notes_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>note_share_sessions</code> in <code>database.sql</code>.</td>
+                    <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>note_share_sessions</code> in <code>db/</code> split bundle.</td>
                     <td><code>php scripts/verify_notes_share.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_qr_share_modules.php" target="_blank" rel="nofollow noreferrer">verify_qr_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Passwords, Bookmarks, Todo, Events, and Private Contacts QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires <code>password_share_sessions</code>, <code>bookmark_share_sessions</code>, <code>todo_share_sessions</code>, <code>event_share_sessions</code>, and <code>private_contact_share_sessions</code> in <code>database.sql</code>.</td>
+                    <td>Regression for Passwords, Bookmarks, Todo, Events, and Private Contacts QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires <code>password_share_sessions</code>, <code>bookmark_share_sessions</code>, <code>todo_share_sessions</code>, <code>event_share_sessions</code>, and <code>private_contact_share_sessions</code> in <code>db/</code> split bundle.</td>
                     <td><code>php scripts/verify_qr_share_modules.php</code></td>
                 </tr>
                 <tr>
@@ -1893,7 +1881,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 				<tr>
                     <td><a href="repro_db_integrity.php" target="_blank" rel="nofollow noreferrer">repro_db_integrity.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Reproduction — incorrect UNIQUE constraints and trigger errors in database.sql.</td>
+                    <td>Reproduction — incorrect UNIQUE constraints and trigger errors in db/.</td>
                     <td><code>php scripts/repro_db_integrity.php</code></td>
                 </tr>
 				<tr>

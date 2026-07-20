@@ -29,7 +29,7 @@ Lookup table for fiber strand counts (e.g., "12", "24", "48").
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_equipment_fiber_count_audit_insert`, `trg_equipment_fiber_count_audit_update`, `trg_equipment_fiber_count_audit_delete` on `equipment_fiber_count` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_equipment_fiber_count_audit_insert`, `trg_equipment_fiber_count_audit_update`, `trg_equipment_fiber_count_audit_delete` on `equipment_fiber_count` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

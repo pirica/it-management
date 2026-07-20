@@ -4,7 +4,7 @@
  *
  * Why: Exercising 101 modules × 5 companies via IDE browser alone is not practical;
  * this tool uses the same login, company scope, CSRF, and module URLs as manual QA.
- * Tier A order: mysql (database.sql INSERT count) → error_log → list → clear → … → error_log.
+ * Tier A order: mysql (db/02_data.sql INSERT count) → error_log → list → clear → … → error_log.
  * Tier A seeds FK parents, fills required NOT NULL columns, then:
  *   add — insert ~30 random tenant rows when count < records_per_page + 1 (mbqa_ensure_bulk_sample_rows);
  *   bulk_delete — when rows >= perPage and bulk UI visible on index; POST delete.php with up to 3 ids[].
@@ -24,6 +24,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 $nl = itm_script_output_nl();
 
 require_once __DIR__ . '/lib/script_browser_nav.php';
@@ -1772,9 +1773,9 @@ $browserRunViaQaButton = !mbqa_is_cli_sapi() && !empty($mbqaOptions['ajax']);
 $bespokeSmoke = mbqa_runner_bespoke_smoke_modules();
 $skipClear = mbqa_runner_skip_clear_modules();
 
-/** Why: Some modules need lookup parents in database.sql before sample seed succeeds for a tenant. */
+/** Why: Some modules need lookup parents in db/ before sample seed succeeds for a tenant. */
 $sampleSeedPrerequisites = [
-    // Why: cost_centers rows in database.sql reference departments; seed that chain before HTTP sample_data.
+    // Why: cost_centers rows in db/ reference departments; seed that chain before HTTP sample_data.
     'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
     'employee_positions' => ['departments'],
     'employee_onboarding_requests' => ['departments', 'employee_positions'],
@@ -2117,9 +2118,9 @@ function mbqa_runner_module_step_exceptions(): array
             'add' => 'N/A (no random bulk rows for junction assignments)',
             'import_db' => 'N/A (no Excel import round-trip)',
         ],
-        // Why: database.sql has no INSERT rows for patches_updates; sample_data start + end restore are N/A in QA.
+        // Why: db/ bundle has no INSERT rows for patches_updates; sample_data start + end restore are N/A in QA.
         'patches_updates' => [
-            'sample_data' => 'No sample rows found in database.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
         ],
         // Why: Explorer not a standart module CRUD
         'explorer' => [
@@ -2152,17 +2153,17 @@ function mbqa_runner_module_step_exceptions(): array
             'clear_table' => 'N/A (Auto populated)',
             'single_delete' => 'N/A (Auto populated)',
         ],
-        // Why: Employee Assignment History database.sql has no INSERT rows.
+        // Why: Employee Assignment History db/ bundle has no INSERT rows.
         'employee_assignment_history' => [
-            'sample_data' => 'No sample rows found in database.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
         ],
-        // Why: database.sql has no INSERT rows for approvers; sample_data start + end restore are N/A in QA.
+        // Why: db/ bundle has no INSERT rows for approvers; sample_data start + end restore are N/A in QA.
         'approvers' => [
-            'sample_data' => 'No sample rows found in database.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
         ],
-        // Why: IP address rows are generated from live subnets, not stored as static database.sql samples.
+        // Why: IP address rows are generated from live subnets, not stored as static db/02_data.sql samples.
         'ip_addresses' => [
-            'sample_data' => 'N/A (IP addresses are generated from subnets, not database.sql samples)',
+            'sample_data' => 'N/A (IP addresses are generated from subnets, not db/02_data.sql samples)',
         ],
         // Why: bulk random rows on equipment_types scaffold modules/is_mbqa_* folders; avoid module creations in QA.
         'equipment_types' => [
@@ -2175,14 +2176,14 @@ function mbqa_runner_module_step_exceptions(): array
         ],
         // Why: Idf Links dont have Sample data.
         'idf_links' => [
-            'sample_data' => 'No sample rows found in database.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
         ],
         'idf_ports' => [
-            'sample_data' => 'No sample rows found in database.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
         ],
-        // Why: IDF positions need idf_id + device_type parents; HTTP sample seed from database.sql is unreliable in QA.
+        // Why: IDF positions need idf_id + device_type parents; HTTP sample seed from db/ is unreliable in QA.
         'idf_positions' => [
-            'sample_data' => 'No sample rows found in database.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
         ],
         // Why: Employees manages application auth; avoid employee profile creation in QA.
         'employees' => [
@@ -2347,7 +2348,7 @@ function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, stri
 
 function mbqa_index_has_sample_seed_error(string $html): bool
 {
-    return stripos($html, 'No sample rows found in database.sql') !== false;
+    return stripos($html, 'No sample rows found in db/02_data.sql') !== false;
 }
 
 /** Pulls the flash error banner text after a failed sample-data POST. */
@@ -2489,7 +2490,7 @@ function mbqa_index_has_xlsx_library(string $html): bool
 }
 
 /**
- * HTTP sample seed, then database.sql seed (and FK parents) when the UI reports missing SQL samples.
+ * HTTP sample seed, then db/ seed (and FK parents) when the UI reports missing SQL samples.
  *
  * @return array{ok:bool, note:string, html:string, csrf:string, na:bool}
  */
@@ -2553,7 +2554,7 @@ function mbqa_ensure_sample_data(
 
     if ($ok) {
         $note = $inserted > 0
-            ? ('DB sample seed (' . $inserted . ' row(s) from database.sql)')
+            ? ('DB sample seed (' . $inserted . ' row(s) from db/)')
             : 'DB sample seed (rows present after FK parent seed)';
         return ['ok' => true, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
     }
@@ -2561,7 +2562,7 @@ function mbqa_ensure_sample_data(
     $flash = mbqa_index_sample_seed_flash_note($index['body']);
     $note = $seedErr !== '' ? $seedErr : ($flash !== '' ? $flash : 'Still empty or seed error');
     if (mbqa_index_has_sample_seed_error($index['body'])) {
-        $note = 'No sample rows in database.sql (HTTP + DB seed)';
+        $note = 'No sample rows in db/ (HTTP + DB seed)';
     }
     return ['ok' => false, 'note' => $note, 'html' => $index['body'], 'csrf' => $csrf, 'na' => false];
 }
@@ -2579,7 +2580,7 @@ function mbqa_error_log_byte_offset(): int
 }
 
 /**
- * HTTP sample seed at end of module QA (after single_delete); falls back to database.sql when HTTP seed leaves the list empty.
+ * HTTP sample seed at end of module QA (after single_delete); falls back to db/ when HTTP seed leaves the list empty.
  *
  * @return array{ok:bool,note:string,na:bool,html?:string}
  */
@@ -2628,7 +2629,7 @@ function mbqa_http_sample_seed_end(string $moduleUrl, string $cookieFile, ?mysql
         $ok = !mbqa_index_is_empty($index['body']) && !mbqa_index_has_sample_seed_error($index['body']);
         if ($ok) {
             $note = $inserted > 0
-                ? ('DB sample seed restore (' . $inserted . ' row(s) from database.sql)')
+                ? ('DB sample seed restore (' . $inserted . ' row(s) from db/)')
                 : 'DB sample seed restore (rows present after FK parent seed)';
             return ['ok' => true, 'note' => $note, 'na' => false, 'html' => $index['body']];
         }
@@ -2894,7 +2895,7 @@ function mbqa_match_list_header_to_column(string $header, array $columnNames): ?
 }
 
 /**
- * Count INSERT sample rows for one table in database.sql (Tier A module slug = table name).
+ * Count INSERT sample rows for one table in db/ (Tier A module slug = table name).
  */
 function mbqa_database_sql_insert_row_count(string $table): int
 {
@@ -2902,7 +2903,7 @@ function mbqa_database_sql_insert_row_count(string $table): int
         return 0;
     }
 
-    $sqlPath = ROOT_PATH . 'database.sql';
+    $sqlPath = itm_database_sql_schema_path();
     if (!is_file($sqlPath)) {
         return -1;
     }
@@ -2921,7 +2922,7 @@ function mbqa_database_sql_insert_row_count(string $table): int
 }
 
 /**
- * Tier A preflight: record how many INSERT rows database.sql defines for this module table.
+ * Tier A preflight: record how many INSERT rows db/ defines for this module table.
  * Why: sample_data / end restore and import_db expectations depend on seed rows (0 vs N).
  *
  * @return array{ok:bool, note:string}
@@ -2930,17 +2931,17 @@ function mbqa_mysql_database_sql_seed_check(string $table): array
 {
     $count = mbqa_database_sql_insert_row_count($table);
     if ($count < 0) {
-        return ['ok' => false, 'note' => 'database.sql missing or unreadable'];
+        return ['ok' => false, 'note' => 'db/ missing or unreadable'];
     }
     if ($count === 0) {
-        return ['ok' => true, 'note' => 'database.sql: 0 row(s) (empty)'];
+        return ['ok' => true, 'note' => 'db/: 0 row(s) (empty)'];
     }
 
-    return ['ok' => true, 'note' => 'database.sql: ' . $count . ' row(s)'];
+    return ['ok' => true, 'note' => 'db/: ' . $count . ' row(s)'];
 }
 
 /**
- * Raw insertable values keyed by column name from database.sql (tenant-resolved FK ids).
+ * Raw insertable values keyed by column name from db/ (tenant-resolved FK ids).
  *
  * @return array<string, string>
  */
@@ -2950,7 +2951,7 @@ function mbqa_database_sql_values_by_column(mysqli $conn, string $table, int $co
         return [];
     }
 
-    $sqlPath = ROOT_PATH . 'database.sql';
+    $sqlPath = itm_database_sql_schema_path();
     if (!is_file($sqlPath)) {
         return [];
     }
@@ -3100,7 +3101,7 @@ function mbqa_build_import_rows_from_db_template(mysqli $conn, string $table, in
 }
 
 /**
- * Import payload from database.sql INSERT samples (raw FK ids), when UI export labels fail to insert.
+ * Import payload from db/02_data.sql INSERT samples (raw FK ids), when UI export labels fail to insert.
  *
  * @return array<int, array<int, string>>
  */
@@ -3110,7 +3111,7 @@ function mbqa_build_import_rows_from_database_sql_seed(mysqli $conn, string $tab
         return [];
     }
 
-    $sqlPath = ROOT_PATH . 'database.sql';
+    $sqlPath = itm_database_sql_schema_path();
     if (!is_file($sqlPath)) {
         return [];
     }
@@ -3336,7 +3337,7 @@ function mbqa_unique_expense_import_row(mysqli $conn, int $companyId, array $sql
 }
 
 /**
- * Import rows for round-trip: Export Excel headers from the list table + insertable values from database.sql.
+ * Import rows for round-trip: Export Excel headers from the list table + insertable values from db/.
  *
  * @param array<int, array<int, string>> $exportRows
  * @return array<int, array<int, string>>
@@ -3593,7 +3594,7 @@ function mbqa_tables_skip_random_qa_inserts(): array
 }
 
 /**
- * Seed equipment_types from database.sql only — never MBQA-random names (sidebar scaffold pollution).
+ * Seed equipment_types from db/ only — never MBQA-random names (sidebar scaffold pollution).
  */
 function mbqa_seed_equipment_types_from_database_sql(mysqli $conn, int $companyId): void
 {
@@ -4020,7 +4021,7 @@ function mbqa_fk_reference_table(string $column, array $fkMap): string
 }
 
 /**
- * Seeds database.sql rows and ensures each outbound FK parent has enough tenant rows.
+ * Seeds db/ rows and ensures each outbound FK parent has enough tenant rows.
  */
 function mbqa_ensure_parent_rows_for_inserts(mysqli $conn, string $table, int $companyId, int $minimumRows): void
 {
@@ -4162,7 +4163,7 @@ function mbqa_fill_scalar_value(
 }
 
 /**
- * Seeds database.sql parents for a module so random inserts can resolve NOT NULL FKs.
+ * Seeds db/02_data.sql parents for a module so random inserts can resolve NOT NULL FKs.
  */
 function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void
 {
@@ -4289,7 +4290,7 @@ function mbqa_pick_fk_value(mysqli $conn, string $refTable, int $companyId, bool
 }
 
 /**
- * Builds one random insert payload (not from database.sql) for QA volume testing.
+ * Builds one random insert payload (not from db/) for QA volume testing.
  *
  * @param array<int, array{name:string,type:string,null:string,default:?string,extra:string,key:string}> $columnMetas
  * @param array<string, array{REFERENCED_TABLE_NAME:string,REFERENCED_COLUMN_NAME:string}> $fkMap
@@ -5911,7 +5912,7 @@ foreach ($companiesToRun as $companyId) {
         $_SESSION['company_id'] = $companyId;
         $addNaNote = mbqa_runner_module_step_exception_note($slug, 'add');
         if ($addNaNote !== null) {
-            // Why: audit_logs is read-only in the UI but QA still needs database.sql rows for list/pagination/view steps.
+            // Why: audit_logs is read-only in the UI but QA still needs db/ rows for list/pagination/view steps.
             if ($slug === 'audit_logs') {
                 mbqa_ensure_bulk_sample_rows($conn, $slug, $companyId);
             }
@@ -6141,7 +6142,7 @@ foreach ($companiesToRun as $companyId) {
             if (empty($importRows)) {
                 $importRows = mbqa_build_import_rows_from_export($exportRows);
             }
-            $importNote = 'Export Excel headers with insertable row (database.sql FK ids when needed)';
+            $importNote = 'Export Excel headers with insertable row (db/02_data.sql FK ids when needed)';
             $importPayload = json_encode([
                 'csrf_token' => $csrfIndex,
                 'import_excel_rows' => $importRows,

@@ -46,7 +46,7 @@ Daily hotel operations report (duty managers, figures & revenue, F&B covers, wal
 - Strict `company_id` scoping on all queries.
 
 ## 9. Audit Logging Requirements
-- Database triggers on **all** `ops_report*` tables: `ops_report`, `ops_report_fb_outlet`, `ops_report_walk_round`, `ops_report_courtesy_call`, `ops_report_guest_experience`, `ops_report_butler`, `ops_report_night_shift`, `ops_report_hotel_figure` (`trg_{table}_audit_insert|update|delete` in `database.sql`).
+- Database triggers on **all** `ops_report*` tables: `ops_report`, `ops_report_fb_outlet`, `ops_report_walk_round`, `ops_report_courtesy_call`, `ops_report_guest_experience`, `ops_report_butler`, `ops_report_night_shift`, `ops_report_hotel_figure` (`trg_{table}_audit_insert|update|delete` in `db/03_triggers.sql`).
 - Child-row triggers include `ops_report_id` in `old_values` / `new_values` JSON for parent linkage.
 
 ## 10. Common Pitfalls

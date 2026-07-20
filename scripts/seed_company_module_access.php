@@ -3,7 +3,7 @@
  * Backfill explicit company_module_access rows (enabled=1) for every active company × registry module.
  *
  * Idempotent: INSERT IGNORE only inserts missing pairs. A result of 0 new rows usually means
- * database.sql (or a prior run) already seeded full coverage.
+ * db/ (or a prior run) already seeded full coverage.
  *
  * CLI: php scripts/seed_company_module_access.php
  * CLI: php scripts/seed_company_module_access.php 3  (single company)

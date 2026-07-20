@@ -34,7 +34,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 ## 6. API Actions (If Applicable)
 - **ajax_update_layout** (POST on create/edit) — `id`, `rack_units`, `layout_json`; normalises layout, persists JSON, syncs prices to source tables; 404 when `affected_rows === 0`.
 - **import_excel_rows** (JSON POST on index/list_all) — standard table import for plan metadata rows.
-- **add_sample_data** (POST index) — seeds empty tenant from `database.sql` when table empty.
+- **add_sample_data** (POST index) — seeds empty tenant from `db/01_schema.sql` when table empty.
 
 ## 7. File Structure
 - `index.php` — main planner UI; `$crud_action = $crud_action ?? 'index'` so wrappers (`create.php`, `edit.php`, etc.) keep their action.
@@ -45,7 +45,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - Scoped by `company_id`; unique rack plan name per company (`rack_planner_name_company`). All active plans are filtered with `deleted_at IS NULL` to support soft deletion.
 
 ## 9. Audit Logging Requirements
-- `trg_rack_planner_audit_insert|update|delete` in `database.sql` logging all fields.
+- `trg_rack_planner_audit_insert|update|delete` in `db/03_triggers.sql` logging all fields.
 
 ## 10. Common Pitfalls
 - There is no `rack_equipment` mapping table — layout lives in `layout_json`. [Cursor-Valid]

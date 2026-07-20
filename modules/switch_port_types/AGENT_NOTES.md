@@ -30,7 +30,7 @@ Lookup table for types of switch ports (e.g., "RJ45", "SFP", "Door", "Access Poi
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_switch_port_types_audit_insert`, `trg_switch_port_types_audit_update`, `trg_switch_port_types_audit_delete` on `switch_port_types` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_switch_port_types_audit_insert`, `trg_switch_port_types_audit_update`, `trg_switch_port_types_audit_delete` on `switch_port_types` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 
