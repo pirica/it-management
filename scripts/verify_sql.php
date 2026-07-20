@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Comprehensive SQL audit script for db/.
  *

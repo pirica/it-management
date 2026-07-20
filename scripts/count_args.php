@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Count arguments in the trg_employees_audit_insert trigger In db/01_schema.sql.
  *

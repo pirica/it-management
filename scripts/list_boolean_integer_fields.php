@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * List Boolean and Integer Fields
  *

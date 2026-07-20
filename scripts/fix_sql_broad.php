@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CLI-only: broad-spectrum SQL cleanup utility for db/.
  */

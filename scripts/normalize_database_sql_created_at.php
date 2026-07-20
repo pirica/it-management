@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Normalize seed created_at timestamps In db/01_schema.sql (INSERT data only).
  *
@@ -14,7 +14,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    itm_script_output_begin('Normalize created_at in db/02_data.sql01_schema.sql');
+    itm_script_output_begin('Normalize created_at in db/02_data.sql');
     echo '<p><strong>CLI only.</strong> This script rewrites <code>db/</code> split bundle on disk. Run from the project root:</p>';
     echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/normalize_database_sql_created_at.php</pre>';
     exit(1);

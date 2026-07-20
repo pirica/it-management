@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Fix column count mismatch in departments INSERT statements In db/01_schema.sql.
  *
