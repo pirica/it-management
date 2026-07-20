@@ -494,6 +494,105 @@ if (!function_exists('itm_vault_reencrypt_events')) {
     }
 }
 
+if (!function_exists('itm_vault_reencrypt_todo')) {
+    /**
+     * Re-encrypt private todo fields for one employee when the vault session key changes.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    function itm_vault_reencrypt_todo($conn, $employeeId, $oldKeySession, $newKeySession)
+    {
+        if (!($conn instanceof mysqli)) {
+            return ['ok' => false, 'message' => 'Database connection unavailable.'];
+        }
+
+        require_once ROOT_PATH . 'modules/todo/todo_vault_helpers.php';
+
+        $employeeId = (int)$employeeId;
+        if ($employeeId <= 0) {
+            return ['ok' => false, 'message' => 'Invalid employee.'];
+        }
+
+        $oldKeySession = (string)$oldKeySession;
+        $newKeySession = (string)$newKeySession;
+        if ($oldKeySession === '' || $newKeySession === '') {
+            return ['ok' => false, 'message' => 'Invalid vault key material.'];
+        }
+
+        $sel_stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, title, description, assigned_to_employee_id, created_by FROM todo WHERE created_by = ? AND active = 1 AND deleted_at IS NULL'
+        );
+        if (!$sel_stmt) {
+            return ['ok' => false, 'message' => 'Failed to load tasks.'];
+        }
+        mysqli_stmt_bind_param($sel_stmt, 'i', $employeeId);
+        if (!mysqli_stmt_execute($sel_stmt)) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to load tasks.'];
+        }
+
+        $res = mysqli_stmt_get_result($sel_stmt);
+        $upd_stmt = mysqli_prepare(
+            $conn,
+            'UPDATE todo SET title = ?, title_hash = ?, description = ? WHERE id = ? AND created_by = ?'
+        );
+        if (!$upd_stmt) {
+            mysqli_stmt_close($sel_stmt);
+            return ['ok' => false, 'message' => 'Failed to prepare task update.'];
+        }
+
+        while ($row = mysqli_fetch_assoc($res)) {
+            $taskId = (int)($row['id'] ?? 0);
+            $createdBy = (int)($row['created_by'] ?? 0);
+            if ($taskId <= 0 || todo_task_is_shared_with_others($row['assigned_to_employee_id'] ?? null, $createdBy)) {
+                continue;
+            }
+
+            $titleStored = (string)($row['title'] ?? '');
+            $descriptionStored = (string)($row['description'] ?? '');
+            $titlePlain = $titleStored === '' ? '' : itm_decrypt($titleStored, $oldKeySession);
+            if ($titlePlain === false && $titleStored !== '' && todo_private_text_legacy_plaintext_check($titleStored)) {
+                $titlePlain = $titleStored;
+            }
+            if ($titlePlain === false) {
+                mysqli_stmt_close($upd_stmt);
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt tasks. Please try again.'];
+            }
+
+            $descriptionPlain = $descriptionStored;
+            if ($descriptionStored !== '') {
+                $descriptionPlain = itm_decrypt($descriptionStored, $oldKeySession);
+                if ($descriptionPlain === false && todo_private_text_legacy_plaintext_check($descriptionStored)) {
+                    $descriptionPlain = $descriptionStored;
+                }
+                if ($descriptionPlain === false) {
+                    mysqli_stmt_close($upd_stmt);
+                    mysqli_stmt_close($sel_stmt);
+                    return ['ok' => false, 'message' => 'Failed to re-encrypt tasks. Please try again.'];
+                }
+            }
+
+            $titleEnc = itm_encrypt($titlePlain, $newKeySession);
+            $titleHash = todo_text_hash($titlePlain);
+            $descriptionEnc = $descriptionPlain === '' ? null : itm_encrypt($descriptionPlain, $newKeySession);
+
+            mysqli_stmt_bind_param($upd_stmt, 'sssii', $titleEnc, $titleHash, $descriptionEnc, $taskId, $employeeId);
+            if (!mysqli_stmt_execute($upd_stmt)) {
+                mysqli_stmt_close($upd_stmt);
+                mysqli_stmt_close($sel_stmt);
+                return ['ok' => false, 'message' => 'Failed to re-encrypt tasks. Please try again.'];
+            }
+        }
+
+        mysqli_stmt_close($upd_stmt);
+        mysqli_stmt_close($sel_stmt);
+
+        return ['ok' => true, 'message' => ''];
+    }
+}
+
 if (!function_exists('itm_vault_reencrypt_private_contacts')) {
     /**
      * Re-encrypt private contact PII for one employee when the vault session key changes.

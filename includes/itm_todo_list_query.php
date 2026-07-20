@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/todo_visibility.php';
 require_once __DIR__ . '/itm_todo_search.php';
+require_once ROOT_PATH . 'modules/todo/todo_vault_helpers.php';
 
 if (!function_exists('todo_list_sortable_columns')) {
     /**
@@ -54,7 +55,6 @@ if (!function_exists('todo_build_list_filters')) {
         $company_id = (int)$company_id;
         $logged_user_id = (int)$logged_user_id;
         $filter = (string)$filter;
-        $searchRaw = trim((string)$searchRaw);
 
         $fromSql = ' FROM todo t WHERE t.company_id = ? AND t.active = 1';
         $params = [$company_id];
@@ -78,17 +78,6 @@ if (!function_exists('todo_build_list_filters')) {
             $params[] = $logged_user_id;
         }
 
-        if ($searchRaw !== '') {
-            $searchConditions = itm_todo_build_search_clause($searchRaw);
-            if ($searchConditions['sql'] !== '') {
-                $fromSql .= $searchConditions['sql'];
-                $types .= $searchConditions['types'];
-                foreach ($searchConditions['params'] as $searchParam) {
-                    $params[] = $searchParam;
-                }
-            }
-        }
-
         return [
             'from_sql' => $fromSql,
             'types' => $types,
@@ -108,47 +97,58 @@ if (!function_exists('todo_query_tasks_for_list')) {
         $filter = (string)($options['filter'] ?? 'tasks');
         $searchRaw = trim((string)($options['search'] ?? ''));
         $sort = (string)($options['sort'] ?? 'created_at');
-        $dir = (string)($options['dir'] ?? 'DESC');
+        $dir = strtoupper((string)($options['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
         $page = max(1, (int)($options['page'] ?? 1));
         $perPage = max(1, (int)($options['per_page'] ?? 25));
         $paginate = !empty($options['paginate']);
+        $categories = (array)($options['categories'] ?? []);
+        $departments = (array)($options['departments'] ?? []);
+        $users = (array)($options['users'] ?? []);
+
+        $sortable = todo_list_sortable_columns();
+        if (!in_array($sort, $sortable, true)) {
+            $sort = 'created_at';
+        }
 
         $built = todo_build_list_filters($companyId, $employeeId, $filter, $searchRaw);
-        $sortSql = todo_resolve_list_sort_sql($sort, $dir);
-
-        $countSql = 'SELECT COUNT(*) AS total' . $built['from_sql'];
-        $stmtCount = $conn->prepare($countSql);
-        if ($stmtCount === false) {
-            return ['rows' => [], 'totalRows' => 0, 'totalPages' => 1, 'page' => 1];
-        }
-        $stmtCount->bind_param($built['types'], ...$built['params']);
-        $stmtCount->execute();
-        $totalRows = (int)($stmtCount->get_result()->fetch_assoc()['total'] ?? 0);
-        $stmtCount->close();
-
-        $totalPages = max(1, (int)ceil($totalRows / $perPage));
-        if ($page > $totalPages) {
-            $page = $totalPages;
-        }
-        $offset = ($page - 1) * $perPage;
-
-        $sql = 'SELECT t.*' . $built['from_sql'] . ' ORDER BY ' . $sortSql;
-        if ($paginate) {
-            $sql .= ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
-        }
-
+        $sql = 'SELECT t.*' . $built['from_sql'] . ' ORDER BY t.id ASC';
         $stmt = $conn->prepare($sql);
         if ($stmt === false) {
-            return ['rows' => [], 'totalRows' => $totalRows, 'totalPages' => $totalPages, 'page' => $page];
+            return ['rows' => [], 'totalRows' => 0, 'totalPages' => 1, 'page' => 1];
         }
         $stmt->bind_param($built['types'], ...$built['params']);
         $stmt->execute();
         $res = $stmt->get_result();
-        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $tasks = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
 
+        foreach ($tasks as &$taskRow) {
+            todo_hydrate_task_row($taskRow, $employeeId);
+        }
+        unset($taskRow);
+
+        if ($searchRaw !== '') {
+            $tasks = array_values(array_filter($tasks, static function ($task) use ($searchRaw, $categories, $departments, $users) {
+                return todo_row_matches_search($task, $searchRaw, $categories, $departments, $users);
+            }));
+        }
+
+        usort($tasks, static function (array $a, array $b) use ($sort, $dir) {
+            return todo_compare_task_rows($a, $b, $sort, $dir);
+        });
+
+        $totalRows = count($tasks);
+        $totalPages = max(1, (int)ceil($totalRows / $perPage));
+        if ($page > $totalPages) {
+            $page = $totalPages;
+        }
+        if ($paginate) {
+            $offset = ($page - 1) * $perPage;
+            $tasks = array_slice($tasks, $offset, $perPage);
+        }
+
         return [
-            'rows' => $rows,
+            'rows' => $tasks,
             'totalRows' => $totalRows,
             'totalPages' => $totalPages,
             'page' => $page,

@@ -209,6 +209,7 @@ Each module must maintain a flat structure with these specific files:
 * **Schema updates:** Edit the appropriate `db/` file — `01_schema.sql` (DDL), `02_data.sql` (seeds/DML), `03_triggers.sql` (audit triggers).
 * **Import bundle (`db/`):** Import in **one MySQL session** in order **01_schema → 02_data → 03_triggers** (`bash scripts/import_database_split.sh`). See `db/AGENT_NOTES.md`.
 * **No live `ALTER TABLE` in `db/01_schema.sql`:** put keys, indexes, and foreign keys inside each table’s `CREATE TABLE`. Import already runs with `FOREIGN_KEY_CHECKS=0`, so FKs may reference tables created later in the file. Commented `-- ALTER TABLE …` lines are historical notes for existing databases only — do not add new executable `ALTER` statements.
+* **Incremental migrations (`db/migrations/`):** schema changes for **existing** databases belong in `db/migrations/{module}_{subject}.sql` (for example `todo_vault.sql`). In the **same PR**, mirror the change in `db/01_schema.sql` (and `db/02_data.sql` when seeds change). Apply migrations manually on live DBs in filename order; there is no migration runner yet. See `db/migrations/AGENT_NOTES.md`.
 * **Company Scoping:**
     * **Hide** `company_id` from all UI views.
     * Add safe inline FK creation logic to create referenced rows automatically.
@@ -337,6 +338,7 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
     - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten; **required on every folder segment**, not only leaves).
     Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer — managed `.htaccess` is restored on every ensure. See `scripts/AGENT_NOTES.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
 5. **Regression scripts:** `php scripts/test_explorer_paths.php` (path ACL logic); `php scripts/verify_explorer_zip_leak.php` (Step 1: blocked roots; Step 2: exact `Private/{username}_{employee_id}` only; Step 3: all other paths blocked). PoC for malicious `.htaccess` upload: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php` (catalog in `scripts/scripts.php`). PHPUnit: `ExplorerTest::testTrashListFiltersAncestorFolders`.
+6. **Vault gate (Private folder):** `explorer_vault_bootstrap.php` / `explorer_vault_helpers.php` — unlocking sets `$_SESSION['vault_key']` (same master key as Passwords/Notes). **Common** and **Departments** work without unlock; paths under `Private/{username}_{employee_id}/` (except `…/profile/` assets served via `file.php`) require vault unlock in `index.php`, `api.php`, and `file.php`. `downloadZip` for the own Private folder also requires unlock.
 
 #### Org Chart and Hierarchy (mandatory)
 
@@ -437,6 +439,18 @@ The Notes module (`modules/notes/`) stores personal note content with vault encr
 5. **Master key rotation:** `itm_vault_reencrypt_notes()` in `includes/itm_vault_master_key.php`; hooked from `user-config.php` with passwords/bookmarks re-encryption.
 6. **Search:** list search runs in PHP after `notes_hydrate_note_row()` — encrypted columns are not SQL-`LIKE` searchable.
 7. **Regression script** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_notes_vault.php`.
+
+#### Todo module (mandatory)
+
+The Todo module (`modules/todo/`) stores personal task title/description with vault encryption (mirrors Notes/Events):
+
+1. **Private tasks:** when `assigned_to_employee_id` is empty (not `NULL` company-global) and assignees are only the creator, encrypt `title` and `description` at rest with `itm_encrypt()` using `$_SESSION['vault_key']`; store `title_hash` (SHA-256 of plaintext title).
+2. **Shared / company tasks:** `assigned_to_employee_id IS NULL` (company-global) or CSV includes another employee — keep `title` and `description` plaintext.
+3. **Vault UI:** `modules/todo/todo_vault_bootstrap.php` — lock screen on index/create when vault is locked; private owned edit/view also require unlock. Shared/global tasks remain readable without unlock on edit/view.
+4. **Master key rotation:** `itm_vault_reencrypt_todo()` in `includes/itm_vault_master_key.php`; hooked from `user-config.php`.
+5. **Search:** list search runs in PHP after `todo_hydrate_task_row()` — encrypted columns are not SQL-`LIKE` searchable (`includes/itm_todo_list_query.php`).
+6. **Schema migration:** `db/migrations/todo_vault.sql` — `title` → `TEXT`, `title_hash`, unique key `(company_id, created_by, id)`.
+7. **Regression script** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_todo_vault.php`.
 
 #### Passwords module (mandatory)
 

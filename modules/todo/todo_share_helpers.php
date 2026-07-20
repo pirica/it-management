@@ -81,11 +81,12 @@ function todo_share_build_join_url($accessToken)
 /**
  * @return array{ok:bool,error?:string,session?:array<string,mixed>}
  */
-function todo_share_create_session($conn, $todoId, $companyId, $employeeId, $ownerUsername, array $categories, array $departments, array $users)
+function todo_share_create_session($conn, $todoId, $companyId, $employeeId, $ownerUsername, array $categories, array $departments, array $users, $vaultUnlocked = false)
 {
     $todoId = (int)$todoId;
     $companyId = (int)$companyId;
     $employeeId = (int)$employeeId;
+    $vaultUnlocked = (bool)$vaultUnlocked;
     if ($todoId <= 0 || $companyId <= 0 || $employeeId <= 0 || !($conn instanceof mysqli)) {
         return ['ok' => false, 'error' => 'Invalid request.'];
     }
@@ -103,6 +104,13 @@ function todo_share_create_session($conn, $todoId, $companyId, $employeeId, $own
     if (!$task) {
         return ['ok' => false, 'error' => 'Task not found or you are not the creator.'];
     }
+
+    require_once __DIR__ . '/todo_vault_helpers.php';
+    $isShared = todo_task_is_shared_with_others($task['assigned_to_employee_id'] ?? null, $employeeId);
+    if (!$isShared && !$vaultUnlocked) {
+        return ['ok' => false, 'error' => 'Unlock your vault before sharing a private task.'];
+    }
+    todo_hydrate_task_row($task, $employeeId);
 
     $payload = todo_share_build_payload_from_task($task, $categories, $departments, $users, $ownerUsername);
     $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

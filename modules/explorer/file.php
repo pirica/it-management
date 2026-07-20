@@ -17,7 +17,8 @@ if (!isset($_SESSION['employee_id']) || !isset($_SESSION['company_id'])) {
 $company_id = (int)$_SESSION['company_id'];
 $user_id = (int)$_SESSION['employee_id'];
 $username = $_SESSION['username'] ?? 'unknown';
-$user_private_dir = "{$username}_{$user_id}";
+$safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
+$user_private_dir = "{$safe_username}_{$user_id}";
 
 // Why: Fetch user department for access control.
 $dept_id = 0;
@@ -33,6 +34,13 @@ $relative_path = explorer_normalize_relative_path($path);
 if ($relative_path === null) {
     http_response_code(403);
     exit("Invalid path.");
+}
+
+require_once ROOT_PATH . 'modules/explorer/explorer_vault_helpers.php';
+$vaultCheck = explorer_enforce_vault_for_private_path($relative_path, $user_private_dir);
+if (!$vaultCheck['ok']) {
+    http_response_code(403);
+    exit($vaultCheck['error']);
 }
 
 // Why: Access control logic (mirroring api.php) with segment-boundary checks.
