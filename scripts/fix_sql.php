@@ -1,28 +1,22 @@
 <?php
 /**
- * CLI-only: fix cable_colors and switch_port_types table structure in db/.
+ * Fix cable_colors and switch_port_types table structure in db/.
+ *
+ * Browser: dry-run by default; ?apply=1 (Admin) writes db/01_schema.sql.
+ * CLI: php scripts/fix_sql.php then php scripts/fix_sql.php --apply
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/fix_sql.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/lib/script_cli_output.php';
-
-$nl = itm_script_output_nl();
-itm_script_output_begin('Fix SQL (Cable Colors & Switch Port Types)');
+$boot = itm_apply_script_bootstrap('Fix SQL (Cable Colors & Switch Port Types)');
+$nl = $boot['nl'];
 
 $sqlPath = itm_database_sql_schema_path();
 $content = file_get_contents($sqlPath);
+$original = $content;
 
 // Fix cable_colors table structure if already updated
 if (strpos($content, 'CREATE TABLE `cable_colors`') !== false) {
-    // Ensure active column is there
     if (strpos($content, '`active` tinyint NOT NULL DEFAULT \'1\'') === false) {
         $content = preg_replace(
             '/(`comments` varchar\(255\) [^,]+,)/',
@@ -30,16 +24,13 @@ if (strpos($content, 'CREATE TABLE `cable_colors`') !== false) {
             $content
         );
     }
-    
-    // Ensure INSERTS have active column and value '1'
-    // First, fix column list
+
     $content = preg_replace(
         '/INSERT INTO `cable_colors` \(`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`\)/',
         "INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `active`, `created_at`)",
         $content
     );
-    
-    // Then, fix values
+
     $content = preg_replace(
         '/(INSERT INTO `cable_colors` .*? VALUES \(.*? \', \')(2026)/',
         "$1'1', '$2",
@@ -47,9 +38,7 @@ if (strpos($content, 'CREATE TABLE `cable_colors`') !== false) {
     );
 }
 
-// Fix switch_port_types table structure
 if (strpos($content, 'CREATE TABLE `switch_port_types`') !== false) {
-    // Ensure active column is there
     if (strpos($content, '`active` tinyint NOT NULL DEFAULT \'1\'') === false) {
         $content = preg_replace(
             '/(`type` varchar\(20\) [^,]+,)/',
@@ -58,17 +47,14 @@ if (strpos($content, 'CREATE TABLE `switch_port_types`') !== false) {
         );
     }
 
-    // Clean up any double active columns in INSERT list
     $content = str_replace('`active`, `active`', '`active`', $content);
 
-    // Fix column list if missing active
     $content = preg_replace(
         '/INSERT INTO `switch_port_types` \(`company_id`, `id`, `type`, `created_at`\)/',
         "INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `active`, `created_at`)",
         $content
     );
-    
-    // Fix values - handle those with 1 already and those without
+
     $content = preg_replace(
         '/(INSERT INTO `switch_port_types` .*? VALUES \(\'[^\']+\', \'[^\']+\', \'[^\']+\', )(?!\'1\', )(\'2026)/',
         "$1'1', $2",
@@ -76,7 +62,20 @@ if (strpos($content, 'CREATE TABLE `switch_port_types`') !== false) {
     );
 }
 
-file_put_contents($sqlPath, $content);
-echo "Updated db/ for cable_colors and switch_port_types" . $nl;
+$changed = ($content !== $original);
 
+if ($boot['apply']) {
+    if ($changed) {
+        file_put_contents($sqlPath, $content);
+        echo 'Updated db/01_schema.sql for cable_colors and switch_port_types.' . $nl;
+    } else {
+        echo 'Nothing to change in db/01_schema.sql.' . $nl;
+    }
+} elseif ($changed) {
+    echo 'Would update db/01_schema.sql for cable_colors and switch_port_types.' . $nl;
+} else {
+    echo 'Dry-run: db/01_schema.sql already compliant for cable_colors and switch_port_types.' . $nl;
+}
+
+itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $changed ? 1 : 0, $nl, 'fix_sql.php');
 itm_script_output_end();

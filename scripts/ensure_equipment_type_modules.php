@@ -2,44 +2,56 @@
 /**
  * Ensure canonical equipment-type façade modules exist under modules/is_*.
  *
- * CLI: php scripts/ensure_equipment_type_modules.php
+ * Browser: dry-run lists missing wrappers; ?apply=1 (Admin) creates missing modules.
+ * CLI: php scripts/ensure_equipment_type_modules.php [--apply]
  *
  * Does not remove anything; only creates missing is_workstation, is_switch, … wrappers.
  */
 
-require_once __DIR__ . '/lib/script_cli_output.php';
-$nl = itm_script_output_nl();
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/equipment_type_modules.php';
 
+$boot = itm_apply_script_bootstrap('Ensure Equipment Type Modules', ['skip_db_tests' => false]);
+$nl = $boot['nl'];
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    itm_script_output_begin('Ensure Equipment Type Modules');
-    echo '<p><strong>CLI only.</strong> Verifies or recreates canonical equipment-type façade modules under <code>modules/is_*</code> (<code>is_switch</code>, <code>is_server</code>, …). Does not delete anything.</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/ensure_equipment_type_modules.php</pre>';
-    exit(1);
-}
-
-define('ITM_CLI_SCRIPT', true);
-require dirname(__DIR__) . '/config/config.php';
-require __DIR__ . '/lib/equipment_type_modules.php';
-
-$ensured = itm_ensure_canonical_equipment_type_modules($conn);
+$modulesRoot = dirname(__DIR__) . '/modules';
 $canonical = itm_canonical_equipment_is_module_names();
 $present = 0;
-$modulesRoot = dirname(__DIR__) . '/modules';
+$missing = [];
 
 foreach ($canonical as $moduleName) {
     $indexPath = $modulesRoot . '/' . $moduleName . '/index.php';
     if (is_file($indexPath)) {
         $present++;
-        fwrite(STDOUT, "[OK] modules/{$moduleName}/index.php" . PHP_EOL);
+        echo "[OK] modules/{$moduleName}/index.php" . $nl;
         continue;
     }
-    fwrite(STDOUT, "[MISSING] modules/{$moduleName}/index.php" . PHP_EOL);
+    $missing[] = $moduleName;
+    echo "[MISSING] modules/{$moduleName}/index.php" . $nl;
 }
 
-fwrite(STDOUT, PHP_EOL . "Canonical modules present: {$present}/" . count($canonical) . PHP_EOL);
-fwrite(STDOUT, "Scaffold calls succeeded: {$ensured}" . PHP_EOL);
+$ensured = 0;
+if ($boot['apply'] && $missing !== []) {
+    $ensured = itm_ensure_canonical_equipment_type_modules($conn);
+    echo "Scaffold calls succeeded: {$ensured}" . $nl;
+} elseif (!$boot['apply'] && $missing !== []) {
+    echo 'Dry-run: re-run with --apply or ?apply=1 (Admin) to create missing façades.' . $nl;
+}
 
-exit($present === count($canonical) ? 0 : 1);
+echo $nl . "Canonical modules present: {$present}/" . count($canonical) . $nl;
 
+$exitCode = ($present === count($canonical)) ? 0 : 1;
+if ($boot['apply'] && $ensured > 0 && $exitCode === 1) {
+    // Re-check after scaffold
+    $presentAfter = 0;
+    foreach ($canonical as $moduleName) {
+        if (is_file($modulesRoot . '/' . $moduleName . '/index.php')) {
+            $presentAfter++;
+        }
+    }
+    $exitCode = ($presentAfter === count($canonical)) ? 0 : 1;
+}
+
+itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], count($missing), $nl, 'ensure_equipment_type_modules.php');
 itm_script_output_end();
+exit($exitCode);

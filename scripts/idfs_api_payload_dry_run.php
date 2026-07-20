@@ -11,15 +11,15 @@
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_cli_output.php';
-$nl = itm_script_output_nl();
+require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 
+$isCli = itm_script_access_is_cli();
+if (!$isCli) {
+    require_once dirname(__DIR__) . '/config/config.php';
     itm_script_output_begin('IDF API payload dry run');
-    echo "This script must be run from the command line." . $nl;
-    echo "Example: php scripts/idfs_api_payload_dry_run.php --samples" . $nl;
-    exit(1);
 }
+$nl = itm_script_output_nl();
 
 function itm_dry_fail(string $message, int $code = 1): void
 {
@@ -173,21 +173,34 @@ function itm_print_samples(): void
     }
 }
 
-$opts = getopt('', ['endpoint:', 'file:', 'json:', 'samples']);
+$opts = $isCli
+    ? getopt('', ['endpoint:', 'file:', 'json:', 'samples'])
+    : array_filter([
+        'samples' => isset($_GET['samples']) ? true : null,
+        'endpoint' => isset($_GET['endpoint']) ? (string)$_GET['endpoint'] : null,
+        'json' => isset($_GET['json']) ? (string)$_GET['json'] : null,
+    ]);
+
 if (isset($opts['samples'])) {
     itm_print_samples();
+    if (!$isCli) {
+        itm_script_output_end();
+    }
     exit(0);
 }
 
 $endpoint = trim((string)($opts['endpoint'] ?? ''));
 if ($endpoint === '') {
-    itm_dry_fail('Please provide --endpoint=port_update|link_create|link_delete');
+    itm_dry_fail('Please provide --endpoint=port_update|link_create|link_delete (or ?endpoint= in browser).');
 }
 
 $raw = null;
 if (isset($opts['json'])) {
     $raw = (string)$opts['json'];
 } elseif (isset($opts['file'])) {
+    if (!$isCli) {
+        itm_dry_fail('Browser mode does not support --file; use ?json= with a URL-encoded payload.');
+    }
     $file = (string)$opts['file'];
     if (!is_file($file)) {
         itm_dry_fail('JSON file not found: ' . $file);
@@ -196,7 +209,7 @@ if (isset($opts['json'])) {
 }
 
 if ($raw === null) {
-    itm_dry_fail('Provide payload with --json or --file, or use --samples.');
+    itm_dry_fail('Provide payload with --json or --file, or use --samples / ?samples=1.');
 }
 
 $payload = json_decode($raw, true);
@@ -206,14 +219,18 @@ if (!is_array($payload)) {
 
 $errors = itm_validate_endpoint($endpoint, $payload);
 if ($errors) {
-    echo "INVALID payload for {$endpoint}" . PHP_EOL;
+    echo "INVALID payload for {$endpoint}" . ($isCli ? PHP_EOL : $nl);
     foreach ($errors as $err) {
-        echo " - {$err}" . PHP_EOL;
+        echo ' - ' . $err . ($isCli ? PHP_EOL : $nl);
+    }
+    if (!$isCli) {
+        itm_script_output_end();
     }
     exit(2);
 }
 
-echo "VALID payload for {$endpoint}" . PHP_EOL;
+echo "VALID payload for {$endpoint}" . $nl;
+if (!$isCli) {
+    itm_script_output_end();
+}
 exit(0);
-
-itm_script_output_end();

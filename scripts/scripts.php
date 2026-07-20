@@ -68,6 +68,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; line-height: 1.4; }
         .scripts-badge-web { background: #ddf4ff; color: #0969da; border: 1px solid #c0e6ff; }
         .scripts-badge-cli { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
+        .scripts-badge-dryrun { background: #fff8c5; color: #7d4e00; border: 1px solid #d4a72c; }
+        .scripts-badge-cli-only { background: #f6f8fa; color: #57606a; border: 1px dashed #8c959f; }
         .scripts-badge-md { background: #fff8c5; color: #6a5f00; border: 1px solid #f0e6a8; }
         .scripts-toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 8px; padding: 0; list-style: none; }
         .scripts-toc a { color: #0969da; text-decoration: none; }
@@ -121,7 +123,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             Maintenance, audits, and developer tools for the IT Management System.
             <strong>Browser</strong> = open the script URL (HTML UI when built; otherwise a plain-text report). Access requires login OR authorized source (IP <code>127.0.0.1</code> / <code>::1</code>, or <code>ITM_MAINTENANCE_TOKEN</code> via <code>?token=</code> or <code>X-ITM-Maintenance-Token</code> header). Every browser script must show <strong>← Scripts index</strong> back to this page (use <code>scripts/lib/script_browser_nav.php</code>, <code>lib/utf8_file.php</code> (UTF-8 BOM file I/O), <code>lib/mbqa_import_helpers.php</code> (QA import resolution), <code>lib/mbqa_report_paths.php</code> (QA report naming), <code>lib/mbqa_step_display.php</code> (QA result display)).
             <strong>CLI</strong> = terminal or CI from the project root with PHP 7.4+ (preferred for exit codes and long scans).
-            <strong>CLI-only</strong> = <code>smoke_test.sh</code> (bash), explicit <code>PHP_SAPI !== 'cli'</code> guards, or unsafe unattended file writes.
+            <strong>Dry-run</strong> = Browser + CLI maintenance: default run previews changes only; writes need CLI <code>--apply</code> or browser <code>?apply=1</code> (Administrator for browser apply). Badge: <span class="scripts-badge scripts-badge-dryrun">Dry-run</span>.
+            <strong>CLI-only</strong> = bash wrappers (<code>smoke_test.sh</code>, <code>*.sh</code>), session hijack helpers (<code>bypass_login.php</code>), stdout-only dumps where browser is impractical, or tools that must never run unattended in a browser.
         </p>
         <p class="scripts-muted">
             <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report, human-readable results, <code>target="_blank"</code> relative links to <code>../modules/…</code> when a module folder exists, and table names linked only when <code>modules/&lt;table&gt;/</code> exists. <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin/</code>) is linked from this catalog page only—not inside other scripts.
@@ -280,7 +283,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="health.php" target="_blank" rel="nofollow noreferrer">health.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Shell bootstrap that provisions a JSON health-check endpoint for monitoring (not a PHP entry script).</td>
                     <td>Deployment host only. Excluded from <code>perform_audit.php</code>. See <code>scripts/SCRIPTS.md</code> → Browser scripts → <code>health.php</code>.</td>
                 </tr>
@@ -322,7 +325,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="apply_form_failed_save_display_fix.php" target="_blank" rel="nofollow noreferrer">apply_form_failed_save_display_fix.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Bulk-applies <code>cr_form_display_value</code> / POST normalization fixes across CRUD entry files (companion to the form test above). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped targets. Optional <code>--module</code> / <code>?module=</code> filter.</td>
                     <td>Browser: <a href="apply_form_failed_save_display_fix.php" target="_blank" rel="nofollow noreferrer">dry-run</a> / <a href="apply_form_failed_save_display_fix.php?apply=1" target="_blank" rel="nofollow noreferrer">apply=1</a> · <a href="apply_form_failed_save_display_fix.php?module=manufacturers" target="_blank" rel="nofollow noreferrer">?module=manufacturers</a>. CLI: <code>php scripts/apply_form_failed_save_display_fix.php</code> then <code>php scripts/apply_form_failed_save_display_fix.php --apply</code> · <code>--module=manufacturers</code></td>
                 </tr>
@@ -334,7 +337,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="apply_human_friendly_error_display.php" target="_blank" rel="nofollow noreferrer">apply_human_friendly_error_display.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Replaces duplicated <code>alert alert-error</code> blocks with <code>itm_render_alert_errors()</code> across module PHP files (all modules, including bespoke folders). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped targets. Optional <code>--module</code> / <code>?module=</code> filter.</td>
                     <td>Browser: <a href="apply_human_friendly_error_display.php" target="_blank" rel="nofollow noreferrer">dry-run</a> / <a href="apply_human_friendly_error_display.php?apply=1" target="_blank" rel="nofollow noreferrer">apply=1</a> · <a href="apply_human_friendly_error_display.php?module=approvers" target="_blank" rel="nofollow noreferrer">?module=approvers</a>. CLI: <code>php scripts/apply_human_friendly_error_display.php</code> then <code>php scripts/apply_human_friendly_error_display.php --apply</code> · <code>--module=approvers</code></td>
                 </tr>
@@ -490,9 +493,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="repair_table_from_schema.php" target="_blank" rel="nofollow noreferrer">repair_table_from_schema.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Rebuilds one InnoDB table from <code>db/</code> split bundle when metadata drift causes "doesn't exist in engine" errors. Refuses web requests (<code>PHP_SAPI !== 'cli'</code>).</td>
-                    <td><code>php scripts/repair_table_from_schema.php --table=table_name</code> — <strong>destructive</strong>; backup first.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
+                    <td>Rebuilds one InnoDB table from <code>db/01_schema.sql</code> when metadata drift causes "doesn't exist in engine" errors. <strong>Destructive</strong> on apply — dry-run validates <code>--table</code> / <code>?table=</code> and shows CREATE excerpt only.</td>
+                    <td>Browser: <a href="repair_table_from_schema.php?table=equipment">dry-run</a> / <a href="repair_table_from_schema.php?table=equipment&amp;apply=1">apply=1</a> (Admin). CLI: <code>php scripts/repair_table_from_schema.php --table=table_name</code> then <code>--apply</code> — backup first.</td>
                 </tr>
                 <tr>
                     <td><a href="count_db_tables.php" target="_blank" rel="nofollow noreferrer">count_db_tables.php</a></td>
@@ -556,23 +559,23 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="normalize_database_sql_created_at.php" target="_blank" rel="nofollow noreferrer">normalize_database_sql_created_at.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Sets every seed <code>created_at</code> literal in <code>db/</code> split bundle INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Writes</strong> <code>db/</code> split bundle.</td>
-                    <td><strong>CLI only</strong> (browser shows instructions + <strong>← Scripts index</strong>): <code>php scripts/normalize_database_sql_created_at.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
+                    <td>Sets every seed <code>created_at</code> literal in <code>db/01_schema.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Default = dry-run</strong>; writes <code>db/01_schema.sql</code> with <code>--apply</code> / <code>?apply=1</code> (Admin).</td>
+                    <td>Browser: <a href="normalize_database_sql_created_at.php">dry-run</a> / <a href="normalize_database_sql_created_at.php?apply=1">apply=1</a>. CLI: <code>php scripts/normalize_database_sql_created_at.php</code> then <code>php scripts/normalize_database_sql_created_at.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_module_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">apply_module_sample_data_seed.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Automates per-module/table seed expansion: adds missing sample rows for every company listed in <code>companies</code> into <code>db/</code> split bundle. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values supported. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists new INSERT statements and skipped targets before apply. Requires <code>--module</code> / <code>?module=</code>.</td>
                     <td>Browser: <a href="apply_module_sample_data_seed.php?module=idf_device_type">dry-run</a> / <a href="apply_module_sample_data_seed.php?module=idf_device_type&amp;apply=1">apply=1</a>. CLI: <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code> then <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --apply</code> · <code>--value-column=name --sample=LabPoE</code></td>
                 </tr>
                 <tr>
                     <td><a href="export_floor_plan_folders_seed.php" target="_blank" rel="nofollow noreferrer">export_floor_plan_folders_seed.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>db/</code> split bundle-style <code>INSERT</code> statements for pasting into seed data.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>db/</code> split bundle-style <code>INSERT</code> statements for pasting into seed data. Read-only dump (no dry-run apply gate).</td>
                     <td>
-                        <code>php scripts/export_floor_plan_folders_seed.php</code><br>
-                        <code>php scripts/export_floor_plan_folders_seed.php --company=1</code> — stdout INSERTs; exit <code>1</code> when no rows.
+                        Browser: <a href="export_floor_plan_folders_seed.php">all companies</a> · <a href="export_floor_plan_folders_seed.php?company=1">?company=1</a><br>
+                        CLI: <code>php scripts/export_floor_plan_folders_seed.php</code> · <code>php scripts/export_floor_plan_folders_seed.php --company=1</code> — exit <code>1</code> when no rows.
                     </td>
                 </tr>
                 <tr>
@@ -607,9 +610,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="fix_sql_departments.php" target="_blank" rel="nofollow noreferrer">fix_sql_departments.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Fix column count mismatch in departments INSERT statements in db/.</td>
-                    <td><code>php scripts/fix_sql_departments.php</code> — CLI only (browser shows instructions).</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
+                    <td>Fix column count mismatch in departments INSERT statements in <code>db/01_schema.sql</code>. <strong>Default = dry-run</strong>.</td>
+                    <td>Browser: <a href="fix_sql_departments.php">dry-run</a> / <a href="fix_sql_departments.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql_departments.php</code> then <code>--apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="list_phone_columns.php" target="_blank" rel="nofollow noreferrer">list_phone_columns.php</a></td>
@@ -624,16 +627,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
                 </tr>
                 <tr>
-                    <td><a href="fix_sql.php" target="_blank" rel="nofollow noreferrer">fix_sql.php</td></a>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Utility to fix common SQL errors in db/.</td>
-                    <td>CLI: <code>php scripts/fix_sql.php</code></td>
+                    <td><a href="fix_sql.php" target="_blank" rel="nofollow noreferrer">fix_sql.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
+                    <td>Utility to fix common SQL errors in <code>db/01_schema.sql</code> (<code>cable_colors</code>, <code>switch_port_types</code>). <strong>Default = dry-run</strong>.</td>
+                    <td>Browser: <a href="fix_sql.php">dry-run</a> / <a href="fix_sql.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql.php</code> then <code>--apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="fix_sql_broad.php" target="_blank" rel="nofollow noreferrer">fix_sql_broad.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Broad-spectrum SQL cleanup utility.</td>
-                    <td>CLI: <code>php scripts/fix_sql_broad.php</code></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
+                    <td>Broad-spectrum SQL cleanup utility for <code>db/01_schema.sql</code>. <strong>Default = dry-run</strong>.</td>
+                    <td>Browser: <a href="fix_sql_broad.php">dry-run</a> / <a href="fix_sql_broad.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql_broad.php</code> then <code>--apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="schema_report.php" target="_blank" rel="nofollow noreferrer">schema_report.php</a></td>
@@ -711,12 +714,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="idfs_api_payload_dry_run.php" target="_blank" rel="nofollow noreferrer">idfs_api_payload_dry_run.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Validates IDF device API JSON payloads offline (no MySQL). Requires CLI flags for payload validation.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Validates IDF device API JSON payloads offline (no MySQL). Read-only structure checks — always dry-run.</td>
                     <td>
-                        <code>php scripts/idfs_api_payload_dry_run.php --samples</code>,
-                        <code>--endpoint=port_update --file=payload.json</code>,
-                        <code>--endpoint=link_create --json='{"port_id_a":1,"port_id_b":2}'</code>
+                        Browser: <a href="idfs_api_payload_dry_run.php?samples=1">samples</a> · <code>?endpoint=port_update&amp;json=…</code><br>
+                        CLI: <code>php scripts/idfs_api_payload_dry_run.php --samples</code> · <code>--endpoint=port_update --file=payload.json</code>
                     </td>
                 </tr>
                 <tr>
@@ -731,17 +733,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="ensure_equipment_type_modules.php" target="_blank" rel="nofollow noreferrer">ensure_equipment_type_modules.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Verifies or recreates canonical equipment-type façade modules under <code>modules/is_*</code> (<code>is_switch</code>, <code>is_server</code>, <code>is_workstation</code>, …). Does not delete anything.</td>
-                    <td><code>php scripts/ensure_equipment_type_modules.php</code> — CLI-only (browser shows <strong>← Scripts index</strong> + CLI command). Exit <code>1</code> if any canonical <code>index.php</code> is missing.</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
+                    <td>Verifies or recreates canonical equipment-type façade modules under <code>modules/is_*</code> (<code>is_switch</code>, <code>is_server</code>, <code>is_workstation</code>, …). Does not delete anything. <strong>Default = dry-run</strong> (lists missing); <code>--apply</code> / <code>?apply=1</code> runs scaffold.</td>
+                    <td>Browser: <a href="ensure_equipment_type_modules.php">dry-run</a> / <a href="ensure_equipment_type_modules.php?apply=1">apply=1</a>. CLI: <code>php scripts/ensure_equipment_type_modules.php</code> then <code>--apply</code>. Exit <code>1</code> if any canonical <code>index.php</code> is missing after apply.</td>
                 </tr>
                 <tr>
                     <td><a href="cleanup_equipment_test_module_artifacts.php" target="_blank" rel="nofollow noreferrer">cleanup_equipment_test_module_artifacts.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>
-                        <strong>Destructive (local dev DB):</strong> removes regression-test <code>equipment_types</code> rows (including <code>MBQA-equipment_types-…</code> runner tags), ITM test companies, junk <code>modules/is_*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> / orphan <code>modules/is_mbqa_equipment_types_*</code> folders, and matching sidebar prefs — then re-ensures canonical <code>is_*</code> modules. Never removes <code>is_switch</code>, <code>is_server</code>, etc. Browser <strong>Run QA</strong> now executes this cleanup silently before and after <code>module_browser_qa_runner.php</code>.
+                        <strong>Destructive (local dev DB) on apply:</strong> removes regression-test <code>equipment_types</code> rows (including <code>MBQA-equipment_types-…</code> runner tags), ITM test companies, junk <code>modules/is_*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> / orphan <code>modules/is_mbqa_equipment_types_*</code> folders, and matching sidebar prefs — then re-ensures canonical <code>is_*</code> modules. Never removes <code>is_switch</code>, <code>is_server</code>, etc. <strong>Default = dry-run</strong> preview counts. Browser <strong>Run QA</strong> runs apply mode silently before/after <code>module_browser_qa_runner.php</code>.
                     </td>
-                    <td><code>php scripts/cleanup_equipment_test_module_artifacts.php</code> — CLI-only (browser shows <strong>← Scripts index</strong> + CLI command). Same logic as post-QA runner cleanup; run manually after other equipment DB tests if needed.</td>
+                    <td>Browser: <a href="cleanup_equipment_test_module_artifacts.php">dry-run</a> / <a href="cleanup_equipment_test_module_artifacts.php?apply=1">apply=1</a> (Admin). CLI: <code>php scripts/cleanup_equipment_test_module_artifacts.php</code> then <code>--apply</code>. Manual run after other equipment DB tests if needed.</td>
                 </tr>
                 <tr>
                     <td><a href="equipment_delete_clear_table_test.php" target="_blank" rel="nofollow noreferrer">equipment_delete_clear_table_test.php</a></td>
@@ -905,7 +907,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
     <div class="scripts-card" id="ci">
         <h2>CI &amp; static analysis</h2>
-        <p class="scripts-muted">PHP scanners support <strong>Browser</strong> (plain-text) and <strong>CLI</strong> (recommended for CI). Only <code>smoke_test.sh</code> is CLI-only (bash).</p>
+        <p class="scripts-muted">PHP scanners support <strong>Browser</strong> (plain-text) and <strong>CLI</strong> (recommended for CI). Bash wrappers (<code>smoke_test.sh</code>, <code>import_database_split.sh</code>, …) and a few session helpers remain <strong>CLI-only</strong>.</p>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
@@ -948,67 +950,67 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="apply_date_display_format.php" target="_blank" rel="nofollow noreferrer">apply_date_display_format.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: patch duplicated <code>cr_render_cell_value()</code> helpers to call <code>itm_format_cell_scalar_display()</code> (dd/mm/yyyy list/view display). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files. Idempotent; re-run when new flattened CRUD modules ship without the date display hook.</td>
                     <td>Browser: <a href="apply_date_display_format.php">dry-run</a> / <a href="apply_date_display_format.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_date_display_format.php</code> then <code>php scripts/apply_date_display_format.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_crud_hidden_employee_id_alias.php" target="_blank" rel="nofollow noreferrer">apply_crud_hidden_employee_id_alias.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: replace dead <code>'user_id'</code> entries in flattened CRUD <code>$hidden</code> column arrays with <code>'employee_id'</code> under <code>modules/</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files. Idempotent; re-run when new scaffolds copy the old hide list.</td>
                     <td>Browser: <a href="apply_crud_hidden_employee_id_alias.php">dry-run</a> / <a href="apply_crud_hidden_employee_id_alias.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_hidden_employee_id_alias.php</code> then <code>php scripts/apply_crud_hidden_employee_id_alias.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_crud_fk_label_search.php" target="_blank" rel="nofollow noreferrer">apply_crud_fk_label_search.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: extend flattened CRUD <code>index.php</code> search blocks with <code>itm_crud_fk_label_search_conditions()</code> so Search (all fields) matches FK label tables, not only raw IDs. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped modules (Employees uses <code>includes/itm_employees_search.php</code> instead). Idempotent.</td>
                     <td>Browser: <a href="apply_crud_fk_label_search.php">dry-run</a> / <a href="apply_crud_fk_label_search.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_fk_label_search.php</code> then <code>php scripts/apply_crud_fk_label_search.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_display_field_columns_search_alias.php" target="_blank" rel="nofollow noreferrer">apply_display_field_columns_search_alias.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped <code>index.php</code> files. Re-run when new flattened CRUD modules omit the alias.</td>
                     <td>Browser: <a href="apply_display_field_columns_search_alias.php">dry-run</a> / <a href="apply_display_field_columns_search_alias.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_display_field_columns_search_alias.php</code> then <code>php scripts/apply_display_field_columns_search_alias.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_head_favicon_link.php" target="_blank" rel="nofollow noreferrer">apply_head_favicon_link.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Maintenance: add <code>itm_render_head_favicon_link($favicon_url ?? null)</code> in module <code>index.php</code>, <code>create.php</code>, <code>edit.php</code>, and <code>view.php</code> <code>&lt;head&gt;</code> so the tab icon matches Settings on first paint. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_head_favicon_link.php">dry-run</a> / <a href="apply_head_favicon_link.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_head_favicon_link.php</code> then <code>php scripts/apply_head_favicon_link.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_list_new_button_style.php" target="_blank" rel="nofollow noreferrer">apply_list_new_button_style.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Maintenance: normalize list-header <code>create.php</code> ➕ controls to <code>btn btn-primary itm-list-new-button</code> with <code>title="Create"</code> (40×40 CSS footprint). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_list_new_button_style.php">dry-run</a> / <a href="apply_list_new_button_style.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_list_new_button_style.php</code> then <code>php scripts/apply_list_new_button_style.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_new_button_position_helper.php" target="_blank" rel="nofollow noreferrer">apply_new_button_position_helper.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Maintenance: replace duplicated <code>new_button_position</code> fallbacks with <code>itm_resolve_new_button_position($ui_config)</code> (default <code>left</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_new_button_position_helper.php">dry-run</a> / <a href="apply_new_button_position_helper.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_new_button_position_helper.php</code> then <code>php scripts/apply_new_button_position_helper.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_itm_actions_cell_markers.php" target="_blank" rel="nofollow noreferrer">apply_itm_actions_cell_markers.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: add <code>class="itm-actions-cell"</code> and <code>data-itm-actions-origin="1"</code> on Actions column header and body cells in module list tables (module browser QA <code>ui_check</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped files under <code>modules/*/index.php</code> and <code>modules/*/includes/partials/render.php</code>.</td>
                     <td>Browser: <a href="apply_itm_actions_cell_markers.php">dry-run</a> / <a href="apply_itm_actions_cell_markers.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_itm_actions_cell_markers.php</code> then <code>php scripts/apply_itm_actions_cell_markers.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">apply_ui_action_emoji.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: bulk replace simple NO MIXED markup (emoji + action word) → emoji-only + <code>title</code> on modules and shared UI files. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped files. Skip PHP ternaries / JS templates — fix manually.</td>
                     <td>Browser: <a href="apply_ui_action_emoji.php">dry-run</a> / <a href="apply_ui_action_emoji.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_ui_action_emoji.php</code> then <code>php scripts/apply_ui_action_emoji.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_pagination_emoji_labels.php" target="_blank" rel="nofollow noreferrer">apply_pagination_emoji_labels.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time/maintenance: bulk replace legacy list pagination plain <code>Previous</code>/<code>Next</code> visible labels (and old mixed title attributes) with emoji-only visible text (<code>◀️</code>/<code>▶️</code>) and word-only <code>title</code> (<code>Previous page</code>/<code>Next page</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists changed files.</td>
                     <td>Browser: <a href="apply_pagination_emoji_labels.php">dry-run</a> / <a href="apply_pagination_emoji_labels.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_emoji_labels.php</code> then <code>php scripts/apply_pagination_emoji_labels.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_pagination_first_last.php" target="_blank" rel="nofollow noreferrer">apply_pagination_first_last.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Add **⏮️** first-page and **⏭️** last-page <code>btn-sm</code> anchors beside existing **◀️** / **▶️** list pagination (word-only <code>title</code> attributes). Covers standard <code>?search=&amp;sort=&amp;dir=&amp;page=</code> links plus bespoke builders (<code>pwd_build_list_url</code>, <code>sa_build_query</code>, <code>itm_audit_logs_build_query</code>, tickets <code>show_archived</code>, catalogs <code>$catalogNewProductsQuery</code>, IPAM focused list suffix, ops_report search hits, emails send logs). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Skips files that already include both first and last controls.</td>
                     <td>Browser: <a href="apply_pagination_first_last.php">dry-run</a> / <a href="apply_pagination_first_last.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_first_last.php</code> then <code>php scripts/apply_pagination_first_last.php --apply</code>.</td>
                 </tr>
@@ -1117,13 +1119,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="apply_bulk_delete_cancel_ux.php" target="_blank" rel="nofollow noreferrer">apply_bulk_delete_cancel_ux.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>One-time maintenance: strip duplicated inline bulk-delete <code>selectionMode</code> scripts from module PHP files after <code>js/bulk-delete-selection.js</code> (shared Cancel button) ships via <code>includes/header.php</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files.</td>
                     <td>Browser: <a href="apply_bulk_delete_cancel_ux.php">dry-run</a> / <a href="apply_bulk_delete_cancel_ux.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_bulk_delete_cancel_ux.php</code> then <code>php scripts/apply_bulk_delete_cancel_ux.php --apply</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_bulk_actions_records_per_page_gate.php" target="_blank" rel="nofollow noreferrer">apply_bulk_actions_records_per_page_gate.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Add <code>records_per_page</code> visibility gate for bulk delete / clear table on module <code>index.php</code> files (<code>$showBulkActions = ($totalRows &gt;= $perPage)</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files.</td>
                     <td>Browser: <a href="apply_bulk_actions_records_per_page_gate.php">dry-run</a> / <a href="apply_bulk_actions_records_per_page_gate.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_bulk_actions_records_per_page_gate.php</code> then <code>php scripts/apply_bulk_actions_records_per_page_gate.php --apply</code>.</td>
                 </tr>
@@ -1314,13 +1316,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><code><a href="bypass_login.php" target="_blank" rel="nofollow noreferrer">bypass_login.php</a></code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_login.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
                 <tr>
                     <td><code><a href="bypass_v2.php" target="_blank" rel="nofollow noreferrer">bypass_v2.php</a></code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_v2.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
@@ -1332,55 +1334,55 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><code>take_screenshots_passwords.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of Bookmarks and Passwords modules. Requires Playwright.</td>
                     <td><code>python3 scripts/take_screenshots_passwords.py</code></td>
                 </tr>
                 <tr>
                     <td><code>take_screenshots_modules.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Playwright screenshots for README module images. Default slugs: <code>todo</code>, <code>notes</code>, <code>roles_permissions</code>, <code>system_status</code>. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file; cookie domain follows the base URL hostname; waits for <code>#rp-permission-matrix</code> (Roles &amp; Permissions) and <code>#system-info-content</code> (System Status) before saving.</td>
                     <td><code>ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py</code> · <code>ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py</code> · optional <code>ITM_SCREENSHOT_BASE_URL</code>, <code>ITM_SCREENSHOT_MODULES</code> (see <code>scripts/SCRIPTS.md</code>).</td>
                 </tr>
                 <tr>
                     <td><code>take_screenshots_modules_all.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Bulk UI screenshot utility for all modules. Requires Playwright.</td>
                     <td><code>python3 scripts/take_screenshots_modules_all.py</code></td>
                 </tr>
                 <tr>
                     <td><code>test_notes_human.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Playwright-based human-flow regression for Notes module.</td>
                     <td><code>python3 scripts/test_notes_human.py</code></td>
                 </tr>
                 <tr>
                     <td><code>update_display.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Display update utility.</td>
                     <td><code>python3 scripts/update_display.py</code></td>
                 </tr>
                 <tr>
                     <td><code>verify_dnd.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Verifies Drag and Drop functionality in UI.</td>
                     <td><code>python3 scripts/verify_dnd.py</code></td>
                 </tr>
                 <tr>
                     <td>verify_todo.py</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Verifies Todo module functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_todo.py</code></td>
                 </tr>
                 <tr>
                     <td>verify_todo_categories.py</td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Verifies Todo categories functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_todo_categories.py</code></td>
                 </tr>
                 <tr>
                     <td><code>verify_notes_ui.py</code></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI-only</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
                     <td>Verifies Notes module functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_notes_ui.py</code></td>
                 </tr>
@@ -1816,7 +1818,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="apply_crud_rbac_guards.php" target="_blank" rel="nofollow noreferrer">apply_crud_rbac_guards.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
                     <td>Bulk repair — insert <code>itm_require_crud_role_module_permission()</code> on flattened CRUD index handlers. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped modules (exempt slugs skipped). Idempotent.</td>
                     <td>Browser: <a href="apply_crud_rbac_guards.php">dry-run</a> / <a href="apply_crud_rbac_guards.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_rbac_guards.php</code> then <code>php scripts/apply_crud_rbac_guards.php --apply</code>.</td>
                 </tr>
@@ -1942,7 +1944,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 				</tr>
 				<tr>
 				    <td><a href="apply_crud_audit_soft_delete.php" target="_blank" rel="nofollow noreferrer">apply_crud_audit_soft_delete.php</a></td>
-				    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+				    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-dryrun">Dry-run</span></span></td>
 				    <td>Apply soft-delete + audit meta UI patches to scaffold modules in <code>docs/list_soft-delete.txt</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). After counts, lists inventory / skip / missing / patch / compliant modules (real newlines for browser <code>&lt;pre&gt;</code>). Idempotent; skips status-driven modules.</td>
 				    <td>Browser: <a href="apply_crud_audit_soft_delete.php">dry-run</a> / <a href="apply_crud_audit_soft_delete.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_audit_soft_delete.php</code> then <code>php scripts/apply_crud_audit_soft_delete.php --apply</code>.</td>
 				</tr>

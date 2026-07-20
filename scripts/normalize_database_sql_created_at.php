@@ -10,28 +10,26 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    itm_script_output_begin('Normalize created_at in db/02_data.sql');
-    echo '<p><strong>CLI only.</strong> This script rewrites <code>db/</code> split bundle on disk. Run from the project root:</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/normalize_database_sql_created_at.php</pre>';
-    exit(1);
-}
+$boot = itm_apply_script_bootstrap('Normalize created_at in db/01_schema.sql');
+$nl = $boot['nl'];
 
 $root = dirname(__DIR__);
 $schemaPath = itm_database_sql_schema_path();
 $targetCreatedAt = '2026-01-01 00:00:01';
 
 if (!is_file($schemaPath)) {
-    fwrite(STDERR, "db/01_schema.sql not found.\n");
+    echo "db/01_schema.sql not found." . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 $sql = (string)file_get_contents($schemaPath);
 if ($sql === '') {
-    fwrite(STDERR, "db/02_data.sql is empty.\n");
+    echo 'db/01_schema.sql is empty.' . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
@@ -428,9 +426,14 @@ if ($output !== '' && substr($sql, -1) === ';') {
 $output = str_replace('DELIMITER __ITM_SEMICOLON__', 'DELIMITER ;', $output);
 $output = preg_replace('/^DELIMITER;\s*$/m', 'DELIMITER ;', $output) ?? $output;
 
-file_put_contents($schemaPath, $output);
-echo colorText("[OK] Updated created_at in {$updatedCount} INSERT statement(s).", 'pass') . itm_script_output_nl();
-echo "Target value: {$targetCreatedAt}" . itm_script_output_nl();
-echo 'Tables with created_at column: ' . count($tablesWithCreatedAt) . itm_script_output_nl();
+if ($boot['apply']) {
+    file_put_contents($schemaPath, $output);
+    echo colorText("[OK] Updated created_at in {$updatedCount} INSERT statement(s).", 'pass') . $nl;
+} else {
+    echo colorText("[DRY-RUN] Would update created_at in {$updatedCount} INSERT statement(s).", 'info') . $nl;
+}
+echo "Target value: {$targetCreatedAt}" . $nl;
+echo 'Tables with created_at column: ' . count($tablesWithCreatedAt) . $nl;
 
+itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $updatedCount, $nl, 'normalize_database_sql_created_at.php');
 itm_script_output_end();

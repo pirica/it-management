@@ -1,24 +1,19 @@
 <?php
 /**
- * CLI-only: broad-spectrum SQL cleanup utility for db/.
+ * Broad-spectrum SQL cleanup utility for db/01_schema.sql.
+ *
+ * Browser: dry-run by default; ?apply=1 (Admin) writes db/01_schema.sql.
+ * CLI: php scripts/fix_sql_broad.php then php scripts/fix_sql_broad.php --apply
  */
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> This tool must be run from the terminal.</p><pre>php scripts/fix_sql_broad.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/lib/script_cli_output.php';
-
-$nl = itm_script_output_nl();
-itm_script_output_begin('Fix SQL Broad');
+$boot = itm_apply_script_bootstrap('Fix SQL Broad');
+$nl = $boot['nl'];
 
 $sqlPath = itm_database_sql_schema_path();
 $content = file_get_contents($sqlPath);
+$original = $content;
 
 $tablesToFix = [
     'cable_colors',
@@ -58,32 +53,31 @@ $tablesToFix = [
     'patches_updates_level',
     'patches_updates',
     'supplier_statuses',
-    'floor_plan_item_tags'
+    'floor_plan_item_tags',
 ];
 
+$logLines = [];
+
 foreach ($tablesToFix as $table) {
-    echo "Processing table: $table" . $nl;
-    
-    // 1. Add active column to CREATE TABLE if missing
+    $tableLog = [];
+
     $pattern = '/(CREATE TABLE `' . preg_quote($table, '/') . '` \(.*?\)) ENGINE=/s';
     if (preg_match($pattern, $content, $matches)) {
         $tableBlock = $matches[1];
         if (strpos($tableBlock, '`active`') === false) {
-            // Find a good place to insert - before created_at or at the end
             if (preg_match('/  `created_at`/', $tableBlock)) {
                 $newBlock = preg_replace('/(  `created_at`)/', "  `active` tinyint NOT NULL DEFAULT '1',\n$1", $tableBlock);
             } else {
                 $newBlock = preg_replace('/\s*\)$/', ",\n  `active` tinyint NOT NULL DEFAULT '1'\n)", $tableBlock);
             }
             $content = str_replace($tableBlock, $newBlock, $content);
-            echo "  Added active column to CREATE TABLE" . $nl;
+            $tableLog[] = 'add active column to CREATE TABLE';
         }
     }
 
-    // 2. Update INSERT statements
-    // This part is tricky with multiple inserts. Let's do it line by line.
     $lines = explode("\n", $content);
     $updatedLines = [];
+    $insertFixes = 0;
     foreach ($lines as $line) {
         if (preg_match('/^INSERT INTO `' . preg_quote($table, '/') . '` \((.*?)\) VALUES \((.*?)\);/', $line, $m)) {
             $cols = $m[1];
@@ -97,20 +91,21 @@ foreach ($tablesToFix as $table) {
                     $newVals = preg_replace('/(\'202[0-9])/', "'1', $1", $vals);
                 }
                 $line = "INSERT INTO `$table` ($newCols) VALUES ($newVals);";
-                echo "  Updated INSERT statement line" . $nl;
+                $insertFixes++;
             }
         }
         $updatedLines[] = $line;
     }
     $content = implode("\n", $updatedLines);
-    
-    // 3. Update Triggers
+    if ($insertFixes > 0) {
+        $tableLog[] = $insertFixes . ' INSERT line(s)';
+    }
+
     $triggerPrefix = "trg_{$table}_audit_";
-    
-    // insert/update
+
     $content = preg_replace_callback(
         '/CREATE TRIGGER `' . preg_quote($triggerPrefix, '/') . '(insert|update)`.+?JSON_OBJECT\((.+?)\)/is',
-        function($m) {
+        function ($m) {
             if (strpos($m[2], "'active'") === false) {
                 $replacement = trim($m[2]) . ", 'active', NEW.`active`";
                 return str_replace($m[2], $replacement, $m[0]);
@@ -119,11 +114,10 @@ foreach ($tablesToFix as $table) {
         },
         $content
     );
-    
-    // delete
+
     $content = preg_replace_callback(
         '/CREATE TRIGGER `' . preg_quote($triggerPrefix, '/') . 'delete`.+?JSON_OBJECT\((.+?)\)/is',
-        function($m) {
+        function ($m) {
             if (strpos($m[2], "'active'") === false) {
                 $replacement = trim($m[2]) . ", 'active', OLD.`active`";
                 return str_replace($m[2], $replacement, $m[0]);
@@ -132,9 +126,28 @@ foreach ($tablesToFix as $table) {
         },
         $content
     );
+
+    if ($tableLog !== []) {
+        $logLines[] = $table . ': ' . implode('; ', $tableLog);
+    }
 }
 
-file_put_contents($sqlPath, $content);
-echo "Completed broad update of db/01_schema.sql" . $nl;
+$changed = ($content !== $original);
 
+if ($logLines !== []) {
+    itm_apply_script_echo_list($boot['apply'] ? 'Changes applied' : 'Would change', $logLines);
+} else {
+    echo ($boot['apply'] ? 'No tables needed updates.' : 'Dry-run: no broad SQL fixes needed.') . $nl;
+}
+
+if ($boot['apply']) {
+    if ($changed) {
+        file_put_contents($sqlPath, $content);
+        echo 'Completed broad update of db/01_schema.sql.' . $nl;
+    }
+} elseif ($changed) {
+    echo 'Re-run with --apply or ?apply=1 to write db/01_schema.sql.' . $nl;
+}
+
+itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $changed ? 1 : 0, $nl, 'fix_sql_broad.php');
 itm_script_output_end();

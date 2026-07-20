@@ -2,72 +2,61 @@
 /**
  * Cleanup regression-test pollution only (never canonical modules/is_* façades).
  *
- * Removes:
- *   - modules/is_*_*itm_eqdct* / *_itm_edct* test scaffold folders
- *   - modules/is_mbqa_equipment_types_{company}_{hash} orphan folders (QA runner on equipment_types)
- *   - equipment_types rows with itm_eqdct / itm_edct in the name, or MBQA-equipment_types-… runner tags
- *   - ITM test companies
- *   - matching employee_sidebar_preferences rows (itm_eqdct / itm_edct / is_mbqa_equipment_types_*)
+ * Browser: dry-run by default; ?apply=1 (Admin) runs cleanup.
+ * CLI: php scripts/cleanup_equipment_test_module_artifacts.php [--apply]
  *
  * Also invoked automatically at the end of module_browser_qa_runner.php.
- *
- * CLI: php scripts/cleanup_equipment_test_module_artifacts.php
- * Restore façades: php scripts/ensure_equipment_type_modules.php
  */
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:720px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> Removes regression-test <code>equipment_types</code> rows (including <code>MBQA-equipment_types-…</code> runner tags), ITM test companies, junk <code>modules/is_*_itm_eqdct_*</code> and orphan <code>modules/is_mbqa_equipment_types_*</code> folders, and matching sidebar prefs — then re-ensures canonical <code>is_*</code> modules. Never removes <code>is_switch</code>, <code>is_server</code>, etc.</p>';
-    echo '<p>Also runs automatically when a <code>module_browser_qa_runner</code> session finishes.</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/cleanup_equipment_test_module_artifacts.php</pre>';
-    echo '<p>Restore façades only: <code>php scripts/ensure_equipment_type_modules.php</code></p>';
-    echo '</body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/equipment_type_modules.php';
 
-define('ITM_CLI_SCRIPT', true);
-require dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
-
-$nl = itm_script_output_nl();
-
-require __DIR__ . '/lib/equipment_type_modules.php';
+$boot = itm_apply_script_bootstrap('Equipment test module artifacts cleanup', ['skip_db_tests' => false]);
+$nl = $boot['nl'];
 
 $modulesRoot = dirname(__DIR__) . '/modules';
+
+if (!$boot['apply']) {
+    $preview = itm_preview_equipment_test_module_artifacts_cleanup($conn, $modulesRoot);
+    itm_apply_script_echo_list('Would remove module folder(s)', $preview['dirs']);
+    echo 'Would delete test companies: ' . (int)$preview['companies'] . $nl;
+    echo 'Would delete equipment_types test rows: ' . (int)$preview['types'] . $nl;
+    echo 'Would delete employee_sidebar_preferences test rows: ' . (int)$preview['sidebar'] . $nl;
+    $wouldChange = ($preview['dirs'] !== [] || $preview['companies'] > 0 || $preview['types'] > 0 || $preview['sidebar'] > 0);
+    itm_apply_script_finish_hint(false, $boot['is_cli'], $wouldChange ? 1 : 0, $nl, 'cleanup_equipment_test_module_artifacts.php');
+    itm_script_output_end();
+    exit(0);
+}
+
 $cleanup = itm_run_equipment_test_module_artifacts_cleanup($conn, $modulesRoot);
 
 if ($cleanup['dirs_removed'] > 0) {
-    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)", 'pass') . "\n");
+    echo colorText("[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)", 'pass') . $nl;
 } else {
-    fwrite(STDOUT, colorText('[OK] No regression-test module folders to remove', 'pass') . "\n");
+    echo colorText('[OK] No regression-test module folders to remove', 'pass') . $nl;
 }
 
 if ($cleanup['companies_deleted'] > 0) {
-    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['companies_deleted']} ITM test compan" . ($cleanup['companies_deleted'] === 1 ? 'y' : 'ies'), 'pass') . "\n");
+    echo colorText("[OK] Removed {$cleanup['companies_deleted']} ITM test compan" . ($cleanup['companies_deleted'] === 1 ? 'y' : 'ies'), 'pass') . $nl;
 }
 
 if ($cleanup['types_deleted'] > 0) {
-    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)", 'pass') . "\n");
+    echo colorText("[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)", 'pass') . $nl;
 } elseif ($cleanup['ok']) {
-    fwrite(STDOUT, colorText('[OK] No equipment_types test rows to remove', 'pass') . "\n");
+    echo colorText('[OK] No equipment_types test rows to remove', 'pass') . $nl;
 }
 
 if ($cleanup['sidebar_deleted'] > 0) {
-    fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} employee_sidebar_preferences test row(s)", 'pass') . "\n");
+    echo colorText("[OK] Removed {$cleanup['sidebar_deleted']} employee_sidebar_preferences test row(s)", 'pass') . $nl;
 }
 
-fwrite(STDOUT, colorText("[OK] Verified canonical modules/is_* façades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . "\n");
+echo colorText("[OK] Verified canonical modules/is_* façades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . $nl;
 
 foreach ($cleanup['errors'] as $errorLine) {
-    fwrite(STDERR, colorText('[FAIL] ' . $errorLine, 'fail') . "\n");
+    echo colorText('[FAIL] ' . $errorLine, 'fail') . $nl;
 }
 
-fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; canonical is_* modules preserved.\n");
-
-exit($cleanup['ok'] ? 0 : 1);
+echo $nl . "Summary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; canonical is_* modules preserved." . $nl;
 
 itm_script_output_end();
+exit($cleanup['ok'] ? 0 : 1);

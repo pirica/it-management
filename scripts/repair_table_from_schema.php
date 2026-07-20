@@ -1,102 +1,104 @@
 <?php
 /**
- * Table Repair Helper (CLI)
+ * Table Repair Helper
  *
  * Why: Some environments can hit InnoDB metadata drift where a table appears
  * in phpMyAdmin but returns "doesn't exist in engine" during ANALYZE TABLE.
  * This helper rebuilds one table from db/ safely by explicit table name.
+ *
+ * Browser: dry-run by default; ?apply=1&table=name (Admin) rebuilds live table.
+ * CLI: php scripts/repair_table_from_schema.php --table=table_name [--apply]
  */
 
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    itm_script_output_begin('Table Repair Helper');
-    itm_script_output_close_pre();
-    echo '<p><strong>CLI only.</strong> Rebuilds one InnoDB table from <code>db/</code> split bundle (destructive). Backup first.</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/repair_table_from_schema.php --table=table_name</pre>';
-    exit(1);
-}
+$boot = itm_apply_script_bootstrap('Table Repair Helper', ['skip_db_tests' => false]);
+$nl = $boot['nl'];
 
-if (!defined('ITM_CLI_SCRIPT')) {
-    define('ITM_CLI_SCRIPT', true);
-}
-
-$options = getopt('', ['table:']);
-$tableName = isset($options['table']) ? trim((string) $options['table']) : '';
+$tableName = itm_apply_script_arg_value($boot['argv'], $boot['is_cli'], 'table', '');
 
 if ($tableName === '') {
-    fwrite(STDERR, "Usage: php scripts/repair_table_from_schema.php --table=<table_name>\n");
-    exit(1);
-}
-
-try {
-    require_once dirname(__DIR__) . '/config/config.php';
-
-$nl = itm_script_output_nl();
-
-} catch (Throwable $e) {
-    fwrite(STDERR, "Unable to bootstrap application config/db connection: " . $e->getMessage() . "\n");
-    exit(1);
-}
-
-if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
-    fwrite(STDERR, "Database connection failed.\n");
+    echo 'Usage: php scripts/repair_table_from_schema.php --table=<table_name> [--apply]' . $nl;
+    echo 'Browser dry-run: ?table=<table_name> then ?table=<name>&apply=1 (Admin).' . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 if (!itm_is_safe_identifier($tableName)) {
-    fwrite(STDERR, "Invalid table name.\n");
+    echo 'Invalid table name.' . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 $sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    fwrite(STDERR, "db/01_schema.sql not found at expected path.\n");
+    echo "db/01_schema.sql not found at expected path." . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 $schemaSql = file_get_contents($sqlPath);
 if ($schemaSql === false || $schemaSql === '') {
-    fwrite(STDERR, "Unable to read db/ content.\n");
+    echo 'Unable to read db/01_schema.sql content.' . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 $createPattern = '/CREATE TABLE\s+`' . preg_quote($tableName, '/') . '`\s*\(.*?\)\s*ENGINE=.*?;/si';
 if (!preg_match($createPattern, $schemaSql, $matches)) {
-    fwrite(STDERR, "Could not find CREATE TABLE statement for '{$tableName}' in db/.\n");
+    echo "Could not find CREATE TABLE statement for '{$tableName}' in db/01_schema.sql." . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 $createSql = trim((string) $matches[0]);
 
-fwrite(STDOUT, "Rebuilding table '{$tableName}' from db/...\n");
+if (!$boot['apply']) {
+    echo colorText("DRY-RUN: would DROP and recreate table `{$tableName}` from db/01_schema.sql.", 'info') . $nl;
+    echo 'CREATE TABLE excerpt (first 400 chars):' . $nl;
+    echo substr($createSql, 0, 400) . (strlen($createSql) > 400 ? '…' : '') . $nl;
+    itm_apply_script_finish_hint(false, $boot['is_cli'], 1, $nl, 'repair_table_from_schema.php');
+    itm_script_output_end();
+    exit(0);
+}
+
+if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
+    echo 'Database connection failed.' . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+echo "Rebuilding table '{$tableName}' from db/..." . $nl;
 
 if (!itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 0')) {
-    fwrite(STDERR, "Failed to disable FOREIGN_KEY_CHECKS.\n");
+    echo 'Failed to disable FOREIGN_KEY_CHECKS.' . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 $dropSql = "DROP TABLE IF EXISTS `{$tableName}`";
 if (!itm_run_query($conn, $dropSql)) {
     itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 1');
-    fwrite(STDERR, "Failed to drop table '{$tableName}'.\n");
+    echo "Failed to drop table '{$tableName}'." . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 if (!itm_run_query($conn, $createSql)) {
     itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 1');
-    fwrite(STDERR, "Failed to recreate table '{$tableName}' from schema definition.\n");
+    echo "Failed to recreate table '{$tableName}' from schema definition." . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 if (!itm_run_query($conn, 'SET FOREIGN_KEY_CHECKS = 1')) {
-    fwrite(STDERR, "Warning: failed to re-enable FOREIGN_KEY_CHECKS. Please verify manually.\n");
+    echo 'Warning: failed to re-enable FOREIGN_KEY_CHECKS. Please verify manually.' . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
-fwrite(STDOUT, "Table '{$tableName}' rebuilt successfully." . PHP_EOL);
-fwrite(STDOUT, "Next step: run php scripts/analyze_database_health.php to verify." . PHP_EOL);
-exit(0);
-
+echo colorText("Table '{$tableName}' rebuilt successfully.", 'pass') . $nl;
+echo 'Next step: run php scripts/analyze_database_health.php to verify.' . $nl;
 itm_script_output_end();
+exit(0);

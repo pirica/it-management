@@ -1,16 +1,13 @@
 <?php
 /**
  * CLI audit: fail when scripts hardcode seed user id 1 for users-table mutations.
+ *
+ * Browser: open scripts/check_script_disposable_employees.php (Administrator session).
+ * CLI: php scripts/check_script_disposable_employees.php
  */
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 
-if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('CLI only');
-    echo '<p>CLI only: <code>php scripts/check_script_disposable_employees.php</code></p>';
-    itm_script_output_end();
-    exit(0);
-}
-itm_script_output_begin();
+$nl = itm_check_script_begin_browser_admin('Disposable script test employees');
 
 $root = dirname(__DIR__);
 $scriptsRoot = __DIR__;
@@ -89,12 +86,14 @@ foreach ($iterator as $fileInfo) {
 }
 
 if (empty($failures)) {
-    echo "PASS: No scripts hardcode user id 1 for disposable-user mutations.\n";
+    echo 'PASS: No scripts hardcode user id 1 for disposable-user mutations.' . $nl;
+    itm_script_output_end();
     exit(0);
 }
 
-echo "FAIL: " . count($failures) . " issue(s):\n";
+echo 'FAIL: ' . count($failures) . ' issue(s):' . $nl;
 foreach ($failures as $msg) {
-    echo "  - {$msg}\n";
+    echo '  - ' . $msg . $nl;
 }
+itm_script_output_end();
 exit(1);
