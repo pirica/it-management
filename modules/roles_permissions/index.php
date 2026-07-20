@@ -369,6 +369,14 @@ $permissionColumns = [
 ];
 
 $crud_title = 'Roles & Permissions';
+
+// Why: List h1 and browser tab honor Settings sidebar icon overrides for this module slug.
+$moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
+$employeeId = (int)($_SESSION['employee_id'] ?? 0);
+$resolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $employeeId, $moduleSlug);
+$cleanModuleTitle = itm_module_access_strip_catalog_label_prefix($crud_title);
+$moduleListHeading = trim($resolvedModuleIcon . ' ' . $cleanModuleTitle);
+$newButtonPosition = itm_resolve_new_button_position($ui_config ?? null);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -380,7 +388,10 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Roles & Permissions';
+    $crud_title = $cleanModuleTitle;
+}
+if ($resolvedModuleIcon !== '') {
+    $crud_title = trim($resolvedModuleIcon . ' ' . $cleanModuleTitle);
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
@@ -400,16 +411,23 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
-                <h1 style="margin:0;"><?= sanitize($crud_title) ?></h1>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;min-height:40px;">
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <?php if ($rpCanManage && is_array($selectedRole) && !$selectedIsSystem): ?>
                         <button type="button" class="btn btn-sm" id="rp-open-edit-role" title="Edit role">✏️</button>
                     <?php endif; ?>
-                    <?php if ($rpCanManage): ?>
-                        <button type="button" class="btn btn-sm btn-primary" id="rp-open-add-role" title="Add role">➕</button>
+                    <?php if ($rpCanManage && in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <button type="button" class="btn btn-primary itm-list-new-button rp-open-add-role" title="Create">➕</button>
                     <?php endif; ?>
                 </div>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if ($rpCanManage && in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button type="button" class="btn btn-primary itm-list-new-button rp-open-add-role" title="Create">➕</button>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
@@ -595,21 +613,23 @@ if (!isset($crud_title)) {
 window.ITM_RP_CSRF = <?= json_encode($csrfToken) ?>;
 window.ITM_RP_ENDPOINT = <?= json_encode($modulePath . '/index.php') ?>;
 (function () {
-    function bindModal(openId, modalId, closeId) {
-        var openBtn = document.getElementById(openId);
+    function bindModal(openSelector, modalId, closeId) {
+        var openBtns = document.querySelectorAll(openSelector);
         var modal = document.getElementById(modalId);
         var closeBtn = document.getElementById(closeId);
-        if (!openBtn || !modal) {
+        if (!modal || openBtns.length === 0) {
             return;
         }
-        openBtn.addEventListener('click', function () {
-            modal.classList.add('is-open');
-            modal.setAttribute('aria-hidden', 'false');
-        });
         function closeModal() {
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
         }
+        openBtns.forEach(function (openBtn) {
+            openBtn.addEventListener('click', function () {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+        });
         if (closeBtn) {
             closeBtn.addEventListener('click', closeModal);
         }
@@ -619,7 +639,7 @@ window.ITM_RP_ENDPOINT = <?= json_encode($modulePath . '/index.php') ?>;
             }
         });
     }
-    bindModal('rp-open-add-role', 'rp-add-role-modal', 'rp-close-add-role');
+    bindModal('.rp-open-add-role', 'rp-add-role-modal', 'rp-close-add-role');
     bindModal('rp-open-edit-role', 'rp-edit-role-modal', 'rp-close-edit-role');
 })();
 </script>

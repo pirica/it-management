@@ -1147,6 +1147,77 @@
         }
       ]
     },
+    "roles_permissions": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Dual-pane RBAC matrix (index.php only): AJAX modals for add/edit role and matrix save — no scaffold create.php, list_all.php, or bulk-delete toolbar. Server-managed ➕ opens the add-role modal; permission matrix uses module filter instead of list search/pagination.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No flattened list search — matrix uses module name filter in toolbar"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Matrix rows fixed ORDER BY module_slug ASC — no per-column sort headers"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full permission matrix on one page — no records_per_page paging"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — permission checkboxes per module row"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — primary ➕ opens add-role modal on index.php (data-itm-new-button-managed=\"server\")"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position gates modal ➕ on index.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header ➕ uses itm-list-new-button modal trigger"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — matrix uses Check All / Uncheck All + save"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php — add role via AJAX modal)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php — edit role via AJAX modal)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
     "resignations": {
       "reviewed_at": "2026-07-20",
       "reason": "Read-only weekly resignation report (index.php only): ISO week/month filters and sortable table — no CRUD entry files, no Actions column, no records_per_page pagination (full filtered week on one page).",
