@@ -273,11 +273,13 @@ if (!isset($crud_title)) {
                 <div class="card" style="margin-top:16px;">
                     <div class="card-body" style="display:flex;justify-content:center;gap:8px;align-items:center;">
                         <?php if ($page > 1): ?>
+                            <a class="btn btn-sm" href="<?php echo sanitize(pc_build_list_url(array_merge($pcListQueryState, ['page' => 1]))); ?>" title="First page">⏮️</a>
                             <a class="btn btn-sm" href="<?php echo sanitize(pc_build_list_url(array_merge($pcListQueryState, ['page' => $page - 1]))); ?>" title="Previous page">◀️</a>
                         <?php endif; ?>
                         <span class="btn btn-sm" style="pointer-events:none;"><?php echo (int)$page; ?> / <?php echo (int)$totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
                             <a class="btn btn-sm" href="<?php echo sanitize(pc_build_list_url(array_merge($pcListQueryState, ['page' => $page + 1]))); ?>" title="Next page">▶️</a>
+                            <a class="btn btn-sm" href="<?php echo sanitize(pc_build_list_url(array_merge($pcListQueryState, ['page' => $totalPages]))); ?>" title="Last page">⏭️</a>
                         <?php endif; ?>
                     </div>
                 </div>

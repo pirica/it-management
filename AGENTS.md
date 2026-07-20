@@ -267,16 +267,23 @@ Every module must implement:
   | ⬅️ | Previous |
   | ➡️ | Next |
 
-  Standard flattened list modules use **◀️** / **▶️** only (`btn-sm` anchors). Optional **⏮️** / **⏭️** when a module renders first/last page jumps; **⬅️** / **➡️** are for non-page-step navigation elsewhere — not standard list Previous/Next.
+  Standard flattened list modules render **⏮️** / **◀️** / **▶️** / **⏭️** (`btn-sm` anchors) inside the `<?php if ($page > 1): ?>` / `<?php if ($page < $totalPages): ?>` blocks. **⬅️** / **➡️** are for non-page-step navigation elsewhere — not standard list pagination.
 
   **Canonical markup** (reference: flattened CRUD `index.php`):
 
   ```html
+  <?php if ($page > 1): ?>
+  <a class="btn btn-sm" href="?search=…&sort=…&dir=…&page=1" title="First page">⏮️</a>
   <a class="btn btn-sm" href="?search=…&sort=…&dir=…&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
+  <?php endif; ?>
+  <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+  <?php if ($page < $totalPages): ?>
   <a class="btn btn-sm" href="?search=…&sort=…&dir=…&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
+  <a class="btn btn-sm" href="?search=…&sort=…&dir=…&page=<?php echo $totalPages; ?>" title="Last page">⏭️</a>
+  <?php endif; ?>
   ```
 
-  **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **▶️** (`btn-sm`, `page=2`, `title="Next page"`), then page 2 includes **◀️** (`btn-sm`, `page=1`, `title="Previous page"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
+  **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **▶️** + **⏭️** (`btn-sm`, `page=2` / `page={totalPages}`, `title="Next page"` / `title="Last page"`), then page 2 includes **⏮️** + **◀️** (`page=1`, `title="First page"` / `title="Previous page"`).
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
 * **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center — **except** private-data tables listed under **Private data — no audit trail** below (no `audit_logs` rows, no `trg_*_audit_*` triggers, no PHP `itm_log_audit()` on those tables).
@@ -877,12 +884,12 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 | Save | 💾 |
 | Previous page (list pagination) | ◀️ |
 | Next page (list pagination) | ▶️ |
-| First page (optional list jump) | ⏮️ |
-| Last page (optional list jump) | ⏭️ |
+| First page (list pagination) | ⏮️ |
+| Last page (list pagination) | ⏭️ |
 | Previous (non-page nav) | ⬅️ |
 | Next (non-page nav) | ➡️ |
 
-**Pagination (NO MIXED):** list `index.php` / `list_all.php` pagination anchors use emoji-only visible text (`◀️` / `▶️` by default). `title` carries the phrase (`Previous page`, `Next page`, …) — never `title="◀️ Previous"` or visible `Next` beside ▶️. Helpers: `itm_ui_pagination_emoji()`, `itm_ui_pagination_title()` in `includes/itm_ui_action_labels.php`.
+**Pagination (NO MIXED):** list `index.php` / `list_all.php` pagination anchors use emoji-only visible text (**⏮️** / **◀️** / **▶️** / **⏭️** when navigation renders). `title` carries the phrase (`First page`, `Previous page`, `Next page`, `Last page`) — never `title="◀️ Previous"` or visible `Next` beside ▶️. Helpers: `itm_ui_pagination_emoji()`, `itm_ui_pagination_title()` in `includes/itm_ui_action_labels.php`. Verify: `php scripts/check_pagination_emoji.php`.
 
 **NO MIXED (zero tolerance):** do not ship visible labels that combine emoji + action word, for example `💾 Save`, `🔙 Back`, `🔎 View Ticket Details`, `➕ New Equipment`, or `▶️ Next`. Compound headings use emoji-only visible text plus a descriptive `title` (see canonical markup below).
 
@@ -897,8 +904,10 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 <a href="create.php" class="btn btn-primary" title="Create">➕</a>
 <h1 title="View ticket details">🔎</h1>
 <h1 title="<?php echo $is_edit ? 'Edit ticket' : 'New ticket'; ?>"><?php echo $is_edit ? '✏️' : '➕'; ?></h1>
+<a class="btn btn-sm" href="?…&page=1" title="First page">⏮️</a>
 <a class="btn btn-sm" href="?…&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
 <a class="btn btn-sm" href="?…&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
+<a class="btn btn-sm" href="?…&page=<?php echo $totalPages; ?>" title="Last page">⏭️</a>
 ```
 
 **Header auto-tooltips (`includes/header.php` `intentRules`):** tooltips **may** use emoji + words (for example `🔎 View details`, `🔙 Go back`, `🔙 Cancel`). Visible node text must still follow NO MIXED. Bulk-selection cancel is skipped: `button[data-itm-bulk-cancel="1"]` keeps visible `Cancel`. Pagination anchors with visible **◀️** / **▶️** / **⏮️** / **⏭️** / **⬅️** / **➡️** rely on `title` for the phrase (`Previous page`, …).
@@ -921,7 +930,7 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 
 Also fails on known compound literals (`View Ticket Details`, `Edit Ticket`, `New Equipment`, `Create IDF`, `Edit IDF`, `View Employee System Access`), plain-text standalone action words on interactive tags without emoji (including list pagination `Previous` / `Next`), and header `intentRules` drift (View must use 🔎, Back must use 🔙).
 
-**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default; `--apply` writes) for simple mixed markup. List pagination legacy `Previous`/`Next` labels: `php scripts/apply_pagination_emoji_labels.php` then `--apply`. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
+**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default; `--apply` writes) for simple mixed markup. List pagination legacy `Previous`/`Next` labels: `php scripts/apply_pagination_emoji_labels.php` then `--apply`. First/last page controls: `php scripts/apply_pagination_first_last.php` then `--apply`. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 
 **Exemptions (visible text only):**
 

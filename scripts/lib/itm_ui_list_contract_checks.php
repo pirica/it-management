@@ -417,10 +417,11 @@ if (!function_exists('itm_check_pagination')) {
             || itm_ui_ipam_address_list_pagination_detected($listContent);
         $hasPageState = preg_match('#\$_GET\s*\[\s*[\'"]page[\'"]\s*\]#', $listContent) === 1
             || preg_match('#\$page\s*=#', $listContent) === 1;
-        $hasPageNav = (stripos($listContent, 'Previous') !== false
+        $hasPageNav = (preg_match('/>\s*[◀️▶️⏮️⏭️]\s*<\/a>/u', $listContent) === 1)
+            || ((stripos($listContent, 'Previous') !== false
                 || stripos($listContent, 'Prev') !== false
                 || stripos($listContent, '«') !== false)
-            && stripos($listContent, 'Next') !== false;
+            && stripos($listContent, 'Next') !== false);
         $hasRowTotal = stripos($listContent, '$totalPages') !== false || stripos($listContent, '$totalRows') !== false;
 
         if ($usesRecordsPerPage && $hasPerPageVar && $hasLimitPaging && $hasPageState && $hasPageNav && $hasRowTotal) {
@@ -1631,6 +1632,14 @@ if (!function_exists('itm_check_pagination_nav_titles')) {
             ) {
                 $missing[] = 'visible ◀️ on Previous link (not plain Previous/Prev text)';
             }
+            if (preg_match('/>\s*⏮️\s*<\/a>/u', $listContent) !== 1) {
+                $missing[] = 'visible ⏮️ first-page link';
+            }
+            if (stripos($listContent, 'title="First page"') === false
+                && stripos($listContent, "title='First page'") === false
+            ) {
+                $missing[] = 'title="First page" on ⏮️ link';
+            }
             $legacyPrevTitle = 'title="' . itm_ui_pagination_emoji('previous_page') . ' Previous"';
             if (stripos($listContent, 'title="Previous page"') === false
                 && stripos($listContent, "title='Previous page'") === false
@@ -1644,6 +1653,14 @@ if (!function_exists('itm_check_pagination_nav_titles')) {
             if (preg_match('/>\s*Next\s*<\/a>/i', $listContent) === 1) {
                 $missing[] = 'visible ▶️ on Next link (not plain Next text)';
             }
+            if (preg_match('/>\s*⏭️\s*<\/a>/u', $listContent) !== 1) {
+                $missing[] = 'visible ⏭️ last-page link';
+            }
+            if (stripos($listContent, 'title="Last page"') === false
+                && stripos($listContent, "title='Last page'") === false
+            ) {
+                $missing[] = 'title="Last page" on ⏭️ link';
+            }
             $legacyNextTitle = 'title="' . itm_ui_pagination_emoji('next_page') . ' Next"';
             if (stripos($listContent, 'title="Next page"') === false
                 && stripos($listContent, "title='Next page'") === false
@@ -1653,14 +1670,14 @@ if (!function_exists('itm_check_pagination_nav_titles')) {
                 $missing[] = 'title="Next page" on ▶️ link';
             }
         }
-        if (preg_match('/title="🔎\s*Search"/i', $listContent)) {
+        if (preg_match('/<a\b[^>]*btn-sm[^>]*title="🔎\s*Search"/i', $listContent)) {
             $missing[] = 'pagination link must not use title="🔎 Search" (use Previous page / Next page titles)';
         }
 
         if ($missing === []) {
             return [
                 'status' => 'pass',
-                'details' => 'Pagination ◀️/▶️ visible labels + title attributes in ' . $sourceLabel,
+                'details' => 'Pagination ⏮️/◀️/▶️/⏭️ visible labels + title attributes in ' . $sourceLabel,
             ];
         }
 
