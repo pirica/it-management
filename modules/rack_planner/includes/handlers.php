@@ -21,7 +21,7 @@ if (!isset($_SESSION['company_id'])) {
 if (isset($_GET['ajax_action']) && (string)$_GET['ajax_action'] === 'create_share_session') {
     require_once ROOT_PATH . 'includes/itm_api_json_response.php';
     itm_require_post_csrf();
-    require_once __DIR__ . '/rack_planner_share_helpers.php';
+    require_once dirname(__DIR__) . '/rack_planner_share_helpers.php';
     $planId = (int)($_POST['id'] ?? 0);
     $ownerUsername = (string)($_SESSION['username'] ?? '');
     $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);

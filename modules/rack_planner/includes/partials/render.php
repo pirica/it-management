@@ -733,12 +733,13 @@ if (!isset($crud_title)) {
                 <div id="rackDragTrash" class="rack-drag-trash" aria-hidden="true">Delete</div>
 
             <?php elseif ($crud_action === 'view'): ?>
+                <?php
+                $rackShareAjaxUrl = 'index.php?ajax_action=create_share_session';
+                $rackSharePlanId = (int)($data['id'] ?? 0);
+                ?>
                 <div class="rack-planner-header">
                     <h1>View Rack Plan: <?php echo sanitize($data['name']); ?></h1>
                     <div>
-                        <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>)" title="Share to device">📱</button>
-                        <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>, null, 'rack plan')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
-                        <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo (int)$data['id']; ?>, null, 'rack plan')" title="Share on Outlook">📨</button>
                         <a href="edit.php?id=<?php echo $data['id']; ?>" class="btn btn-primary" title="Edit">✏️</a>
                         <a href="index.php" class="btn" title="Back">🔙</a>
                     </div>
@@ -832,6 +833,9 @@ if (!isset($crud_title)) {
                             <button type="button" class="btn btn-sm" id="rackSaveImageBtn">Save as Image</button>
                             <button type="button" class="btn btn-sm" id="rackExportPdfBtn">PDF Export</button>
                             <button type="button" class="btn btn-sm" id="rackExportExcelBtn">Excel Export</button>
+                            <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('<?php echo sanitize($rackShareAjaxUrl); ?>', <?php echo $rackSharePlanId; ?>)" title="Share to device">📱</button>
+                            <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('<?php echo sanitize($rackShareAjaxUrl); ?>', <?php echo $rackSharePlanId; ?>, null, 'rack plan')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+                            <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('<?php echo sanitize($rackShareAjaxUrl); ?>', <?php echo $rackSharePlanId; ?>, null, 'rack plan')" title="Share on Outlook">📨</button>
                         </div>
                     </div>
                 </div>
