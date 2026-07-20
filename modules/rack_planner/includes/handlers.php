@@ -18,6 +18,28 @@ if (!isset($_SESSION['company_id'])) {
     exit;
 }
 
+if (isset($_GET['ajax_action']) && (string)$_GET['ajax_action'] === 'create_share_session') {
+    require_once ROOT_PATH . 'includes/itm_api_json_response.php';
+    itm_require_post_csrf();
+    require_once __DIR__ . '/rack_planner_share_helpers.php';
+    $planId = (int)($_POST['id'] ?? 0);
+    $ownerUsername = (string)($_SESSION['username'] ?? '');
+    $logged_employee_id = (int)($_SESSION['employee_id'] ?? 0);
+    $ajaxCompanyId = (int)($_SESSION['company_id'] ?? 0);
+    $result = rack_planner_share_create_session($conn, $planId, $ajaxCompanyId, $logged_employee_id, $ownerUsername);
+    if (!$result['ok'] || empty($result['session'])) {
+        itm_api_json_response(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], 400);
+    }
+    $session = $result['session'];
+    itm_api_json_response([
+        'ok' => true,
+        'share_code' => (string)$session['share_code'],
+        'join_url' => rack_planner_share_build_join_url((string)$session['access_token']),
+        'expires_at' => (string)$session['expires_at'],
+        'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+    ]);
+}
+
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 $errors = [];

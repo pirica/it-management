@@ -534,6 +534,9 @@ if ($action !== '') {
     if (isset($_POST['dest'])) {
         $vaultPaths[] = trim((string)$_POST['dest'], '/');
     }
+    if (isset($_POST['scope_path'])) {
+        $vaultPaths[] = trim((string)$_POST['scope_path'], '/');
+    }
     foreach (array_unique(array_filter($vaultPaths, static function ($vaultPath) {
         return $vaultPath !== '';
     })) as $vaultPath) {
@@ -1093,6 +1096,43 @@ case "emptyRecycle":
     }
     explorer_ensure_dir($trash_root);
     echo json_encode(["ok" => 1]);
+    break;
+
+case "create_share_session":
+    require_once __DIR__ . '/explorer_share_helpers.php';
+    itm_require_post_csrf();
+    $scopePath = trim((string)($_POST['scope_path'] ?? ''), '/');
+    if ($scopePath === '' && isset($_POST['path'])) {
+        $scopePath = trim((string)$_POST['path'], '/');
+    }
+    $ownerUsername = (string)($username ?? '');
+    $vaultUnlocked = explorer_vault_is_unlocked();
+    $result = explorer_share_create_session(
+        $conn,
+        $company_id,
+        $user_id,
+        $ownerUsername,
+        $scopePath,
+        $safe_dept_code,
+        $username,
+        $vaultUnlocked,
+        $storage_root,
+        $user_private_dir
+    );
+    if (!$result['ok'] || empty($result['session'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        break;
+    }
+    $session = $result['session'];
+    echo json_encode([
+        'ok' => true,
+        'share_code' => (string)$session['share_code'],
+        'join_url' => explorer_share_build_join_url((string)$session['access_token']),
+        'expires_at' => (string)$session['expires_at'],
+        'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+        'has_images' => true,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     break;
 
 default:

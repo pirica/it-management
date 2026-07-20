@@ -102,6 +102,93 @@ function itm_qr_share_render_join_page($moduleLabel, $joinScriptPath, $accessTok
                     <?php endif; ?>
                     <?php if (!empty($payload['notes'])): ?><tr><th>Notes</th><td style="white-space:pre-wrap;"><?php echo sanitize((string)$payload['notes']); ?></td></tr><?php endif; ?>
                 </table>
+            <?php elseif ($payloadType === 'explorer'): ?>
+                <?php
+                $explorerFiles = is_array($payload['files'] ?? null) ? $payload['files'] : [];
+                $explorerToken = $accessToken;
+                ?>
+                <p class="join-expiry"><?php echo (int)($payload['file_count'] ?? count($explorerFiles)); ?> file(s) in <code><?php echo sanitize((string)($payload['scope_path'] ?? '')); ?></code></p>
+                <?php if ($explorerFiles !== []): ?>
+                    <table class="join-table">
+                        <thead>
+                            <tr><th>File</th><th>Size</th><th>Download</th></tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($explorerFiles as $explorerFile): ?>
+                            <?php if (!is_array($explorerFile)) { continue; } ?>
+                            <?php
+                            $fileId = (string)($explorerFile['id'] ?? '');
+                            $fileName = (string)($explorerFile['name'] ?? '');
+                            $fileSize = (int)($explorerFile['size'] ?? 0);
+                            $fileUrl = $explorerToken !== '' && $fileId !== '' && function_exists('explorer_share_file_download_url')
+                                ? explorer_share_file_download_url($explorerToken, $fileId)
+                                : '';
+                            $fileMime = (string)($explorerFile['mime'] ?? '');
+                            ?>
+                            <tr>
+                                <td><?php echo sanitize($fileName); ?></td>
+                                <td><?php echo $fileSize > 0 ? sanitize(number_format($fileSize / 1024, 1) . ' KB') : '—'; ?></td>
+                                <td>
+                                    <?php if ($fileUrl !== ''): ?>
+                                        <a href="<?php echo sanitize($fileUrl); ?>" rel="nofollow noreferrer noopener" target="_blank">Open / download</a>
+                                        <?php if (strpos($fileMime, 'image/') === 0): ?>
+                                            <div style="margin-top:8px;"><img src="<?php echo sanitize($fileUrl); ?>" alt="<?php echo sanitize($fileName); ?>" style="max-width:100%;height:auto;"></div>
+                                        <?php elseif ($fileMime === 'application/pdf'): ?>
+                                            <div style="margin-top:8px;"><iframe src="<?php echo sanitize($fileUrl); ?>" title="<?php echo sanitize($fileName); ?>" style="width:100%;min-height:420px;border:1px solid var(--border);"></iframe></div>
+                                        <?php endif; ?>
+                                    <?php else: ?>—<?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            <?php elseif ($payloadType === 'floor_plan'): ?>
+                <?php
+                $floorAssetUrl = ($accessToken !== '' && function_exists('floor_plans_share_asset_url'))
+                    ? floor_plans_share_asset_url($accessToken)
+                    : '';
+                $floorPreviewKind = (string)($payload['preview_kind'] ?? '');
+                ?>
+                <table class="join-table">
+                    <tr><th>Name</th><td><?php echo sanitize((string)($payload['display_name'] ?? '')); ?></td></tr>
+                    <tr><th>Type</th><td><?php echo sanitize((string)($payload['mime_type'] ?? '')); ?> (<?php echo sanitize(strtoupper((string)($payload['file_ext'] ?? ''))); ?>)</td></tr>
+                    <?php if (!empty($payload['file_size'])): ?><tr><th>Size</th><td><?php echo sanitize(number_format(((int)$payload['file_size']) / 1024, 1) . ' KB'); ?></td></tr><?php endif; ?>
+                </table>
+                <?php if ($floorAssetUrl !== ''): ?>
+                    <p style="margin-top:16px;"><a class="btn btn-primary" href="<?php echo sanitize($floorAssetUrl); ?>" rel="nofollow noreferrer noopener" target="_blank">Open / download file</a></p>
+                    <?php if ($floorPreviewKind === 'image'): ?>
+                        <p style="margin-top:12px;"><img src="<?php echo sanitize($floorAssetUrl); ?>" alt="<?php echo sanitize((string)($payload['display_name'] ?? '')); ?>" style="max-width:100%;height:auto;"></p>
+                    <?php elseif ($floorPreviewKind === 'pdf'): ?>
+                        <p style="margin-top:12px;"><iframe src="<?php echo sanitize($floorAssetUrl); ?>" title="<?php echo sanitize((string)($payload['display_name'] ?? '')); ?>" style="width:100%;min-height:480px;border:1px solid var(--border);"></iframe></p>
+                    <?php endif; ?>
+                <?php endif; ?>
+            <?php elseif ($payloadType === 'rack_planner'): ?>
+                <table class="join-table">
+                    <tr><th>Name</th><td><?php echo sanitize((string)($payload['name'] ?? '')); ?></td></tr>
+                    <?php if (!empty($payload['status_name'])): ?><tr><th>Status</th><td><?php echo sanitize((string)$payload['status_name']); ?></td></tr><?php endif; ?>
+                    <tr><th>Units</th><td><?php echo (int)($payload['rack_units'] ?? 0); ?> U</td></tr>
+                    <?php if (!empty($payload['total_amount'])): ?><tr><th>Total</th><td><?php echo sanitize((string)$payload['total_amount']); ?></td></tr><?php endif; ?>
+                    <?php if (!empty($payload['notes'])): ?><tr><th>Notes</th><td style="white-space:pre-wrap;"><?php echo sanitize((string)$payload['notes']); ?></td></tr><?php endif; ?>
+                </table>
+                <?php $rackRows = is_array($payload['unit_rows'] ?? null) ? $payload['unit_rows'] : []; ?>
+                <?php if ($rackRows !== []): ?>
+                    <table class="join-table" style="margin-top:16px;">
+                        <thead><tr><th>U</th><th>Device</th><th>Code</th><th>Size</th><th>Price</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($rackRows as $rackRow): ?>
+                            <?php if (!is_array($rackRow)) { continue; } ?>
+                            <tr>
+                                <td><?php echo (int)($rackRow['unit'] ?? 0); ?></td>
+                                <td><?php echo sanitize((string)($rackRow['label'] ?? '')); ?></td>
+                                <td><?php echo sanitize((string)($rackRow['code'] ?? '')); ?></td>
+                                <td><?php echo (int)($rackRow['size'] ?? 1); ?></td>
+                                <td><?php echo sanitize((string)($rackRow['price'] ?? '')); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
             <?php else: ?>
                 <p class="join-expiry">Unsupported share payload.</p>
             <?php endif; ?>

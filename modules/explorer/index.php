@@ -628,6 +628,43 @@ function clearContextMenu() {
     ctxMenu.innerHTML = "";
 }
 
+function explorerShareScopeForItem(item) {
+    if (!item || !item.name) {
+        return currentPath || "";
+    }
+    return currentPath ? `${currentPath}/${item.name}` : item.name;
+}
+
+function explorerCanSharePath(path) {
+    if (inRecycle) {
+        return false;
+    }
+    path = (path || "").replace(/^\/+|\/+$/g, "");
+    if (!path) {
+        return false;
+    }
+    if (path === "Private" || path === "Departments" || path === "Trash") {
+        return false;
+    }
+    if (path.startsWith("Trash/")) {
+        return false;
+    }
+    return true;
+}
+
+function explorerShareScope(scopePath) {
+    scopePath = (scopePath || "").replace(/^\/+|\/+$/g, "");
+    if (!explorerCanSharePath(scopePath)) {
+        alert("This location cannot be shared.");
+        return;
+    }
+    if (typeof itmOpenQrShareModal !== "function") {
+        alert("Share modal is not available.");
+        return;
+    }
+    itmOpenQrShareModal("api.php", 0, { action: "create_share_session", scope_path: scopePath });
+}
+
 function appendContextSeparator() {
     const hr = document.createElement("hr");
     ctxMenu.appendChild(hr);
@@ -693,6 +730,11 @@ function showContextMenu(e, item) {
         appendContextAction("Compress 🗜️", () => zipItem());
         appendContextAction("Move to…", () => moveTo());
         appendContextAction("⭐ Favourite", () => toggleFavourite(item.name));
+        const shareScope = explorerShareScopeForItem(item);
+        if (explorerCanSharePath(shareScope)) {
+            appendContextSeparator();
+            appendContextAction("Share 📱", () => explorerShareScope(shareScope));
+        }
     } else if (inRecycle) {
         appendContextAction("Restore", () => restoreFromRecycle(item.name));
     }
@@ -715,6 +757,9 @@ function showEmptyContextMenu(e) {
     appendContextAction("Upload Files ⬆️", () => triggerUpload());
     if (canDownloadPrivateZipBackup()) {
         appendContextAction("Download as ZIP 🗜️", () => downloadZip());
+    }
+    if (explorerCanSharePath(currentPath)) {
+        appendContextAction("Share folder 📱", () => explorerShareScope(currentPath));
     }
     appendContextAction("Paste 📋", () => pasteItem(), clipboardHasItems());
     appendContextAction("Refresh 🔄", () => refreshFolder());
@@ -1122,6 +1167,8 @@ loadClipboard();
 currentPath = "";
 loadFolder("");
 </script>
+<script>window.ITM_CSRF_TOKEN = <?= json_encode($explorerVaultCsrf, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
 <script src="../../js/theme.js"></script>
 </body>
 </html>

@@ -268,7 +268,7 @@ Tables that store **private user content** must **not** be copied into `audit_lo
 | `emails` | Send log (`modules/emails/` tab) — may contain recipient/subject/body metadata; **not** `email_smtp_configurations` or `email_alert_rules` (those remain auditable). |
 | `password_entries`, `password_folders` | `modules/passwords/` — vault credentials; encrypted at rest. |
 | `private_contacts` | `modules/private_contacts/` — per-user address book; PII vault-encrypted at rest. |
-| `*_share_sessions` (`note_`, `password_`, `bookmark_`, `todo_`, `event_`, `private_contact_`) | Temporary QR/code share snapshots (`payload_json` plaintext until expiry); no audit triggers. |
+| `*_share_sessions` (`note_`, `password_`, `bookmark_`, `todo_`, `event_`, `private_contact_`, `explorer_`, `floor_plan_`, `rack_planner_`) | Temporary QR/code share snapshots (`payload_json` plaintext until expiry); no audit triggers. |
 | `todo_categories`, `todo` | `modules/todo/` — personal/assigned tasks. |
 | `notes`, `note_labels` | `modules/notes/` — personal/shared note content. |
 | `events` | `modules/events/` — private/shared event title, description, and location (vault-encrypted when not shared). |
@@ -339,6 +339,7 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
     Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer — managed `.htaccess` is restored on every ensure. See `scripts/AGENT_NOTES.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
 5. **Regression scripts:** `php scripts/test_explorer_paths.php` (path ACL logic); `php scripts/verify_explorer_zip_leak.php` (Step 1: blocked roots; Step 2: exact `Private/{username}_{employee_id}` only; Step 3: all other paths blocked). PoC for malicious `.htaccess` upload: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php` (catalog in `scripts/scripts.php`). PHPUnit: `ExplorerTest::testTrashListFiltersAncestorFolders`.
 6. **Vault gate (Private folder):** `explorer_vault_bootstrap.php` / `explorer_vault_helpers.php` — unlocking sets `$_SESSION['vault_key']` (same master key as Passwords/Notes). **Common** and **Departments** work without unlock; paths under `Private/{username}_{employee_id}/` (except `…/profile/` assets served via `file.php`) require vault unlock in `index.php`, `api.php`, and `file.php`. `downloadZip` for the own Private folder also requires unlock.
+7. **QR / folder share (`join.php`, `share_file.php`):** `explorer_share_sessions` stores a recursive file snapshot for a scoped folder or single file under **Common/**, **Departments/{dept_code}/**, or **Private/{username}_{employee_id}/** (Private requires vault unlock at create). Context menu **Share 📱** calls `api.php` `create_share_session` with `scope_path`. Public join lists files; downloads use token-scoped `share_file.php`. Regression: `php scripts/verify_qr_share_modules.php`.
 
 #### Org Chart and Hierarchy (mandatory)
 
@@ -461,7 +462,7 @@ The Passwords module provides a secure, private manager for user credentials.
 4. **Master Key Change**: Re-encryption of all entries during a master key change must be atomic via database transactions.
 5. **UI behavior**: Password fields MUST be masked by default with a toggle visibility button. Always provide a 🗐 icon for copying fields to the clipboard.
 6. **Special import/export:** Tools menu (CSV/Excel modals + `exportVault` / `export_handler.php`), not table-tools. Entry list table uses `data-itm-no-import-excel` / `data-itm-no-export-*`; Actions cells (including JS rows) keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
-7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_qr_share_modules.php` (password share sessions among Passwords, Bookmarks, Todo, Events, Private Contacts).
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_qr_share_modules.php` (Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner).
 
 #### Private Contacts module (mandatory)
 

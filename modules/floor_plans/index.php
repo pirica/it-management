@@ -19,6 +19,31 @@ require '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
 require __DIR__ . '/gallery_helpers.php';
 
+if (isset($_GET['ajax_action']) && (string)$_GET['ajax_action'] === 'create_share_session') {
+    header('Content-Type: application/json; charset=utf-8');
+    itm_require_post_csrf();
+    require_once __DIR__ . '/floor_plans_share_helpers.php';
+    $planId = (int)($_POST['id'] ?? 0);
+    $ownerUsername = (string)($_SESSION['username'] ?? '');
+    $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+    $result = floor_plans_share_create_session($conn, $planId, (int)$company_id, $employeeId, $ownerUsername);
+    if (!$result['ok'] || empty($result['session'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $session = $result['session'];
+    echo json_encode([
+        'ok' => true,
+        'share_code' => (string)$session['share_code'],
+        'join_url' => floor_plans_share_build_join_url((string)$session['access_token']),
+        'expires_at' => (string)$session['expires_at'],
+        'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+        'has_images' => true,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 // Check for valid table configuration to prevent injection via $crud_table clones.
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -1584,5 +1609,6 @@ document.addEventListener('change', function (event) {
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
+<?php require_once ROOT_PATH . 'includes/itm_qr_share_modal.php'; ?>
 </body>
 </html>
