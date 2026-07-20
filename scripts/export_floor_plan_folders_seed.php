@@ -2,46 +2,52 @@
 /**
  * Export floor_plan_folders rows as db/02_data.sql-style INSERT statements.
  *
- * Why: folder seed data is tenant-specific; run this against your local Laragon DB
- * and paste the output into db/ after the floor_plan_folders CREATE TABLE block.
- *
- * Usage (repository root, PHP 7.4+ with MySQLi):
- *   php scripts/export_floor_plan_folders_seed.php
- *   php scripts/export_floor_plan_folders_seed.php --company=1
- *
- * Windows Laragon when php is not on PATH:
- *   C:\<folder>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\export_floor_plan_folders_seed.php
+ * Browser: open scripts/export_floor_plan_folders_seed.php?company=1 (read-only dump).
+ * CLI: php scripts/export_floor_plan_folders_seed.php [--company=1]
  */
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CLI only</title></head><body style="font-family:Segoe UI,system-ui,sans-serif;margin:16px;max-width:720px;">';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong> Exports INSERT statements to stdout:</p>';
-    echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/export_floor_plan_folders_seed.php --company=1</pre>';
-    echo '</body></html>';
-    exit(1);
+require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_access_helpers.php';
+
+$isCli = itm_script_access_is_cli();
+if ($isCli) {
+    if (!defined('ITM_CLI_SCRIPT')) {
+        define('ITM_CLI_SCRIPT', true);
+    }
+    require_once dirname(__DIR__) . '/config/config.php';
+} else {
+    require_once dirname(__DIR__) . '/config/config.php';
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+    itm_script_output_begin('Export floor_plan_folders seed');
 }
 
-$root = dirname(__DIR__);
-require_once $root . '/config/config.php';
+$nl = itm_script_output_nl();
 
 if (!isset($conn) || !($conn instanceof mysqli)) {
-    fwrite(STDERR, "Database connection failed.\n");
+    echo 'Database connection failed.' . $nl;
+    if (!$isCli) {
+        itm_script_output_end();
+    }
     exit(2);
 }
 
 $companyFilter = 0;
-foreach (array_slice($argv, 1) as $arg) {
-    if (preg_match('/^--company=(\d+)$/', $arg, $m)) {
-        $companyFilter = (int)$m[1];
-        continue;
+if ($isCli) {
+    foreach (array_slice($GLOBALS['argv'] ?? [], 1) as $arg) {
+        if (preg_match('/^--company=(\d+)$/', $arg, $m)) {
+            $companyFilter = (int)$m[1];
+            continue;
+        }
+        echo "Unknown option: {$arg}" . $nl;
+        if (!$isCli) {
+            itm_script_output_end();
+        }
+        exit(2);
     }
-    fwrite(STDERR, "Unknown option: {$arg}\n");
-    exit(2);
+} elseif (isset($_GET['company']) && (string)$_GET['company'] !== '') {
+    $companyFilter = (int)$_GET['company'];
 }
 
 $sql = 'SELECT `id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at` FROM `floor_plan_folders`';
@@ -52,7 +58,10 @@ $sql .= ' ORDER BY `company_id`, `id`';
 
 $res = mysqli_query($conn, $sql);
 if (!$res) {
-    fwrite(STDERR, 'Query failed: ' . mysqli_error($conn) . "\n");
+    echo 'Query failed: ' . mysqli_error($conn) . $nl;
+    if (!$isCli) {
+        itm_script_output_end();
+    }
     exit(2);
 }
 
@@ -67,14 +76,21 @@ while ($row = mysqli_fetch_assoc($res)) {
     $createdAt = mysqli_real_escape_string($conn, (string)($row['created_at'] ?? '2026-01-01 00:00:01'));
 
     echo "INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) "
-        . "VALUES ('{$id}', '{$companyId}', {$parentSql}, '{$name}', '{$active}', '{$createdAt}');\n";
+        . "VALUES ('{$id}', '{$companyId}', {$parentSql}, '{$name}', '{$active}', '{$createdAt}');" . $nl;
     $rowCount++;
 }
 mysqli_free_result($res);
 
 if ($rowCount === 0) {
-    fwrite(STDERR, "No rows in floor_plan_folders" . ($companyFilter > 0 ? " for company_id={$companyFilter}" : '') . ".\n");
+    echo 'No rows in floor_plan_folders' . ($companyFilter > 0 ? " for company_id={$companyFilter}" : '') . '.' . $nl;
+    if (!$isCli) {
+        itm_script_output_end();
+    }
     exit(1);
 }
 
-fwrite(STDERR, "Exported {$rowCount} row(s) to stdout.\n");
+echo ($isCli ? "Exported {$rowCount} row(s) to stdout." : "Exported {$rowCount} row(s).") . $nl;
+if (!$isCli) {
+    itm_script_output_end();
+}
+exit(0);

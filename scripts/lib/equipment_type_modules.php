@@ -180,6 +180,89 @@ function itm_remove_equipment_regression_test_module_dirs(string $modulesRoot): 
 }
 
 /**
+ * List regression-test module folder basenames that cleanup would remove (dry-run preview).
+ *
+ * @param string $modulesRoot
+ * @return array<int, string>
+ */
+function itm_list_equipment_regression_test_module_dir_names(string $modulesRoot): array
+{
+    $names = [];
+    $modulesRoot = rtrim($modulesRoot, '/\\');
+    foreach (glob($modulesRoot . '/is_*', GLOB_ONLYDIR) ?: [] as $moduleDir) {
+        $base = basename($moduleDir);
+        if (itm_is_equipment_regression_test_module_dir($base)) {
+            $names[] = $base;
+        }
+    }
+    sort($names, SORT_STRING);
+
+    return $names;
+}
+
+/**
+ * Dry-run preview counts for equipment test artifact cleanup (no writes).
+ *
+ * @param mysqli $conn
+ * @param string $modulesRoot
+ * @return array{dirs:array<int,string>,companies:int,types:int,sidebar:int}
+ */
+function itm_preview_equipment_test_module_artifacts_cleanup(mysqli $conn, string $modulesRoot): array
+{
+    $preview = [
+        'dirs' => itm_list_equipment_regression_test_module_dir_names($modulesRoot),
+        'companies' => 0,
+        'types' => 0,
+        'sidebar' => 0,
+    ];
+
+    if (!$conn instanceof mysqli) {
+        return $preview;
+    }
+
+    $companyRes = mysqli_query(
+        $conn,
+        "SELECT COUNT(*) AS c FROM companies WHERE company LIKE 'ITM ClearTable Test %'
+            OR company LIKE 'ITM Equipment ClearTable %'
+            OR company LIKE 'ITM Debug %'"
+    );
+    if ($companyRes && ($row = mysqli_fetch_assoc($companyRes))) {
+        $preview['companies'] = (int)($row['c'] ?? 0);
+    }
+    if ($companyRes) {
+        mysqli_free_result($companyRes);
+    }
+
+    $typesRes = mysqli_query(
+        $conn,
+        "SELECT COUNT(*) AS c FROM equipment_types WHERE name LIKE '%itm_eqdct%' OR name LIKE '%itm_edct%'
+            OR " . itm_mbqa_equipment_type_name_pattern_sql() . "
+            OR " . itm_qa_import_equipment_type_name_pattern_sql()
+    );
+    if ($typesRes && ($row = mysqli_fetch_assoc($typesRes))) {
+        $preview['types'] = (int)($row['c'] ?? 0);
+    }
+    if ($typesRes) {
+        mysqli_free_result($typesRes);
+    }
+
+    $sidebarRes = mysqli_query(
+        $conn,
+        'SELECT COUNT(*) AS c FROM employee_sidebar_preferences WHERE entry_id LIKE \'%itm_eqdct%\' OR entry_id LIKE \'%itm_edct%\'
+            OR ' . itm_mbqa_equipment_type_scaffold_entry_id_pattern_sql() . '
+            OR ' . itm_qa_import_equipment_type_scaffold_entry_id_pattern_sql()
+    );
+    if ($sidebarRes && ($row = mysqli_fetch_assoc($sidebarRes))) {
+        $preview['sidebar'] = (int)($row['c'] ?? 0);
+    }
+    if ($sidebarRes) {
+        mysqli_free_result($sidebarRes);
+    }
+
+    return $preview;
+}
+
+/**
  * Removes equipment regression / MBQA-runner scaffold pollution (DB + modules/is_* orphans).
  *
  * @return array{

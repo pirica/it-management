@@ -1,31 +1,25 @@
 <?php
 /**
- * Fix column count mismatch in departments INSERT statements In db/01_schema.sql.
+ * Fix column count mismatch in departments INSERT statements in db/01_schema.sql.
  *
- * Why: Manual edits to departments table schema can leave seed data with
- * mismatched column counts. This script normalizes these INSERTs to 11 columns.
- *
- * CLI: php scripts/fix_sql_departments.php
+ * Browser: dry-run by default; ?apply=1 (Admin) writes db/01_schema.sql.
+ * CLI: php scripts/fix_sql_departments.php then php scripts/fix_sql_departments.php --apply
  */
 
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
-    require_once dirname(__DIR__) . '/config/config.php';
-    require_once __DIR__ . '/lib/script_browser_nav.php';
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fix SQL Departments</title></head><body style="font-family:Segoe UI,sans-serif;margin:16px;">';
-    itm_script_browser_nav_echo();
-    echo '<p><strong>CLI only.</strong></p><pre>php scripts/fix_sql_departments.php</pre></body></html>';
-    exit(1);
-}
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
-define('ITM_CLI_SCRIPT', true);
+$boot = itm_apply_script_bootstrap('Fix SQL Departments');
+$nl = $boot['nl'];
 
 $sqlFile = itm_database_sql_schema_path();
 
 if (!file_exists($sqlFile)) {
-    die("Error: 'db/01_schema.sql' could not be found.\n");
+    echo "Error: db/01_schema.sql could not be found." . $nl;
+    itm_script_output_end();
+    exit(1);
 }
 
 $content = file_get_contents($sqlFile);
@@ -67,20 +61,20 @@ foreach ($lines as $line) {
     if (preg_match('/^INSERT INTO `departments` \(`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`\) VALUES \((.+)\);$/', trim($line), $matches)) {
         $valuesPart = $matches[1];
         $values = parseValues($valuesPart);
-        
+
         if (count($values) !== 11) {
             $newValues = [
-                $values[0], // id
-                $values[1], // company_id
-                $values[2], // name
-                $values[3], // code
-                $values[4], // description
-                $values[5], // email
-                $values[6], // phone
-                $values[7], // dect
-                $values[8], // extension
-                $values[count($values) - 2], // active
-                $values[count($values) - 1]  // created_at
+                $values[0],
+                $values[1],
+                $values[2],
+                $values[3],
+                $values[4],
+                $values[5],
+                $values[6],
+                $values[7],
+                $values[8],
+                $values[count($values) - 2],
+                $values[count($values) - 1],
             ];
             $line = "INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (" . implode(", ", $newValues) . ");";
             $fixedCount++;
@@ -90,10 +84,15 @@ foreach ($lines as $line) {
 }
 
 if ($fixedCount > 0) {
-    file_put_contents($sqlFile, implode("\n", $newLines));
-    echo "Fixed $fixedCount lines In db/01_schema.sql." . $nl;
+    if ($boot['apply']) {
+        file_put_contents($sqlFile, implode("\n", $newLines));
+        echo "Fixed {$fixedCount} departments INSERT line(s) in db/01_schema.sql." . $nl;
+    } else {
+        echo "Would fix {$fixedCount} departments INSERT line(s) in db/01_schema.sql." . $nl;
+    }
 } else {
-    echo "No departments INSERT lines needed fixing." . $nl;
+    echo 'No departments INSERT lines needed fixing.' . $nl;
 }
 
+itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $fixedCount, $nl, 'fix_sql_departments.php');
 itm_script_output_end();

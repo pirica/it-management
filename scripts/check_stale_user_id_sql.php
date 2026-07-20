@@ -4,16 +4,9 @@
  *
  * Why: db/ uses employee_id; leftover user_id SQL breaks at runtime.
  */
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 
-if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('Stale user_id SQL Check');
-    echo '<p>CLI only: <code>php scripts/check_stale_user_id_sql.php</code></p>';
-    exit(0);
-}
-
-itm_script_output_begin('Stale user_id SQL Check');
-$nl = itm_script_output_nl();
+$nl = itm_check_script_begin_browser_admin('Stale user_id SQL Check');
 
 $root = dirname(__DIR__);
 $scanDirs = [

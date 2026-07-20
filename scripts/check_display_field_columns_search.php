@@ -1,16 +1,13 @@
 <?php
 /**
  * CLI audit: fail when index.php uses $displayFieldColumns in foreach without assigning it.
+ *
+ * Browser: open scripts/check_display_field_columns_search.php (Administrator session).
+ * CLI: php scripts/check_display_field_columns_search.php
  */
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 
-if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('CLI only');
-    echo '<p>CLI only: <code>php scripts/check_display_field_columns_search.php</code></p>';
-    itm_script_output_end();
-    exit(0);
-}
-itm_script_output_begin();
+$nl = itm_check_script_begin_browser_admin('Display field columns search');
 
 $root = dirname(__DIR__);
 $failures = [];
@@ -27,12 +24,14 @@ foreach (glob($root . '/modules/*/index.php') as $path) {
 }
 
 if (empty($failures)) {
-    echo "PASS: All module index.php files assign \$displayFieldColumns before use.\n";
+    echo "PASS: All module index.php files assign \$displayFieldColumns before use." . $nl;
+    itm_script_output_end();
     exit(0);
 }
 
-echo "FAIL: " . count($failures) . " issue(s):\n";
+echo "FAIL: " . count($failures) . " issue(s):" . $nl;
 foreach ($failures as $msg) {
-    echo "  - {$msg}\n";
+    echo ' - ' . $msg . $nl;
 }
+itm_script_output_end();
 exit(1);

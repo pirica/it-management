@@ -5,16 +5,9 @@
  *
  * Why: After the employees merge, docs/scripts must say Employees module and employee_id.
  */
-require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 
-if (PHP_SAPI !== 'cli') {
-    itm_script_output_begin('Stale User Terminology Check');
-    echo '<p>CLI only: <code>php scripts/check_stale_user_terminology.php</code></p>';
-    exit(0);
-}
-
-itm_script_output_begin('Stale User Terminology Check');
-$nl = itm_script_output_nl();
+$nl = itm_check_script_begin_browser_admin('Stale User Terminology Check');
 
 $root = dirname(__DIR__);
 $scanDirs = [

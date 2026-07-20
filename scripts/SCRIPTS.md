@@ -209,7 +209,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 
 **Admin-gated `scripts/*` (browser):** after `config.php`, call `itm_script_require_admin_script_or_exit($conn)` (or pass a custom plain-text message). Do **not** gate with `itm_is_admin($conn, (int)$_SESSION['employee_id'])` alone — disposable test Admin sessions and pre-swap authorization employees are accepted via `itm_script_session_or_authorization_is_admin()`. Exceptions: `scripts.php` (catalog checks the **real** signed-in Admin with custom HTML recovery copy) and CLI-only utilities that validate a target user row (e.g. `bypass_v2.php`).
 
-**CLI-only scripts** — per-file `PHP_SAPI !== 'cli'` guard (e.g. `bypass_login.php`, `repair_table_from_schema.php`, `fix_sql*.php`) or call `itm_script_prepare_cli_entry()` before `config.php`.
+**CLI-only scripts** — bash wrappers (`smoke_test.sh`, `import_database_split.sh`, …), session hijack helpers (`bypass_login.php`, `bypass_v2.php`), catalog listing-only repro tools, or `itm_script_prepare_cli_entry()` before `config.php`. Repo/DB writers that previously blocked the browser now use **`itm_apply_script_bootstrap.php`** (dry-run default) instead of a hard CLI-only guard.
 
 **Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`.
 
@@ -322,7 +322,7 @@ Add a table row with:
 | Column | Content |
 |--------|---------|
 | **Script** | Filename (link if browser-safe to open) |
-| **Access** | **Browser**, **CLI**, or both; mark **CLI-only** for bash, file writers, or `PHP_SAPI !== 'cli'` guards |
+| **Access** | **Browser**, **CLI**, **Dry-run** (default preview; `--apply` / `?apply=1`), or **CLI-only** (bash, session hijack, stdout-only) — see catalog badges in `scripts/scripts.php` |
 | **What it does** | Plain-language purpose (one short paragraph) |
 | **How to use** | Exact browser URL/path, query flags, env vars, and CLI command: `php scripts/<name>.php [options]` |
 
@@ -481,8 +481,8 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** from **`AGENTS.md` → Setup & Debugging → PHP CLI tests**.
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **`AGENTS.md` → Setup & Debugging → PHP CLI tests**).
 * **`PHP_BINARY` for sub-processes:** When a script needs to execute another PHP script, prefer using the **`PHP_BINARY`** constant to ensure the same PHP version is used.
-* **Repo-writing maintenance (`scripts/apply*.php`):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes; browser dry-run needs a signed-in session only). Writes only with CLI `--apply` or browser `?apply=1` (**Admin** session required for browser apply). Each apply script prints named target lists (changed / skipped / compliant) using real newlines inside browser `<pre>`. Legacy `--dry-run` (CLI) and `?dry-run=1` (browser) force preview-only.
-* **Other destructive repo writers** (`normalize_database_sql_created_at.php`, `repair_table_from_schema.php`, `fix_sql*.php`, `ensure_equipment_type_modules.php`, etc.): **CLI-only** — block web SAPI with `PHP_SAPI !== 'cli'` and use `itm_script_output_begin()` from `scripts/lib/script_cli_output.php` to show a small HTML page with **← Scripts index** + CLI instructions if opened in a browser.
+* **Repo-writing maintenance (`scripts/apply*.php` and peers):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes; browser dry-run needs a signed-in session only). Writes only with CLI `--apply` or browser `?apply=1` (**Admin** session required for browser apply). Catalog badge: **Dry-run**. Same contract for `fix_sql*.php`, `normalize_database_sql_created_at.php`, `repair_table_from_schema.php`, `ensure_equipment_type_modules.php`, and `cleanup_equipment_test_module_artifacts.php` (preview counts / CREATE excerpt on dry-run).
+* **Static check scripts** (`check_*` audits): **Browser + CLI** via `scripts/lib/itm_script_access_helpers.php` → `itm_check_script_begin_browser_admin()` (Administrator in browser).
 * **Session-mock harnesses** (`test_ajax.php`, `test_edit.php`): **Browser + CLI** — browser Admin form (PHPSESSID + title/note id) or CLI positional args (`<PHPSESSID>`, title, note id for edit). CLI argv harness excluded from **`perform_audit.php`** (same contract as CSRF coverage skip).
 * List exact commands and outcomes in the PR description when checks ran.
 
@@ -497,7 +497,8 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | `scripts/lib/mbqa_runner_tiers.php` | Canonical `$bespokeSmoke` (Tier D) and `$skipClear` lists; tier reference markdown/HTML for build reports |
 | `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
-| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php`: browser + CLI, dry-run default, `--apply` / `?apply=1`, `itm_script_require_admin_script_or_exit()` for browser apply only (passes function-local `$conn` from `config.php` — not `$GLOBALS['conn']`), `itm_apply_script_echo_list()` |
+| `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php` and repo/DB writers with dry-run default: browser + CLI, `--apply` / `?apply=1`, `itm_script_require_admin_script_or_exit()` for browser apply only (passes function-local `$conn` from `config.php` — not `$GLOBALS['conn']`), `itm_apply_script_echo_list()` |
+| `scripts/lib/itm_script_access_helpers.php` | `itm_check_script_begin_browser_admin()` for static `check_*` audits; `itm_script_echo_cli_only_page()` for true CLI-only instruction pages |
 | `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions, optional Admin browser gate |
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |
 | `scripts/lib/itm_codacy_xss_echo_audit.php` | Codacy XSS echo pattern matchers for `check_codacy_xss_echo.php` |
@@ -513,8 +514,8 @@ Canonical equipment-type wrappers live under **`modules/is_*`** (for example `is
 | Script | Role |
 |--------|------|
 | `scripts/lib/equipment_type_modules.php` | Shared allowlist + `itm_remove_equipment_regression_test_module_dirs()` / `itm_ensure_canonical_equipment_type_modules()` |
-| `scripts/ensure_equipment_type_modules.php` | Verify or recreate missing canonical `modules/is_*/index.php` wrappers (CLI) |
-| `scripts/cleanup_equipment_test_module_artifacts.php` | **CLI-only** cleanup utility: remove test `equipment_types` rows (incl. `MBQA-equipment_types-…`), ITM test companies, junk `is_*_itm_eqdct_*` / `is_mbqa_equipment_types_*` folders, sidebar prefs, then re-ensure canonical façades |
+| `scripts/ensure_equipment_type_modules.php` | Verify or recreate missing canonical `modules/is_*/index.php` wrappers (Browser + CLI; dry-run lists missing, `--apply` scaffolds) |
+| `scripts/cleanup_equipment_test_module_artifacts.php` | Cleanup utility: remove test `equipment_types` rows (incl. `MBQA-equipment_types-…`), ITM test companies, junk `is_*_itm_eqdct_*` / `is_mbqa_equipment_types_*` folders, sidebar prefs, then re-ensure canonical façades. Browser + CLI; **dry-run** preview via `itm_preview_equipment_test_module_artifacts_cleanup()` |
 | `scripts/equipment_delete_clear_table_test.php` | DB regression for equipment `clear_table` + transactional single delete (use type names **`Switch`** / **`Server`**, not suffixed names) |
 | `scripts/employees_delete_clear_table_test.php` | DB regression for employees `clear_table` soft-delete + detach |
 | `scripts/check_equipment_clear_table_delete.php` | Static guard for equipment clear-table soft-delete (`equipment_delete_record`, transaction, `itm_crud_build_soft_delete_sql`). Browser + CLI. |
