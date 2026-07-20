@@ -55,7 +55,7 @@ if (!function_exists('todo_merge_assignee_users')) {
 }
 
 $crud_table = "todo";
-$crud_title = "Todo";
+$crud_title = "To-Do";
 $crud_action = $crud_action ?? 'index';
 $logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
 $company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
@@ -300,6 +300,11 @@ if (isset($_GET["ajax_action"])) {
 
 // Data fetching
 $filter = $_GET["filter"] ?? "tasks";
+if ($crud_action === 'index') {
+    $_SESSION['todo_create_filter'] = $filter;
+} elseif ($crud_action === 'create' && !isset($_GET['filter']) && isset($_SESSION['todo_create_filter'])) {
+    $filter = (string)$_SESSION['todo_create_filter'];
+}
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $search = $searchRaw;
 $sortableColumns = todo_list_sortable_columns();
@@ -363,6 +368,25 @@ if ($crud_action === "index") {
     }
 }
 
+$moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
+$todoCatalogLabel = itm_sidebar_label_for_module($moduleSlug) ?: '📝 To-Do';
+$todoCleanModuleTitle = itm_module_access_strip_catalog_label_prefix($todoCatalogLabel);
+$todoResolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $logged_user_id, $moduleSlug);
+$moduleListHeading = $todoResolvedModuleIcon !== ''
+    ? trim($todoResolvedModuleIcon . ' ' . $todoCleanModuleTitle)
+    : $todoCatalogLabel;
+$newButtonPosition = itm_resolve_new_button_position($ui_config ?? null);
+$todoFilterHeading = '🏠 Tasks';
+if ($filter === 'my_day') {
+    $todoFilterHeading = '☀️ My Day';
+} elseif ($filter === 'important') {
+    $todoFilterHeading = '⭐ Important';
+} elseif ($filter === 'planned') {
+    $todoFilterHeading = '📅 Planned';
+} elseif ($filter === 'assigned') {
+    $todoFilterHeading = '👤 Attributed to me';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -374,7 +398,10 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'IT Management - Todo';
+    $crud_title = 'To-Do';
+}
+if ($todoResolvedModuleIcon !== '') {
+    $crud_title = trim($todoResolvedModuleIcon . ' ' . $todoCleanModuleTitle);
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
@@ -387,6 +414,9 @@ if (!isset($crud_title)) {
         .todo-sidebar-item:hover { background: var(--bg-tertiary); }
         .todo-sidebar-item.active { background: #e7f3ff; color: var(--accent); font-weight: 500; }
         .todo-header .date-subtitle { color: var(--text-secondary); font-size: 14px; }
+        .todo-header .todo-filter-subtitle { font-size: 1.125rem; font-weight: 600; margin-bottom: 4px; }
+        .todo-list-toolbar { position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; min-height: 40px; gap: 12px; flex-wrap: wrap; }
+        .todo-list-toolbar h1 { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; text-align: center; font-size: clamp(1.25rem, 4vw, 1.5rem); }
         .todo-content { flex: 1; padding: 30px 50px; overflow-y: auto; position: relative; }
         .todo-header { margin-bottom: 30px; }
         .quick-add { background: var(--bg-secondary); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: box-shadow 0.2s; }
@@ -478,19 +508,25 @@ if (!isset($crud_title)) {
                 </div>
                 <div class="todo-content">
                     <?php if ($crud_action === "index"): ?>
+                        <div data-itm-new-button-managed="server" class="todo-list-toolbar" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;min-height:40px;gap:12px;flex-wrap:wrap;">
+                            <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                                <div style="display:flex;gap:8px;">
+                                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                                </div>
+                            <?php else: ?>
+                                <span aria-hidden="true"></span>
+                            <?php endif; ?>
+                            <h1><?php echo sanitize($moduleListHeading); ?></h1>
+                            <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                                <div style="display:flex;gap:8px;">
+                                    <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                                </div>
+                            <?php else: ?>
+                                <span aria-hidden="true"></span>
+                            <?php endif; ?>
+                        </div>
                         <div class="todo-header">
-                            
-                                
-                        <a href="create.php?filter=<?php echo urlencode($filter); ?>" class="btn btn-primary itm-list-new-button" title="Create">➕</a><br>
-							<h1>
-                                <?php
-                                    if ($filter === "my_day") echo "☀️ My Day";
-                                    elseif ($filter === "important") echo "⭐ Important";
-                                    elseif ($filter === "planned") echo "📅 Planned";
-                                    elseif ($filter === "assigned") echo "👤 Attributed to me";
-                                    else echo "🏠 Tasks";
-                                ?>
-                            </h1>
+                            <div class="todo-filter-subtitle"><?php echo sanitize($todoFilterHeading); ?></div>
                             <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
                         </div>
 
