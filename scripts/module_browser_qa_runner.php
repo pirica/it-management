@@ -3886,7 +3886,12 @@ function mbqa_tenant_row_count(mysqli $conn, string $table, int $companyId): int
         return 0;
     }
 
-    $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM ' . $tableEsc . ' WHERE company_id=' . (int)$companyId);
+    $where = ' WHERE company_id=' . (int)$companyId;
+    if (function_exists('itm_crud_append_not_deleted_predicate')) {
+        $where = itm_crud_append_not_deleted_predicate($where);
+    }
+
+    $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM ' . $tableEsc . $where);
     if (!$res || !($row = mysqli_fetch_assoc($res))) {
         return 0;
     }
@@ -3975,7 +3980,8 @@ function mbqa_column_skipped_for_insert(string $name, array $meta): bool
         return true;
     }
 
-    return $name === 'created_at' || $name === 'updated_at';
+    // Why: Soft-delete meta must stay NULL on QA inserts; timestamp filler treated deleted_at as "now" and hid rows from list.
+    return in_array($name, ['created_at', 'updated_at', 'deleted_at', 'deleted_by'], true);
 }
 
 function mbqa_column_has_db_default(array $meta): bool
@@ -5181,7 +5187,7 @@ function mbqa_html_step_bulk_cancel(string $indexHtml): array
         $issues[] = 'inline selectionMode script in HTML (use shared bulk-delete-selection.js)';
     }
 
-    $hasStaticCancel = stripos($indexHtml, 'data-itm-bulk-cancel') !== false;
+    $hasStaticCancel = preg_match('/<button\b[^>]*\bdata-itm-bulk-cancel\s*=\s*["\']1["\'][^>]*>/i', $indexHtml) === 1;
     if ($hasStaticCancel) {
         if (!preg_match('/<button[^>]*data-itm-bulk-cancel\s*=\s*["\']1["\'][^>]*type\s*=\s*["\']button["\']/i', $indexHtml)
             && !preg_match('/<button[^>]*type\s*=\s*["\']button["\'][^>]*data-itm-bulk-cancel\s*=\s*["\']1["\']/i', $indexHtml)) {

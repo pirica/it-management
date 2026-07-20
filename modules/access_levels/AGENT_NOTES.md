@@ -18,6 +18,7 @@ This module manages system-wide access level definitions (e.g., "Full", "Limited
 ## 5. UI Behavior Requirements
 - **Standard CRUD**: Supports list, view, create, edit, and delete.
 - **Search & Sort**: The index view must support searching by name and sorting.
+- **Bulk toolbar**: When row count ≥ `records_per_page`, index shows `bulk-delete-form` with **Select to Delete**, **Cancel** (`type="button"`, `data-itm-bulk-cancel="1"`), and **Clear Table** per shared `js/bulk-delete-selection.js` contract.
 - **CSRF Protection**: All mutations (create, edit, delete, bulk actions) must include a valid CSRF token.
 
 ## 6. API Actions (If Applicable)
