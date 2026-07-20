@@ -1,33 +1,41 @@
 <?php
 /**
+ * Todo vault encryption regression.
+ *
+ * Browser: open scripts/verify_todo_vault.php (Administrator session).
  * CLI: php scripts/verify_todo_vault.php
- * Verifies private todo vault encryption (encrypt on write, decrypt on read, shared tasks plaintext).
  */
 
-define('ITM_CLI_SCRIPT', true);
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/todo/todo_vault_helpers.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Todo Vault Verification');
+$nl = itm_script_output_nl();
 
 $failures = 0;
 
 function todo_vault_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo itm_script_format_status_line('[FAIL] ' . $message) . $nl;
 }
 
 function todo_vault_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo itm_script_format_status_line('[PASS] ' . $message) . $nl;
 }
 
 if (!($conn instanceof mysqli)) {
     todo_vault_fail('Database connection unavailable.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -35,6 +43,7 @@ $companyId = 1;
 $actor = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-todo-vault']);
 if (!is_array($actor) || empty($actor['id'])) {
     todo_vault_fail('Could not create disposable test employee.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -45,6 +54,7 @@ $schemaRes = $conn->query("SHOW COLUMNS FROM todo LIKE 'title_hash'");
 if (!$schemaRes || $schemaRes->num_rows === 0) {
     todo_vault_fail('todo.title_hash column missing — re-import db/ bundle or apply db/migrations/todo_vault.sql.');
     itm_script_test_employee_delete($conn, $employeeId);
+    itm_script_output_end();
     exit(1);
 }
 
@@ -87,6 +97,7 @@ $ins->bind_param(
 if (!$ins->execute()) {
     todo_vault_fail('Could not insert encrypted task row.');
     itm_script_test_employee_delete($conn, $employeeId);
+    itm_script_output_end();
     exit(1);
 }
 $taskId = (int)$conn->insert_id;
@@ -125,9 +136,11 @@ $conn->query('DELETE FROM todo WHERE id = ' . (int)$taskId);
 itm_script_test_employee_delete($conn, $employeeId);
 
 if ($failures > 0) {
-    fwrite(STDERR, "\n{$failures} failure(s).\n");
+    echo $nl . colorText($failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
-fwrite(STDOUT, "\nAll todo vault checks passed.\n");
+echo $nl . itm_script_format_status_line('[PASS] All todo vault checks passed.') . $nl;
+itm_script_output_end();
 exit(0);

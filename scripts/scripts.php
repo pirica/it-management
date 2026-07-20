@@ -1752,7 +1752,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="verify_todo_vault.php" target="_blank" rel="nofollow noreferrer">verify_todo_vault.php</a></td>
-                    <td>Todo vault</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for Todo vault encryption: private title/description encrypt at rest, company-global tasks stay plaintext, hydrate when vault locked/unlocked. Disposable script employee.</td>
                     <td><code>php scripts/verify_todo_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/todo/todo_vault_helpers.php</code>, persistence in <code>modules/todo/index.php</code>, or <code>itm_vault_reencrypt_todo()</code>.</td>
                 </tr>
                 <tr>
@@ -1953,11 +1954,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 				    <td>Static gate for scaffold soft-delete / audit UI contracts (list hide, view columns, not-deleted filter, soft-delete helper).</td>
 				    <td><code>php scripts/check_crud_audit_soft_delete.php</code></td>
 				</tr>
-				<tr>
+                <tr>
                     <td><a href="repro_employee_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_employee_dataloss.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. Catalog listing only; no browser runner — use CLI from repo root.</td>
-                   <td>Run from repo root: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
+                   <td>Browser: open <a href="repro_employee_dataloss.php">repro_employee_dataloss.php</a>. CLI: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
                 <tr>
                     <td><a href="verify_import_fix_updated.php" target="_blank" rel="nofollow noreferrer">verify_import_fix_updated.php</a></td>
@@ -1967,9 +1968,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="repro_generic_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_generic_dataloss.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update. Catalog listing only; no browser runner — use CLI from repo root.</td>
-                    <td>Run from repo root: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
+                    <td>Browser: open <a href="repro_generic_dataloss.php">repro_generic_dataloss.php</a>. CLI: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
                 <tr>
                     <td><a href="repro_contacts_idor.php" target="_blank" rel="nofollow noreferrer">repro_contacts_idor.php</a></td>
