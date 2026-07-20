@@ -1,10 +1,13 @@
 -- Todo vault: encrypt personal task title/description at rest (see modules/todo/todo_vault_helpers.php).
--- Live DBs: full CREATE TABLE swap (no ALTER). Fresh installs use the same shape in db/01_schema.sql.
--- Why: title_hash backfill uses SHA2(TRIM(title), 256) to match todo_text_hash() for legacy plaintext rows.
+-- Live DBs: copy/paste table replacement — DROP then full CREATE TABLE (no ALTER, no _new staging table).
+-- Warning: DROP TABLE removes existing todo rows; back up data before applying on production.
+-- Fresh installs use the same block in db/01_schema.sql.
 
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE TABLE `todo_new` (
+DROP TABLE IF EXISTS `todo`;
+
+CREATE TABLE `todo` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -34,53 +37,5 @@ CREATE TABLE `todo_new` (
   KEY `created_by` (`created_by`),
   CONSTRAINT `todo_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `todo_new` (
-  `id`,
-  `company_id`,
-  `title`,
-  `title_hash`,
-  `description`,
-  `due_date`,
-  `reminder_at`,
-  `repeat_pattern`,
-  `category_id`,
-  `department_id`,
-  `assigned_to_employee_id`,
-  `completed`,
-  `importance`,
-  `active`,
-  `deleted_by`,
-  `deleted_at`,
-  `created_by`,
-  `created_at`,
-  `updated_by`,
-  `updated_at`
-)
-SELECT
-  `id`,
-  `company_id`,
-  `title`,
-  SHA2(TRIM(`title`), 256),
-  `description`,
-  `due_date`,
-  `reminder_at`,
-  `repeat_pattern`,
-  `category_id`,
-  `department_id`,
-  `assigned_to_employee_id`,
-  `completed`,
-  `importance`,
-  `active`,
-  `deleted_by`,
-  `deleted_at`,
-  `created_by`,
-  `created_at`,
-  `updated_by`,
-  `updated_at`
-FROM `todo`;
-
-DROP TABLE `todo`;
-RENAME TABLE `todo_new` TO `todo`;
 
 SET FOREIGN_KEY_CHECKS = 1;
