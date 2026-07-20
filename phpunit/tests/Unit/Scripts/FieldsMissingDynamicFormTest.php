@@ -305,7 +305,11 @@ PHP;
         );
 
         $this->assertNotSame([], $failures);
-        $this->assertGreaterThanOrEqual(3, count($failures));
+        // Why: bespoke_page_ui no longer double-records New button (list contract owns it) — two stable gaps remain.
+        $this->assertGreaterThanOrEqual(2, count($failures));
+        $failureCodes = array_column($failures, 'code');
+        $this->assertContains('bespoke_list_ui_sort', $failureCodes);
+        $this->assertContains('bespoke_list_ui_new_button', $failureCodes);
     }
 
     public function testCableColorsBespokeGatePassesHybridContract(): void

@@ -9,6 +9,8 @@
  * - Needs review (context-validated?): no direct tenant predicate, but nearby/context hints suggest another guard.
  */
 
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
+
 $modules_dir = __DIR__ . '/../modules';
 $database_sql = itm_database_sql_schema_path();
 $project_root = realpath(__DIR__ . '/..');
@@ -1121,7 +1123,6 @@ if ($table_regex === null) {
 $allowlist_rules = load_allowlist_rules($allowlist_file);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
-require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $is_cli = (PHP_SAPI === 'cli');
 
