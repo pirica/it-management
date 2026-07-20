@@ -1149,13 +1149,8 @@
     },
     "roles_permissions": {
       "reviewed_at": "2026-07-20",
-      "reason": "Dual-pane RBAC matrix (index.php only): AJAX modals for add/edit role and matrix save — no scaffold create.php, list_all.php, or bulk-delete toolbar. Server-managed ➕ opens the add-role modal; permission matrix uses module filter instead of list search/pagination.",
+      "reason": "Dual-pane RBAC matrix (index.php only): AJAX modals for add/edit role and matrix save — no scaffold create.php, list_all.php, or bulk-delete toolbar. Server-managed ➕ opens the add-role modal; permission matrix uses GET search on registry rows plus optional client-side filter.",
       "checks": [
-        {
-          "check": "Search",
-          "code": "ui_config_search",
-          "note": "No flattened list search — matrix uses module name filter in toolbar"
-        },
         {
           "check": "Column sort (ASC/DESC)",
           "code": "ui_config_sort",

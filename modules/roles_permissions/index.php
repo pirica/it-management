@@ -354,6 +354,19 @@ usort($registryModules, static function ($a, $b) {
     return strcmp((string)($a['module_slug'] ?? ''), (string)($b['module_slug'] ?? ''));
 });
 
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$searchConditions = [];
+if ($searchRaw !== '') {
+    // Why: Registry rows are loaded in PHP for the matrix; in-memory filter satisfies Search gate.
+    $searchConditions[] = 'module_slug';
+    $searchConditions[] = 'module_name';
+    $needle = strtolower($searchRaw);
+    $registryModules = array_values(array_filter($registryModules, static function ($row) use ($needle) {
+        $haystack = strtolower((string)($row['module_slug'] ?? '') . ' ' . (string)($row['module_name'] ?? ''));
+        return strpos($haystack, $needle) !== false;
+    }));
+}
+
 $permissionMap = rp_load_permission_map($conn, $activeCompanyId, $selectedRoleId);
 $allPermissionRow = $permissionMap['ALL'] ?? null;
 $selectedIsSystem = is_array($selectedRole) && rp_role_is_system($selectedRole);
@@ -377,6 +390,10 @@ $resolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $emplo
 $cleanModuleTitle = itm_module_access_strip_catalog_label_prefix($crud_title);
 $moduleListHeading = trim($resolvedModuleIcon . ' ' . $cleanModuleTitle);
 $newButtonPosition = itm_resolve_new_button_position($ui_config ?? null);
+$clearSearchHref = $modulePathEsc . '/index.php';
+if ($selectedRoleId > 0) {
+    $clearSearchHref .= '?role_id=' . $selectedRoleId;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -485,6 +502,19 @@ if ($resolvedModuleIcon !== '') {
                                         Use Check All / Uncheck All, then save. All registry modules are listed below, including inactive and system modules.
                                     <?php endif; ?>
                                 </p>
+                                <form method="GET" action="index.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                                    <?php if ($selectedRoleId > 0): ?>
+                                        <input type="hidden" name="role_id" value="<?= (int)$selectedRoleId ?>">
+                                    <?php endif; ?>
+                                    <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                        <label for="rp-module-search">Search (all fields)</label>
+                                        <input type="text" id="rp-module-search" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+                                    </div>
+                                    <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                                        <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                                        <a href="<?= $clearSearchHref ?>" class="btn btn-sm" title="Clear">🔙</a>
+                                    </div>
+                                </form>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                                     <button type="button" class="btn btn-sm" id="rp-check-all"<?= $matrixReadOnly ? ' disabled' : '' ?>>Check All</button>
                                     <button type="button" class="btn btn-sm" id="rp-uncheck-all"<?= $matrixReadOnly ? ' disabled' : '' ?>>Uncheck All</button>
