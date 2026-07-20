@@ -1064,6 +1064,7 @@ if (!isset($crud_title)) {
                             );
                             ?>
                             <li>
+                                <?php echo sanitize($search); ?> |
                                 <a href="<?php echo $hitHref; ?>"><?php echo sanitize(opr_format_date($hitDate)); ?></a>
                                 <span style="color:var(--text-secondary);"> — <?php echo sanitize(implode(', ', $sections)); ?></span>
                             </li>
