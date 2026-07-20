@@ -596,8 +596,62 @@ if (!function_exists('opr_search_cross_date_hits')) {
     }
 }
 
+if (!function_exists('opr_search_cross_date_rows_from_hits')) {
+    function opr_search_cross_date_rows_from_hits(array $hits) {
+        $rows = [];
+        foreach ($hits as $reportDate => $sections) {
+            $rows[] = [
+                'report_date' => (string)$reportDate,
+                'sections' => $sections,
+                'sections_label' => implode(', ', $sections),
+            ];
+        }
+        return $rows;
+    }
+}
+
+if (!function_exists('opr_search_cross_date_sort_rows')) {
+    function opr_search_cross_date_sort_rows(array $rows, $sort, $dir) {
+        $sort = in_array($sort, ['report_date', 'sections'], true) ? $sort : 'report_date';
+        $dir = strtoupper((string)$dir) === 'ASC' ? 'ASC' : 'DESC';
+
+        usort($rows, static function (array $a, array $b) use ($sort, $dir) {
+            if ($sort === 'report_date') {
+                $cmp = strcmp($a['report_date'], $b['report_date']);
+            } else {
+                $cmp = strcasecmp($a['sections_label'], $b['sections_label']);
+            }
+            if ($cmp === 0) {
+                $cmp = strcmp($a['report_date'], $b['report_date']);
+            }
+            return $dir === 'ASC' ? $cmp : -$cmp;
+        });
+
+        return $rows;
+    }
+}
+
+if (!function_exists('opr_search_cross_date_paginate_rows')) {
+    function opr_search_cross_date_paginate_rows(array $rows, $page, $perPage) {
+        $total = count($rows);
+        $perPage = max(1, (int)$perPage);
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        $page = max(1, min((int)$page, $totalPages));
+        $offset = ($page - 1) * $perPage;
+
+        return [
+            'rows' => array_slice($rows, $offset, $perPage),
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+            'totalPages' => $totalPages,
+            'offset' => $offset,
+        ];
+    }
+}
+
 if (!function_exists('opr_report_index_url')) {
-    function opr_report_index_url($day, $month, $year, $search = '', $searchScope = 'day', $searchSection = 'all') {
+    function opr_report_index_url($day, $month, $year, $search = '', $searchScope = 'day', $searchSection = 'all', $sort = '', $dir = '', $page = 0) {
         $query = [
             'day' => (int)$day,
             'month' => (int)$month,
@@ -612,6 +666,19 @@ if (!function_exists('opr_report_index_url')) {
         $searchSection = opr_search_normalize_section($searchSection);
         if ($searchSection !== 'all') {
             $query['search_section'] = $searchSection;
+        }
+        if ($search !== '' && $searchScope === 'all') {
+            if (in_array((string)$sort, ['report_date', 'sections'], true)) {
+                $query['sort'] = (string)$sort;
+            }
+            $dir = strtoupper((string)$dir);
+            if (in_array($dir, ['ASC', 'DESC'], true)) {
+                $query['dir'] = $dir;
+            }
+            $page = (int)$page;
+            if ($page > 1) {
+                $query['page'] = $page;
+            }
         }
         return 'index.php?' . http_build_query($query);
     }
@@ -635,9 +702,39 @@ if (!in_array($searchScope, ['day', 'all'], true)) {
 }
 $searchSection = opr_search_normalize_section($_GET['search_section'] ?? 'all');
 $can_edit_report = opr_is_editable_date($selected_date, $is_admin);
+$searchSort = (string)($_GET['sort'] ?? 'report_date');
+if (!in_array($searchSort, ['report_date', 'sections'], true)) {
+    $searchSort = 'report_date';
+}
+$searchDir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+if (!in_array($searchDir, ['ASC', 'DESC'], true)) {
+    $searchDir = 'DESC';
+}
+$searchPerPage = itm_resolve_records_per_page($ui_config ?? null);
+$searchPage = max(1, (int)($_GET['page'] ?? 1));
 $crossDateHits = ($search !== '' && $searchScope === 'all')
     ? opr_search_cross_date_hits($conn, $company_id, $search, $searchSection)
     : [];
+$crossDateHitRows = [];
+$crossDateHitTotal = 0;
+$crossDateHitOffset = 0;
+$crossDateHitTotalPages = 1;
+if ($search !== '' && $searchScope === 'all') {
+    $crossDateHitPaged = opr_search_cross_date_paginate_rows(
+        opr_search_cross_date_sort_rows(
+            opr_search_cross_date_rows_from_hits($crossDateHits),
+            $searchSort,
+            $searchDir
+        ),
+        $searchPage,
+        $searchPerPage
+    );
+    $crossDateHitRows = $crossDateHitPaged['rows'];
+    $crossDateHitTotal = $crossDateHitPaged['total'];
+    $searchPage = $crossDateHitPaged['page'];
+    $crossDateHitOffset = $crossDateHitPaged['offset'];
+    $crossDateHitTotalPages = $crossDateHitPaged['totalPages'];
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) {
     itm_require_post_csrf();
@@ -925,6 +1022,23 @@ $oprSearchClearHref = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
+$oprSearchHitsListUrl = static function ($sort, $dir, $page = null) use ($selected_day, $selected_month, $selected_year, $search, $searchSection, $searchPage) {
+    return htmlspecialchars(
+        opr_report_index_url(
+            $selected_day,
+            $selected_month,
+            $selected_year,
+            $search,
+            'all',
+            $searchSection,
+            $sort,
+            $dir,
+            $page ?? $searchPage
+        ),
+        ENT_QUOTES,
+        'UTF-8'
+    );
+};
 
 $stmt = mysqli_prepare($conn, 'SELECT company, unit_no FROM companies WHERE id = ?');
 mysqli_stmt_bind_param($stmt, 'i', $company_id);
@@ -985,8 +1099,8 @@ if (!isset($crud_title)) {
         .opr-subtitle .edit-input-ui { border:none; background:transparent; padding:0; width:100%; color:var(--text-secondary); }
         .opr-company-block .edit-input-ui { border:none; background:transparent; padding:0; min-width:120px; }
         .opr-btn-label .edit-input-ui { border:none; background:transparent; padding:0; min-width:80px; }
-        .opr-cross-date-hits { margin:0; padding-left:20px; }
-        .opr-cross-date-hits li { margin-bottom:6px; }
+        .opr-cross-date-hits-table { margin:0; }
+        .opr-cross-date-hits-table th a { text-decoration:none; color:inherit; }
         @media print {
             @page { size: landscape; margin: 1cm; }
             .opr-controls, .opr-no-print, .btn { display:none !important; }
@@ -1043,12 +1157,33 @@ if (!isset($crud_title)) {
             <?php if ($search !== '' && $searchScope === 'all'): ?>
             <div class="card opr-no-print" style="margin-bottom:16px;">
                 <h2 style="margin:0 0 10px; font-size:1.1rem;">Matching report dates</h2>
-                <?php if (empty($crossDateHits)): ?>
+                <?php if ($crossDateHitTotal === 0): ?>
                     <p style="margin:0; color:var(--text-secondary);">No matches found across saved reports for this company.</p>
                 <?php else: ?>
-                    <ul class="opr-cross-date-hits">
-                        <?php foreach ($crossDateHits as $hitDate => $sections): ?>
+                    <?php
+                    $nextReportDateDir = ($searchSort === 'report_date' && $searchDir === 'ASC') ? 'DESC' : 'ASC';
+                    $nextSectionsDir = ($searchSort === 'sections' && $searchDir === 'ASC') ? 'DESC' : 'ASC';
+                    ?>
+                    <table class="table opr-cross-date-hits-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a href="<?php echo $oprSearchHitsListUrl('report_date', $nextReportDateDir, 1); ?>">
+                                        Report date<?php if ($searchSort === 'report_date'): ?> <?php echo $searchDir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="<?php echo $oprSearchHitsListUrl('sections', $nextSectionsDir, 1); ?>">
+                                        Sections<?php if ($searchSort === 'sections'): ?> <?php echo $searchDir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                    </a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($crossDateHitRows as $hitRow): ?>
                             <?php
+                            $hitDate = $hitRow['report_date'];
+                            $sections = $hitRow['sections'];
                             $hitTs = strtotime((string)$hitDate);
                             $hitHref = htmlspecialchars(
                                 opr_report_index_url(
@@ -1063,13 +1198,29 @@ if (!isset($crud_title)) {
                                 'UTF-8'
                             );
                             ?>
-                            <li>
-                                <?php echo sanitize($search); ?> |
-                                <a href="<?php echo $hitHref; ?>"><?php echo sanitize(opr_format_date($hitDate)); ?></a>
-                                <span style="color:var(--text-secondary);"> — <?php echo sanitize(implode(', ', $sections)); ?></span>
-                            </li>
+                            <tr>
+                                <td>
+                                    <?php echo sanitize($search); ?> |
+                                    <a href="<?php echo $hitHref; ?>"><?php echo sanitize(opr_format_date($hitDate)); ?></a>
+                                </td>
+                                <td><?php echo sanitize(implode(', ', $sections)); ?></td>
+                            </tr>
                         <?php endforeach; ?>
-                    </ul>
+                        </tbody>
+                    </table>
+                    <?php if ($crossDateHitTotal > $searchPerPage): ?>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px;">
+                            <div>Showing <?php echo $crossDateHitOffset + 1; ?>-<?php echo min($crossDateHitOffset + $searchPerPage, $crossDateHitTotal); ?> of <?php echo (int)$crossDateHitTotal; ?></div>
+                            <div style="display:flex; gap:8px;">
+                                <?php if ($searchPage > 1): ?>
+                                    <a class="btn btn-sm" href="<?php echo $oprSearchHitsListUrl($searchSort, $searchDir, $searchPage - 1); ?>" title="◀️ Previous">Previous</a>
+                                <?php endif; ?>
+                                <?php if ($searchPage < $crossDateHitTotalPages): ?>
+                                    <a class="btn btn-sm" href="<?php echo $oprSearchHitsListUrl($searchSort, $searchDir, $searchPage + 1); ?>" title="▶️ Next">Next</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
@@ -1105,6 +1256,11 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                     <?php if ($searchScope === 'all'): ?>
                         <input type="hidden" name="search_scope" value="all">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($searchSort); ?>">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($searchDir); ?>">
+                        <?php if ($searchPage > 1): ?>
+                            <input type="hidden" name="page" value="<?php echo (int)$searchPage; ?>">
+                        <?php endif; ?>
                     <?php endif; ?>
                     <?php if ($searchSection !== 'all'): ?>
                         <input type="hidden" name="search_section" value="<?php echo sanitize($searchSection); ?>">
