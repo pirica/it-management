@@ -457,8 +457,8 @@ if (!isset($crud_title)) {
 
                 <!-- Quick Actions -->
                 <section class="reports-actions">
-                    <button onclick="exportAllReports()" class="btn btn-secondary">📥 Export All Reports</button>
-                    <button onclick="window.print()" class="btn btn-primary">🖨️ Print Dashboard</button>
+                    <button onclick="exportAllReports()" class="btn btn-secondary">📥 Export All</button>
+                    <button onclick="window.print()" class="btn btn-primary">🖨️ Print</button>
                 </section>
             </div>
         </div>
